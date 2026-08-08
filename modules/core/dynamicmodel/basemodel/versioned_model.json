@@ -1,0 +1,12 @@
+{
+	"name": "core.basemodel.versioned_model",
+	"fields": [
+		{
+			"name": "etag",
+			"label": "fields.etag",
+			"data_type": "etag",
+			"versioning_key": true,
+			"use_type_default": true
+		}
+	]
+}

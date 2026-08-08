@@ -120,6 +120,39 @@ func (this *ModelSchemaBuilder) Extend(builder *ModelSchemaBuilder) *ModelSchema
 	return this
 }
 
+// ExtendByName extends this schema with the builder registered under schemaName
+// via RegisterSchemaBuilderFn. Panics when no builder is registered, because a JSON
+// model referencing an unknown base schema is a programming error, not user input.
+func (this *ModelSchemaBuilder) ExtendByName(schemaName string) *ModelSchemaBuilder {
+	builder := GetSchemaBuilder(schemaName)
+	if builder == nil {
+		panic(errors.Errorf(
+			"ExtendByName: model '%s' extends '%s' which is not registered; "+
+				"register it with RegisterSchemaBuilderFn before parsing this model",
+			this.schema.name, schemaName,
+		))
+	}
+	return this.Extend(builder)
+}
+
+// HasField reports whether a field of the given name has been added to this schema.
+func (this *ModelSchemaBuilder) HasField(name string) bool {
+	_, exists := this.schema.fields[name]
+	return exists
+}
+
+// GetField returns a FieldBuilder wrapping an already-added field, so callers can apply
+// options that cannot be expressed in JSON (ServiceInjected, DefaultFn). The returned
+// builder mutates the field in place, so there is no need to re-add it.
+// Panics when the field does not exist.
+func (this *ModelSchemaBuilder) GetField(name string) *FieldBuilder {
+	field, exists := this.schema.fields[name]
+	if !exists {
+		panic(errors.Errorf("GetField: field '%s' not found in model '%s'", name, this.schema.name))
+	}
+	return &FieldBuilder{field: field}
+}
+
 func (this *ModelSchemaBuilder) ExtendBase() *ModelSchemaBuilder {
 	if baseBuilder != nil {
 		this.Extend(baseBuilder)

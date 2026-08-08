@@ -98,3 +98,11 @@ const (
 	TokenSecretKey   ConfigName = "CORE.TOKEN.SECRET_KEY"
 	TokenExpiryHours ConfigName = "CORE.TOKEN.EXPIRY_HOURS"
 )
+
+const (
+	S3StorageRegionName  ConfigName = "CORE.S3_STORAGE.REGION_NAME"
+	S3StorageAccessToken ConfigName = "CORE.S3_STORAGE.ACCESS_TOKEN"
+	S3StorageSecretKey   ConfigName = "CORE.S3_STORAGE.SECRET_KEY"
+	S3StorageEndpoint    ConfigName = "CORE.S3_STORAGE.ENDPOINT"
+	S3StorageBucket      ConfigName = "CORE.S3_STORAGE.BUCKET"
+)

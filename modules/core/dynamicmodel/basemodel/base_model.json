@@ -1,0 +1,12 @@
+{
+	"name": "core.basemodel.base_model",
+	"fields": [
+		{
+			"name": "id",
+			"label": "fields.id",
+			"data_type": "ulid",
+			"use_type_default": true,
+			"primary_key": true
+		}
+	]
+}

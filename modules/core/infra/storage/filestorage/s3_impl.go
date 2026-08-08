@@ -12,8 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 
-	"github.com/corevision-technology/coremart/modules/vending_machine/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	"github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 

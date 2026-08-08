@@ -8,6 +8,19 @@ import (
 	coreCtx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
+// Names the base schemas are registered under, and which a model JSON references
+// from "extend_before" / "extend_after".
+const (
+	BaseModelSchemaName              = "core.basemodel.base_model"
+	OrgBaseModelSchemaName           = "core.basemodel.org_base_model"
+	ArchivableModelSchemaName        = "core.basemodel.archivable_model"
+	AuditableModelSchemaName         = "core.basemodel.auditable_model"
+	AuditableReadonlyModelSchemaName = "core.basemodel.auditable_readonly_model"
+	TraceableModelSchemaName         = "core.basemodel.traceable_model"
+	TraceableReadonlyModelSchemaName = "core.basemodel.traceable_readonly_model"
+	VersionedModelSchemaName         = "core.basemodel.versioned_model"
+)
+
 const (
 	FieldAssociations = "add"
 	FieldDesociations = "remove"
@@ -39,7 +52,7 @@ func DefineFieldIdArr(fieldName string) *dmodel.FieldBuilder {
 }
 
 func ArchivableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel("core.basemodel.archivable_model").
+	return dmodel.DefineModel(ArchivableModelSchemaName).
 		Field(
 			dmodel.DefineField().
 				Name(FieldIsArchived).
@@ -52,7 +65,7 @@ func ArchivableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 func AuditableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel("core.basemodel.auditable_model").
+	return dmodel.DefineModel(AuditableModelSchemaName).
 		Field(
 			dmodel.DefineField().
 				Name(FieldCreatedAt).
@@ -72,7 +85,7 @@ func AuditableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 func AuditableReadonlyModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel("core.basemodel.auditable_readonly_model").
+	return dmodel.DefineModel(AuditableReadonlyModelSchemaName).
 		Field(
 			dmodel.DefineField().
 				Name(FieldCreatedAt).
@@ -112,7 +125,7 @@ func injectUpdatedBy(ctx context.Context, _ bool) any {
 }
 
 func TraceableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel("core.basemodel.traceable_model").
+	return dmodel.DefineModel(TraceableModelSchemaName).
 		Field(
 			dmodel.DefineField().
 				Name(FieldCreatedBy).
@@ -128,7 +141,7 @@ func TraceableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 func TraceableReadonlyModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel("core.basemodel.traceable_readonly_model").
+	return dmodel.DefineModel(TraceableReadonlyModelSchemaName).
 		Field(
 			dmodel.DefineField().
 				Name(FieldCreatedBy).
@@ -138,7 +151,7 @@ func TraceableReadonlyModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 func BaseModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel("core.basemodel.base_model").
+	return dmodel.DefineModel(BaseModelSchemaName).
 		Field(
 			DefineFieldId(FieldId).
 				Label(model.NewLangJsonRefSf("fields.%s", FieldId)).
@@ -149,7 +162,7 @@ func BaseModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 func OrgIdModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel("core.basemodel.org_base_model").
+	return dmodel.DefineModel(OrgBaseModelSchemaName).
 		Field(
 			DefineFieldId(FieldOrgId).
 				Label(model.NewLangJsonRefSf("fields.%s", FieldOrgId)).
@@ -158,7 +171,7 @@ func OrgIdModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 func VersionedModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel("core.basemodel.versioned_model").
+	return dmodel.DefineModel(VersionedModelSchemaName).
 		Field(
 			dmodel.DefineField().
 				Name(FieldEtag).

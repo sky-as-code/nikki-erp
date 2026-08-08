@@ -12,6 +12,56 @@ var schemaRegistry = &SchemaRegistry{
 	mu:      &sync.RWMutex{},
 }
 
+// builderRegistry maps a schema name to a factory producing a fresh *ModelSchemaBuilder.
+// It exists because Extend needs a builder, while schemaRegistry only stores built schemas.
+// A factory (not a shared instance) keeps each Extend call working on its own copy.
+var builderRegistry = struct {
+	factories map[string]func() *ModelSchemaBuilder
+	mu        *sync.RWMutex
+}{
+	factories: make(map[string]func() *ModelSchemaBuilder),
+	mu:        &sync.RWMutex{},
+}
+
+// RegisterSchemaBuilderFn registers a builder factory under name, so that JSON models can
+// reference it from "extend_before" / "extend_after". Returns an error on duplicate registration.
+func RegisterSchemaBuilderFn(name string, factory func() *ModelSchemaBuilder) error {
+	if name == "" {
+		return errors.New("RegisterSchemaBuilderFn: schema name must not be empty")
+	}
+	if factory == nil {
+		return errors.Errorf("RegisterSchemaBuilderFn: factory for '%s' must not be nil", name)
+	}
+
+	builderRegistry.mu.Lock()
+	defer builderRegistry.mu.Unlock()
+
+	if _, exists := builderRegistry.factories[name]; exists {
+		return errors.Errorf("RegisterSchemaBuilderFn: builder '%s' already registered", name)
+	}
+	builderRegistry.factories[name] = factory
+
+	return nil
+}
+
+// GetSchemaBuilderFn returns the builder factory registered under name, or nil when absent.
+func GetSchemaBuilderFn(name string) func() *ModelSchemaBuilder {
+	builderRegistry.mu.RLock()
+	defer builderRegistry.mu.RUnlock()
+
+	return builderRegistry.factories[name]
+}
+
+// GetSchemaBuilder builds a fresh *ModelSchemaBuilder from the factory registered under name,
+// or nil when no factory is registered.
+func GetSchemaBuilder(name string) *ModelSchemaBuilder {
+	factory := GetSchemaBuilderFn(name)
+	if factory == nil {
+		return nil
+	}
+	return factory()
+}
+
 type SchemaRegistry struct {
 	schemas      map[string]*ModelSchema
 	orderedNames []string

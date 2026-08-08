@@ -532,6 +532,10 @@ type ModelRelation struct {
 	M2mDestFieldPrefix string `json:"dest_field_prefix,omitempty"`
 }
 
+func (this ModelRelation) Label() model.LangJson {
+	return this.label
+}
+
 func (this ModelRelation) ToSimplized() any {
 	return struct {
 		Edge           string       `json:"edge,omitempty"`

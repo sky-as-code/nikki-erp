@@ -1,0 +1,75 @@
+{
+	"name": "iam_group",
+	"label": "iam_group.label",
+	"table_name": "iam_groups",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true,
+			"unique": true
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "langjson", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "owner_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "User who owns the group, is notified when membership is updated and is responsible for reviewing the membership periodically."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "owner",
+			"type": "many:one",
+			"dest_schema": "iam_user",
+			"key_map": { "owner_id": "id" }
+		},
+		{
+			"edge": "users",
+			"type": "many:many",
+			"peer_schema": "iam_user",
+			"through_schema": "iam_group_user_rel",
+			"src_field_prefix": "group",
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "roles",
+			"type": "many:many",
+			"peer_schema": "iam_role",
+			"through_schema": "iam_role_group_assignment",
+			"src_field_prefix": "receiver_group",
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"edges_from": [
+		{
+			"edge": "own_roles",
+			"label": { "en-US": "Owned roles" },
+			"existing": { "src_schema": "iam_role", "src_edge": "owner_group" }
+		},
+		{
+			"edge": "benefit_grant_requests",
+			"label": { "en-US": "Grant requests for this group" },
+			"existing": { "src_schema": "iam_grant_request", "src_edge": "receiver_group" }
+		}
+	]
+}

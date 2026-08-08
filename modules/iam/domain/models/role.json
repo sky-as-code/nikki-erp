@@ -1,0 +1,117 @@
+{
+	"name": "iam_role",
+	"label": "iam_role.label",
+	"table_name": "iam_roles",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"partial_uniques": [
+		{ "not_null_fields": ["name"], "nullable_field": "org_id" }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "description",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "owner_group_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "One of the users in this group can approve grant requests for this role"
+			}
+		},
+		{
+			"name": "owner_user_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Only this user can approve grant requests for this role"
+			}
+		},
+		{
+			"name": "is_private",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false
+		},
+		{
+			"name": "is_requestable",
+			"data_type": "boolean",
+			"required_for_create": true
+		},
+		{
+			"name": "is_required_attachment",
+			"data_type": "boolean",
+			"default_value": false
+		},
+		{
+			"name": "is_required_comment",
+			"data_type": "boolean",
+			"default_value": false
+		},
+		{
+			"name": "org_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "If specified, the role only accepts entitlements whose org_unit_id belongs to this organization. Otherwise, the role only accepts entitlements with domain scope (org_unit_id is nil)"
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_from": [
+		{
+			"edge": "role_requests",
+			"label": { "en-US": "Grant requests" },
+			"existing": { "src_schema": "iam_grant_request", "src_edge": "role" }
+		},
+		{
+			"edge": "entitlements",
+			"label": { "en-US": "Entitlements" },
+			"existing": { "src_schema": "iam_entitlement", "src_edge": "role" }
+		}
+	],
+
+	"edges_to": [
+		{
+			"edge": "owner_group",
+			"label": { "en-US": "Owner group" },
+			"type": "many:one",
+			"dest_schema": "iam_group",
+			"key_map": { "owner_group_id": "id" }
+		},
+		{
+			"edge": "owner_user",
+			"label": { "en-US": "Owner user" },
+			"type": "many:one",
+			"dest_schema": "iam_user",
+			"key_map": { "owner_user_id": "id" }
+		},
+		{
+			"edge": "assigned_groups",
+			"label": { "en-US": "Assigned groups" },
+			"type": "many:many",
+			"peer_schema": "iam_group",
+			"through_schema": "iam_role_group_assignment",
+			"src_field_prefix": "role"
+		},
+		{
+			"edge": "assigned_users",
+			"label": { "en-US": "Assigned users" },
+			"type": "many:many",
+			"peer_schema": "iam_user",
+			"through_schema": "iam_role_user_assignment",
+			"src_field_prefix": "role"
+		}
+	]
+}

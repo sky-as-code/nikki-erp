@@ -1,0 +1,21 @@
+{
+	"name": "iam_group_user_rel",
+	"label": "iam_group_user_rel.label",
+	"table_name": "iam_group_user_rel",
+	"should_build_db": true,
+	"composite_uniques": [["group_id", "user_id"]],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "group_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "user_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	]
+}

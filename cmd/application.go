@@ -7,7 +7,6 @@ import (
 
 	"go.bryk.io/pkg/errors"
 
-	"github.com/sky-as-code/nikki-erp/common/array"
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
@@ -205,9 +204,15 @@ func (this *Application) registerModelInOrder(moduleMap map[string]modules.InCod
 		return errors.Wrap(err, "failed to determine model registering order")
 	}
 
-	initOrder = array.Prepend(initOrder, "core")
+	// No need to force "core" to the front: buildDependencyGraph makes every other module
+	// implicitly depend on it, and core itself depends on "apptrait", so the sort already
+	// yields ["apptrait", "core", ...]. Prepending it here would visit it twice and
+	// register its schemas twice.
 	for _, modName := range initOrder {
 		mod := moduleMap[modName]
+		if mod == nil {
+			continue
+		}
 		modWithDynamic, ok := mod.(modules.DynamicModule)
 		if !ok {
 			continue

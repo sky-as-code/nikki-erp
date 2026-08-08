@@ -1,0 +1,365 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://sky-as-code.github.io/nikki-erp/schemas/model_schema.json",
+	"title": "Nikki dynamic model schema",
+	"description": "Declarative definition of a dynamic model, mirroring ModelSchemaBuilder.",
+	"type": "object",
+	"required": ["name"],
+	"additionalProperties": false,
+
+	"properties": {
+		"name": {
+			"description": "Schema name. Must equal the backend Go constant verbatim.",
+			"type": "string",
+			"minLength": 1
+		},
+		"label": { "$ref": "#/$defs/langJson" },
+		"description": { "$ref": "#/$defs/langJson" },
+		"table_name": { "type": "string" },
+		"should_build_db": { "type": "boolean" },
+		"record_label_field": { "type": "string" },
+		"record_sub_label_field": { "type": "string" },
+
+		"extend_before": {
+			"description": "Schemas merged BEFORE this model's own fields, so their columns come first.",
+			"$ref": "#/$defs/schemaNameList"
+		},
+		"extend_after": {
+			"description": "Schemas merged AFTER this model's own fields.",
+			"$ref": "#/$defs/schemaNameList"
+		},
+
+		"fields": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/field" }
+		},
+
+		"composite_uniques": {
+			"type": "array",
+			"items": {
+				"type": "array",
+				"items": { "type": "string", "minLength": 1 },
+				"minItems": 1
+			}
+		},
+		"partial_uniques": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/partialUnique" }
+		},
+		"search_indexes": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/searchIndex" }
+		},
+		"exclusive_required_fields": {
+			"type": "array",
+			"items": {
+				"type": "array",
+				"items": { "type": "string", "minLength": 1 },
+				"minItems": 2
+			}
+		},
+
+		"edges_to": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/edgeTo" }
+		},
+		"edges_from": {
+			"type": "array",
+			"items": { "$ref": "#/$defs/edgeFrom" }
+		}
+	},
+
+	"$defs": {
+		"schemaNameList": {
+			"type": "array",
+			"items": { "type": "string", "minLength": 1 }
+		},
+
+		"langJson": {
+			"description": "A string is a translation-key reference; an object is a literal per-language map.",
+			"oneOf": [
+				{ "type": "string" },
+				{
+					"type": "object",
+					"minProperties": 1,
+					"additionalProperties": { "type": "string" }
+				}
+			]
+		},
+
+		"field": {
+			"type": "object",
+			"required": ["name", "data_type"],
+			"additionalProperties": false,
+			"properties": {
+				"name": { "type": "string", "minLength": 1 },
+				"label": { "$ref": "#/$defs/langJson" },
+				"description": { "$ref": "#/$defs/langJson" },
+				"placeholder": { "$ref": "#/$defs/langJson" },
+				"data_type": { "$ref": "#/$defs/dataType" },
+
+				"required_always": { "type": "boolean" },
+				"required_for_create": { "type": "boolean" },
+				"required_for_update": { "type": "boolean" },
+				"required_with": { "type": "string", "minLength": 1 },
+
+				"no_update": { "type": "boolean" },
+				"unique": { "type": "boolean" },
+				"auto_generated": { "type": "boolean" },
+				"tenant_key": { "type": "boolean" },
+				"versioning_key": { "type": "boolean" },
+				"primary_key": {
+					"description": "true uses the auto-generated default; the object form sets it explicitly.",
+					"oneOf": [
+						{ "type": "boolean" },
+						{
+							"type": "object",
+							"additionalProperties": false,
+							"properties": { "is_auto_generated": { "type": "boolean" } }
+						}
+					]
+				},
+
+				"default_value": {
+					"description": "Literal default. Precedence: default_value > use_type_default."
+				},
+				"use_type_default": { "type": "boolean" },
+
+				"rules": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/rule" }
+				}
+			}
+		},
+
+		"rule": {
+			"type": "object",
+			"required": ["name"],
+			"additionalProperties": false,
+			"properties": {
+				"name": { "type": "string", "enum": ["arrlength"] },
+				"min": { "type": "integer" },
+				"max": { "type": "integer" }
+			}
+		},
+
+		"dataType": {
+			"description": "Bare string for no-arg types, or an object for anything taking arguments.",
+			"oneOf": [
+				{ "$ref": "#/$defs/dataTypeName" },
+				{ "$ref": "#/$defs/dataTypeObject" }
+			]
+		},
+
+		"dataTypeName": {
+			"type": "string",
+			"enum": [
+				"string", "secret", "email", "phone", "url", "ulid", "uuid",
+				"int32", "int64", "decimal", "boolean",
+				"date", "time", "datetime",
+				"enum_string", "enum_int32",
+				"etag", "langjson", "langcode", "slug", "jsonmap", "model"
+			]
+		},
+
+		"dataTypeObject": {
+			"type": "object",
+			"required": ["type"],
+			"additionalProperties": false,
+			"properties": {
+				"type": { "$ref": "#/$defs/dataTypeName" },
+				"array": { "type": "boolean" },
+				"min": {
+					"description": "Number for string/secret/langjson/int32/int64; string for decimal.",
+					"type": ["integer", "string"]
+				},
+				"max": { "type": ["integer", "string"] },
+				"scale": { "type": "integer", "minimum": 0, "maximum": 20 },
+				"values": {
+					"description": "Enum members: strings for enum_string, integers for enum_int32.",
+					"type": "array",
+					"minItems": 1
+				},
+				"sanitize": { "type": "string", "enum": ["none", "html", "plaintext"] },
+				"regex": { "type": "string", "minLength": 1 }
+			},
+
+			"allOf": [
+				{
+					"if": { "properties": { "type": { "const": "decimal" } }, "required": ["type"] },
+					"then": {
+						"required": ["min", "max", "scale"],
+						"properties": {
+							"min": { "type": "string" },
+							"max": { "type": "string" }
+						}
+					}
+				},
+				{
+					"if": {
+						"properties": { "type": { "enum": ["string", "secret", "langjson"] } },
+						"required": ["type"]
+					},
+					"then": {
+						"required": ["min", "max"],
+						"properties": {
+							"min": { "type": "integer" },
+							"max": { "type": "integer" }
+						}
+					}
+				},
+				{
+					"if": {
+						"properties": { "type": { "enum": ["int32", "int64"] } },
+						"required": ["type"]
+					},
+					"then": {
+						"required": ["min", "max"],
+						"properties": {
+							"min": { "type": "integer" },
+							"max": { "type": "integer" }
+						}
+					}
+				},
+				{
+					"if": { "properties": { "type": { "const": "enum_string" } }, "required": ["type"] },
+					"then": {
+						"required": ["values"],
+						"properties": { "values": { "items": { "type": "string" } } }
+					}
+				},
+				{
+					"if": { "properties": { "type": { "const": "enum_int32" } }, "required": ["type"] },
+					"then": {
+						"required": ["values"],
+						"properties": { "values": { "items": { "type": "integer" } } }
+					}
+				},
+				{
+					"if": { "properties": { "type": { "const": "jsonmap" } }, "required": ["type"] },
+					"then": {
+						"description": "FieldDataTypeJsonMap().ArrayType() panics, so arrays are rejected up front.",
+						"properties": { "array": { "const": false } }
+					}
+				},
+				{
+					"if": {
+						"properties": { "type": { "enum": ["string", "secret"] } },
+						"required": ["type"]
+					},
+					"else": {
+						"properties": {
+							"sanitize": false,
+							"regex": false
+						}
+					}
+				}
+			]
+		},
+
+		"partialUnique": {
+			"type": "object",
+			"required": ["not_null_fields", "nullable_field"],
+			"additionalProperties": false,
+			"properties": {
+				"index_name": { "type": "string" },
+				"not_null_fields": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 },
+					"minItems": 1
+				},
+				"nullable_field": { "type": "string", "minLength": 1 }
+			}
+		},
+
+		"searchIndex": {
+			"type": "object",
+			"required": ["fields"],
+			"additionalProperties": false,
+			"properties": {
+				"index_name": { "type": "string" },
+				"fields": {
+					"description": "Order matters: highest selectivity first.",
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 },
+					"minItems": 1
+				}
+			}
+		},
+
+		"relationCascade": {
+			"type": "string",
+			"enum": ["NO ACTION", "SET NULL", "SET DEFAULT", "CASCADE"]
+		},
+
+		"edgeTo": {
+			"type": "object",
+			"required": ["edge", "type"],
+			"additionalProperties": false,
+			"properties": {
+				"edge": { "type": "string", "minLength": 1 },
+				"label": { "$ref": "#/$defs/langJson" },
+				"type": {
+					"type": "string",
+					"enum": ["one:one", "one:many", "many:one", "many:many"]
+				},
+				"dest_schema": {
+					"description": "Target schema for one:one / one:many / many:one.",
+					"type": "string",
+					"minLength": 1
+				},
+				"key_map": {
+					"description": "Local column -> referenced column.",
+					"type": "object",
+					"minProperties": 1,
+					"additionalProperties": { "type": "string", "minLength": 1 }
+				},
+				"peer_schema": { "type": "string", "minLength": 1 },
+				"through_schema": { "type": "string", "minLength": 1 },
+				"src_field_prefix": { "type": "string", "minLength": 1 },
+				"on_delete": { "$ref": "#/$defs/relationCascade" },
+				"on_update": { "$ref": "#/$defs/relationCascade" }
+			},
+
+			"allOf": [
+				{
+					"if": {
+						"properties": { "type": { "enum": ["one:one", "one:many", "many:one"] } },
+						"required": ["type"]
+					},
+					"then": { "required": ["dest_schema", "key_map"] },
+					"else": {
+						"required": ["peer_schema", "through_schema", "src_field_prefix"],
+						"description": "many:many only accepts NO ACTION or CASCADE cascades.",
+						"properties": {
+							"on_delete": { "enum": ["NO ACTION", "CASCADE"] },
+							"on_update": { "enum": ["NO ACTION", "CASCADE"] }
+						}
+					}
+				}
+			]
+		},
+
+		"edgeFrom": {
+			"description": "Inverse edge: the peer schema owns the relation, so only `existing` is needed.",
+			"type": "object",
+			"required": ["edge", "existing"],
+			"additionalProperties": false,
+			"properties": {
+				"edge": { "type": "string", "minLength": 1 },
+				"label": { "$ref": "#/$defs/langJson" },
+				"existing": {
+					"type": "object",
+					"required": ["src_schema", "src_edge"],
+					"additionalProperties": false,
+					"properties": {
+						"src_schema": { "type": "string", "minLength": 1 },
+						"src_edge": { "type": "string", "minLength": 1 }
+					}
+				},
+				"on_delete": { "$ref": "#/$defs/relationCascade" },
+				"on_update": { "$ref": "#/$defs/relationCascade" }
+			}
+		}
+	}
+}

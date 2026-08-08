@@ -1,0 +1,11 @@
+{
+	"name": "core.basemodel.org_base_model",
+	"fields": [
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	]
+}
