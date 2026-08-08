@@ -1,0 +1,19 @@
+{
+	"name": "core.basemodel.auditable_model",
+	"fields": [
+		{
+			"name": "created_at",
+			"label": "fields.created_at",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"use_type_default": true,
+			"auto_generated": true
+		},
+		{
+			"name": "updated_at",
+			"label": "fields.updated_at",
+			"data_type": "datetime",
+			"auto_generated": true
+		}
+	]
+}

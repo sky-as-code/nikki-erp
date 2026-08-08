@@ -12,6 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpclient"
 	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -52,6 +53,15 @@ func (*CoreModule) IsInternal() bool {
 // Version implements NikkiModule.
 func (*CoreModule) Version() semver.SemVer {
 	return *semver.MustParseSemVer("v1.0.0")
+}
+
+// RegisterModels implements DynamicModule.
+//
+// This runs in the model-registration phase, which completes for every module before any
+// module's Init(). Registering the base schemas here is what makes them resolvable by name
+// when other modules parse JSON models that extend them.
+func (*CoreModule) RegisterModels() error {
+	return basemodel.RegisterJsonBaseSchemas()
 }
 
 // Init implements NikkiModule.

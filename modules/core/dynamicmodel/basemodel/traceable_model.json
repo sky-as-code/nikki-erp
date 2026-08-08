@@ -1,0 +1,7 @@
+{
+	"name": "core.basemodel.traceable_model",
+	"fields": [
+		{"name": "created_by", "data_type": "ulid"},
+		{"name": "updated_by", "data_type": "ulid"}
+	]
+}

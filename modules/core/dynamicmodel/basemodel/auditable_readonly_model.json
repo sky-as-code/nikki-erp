@@ -1,0 +1,13 @@
+{
+	"name": "core.basemodel.auditable_readonly_model",
+	"fields": [
+		{
+			"name": "created_at",
+			"label": "fields.created_at",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"use_type_default": true,
+			"auto_generated": true
+		}
+	]
+}

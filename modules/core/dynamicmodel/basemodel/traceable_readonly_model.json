@@ -1,0 +1,6 @@
+{
+	"name": "core.basemodel.traceable_readonly_model",
+	"fields": [
+		{"name": "created_by", "data_type": "ulid"}
+	]
+}

@@ -60,6 +60,7 @@ require (
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 )
 
 require (

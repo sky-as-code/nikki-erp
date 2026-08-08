@@ -1,0 +1,13 @@
+{
+	"name": "core.basemodel.archivable_model",
+	"fields": [
+		{
+			"name": "is_archived",
+			"label": "fields.is_archived",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"auto_generated": true
+		}
+	]
+}
