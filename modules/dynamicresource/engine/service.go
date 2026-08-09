@@ -109,8 +109,11 @@ func (this *DynamicResourceServiceImpl) GetById(
 	if err != nil {
 		return nil, errors.Wrap(err, "DynamicResourceService.GetById")
 	}
+	// defaultFields is the *list view* projection a search falls back to (e.g. a user is
+	// listed by avatar/name/email/status). Fetching one record by its id is the detail
+	// view, so with no explicit selection it returns the whole record instead.
 	if len(query.Fields) == 0 {
-		query.Fields = this.defaultFields
+		query.Fields = columnNames(this.schema)
 	}
 
 	result, err := corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[it.DynamicEntity, *it.DynamicEntity]{

@@ -34,3 +34,9 @@ scripts/cert/pki/*/index.txt.*
 scripts/cert/pki/*/serial.txt.*
 scripts/cert/pki/**/*.csr
 scripts/cert/pki/**/*.srl
+# Robot Framework API test reports
+tests/api-rest/output/
+
+# Python bytecode (Robot API tests)
+__pycache__/
+*.py[cod]

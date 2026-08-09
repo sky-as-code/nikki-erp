@@ -187,7 +187,10 @@ func (this *DynamicRestApiImpl) serveAction(
 	if result.ClientErrors != nil && result.ClientErrors.Count() > 0 {
 		return httpserver.JsonBadRequest(echoCtx, result.ClientErrors)
 	}
-	if !result.HasData {
+	// Search reports HasData=false for an empty page, which is a successful result rather
+	// than a missing record: a filter matching nothing, or a page past the end, still
+	// answers 200 with an empty item list.
+	if !result.HasData && actionName != it.ActionSearch {
 		return httpserver.JsonBadRequest(echoCtx, ft.ClientErrors{*ft.NewAnonymousNotFoundError()})
 	}
 

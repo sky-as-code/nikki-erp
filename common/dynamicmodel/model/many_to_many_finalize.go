@@ -18,7 +18,7 @@ func finalizeManyToManyRelationsUnlocked(reg *SchemaRegistry) error {
 }
 
 func resolveManyToManyPeers(reg *SchemaRegistry) error {
-	for _, srcSch := range reg.schemas {
+	for _, srcSch := range schemasInNameOrder(reg) {
 		for i := range srcSch.toRelations {
 			rel := &srcSch.toRelations[i]
 			if rel.RelationType != RelationTypeManyToMany {
@@ -245,7 +245,7 @@ func ensureFieldTypesMatch(a *ModelSchema, aField string, b *ModelSchema, bField
 }
 
 func injectThroughSchemaManyToOnes(reg *SchemaRegistry) error {
-	for _, srcSch := range reg.schemas {
+	for _, srcSch := range schemasInNameOrder(reg) {
 		for i := range srcSch.toRelations {
 			rel := &srcSch.toRelations[i]
 			if rel.RelationType != RelationTypeManyToMany || rel.M2mDestFieldPrefix == "" {

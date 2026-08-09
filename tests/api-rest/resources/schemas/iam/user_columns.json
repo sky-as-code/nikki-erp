@@ -1,0 +1,20 @@
+{
+    "type": "object",
+    "required": ["id", "display_name", "email"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "display_name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "email": {
+            "type": "string",
+            "format": "email",
+            "minLength": 1
+        }
+    },
+    "additionalProperties": false
+}

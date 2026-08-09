@@ -9,12 +9,12 @@ ifndef cwd
 cwd := $(dir $(lastword $(MAKEFILE_LIST)))
 endif
 
-ifndef migration_dir_2
-migration_dir_2 := file://${cwd}scripts/migrations-nikki
+ifndef migration_dir_tmp
+migration_dir_tmp := file://${cwd}scripts/migrations-tmp
 endif
 
 
-.PHONY: build build-mods build-static build-dynamic clean ent-init ent-gen ent-current ent-hash ent-migration ent-apply infra-up infra-down nikki
+.PHONY: build build-mods build-static build-dynamic clean ent-init ent-gen ent-current ent-hash ent-migration ent-apply infra-up infra-down nikki test-api-rest test-api-rest-deps
 
 
 # START: Go builds
@@ -107,28 +107,8 @@ ent-migration:
 		echo "Error: name parameter is required. Usage: make ent-migration module=<module_name> name=<name>"; \
 		exit 1; \
 	fi
-	@if [ ! -d "./modules/$(module)/infra/ent" ]; then \
-		echo "Error: ent schema directory not found for module '$(module)'"; \
-		exit 1; \
-	fi
-	@echo "Generating migration named '$(name)' for module '$(module)' to '$(migration_dir)'..."
 	atlas migrate diff $(name) \
-		--dir "$(migration_dir)" \
-		--to "ent://modules/$(module)/infra/ent/schema" \
-		--config file://${cwd}scripts/atlas.hcl \
-		--env local
-
-ent-migration-nikki:
-	@if [ -z "$(module)" ]; then \
-		echo "Error: module parameter is required. Usage: make ent-migration module=<module_name> name=<name>"; \
-		exit 1; \
-	fi
-	@if [ -z "$(name)" ]; then \
-		echo "Error: name parameter is required. Usage: make ent-migration module=<module_name> name=<name>"; \
-		exit 1; \
-	fi
-	atlas migrate diff $(name) \
-		--dir "$(migration_dir_2)" \
+		--dir "$(migration_dir_tmp)" \
 		--config file://${cwd}scripts/atlas.hcl \
 		--env nikki \
 		--var module=$(module) \
@@ -186,6 +166,34 @@ nikki:
 	APP_ENV=$(env) WORKING_DIR="$(cwd)" GENERAL_LOG_LEVEL="info" go run -tags=staticmods *.go $(ARGS)
 
 # END: Local development
+
+# START: API testing
+robot_outdir ?= $(cwd)tests/api-rest/output
+# Falls back to "python -m robot" when the robot launcher is not on PATH.
+robot_bin ?= $(shell command -v robot >/dev/null 2>&1 && echo robot || echo "python -m robot")
+
+# Robot Framework API tests. Runs the tree under the CALLING app's tests/api-rest
+# (cd coremart && make test-api-rest -> coremart tests; from nikkierp -> nikkierp tests).
+# Optional params:
+#   t=<folder-or-file>   relative to tests/api-rest, e.g. t=iam/user or t=iam/user/03_update.robot
+#   env=<name>           environment variable file, default "local"
+#   include=<tag>        Robot --include tag filter
+#   robot_args=...       extra raw robot arguments
+test-api-rest:
+	@target="$(cwd)tests/api-rest$(if $(t),/$(t),)"; \
+	echo "Running Robot API tests: $$target (env=$(env))"; \
+	$(robot_bin) \
+		--pythonpath "$(cwdnikki)tests/api-rest" \
+		--variablefile "$(cwd)tests/api-rest/environments/$(env).py" \
+		--outputdir "$(robot_outdir)" \
+		--name "api-rest" \
+		$(if $(include),--include $(include),) \
+		$(robot_args) \
+		"$$target"
+
+test-api-rest-deps:
+	pip install -r "$(cwdnikki)tests/api-rest/requirements.txt"
+# END: API testing
 
 # START: Certificate
 

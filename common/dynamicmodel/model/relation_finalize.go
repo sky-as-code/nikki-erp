@@ -25,7 +25,7 @@ func (this *SchemaRegistry) FinalizeRelations() error {
 }
 
 func normalizeAllForeignKeyMapsUnlocked(reg *SchemaRegistry) error {
-	for _, sch := range reg.schemas {
+	for _, sch := range schemasInNameOrder(reg) {
 		if err := normalizeRelationSliceForeignKeys(reg, sch, &sch.toRelations); err != nil {
 			return err
 		}
@@ -229,7 +229,7 @@ func assertMatchingTypes(leftSch *ModelSchema, leftCol string, rightSch *ModelSc
 }
 
 func finalizePeerInverseEdgesUnlocked(reg *SchemaRegistry) error {
-	for _, destSch := range reg.schemas {
+	for _, destSch := range schemasInNameOrder(reg) {
 		for i := range destSch.fromRelations {
 			rel := &destSch.fromRelations[i]
 			if rel.InversePeerSchemaName == "" {

@@ -1,0 +1,35 @@
+{
+    "type": "object",
+    "required": ["name", "label", "fields"],
+    "properties": {
+        "name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "label": {
+            "type": "object"
+        },
+        "fields": {
+            "type": "object"
+        },
+        "etag": {
+            "type": "string"
+        },
+        "exclusive_required_field_groups": {
+            "type": "array"
+        },
+        "record_label_field": {
+            "type": "string"
+        },
+        "record_sub_label_field": {
+            "type": "string"
+        },
+        "to_relations": {
+            "type": "array"
+        },
+        "from_relations": {
+            "type": "array"
+        }
+    },
+    "additionalProperties": false
+}

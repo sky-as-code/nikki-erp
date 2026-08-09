@@ -107,7 +107,8 @@ BEGIN
 		('01JWP810BRSH9GWCYQC463K012', 'Authorize module Moderator', 'Granted with all actions on Resource, Action, and Role in Authorize module, but not allowed to delete the ones which are associated with an Entitlement', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWP72RCDK8NVBJMZTWJK9R97', 'Org Administrator (My Company)', 'Granted with all actions on all resources regardless of organizational units in the organization My Company', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01KNHHJY194Y2F0KB34C4YVHC7', 'Org Administrator (requires membership)', 'Granted with all actions on all resources regardless of organizational units in the organization the user has membership', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KNHHJY19FFBFSXDJSAP7N6Z2', 'Sales Manager', 'Granted with all actions on all resources under org unit "Sales Department"', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
+		('01KNHHJY19FFBFSXDJSAP7N6Z2', 'Sales Manager', 'Granted with all actions on all resources under org unit "Sales Department"', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ5XRJDXSXZY0DKNNE6S086', 'User', 'A system role that every user has it', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
 
 	END IF;
 

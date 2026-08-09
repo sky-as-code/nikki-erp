@@ -140,6 +140,11 @@ func UiGetOne[
 	if result.ClientErrors.Count() > 0 {
 		return &dyn.OpResult[dyn.SingleResultData[TDomain]]{ClientErrors: result.ClientErrors}, nil
 	}
+	// Propagate "no record found" so the transport can answer 404 instead of returning
+	// 200 with an empty item.
+	if !result.HasData {
+		return &dyn.OpResult[dyn.SingleResultData[TDomain]]{HasData: false}, nil
+	}
 
 	maskedFields := []string{}
 	data := TDomainPtr(&result.Data).GetFieldData()

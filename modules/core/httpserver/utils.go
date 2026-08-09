@@ -36,10 +36,14 @@ func applySchemaFilter(rawBody map[string]any, entitySchema *dmodel.ModelSchema)
 			continue
 		}
 		converted, err := field.DataType().TryConvert(rawVal, field.DataType().Options())
-		if err != nil {
+		// TryConvert returns the `value` wrapper, which holds an *any. Storing it in
+		// DynamicFields (itself map[string]any) would box the wrapper, and the later
+		// Value(val) in ModelSchema.Validate would wrap it a second time. Validation
+		// then stringifies the wrapper as a pointer address instead of the payload.
+		if err != nil || converted.IsEmpty() {
 			result[fieldName] = rawVal
 		} else {
-			result[fieldName] = converted
+			result[fieldName] = *converted.Get()
 		}
 	}
 	return result
