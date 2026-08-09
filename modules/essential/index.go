@@ -14,6 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	models "github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/essential/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/essential/infra/repository"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
@@ -38,7 +39,9 @@ func (*EssentialModule) Name() string {
 
 // Deps implements NikkiModule.
 func (*EssentialModule) Deps() []string {
-	return nil
+	return []string{
+		"dynamicresource",
+	}
 }
 
 // IsInternal implements InCodeModule.
@@ -48,11 +51,16 @@ func (*EssentialModule) IsInternal() bool {
 
 // Version implements NikkiModule.
 func (*EssentialModule) Version() semver.SemVer {
-	return *semver.MustParseSemVer("v1.0.1")
+	return *semver.MustParseSemVer("v1.1.0")
 }
 
 // Init implements NikkiModule.
 func (*EssentialModule) Init() error {
+	// The engines must exist before transport registers their routes.
+	if err := dynamicengines.InitDynamicEngines(); err != nil {
+		return err
+	}
+
 	err := errors.Join(
 		repo.InitRepositories(),
 		services.InitDomainServices(),
@@ -71,8 +79,9 @@ func (*EssentialModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.ModelMetadataSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.LanguageSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.TagSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.UnitCategorySchemaBuilder()),
-		dmodel.RegisterSchemaB(models.UnitSchemaBuilder()),
+		// The category must be registered before the UoM: the UoM's edge points at it.
+		dmodel.RegisterSchemaB(models.UomCatSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.UomSchemaBuilder()),
 	)
 }
 

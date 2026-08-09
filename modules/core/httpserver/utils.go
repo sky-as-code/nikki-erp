@@ -28,6 +28,13 @@ func BindToDynamicEntity(echoCtx *echo.Context, entitySchema *dmodel.ModelSchema
 	return applySchemaFilter(rawBody, entitySchema), nil
 }
 
+// FilterToDynamicEntity is BindToDynamicEntity for a body that has already been read.
+// The request body is a single-use stream, so a caller that inspected it first must hand
+// the parsed map here rather than binding a second time.
+func FilterToDynamicEntity(rawBody map[string]any, entitySchema *dmodel.ModelSchema) dmodel.DynamicFields {
+	return applySchemaFilter(rawBody, entitySchema)
+}
+
 func applySchemaFilter(rawBody map[string]any, entitySchema *dmodel.ModelSchema) dmodel.DynamicFields {
 	result := make(dmodel.DynamicFields)
 	for fieldName, field := range entitySchema.Fields() {

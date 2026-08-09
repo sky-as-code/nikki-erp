@@ -1,0 +1,57 @@
+{
+    "type": "object",
+    "required": [
+        "id", "created_at", "name", "symbol", "category_id", "uom_type", "factor",
+        "rounding", "etag", "is_archived", "org_id"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "name": {
+            "type": "object"
+        },
+        "symbol": {
+            "type": "string",
+            "minLength": 1
+        },
+        "category_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "uom_type": {
+            "type": "string",
+            "enum": ["reference", "bigger_equal", "smaller"]
+        },
+        "factor": {
+            "comment": "A decimal is carried as a string so values such as 0.453592 survive without float drift (BR-UOM-ESS-018).",
+            "type": "string",
+            "minLength": 1
+        },
+        "rounding": {
+            "type": "string",
+            "minLength": 1
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        }
+    },
+    "additionalProperties": false
+}

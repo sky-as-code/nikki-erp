@@ -10,7 +10,6 @@ func InitApplicationServices() error {
 		NewModelMetadataApplicationServiceImpl,
 		NewModuleApplicationServiceImpl,
 		NewTagServiceImpl,
-		NewUnitApplicationServiceImpl,
-		NewUnitCategoryApplicationServiceImpl,
+		NewUomConversionApplicationServiceImpl,
 	)
 }

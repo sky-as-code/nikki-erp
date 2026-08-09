@@ -104,7 +104,7 @@ type restBinding struct {
 func (this *DynamicRestApiImpl) bindingFor(actionName string) restBinding {
 	switch actionName {
 	case it.ActionCreate:
-		return restBinding{this.bodyParams, createResponse, httpserver.JsonCreated}
+		return restBinding{this.createBodyParams, createResponse, httpserver.JsonCreated}
 	case it.ActionUpdate:
 		return restBinding{this.updateParams, mutateResponse, httpserver.JsonOk}
 	case it.ActionDelete:
@@ -175,6 +175,11 @@ func (this *DynamicRestApiImpl) serveAction(
 			return httpserver.JsonBadRequest(echoCtx, []any{
 				ft.NewAnonymousValidationError(ft.ErrorKey("err_malformed_request"), "malformed request"),
 			})
+		}
+		// A well-formed body naming fields the schema does not declare is the caller's
+		// mistake, not a server fault.
+		if unknownFields, isUnknown := err.(*unknownFieldsError); isUnknown {
+			return httpserver.JsonBadRequest(echoCtx, unknownFields.errors)
 		}
 		return err
 	}

@@ -15,7 +15,5 @@ func InitRepositories() error {
 		deps.Register(NewModelMetadataDynamicRepository),
 		deps.Register(NewModuleDynamicRepository),
 		deps.Register(NewTagDynamicRepository),
-		deps.Register(NewUnitDynamicRepository),
-		deps.Register(NewUnitCategoryDynamicRepository),
 	)
 }

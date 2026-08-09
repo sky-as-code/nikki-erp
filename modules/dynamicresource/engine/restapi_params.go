@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"maps"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v5"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 )
@@ -105,9 +107,65 @@ func rawBodyParams(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
 }
 
 // bodyParams binds the request body and keeps only the fields the schema declares,
-// converting each to its declared data type.
+// converting each to its declared data type. An undeclared field is dropped, which is the
+// long-standing behaviour of every update endpoint.
 func (this *DynamicRestApiImpl) bodyParams(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
 	return httpserver.BindToDynamicEntity(echoCtx, this.engine.Schema())
+}
+
+// createBodyParams is bodyParams plus a rejection of fields the schema does not declare.
+// On create the distinction matters: silently dropping an unknown field answers 201 to a
+// request that did not do what the caller asked, and the record it names never exists.
+// Update keeps the permissive binding — clients round-tripping a fetched record back may
+// carry read-only or computed keys they never intended to write.
+func (this *DynamicRestApiImpl) createBodyParams(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
+	raw, err := rawBodyParams(echoCtx)
+	if err != nil {
+		return nil, err
+	}
+	if cErrs := this.unknownFieldErrors(raw); cErrs != nil {
+		return nil, &unknownFieldsError{errors: *cErrs}
+	}
+	// The body stream is already consumed, so filter the parsed map rather than re-binding.
+	return httpserver.FilterToDynamicEntity(raw, this.engine.Schema()), nil
+}
+
+// unknownFieldErrors reports every body key that names no schema field. The base models a
+// resource extends (id, etag, timestamps) are part of its schema, so they pass on their own.
+func (this *DynamicRestApiImpl) unknownFieldErrors(raw dmodel.DynamicFields) *ft.ClientErrors {
+	schema := this.engine.Schema()
+	if schema == nil {
+		return nil
+	}
+
+	names := make([]string, 0, len(raw))
+	for name := range raw {
+		if _, exists := schema.Field(name); !exists {
+			names = append(names, name)
+		}
+	}
+	if len(names) == 0 {
+		return nil
+	}
+
+	// Map iteration order is random; the response lists the fields deterministically.
+	sort.Strings(names)
+	cErrs := ft.ClientErrors{}
+	for _, name := range names {
+		cErrs.Append(*ft.NewValidationError(name, ft.ErrorKey("err_unknown_schema_field"),
+			"field is not defined on this schema"))
+	}
+	return &cErrs
+}
+
+// unknownFieldsError carries client errors out of a buildParamsFn, whose signature only
+// allows a Go error. serveAction unwraps it into a 400 instead of a 500.
+type unknownFieldsError struct {
+	errors ft.ClientErrors
+}
+
+func (this *unknownFieldsError) Error() string {
+	return "request body contains fields not defined on this schema"
 }
 
 // deleteParams reads the record id from the path and the optional org from the query string.

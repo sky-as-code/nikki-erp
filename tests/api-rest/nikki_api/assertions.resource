@@ -168,3 +168,82 @@ Response Should Be Invalid Access Token Error
     ${schema}=    One Error Schema No Field
     ...    common:err_invalid_access_token    Invalid or expired access token.    authorization
     Response Should Match Schema    ${resp}    ${schema}    401
+
+# --- Unit of Measure business violations (BR-UOM-ESS) ---------------------------------
+# The key/message pairs are server contracts emitted by
+# modules/essential/dynamicengines/{uom,uomcat}.go and the conversion domain service.
+# Keep them verbatim; the frontend localizes by key through essential.json.
+
+Response Should Be Uom Reference Factor Error
+    [Documentation]    BR-UOM-ESS-006: the Reference UoM's factor is exactly 1.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['factor']}}
+    ...    uom.reference_factor_must_be_one
+    ...    the Reference UoM must have a conversion factor of exactly 1    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Uom Bigger Equal Factor Error
+    [Documentation]    BR-UOM-ESS-009: a bigger_equal UoM has factor >= 1.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['factor']}}
+    ...    uom.bigger_equal_factor_out_of_range
+    ...    a bigger_equal UoM must have a conversion factor greater than or equal to 1    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Uom Smaller Factor Error
+    [Documentation]    BR-UOM-ESS-009: a smaller UoM has 0 < factor < 1.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['factor']}}
+    ...    uom.smaller_factor_out_of_range
+    ...    a smaller UoM must have a conversion factor greater than 0 and less than 1    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Uom Rounding Range Error
+    [Documentation]    BR-UOM-ESS-017: 0 <= rounding <= 1.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['rounding']}}
+    ...    uom.rounding_out_of_range
+    ...    rounding precision must be greater than or equal to 0 and less than or equal to 1    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Uom Duplicate Reference Error
+    [Documentation]    BR-UOM-ESS-005 / UOM-ESS-INV-09: one Reference UoM per category.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['uom_type']}}
+    ...    uom.category_already_has_reference
+    ...    this UoM Category already has a Reference UoM    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Uom Category Mismatch Error
+    [Documentation]    BR-UOM-ESS-012 / UOM-ESS-INV-06: the category is the conversion
+    ...    boundary, so a cross-category conversion is refused before it is attempted.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['target_uom_id']}}
+    ...    uom.category_mismatch
+    ...    the source and target UoM must belong to the same UoM Category    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Uom Target Archived Error
+    [Documentation]    BR-UOM-ESS-019 / UOM-ESS-INV-11: an archived UoM cannot be the
+    ...    target of a new conversion, though it stays usable as a source so historical
+    ...    quantities remain readable.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['target_uom_id']}}
+    ...    uom.target_archived
+    ...    an archived UoM cannot be the target of a conversion    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Uomcat Foreign Reference Error
+    [Documentation]    BR-UOM-ESS-004 / UOM-ESS-INV-03.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['reference_uom_id']}}
+    ...    uomcat.reference_uom_foreign
+    ...    the Reference UoM must belong to this UoM Category    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Uomcat Reference Not Found Error
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['reference_uom_id']}}
+    ...    uomcat.reference_uom_not_found
+    ...    the referenced UoM does not exist    business
+    Response Should Match Schema    ${resp}    ${schema}    400

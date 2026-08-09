@@ -7,6 +7,8 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/essential/dynamicengines"
 	v1 "github.com/sky-as-code/nikki-erp/modules/essential/transport/restful/v1"
 )
 
@@ -19,8 +21,7 @@ func InitRestfulHandlers() error {
 		v1.NewModelMetadataRest,
 		v1.NewModuleRest,
 		v1.NewTagRest,
-		v1.NewUnitRest,
-		v1.NewUnitCategoryRest,
+		v1.NewUomConversionRest,
 	)
 	err = stdErr.Join(
 		err,
@@ -34,6 +35,11 @@ func initEssentialV1() error {
 		route *echo.Group,
 	) error {
 		routeV1 := route.Group("/v1/essential")
+
+		// UoM and UoM Category are served entirely by the dynamic resource engine, at
+		// /v1/essential/{schema_name}. They have no hand-written REST layer.
+		registerEngineRoutes(routeV1)
+
 		return stdErr.Join(
 			initEnumV1(routeV1),
 			initFieldMetadataV1(routeV1),
@@ -41,10 +47,21 @@ func initEssentialV1() error {
 			initModelMetadataV1(routeV1),
 			initModuleV1(routeV1),
 			initTagV1(routeV1),
-			initUnitV1(routeV1),
-			initUnitCategoryV1(routeV1),
+			initUomConversionV1(routeV1),
 		)
 	})
+}
+
+// registerEngineRoutes exposes every Essential resource engine over HTTP.
+// A missing engine is skipped, so that a build which drops one still starts.
+func registerEngineRoutes(routeV1 *echo.Group) {
+	for _, schemaName := range dynamicengines.EngineSchemaNames() {
+		engine, exists := dynamicresource.Registry().GetEngine(schemaName)
+		if !exists {
+			continue
+		}
+		engine.RestApi().RegisterRoutes(routeV1, m.SmokeAuthz())
+	}
 }
 
 func initEnumV1(route *echo.Group) error {
@@ -127,26 +144,13 @@ func initTagV1(route *echo.Group) error {
 	})
 }
 
-func initUnitV1(route *echo.Group) error {
+// initUomConversionV1 registers the one UoM endpoint the resource engine cannot express:
+// conversion is a calculation over two records, not a CRUD action on one.
+func initUomConversionV1(route *echo.Group) error {
 	return deps.Invoke(func(
-		unitRest *v1.UnitRest,
+		uomConversionRest *v1.UomConversionRest,
 	) {
-		route.DELETE("/units/:id", unitRest.Delete, m.SmokeAuthz())
-		route.GET("/units/:id", unitRest.GetOne, m.SmokeAuthz())
-		route.POST("/units/:id/exists", unitRest.Exists, m.SmokeAuthz())
-		route.POST("/units/:id", unitRest.Create, m.SmokeAuthz())
-		route.PUT("/units/:id", unitRest.Update, m.SmokeAuthz())
-	})
-}
-
-func initUnitCategoryV1(route *echo.Group) error {
-	return deps.Invoke(func(
-		unitCategoryRest *v1.UnitCategoryRest,
-	) {
-		route.DELETE("/units-categories/:id", unitCategoryRest.Delete)
-		route.GET("/units-categories/:id", unitCategoryRest.GetOne)
-		route.POST("/units-categories/:id/exists", unitCategoryRest.Exists)
-		route.POST("/units-categories/:id", unitCategoryRest.Create)
-		route.PUT("/units-categories/:id", unitCategoryRest.Update)
+		route.POST("/uoms/convert", uomConversionRest.Convert, m.SmokeAuthz())
+		route.POST("/uoms/to_reference", uomConversionRest.ToReference, m.SmokeAuthz())
 	})
 }

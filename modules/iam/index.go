@@ -36,6 +36,7 @@ func (*IamModule) Name() string {
 func (*IamModule) Deps() []string {
 	return []string{
 		"dynamicresource",
+		"essential",
 		"settings",
 	}
 }

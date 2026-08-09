@@ -32,7 +32,7 @@ type ProductServiceParam struct {
 	ProductRepo itProduct.ProductRepository
 	VariantRepo itVariant.VariantRepository
 	Storage     filestorage.FileStorageAdapter
-	UnitSvc     ext.UnitExtService
+	UomSvc      ext.UomExtService
 }
 
 func NewProductService(param ProductServiceParam) itProduct.ProductService {
@@ -47,7 +47,7 @@ func newProductServiceImpl(param ProductServiceParam) *ProductServiceImpl {
 		attrValueRepo: param.AttrValRepo,
 		productRepo:   param.ProductRepo,
 		variantRepo:   param.VariantRepo,
-		unitSvc:       param.UnitSvc,
+		uomSvc:        param.UomSvc,
 		storage:       param.Storage,
 	}
 }
@@ -59,7 +59,7 @@ type ProductServiceImpl struct {
 	attrValueRepo itAttrVal.AttributeValueRepository
 	productRepo   itProduct.ProductRepository
 	variantRepo   itVariant.VariantRepository
-	unitSvc       ext.UnitExtService
+	uomSvc        ext.UomExtService
 	storage       filestorage.FileStorageAdapter
 }
 
@@ -73,12 +73,12 @@ func (this *ProductServiceImpl) CreateProduct(ctx corectx.Context, cmd itProduct
 			if unitId == nil {
 				return nil
 			}
-			unitResult, err := this.unitSvc.GetUnit(ctx, ext.GetUnitQuery{Id: *unitId})
+			uomResult, err := this.uomSvc.GetUom(ctx, ext.GetUomQuery{Id: *unitId})
 			if err != nil {
 				return err
 			}
-			if !unitResult.HasData {
-				vErrs.Append(*ft.NewBusinessViolation("unit_id", "unit.not_found", "unit does not exist"))
+			if !uomResult.HasData {
+				vErrs.Append(*ft.NewBusinessViolation("unit_id", "uom.not_found", "unit of measure does not exist"))
 			}
 			return nil
 		},
@@ -110,12 +110,12 @@ func (this *ProductServiceImpl) UpdateProduct(ctx corectx.Context, cmd itProduct
 		ValidateExtra: func(ctx corectx.Context, product *domain.Product, foundProduct *domain.Product, vErrs *ft.ClientErrors) error {
 			unitId := product.GetUnitId()
 			if unitId != nil {
-				unitResult, err := this.unitSvc.GetUnit(ctx, ext.GetUnitQuery{Id: *unitId})
+				uomResult, err := this.uomSvc.GetUom(ctx, ext.GetUomQuery{Id: *unitId})
 				if err != nil {
 					return err
 				}
-				if !unitResult.HasData {
-					vErrs.Append(*ft.NewBusinessViolation("unit_id", "unit.not_found", "unit does not exist"))
+				if !uomResult.HasData {
+					vErrs.Append(*ft.NewBusinessViolation("unit_id", "uom.not_found", "unit of measure does not exist"))
 				}
 			}
 

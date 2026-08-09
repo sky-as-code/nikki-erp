@@ -1,0 +1,46 @@
+{
+	"name": "essential_uomcat",
+	"label": "essential_uomcat.label",
+	"table_name": "essential_uomcats",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [["name", "org_id"]],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "reference_uom_id",
+			"label": "fields.reference_uom_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The single Reference UoM of this category. All conversion factors in the category are expressed relative to it. Nullable because a category is created before the UoM that becomes its reference exists."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_from": [
+		{
+			"edge": "uoms",
+			"label": { "en-US": "Units of measure" },
+			"existing": { "src_schema": "essential_uom", "src_edge": "category" }
+		}
+	]
+}
