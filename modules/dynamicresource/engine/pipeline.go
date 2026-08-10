@@ -102,6 +102,7 @@ func (this *DynamicResourceEngineImpl) ExecuteAction(
 
 	result, err = definition.MainProcess(ctx, it.ProcessInput{
 		Params:             params,
+		FoundModel:         foundModel,
 		ResourceService:    this.ResourceService(),
 		ResourceRepository: this.ResourceRepository(),
 	})

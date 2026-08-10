@@ -6,7 +6,7 @@
 //
 // A consuming module never imports this package from its domain or application layer.
 // It declares a local port in its own interfaces/external/ and binds it once in
-// infra/external/index.go — see docs/01 "Microservice-ready Monolith".
+// infra/external/index.go — see docs/wiki/01 "Microservice-ready Monolith".
 package uom
 
 import (

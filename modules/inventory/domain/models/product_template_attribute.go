@@ -1,0 +1,126 @@
+package models
+
+import (
+	_ "embed"
+
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
+
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+)
+
+// The two template-attribute junctions exist so that a template can narrow a global attribute to
+// a subset of its values: Color may be Black and White on one template and Red and Blue on
+// another. A variant references the template-scoped value, which is what makes "every value in a
+// combination is allowed by the template" checkable rather than merely conventional.
+// See BR §6.7 and BR-PROD-VAR-009.
+
+const (
+	ProductTemplateAttributeSchemaName = "inventory_product_template_attribute"
+
+	ProductTemplateAttributeFieldId                = basemodel.FieldId
+	ProductTemplateAttributeFieldProductTemplateId = "product_template_id"
+	ProductTemplateAttributeFieldAttributeId       = "attribute_id"
+	ProductTemplateAttributeFieldSequence          = "sequence"
+
+	ProductTemplateAttributeEdgeTemplate  = "template"
+	ProductTemplateAttributeEdgeAttribute = "attribute"
+)
+
+//go:embed product_template_attribute.json
+var productTemplateAttributeSchemaJson string
+
+func ProductTemplateAttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(productTemplateAttributeSchemaJson)
+}
+
+type ProductTemplateAttribute struct {
+	basemodel.DynamicModelBase
+}
+
+func NewProductTemplateAttribute() *ProductTemplateAttribute {
+	return &ProductTemplateAttribute{basemodel.NewDynamicModel()}
+}
+
+func NewProductTemplateAttributeFrom(src dmodel.DynamicFields) *ProductTemplateAttribute {
+	return &ProductTemplateAttribute{basemodel.NewDynamicModel(src)}
+}
+
+func (this ProductTemplateAttribute) GetProductTemplateId() *model.Id {
+	return this.GetFieldData().GetModelId(ProductTemplateAttributeFieldProductTemplateId)
+}
+
+func (this *ProductTemplateAttribute) SetProductTemplateId(v *model.Id) {
+	this.GetFieldData().SetModelId(ProductTemplateAttributeFieldProductTemplateId, v)
+}
+
+func (this ProductTemplateAttribute) GetAttributeId() *model.Id {
+	return this.GetFieldData().GetModelId(ProductTemplateAttributeFieldAttributeId)
+}
+
+func (this *ProductTemplateAttribute) SetAttributeId(v *model.Id) {
+	this.GetFieldData().SetModelId(ProductTemplateAttributeFieldAttributeId, v)
+}
+
+func (this ProductTemplateAttribute) GetSequence() *int32 {
+	return this.GetFieldData().GetInt32(ProductTemplateAttributeFieldSequence)
+}
+
+func (this *ProductTemplateAttribute) SetSequence(v *int32) {
+	this.GetFieldData().SetInt32(ProductTemplateAttributeFieldSequence, v)
+}
+
+const (
+	ProductTemplateAttributeValueSchemaName = "inventory_product_template_attribute_value"
+
+	ProductTemplateAttributeValueFieldId                  = basemodel.FieldId
+	ProductTemplateAttributeValueFieldTemplateAttributeId = "template_attribute_id"
+	ProductTemplateAttributeValueFieldAttributeValueId    = "attribute_value_id"
+	ProductTemplateAttributeValueFieldSequence            = "sequence"
+
+	ProductTemplateAttributeValueEdgeTemplateAttribute = "template_attribute"
+	ProductTemplateAttributeValueEdgeAttributeValue    = "attribute_value"
+)
+
+//go:embed product_template_attribute_value.json
+var productTemplateAttributeValueSchemaJson string
+
+func ProductTemplateAttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(productTemplateAttributeValueSchemaJson)
+}
+
+type ProductTemplateAttributeValue struct {
+	basemodel.DynamicModelBase
+}
+
+func NewProductTemplateAttributeValue() *ProductTemplateAttributeValue {
+	return &ProductTemplateAttributeValue{basemodel.NewDynamicModel()}
+}
+
+func NewProductTemplateAttributeValueFrom(src dmodel.DynamicFields) *ProductTemplateAttributeValue {
+	return &ProductTemplateAttributeValue{basemodel.NewDynamicModel(src)}
+}
+
+func (this ProductTemplateAttributeValue) GetTemplateAttributeId() *model.Id {
+	return this.GetFieldData().GetModelId(ProductTemplateAttributeValueFieldTemplateAttributeId)
+}
+
+func (this *ProductTemplateAttributeValue) SetTemplateAttributeId(v *model.Id) {
+	this.GetFieldData().SetModelId(ProductTemplateAttributeValueFieldTemplateAttributeId, v)
+}
+
+func (this ProductTemplateAttributeValue) GetAttributeValueId() *model.Id {
+	return this.GetFieldData().GetModelId(ProductTemplateAttributeValueFieldAttributeValueId)
+}
+
+func (this *ProductTemplateAttributeValue) SetAttributeValueId(v *model.Id) {
+	this.GetFieldData().SetModelId(ProductTemplateAttributeValueFieldAttributeValueId, v)
+}
+
+func (this ProductTemplateAttributeValue) GetSequence() *int32 {
+	return this.GetFieldData().GetInt32(ProductTemplateAttributeValueFieldSequence)
+}
+
+func (this *ProductTemplateAttributeValue) SetSequence(v *int32) {
+	this.GetFieldData().SetInt32(ProductTemplateAttributeValueFieldSequence, v)
+}

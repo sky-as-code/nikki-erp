@@ -65,15 +65,24 @@ func NewRequestContextF(ctx context.Context, moduleName string, domainConstraint
 	}
 }
 
+// CloneRequestContext returns a copy of ctx that can be given a different transaction without
+// disturbing the original. Use it to derive a scoped context from a live request; the New*
+// constructors above build an empty one, for code with no caller behind it.
+//
+// It copies every field the copy might be used with, the caller's identity above all: basemodel
+// stamps created_by/updated_by from GetPermissions().UserId, so a clone that dropped permissions
+// would write those columns null and report nothing. Domain constraints live in the inner
+// context's values, so copying Context carries them along.
+//
+// A field added to RequestContext must be added here too.
 func CloneRequestContext(ctx Context) Context {
-	// var dbTrx db.DbTransaction
-	// if ctx.GetDbTranx() != nil {
-	// 	dbTrx = ctx.GetDbTranx().(db.DbTransaction)
-	// }
 	return &RequestContext{
-		Context: ctx.InnerContext(),
-		logger:  ctx.GetLogger(),
-		repoTrx: ctx.GetDbTranx(),
+		Context:     ctx.InnerContext(),
+		logger:      ctx.GetLogger(),
+		repoTrx:     ctx.GetDbTranx(),
+		moduleName:  ctx.GetModuleName(),
+		permissions: ctx.GetPermissions(),
+		user:        ctx.GetUser(),
 	}
 }
 

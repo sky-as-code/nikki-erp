@@ -77,6 +77,54 @@ func TestExecuteActionRunsMainProcess(t *testing.T) {
 	assert.Equal(t, "abc", seen["name"])
 }
 
+// An action declaring KeysToFetch has its record read by the pipeline. Handing that record to
+// MainProcess is what saves it re-reading a row the pipeline already read.
+func TestExecuteActionPassesFoundModelToMainProcess(t *testing.T) {
+	repo := &stubRepository{
+		record: dmodel.DynamicFields{"id": "01ABC", "name": "stored"},
+		found:  true,
+	}
+	engine := newPipelineEngine(repo)
+	var seen *dmodel.DynamicFields
+
+	assert.NoError(t, engine.DefineAction(it.DynamicActionDefinition{
+		ActionName: "with_keys",
+		KeysToFetch: func(params dmodel.DynamicFields) dmodel.DynamicFields {
+			return dmodel.DynamicFields{"id": params["id"]}
+		},
+		MainProcess: func(_ corectx.Context, input it.ProcessInput) (*it.ActionResult, error) {
+			seen = input.FoundModel
+			return &it.ActionResult{HasData: true}, nil
+		},
+	}))
+
+	_, err := engine.ExecuteAction(ownerContext(), "with_keys", dmodel.DynamicFields{"id": "01ABC"})
+
+	assert.NoError(t, err)
+	assert.NotNil(t, seen, "the pipeline already fetched this record")
+	assert.Equal(t, "stored", (*seen)["name"])
+}
+
+// Without KeysToFetch there is nothing to hand over, and MainProcess must be able to tell that
+// apart from a record that happens to be empty.
+func TestExecuteActionLeavesFoundModelNilWithoutKeysToFetch(t *testing.T) {
+	engine := newPipelineEngine(&stubRepository{})
+	seen := &dmodel.DynamicFields{}
+
+	assert.NoError(t, engine.DefineAction(it.DynamicActionDefinition{
+		ActionName: "no_keys",
+		MainProcess: func(_ corectx.Context, input it.ProcessInput) (*it.ActionResult, error) {
+			seen = input.FoundModel
+			return &it.ActionResult{HasData: true}, nil
+		},
+	}))
+
+	_, err := engine.ExecuteAction(ownerContext(), "no_keys", nil)
+
+	assert.NoError(t, err)
+	assert.Nil(t, seen)
+}
+
 func TestExecuteActionRejectsUnknownAction(t *testing.T) {
 	engine := newPipelineEngine(&stubRepository{})
 

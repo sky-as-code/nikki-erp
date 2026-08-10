@@ -3,12 +3,18 @@ package inventory
 import (
 	"errors"
 
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/product"
-	productDomain "github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/dynamicengines"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/transport/restful"
+
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 var ModuleSingleton modules.InCodeModule = &InventoryModule{}
@@ -29,6 +35,7 @@ func (*InventoryModule) Name() string {
 // Deps implements NikkiModule.
 func (*InventoryModule) Deps() []string {
 	return []string{
+		"dynamicresource",
 		"essential",
 	}
 }
@@ -44,25 +51,68 @@ func (*InventoryModule) Version() semver.SemVer {
 }
 
 // Init implements NikkiModule.
+//
+// The steps are ordered, and each depends on the one before it, so they run in sequence rather
+// than being joined: the engines must exist before a service can be derived from one, the
+// derived service must be installed before the actions that type-assert it are reachable, and
+// the REST layer registers the engines' routes last.
+//
+// The superseded Products implementation under ./product is deliberately not initialized: it is
+// kept as a historical folder pending manual deletion. See ./product/README.md.
 func (*InventoryModule) Init() error {
-	err := errors.Join(
-		product.Init(),
-	)
+	if err := dynamicengines.InitDynamicEngines(); err != nil {
+		return err
+	}
+	if err := initProductService(); err != nil {
+		return err
+	}
+	return restful.InitRestfulHandlers()
+}
 
-	return err
+// initProductService installs the derived Products service on the Product Template engine.
+//
+// The engine is created with the default resource service; this replaces it with one that embeds
+// the default and adds the Products capabilities, so that built-in CRUD is untouched while a
+// custom action can reach the extra methods through ProcessInput.ResourceService.
+//
+// SetResourceService is a plain field assignment with no locking, so it is safe here — during
+// Init, before any request is served — and nowhere else.
+func initProductService() error {
+	templateEngine, ok := dynamicresource.Registry().GetEngine(models.ProductTemplateSchemaName)
+	if !ok {
+		return errors.New("the '" + models.ProductTemplateSchemaName + "' engine is not registered")
+	}
+
+	derived := app.NewProductAppService(templateEngine.ResourceService())
+	templateEngine.SetResourceService(derived)
+
+	// Published for consumers that reach the capability outside an engine action.
+	return deps.Register(func() itProduct.ProductService { return derived })
 }
 
 // RegisterModels implements DynamicModule.
+//
+// Schemas must be registered referenced-before-referencing, because an edge is resolved against
+// the schema registry at registration time.
 func (*InventoryModule) RegisterModels() error {
 	return errors.Join(
-		// Product schemas
-		dmodel.RegisterSchemaB(productDomain.ProductCategoryRelSchemaBuilder()),
-		dmodel.RegisterSchemaB(productDomain.ProductCategorySchemaBuilder()),
-		dmodel.RegisterSchemaB(productDomain.ProductSchemaBuilder()),
-		dmodel.RegisterSchemaB(productDomain.AttributeGroupSchemaBuilder()),
-		dmodel.RegisterSchemaB(productDomain.AttributeSchemaBuilder()),
-		dmodel.RegisterSchemaB(productDomain.AttributeValueSchemaBuilder()),
-		dmodel.RegisterSchemaB(productDomain.VariantSchemaBuilder()),
-		dmodel.RegisterSchemaB(productDomain.VariantAttrValRelSchemaBuilder()),
+		// Master data: referenced by the template, so registered first.
+		dmodel.RegisterSchemaB(models.ProductTypeSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ProductCategorySchemaBuilder()),
+		dmodel.RegisterSchemaB(models.BrandSchemaBuilder()),
+
+		// Attributes: the value points at the attribute, so the attribute comes first.
+		dmodel.RegisterSchemaB(models.ProductAttributeSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ProductAttributeValueSchemaBuilder()),
+
+		// The template references type, category and brand, all registered above.
+		dmodel.RegisterSchemaB(models.ProductTemplateSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ProductTemplateAttributeSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ProductTemplateAttributeValueSchemaBuilder()),
+
+		// The variant references the template; its value junction references both the variant
+		// and the template-scoped allowed value.
+		dmodel.RegisterSchemaB(models.ProductVariantSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ProductVariantAttributeValueSchemaBuilder()),
 	)
 }

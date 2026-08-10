@@ -1,0 +1,68 @@
+{
+	"name": "inventory_product_category",
+	"label": "inventory_product_category.label",
+	"table_name": "inventory_product_categories",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [["code", "org_id"]],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "parent_category_id",
+			"label": "fields.parent_category_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Parent in the category tree. Null for a root category. The tree must stay acyclic, which the engine enforces because the schema cannot."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
+			"description": {
+				"en-US": "Display order among siblings."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "langjson", "min": 0, "max": 2000 }
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "parent_category",
+			"label": { "en-US": "Parent category" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_category",
+			"key_map": { "parent_category_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

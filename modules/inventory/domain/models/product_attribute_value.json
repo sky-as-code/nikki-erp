@@ -1,0 +1,69 @@
+{
+	"name": "inventory_product_attribute_value",
+	"label": "inventory_product_attribute_value.label",
+	"table_name": "inventory_product_attribute_values",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [["attribute_id", "code"]],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "attribute_id",
+			"label": "fields.attribute_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The attribute this value belongs to. A value cannot exist outside an attribute."
+			}
+		},
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 2147483647 }
+		},
+		{
+			"name": "price_extra",
+			"label": "fields.price_extra",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"description": {
+				"en-US": "Surcharge applied when a variant carries this value, for pricing models that price variants by value. Signed, because a value may also discount."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "attribute",
+			"label": { "en-US": "Attribute" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_attribute",
+			"key_map": { "attribute_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

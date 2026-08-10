@@ -1,0 +1,78 @@
+{
+	"name": "inventory_product_attribute",
+	"label": "inventory_product_attribute.label",
+	"table_name": "inventory_product_attributes",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [["code", "org_id"]],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "data_type",
+			"label": "fields.data_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["option", "text", "number", "date", "boolean"]
+			},
+			"required_for_create": true,
+			"default_value": "option",
+			"description": {
+				"en-US": "Shape of the attribute's values. Only `option` attributes can take part in a variant combination, because a combination is built from discrete Attribute Value records."
+			}
+		},
+		{
+			"name": "variant_creation_mode",
+			"label": "fields.variant_creation_mode",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["instant", "dynamic", "never"]
+			},
+			"required_for_create": true,
+			"default_value": "instant",
+			"description": {
+				"en-US": "instant: every valid combination is generated as soon as values are assigned to a template. dynamic: a variant is materialized only when a combination is actually used. never: the attribute carries information but does not take part in the combination key at all."
+			}
+		},
+		{
+			"name": "display_type",
+			"label": "fields.display_type",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"description": {
+				"en-US": "UI rendering hint, for example radio, select or color. Presentation only; it never affects variant identity."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
+			"description": {
+				"en-US": "Display order. The combination key sorts by attribute id rather than by this, so reordering never changes variant identity."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

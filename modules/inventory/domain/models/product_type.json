@@ -1,0 +1,65 @@
+{
+	"name": "inventory_product_type",
+	"label": "inventory_product_type.label",
+	"table_name": "inventory_product_types",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"unique": true,
+			"description": {
+				"en-US": "Stable machine-readable code such as GOODS or SERVICE. Processing logic keys off this, so it must not change once transactions reference the type."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "langjson", "min": 0, "max": 2000 }
+		},
+		{
+			"name": "supports_stock",
+			"label": "fields.supports_stock",
+			"data_type": "boolean",
+			"default_value": false,
+			"description": {
+				"en-US": "Whether products of this type take part in stock processing. A SERVICE type is the canonical false case."
+			}
+		},
+		{
+			"name": "supports_sale",
+			"label": "fields.supports_sale",
+			"data_type": "boolean",
+			"default_value": true
+		},
+		{
+			"name": "supports_purchase",
+			"label": "fields.supports_purchase",
+			"data_type": "boolean",
+			"default_value": true
+		},
+		{
+			"name": "supports_manufacturing",
+			"label": "fields.supports_manufacturing",
+			"data_type": "boolean",
+			"default_value": false
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

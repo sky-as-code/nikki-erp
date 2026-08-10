@@ -1,0 +1,131 @@
+{
+	"name": "inventory_product_variant",
+	"label": "inventory_product_variant.label",
+	"table_name": "inventory_product_variants",
+	"should_build_db": true,
+	"record_label_field": "sku",
+	"composite_uniques": [["product_template_id", "combination_key"]],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "product_template_id",
+			"label": "fields.product_template_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Owning template. Required and immutable: re-parenting a variant would silently reinterpret every transaction that already references it."
+			}
+		},
+		{
+			"name": "combination_key",
+			"label": "fields.combination_key",
+			"data_type": { "type": "string", "min": 0, "max": 1000 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Normalized identity of the attribute-value combination, built by sorting attribute:value id pairs. Empty string for a template with no variant-generating attributes, which is the normal single-variant case."
+			}
+		},
+		{
+			"name": "sku",
+			"label": "fields.sku",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Variant-owned internal reference. The template has no SKU of its own: with several variants there would be nothing for it to mean."
+			}
+		},
+		{
+			"name": "primary_barcode",
+			"label": "fields.primary_barcode",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Variant-owned. Scanning it must resolve to this variant."
+			}
+		},
+		{
+			"name": "is_materialized",
+			"label": "fields.is_materialized",
+			"data_type": "boolean",
+			"default_value": true,
+			"description": {
+				"en-US": "False while a dynamic-mode combination is known to be valid but has not yet been used by a transaction."
+			}
+		},
+		{
+			"name": "variant_image_id",
+			"label": "fields.variant_image_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Overrides the template's default image. Null means fall back to the template rather than 'no image'."
+			}
+		},
+		{
+			"name": "weight",
+			"label": "fields.weight",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+		},
+		{
+			"name": "length",
+			"label": "fields.length",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+		},
+		{
+			"name": "width",
+			"label": "fields.width",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+		},
+		{
+			"name": "height",
+			"label": "fields.height",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["active", "discontinued"]
+			},
+			"required_for_create": true,
+			"default_value": "active",
+			"description": {
+				"en-US": "Lets a single variant be discontinued while its siblings stay on sale. Independent of is_archived."
+			}
+		},
+		{
+			"name": "archive_source",
+			"label": "fields.archive_source",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["user", "template_cascade", "system_sync"]
+			},
+			"description": {
+				"en-US": "Why this variant was archived. Unarchiving a template restores only the variants it cascaded to, leaving ones a user archived deliberately still archived."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "template",
+			"label": { "en-US": "Product template" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_template",
+			"key_map": { "product_template_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}
