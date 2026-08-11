@@ -12,7 +12,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-
 // These tests pin the JSON-backed builders to the Go builders they replaced. The legacy
 // chains below are verbatim copies of what role.go / group.go contained before the
 // conversion, and exist only as the reference to diff against.
@@ -43,7 +42,10 @@ func roleSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		Label(model.NewLangJsonRefSf("%s.label", RoleSchemaName)).
 		TableName("iam_roles").
 		RecordLabelField(RoleFieldName).
-		PartialUnique(RoleFieldName, RoleFieldOrgId).
+		PartialUnique(dmodel.PartialUniqueParam{
+			NotNullFields: []string{RoleFieldName},
+			NullableField: RoleFieldOrgId,
+		}).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
@@ -134,7 +136,9 @@ func groupUserRelSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		TableName("iam_group_user_rel").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
-		CompositeUnique(GrpUsrRelFieldGroupId, GrpUsrRelFieldUserId).
+		CompositeUnique(dmodel.CompositeUniqueParam{
+			Fields: []string{GrpUsrRelFieldGroupId, GrpUsrRelFieldUserId},
+		}).
 		Field(
 			basemodel.DefineFieldId(GrpUsrRelFieldGroupId).
 				RequiredForCreate(),
@@ -216,7 +220,7 @@ func assertSchemasEqual(t *testing.T, expected *dmodel.ModelSchema, actual *dmod
 	// Field ORDER, not just membership: it determines column order.
 	assert.Equal(t, expected.FieldNames(), actual.FieldNames())
 	assert.Equal(t, expected.CompositeUniques(), actual.CompositeUniques())
-	assert.Equal(t, expected.PartialUniqueGroups(), actual.PartialUniqueGroups())
+	assert.Equal(t, expected.PartialUniques(), actual.PartialUniques())
 	assert.Equal(t, expected.SearchIndexGroups(), actual.SearchIndexGroups())
 	assert.Equal(t, expected.PrimaryKeys(), actual.PrimaryKeys())
 	assert.Equal(t, expected.AllUniques(), actual.AllUniques())

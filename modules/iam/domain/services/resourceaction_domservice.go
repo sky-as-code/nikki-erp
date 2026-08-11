@@ -225,10 +225,11 @@ func (this *ResourceDomainServiceImpl) SearchActions(
 		DbRepoGetter:           this.actionRepo,
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 		Query: dyn.SearchQuery{
-			Fields: query.Columns,
-			Graph:  graph,
-			Page:   query.Page,
-			Size:   query.Size,
+			Fields:          query.Columns,
+			Graph:           graph,
+			Page:            query.Page,
+			Size:            query.Size,
+			IncludeArchived: query.IncludeArchived,
 		},
 	})
 }

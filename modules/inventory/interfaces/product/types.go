@@ -86,7 +86,7 @@ type GenerateVariantsResult = dyn.OpResult[GenerateVariantsResultData]
 // It embeds drif.DynamicResourceService so that the engine keeps serving every built-in CRUD
 // action through it unchanged; the methods below are the additions a custom action reaches by
 // type-asserting ProcessInput.ResourceService to this interface. See the extended-service
-// pattern in docs/wiki/05. Dynamic resource engine.md §5.2.
+// pattern in docs/wiki/05. Dynamic resource engine.md §6.2.
 type ProductService interface {
 	drif.DynamicResourceService
 

@@ -1,0 +1,101 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "product_template_id", "combination_key", "status", "etag", "is_archived", "org_id"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "product_template_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "combination_key": {
+            "type": "string"
+        },
+        "sku": {
+            "type": ["string", "null"]
+        },
+        "primary_barcode": {
+            "type": ["string", "null"]
+        },
+        "is_materialized": {
+            "type": "boolean"
+        },
+        "variant_image_id": {
+            "type": ["string", "null"]
+        },
+        "weight": {
+            "type": ["string", "number", "null"]
+        },
+        "length": {
+            "type": ["string", "number", "null"]
+        },
+        "width": {
+            "type": ["string", "number", "null"]
+        },
+        "height": {
+            "type": ["string", "number", "null"]
+        },
+        "status": {
+            "type": "string",
+            "enum": ["active", "discontinued"]
+        },
+        "archive_source": {
+            "type": ["string", "null"],
+            "enum": ["user", "template_cascade", "system_sync", null]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        },
+
+        "template_name": {
+            "type": ["object", "null"]
+        },
+        "template_short_name": {
+            "type": ["object", "null"]
+        },
+        "template_description": {
+            "type": ["object", "null"]
+        },
+        "template_sales_description": {
+            "type": ["object", "null"]
+        },
+        "template_purchase_description": {
+            "type": ["object", "null"]
+        },
+        "template_category_id": {
+            "type": ["string", "null"]
+        },
+        "template_brand_id": {
+            "type": ["string", "null"]
+        },
+        "template_product_type_id": {
+            "type": ["string", "null"]
+        },
+        "template_status": {
+            "type": ["string", "null"],
+            "enum": ["draft", "active", "discontinued", null]
+        },
+        "template_sale_ok": {
+            "type": ["boolean", "null"]
+        }
+    },
+    "additionalProperties": false
+}

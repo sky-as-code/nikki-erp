@@ -25,8 +25,8 @@ func ActionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ActionSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", ActionSchemaName)).
 		TableName("iam_actions").
-		CompositeUnique(ActionFieldResourceId, ActionFieldName).
-		CompositeUnique(ActionFieldResourceId, ActionFieldCode).
+		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{ActionFieldResourceId, ActionFieldName}}).
+		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{ActionFieldResourceId, ActionFieldCode}}).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(

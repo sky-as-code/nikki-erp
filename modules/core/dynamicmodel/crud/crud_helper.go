@@ -631,13 +631,22 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 		sanitizedQuery = newQuery
 	}
 
+	includeArchived := sanitizedQuery.IncludeArchived
+	if includeArchived == nil {
+		// The public search API hides archived records unless the caller asks for them.
+		// Internal callers going straight to baserepo.Search leave this nil and keep
+		// seeing every record, archived or not.
+		includeArchived = util.ToPtr(false)
+	}
+
 	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
 	result, err := baserepo.Search[TDomain, TDomainPtr](ctx, dynamicRepo, dyn.RepoSearchParam{
-		Fields:   sanitizedQuery.Fields,
-		Page:     sanitizedQuery.Page,
-		Size:     sanitizedQuery.Size,
-		Graph:    sanitizedQuery.Graph,
-		Language: sanitizedQuery.Language,
+		Fields:          sanitizedQuery.Fields,
+		Page:            sanitizedQuery.Page,
+		Size:            sanitizedQuery.Size,
+		Graph:           sanitizedQuery.Graph,
+		Language:        sanitizedQuery.Language,
+		IncludeArchived: includeArchived,
 	})
 	return result, errors.Wrap(err, "Search")
 }

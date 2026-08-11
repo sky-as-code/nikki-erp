@@ -132,6 +132,13 @@ func processResolveSelection(
 		return &drif.ActionResult{ClientErrors: result.ClientErrors}, nil
 	}
 
+	// The service reports HasData=false when the template does not exist, which the REST layer
+	// turns into a missing record. Forcing it true here would answer 200 with the combination key
+	// of a product line that cannot be resolved against.
+	if !result.HasData {
+		return &drif.ActionResult{HasData: false}, nil
+	}
+
 	return &drif.ActionResult{
 		Data:    itProduct.NewResolveProductSelectionView(result.Data),
 		HasData: true,
@@ -143,11 +150,19 @@ func templateKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 }
 
 // validateTemplateDelete adapts the engine's validation callback to the delete rule.
-func validateTemplateDelete(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
+//
+// The rule counts the template's variants, so it reads through the Product Variant engine's
+// repository rather than the template engine passed in here: product_template_id is a field of the
+// variant schema, and searching the template's own repository for it fails as undefined.
+func validateTemplateDelete(_ drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
 		ctx corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
 	) error {
 		templateId := derefId(models.NewProductTemplateFrom(params).GetId())
-		return services.AssertTemplateDeletable(ctx, engine.ResourceRepository(), templateId, vErrs)
+		variantEngine, err := services.EngineFor(models.ProductVariantSchemaName)
+		if err != nil {
+			return err
+		}
+		return services.AssertTemplateDeletable(ctx, variantEngine.ResourceRepository(), templateId, vErrs)
 	}
 }

@@ -63,7 +63,9 @@ func (this *PgQueryBuilder) buildCreateTableSql(
 	if err := this.defineColumns(builder, schema); err != nil {
 		return "", err
 	}
-	this.defineKeys(builder, schema)
+	if err := this.defineKeys(builder, schema); err != nil {
+		return "", err
+	}
 	if err := this.defineForeignKeys(builder, schema, registry); err != nil {
 		return "", err
 	}
@@ -71,13 +73,28 @@ func (this *PgQueryBuilder) buildCreateTableSql(
 	return strings.TrimSuffix(sql, ";"), nil
 }
 
+// PgMaxIdentifierLen is PostgreSQL's identifier limit (NAMEDATALEN - 1). Longer names are
+// truncated silently at CREATE time, so two names differing only past this length collide.
+const PgMaxIdentifierLen = 63
+
+// mustFitIdentifier rejects a generated index name that PostgreSQL would silently truncate.
+func mustFitIdentifier(caller, tableName, name string) error {
+	if len(name) <= PgMaxIdentifierLen {
+		return nil
+	}
+	return errors.Errorf(
+		"%s: table '%s': generated index name '%s' is %d bytes, exceeding PostgreSQL's %d-byte "+
+			"identifier limit; specify a shorter IndexName",
+		caller, tableName, name, len(name), PgMaxIdentifierLen)
+}
+
 func (this *PgQueryBuilder) partialUniqueIndexSqls(schema *dmodel.ModelSchema) ([]string, error) {
-	groups := schema.PartialUniqueGroups()
+	groups := schema.PartialUniques()
 	out := make([]string, 0, len(groups)*2)
 	tenantKey := schema.TenantKey()
 	for _, group := range groups {
 		group.NotNullFields = prependTenantKey(tenantKey, group.NotNullFields)
-		lines, err := formatPartialUniqueGroupIndexPair(schema, group)
+		lines, err := formatPartialUniqueIndexPair(schema, group)
 		if err != nil {
 			return nil, err
 		}
@@ -110,15 +127,15 @@ func schemaHasSingleColumnUniqueOn(schema *dmodel.ModelSchema, col string) bool 
 	return false
 }
 
-func formatPartialUniqueGroupIndexPair(schema *dmodel.ModelSchema, group dmodel.PartialUniqueGroupParam) ([]string, error) {
+func formatPartialUniqueIndexPair(schema *dmodel.ModelSchema, group dmodel.PartialUniqueParam) ([]string, error) {
 	if len(group.NotNullFields) == 0 {
 		return nil, errors.Errorf(
-			"formatPartialUniqueGroupIndexPair: table '%s': at least one not-null field is required", schema.TableName())
+			"formatPartialUniqueIndexPair: table '%s': at least one not-null field is required", schema.TableName())
 	}
 	nullable := strings.TrimSpace(group.NullableField)
 	if nullable == "" {
 		return nil, errors.Errorf(
-			"formatPartialUniqueGroupIndexPair: table '%s': nullable field is required", schema.TableName())
+			"formatPartialUniqueIndexPair: table '%s': nullable field is required", schema.TableName())
 	}
 	for _, col := range group.NotNullFields {
 		if schemaHasSingleColumnUniqueOn(schema, col) {
@@ -127,7 +144,12 @@ func formatPartialUniqueGroupIndexPair(schema *dmodel.ModelSchema, group dmodel.
 				schema.TableName(), col)
 		}
 	}
-	indexName := resolvePartialUniqueGroupIndexName(schema.TableName(), group)
+	indexName := resolvePartialUniqueIndexName(schema.TableName(), group)
+	for _, suffix := range []string{"_ukey_notnull", "_ukey_null"} {
+		if err := mustFitIdentifier("formatPartialUniqueIndexPair", schema.TableName(), indexName+suffix); err != nil {
+			return nil, err
+		}
+	}
 	colsWithNullable := make([]string, 0, len(group.NotNullFields)+1)
 	for _, col := range group.NotNullFields {
 		colsWithNullable = append(colsWithNullable, pgQuote(col))
@@ -152,7 +174,7 @@ func formatPartialUniqueGroupIndexPair(schema *dmodel.ModelSchema, group dmodel.
 	return []string{lineNN, lineNull}, nil
 }
 
-func resolvePartialUniqueGroupIndexName(tableName string, group dmodel.PartialUniqueGroupParam) string {
+func resolvePartialUniqueIndexName(tableName string, group dmodel.PartialUniqueParam) string {
 	raw := strings.TrimSpace(group.IndexName)
 	if raw == "" {
 		raw = fmt.Sprintf("%s_%s_%s", tableName, strings.Join(group.NotNullFields, "_"), group.NullableField)
@@ -192,6 +214,9 @@ func formatSearchIndexGroup(schema *dmodel.ModelSchema, group dmodel.SearchIndex
 	if indexName == "" {
 		return "", errors.Errorf(
 			"formatSearchIndexGroup: table '%s': index name is required", schema.TableName())
+	}
+	if err := mustFitIdentifier("formatSearchIndexGroup", schema.TableName(), indexName); err != nil {
+		return "", err
 	}
 	tableRef := pgQuoteTable(strings.Split(schema.TableName(), ".")...)
 	return fmt.Sprintf(
@@ -237,20 +262,36 @@ func (this *PgQueryBuilder) defineColumns(
 
 func (this *PgQueryBuilder) defineKeys(
 	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema,
-) {
+) error {
 	if keys := schema.PrimaryKeys(); len(keys) > 0 {
 		builder.Define("PRIMARY KEY", fmt.Sprintf("(%s)", strings.Join(pgQuoteArr(keys), ", ")))
 	}
 	tenantKey := schema.TenantKey()
-	for _, unique := range schema.AllUniques() {
-		if len(unique) == 0 {
+	for _, unique := range schema.AllUniqueGroups() {
+		if len(unique.Fields) == 0 {
 			continue
 		}
-		effectiveUnique := prependTenantKey(tenantKey, unique)
-		name := pgQuote(fmt.Sprintf("%s_%s_ukey", schema.TableName(), strings.Join(effectiveUnique, "_")))
+		effectiveUnique := prependTenantKey(tenantKey, unique.Fields)
+		name := resolveCompositeUniqueIndexName(schema.TableName(), unique, effectiveUnique)
+		if err := mustFitIdentifier("defineKeys", schema.TableName(), name); err != nil {
+			return err
+		}
 		cols := fmt.Sprintf("(%s)", strings.Join(pgQuoteArr(effectiveUnique), ", "))
-		builder.Define(fmt.Sprintf("CONSTRAINT %s UNIQUE", name), cols)
+		builder.Define(fmt.Sprintf("CONSTRAINT %s UNIQUE", pgQuote(name)), cols)
 	}
+	return nil
+}
+
+// resolveCompositeUniqueIndexName derives the UNIQUE constraint name. An explicit IndexName
+// replaces the whole derived stem, including the table and tenant prefix.
+func resolveCompositeUniqueIndexName(
+	tableName string, group dmodel.CompositeUniqueParam, effectiveCols []string,
+) string {
+	raw := strings.TrimSpace(group.IndexName)
+	if raw == "" {
+		raw = fmt.Sprintf("%s_%s", tableName, strings.Join(effectiveCols, "_"))
+	}
+	return toSnakeLower(raw) + "_ukey"
 }
 
 func (this *PgQueryBuilder) defineForeignKeys(
@@ -359,10 +400,26 @@ func (this *PgQueryBuilder) buildSqlSelectGraph(
 	}
 	ctx := &graphSelectCtx{planner: planner, language: opts.Language}
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	if anySelectColumnDistinct(opts.Columns) {
+	// A one:many or many:many join repeats each root row once per matching child. DISTINCT
+	// restores the caller's grain; the explicit DISTINCT:: token remains the other way to ask
+	// for it. A many:one join is cardinality-preserving and pays nothing here.
+	isDistinct := anySelectColumnDistinct(opts.Columns) || planner.needsDistinct()
+	if isDistinct {
 		sb.Distinct()
 	}
-	if err := this.applySelectColumns(sb, planner, opts.Columns); err != nil {
+
+	// The order has to be resolved before the projection is written: under SELECT DISTINCT,
+	// PostgreSQL requires every ORDER BY expression to appear in the select list, and a sort on a
+	// joined column would otherwise be absent from it.
+	var orderExprs []string
+	if graph != nil {
+		var err error
+		orderExprs, err = this.orderExprs(ctx, schema, graph.GetOrder())
+		if err != nil {
+			return "", nil, err
+		}
+	}
+	if err := this.applySelectColumns(sb, planner, opts.Columns, orderRefsForDistinct(isDistinct, orderExprs)...); err != nil {
 		return "", nil, err
 	}
 	this.applyFromWithJoins(sb, schema, planner)
@@ -378,10 +435,6 @@ func (this *PgQueryBuilder) buildSqlSelectGraph(
 		}
 		if len(predicate) > 0 {
 			sb.Where(predicate)
-		}
-		orderExprs, err := this.orderExprs(ctx, schema, graph.GetOrder())
-		if err != nil {
-			return "", nil, err
 		}
 		if len(orderExprs) > 0 {
 			sb.OrderBy(orderExprs...)
@@ -446,12 +499,15 @@ func (this *PgQueryBuilder) SqlCountGraph(
 func (this *PgQueryBuilder) buildSqlCountGraph(
 	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
 ) (string, ft.ClientErrors, error) {
-	if anySelectColumnDistinct(opts.Columns) {
-		return this.buildSqlCountGraphAsDistinctSubquery(schema, registry, graph, opts)
-	}
+	// Planning comes first because fan-out is only knowable once the joins are resolved. The
+	// planner is then handed to the DISTINCT path rather than letting it re-plan: alias
+	// numbering walks a map, so a second plan could number differently from the list query.
 	planner, err := this.planGraphJoins(schema, registry, graph, opts)
 	if err != nil {
 		return "", nil, err
+	}
+	if anySelectColumnDistinct(opts.Columns) || planner.needsDistinct() {
+		return this.buildSqlCountGraphAsDistinctSubquery(schema, graph, opts, planner)
 	}
 	ctx := &graphSelectCtx{planner: planner, language: opts.Language}
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
@@ -480,13 +536,12 @@ func (this *PgQueryBuilder) buildSqlCountGraph(
 }
 
 // buildSqlCountGraphAsDistinctSubquery: COUNT(*) over (SELECT DISTINCT <list columns> …), same grain as list.
+//
+// It takes the planner its caller already built rather than planning again, so the count and the
+// list query are guaranteed to share one join plan.
 func (this *PgQueryBuilder) buildSqlCountGraphAsDistinctSubquery(
-	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
+	schema *dmodel.ModelSchema, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts, planner *joinPlanner,
 ) (string, ft.ClientErrors, error) {
-	planner, err := this.planGraphJoins(schema, registry, graph, opts)
-	if err != nil {
-		return "", nil, err
-	}
 	ctx := &graphSelectCtx{planner: planner, language: opts.Language}
 	inner := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	inner.Distinct()
@@ -875,7 +930,7 @@ func (this *PgQueryBuilder) resolveColumnValues(
 			return nil, false, nil, nil
 		}
 		field, ok := schema.Column(col)
-		if !ok || field.IsVirtualModelField() {
+		if !ok || field.IsNonPhysical() {
 			return nil, false, nil, errors.Wrap(&errClientUnknownField{Field: col}, "resolveColumnValues")
 		}
 		converted, cErrs, err := this.convertValue(field, v)
@@ -940,11 +995,13 @@ func (this *PgQueryBuilder) rowFromMap(
 		if !includeFn(key) {
 			continue
 		}
-		field, ok := schema.Column(key)
+		// Resolved through Field rather than Column: a virtual scalar is a real, known field
+		// that simply has no column, and must be skipped rather than reported as unknown.
+		field, ok := schema.Field(key)
 		if !ok {
 			return rowData{}, nil, errors.Wrap(&errClientUnknownField{Field: key}, "rowFromMap")
 		}
-		if field.IsVirtualModelField() {
+		if field.IsNonPhysical() {
 			continue
 		}
 		keys = append(keys, key)
@@ -1090,9 +1147,15 @@ func (this *PgQueryBuilder) prepareColName(
 	if strings.Contains(fieldName, ".") {
 		return nil, "", wrapClientSqlErrors(clientErrorsNestedFieldNotSupported(fieldName))
 	}
-	field, ok := schema.Column(fieldName)
-	if !ok || field.IsVirtualModelField() {
+	// Field rather than Column, so that a known-but-columnless field is reported as such instead
+	// of as an unknown one: "you may not filter on this" is a different fact from "no such field",
+	// and a caller fixes them differently.
+	field, ok := schema.Field(fieldName)
+	if !ok {
 		return nil, "", errors.Wrap(&errClientUnknownField{Field: fieldName}, "prepareColName")
+	}
+	if field.IsNonPhysical() {
+		return nil, "", wrapClientSqlErrors(clientErrorsVirtualFieldUnavailable(fieldName))
 	}
 	return field, pgQuote(field.Name()), nil
 }
@@ -1242,9 +1305,10 @@ func (this *PgQueryBuilder) orderExprs(
 		if err != nil {
 			return nil, err
 		}
-		if field.IsVirtualModelField() {
-			return nil, errors.Errorf(
-				"orderExprs: order field '%s' is not stored in this schema", fieldName)
+		// A field with no column cannot be ordered on. The caller can fix that by dropping the
+		// sort, so it is a client error rather than the 500 this used to raise.
+		if field == nil || field.IsNonPhysical() {
+			return nil, wrapClientSqlErrors(clientErrorsFieldNotSortable(fieldName))
 		}
 		dir := "ASC"
 		if item.Direction() == dmodel.Desc {
@@ -1291,7 +1355,7 @@ func parseNikkiDateTimeInput(fieldName, columnType string, value any) (any, ft.C
 }
 
 func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (any, ft.ClientErrors, error) {
-	if field.IsVirtualModelField() {
+	if field.IsNonPhysical() {
 		return nil, clientErrorsVirtualFieldUnavailable(field.Name()), nil
 	}
 	if field.IsArray() {
@@ -1494,7 +1558,7 @@ func modelTimeFromReflect(v reflect.Value) (time.Time, error) {
 }
 
 func resolveModelFieldToPgType(col *dmodel.ModelField) (string, error) {
-	if col.IsVirtualModelField() {
+	if col.IsNonPhysical() {
 		return "", errors.Errorf("resolveModelFieldToPgType: virtual field '%s' has no SQL type", col.Name())
 	}
 	base, err := resolveGenericToPgType(col.ColumnType())
@@ -1792,6 +1856,15 @@ func clientErrorsVirtualFieldUnavailable(field string) ft.ClientErrors {
 	return ft.ClientErrors{
 		*ft.NewValidationError(field, ft.ErrorKey("err_virtual_field_unavailable"),
 			"field is not available for this operation"),
+	}
+}
+
+// clientErrorsFieldNotSortable reports an ORDER BY on a field with no column. A caller can fix
+// this by dropping the sort, so it is a client error rather than a technical one.
+func clientErrorsFieldNotSortable(field string) ft.ClientErrors {
+	return ft.ClientErrors{
+		*ft.NewValidationError(field, ft.ErrorKey("err_field_not_sortable"),
+			"field is not stored in this schema and cannot be sorted on"),
 	}
 }
 

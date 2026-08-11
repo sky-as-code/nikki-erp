@@ -36,11 +36,7 @@
 
 		"composite_uniques": {
 			"type": "array",
-			"items": {
-				"type": "array",
-				"items": { "type": "string", "minLength": 1 },
-				"minItems": 1
-			}
+			"items": { "$ref": "#/$defs/compositeUnique" }
 		},
 		"partial_uniques": {
 			"type": "array",
@@ -104,6 +100,10 @@
 				"required_with": { "type": "string", "minLength": 1 },
 
 				"no_update": { "type": "boolean" },
+				"is_virtual": {
+					"description": "Scalar field with no database column, filled by a service after the read. Selectable and returned, never written.",
+					"type": "boolean"
+				},
 				"unique": { "type": "boolean" },
 				"auto_generated": { "type": "boolean" },
 				"tenant_key": { "type": "boolean" },
@@ -257,12 +257,37 @@
 			]
 		},
 
+		"compositeUnique": {
+			"type": "object",
+			"required": ["fields"],
+			"additionalProperties": false,
+			"properties": {
+				"index_name": {
+					"description": "Optional. Replaces the derived '{table}_{tenant_key}_{fields}' stem. The '_ukey' suffix is appended automatically. The final name must not exceed 63 bytes.",
+					"type": "string",
+					"minLength": 1,
+					"pattern": "^[A-Za-z0-9_]+$"
+				},
+				"fields": {
+					"description": "All columns must be required_for_create. Use partial_uniques when one is nullable.",
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 },
+					"minItems": 1
+				}
+			}
+		},
+
 		"partialUnique": {
 			"type": "object",
 			"required": ["not_null_fields", "nullable_field"],
 			"additionalProperties": false,
 			"properties": {
-				"index_name": { "type": "string" },
+				"index_name": {
+					"description": "Optional. Replaces the derived '{table}_{tenant_key}_{not_null_fields}_{nullable_field}' stem. The '_ukey_notnull' and '_ukey_null' suffixes are appended automatically. The final name must not exceed 63 bytes.",
+					"type": "string",
+					"minLength": 1,
+					"pattern": "^[A-Za-z0-9_]+$"
+				},
 				"not_null_fields": {
 					"type": "array",
 					"items": { "type": "string", "minLength": 1 },
@@ -277,7 +302,12 @@
 			"required": ["fields"],
 			"additionalProperties": false,
 			"properties": {
-				"index_name": { "type": "string" },
+				"index_name": {
+					"description": "Optional. The '_idx' suffix is appended when absent. The final name must not exceed 63 bytes.",
+					"type": "string",
+					"minLength": 1,
+					"pattern": "^[A-Za-z0-9_]+$"
+				},
 				"fields": {
 					"description": "Order matters: highest selectivity first.",
 					"type": "array",

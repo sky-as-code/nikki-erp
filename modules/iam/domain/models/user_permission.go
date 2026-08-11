@@ -39,7 +39,7 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserPermissionSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", UserPermissionSchemaName)).
 		TableName("iam_user_permissions").
-		CompositeUnique(UserPermFieldUserId, UserPermFieldEntExpression).
+		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{UserPermFieldUserId, UserPermFieldEntExpression}}).
 		ShouldBuildDb().
 		Field(
 			basemodel.DefineFieldId(UserPermFieldUserId).

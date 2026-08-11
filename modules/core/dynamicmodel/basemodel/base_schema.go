@@ -37,6 +37,11 @@ const (
 	FieldEtag         = "etag"
 	FieldCreatedBy    = "created_by"
 	FieldUpdatedBy    = "updated_by"
+
+	// FieldIncludeArchived is the search query parameter, not a model column.
+	// It is deliberately distinct from FieldIsArchived: ModelSchema.Validate keys off the
+	// field name, so reusing the column name would make the query field collide with it.
+	FieldIncludeArchived = "include_archived"
 )
 
 func DefineFieldId(fieldName string) *dmodel.FieldBuilder {

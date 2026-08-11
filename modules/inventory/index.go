@@ -7,9 +7,9 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/dynamicengines"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/transport/restful"
@@ -83,11 +83,37 @@ func initProductService() error {
 		return errors.New("the '" + models.ProductTemplateSchemaName + "' engine is not registered")
 	}
 
-	derived := app.NewProductAppService(templateEngine.ResourceService())
+	derived := services.NewProductTemplateDomainService(templateEngine.ResourceService())
 	templateEngine.SetResourceService(derived)
+
+	if err := initProductVariantService(); err != nil {
+		return err
+	}
 
 	// Published for consumers that reach the capability outside an engine action.
 	return deps.Register(func() itProduct.ProductService { return derived })
+}
+
+// initProductVariantService installs the derived variant service on the Product Variant engine.
+//
+// It is what fills the template_* virtual fields on a read: they have no database column, so
+// without this the engine would serve them as permanently absent.
+func initProductVariantService() error {
+	variantEngine, ok := dynamicresource.Registry().GetEngine(models.ProductVariantSchemaName)
+	if !ok {
+		return errors.New("the '" + models.ProductVariantSchemaName + "' engine is not registered")
+	}
+
+	derived := services.NewProductVariantDomainService(variantEngine.ResourceService())
+	variantEngine.SetResourceService(derived)
+
+	// Published for consumers that reach these reads outside an engine action. The same instance
+	// serves all three ports, so a consumer gets the batched template_* fill whichever it injects.
+	return errors.Join(
+		deps.Register(func() itProduct.ProductVariantDomainService { return derived }),
+		deps.Register(func() itProduct.ProductTemplateReadService { return derived }),
+		deps.Register(func() itProduct.ProductCategoryReadService { return derived }),
+	)
 }
 
 // RegisterModels implements DynamicModule.
@@ -100,6 +126,7 @@ func (*InventoryModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.ProductTypeSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.ProductCategorySchemaBuilder()),
 		dmodel.RegisterSchemaB(models.BrandSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ProductPriceSchemaBuilder()),
 
 		// Attributes: the value points at the attribute, so the attribute comes first.
 		dmodel.RegisterSchemaB(models.ProductAttributeSchemaBuilder()),

@@ -166,6 +166,11 @@ func (this *DynamicResourceServiceImpl) Search(
 ) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error) {
 	query, err := paramsToSearchQuery(params)
 	if err != nil {
+		// A query parameter of the wrong type is the caller's mistake; reporting it as a 500
+		// would blame the server for a bad request.
+		if cErrs, ok := clientErrorsForDecodeFailure(err); ok {
+			return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
+		}
 		return nil, errors.Wrap(err, "DynamicResourceService.Search")
 	}
 

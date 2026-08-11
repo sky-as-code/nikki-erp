@@ -25,6 +25,9 @@ const (
 	queryParamGraph    = "graph"
 	queryParamLanguage = "language"
 	queryParamName     = "search_name"
+	// queryParamIncludeArchived is tri-state: absent means "hide archived", which crud.Search
+	// applies as the public-API default. Only a value the caller actually sent is forwarded.
+	queryParamIncludeArchived = basemodel.FieldIncludeArchived
 
 	fieldOrgId = "org_id"
 )
@@ -208,6 +211,17 @@ func (this *DynamicRestApiImpl) searchParams(echoCtx *echo.Context) (dmodel.Dyna
 	}
 	if searchName := echoCtx.QueryParam(queryParamName); searchName != "" {
 		params[queryParamName] = searchName
+	}
+	// Parsed here because SearchQuery.IncludeArchived is a *bool and the params are decoded into
+	// it by strict JSON unmarshalling, which a raw string fails outright. An unparseable value is
+	// forwarded untouched so the query schema reports it as an invalid format, rather than being
+	// dropped and silently read as "hide archived".
+	if raw := echoCtx.QueryParam(queryParamIncludeArchived); raw != "" {
+		if parsed, err := strconv.ParseBool(raw); err == nil {
+			params[queryParamIncludeArchived] = parsed
+		} else {
+			params[queryParamIncludeArchived] = raw
+		}
 	}
 
 	if raw := echoCtx.QueryParam(queryParamGraph); raw != "" {

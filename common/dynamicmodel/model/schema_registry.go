@@ -188,11 +188,12 @@ func GetSchema(name string) *ModelSchema {
 	return schemaRegistry.Get(name)
 }
 
+// GetFieldNames lists what a client may ask for, so it reports readable fields rather than
+// physical columns: a virtual scalar is selectable even though it has no column.
 func GetFieldNames(name string) (fieldNames []string) {
 	schema := GetSchema(name)
-	columns := schema.Columns()
-	for _, col := range columns {
-		fieldNames = append(fieldNames, col.Name())
+	for _, field := range schema.ReadableFields() {
+		fieldNames = append(fieldNames, field.Name())
 	}
 
 	return

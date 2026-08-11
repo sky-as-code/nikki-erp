@@ -42,3 +42,10 @@ CORS_ALLOW_HEADERS = os.getenv("API_CORS_HEADERS", "Accept,Authorization,Content
 SEED_USER_ID = os.getenv("SEED_USER_ID", "")
 SEED_GROUP_ID = os.getenv("SEED_GROUP_ID", "")
 ORG_ID = os.getenv("ORG_ID", "")
+
+# Credentials of an account holding ONLY the system `User` role, used by the Inventory
+# permission regression test: Product master data grants no domain-wide read to that
+# role, unlike Essential UoM, so such a user must be refused. Left empty the test skips
+# rather than failing, because no environment can be assumed to have provisioned one.
+PLAIN_USER_USERNAME = os.getenv("API_PLAIN_USER_USERNAME", "")
+PLAIN_USER_PASSWORD = os.getenv("API_PLAIN_USER_PASSWORD", "")

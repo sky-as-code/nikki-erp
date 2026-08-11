@@ -74,6 +74,19 @@ const (
 	ProductVariantFieldArchiveSource     = "archive_source"
 	ProductVariantFieldOrgId             = "org_id"
 
+	// Virtual fields, copied from the owning template when a variant is read. They have no
+	// database column: FillFromTemplate populates them, and nothing ever writes them back.
+	ProductVariantFieldTemplateName                = "template_name"
+	ProductVariantFieldTemplateShortName           = "template_short_name"
+	ProductVariantFieldTemplateDescription         = "template_description"
+	ProductVariantFieldTemplateSalesDescription    = "template_sales_description"
+	ProductVariantFieldTemplatePurchaseDescription = "template_purchase_description"
+	ProductVariantFieldTemplateCategoryId          = "template_category_id"
+	ProductVariantFieldTemplateBrandId             = "template_brand_id"
+	ProductVariantFieldTemplateProductTypeId       = "template_product_type_id"
+	ProductVariantFieldTemplateStatus              = "template_status"
+	ProductVariantFieldTemplateSaleOk              = "template_sale_ok"
+
 	ProductVariantEdgeTemplate = "template"
 
 	// EmptyCombinationKey is the combination of a template that has no variant-generating

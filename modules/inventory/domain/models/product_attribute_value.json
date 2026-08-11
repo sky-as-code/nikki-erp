@@ -4,7 +4,7 @@
 	"table_name": "inventory_product_attribute_values",
 	"should_build_db": true,
 	"record_label_field": "name",
-	"composite_uniques": [["attribute_id", "code"]],
+	"composite_uniques": [{ "index_name": "invty_prod_attr_vals_tid_attr_id_code", "fields": ["attribute_id", "code"] }],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [

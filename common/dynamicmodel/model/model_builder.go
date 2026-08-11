@@ -105,7 +105,7 @@ func (this *ModelSchemaBuilder) Extend(builder *ModelSchemaBuilder) *ModelSchema
 	this.schema.toRelations = append(this.schema.toRelations, builder.schema.toRelations...)
 	this.schema.fromRelations = append(this.schema.fromRelations, builder.schema.fromRelations...)
 	this.schema.compositeUniques = append(this.schema.compositeUniques, builder.schema.compositeUniques...)
-	this.schema.partialUniqueGroups = append(this.schema.partialUniqueGroups, builder.schema.partialUniqueGroups...)
+	this.schema.partialUniques = append(this.schema.partialUniques, builder.schema.partialUniques...)
 	this.schema.searchIndexGroups = append(this.schema.searchIndexGroups, builder.schema.searchIndexGroups...)
 	this.schema.exclusiveRequiredFieldGroups = append(
 		this.schema.exclusiveRequiredFieldGroups, builder.schema.exclusiveRequiredFieldGroups...)
@@ -245,24 +245,33 @@ func (this *ModelSchemaBuilder) validateManyToManyCascade(rel ModelRelation) {
 	}
 }
 
-func (this *ModelSchemaBuilder) CompositeUnique(composite ...string) *ModelSchemaBuilder {
-	if len(composite) > 0 {
-		this.schema.compositeUniques = append(this.schema.compositeUniques, composite)
-	}
-	return this
+type CompositeUniqueParam struct {
+	// IndexName is optional. When empty, the constraint name is derived as
+	// "{tableName}_{tenantKey}_{Fields...}". When set, it replaces that whole stem, so it must
+	// carry the table prefix itself. The "_ukey" suffix is always appended by the query builder;
+	// never write it here. See docs/wiki "04. Dynamic schema" for the 63-byte naming rules.
+	IndexName string
+	// Fields must all be requiredForCreate. Use PartialUnique when one of them is nullable.
+	Fields []string
 }
 
-// PartialUnique registers a partial unique index on two columns: exactly one must be requiredForCreate
-// (NOT NULL) and the other nullable. Enforced in Build() when ShouldBuildDb is set.
-func (this *ModelSchemaBuilder) PartialUnique(notNullField, nullableField string) *ModelSchemaBuilder {
-	a := strings.TrimSpace(notNullField)
-	b := strings.TrimSpace(nullableField)
-	if a != "" && b != "" {
-		this.PartialUniqueGroup(PartialUniqueGroupParam{
-			NotNullFields: []string{a},
-			NullableField: b,
-		})
+// CompositeUnique registers a multi-column UNIQUE constraint. All columns must be requiredForCreate,
+// enforced in Build() when ShouldBuildDb is set.
+func (this *ModelSchemaBuilder) CompositeUnique(param CompositeUniqueParam) *ModelSchemaBuilder {
+	if len(param.Fields) == 0 {
+		panic(errors.New("CompositeUnique: field list must not be empty"))
 	}
+	fields := array.Map(param.Fields, func(fieldName string) string {
+		trimName := strings.TrimSpace(fieldName)
+		if trimName == "" {
+			panic(errors.Errorf("CompositeUnique: field name must not be empty: %s", fieldName))
+		}
+		return trimName
+	})
+	this.schema.compositeUniques = append(this.schema.compositeUniques, CompositeUniqueParam{
+		IndexName: mustValidateIndexName(param.IndexName),
+		Fields:    fields,
+	})
 	return this
 }
 
@@ -302,29 +311,39 @@ func (this *ModelSchemaBuilder) SearchIndexGroup(group SearchIndexGroupParam) *M
 	})
 
 	this.schema.searchIndexGroups = append(this.schema.searchIndexGroups, SearchIndexGroupParam{
-		IndexName: mustNormalizeIndexName(group.IndexName),
+		IndexName: mustNormalizeSearchIndexName(group.IndexName),
 		Fields:    fields,
 	})
 	return this
 }
 
-type PartialUniqueGroupParam struct {
-	IndexName     string
+type PartialUniqueParam struct {
+	// IndexName is optional. When empty, the index name is derived as
+	// "{tableName}_{tenantKey}_{NotNullFields...}_{NullableField}". When set, it replaces that whole
+	// stem, so it must carry the table prefix itself. The "_ukey_notnull" and "_ukey_null" suffixes
+	// are always appended by the query builder; never write them here.
+	IndexName string
+	// NotNullFields must all be requiredForCreate.
 	NotNullFields []string
+	// NullableField must NOT be requiredForCreate.
 	NullableField string
 }
 
-func (this *ModelSchemaBuilder) PartialUniqueGroup(group PartialUniqueGroupParam) *ModelSchemaBuilder {
-	indexName := mustNormalizeIndexName(group.IndexName)
-	nullableField := strings.TrimSpace(group.NullableField)
-	notNullFields := array.Map(group.NotNullFields, func(fieldName string) string {
+// PartialUnique registers a pair of partial unique indexes: one over NotNullFields plus
+// NullableField where the latter IS NOT NULL, and one over NotNullFields alone where it IS NULL.
+// This is how tenant/org-scoped uniqueness is expressed.
+// Enforced in Build() when ShouldBuildDb is set.
+func (this *ModelSchemaBuilder) PartialUnique(param PartialUniqueParam) *ModelSchemaBuilder {
+	indexName := mustValidateIndexName(param.IndexName)
+	nullableField := strings.TrimSpace(param.NullableField)
+	notNullFields := array.Map(param.NotNullFields, func(fieldName string) string {
 		trimName := strings.TrimSpace(fieldName)
 		if trimName == "" {
-			panic(errors.Errorf("PartialUniqueGroup: field name must not be empty: %s", fieldName))
+			panic(errors.Errorf("PartialUnique: field name must not be empty: %s", fieldName))
 		}
 		return trimName
 	})
-	this.schema.partialUniqueGroups = append(this.schema.partialUniqueGroups, PartialUniqueGroupParam{
+	this.schema.partialUniques = append(this.schema.partialUniques, PartialUniqueParam{
 		IndexName:     indexName,
 		NotNullFields: notNullFields,
 		NullableField: nullableField,
@@ -332,25 +351,33 @@ func (this *ModelSchemaBuilder) PartialUniqueGroup(group PartialUniqueGroupParam
 	return this
 }
 
-func mustNormalizeIndexName(raw string) string {
+// mustValidateIndexName checks the character set of a caller-provided index name and returns it
+// unchanged. Unique index names must NOT gain an "_idx" suffix: the query builder appends
+// "_ukey", "_ukey_notnull" or "_ukey_null" to them.
+func mustValidateIndexName(raw string) string {
 	indexName := strings.TrimSpace(raw)
 	if indexName == "" {
 		return ""
 	}
 	if !indexNameRegex.MatchString(indexName) {
 		panic(errors.Errorf(
-			"mustNormalizeIndexName: invalid index name '%s'; only alphanumeric and '_' are allowed",
+			"mustValidateIndexName: invalid index name '%s'; only alphanumeric and '_' are allowed",
 			indexName))
+	}
+	return indexName
+}
+
+// mustNormalizeSearchIndexName validates a non-unique index name and appends the "_idx" suffix
+// convention when the caller did not.
+func mustNormalizeSearchIndexName(raw string) string {
+	indexName := mustValidateIndexName(raw)
+	if indexName == "" {
+		return ""
 	}
 	if !strings.HasSuffix(indexName, "_idx") {
 		indexName += "_idx"
 	}
 	return indexName
-}
-
-func (this *ModelSchemaBuilder) SetCompositeUniques(allUniques [][]string) *ModelSchemaBuilder {
-	this.schema.compositeUniques = allUniques
-	return this
 }
 
 func (this *ModelSchemaBuilder) Build() *ModelSchema {
@@ -364,10 +391,85 @@ func (this *ModelSchemaBuilder) Build() *ModelSchema {
 	if err := validateRecordLabelFields(schema); err != nil {
 		panic(errors.Wrap(err, "Build"))
 	}
+	// Runs here rather than inside populateDbMetadata, which only runs when shouldBuildDb is set:
+	// a validation-only schema must reject the same contradictions.
+	if err := validateVirtualFields(schema); err != nil {
+		panic(errors.Wrap(err, "Build"))
+	}
 	if this.shouldBuildDb {
 		ft.PanicOnErr(populateDbMetadata(schema))
 	}
 	return schema
+}
+
+// validateVirtualFields rejects a virtual field that also claims a role requiring a column.
+// Each combination below would otherwise fail silently and far from its cause: the field is
+// dropped from every write, so a "required" or "unique" virtual field is a promise nothing can
+// keep.
+func validateVirtualFields(schema *ModelSchema) error {
+	for _, name := range schema.fieldsOrder {
+		field, ok := schema.fields[name]
+		if !ok || field == nil || !field.IsVirtual() {
+			continue
+		}
+		if field.IsVirtualModelField() {
+			return errors.Errorf(
+				"field %q: Virtual() is for scalar fields; a model-typed field is already virtual",
+				name)
+		}
+		if field.IsPrimaryKey() || field.IsTenantKey() || field.IsVersioningKey() || field.IsUnique() {
+			return errors.Errorf(
+				"field %q: a virtual field has no column and cannot be a primary, tenant or "+
+					"versioning key, nor unique", name)
+		}
+		if field.IsRequiredForCreate() || field.IsRequiredForUpdate() || field.requiredWithFieldName != "" {
+			return errors.Errorf("field %q: a virtual field is never written and cannot be required", name)
+		}
+		if field.IsAutoGenerated() || field.IsServiceInjected() {
+			return errors.Errorf(
+				"field %q: a virtual field is filled after the read; auto-generated and "+
+					"service-injected apply to written fields", name)
+		}
+		if field.IsNoUpdate() {
+			return errors.Errorf("field %q: NoUpdate is meaningless on a virtual field", name)
+		}
+		if err := assertVirtualFieldNotIndexed(schema, name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// assertVirtualFieldNotIndexed rejects a virtual field named by anything that needs a column to
+// point at: an index, a uniqueness constraint, an exclusive group, or a record label.
+func assertVirtualFieldNotIndexed(schema *ModelSchema, name string) error {
+	groups := map[string][][]string{"exclusive group": schema.exclusiveRequiredFieldGroups}
+	for _, param := range schema.compositeUniques {
+		groups["composite unique"] = append(groups["composite unique"], param.Fields)
+	}
+	for _, param := range schema.partialUniques {
+		groups["partial unique"] = append(
+			groups["partial unique"], param.NotNullFields, []string{param.NullableField})
+	}
+	for _, param := range schema.searchIndexGroups {
+		groups["search index"] = append(groups["search index"], param.Fields)
+	}
+
+	for kind, fieldGroups := range groups {
+		for _, group := range fieldGroups {
+			for _, member := range group {
+				if member == name {
+					return errors.Errorf("field %q: a virtual field cannot appear in a %s", name, kind)
+				}
+			}
+		}
+	}
+	if schema.recordLabelField == name || schema.recordSubLabelField == name {
+		return errors.Errorf(
+			"field %q: a virtual field cannot be the record label; clients read that column directly",
+			name)
+	}
+	return nil
 }
 
 func validateExclusiveFieldGroups(schema *ModelSchema) error {
@@ -574,6 +676,14 @@ func (this *FieldBuilder) IsAutoGenerated(isAutoGenerated bool) *FieldBuilder {
 // Allows setting value on create but not on update.
 func (this *FieldBuilder) NoUpdate() *FieldBuilder {
 	this.field.noUpdate = true
+	return this
+}
+
+// Virtual marks a scalar field that has no database column. It is selectable and returned in
+// results, but never written, and never filtered or sorted in SQL unless the owning module
+// rewrites it to the edge path it derives from. A service fills it after the read.
+func (this *FieldBuilder) Virtual() *FieldBuilder {
+	this.field.isVirtual = true
 	return this
 }
 

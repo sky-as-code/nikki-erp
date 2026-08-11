@@ -99,11 +99,12 @@ var searchRelationshipsQueryType = cqrs.RequestType{
 }
 
 type SearchRelationshipsQuery struct {
-	Fields  []string            `json:"fields" query:"fields"`
-	Graph   *dmodel.SearchGraph `json:"graph" query:"graph"`
-	Page    int                 `json:"page" query:"page"`
-	Size    int                 `json:"size" query:"size"`
-	PartyId model.Id            `json:"party_id" param:"party_id"`
+	Fields          []string            `json:"fields" query:"fields"`
+	Graph           *dmodel.SearchGraph `json:"graph" query:"graph"`
+	Page            int                 `json:"page" query:"page"`
+	Size            int                 `json:"size" query:"size"`
+	IncludeArchived *bool               `json:"include_archived" query:"include_archived"`
+	PartyId         model.Id            `json:"party_id" param:"party_id"`
 }
 
 func (SearchRelationshipsQuery) CqrsRequestType() cqrs.RequestType {
@@ -119,6 +120,7 @@ func (SearchRelationshipsQuery) GetSchema() *dmodel.ModelSchema {
 				Field(dyn.DefineFieldSearchGraph()).
 				Field(dyn.DefineFieldSearchPage()).
 				Field(dyn.DefineFieldSearchSize()).
+				Field(dyn.DefineFieldIncludeArchived()).
 				Field(dmodel.DefineField().
 					Name("party_id").
 					DataType(dmodel.FieldDataTypeUlid()))

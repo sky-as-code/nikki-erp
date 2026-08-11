@@ -76,6 +76,22 @@ Response Should Be Search Success
     Should Be Equal As Integers    ${resp.json()}[size]    ${size}
     Should Be Equal As Integers    ${resp.json()}[page]    ${page}
 
+Search Results Should Contain Id
+    [Documentation]    Asserts a specific record is among the returned items. Response Should
+    ...    Be Search Success validates the envelope but cannot pin membership, which is what
+    ...    the include_archived contract needs.
+    [Arguments]    ${resp}    ${id}
+    ${ids}=    Evaluate    [i['id'] for i in $resp.json()['items']]
+    Should Contain    ${ids}    ${id}
+    ...    msg=Expected record ${id} in the search result, got ${ids}
+
+Search Results Should Not Contain Id
+    [Documentation]    The negative counterpart, for asserting archived records are filtered out.
+    [Arguments]    ${resp}    ${id}
+    ${ids}=    Evaluate    [i['id'] for i in $resp.json()['items']]
+    Should Not Contain    ${ids}    ${id}
+    ...    msg=Record ${id} must not appear in the search result, got ${ids}
+
 # --- Error contracts (400 unless noted) ---
 
 Response Should Be Missing Fields Error
@@ -246,4 +262,67 @@ Response Should Be Uomcat Reference Not Found Error
     ${schema}=    Same Error Schema    ${{['reference_uom_id']}}
     ...    uomcat.reference_uom_not_found
     ...    the referenced UoM does not exist    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+# --- Inventory Products business violations (BR-PROD) ---------------------------------
+# The key/message pairs are server contracts emitted by
+# modules/inventory/dynamicengines/{product_category,product_variant}.go,
+# modules/inventory/domain/services/product_template_domservice.go and
+# modules/inventory/dynamicengines/product_action_params.go.
+# Keep them verbatim; the frontend localizes by key through inventory.json.
+
+Response Should Be Category Self Parent Error
+    [Documentation]    A category cannot be its own parent — the degenerate one-node cycle,
+    ...    reported separately from the walk because there is no chain to walk.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['parent_category_id']}}
+    ...    product_category.self_parent
+    ...    a category cannot be its own parent    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Category Cycle Error
+    [Documentation]    The category tree must stay acyclic; pointing a category at one of
+    ...    its own descendants would close a loop no traversal could terminate on.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['parent_category_id']}}
+    ...    product_category.cycle
+    ...    this parent is a descendant of the category, which would create a cycle    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Duplicate Combination Error
+    [Documentation]    BR-PROD-VAR-002: a template holds at most one variant per attribute
+    ...    combination. The engine turns the composite unique into a field-level business
+    ...    error rather than letting the constraint surface as a 500.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['combination_key']}}
+    ...    product_variant.duplicate_combination
+    ...    this template already has a variant with the same attribute combination    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Template Has Variants Error
+    [Documentation]    BR-PROD-TPL-005 / AC-PROD-021: a template whose variants may already
+    ...    be referenced by a transaction is archived, never hard-deleted.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['id']}}
+    ...    product_template.has_variants
+    ...    this template still has variants; archive it instead of deleting it    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Template Id Required Error
+    [Documentation]    resolve_selection identifies its template through the body, not the
+    ...    path, so a missing template_id is a client error rather than a 404.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['template_id']}}
+    ...    product_template.template_id_required
+    ...    a product template must be identified    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Selections Malformed Error
+    [Documentation]    Without this check a malformed `selections` would decode to an empty
+    ...    list, resolve to the empty combination — a real and different variant — and
+    ...    answer 200 with the wrong product.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['selections']}}
+    ...    product_template.selections_malformed
+    ...    selections must be a list of attribute-value choices    business
     Response Should Match Schema    ${resp}    ${schema}    400

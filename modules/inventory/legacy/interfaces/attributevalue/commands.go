@@ -1,0 +1,146 @@
+package attributevalue
+
+import (
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	basemodel "github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/legacy/domain"
+)
+
+func init() {
+	var req cqrs.Request
+	req = (*CreateAttributeValueCommand)(nil)
+	req = (*DeleteAttributeValueCommand)(nil)
+	req = (*AttributeValueExistsQuery)(nil)
+	req = (*GetAttributeValueQuery)(nil)
+	req = (*SearchAttributeValuesQuery)(nil)
+	req = (*UpdateAttributeValueCommand)(nil)
+	util.Unused(req)
+}
+
+var createAttributeValueCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "attribute_value",
+	Action:    "create",
+}
+
+type CreateAttributeValueCommand struct {
+	domain.AttributeValue
+}
+
+func (CreateAttributeValueCommand) CqrsRequestType() cqrs.RequestType {
+	return createAttributeValueCommandType
+}
+
+func (this CreateAttributeValueCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.AttributeValueSchemaName)
+}
+
+type CreateAttributeValueResult = dyn.OpResult[domain.AttributeValue]
+
+var deleteAttributeValueCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "attribute_value",
+	Action:    "delete",
+}
+
+type DeleteAttributeValueCommand dyn.DeleteOneCommand
+
+func (DeleteAttributeValueCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteAttributeValueCommandType
+}
+
+type DeleteAttributeValueResult = dyn.OpResult[dyn.MutateResultData]
+
+var getAttributeValueQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "attribute_value",
+	Action:    "getAttributeValue",
+}
+
+type GetAttributeValueQuery dyn.GetOneQuery
+
+func (GetAttributeValueQuery) CqrsRequestType() cqrs.RequestType {
+	return getAttributeValueQueryType
+}
+
+type GetAttributeValueResult = dyn.OpResult[domain.AttributeValue]
+
+var attributeValueExistsQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "attribute_value",
+	Action:    "attributeValueExists",
+}
+
+type AttributeValueExistsQuery dyn.ExistsQuery
+
+func (AttributeValueExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return attributeValueExistsQueryType
+}
+
+type AttributeValueExistsResult = dyn.OpResult[dyn.ExistsResultData]
+
+var searchAttributeValuesQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "attribute_value",
+	Action:    "search",
+}
+
+type SearchAttributeValuesQuery struct {
+	Columns         []string            `json:"columns" query:"columns"`
+	Graph           *dmodel.SearchGraph `json:"graph" query:"graph"`
+	Page            int                 `json:"page" query:"page"`
+	Size            int                 `json:"size" query:"size"`
+	IncludeArchived *bool               `json:"include_archived" query:"include_archived"`
+	ProductId       basemodel.Id        `json:"product_id" param:"product_id"`
+	AttributeId     basemodel.Id        `json:"attribute_id" param:"attribute_id"`
+}
+
+func (SearchAttributeValuesQuery) CqrsRequestType() cqrs.RequestType {
+	return searchAttributeValuesQueryType
+}
+
+func (SearchAttributeValuesQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"inventory.search_attribute_values_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(dyn.DefineFieldSearchFields()).
+				Field(dyn.DefineFieldSearchGraph()).
+				Field(dyn.DefineFieldSearchPage()).
+				Field(dyn.DefineFieldSearchSize()).
+				Field(dyn.DefineFieldIncludeArchived()).
+				Field(dmodel.DefineField().
+					Name("product_id").
+					DataType(dmodel.FieldDataTypeUlid())).
+				Field(dmodel.DefineField().
+					Name("attribute_id").
+					DataType(dmodel.FieldDataTypeUlid()))
+		},
+	)
+}
+
+type SearchAttributeValuesResultData = dyn.PagedResultData[domain.AttributeValue]
+type SearchAttributeValuesResult = dyn.OpResult[SearchAttributeValuesResultData]
+
+var updateAttributeValueCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "attribute_value",
+	Action:    "update",
+}
+
+type UpdateAttributeValueCommand struct {
+	domain.AttributeValue
+}
+
+func (UpdateAttributeValueCommand) CqrsRequestType() cqrs.RequestType {
+	return updateAttributeValueCommandType
+}
+
+func (this UpdateAttributeValueCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.AttributeValueSchemaName)
+}
+
+type UpdateAttributeValueResult = dyn.OpResult[dyn.MutateResultData]

@@ -25,7 +25,10 @@ func RoleUserAssignmentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Label(model.NewLangJsonRefSf("%s.label", RoleUserAssignmentSchemaName)).
 		TableName("iam_role_user_assignments").
 		ShouldBuildDb().
-		CompositeUnique(RoleUserAssignFieldRoleId, RoleUserAssignFieldReceiverUserId).
+		CompositeUnique(dmodel.CompositeUniqueParam{
+			IndexName: "iam_role_usr_assigns_tid_role_id_rcv_usr_id",
+			Fields:    []string{RoleUserAssignFieldRoleId, RoleUserAssignFieldReceiverUserId},
+		}).
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Extend(basemodel.AuditableReadonlyModelSchemaBuilder()).
 		Field(

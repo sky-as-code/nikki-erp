@@ -1,0 +1,47 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "attribute_id", "code", "name", "etag", "is_archived", "org_id"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "attribute_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "code": {
+            "type": "string",
+            "minLength": 1
+        },
+        "name": {
+            "type": "object"
+        },
+        "sequence": {
+            "type": ["integer", "null"]
+        },
+        "price_extra": {
+            "type": ["string", "number", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        }
+    },
+    "additionalProperties": false
+}

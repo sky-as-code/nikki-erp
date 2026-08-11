@@ -7,9 +7,6 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
@@ -47,15 +44,9 @@ func defineProductVariantActions(engine drif.DynamicResourceEngine) error {
 		return errors.Wrap(err, "failed to attach product variant update validation")
 	}
 
-	// BR-PROD-VAR-006/007: the template follows its variants' availability.
-	err = engine.ModifyAction(drif.DynamicActionDelta{
-		ActionName:             drif.ActionSetArchived,
-		KeysToFetch:            variantKeysToFetch,
-		AfterValidationSuccess: syncTemplateAvailability(engine),
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to attach product variant archive sync")
-	}
+	// BR-PROD-VAR-006/007: the template follows its variants' availability. The cascade lives in
+	// ProductVariantDomainServiceImpl.SetArchived rather than an action hook, because it must run
+	// after the variant row is written — AfterValidationSuccess runs before MainProcess.
 
 	// AC-PROD-032: consumers read the flattened product rather than re-deriving which fields
 	// come from the template and which from the variant.
@@ -135,9 +126,29 @@ func validateVariantUpdate(engine drif.DynamicResourceEngine) drif.ActionValidat
 			return nil
 		}
 		submitted, stored := models.NewProductVariantFrom(params), models.NewProductVariantFrom(*foundModel)
+		assertNotReparented(submitted, stored, vErrs)
+		if vErrs.Count() > 0 {
+			return nil
+		}
 		merged := mergeVariantForValidation(submitted, stored)
 		return assertUniqueCombination(ctx, engine, merged, derefId(stored.GetId()), vErrs)
 	}
+}
+
+// assertNotReparented refuses an update that moves a variant to another template.
+//
+// product_template_id is declared no_update, and the schema validator honours that by dropping the
+// field from the write — which answers 200 as though the change had been applied. Re-parenting
+// would silently reinterpret every transaction already referencing the variant, so it is reported
+// rather than ignored. See BR §6.1.
+func assertNotReparented(submitted *models.ProductVariant, stored *models.ProductVariant, vErrs *ft.ClientErrors) {
+	newTemplateId := derefId(submitted.GetProductTemplateId())
+	if newTemplateId == "" || newTemplateId == derefId(stored.GetProductTemplateId()) {
+		return
+	}
+	vErrs.Append(*ft.NewBusinessViolation(models.ProductVariantFieldProductTemplateId,
+		"product_variant.immutable_template",
+		"product_template_id cannot be changed; create a variant under the other template instead"))
 }
 
 // mergeVariantForValidation overlays the submitted fields onto the stored record, so that a
@@ -205,89 +216,3 @@ func checkUniqueCombination(
 	return nil
 }
 
-// syncTemplateAvailability keeps the template in step with its variants.
-//
-// Archiving the last non-archived variant archives the template, because a template with nothing
-// selectable must not keep appearing as an available product. Unarchiving a variant of an
-// archived template brings the template back, unless a user archived it deliberately.
-// See BR-PROD-VAR-006, BR-PROD-VAR-007 and AC-PROD-020.
-func syncTemplateAvailability(engine drif.DynamicResourceEngine) drif.ActionAfterValidationFn {
-	return func(ctx corectx.Context, params dmodel.DynamicFields) error {
-		variant := models.NewProductVariantFrom(params)
-		archived := variant.IsArchived()
-		if archived == nil {
-			return nil
-		}
-
-		templateId, err := resolveVariantTemplateId(ctx, engine, variant)
-		if err != nil || templateId == "" {
-			return err
-		}
-
-		if *archived {
-			return archiveTemplateIfNoVariantsLeft(ctx, engine, templateId)
-		}
-		return unarchiveCascadedTemplate(ctx, templateId)
-	}
-}
-
-// resolveVariantTemplateId finds the owning template, which a set_archived payload carrying only
-// the id and the flag does not include.
-func resolveVariantTemplateId(
-	ctx corectx.Context, engine drif.DynamicResourceEngine, variant *models.ProductVariant,
-) (string, error) {
-	if templateId := derefId(variant.GetProductTemplateId()); templateId != "" {
-		return templateId, nil
-	}
-	variantId := derefId(variant.GetId())
-	if variantId == "" {
-		return "", nil
-	}
-
-	found, err := engine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
-		Filter: dmodel.DynamicFields{models.ProductVariantFieldId: variantId},
-		Fields: []string{models.ProductVariantFieldId, models.ProductVariantFieldProductTemplateId},
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "resolveVariantTemplateId")
-	}
-	if !found.HasData {
-		return "", nil
-	}
-	return derefId(models.NewProductVariantFrom(found.Data).GetProductTemplateId()), nil
-}
-
-func archiveTemplateIfNoVariantsLeft(
-	ctx corectx.Context, engine drif.DynamicResourceEngine, templateId string,
-) error {
-	remaining, err := models.FindActiveTemplateVariants(ctx, engine.ResourceRepository(), templateId, 1)
-	if err != nil {
-		return errors.Wrap(err, "archiveTemplateIfNoVariantsLeft")
-	}
-	if len(remaining) > 0 {
-		return nil
-	}
-	return setTemplateArchived(ctx, templateId, true)
-}
-
-func unarchiveCascadedTemplate(ctx corectx.Context, templateId string) error {
-	return setTemplateArchived(ctx, templateId, false)
-}
-
-// setTemplateArchived writes the template row through the template's own repository.
-//
-// It deliberately goes to the repository rather than the template engine's set_archived action:
-// this update is the consequence of a cascade, and re-entering that action would run the
-// template's own cascade back over the variants that triggered it.
-func setTemplateArchived(ctx corectx.Context, templateId string, archived bool) error {
-	templateEngine, ok := dynamicresource.Registry().GetEngine(models.ProductTemplateSchemaName)
-	if !ok {
-		return errors.Errorf("setTemplateArchived: no engine for '%s'", models.ProductTemplateSchemaName)
-	}
-
-	_, err := templateEngine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
-		models.ProductTemplateFieldId: templateId,
-		basemodel.FieldIsArchived:     archived,
-	})
-	return errors.Wrap(err, "setTemplateArchived")
-}

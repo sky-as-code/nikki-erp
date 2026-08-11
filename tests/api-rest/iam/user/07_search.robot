@@ -6,6 +6,7 @@ Documentation     Bruno: IAM/User/User - Search (+ Create test data + CORS). Gra
 Resource          resources/iam.resource
 Suite Setup       Run Keywords    Create Authorized API Session
 ...               AND    Ensure Seeded Users    50
+...               AND    Ensure Archived User
 Test Tags         iam    user    search
 
 
@@ -73,6 +74,62 @@ Search Order By Edge Json Subfield Succeeds
     ${resp}=    GET On Session    api    ${USER_API}
     ...    params=${{ {'graph': '{"order": [["groups.name", "desc"]]}'} }}    expected_status=any
     Response Status Should Be    ${resp}    200
+
+Search Excludes Archived By Default
+    [Documentation]    Omitting include_archived makes the repository prepend
+    ...    "is_archived = false", so the archived fixture must not come back.
+    ${resp}=    GET On Session    api    ${USER_API}
+    ...    params=${{ {'graph': '{"if":["display_name", "*", "Seed Archived User"]}'} }}
+    Response Status Should Be    ${resp}    200
+    Search Results Should Not Contain Id    ${resp}    ${ARCHIVED_USER_ID}
+
+Search With Include Archived False Excludes Archived
+    [Documentation]    An explicit false must behave exactly like omitting the parameter.
+    ${resp}=    GET On Session    api    ${USER_API}
+    ...    params=${{ {'include_archived': False, 'graph': '{"if":["display_name", "*", "Seed Archived User"]}'} }}
+    Response Status Should Be    ${resp}    200
+    Search Results Should Not Contain Id    ${resp}    ${ARCHIVED_USER_ID}
+
+Search With Include Archived True Includes Archived
+    ${resp}=    GET On Session    api    ${USER_API}
+    ...    params=${{ {'include_archived': True, 'graph': '{"if":["display_name", "*", "Seed Archived User"]}'} }}
+    Response Should Be Search Success    ${resp}    ${USER_SCHEMA}    size=50    page=0
+    Search Results Should Contain Id    ${resp}    ${ARCHIVED_USER_ID}
+
+Search With Include Archived And Graph Succeeds
+    [Documentation]    Pins that the injected condition is ANDed with the caller's graph
+    ...    rather than replacing it: the exact-name filter must still apply.
+    ${graph}=    Evaluate    json.dumps({'if': ['display_name', '=', $ARCHIVED_USER_NAME]})    modules=json
+    ${resp}=    GET On Session    api    ${USER_API}
+    ...    params=${{ {'include_archived': True, 'graph': $graph} }}
+    Response Should Be Search Success    ${resp}    ${USER_SCHEMA}    size=50    page=0    item_count=1
+    Search Results Should Contain Id    ${resp}    ${ARCHIVED_USER_ID}
+
+Search With Include Archived And Order Succeeds
+    [Documentation]    Regression guard for the order-only graph: folding it into the
+    ...    injected AND must not emit an empty predicate, and the order must survive.
+    ${resp}=    GET On Session    api    ${USER_API}
+    ...    params=${{ {'include_archived': True, 'graph': '{"order": [["display_name", "desc"]]}'} }}
+    Response Should Be Search Success    ${resp}    ${USER_SCHEMA}    size=50    page=0
+    ${names}=    Evaluate    [i['display_name'] for i in $resp.json()['items']]
+    Should Be Equal    ${names}    ${{ sorted($names, reverse=True) }}
+    ...    msg=Order was dropped when the is_archived condition was prepended
+
+Search Excluding Archived Keeps Order
+    [Documentation]    The same order-only graph on the default (archived-excluded) path.
+    ${resp}=    GET On Session    api    ${USER_API}
+    ...    params=${{ {'graph': '{"order": [["display_name", "desc"]]}'} }}
+    Response Should Be Search Success    ${resp}    ${USER_SCHEMA}    size=50    page=0
+    ${names}=    Evaluate    [i['display_name'] for i in $resp.json()['items']]
+    Should Be Equal    ${names}    ${{ sorted($names, reverse=True) }}
+    ...    msg=Order was dropped when the is_archived condition was prepended
+    Search Results Should Not Contain Id    ${resp}    ${ARCHIVED_USER_ID}
+
+Search With Invalid Include Archived Fails
+    [Tags]    negative
+    ${resp}=    GET On Session    api    ${USER_API}
+    ...    params=${{ {'include_archived': 'not-a-bool'} }}    expected_status=any
+    Response Should Be Invalid Format Error    ${resp}    include_archived
 
 Search With Nonexist Field Fails
     [Tags]    negative

@@ -4,7 +4,7 @@
 	"table_name": "inventory_product_variants",
 	"should_build_db": true,
 	"record_label_field": "sku",
-	"composite_uniques": [["product_template_id", "combination_key"]],
+	"composite_uniques": [{ "index_name": "invty_prod_variants_tid_ptpl_id_comb_key", "fields": ["product_template_id", "combination_key"] }],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
@@ -109,6 +109,76 @@
 			"label": "fields.org_id",
 			"data_type": "ulid",
 			"required_for_create": true
+		},
+
+		{
+			"name": "template_name",
+			"label": "fields.template_name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"is_virtual": true,
+			"description": {
+				"en-US": "Copied from the owning template when the variant is read. Virtual: the name lives on the template, so storing a second copy here would go stale the moment the template is renamed."
+			}
+		},
+		{
+			"name": "template_short_name",
+			"label": "fields.template_short_name",
+			"data_type": { "type": "langjson", "min": 0, "max": 100 },
+			"is_virtual": true
+		},
+		{
+			"name": "template_description",
+			"label": "fields.template_description",
+			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
+			"is_virtual": true
+		},
+		{
+			"name": "template_sales_description",
+			"label": "fields.template_sales_description",
+			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
+			"is_virtual": true
+		},
+		{
+			"name": "template_purchase_description",
+			"label": "fields.template_purchase_description",
+			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
+			"is_virtual": true
+		},
+		{
+			"name": "template_category_id",
+			"label": "fields.template_category_id",
+			"data_type": "ulid",
+			"is_virtual": true
+		},
+		{
+			"name": "template_brand_id",
+			"label": "fields.template_brand_id",
+			"data_type": "ulid",
+			"is_virtual": true
+		},
+		{
+			"name": "template_product_type_id",
+			"label": "fields.template_product_type_id",
+			"data_type": "ulid",
+			"is_virtual": true
+		},
+		{
+			"name": "template_status",
+			"label": "fields.template_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "active", "discontinued"]
+			},
+			"is_virtual": true,
+			"description": {
+				"en-US": "The template's lifecycle, distinct from this variant's own status: an active variant of a discontinued template is a real and meaningful state."
+			}
+		},
+		{
+			"name": "template_sale_ok",
+			"label": "fields.template_sale_ok",
+			"data_type": "boolean",
+			"is_virtual": true
 		}
 	],
 

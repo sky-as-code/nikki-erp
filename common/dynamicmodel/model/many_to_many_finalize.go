@@ -225,7 +225,7 @@ func physicalColumnNames(s *ModelSchema) []string {
 	out := make([]string, 0, len(s.fieldsOrder))
 	for _, name := range s.fieldsOrder {
 		f := s.fields[name]
-		if f != nil && !f.IsVirtualModelField() {
+		if f != nil && !f.IsNonPhysical() {
 			out = append(out, name)
 		}
 	}

@@ -131,16 +131,39 @@ func buildAggregateSelectExpr(
 	return out, nil, nil
 }
 
+// orderRefsForDistinct returns the ORDER BY refs that must be forced into the select list.
+//
+// Under SELECT DISTINCT, PostgreSQL rejects an ORDER BY expression that is not projected. The
+// refs are already-built SQL ("t1.\"label\" ASC"), so the direction suffix is trimmed off.
+func orderRefsForDistinct(isDistinct bool, orderExprs []string) []string {
+	if !isDistinct {
+		return nil
+	}
+	refs := make([]string, 0, len(orderExprs))
+	for _, expr := range orderExprs {
+		if ref := strings.TrimSpace(strings.TrimSuffix(
+			strings.TrimSuffix(strings.TrimSpace(expr), " DESC"), " ASC")); ref != "" {
+			refs = append(refs, ref)
+		}
+	}
+	return refs
+}
+
+// applySelectColumns writes the projection. extraRefs are already-resolved SQL refs appended
+// when they are not already projected; see orderRefsForDistinct.
 func (this *PgQueryBuilder) applySelectColumns(
-	sb *sqlbuilder.SelectBuilder, planner *joinPlanner, columns []SelectColumn,
+	sb *sqlbuilder.SelectBuilder, planner *joinPlanner, columns []SelectColumn, extraRefs ...string,
 ) error {
 	if len(columns) == 0 {
+		wildcard := "*"
 		if planner != nil && planner.usesJoins() {
 			planner.ensureRootAliased()
-			sb.Select(fmt.Sprintf("%s.*", planner.rootAlias))
-		} else {
-			sb.Select("*")
+			wildcard = fmt.Sprintf("%s.*", planner.rootAlias)
 		}
+		// The wildcard covers the root table only, so an ORDER BY on a joined column is still
+		// absent from the projection — which SELECT DISTINCT rejects outright. extraRefs carries
+		// exactly those sort expressions, so they are appended here too.
+		sb.Select(append([]string{wildcard}, extraRefs...)...)
 		return nil
 	}
 	selectCols := make([]string, 0, len(columns))
@@ -160,12 +183,37 @@ func (this *PgQueryBuilder) applySelectColumns(
 		if strings.Contains(path, "(") {
 			return wrapClientSqlErrors(clientErrorsInvalidSelectAggregate(col.rawString()))
 		}
+		// A virtual scalar has no column to project. It stays a legal request — a service fills
+		// it after the read — so it is skipped here rather than rejected.
+		if planner != nil && planner.isVirtualScalarPath(path) {
+			continue
+		}
 		expr, err := planner.selectExprForColumn(path)
 		if err != nil {
 			return errors.Wrap(err, "applySelectColumns")
 		}
 		selectCols = append(selectCols, expr)
 	}
+	// Every requested column was virtual. An empty list would make sqlbuilder emit "SELECT ",
+	// and falling through to "SELECT *" would contradict the caller's projection, so anchor the
+	// query on the primary keys instead.
+	if len(selectCols) == 0 && planner != nil {
+		selectCols = planner.primaryKeySelectRefs()
+	}
+	for _, ref := range extraRefs {
+		if !containsString(selectCols, ref) {
+			selectCols = append(selectCols, ref)
+		}
+	}
 	sb.Select(selectCols...)
 	return nil
+}
+
+func containsString(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }

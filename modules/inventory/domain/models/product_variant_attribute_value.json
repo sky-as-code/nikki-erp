@@ -3,7 +3,7 @@
 	"label": "inventory_product_variant_attribute_value.label",
 	"table_name": "inventory_product_variant_attribute_values",
 	"should_build_db": true,
-	"composite_uniques": [["product_variant_id", "template_attribute_value_id"]],
+	"composite_uniques": [{ "index_name": "invty_prod_var_attr_vals_tid_pvar_id_tav_id", "fields": ["product_variant_id", "template_attribute_value_id"] }],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [

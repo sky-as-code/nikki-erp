@@ -81,9 +81,11 @@ func (this *DynamicResourceRepositoryImpl) FindByKeys(
 	})
 }
 
-// columnNames lists the names of the schema fields backed by a real database column.
+// columnNames lists the schema fields a client may select and receive, which is what the default
+// projection must be. Virtual scalars are included: they have no database column but are filled
+// by a service after the read, so omitting them here would make them unreachable by default.
 func columnNames(schema *dmodel.ModelSchema) []string {
-	return array.Map(schema.Columns(), func(field *dmodel.ModelField) string {
+	return array.Map(schema.ReadableFields(), func(field *dmodel.ModelField) string {
 		return field.Name()
 	})
 }

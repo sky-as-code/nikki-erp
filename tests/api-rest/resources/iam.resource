@@ -91,9 +91,34 @@ Ensure Seed Group
     ...    json=${{ {'add': [$SEED_USER_ID]} }}
     Response Should Be Update Success    ${resp}    count=1
 
+Ensure Archived User
+    [Documentation]    An archived user for the include_archived search contract. A dedicated
+    ...    fixture is required because 06_archive.robot deliberately unarchives the user under
+    ...    test before 07_search.robot runs, so no archived row would otherwise exist.
+    ...    The display name is stored too, so a search can be narrowed to this record alone.
+    ${existing}=    Get Variable Value    ${ARCHIVED_USER_ID}    ${EMPTY}
+    IF    $existing    RETURN
+    ${email}=    Unique Email    seed.archived.user
+    ${name}=    Unique Display Name    Seed Archived User
+    ${resp}=    POST On Session    api    ${USER_API}
+    ...    json=${{ {'display_name': $name, 'email': $email} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    ${resp}=    POST On Session    api    ${USER_API}/${id}/archived
+    ...    json=${{ {'etag': $etag, 'is_archived': True} }}
+    Response Should Be Update Success    ${resp}    count=1    previous_etag=${etag}
+    Set Global Variable    ${ARCHIVED_USER_ID}    ${id}
+    Set Global Variable    ${ARCHIVED_USER_NAME}    ${name}
+    Set Global Variable    ${ARCHIVED_USER_CREATED}    ${True}
+
 Delete Seed Data
     [Documentation]    Best-effort removal of the on-the-fly seed group/user (in that
     ...    order — membership first). Env-provided seed entities are never deleted.
+    ${archived_created}=    Get Variable Value    ${ARCHIVED_USER_CREATED}    ${False}
+    IF    $archived_created
+        DELETE On Session    api    ${USER_API}/${ARCHIVED_USER_ID}    expected_status=any
+        Set Global Variable    ${ARCHIVED_USER_ID}    ${EMPTY}
+        Set Global Variable    ${ARCHIVED_USER_CREATED}    ${False}
+    END
     ${group_created}=    Get Variable Value    ${SEED_GROUP_CREATED}    ${False}
     IF    $group_created
         DELETE On Session    api    ${GROUP_API}/${SEED_GROUP_ID}    expected_status=any

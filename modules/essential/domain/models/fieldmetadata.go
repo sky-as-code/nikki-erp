@@ -71,10 +71,7 @@ func FieldMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Default(int32(0)).
 				RequiredForCreate(),
 		).
-		CompositeUnique(
-			FieldMetadataFieldModelMetadataId,
-			FieldMetadataFieldCode,
-		).
+		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{FieldMetadataFieldModelMetadataId, FieldMetadataFieldCode}}).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).

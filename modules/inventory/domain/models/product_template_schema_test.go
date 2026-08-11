@@ -91,9 +91,9 @@ func TestVariantCombinationIsUnique(t *testing.T) {
 
 	found := false
 	for _, composite := range schema.CompositeUniques() {
-		if len(composite) == 2 &&
-			composite[0] == ProductVariantFieldProductTemplateId &&
-			composite[1] == ProductVariantFieldCombinationKey {
+		if len(composite.Fields) == 2 &&
+			composite.Fields[0] == ProductVariantFieldProductTemplateId &&
+			composite.Fields[1] == ProductVariantFieldCombinationKey {
 			found = true
 		}
 	}

@@ -4,7 +4,7 @@
 	"table_name": "essential_uoms",
 	"should_build_db": true,
 	"record_label_field": "name",
-	"composite_uniques": [["symbol", "org_id"]],
+	"composite_uniques": [{ "fields": ["symbol", "org_id"] }],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [

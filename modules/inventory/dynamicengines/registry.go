@@ -82,6 +82,12 @@ func initEngine(spec engineSpec) error {
 		}
 	}
 
+	// After DefineActions, because ModifyAction replaces ValidateExtra rather than chaining it:
+	// attaching the guard first would let a spec's own create validation silently drop it.
+	if err := rejectArchivedOnCreate(engine); err != nil {
+		return errors.Wrapf(err, "failed to attach the create guard of the '%s' resource engine", spec.SchemaName)
+	}
+
 	err = deps.RegisterNamed(
 		dynamicresource.EngineDependencyName(spec.SchemaName),
 		func() drif.DynamicResourceEngine { return engine },
