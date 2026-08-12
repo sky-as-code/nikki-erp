@@ -1,0 +1,97 @@
+{
+    "type": "object",
+    "required": [
+        "id", "created_at", "transfer_number", "operation_type_id", "operation_code",
+        "source_location_id", "destination_location_id", "status", "reservation_method",
+        "backorder_policy", "shipping_policy", "etag", "org_id"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "transfer_number": {
+            "type": "string",
+            "minLength": 1
+        },
+        "operation_type_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "operation_code": {
+            "type": "string",
+            "enum": ["incoming", "outgoing", "internal"]
+        },
+        "origin_reference": {
+            "type": ["string", "null"]
+        },
+        "source_location_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "destination_location_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "status": {
+            "type": "string",
+            "enum": ["draft", "waiting", "confirmed", "ready", "done", "cancelled"]
+        },
+        "priority": {
+            "type": ["integer", "null"]
+        },
+        "reservation_method": {
+            "type": "string",
+            "enum": ["at_confirmation", "manual", "before_scheduled_date"]
+        },
+        "backorder_policy": {
+            "type": "string",
+            "enum": ["ask", "always", "never"]
+        },
+        "shipping_policy": {
+            "type": "string",
+            "enum": ["partial", "all_at_once"]
+        },
+        "scheduled_at": {
+            "type": ["string", "null"]
+        },
+        "deadline_at": {
+            "type": ["string", "null"]
+        },
+        "completed_at": {
+            "type": ["string", "null"]
+        },
+        "backorder_of_id": {
+            "type": ["string", "null"]
+        },
+        "return_of_id": {
+            "type": ["string", "null"]
+        },
+        "chain_group_id": {
+            "type": ["string", "null"]
+        },
+        "idempotency_key": {
+            "type": ["string", "null"]
+        },
+        "note": {
+            "type": ["string", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        }
+    },
+    "additionalProperties": false
+}

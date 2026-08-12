@@ -23,6 +23,13 @@ func TestEngineSchemaNamesCoverEveryProductResource(t *testing.T) {
 			models.ProductTemplateAttributeValueSchemaName,
 			models.ProductVariantSchemaName,
 			models.ProductVariantAttributeValueSchemaName,
+			models.StockLocationSchemaName,
+			models.StockOperationTypeSchemaName,
+			models.StockQuantSchemaName,
+			models.StockTransferSchemaName,
+			models.StockMoveSchemaName,
+			models.StockMoveLineSchemaName,
+			models.StockMoveDependencySchemaName,
 		},
 		EngineSchemaNames())
 }
@@ -34,6 +41,13 @@ func TestRuleBearingResourcesDefineActions(t *testing.T) {
 		models.ProductCategorySchemaName: true,
 		models.ProductTemplateSchemaName: true,
 		models.ProductVariantSchemaName:  true,
+		// Losing this one would silently reopen client writes to stock balances.
+		models.StockQuantSchemaName: true,
+		// The transfer's six movement operations are defined here; without them the resource
+		// still serves CRUD and no stock can ever move.
+		models.StockTransferSchemaName: true,
+		// Losing this one would let a client write an allocation the balance knows nothing about.
+		models.StockMoveLineSchemaName: true,
 	}
 
 	for _, spec := range engineSpecs {

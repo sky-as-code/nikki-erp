@@ -1,0 +1,115 @@
+{
+	"name": "inventory_stock_operation_type",
+	"label": "inventory_stock_operation_type.label",
+	"table_name": "inventory_stock_operation_types",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [{ "index_name": "invty_stock_op_types_tid_code_org_id", "fields": ["code", "org_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "operation_code",
+			"label": "fields.operation_code",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["incoming", "outgoing", "internal"]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Immutable: transfers snapshot this value, and changing it would reinterpret the direction of movements already recorded against the type."
+			}
+		},
+		{
+			"name": "reservation_method",
+			"label": "fields.reservation_method",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["at_confirmation", "manual", "before_scheduled_date"]
+			},
+			"required_for_create": true,
+			"default_value": "at_confirmation"
+		},
+		{
+			"name": "reserve_before_days",
+			"label": "fields.reserve_before_days",
+			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
+			"description": {
+				"en-US": "How many days before the scheduled date reservation starts. Only meaningful when reservation_method is 'before_scheduled_date'."
+			}
+		},
+		{
+			"name": "backorder_policy",
+			"label": "fields.backorder_policy",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["ask", "always", "never"]
+			},
+			"required_for_create": true,
+			"default_value": "ask"
+		},
+		{
+			"name": "shipping_policy",
+			"label": "fields.shipping_policy",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["partial", "all_at_once"]
+			},
+			"default_value": "partial"
+		},
+		{
+			"name": "default_source_location_id",
+			"label": "fields.default_source_location_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "default_destination_location_id",
+			"label": "fields.default_destination_location_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "default_source_location",
+			"label": { "en-US": "Default source location" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_location",
+			"key_map": { "default_source_location_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "default_destination_location",
+			"label": { "en-US": "Default destination location" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_location",
+			"key_map": { "default_destination_location_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

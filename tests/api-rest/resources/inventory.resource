@@ -21,6 +21,13 @@ ${PRODUCT_TEMPLATE_API}     /v1/inventory/inventory_product_template
 ${PRODUCT_VARIANT_API}      /v1/inventory/inventory_product_variant
 ${TEMPLATE_ATTRIBUTE_API}           /v1/inventory/inventory_product_template_attribute
 ${TEMPLATE_ATTRIBUTE_VALUE_API}     /v1/inventory/inventory_product_template_attribute_value
+${STOCK_LOCATION_API}               /v1/inventory/inventory_stock_location
+${STOCK_OPERATION_TYPE_API}         /v1/inventory/inventory_stock_operation_type
+${STOCK_QUANT_API}                  /v1/inventory/inventory_stock_quant
+${STOCK_TRANSFER_API}               /v1/inventory/inventory_stock_transfer
+${STOCK_MOVE_API}                   /v1/inventory/inventory_stock_move
+${STOCK_MOVE_LINE_API}              /v1/inventory/inventory_stock_move_line
+${STOCK_MOVE_DEPENDENCY_API}        /v1/inventory/inventory_stock_move_dependency
 ${INVENTORY_SCHEMA_DIR}     ${CURDIR}/schemas/inventory
 
 
@@ -360,12 +367,211 @@ Delete Matrix Template Fixture
     DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}    expected_status=any
     Set Global Variable    ${MATRIX_TEMPLATE_ID}    ${EMPTY}
 
+# --- Stock ----------------------------------------------------------------------------
+
+Ensure Stock Location Under Test
+    [Documentation]    The internal location the stock suites exercise. Internal is the only
+    ...    type that holds company-owned stock, so it is what a quant hangs off.
+    ${id}=    Get Variable Value    ${STOCK_LOCATION_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${name}=    Unique Display Name    Robot Stock Location
+    ${code}=    Unique Code    stkloc
+    ${resp}=    POST On Session    api    ${STOCK_LOCATION_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${STOCK_LOCATION_ID}    ${id}
+    Set Global Variable    ${STOCK_LOCATION_ETAG}    ${etag}
+    Set Global Variable    ${STOCK_LOCATION_CODE}    ${code}
+
+Ensure Stock Operation Type Under Test
+    [Documentation]    The receipt operation type the stock_operation_type suite exercises.
+    ${id}=    Get Variable Value    ${STOCK_OPERATION_TYPE_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Stock Location Under Test
+    ${name}=    Unique Display Name    Robot Receipt Type
+    ${code}=    Unique Code    stkop
+    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'at_confirmation', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${STOCK_OPERATION_TYPE_ID}    ${id}
+    Set Global Variable    ${STOCK_OPERATION_TYPE_ETAG}    ${etag}
+    Set Global Variable    ${STOCK_OPERATION_TYPE_CODE}    ${code}
+
+Ensure Stock Destination Location Under Test
+    [Documentation]    A second internal location, so a transfer has somewhere to move stock to.
+    ...    Source and destination must differ (BR §4.2.3.4), so the movement suites cannot reuse
+    ...    the single location the Phase 1 suites share.
+    ${id}=    Get Variable Value    ${STOCK_DEST_LOCATION_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${name}=    Unique Display Name    Robot Stock Destination
+    ${code}=    Unique Code    stkdst
+    ${resp}=    POST On Session    api    ${STOCK_LOCATION_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${STOCK_DEST_LOCATION_ID}    ${id}
+
+Ensure Stock Transfer Under Test
+    [Documentation]    An internal draft transfer between the two locations under test, with one
+    ...    move for the variant under test. Internal rather than incoming, because both ends must
+    ...    be real locations for the balance assertions to have something to read on each side.
+    ${id}=    Get Variable Value    ${STOCK_TRANSFER_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Stock Location Under Test
+    Ensure Stock Destination Location Under Test
+    Ensure Internal Operation Type Under Test
+    Ensure Product Variant Under Test
+    ${id}    ${etag}=    Create Stock Transfer    ${INTERNAL_OPERATION_TYPE_ID}
+    Set Global Variable    ${STOCK_TRANSFER_ID}    ${id}
+    Set Global Variable    ${STOCK_TRANSFER_ETAG}    ${etag}
+    ${move_id}=    Add Stock Move    ${id}    ${PRODUCT_VARIANT_ID}    10
+    Set Global Variable    ${STOCK_MOVE_ID}    ${move_id}
+
+Ensure Internal Operation Type Under Test
+    [Documentation]    An internal-direction operation type reserving at confirmation, which is
+    ...    what the flow suites drive. The Phase 1 fixture is 'incoming' and is left alone so the
+    ...    two suites do not fight over one record.
+    ${id}=    Get Variable Value    ${INTERNAL_OPERATION_TYPE_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Stock Location Under Test
+    Ensure Stock Destination Location Under Test
+    ${name}=    Unique Display Name    Robot Internal Type
+    ${code}=    Unique Code    stkint
+    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'always', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${INTERNAL_OPERATION_TYPE_ID}    ${id}
+
+Create Stock Transfer
+    [Documentation]    Creates a draft transfer and returns its id and etag. The transfer number
+    ...    is generated server-side, so none is sent: a client-supplied one is overwritten.
+    [Arguments]    ${operation_type_id}
+    ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
+    ...    json=${{ {'operation_type_id': $operation_type_id, 'source_location_id': $STOCK_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    RETURN    ${id}    ${etag}
+
+Add Stock Move
+    [Documentation]    Adds one line of demand to a transfer and returns the move id.
+    ...    Quantities travel as strings: BR §7.3 forbids floating point for stock quantities, and
+    ...    a JSON number would be parsed as a double before it ever reached the decimal column.
+    [Arguments]    ${transfer_id}    ${variant_id}    ${quantity}
+    ${qty}=    Convert To String    ${quantity}
+    ${resp}=    POST On Session    api    ${STOCK_MOVE_API}
+    ...    json=${{ {'transfer_id': $transfer_id, 'product_variant_id': $variant_id, 'demand_quantity': $qty, 'base_demand_quantity': $qty, 'source_location_id': $STOCK_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    RETURN    ${id}
+
+Ensure Supplier Location Under Test
+    [Documentation]    The 'supplier' virtual location a receipt draws from. A receipt has to have
+    ...    a source, and it is not a place the company holds stock — which is why location_type
+    ...    exists and why only 'internal' counts as company-owned (BR §4.2.2).
+    ${id}=    Get Variable Value    ${SUPPLIER_LOCATION_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${name}=    Unique Display Name    Robot Supplier
+    ${code}=    Unique Code    stksup
+    ${resp}=    POST On Session    api    ${STOCK_LOCATION_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_type': 'supplier', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${SUPPLIER_LOCATION_ID}    ${id}
+
+Ensure Receipt Operation Type Under Test
+    [Documentation]    An incoming type reserving manually and never creating a backorder, so a
+    ...    receipt used purely to seed stock cannot leave a stray transfer behind.
+    ${id}=    Get Variable Value    ${RECEIPT_OPERATION_TYPE_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${name}=    Unique Display Name    Robot Receipt Flow Type
+    ${code}=    Unique Code    stkrcp
+    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${RECEIPT_OPERATION_TYPE_ID}    ${id}
+
+Receive Stock Into Location
+    [Documentation]    Puts a quantity of a variant into a location by running a real receipt:
+    ...    create -> add move -> confirm -> validate.
+    ...
+    ...    It goes the long way round on purpose. The quant is read-only to clients (AC-STOCK-002),
+    ...    so there is no shortcut that seeds a balance, and a test fixture that had one would be
+    ...    proving something the product does not allow.
+    ...
+    ...    A receipt draws from the supplier location, where nothing is on hand, so its moves
+    ...    reserve nothing and validate ships the full demand from an unreserved source.
+    [Arguments]    ${variant_id}    ${location_id}    ${quantity}
+    Ensure Supplier Location Under Test
+    Ensure Receipt Operation Type Under Test
+    ${qty}=    Convert To String    ${quantity}
+
+    ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
+    ...    json=${{ {'operation_type_id': $RECEIPT_OPERATION_TYPE_ID, 'source_location_id': $SUPPLIER_LOCATION_ID, 'destination_location_id': $location_id, 'org_id': $INV_ORG_ID} }}
+    ${transfer_id}    ${etag}=    Response Should Be Create Success    ${resp}
+
+    ${resp}=    POST On Session    api    ${STOCK_MOVE_API}
+    ...    json=${{ {'transfer_id': $transfer_id, 'product_variant_id': $variant_id, 'demand_quantity': $qty, 'base_demand_quantity': $qty, 'source_location_id': $SUPPLIER_LOCATION_ID, 'destination_location_id': $location_id, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+    ${move_id}    ${move_etag}=    Response Should Be Create Success    ${resp}
+
+    POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/confirm
+    ...    json=${{ {} }}    expected_status=any
+    RETURN    ${transfer_id}    ${move_id}
+
+Read Stock On Hand
+    [Documentation]    Sums on_hand_quantity across every balance of a variant in a location.
+    ...    Returns 0 when no balance exists yet, which is the state before any receipt: absent and
+    ...    zero mean the same thing to a caller asking how much is there.
+    [Arguments]    ${variant_id}    ${location_id}
+    ${resp}=    GET On Session    api    ${STOCK_QUANT_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    Response Status Should Be    ${resp}    200
+    ${total}=    Set Variable    ${0}
+    FOR    ${item}    IN    @{resp.json()}[items]
+        IF    $item.get('product_variant_id') == $variant_id and $item.get('location_id') == $location_id
+            ${qty}=    Convert To Number    ${item.get('on_hand_quantity') or 0}
+            ${total}=    Evaluate    ${total} + ${qty}
+        END
+    END
+    RETURN    ${total}
+
+Read Stock Reserved
+    [Documentation]    Sums reserved_quantity across every balance of a variant in a location.
+    [Arguments]    ${variant_id}    ${location_id}
+    ${resp}=    GET On Session    api    ${STOCK_QUANT_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    Response Status Should Be    ${resp}    200
+    ${total}=    Set Variable    ${0}
+    FOR    ${item}    IN    @{resp.json()}[items]
+        IF    $item.get('product_variant_id') == $variant_id and $item.get('location_id') == $location_id
+            ${qty}=    Convert To Number    ${item.get('reserved_quantity') or 0}
+            ${total}=    Evaluate    ${total} + ${qty}
+        END
+    END
+    RETURN    ${total}
+
 Delete Inventory Seed Data
     [Documentation]    Best-effort removal of the fixtures the Inventory suites created on
     ...    the fly, referencing-before-referenced: variants and attribute values first,
     ...    then their owners, then the master data every template points at. Every FK in
     ...    this module is ON DELETE NO ACTION apart from the junctions, so a wrong order
     ...    leaves rows behind rather than cascading.
+    #    Movement unwinds innermost-first: a move line points at its move and its transfer, a
+    #    move points at its transfer, and the transfer points at the operation type and both
+    #    locations. Deleting the transfer first would leave its moves orphaned rather than
+    #    cascading, since every FK here is ON DELETE NO ACTION.
+    Delete Inventory Fixture    ${STOCK_MOVE_LINE_API}    STOCK_MOVE_LINE_ID
+    Delete Inventory Fixture    ${STOCK_MOVE_API}    STOCK_MOVE_ID
+    #    A backorder points at the transfer it carries the remainder of, so it goes first.
+    Delete Inventory Fixture    ${STOCK_TRANSFER_API}    BACKORDER_TRANSFER_ID
+    Delete Inventory Fixture    ${STOCK_TRANSFER_API}    STOCK_TRANSFER_ID
+    #    The operation type points at the location, and a quant points at both the location
+    #    and a variant, so stock unwinds before the products it references.
+    Delete Inventory Fixture    ${STOCK_OPERATION_TYPE_API}    INTERNAL_OPERATION_TYPE_ID
+    Delete Inventory Fixture    ${STOCK_OPERATION_TYPE_API}    STOCK_OPERATION_TYPE_ID
+    #    The child points at the location under test, so it must go first.
+    Delete Inventory Fixture    ${STOCK_LOCATION_API}    CHILD_STOCK_LOCATION_ID
+    Delete Inventory Fixture    ${STOCK_LOCATION_API}    STOCK_DEST_LOCATION_ID
+    Delete Inventory Fixture    ${STOCK_LOCATION_API}    STOCK_LOCATION_ID
     Delete Matrix Template Fixture
     Delete Inventory Fixture    ${PRODUCT_VARIANT_API}    PRODUCT_VARIANT_ID
     Delete Inventory Fixture    ${PRODUCT_TEMPLATE_API}    PRODUCT_TEMPLATE_ID

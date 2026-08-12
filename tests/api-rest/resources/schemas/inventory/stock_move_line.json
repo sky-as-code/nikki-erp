@@ -1,0 +1,77 @@
+{
+    "type": "object",
+    "required": [
+        "id", "created_at", "move_id", "product_variant_id", "quantity", "base_quantity",
+        "source_location_id", "destination_location_id", "lot_ref", "package_ref",
+        "result_package_ref", "owner_ref", "etag", "org_id"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "move_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "transfer_id": {
+            "type": ["string", "null"]
+        },
+        "product_variant_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "uom_id": {
+            "type": ["string", "null"]
+        },
+        "quantity": {
+            "type": ["string", "number"]
+        },
+        "base_quantity": {
+            "type": ["string", "number"]
+        },
+        "source_location_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "destination_location_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "lot_ref": {
+            "type": "string"
+        },
+        "package_ref": {
+            "type": "string"
+        },
+        "result_package_ref": {
+            "type": "string"
+        },
+        "owner_ref": {
+            "type": "string"
+        },
+        "picked": {
+            "type": ["boolean", "null"]
+        },
+        "operation_at": {
+            "type": ["string", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        }
+    },
+    "additionalProperties": false
+}

@@ -13,4 +13,13 @@ const (
 	ResourceProductAttribute      = "inventory_product_attribute"
 	ResourceProductAttributeValue = "inventory_product_attribute_value"
 	ResourceBrand                 = "inventory_brand"
+
+	ResourceStockLocation      = "inventory_stock_location"
+	ResourceStockOperationType = "inventory_stock_operation_type"
+	ResourceStockQuant         = "inventory_stock_quant"
+
+	ResourceStockTransfer       = "inventory_stock_transfer"
+	ResourceStockMove           = "inventory_stock_move"
+	ResourceStockMoveLine       = "inventory_stock_move_line"
+	ResourceStockMoveDependency = "inventory_stock_move_dependency"
 )

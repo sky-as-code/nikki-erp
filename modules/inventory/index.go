@@ -66,7 +66,42 @@ func (*InventoryModule) Init() error {
 	if err := initProductService(); err != nil {
 		return err
 	}
+	if err := initStockQuantService(); err != nil {
+		return err
+	}
+	if err := initStockTransferService(); err != nil {
+		return err
+	}
 	return restful.InitRestfulHandlers()
+}
+
+// initStockTransferService installs the derived transfer service on the Stock Transfer engine.
+//
+// The six movement actions type-assert the engine's service to the derived type, so without this
+// every one of them fails at the assertion rather than at a request: confirm, reserve, validate
+// and the rest live on that type and nowhere else.
+func initStockTransferService() error {
+	transferEngine, ok := dynamicresource.Registry().GetEngine(models.StockTransferSchemaName)
+	if !ok {
+		return errors.New("the '" + models.StockTransferSchemaName + "' engine is not registered")
+	}
+
+	transferEngine.SetResourceService(services.NewStockTransferDomainService(transferEngine.ResourceService()))
+	return nil
+}
+
+// initStockQuantService installs the derived quant service on the Stock Quant engine.
+//
+// It is what fills available_quantity on a read: the field has no database column, so without
+// this the engine would advertise it in meta/schema and serve it as permanently null.
+func initStockQuantService() error {
+	quantEngine, ok := dynamicresource.Registry().GetEngine(models.StockQuantSchemaName)
+	if !ok {
+		return errors.New("the '" + models.StockQuantSchemaName + "' engine is not registered")
+	}
+
+	quantEngine.SetResourceService(services.NewStockQuantDomainService(quantEngine.ResourceService()))
+	return nil
 }
 
 // initProductService installs the derived Products service on the Product Template engine.
@@ -141,5 +176,19 @@ func (*InventoryModule) RegisterModels() error {
 		// and the template-scoped allowed value.
 		dmodel.RegisterSchemaB(models.ProductVariantSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.ProductVariantAttributeValueSchemaBuilder()),
+
+		// Stock. The location is referenced by both of the others, and the quant references the
+		// variant registered above, so this order is the only one that resolves.
+		dmodel.RegisterSchemaB(models.StockLocationSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.StockOperationTypeSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.StockQuantSchemaBuilder()),
+
+		// Movement. The transfer references the operation type and locations above; the move
+		// references the transfer, and the line and the dependency both reference the move, so
+		// this order is the only one that resolves.
+		dmodel.RegisterSchemaB(models.StockTransferSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.StockMoveSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.StockMoveLineSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.StockMoveDependencySchemaBuilder()),
 	)
 }

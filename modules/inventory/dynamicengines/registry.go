@@ -47,6 +47,13 @@ var engineSpecs = []engineSpec{
 	productTemplateAttributeValueEngineSpec(),
 	productVariantEngineSpec(),
 	productVariantAttributeValueEngineSpec(),
+	stockLocationEngineSpec(),
+	stockOperationTypeEngineSpec(),
+	stockQuantEngineSpec(),
+	stockTransferEngineSpec(),
+	stockMoveEngineSpec(),
+	stockMoveLineEngineSpec(),
+	stockMoveDependencyEngineSpec(),
 }
 
 // EngineSchemaNames lists the schemas Inventory creates an engine for, so that route

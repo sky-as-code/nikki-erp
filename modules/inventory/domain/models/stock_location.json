@@ -1,0 +1,73 @@
+{
+	"name": "inventory_stock_location",
+	"label": "inventory_stock_location.label",
+	"table_name": "inventory_stock_locations",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [{ "index_name": "invty_stock_locs_tid_code_org_id", "fields": ["code", "org_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "location_type",
+			"label": "fields.location_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["internal", "customer", "supplier", "inventory_loss", "scrap", "transit"]
+			},
+			"required_for_create": true,
+			"default_value": "internal",
+			"description": {
+				"en-US": "Only 'internal' holds company-owned stock. The others are the counterparties and virtual locations every movement needs an opposite side for: a receipt comes from 'supplier', a delivery goes to 'customer', an inventory adjustment balances against 'inventory_loss', a scrap moves to 'scrap', and a multi-step flow parks stock in 'transit'."
+			}
+		},
+		{
+			"name": "parent_location_id",
+			"label": "fields.parent_location_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Parent in the location tree. Null for a root location. The tree must stay acyclic, which the engine enforces because the schema cannot."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "langjson", "min": 0, "max": 2000 }
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "parent_location",
+			"label": { "en-US": "Parent location" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_location",
+			"key_map": { "parent_location_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

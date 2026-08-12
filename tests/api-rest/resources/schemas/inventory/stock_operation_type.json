@@ -1,0 +1,65 @@
+{
+    "type": "object",
+    "required": [
+        "id", "created_at", "code", "name", "operation_code", "reservation_method",
+        "backorder_policy", "etag", "is_archived", "org_id"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "code": {
+            "type": "string",
+            "minLength": 1
+        },
+        "name": {
+            "type": "object"
+        },
+        "operation_code": {
+            "type": "string",
+            "enum": ["incoming", "outgoing", "internal"]
+        },
+        "reservation_method": {
+            "type": "string",
+            "enum": ["at_confirmation", "manual", "before_scheduled_date"]
+        },
+        "reserve_before_days": {
+            "type": ["integer", "null"]
+        },
+        "backorder_policy": {
+            "type": "string",
+            "enum": ["ask", "always", "never"]
+        },
+        "shipping_policy": {
+            "type": ["string", "null"],
+            "enum": ["partial", "all_at_once", null]
+        },
+        "default_source_location_id": {
+            "type": ["string", "null"]
+        },
+        "default_destination_location_id": {
+            "type": ["string", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        }
+    },
+    "additionalProperties": false
+}
