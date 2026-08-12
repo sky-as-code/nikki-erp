@@ -1,6 +1,8 @@
 package orm
 
 import (
+	"strings"
+
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -11,7 +13,22 @@ const (
 	DialectPostgres = "postgres"
 )
 
-func GenCreateSql(registry *model.SchemaRegistry, dialect string) ([]string, error) {
+// GenCreateSql generates CREATE TABLE statements for the schemas in registry, in
+// FK-dependency order.
+//
+// schemaPrefixes limits output to schemas whose name starts with one of them, so a
+// migration can be scoped to one module while the registry still holds that module's
+// dependencies — they must stay registered to resolve base schemas and act as FK targets,
+// but their tables belong in their own migration files. Pass none to emit every schema.
+//
+// Prefixes match the schema name (ModelSchemaBuilder.Name), not the table name; the two
+// differ for some modules. A module can need several prefixes: iam owns both "iam_" and
+// "authenticate_" schemas.
+//
+// Matching nothing is not an error here — a module may legitimately register no schema at
+// all. Callers that can tell a schema-less module from a mistyped prefix should check the
+// result themselves.
+func GenCreateSql(registry *model.SchemaRegistry, dialect string, schemaPrefixes ...string) ([]string, error) {
 	if registry == nil {
 		return nil, errors.New("GenCreateSql: schema registry is required")
 	}
@@ -21,6 +38,9 @@ func GenCreateSql(registry *model.SchemaRegistry, dialect string) ([]string, err
 	builder := NewPgQueryBuilder()
 	var results []string
 	err := registry.ForEachOrder(func(schemaName string, s *model.ModelSchema) error {
+		if !matchesAnyPrefix(schemaName, schemaPrefixes) {
+			return nil
+		}
 		sqlParts, clientErrs, genErr := builder.SqlCreateTable(s, registry)
 		if genErr != nil {
 			return errors.Wrapf(genErr, "GenCreateSql: schema '%s'", schemaName)
@@ -35,6 +55,20 @@ func GenCreateSql(registry *model.SchemaRegistry, dialect string) ([]string, err
 		return nil, err
 	}
 	return results, nil
+}
+
+// matchesAnyPrefix reports whether schemaName starts with one of prefixes. An empty prefix
+// list matches everything, so callers that want the whole registry pass no prefix at all.
+func matchesAnyPrefix(schemaName string, prefixes []string) bool {
+	if len(prefixes) == 0 {
+		return true
+	}
+	for _, prefix := range prefixes {
+		if prefix != "" && strings.HasPrefix(schemaName, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func isFkOwnerRelationType(relType model.RelationType) bool {

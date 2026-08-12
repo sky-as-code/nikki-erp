@@ -10,7 +10,6 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
-
 // Each JSON twin must produce exactly the schema its Go builder produces, so that swapping
 // one for the other is invisible to the rest of the system.
 func TestJsonBaseSchemasMatchGoBuilders(t *testing.T) {
@@ -103,7 +102,7 @@ func assertSchemasEqual(t *testing.T, expected *dmodel.ModelSchema, actual *dmod
 	// Field ORDER, not just membership: it determines column order.
 	assert.Equal(t, expected.FieldNames(), actual.FieldNames())
 	assert.Equal(t, expected.CompositeUniques(), actual.CompositeUniques())
-	assert.Equal(t, expected.PartialUniqueGroups(), actual.PartialUniqueGroups())
+	assert.Equal(t, expected.PartialUniques(), actual.PartialUniques())
 	assert.Equal(t, expected.SearchIndexGroups(), actual.SearchIndexGroups())
 
 	for _, fieldName := range expected.FieldNames() {

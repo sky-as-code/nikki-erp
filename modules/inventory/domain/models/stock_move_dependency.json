@@ -1,0 +1,69 @@
+{
+	"name": "inventory_stock_move_dependency",
+	"label": "inventory_stock_move_dependency.label",
+	"table_name": "inventory_stock_move_dependencies",
+	"should_build_db": true,
+	"composite_uniques": [{
+		"index_name": "invty_stock_mvdeps_tid_pred_succ",
+		"fields": ["predecessor_move_id", "successor_move_id"]
+	}],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "predecessor_move_id",
+			"label": "fields.predecessor_move_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The move that must complete first. In a pick-then-ship chain this is the pick (BR 7.7)."
+			}
+		},
+		{
+			"name": "successor_move_id",
+			"label": "fields.successor_move_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The move that waits on the predecessor. It stays 'waiting' until the predecessor is done, which is how a multi-step flow keeps its order."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "invty_stock_mvdeps_succ_move_id", "fields": ["successor_move_id"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "predecessor_move",
+			"label": { "en-US": "Predecessor move" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_move",
+			"key_map": { "predecessor_move_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "successor_move",
+			"label": { "en-US": "Successor move" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_move",
+			"key_map": { "successor_move_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

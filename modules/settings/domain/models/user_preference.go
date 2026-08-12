@@ -24,7 +24,7 @@ func UserPreferenceSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserPreferenceSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", UserPreferenceSchemaName)).
 		TableName("settings_user_preferences").
-		CompositeUnique(UserPrefFieldCode).
+		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{UserPrefFieldCode}}).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(

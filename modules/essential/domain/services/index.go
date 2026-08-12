@@ -8,7 +8,6 @@ func InitDomainServices() error {
 		NewLanguageDomainServiceImpl,
 		NewModelMetadataDomainServiceImpl,
 		NewModuleDomainServiceImpl,
-		NewUnitDomainServiceImpl,
-		NewUnitCategoryDomainServiceImpl,
+		NewUomConversionDomainServiceImpl,
 	)
 }

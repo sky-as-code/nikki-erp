@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	stdErr "errors"
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/labstack/echo/v5"
@@ -115,7 +116,15 @@ func (this *HttpServer) startHttp() error {
 	}
 
 	this.httpServer = httpServer
-	err := httpServer.ListenAndServe()
+
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return err
+	}
+
+	this.logger.Infof("HTTP server %s is running at %s", this.Name, address)
+
+	err = httpServer.Serve(listener)
 	if err != nil && !stdErr.Is(err, http.ErrServerClosed) {
 		return err
 	}
@@ -174,8 +183,15 @@ func (this *HttpServer) startHttps() error {
 	}
 
 	this.httpServer = tlsServer
-	err = tlsServer.ListenAndServeTLS("", "")
 
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return err
+	}
+
+	this.logger.Infof("HTTPS server %s is running at %s", this.Name, address)
+
+	err = tlsServer.ServeTLS(listener, "", "")
 	if err != nil && !stdErr.Is(err, http.ErrServerClosed) {
 		return err
 	}

@@ -43,8 +43,8 @@ func EntitlementSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(EntitlementSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", EntitlementSchemaName)).
 		TableName("iam_entitlements").
-		CompositeUnique(EntitlementFieldRoleId, EntitlementFieldName).
-		CompositeUnique(EntitlementFieldRoleId, EntitlementFieldExpression).
+		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{EntitlementFieldRoleId, EntitlementFieldName}}).
+		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{EntitlementFieldRoleId, EntitlementFieldExpression}}).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(

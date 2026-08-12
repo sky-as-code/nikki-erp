@@ -113,11 +113,12 @@ type ActionExistsResult = dyn.OpResult[dyn.ExistsResultData]
 var searchActionsQueryType = cqrs.RequestType{Module: "iam", Submodule: "action", Action: "searchActions"}
 
 type SearchActionsQuery struct {
-	Columns    []string            `json:"columns" query:"columns"`
-	Graph      *dmodel.SearchGraph `json:"graph" query:"graph"`
-	Page       int                 `json:"page" query:"page"`
-	Size       int                 `json:"size" query:"size"`
-	ResourceId model.Id            `json:"resource_id" param:"resource_id"`
+	Columns         []string            `json:"columns" query:"columns"`
+	Graph           *dmodel.SearchGraph `json:"graph" query:"graph"`
+	Page            int                 `json:"page" query:"page"`
+	Size            int                 `json:"size" query:"size"`
+	IncludeArchived *bool               `json:"include_archived" query:"include_archived"`
+	ResourceId      model.Id            `json:"resource_id" param:"resource_id"`
 }
 
 func (SearchActionsQuery) CqrsRequestType() cqrs.RequestType { return searchActionsQueryType }
@@ -131,6 +132,7 @@ func (SearchActionsQuery) GetSchema() *dmodel.ModelSchema {
 				Field(dyn.DefineFieldSearchGraph()).
 				Field(dyn.DefineFieldSearchPage()).
 				Field(dyn.DefineFieldSearchSize()).
+				Field(dyn.DefineFieldIncludeArchived()).
 				Field(basemodel.DefineFieldId("resource_id").
 					RequiredAlways())
 		},

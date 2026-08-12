@@ -132,15 +132,42 @@ func RegisterSchema(schema *ModelSchema) error {
 	return nil
 }
 
+// ForEach iterates schemas in alphabetical order by name. The order is fixed rather than
+// following Go's randomized map range because callers emit DDL from it: the generated
+// CREATE TABLE constraints would otherwise be ordered differently on each run, making
+// Atlas diff two identical schemas as a change.
 func (this *SchemaRegistry) ForEach(fn func(schemaName string, schema *ModelSchema) error) error {
 	this.mu.RLock()
 	defer this.mu.RUnlock()
-	for schemaName, schemaItem := range this.schemas {
-		if err := fn(schemaName, schemaItem); err != nil {
+	names := make([]string, 0, len(this.schemas))
+	for schemaName := range this.schemas {
+		names = append(names, schemaName)
+	}
+	sort.Strings(names)
+	for _, schemaName := range names {
+		if err := fn(schemaName, this.schemas[schemaName]); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// schemasInNameOrder returns the registry's schemas sorted by name. Finalization steps use
+// it instead of ranging reg.schemas directly: they append to relation slices, and Go's
+// randomized map order would otherwise vary the resulting FK constraint order between runs.
+// Caller must hold reg.mu.
+func schemasInNameOrder(reg *SchemaRegistry) []*ModelSchema {
+	names := make([]string, 0, len(reg.schemas))
+	for name := range reg.schemas {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	ordered := make([]*ModelSchema, 0, len(names))
+	for _, name := range names {
+		ordered = append(ordered, reg.schemas[name])
+	}
+	return ordered
 }
 
 // ForEachOrder iterates schemas in FK-dependency order (parents before children),
@@ -161,11 +188,12 @@ func GetSchema(name string) *ModelSchema {
 	return schemaRegistry.Get(name)
 }
 
+// GetFieldNames lists what a client may ask for, so it reports readable fields rather than
+// physical columns: a virtual scalar is selectable even though it has no column.
 func GetFieldNames(name string) (fieldNames []string) {
 	schema := GetSchema(name)
-	columns := schema.Columns()
-	for _, col := range columns {
-		fieldNames = append(fieldNames, col.Name())
+	for _, field := range schema.ReadableFields() {
+		fieldNames = append(fieldNames, field.Name())
 	}
 
 	return

@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"go.bryk.io/pkg/errors"
+
+	"github.com/sky-as-code/nikki-erp/common/array"
 )
 
 type Operator string
@@ -359,7 +361,7 @@ func populateDbMetadata(schema *ModelSchema) error {
 	if err != nil {
 		return err
 	}
-	validatedPartialGroups, err := validatePartialUniqueGroupsForDb(schema, columnSet)
+	validatedPartials, err := validatePartialUniquesForDb(schema, columnSet)
 	if err != nil {
 		return err
 	}
@@ -371,9 +373,12 @@ func populateDbMetadata(schema *ModelSchema) error {
 		return errors.Errorf("populateDbMetadata: model '%s' must define at least one primary key column", name)
 	}
 	schema.primaryKeys = append([]string{}, primaryKeys...)
-	schema.partialUniqueGroups = validatedPartialGroups
+	schema.partialUniques = validatedPartials
 	schema.searchIndexGroups = validatedSearchIndexGroups
 	schema.allUniqueKeys = append(fieldUnique, schemaUnique...)
+	schema.allUniqueColumns = array.Map(schema.allUniqueKeys, func(group CompositeUniqueParam) []string {
+		return group.Fields
+	})
 	if tenantKey != "" {
 		schema.tenantKey = &tenantKey
 	} else {
@@ -394,9 +399,9 @@ func buildDbMetadata(
 	fields map[string]*ModelField,
 	fieldsOrder []string,
 	schemaName string,
-) (columnSet map[string]struct{}, primary []string, tenant string, uniques [][]string, err error) {
+) (columnSet map[string]struct{}, primary []string, tenant string, uniques []CompositeUniqueParam, err error) {
 	columnSet = make(map[string]struct{}, len(fields))
-	uniques = make([][]string, 0)
+	uniques = make([]CompositeUniqueParam, 0)
 
 	for _, fieldName := range fieldsOrder {
 		field, ok := fields[fieldName]
@@ -406,14 +411,15 @@ func buildDbMetadata(
 		if err := validateFieldName(field); err != nil {
 			return nil, nil, "", nil, errors.Wrapf(err, "buildDbMetadata: model '%s'", schemaName)
 		}
-		if field.IsVirtualModelField() {
+		if field.IsNonPhysical() {
 			continue
 		}
 		columnName := field.Name()
 		columnSet[columnName] = struct{}{}
 
 		if field.IsUnique() {
-			uniques = append(uniques, []string{columnName})
+			// Field-level uniques carry no index name; the query builder derives one.
+			uniques = append(uniques, CompositeUniqueParam{Fields: []string{columnName}})
 		}
 		if field.IsPrimaryKey() {
 			primary = append(primary, columnName)
@@ -433,16 +439,19 @@ func buildDbMetadata(
 func validateCompositeUniquesForDb(
 	schema *ModelSchema,
 	columnSet map[string]struct{},
-) ([][]string, error) {
-	uniqueFields := schema.CompositeUniques()
-	uniqueKeys := make([][]string, 0, len(uniqueFields))
-	for _, compositeKey := range uniqueFields {
-		validated, err := validateCompositeUniqueKey(schema, columnSet, compositeKey)
+) ([]CompositeUniqueParam, error) {
+	composites := schema.CompositeUniques()
+	uniqueKeys := make([]CompositeUniqueParam, 0, len(composites))
+	for _, composite := range composites {
+		validated, err := validateCompositeUniqueKey(schema, columnSet, composite.Fields)
 		if err != nil {
 			return nil, err
 		}
 		if len(validated) > 0 {
-			uniqueKeys = append(uniqueKeys, validated)
+			uniqueKeys = append(uniqueKeys, CompositeUniqueParam{
+				IndexName: strings.TrimSpace(composite.IndexName),
+				Fields:    validated,
+			})
 		}
 	}
 	return uniqueKeys, nil
@@ -479,113 +488,28 @@ func validateCompositeUniqueKey(
 	return validated, nil
 }
 
-func validatePartialUniquesForDb(
-	schema *ModelSchema,
-	columnSet map[string]struct{},
-) ([][]string, error) {
-	raw := schema.partialUniques
-	out := make([][]string, 0, len(raw))
-	for _, pair := range raw {
-		validated, err := validatePartialUniquePair(schema, columnSet, pair)
-		if err != nil {
-			return nil, err
-		}
-		if len(validated) == 2 {
-			out = append(out, validated)
-		}
-	}
-	return out, nil
-}
-
-func validatePartialUniquePair(
-	schema *ModelSchema,
-	columnSet map[string]struct{},
-	pair []string,
-) ([]string, error) {
-	if len(pair) == 0 {
-		return nil, nil
-	}
-	a, b, err := parsePartialUniquePairNames(schema, pair)
-	if err != nil {
-		return nil, err
-	}
-	if err := ensurePartialUniqueColumnsExist(schema, columnSet, a, b); err != nil {
-		return nil, err
-	}
-	return finalizePartialUniquePair(schema, a, b)
-}
-
-func parsePartialUniquePairNames(schema *ModelSchema, pair []string) (string, string, error) {
-	if len(pair) != 2 {
-		return "", "", errors.Errorf(
-			"validatePartialUniquesForDb: model '%s': PartialUnique supports exactly two fields per key",
-			schema.Name())
-	}
-	a := strings.TrimSpace(pair[0])
-	b := strings.TrimSpace(pair[1])
-	if a == "" || b == "" {
-		return "", "", errors.Errorf(
-			"validatePartialUniquesForDb: model '%s': PartialUnique requires two non-empty field names",
-			schema.Name())
-	}
-	return a, b, nil
-}
-
-func ensurePartialUniqueColumnsExist(
-	schema *ModelSchema, columnSet map[string]struct{}, a, b string,
+func ensurePartialUniqueColumnExists(
+	schema *ModelSchema, columnSet map[string]struct{}, col string,
 ) error {
-	for _, col := range []string{a, b} {
-		if _, ok := columnSet[col]; !ok {
-			return errors.Errorf(
-				"validatePartialUniquesForDb: model '%s': unknown column reference '%s' in partial unique",
-				schema.Name(), col)
-		}
+	if columnSet == nil {
+		return nil
+	}
+	if _, ok := columnSet[col]; !ok {
+		return errors.Errorf(
+			"validatePartialUniquesForDb: model '%s': unknown column reference '%s' in partial unique",
+			schema.Name(), col)
 	}
 	return nil
 }
 
-func finalizePartialUniquePair(schema *ModelSchema, a, b string) ([]string, error) {
-	fa := schema.fields[a]
-	fb := schema.fields[b]
-	if fa == nil || fb == nil {
-		return nil, errors.Errorf(
-			"validatePartialUniquesForDb: model '%s': missing field for partial unique", schema.Name())
-	}
-	ra := fa.IsRequiredForCreate()
-	rb := fb.IsRequiredForCreate()
-	if ra && rb {
-		return nil, errors.Errorf(
-			"validatePartialUniquesForDb: model '%s': partial unique on '%s' and '%s': both are requiredForCreate; "+
-				"use CompositeUnique() instead",
-			schema.Name(), a, b)
-	}
-	if !ra && !rb {
-		return nil, errors.Errorf(
-			"validatePartialUniquesForDb: model '%s': partial unique on '%s' and '%s': one field must be "+
-				"requiredForCreate, the other must not",
-			schema.Name(), a, b)
-	}
-	return []string{a, b}, nil
-}
-
-func validatePartialUniqueGroupsForDb(
+func validatePartialUniquesForDb(
 	schema *ModelSchema,
 	columnSet map[string]struct{},
-) ([]PartialUniqueGroupParam, error) {
-	raw := schema.partialUniqueGroups
-	legacyPartial := schema.partialUniques
-	out := make([]PartialUniqueGroupParam, 0, len(raw))
-	for _, pair := range legacyPartial {
-		group, err := partialUniquePairToGroup(schema, pair)
-		if err != nil {
-			return nil, err
-		}
-		if len(group.NotNullFields) > 0 {
-			raw = append(raw, group)
-		}
-	}
-	for _, group := range raw {
-		validated, err := validatePartialUniqueGroup(schema, columnSet, group)
+) ([]PartialUniqueParam, error) {
+	raw := schema.partialUniques
+	out := make([]PartialUniqueParam, 0, len(raw))
+	for _, param := range raw {
+		validated, err := validatePartialUniqueParam(schema, columnSet, param)
 		if err != nil {
 			return nil, err
 		}
@@ -596,116 +520,88 @@ func validatePartialUniqueGroupsForDb(
 	return out, nil
 }
 
-func partialUniquePairToGroup(schema *ModelSchema, pair []string) (PartialUniqueGroupParam, error) {
-	a, b, err := parsePartialUniquePairNames(schema, pair)
+func validatePartialUniqueParam(
+	schema *ModelSchema,
+	columnSet map[string]struct{},
+	param PartialUniqueParam,
+) (PartialUniqueParam, error) {
+	nullableField := strings.TrimSpace(param.NullableField)
+	if nullableField == "" {
+		return PartialUniqueParam{}, nil
+	}
+	nullable, err := resolvePartialUniqueNullable(schema, columnSet, nullableField)
 	if err != nil {
-		return PartialUniqueGroupParam{}, err
+		return PartialUniqueParam{}, err
 	}
-	validatedPair, err := finalizePartialUniquePair(schema, a, b)
+	notNullFields, err := resolvePartialUniqueNotNulls(schema, columnSet, param.NotNullFields, nullableField)
 	if err != nil {
-		return PartialUniqueGroupParam{}, err
+		return PartialUniqueParam{}, err
 	}
-	if len(validatedPair) != 2 {
-		return PartialUniqueGroupParam{}, nil
+	if len(notNullFields) == 0 {
+		return PartialUniqueParam{}, errors.Errorf(
+			"validatePartialUniquesForDb: model '%s': partial unique on nullable field '%s' requires at least "+
+				"one not-null field",
+			schema.Name(), nullableField)
 	}
-	return PartialUniqueGroupParam{
-		NotNullFields: []string{validatedPair[0]},
-		NullableField: validatedPair[1],
+	if nullable.IsRequiredForCreate() {
+		return PartialUniqueParam{}, errors.Errorf(
+			"validatePartialUniquesForDb: model '%s': nullable field '%s' must not be requiredForCreate",
+			schema.Name(), nullableField)
+	}
+	return PartialUniqueParam{
+		IndexName:     strings.TrimSpace(param.IndexName),
+		NotNullFields: notNullFields,
+		NullableField: nullableField,
 	}, nil
 }
 
-func validatePartialUniqueGroup(
-	schema *ModelSchema,
-	columnSet map[string]struct{},
-	group PartialUniqueGroupParam,
-) (PartialUniqueGroupParam, error) {
-	indexName := strings.TrimSpace(group.IndexName)
-	nullableField := strings.TrimSpace(group.NullableField)
-	if nullableField == "" {
-		return PartialUniqueGroupParam{}, nil
-	}
-	if columnSet != nil {
-		if err := ensurePartialUniqueColumnsExist(schema, columnSet, nullableField, nullableField); err != nil {
-			return PartialUniqueGroupParam{}, err
-		}
+func resolvePartialUniqueNullable(
+	schema *ModelSchema, columnSet map[string]struct{}, nullableField string,
+) (*ModelField, error) {
+	if err := ensurePartialUniqueColumnExists(schema, columnSet, nullableField); err != nil {
+		return nil, err
 	}
 	nullable, ok := schema.fields[nullableField]
 	if !ok || nullable == nil {
-		return PartialUniqueGroupParam{}, errors.Errorf(
-			"validatePartialUniqueGroupsForDb: model '%s': unknown column '%s' in partial unique group",
+		return nil, errors.Errorf(
+			"validatePartialUniquesForDb: model '%s': unknown column '%s' in partial unique",
 			schema.Name(), nullableField)
 	}
-	notNullFields := make([]string, 0, len(group.NotNullFields))
-	for _, name := range group.NotNullFields {
+	return nullable, nil
+}
+
+func resolvePartialUniqueNotNulls(
+	schema *ModelSchema, columnSet map[string]struct{}, rawFields []string, nullableField string,
+) ([]string, error) {
+	notNullFields := make([]string, 0, len(rawFields))
+	for _, name := range rawFields {
 		trimmed := strings.TrimSpace(name)
 		if trimmed == "" {
 			continue
 		}
-		if columnSet != nil {
-			if err := ensurePartialUniqueColumnsExist(schema, columnSet, trimmed, trimmed); err != nil {
-				return PartialUniqueGroupParam{}, err
-			}
+		if err := ensurePartialUniqueColumnExists(schema, columnSet, trimmed); err != nil {
+			return nil, err
 		}
 		field := schema.fields[trimmed]
 		if field == nil {
-			return PartialUniqueGroupParam{}, errors.Errorf(
-				"validatePartialUniqueGroupsForDb: model '%s': unknown column '%s' in partial unique group",
+			return nil, errors.Errorf(
+				"validatePartialUniquesForDb: model '%s': unknown column '%s' in partial unique",
 				schema.Name(), trimmed)
 		}
 		if trimmed == nullableField {
-			return PartialUniqueGroupParam{}, errors.Errorf(
-				"validatePartialUniqueGroupsForDb: model '%s': field '%s' cannot be both nullable and not-null in the same partial unique group",
+			return nil, errors.Errorf(
+				"validatePartialUniquesForDb: model '%s': field '%s' cannot be both nullable and not-null "+
+					"in the same partial unique",
+				schema.Name(), trimmed)
+		}
+		if !field.IsRequiredForCreate() {
+			return nil, errors.Errorf(
+				"validatePartialUniquesForDb: model '%s': not-null field '%s' must be requiredForCreate",
 				schema.Name(), trimmed)
 		}
 		notNullFields = append(notNullFields, trimmed)
 	}
-	if len(notNullFields) == 1 {
-		notNullField := schema.fields[notNullFields[0]]
-		// Preserve legacy PartialUnique(a,b) behavior: order is auto-normalized.
-		if notNullField != nil && !notNullField.IsRequiredForCreate() && nullable.IsRequiredForCreate() {
-			nullableField, notNullFields[0] = notNullFields[0], nullableField
-			nullable = schema.fields[nullableField]
-			notNullField = schema.fields[notNullFields[0]]
-		}
-		if notNullField == nil || !notNullField.IsRequiredForCreate() {
-			return PartialUniqueGroupParam{}, errors.Errorf(
-				"validatePartialUniqueGroupsForDb: model '%s': not-null field '%s' must be requiredForCreate",
-				schema.Name(), notNullFields[0])
-		}
-		if nullable == nil || nullable.IsRequiredForCreate() {
-			return PartialUniqueGroupParam{}, errors.Errorf(
-				"validatePartialUniqueGroupsForDb: model '%s': nullable field '%s' must not be requiredForCreate",
-				schema.Name(), nullableField)
-		}
-		return PartialUniqueGroupParam{
-			IndexName:     indexName,
-			NotNullFields: notNullFields,
-			NullableField: nullableField,
-		}, nil
-	}
-	if nullable.IsRequiredForCreate() {
-		return PartialUniqueGroupParam{}, errors.Errorf(
-			"validatePartialUniqueGroupsForDb: model '%s': nullable field '%s' must not be requiredForCreate",
-			schema.Name(), nullableField)
-	}
-	for _, trimmed := range notNullFields {
-		field := schema.fields[trimmed]
-		if field == nil || !field.IsRequiredForCreate() {
-			return PartialUniqueGroupParam{}, errors.Errorf(
-				"validatePartialUniqueGroupsForDb: model '%s': not-null field '%s' must be requiredForCreate",
-				schema.Name(), trimmed)
-		}
-	}
-	if len(notNullFields) == 0 {
-		return PartialUniqueGroupParam{}, errors.Errorf(
-			"validatePartialUniqueGroupsForDb: model '%s': partial unique group '%s' requires at least one not-null field",
-			schema.Name(), indexName)
-	}
-	return PartialUniqueGroupParam{
-		IndexName:     indexName,
-		NotNullFields: notNullFields,
-		NullableField: nullableField,
-	}, nil
+	return notNullFields, nil
 }
 
 func validateSearchIndexGroupsForDb(

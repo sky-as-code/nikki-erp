@@ -1,0 +1,83 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "product_variant_id", "location_id", "etag", "org_id"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "product_variant_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "location_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "lot_ref": {
+            "type": ["string", "null"]
+        },
+        "package_ref": {
+            "type": ["string", "null"]
+        },
+        "owner_ref": {
+            "type": ["string", "null"]
+        },
+        "base_uom_id": {
+            "type": ["string", "null"]
+        },
+        "on_hand_quantity": {
+            "type": ["string", "number", "null"]
+        },
+        "reserved_quantity": {
+            "type": ["string", "number", "null"]
+        },
+        "available_quantity": {
+            "type": ["string", "number", "null"]
+        },
+        "incoming_date": {
+            "type": ["string", "null"]
+        },
+        "counted_quantity": {
+            "type": ["string", "number", "null"]
+        },
+        "count_quantity_set": {
+            "type": ["boolean", "null"]
+        },
+        "count_snapshot_quantity": {
+            "type": ["string", "number", "null"]
+        },
+        "count_reason_code": {
+            "type": ["string", "null"]
+        },
+        "count_reason_text": {
+            "type": ["string", "null"]
+        },
+        "next_count_date": {
+            "type": ["string", "null"]
+        },
+        "last_count_date": {
+            "type": ["string", "null"]
+        },
+        "count_assigned_user_id": {
+            "type": ["string", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        }
+    },
+    "additionalProperties": false
+}

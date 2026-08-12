@@ -74,6 +74,25 @@ type RepoSearchParam struct {
 	Size     int
 	Graph    *dmodel.SearchGraph
 	Language *model.LanguageCode
+
+	// IncludeArchived controls whether archived records take part in the search.
+	// It is tri-state on purpose:
+	//   - nil: no filtering at all. This is the legacy contract that every internal lookup
+	//     relies on, e.g. models.FindTemplateVariants which needs archived rows by design.
+	//     Leave it nil when reusing Search to fetch a single known record.
+	//   - false: the repository prepends "is_archived = false" to the search graph.
+	//     crud.Search sets this when the caller omitted the query parameter, so the public
+	//     HTTP API hides archived records by default.
+	//   - true: no filtering; archived records are returned alongside active ones.
+	//
+	// The condition is only prepended on schemas that actually carry the is_archived column
+	// (it comes from the optional basemodel.ArchivableModelSchemaBuilder mixin).
+	//
+	// Note this filters the searched schema only. Nested edge columns are hydrated by
+	// follow-up queries that are not filtered, so requesting fields=groups.name with
+	// IncludeArchived=false excludes archived rows of this schema but still hydrates
+	// archived rows of the edge.
+	IncludeArchived *bool
 }
 
 type RepoManageM2mParam struct {

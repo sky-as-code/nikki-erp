@@ -25,7 +25,10 @@ func RoleGroupAssignmentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Label(model.NewLangJsonRefSf("%s.label", RoleGroupAssignmentSchemaName)).
 		TableName("iam_role_group_assignments").
 		ShouldBuildDb().
-		CompositeUnique(RoleGroupAssignFieldRoleId, RoleGroupAssignFieldReceiverGroupId).
+		CompositeUnique(dmodel.CompositeUniqueParam{
+			IndexName: "iam_role_grp_assigns_tid_role_id_rcv_grp_id",
+			Fields:    []string{RoleGroupAssignFieldRoleId, RoleGroupAssignFieldReceiverGroupId},
+		}).
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			basemodel.DefineFieldId(RoleGroupAssignFieldRoleId).

@@ -102,6 +102,14 @@ type ActionResult = dyn.OpResult[any]
 type ProcessInput struct {
 	Params dmodel.DynamicFields
 
+	// FoundModel is the record the action's KeysToFetch identified, already fetched by the
+	// pipeline. It is nil when the action declares no KeysToFetch, and when the record does
+	// not exist.
+	//
+	// It exists so that a MainProcess needing the record does not re-read a row the pipeline
+	// has already read on its behalf.
+	FoundModel *dmodel.DynamicFields
+
 	// ResourceService is the engine's service subengine. A module that installed its own
 	// extended service via Engine.SetResourceService type-asserts this to its own interface.
 	ResourceService DynamicResourceService

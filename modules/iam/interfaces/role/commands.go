@@ -81,11 +81,12 @@ var searchUserRolesQueryType = cqrs.RequestType{Module: "iam", Submodule: "role"
 // route, the caller may still narrow the result with its own graph, which is ANDed with the
 // assignment condition.
 type SearchUserRolesQuery struct {
-	Fields []string            `json:"fields" query:"fields"`
-	Graph  *dmodel.SearchGraph `json:"graph" query:"graph"`
-	Page   int                 `json:"page" query:"page"`
-	Size   int                 `json:"size" query:"size"`
-	UserId model.Id            `json:"user_id" param:"user_id"`
+	Fields          []string            `json:"fields" query:"fields"`
+	Graph           *dmodel.SearchGraph `json:"graph" query:"graph"`
+	Page            int                 `json:"page" query:"page"`
+	Size            int                 `json:"size" query:"size"`
+	IncludeArchived *bool               `json:"include_archived" query:"include_archived"`
+	UserId          model.Id            `json:"user_id" param:"user_id"`
 }
 
 func (SearchUserRolesQuery) CqrsRequestType() cqrs.RequestType { return searchUserRolesQueryType }
@@ -99,6 +100,7 @@ func (SearchUserRolesQuery) GetSchema() *dmodel.ModelSchema {
 				Field(dyn.DefineFieldSearchGraph()).
 				Field(dyn.DefineFieldSearchPage()).
 				Field(dyn.DefineFieldSearchSize()).
+				Field(dyn.DefineFieldIncludeArchived()).
 				Field(basemodel.DefineFieldId("user_id").
 					RequiredAlways())
 		},
@@ -111,11 +113,12 @@ var searchGroupRolesQueryType = cqrs.RequestType{Module: "iam", Submodule: "role
 
 // SearchGroupRolesQuery is the group counterpart of SearchUserRolesQuery.
 type SearchGroupRolesQuery struct {
-	Fields  []string            `json:"fields" query:"fields"`
-	Graph   *dmodel.SearchGraph `json:"graph" query:"graph"`
-	Page    int                 `json:"page" query:"page"`
-	Size    int                 `json:"size" query:"size"`
-	GroupId model.Id            `json:"group_id" param:"group_id"`
+	Fields          []string            `json:"fields" query:"fields"`
+	Graph           *dmodel.SearchGraph `json:"graph" query:"graph"`
+	Page            int                 `json:"page" query:"page"`
+	Size            int                 `json:"size" query:"size"`
+	IncludeArchived *bool               `json:"include_archived" query:"include_archived"`
+	GroupId         model.Id            `json:"group_id" param:"group_id"`
 }
 
 func (SearchGroupRolesQuery) CqrsRequestType() cqrs.RequestType { return searchGroupRolesQueryType }
@@ -129,6 +132,7 @@ func (SearchGroupRolesQuery) GetSchema() *dmodel.ModelSchema {
 				Field(dyn.DefineFieldSearchGraph()).
 				Field(dyn.DefineFieldSearchPage()).
 				Field(dyn.DefineFieldSearchSize()).
+				Field(dyn.DefineFieldIncludeArchived()).
 				Field(basemodel.DefineFieldId("group_id").
 					RequiredAlways())
 		},

@@ -781,10 +781,23 @@ func appendMissingKeyErrors(errs *ft.ClientErrors, fieldPrefix string, keys dmod
 
 // Search fetches records matching the SearchGraph criteria.
 // When the schema is tenant-scoped, the tenant key is automatically injected from ctx domain constraints.
+// When param.IncludeArchived is false, "is_archived = false" is prepended to the graph.
 // Data uses PagedResult: Total is from COUNT when Size > 0, otherwise len(Items).
 func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.RepoSearchParam) (
 	*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error,
 ) {
+	// Validated up front, as GetOne does, so an unusable field list is reported the same way on
+	// both paths rather than surfacing later as an ORM error.
+	if vErr := this.validateSelectColumns(param.Fields); vErr != nil {
+		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{
+			ClientErrors: ft.ClientErrors{*vErr},
+		}, nil
+	}
+	// Injected before the branch so both the plain and the nested-column paths inherit it.
+	// param is a value copy, and searchWithNestedColumns also takes one, so this cannot
+	// leak back to the caller.
+	param.Graph = this.injectIsArchivedIntoGraph(param.Graph, param.IncludeArchived)
+
 	if this.hasNestedOrEdgeColumns(param.Fields) {
 		return this.searchWithNestedColumns(ctx, param)
 	}
@@ -885,6 +898,12 @@ type nestedSelectPlan struct {
 	EdgeLeafColumns map[string][]string
 }
 
+// hasNestedOrEdgeColumns reports whether a request must take the nested-hydration path, which
+// costs one follow-up query per row per edge.
+//
+// The edge test is deliberately IsVirtualModelField and NOT IsNonPhysical: a virtual scalar is
+// filled by its service after a single read and must stay on the plain path. Widening this to
+// IsNonPhysical would silently turn every request selecting one into an N+1.
 func (this *BaseDynamicRepositoryImpl) hasNestedOrEdgeColumns(columns []string) bool {
 	for _, col := range columns {
 		if strings.Contains(col, ".") {
@@ -909,15 +928,15 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 		if strings.Count(col, ".") == 0 {
 			field, ok := this.schema.Field(col)
 			if ok && field.IsVirtualModelField() {
-			rel, hasRel := this.relationByEdge(col)
-			if !hasRel {
-				errs.Append(*ft.NewValidationError(
-					col, ft.ErrorKey("err_unknown_schema_field"), "edge is not defined on this schema",
-				))
-				continue
-			}
-			addFkColumnsToMainSet(mainSet, rel)
-			destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
+				rel, hasRel := this.relationByEdge(col)
+				if !hasRel {
+					errs.Append(*ft.NewValidationError(
+						col, ft.ErrorKey("err_unknown_schema_field"), "edge is not defined on this schema",
+					))
+					continue
+				}
+				addFkColumnsToMainSet(mainSet, rel)
+				destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
 				if destSchema == nil {
 					errs.Append(*ft.NewAnonymousValidationError(
 						ft.ErrorKey("err_schema_not_found"), "edge destination schema not found", nil,
@@ -927,7 +946,7 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 				if edgeLeafSet[col] == nil {
 					edgeLeafSet[col] = make(map[string]struct{})
 				}
-				for _, edgeCol := range physicalColumnNames(destSchema) {
+				for _, edgeCol := range readableFieldNames(destSchema) {
 					edgeLeafSet[col][edgeCol] = struct{}{}
 				}
 				continue
@@ -1037,11 +1056,13 @@ func (this *BaseDynamicRepositoryImpl) parseNestedColumn(col string) ([]string, 
 	return parts, nil
 }
 
-func physicalColumnNames(schema *dmodel.ModelSchema) []string {
-	cols := schema.Columns()
-	out := make([]string, 0, len(cols))
-	for _, col := range cols {
-		out = append(out, col.Name())
+// readableFieldNames lists what a bare edge expands to: every field of the destination schema a
+// client may receive, virtual scalars included, since those are readable through the edge too.
+func readableFieldNames(schema *dmodel.ModelSchema) []string {
+	fields := schema.ReadableFields()
+	out := make([]string, 0, len(fields))
+	for _, field := range fields {
+		out = append(out, field.Name())
 	}
 	return out
 }
@@ -1513,10 +1534,12 @@ func (this *BaseDynamicRepositoryImpl) validateKeyMap(keys dmodel.DynamicFields)
 	return nil
 }
 
-func (this *BaseDynamicRepositoryImpl) validateGetOneColumnsAndFilter(
-	columns []string, filter dmodel.DynamicFields,
-) *ft.ClientErrorItem {
-	this.removeNilFilterFields(filter)
+// validateSelectColumns checks a requested field list against the schema.
+//
+// Shared by GetOne and Search so the two accept exactly the same projections. They diverged
+// before: GetOne validated up front while Search let the ORM reject a bad field later, with a
+// different error and only after the query had been built.
+func (this *BaseDynamicRepositoryImpl) validateSelectColumns(columns []string) *ft.ClientErrorItem {
 	for _, col := range columns {
 		field, hasField := this.schema.Field(col)
 		if hasField && field.IsVirtualModelField() {
@@ -1535,8 +1558,9 @@ func (this *BaseDynamicRepositoryImpl) validateGetOneColumnsAndFilter(
 			}
 			continue
 		}
-		field, ok := this.schema.Column(col)
-		if !ok || field.IsVirtualModelField() {
+		// Field rather than Column: a virtual scalar has no column but is a legal thing to
+		// select, so it must pass here and be dropped from the projection later.
+		if !hasField || field.IsVirtualModelField() {
 			return ft.NewValidationError(
 				col,
 				ft.ErrorKey("err_unknown_schema_field"),
@@ -1544,12 +1568,32 @@ func (this *BaseDynamicRepositoryImpl) validateGetOneColumnsAndFilter(
 			)
 		}
 	}
+	return nil
+}
+
+func (this *BaseDynamicRepositoryImpl) validateGetOneColumnsAndFilter(
+	columns []string, filter dmodel.DynamicFields,
+) *ft.ClientErrorItem {
+	this.removeNilFilterFields(filter)
+	if vErr := this.validateSelectColumns(columns); vErr != nil {
+		return vErr
+	}
 	keys := make([]string, 0, len(filter))
 	for k := range filter {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
+		// A GetOne filter must resolve to a primary or unique key, which a virtual field can
+		// never be. Report it as unavailable rather than unknown, so the caller learns the field
+		// exists but cannot identify a record.
+		if field, hasField := this.schema.Field(k); hasField && field.IsNonPhysical() {
+			return ft.NewValidationError(
+				k,
+				ft.ErrorKey("err_virtual_field_unavailable"),
+				"field is not available for this operation",
+			)
+		}
 		if _, ok := this.schema.Column(k); !ok {
 			return ft.NewValidationError(
 				k,
@@ -1585,21 +1629,21 @@ func (this *BaseDynamicRepositoryImpl) validateGetOneFilterForUniqueLookup(
 	)
 }
 
-func (this *BaseDynamicRepositoryImpl) buildGetOneUniqueFilterCandidates() []dmodel.PartialUniqueGroupParam {
-	candidates := make([]dmodel.PartialUniqueGroupParam, 0, 1+len(this.schema.AllUniques())+len(this.schema.PartialUniqueGroups()))
-	candidates = append(candidates, dmodel.PartialUniqueGroupParam{
+func (this *BaseDynamicRepositoryImpl) buildGetOneUniqueFilterCandidates() []dmodel.PartialUniqueParam {
+	candidates := make([]dmodel.PartialUniqueParam, 0, 1+len(this.schema.AllUniques())+len(this.schema.PartialUniques()))
+	candidates = append(candidates, dmodel.PartialUniqueParam{
 		NotNullFields: append([]string{}, this.schema.PrimaryKeys()...),
 	})
 	for _, uniqueFields := range this.schema.AllUniques() {
 		if len(uniqueFields) == 0 {
 			continue
 		}
-		candidates = append(candidates, dmodel.PartialUniqueGroupParam{
+		candidates = append(candidates, dmodel.PartialUniqueParam{
 			NotNullFields: append([]string{}, uniqueFields...),
 		})
 	}
-	for _, group := range this.schema.PartialUniqueGroups() {
-		copied := dmodel.PartialUniqueGroupParam{
+	for _, group := range this.schema.PartialUniques() {
+		copied := dmodel.PartialUniqueParam{
 			NotNullFields: append([]string{}, group.NotNullFields...),
 			NullableField: group.NullableField,
 		}
@@ -1609,7 +1653,7 @@ func (this *BaseDynamicRepositoryImpl) buildGetOneUniqueFilterCandidates() []dmo
 }
 
 func (this *BaseDynamicRepositoryImpl) matchesGetOneFilterCandidate(
-	filter dmodel.DynamicFields, candidate dmodel.PartialUniqueGroupParam,
+	filter dmodel.DynamicFields, candidate dmodel.PartialUniqueParam,
 ) bool {
 	requiredNonNil := make([]string, 0, len(candidate.NotNullFields)+1)
 	requiredNonNil = append(requiredNonNil, candidate.NotNullFields...)
@@ -1816,9 +1860,11 @@ func (this *BaseDynamicRepositoryImpl) selectFieldsForSchema(
 	cols := columns
 	colLen := len(cols)
 	if colLen == 0 {
-		physical := schema.Columns()
-		cols = make([]string, 0, len(physical))
-		for _, field := range physical {
+		// ReadableFields, so the scanner can still type-convert a virtual scalar that a service
+		// fills after the read when the caller named no fields at all.
+		readable := schema.ReadableFields()
+		cols = make([]string, 0, len(readable))
+		for _, field := range readable {
 			cols = append(cols, field.Name())
 		}
 	}
@@ -1907,6 +1953,51 @@ func (this *BaseDynamicRepositoryImpl) injectTenantIntoGraph(
 	ctx corectx.Context, graph *dmodel.SearchGraph,
 ) *dmodel.SearchGraph {
 	return injectTenantIntoGraphForSchema(ctx, this.schema, graph)
+}
+
+func (this *BaseDynamicRepositoryImpl) injectIsArchivedIntoGraph(
+	graph *dmodel.SearchGraph, includeArchived *bool,
+) *dmodel.SearchGraph {
+	return injectIsArchivedIntoGraphForSchema(this.schema, graph, includeArchived)
+}
+
+// injectIsArchivedIntoGraphForSchema prepends "is_archived = false" when the caller explicitly
+// asked to exclude archived records, so that every service reading through Search gets the
+// filter without repeating it.
+//
+// includeArchived is tri-state, see dyn.RepoSearchParam.IncludeArchived: nil means no filtering
+// at all (the legacy contract internal lookups rely on), false prepends the condition, and true
+// leaves archived records in.
+func injectIsArchivedIntoGraphForSchema(
+	schema *dmodel.ModelSchema, graph *dmodel.SearchGraph, includeArchived *bool,
+) *dmodel.SearchGraph {
+	if includeArchived == nil || *includeArchived {
+		return graph
+	}
+	// is_archived is opt-in per schema via basemodel.ArchivableModelSchemaBuilder,
+	// so schemas without the column must be left alone.
+	if _, ok := schema.Column(basemodel.FieldIsArchived); !ok {
+		return graph
+	}
+
+	notArchivedNode := *dmodel.NewSearchNode().NewCondition(basemodel.FieldIsArchived, dmodel.Equals, false)
+	out := dmodel.NewSearchGraph()
+	if graph == nil {
+		out.And(notArchivedNode)
+		return out
+	}
+
+	// An order-only graph carries no condition/and/or, and folding it in as an AND member would
+	// emit an empty predicate. Keep its order, drop the empty node.
+	isEmptyPredicate := graph.GetCondition() == nil && len(graph.GetAnd()) == 0 && len(graph.GetOr()) == 0
+	if isEmptyPredicate {
+		out.And(notArchivedNode)
+	} else {
+		out.And(notArchivedNode, *graph.ToSearchNode())
+	}
+	// ToSearchNode drops the order, so it must be re-applied.
+	out.Order(graph.GetOrder())
+	return out
 }
 
 func injectTenantIntoGraphForSchema(

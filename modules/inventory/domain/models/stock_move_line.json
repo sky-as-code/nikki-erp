@@ -1,0 +1,189 @@
+{
+	"name": "inventory_stock_move_line",
+	"label": "inventory_stock_move_line.label",
+	"table_name": "inventory_stock_move_lines",
+	"should_build_db": true,
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "move_id",
+			"label": "fields.move_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The move this line executes. A move says how much is needed; its lines say what was actually taken and from where, which is why they are two layers and not one number (BR 4.2.5.2)."
+			}
+		},
+		{
+			"name": "transfer_id",
+			"label": "fields.transfer_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "Denormalized from the move so that a transfer's lines can be listed without joining through moves. Null when the move is a system move with no transfer."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "uom_id",
+			"label": "fields.uom_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The quantity this line reserves, and then moves when the transfer is validated. Expressed in uom_id."
+			}
+		},
+		{
+			"name": "base_quantity",
+			"label": "fields.base_quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "quantity in the variant's base unit. This is the number applied to the quant, because balances from different transactions can only be added in a common unit."
+			}
+		},
+		{
+			"name": "source_location_id",
+			"label": "fields.source_location_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The exact location the goods were taken from, which may be narrower than the move's source: one move can draw from several locations, and that is what a line records."
+			}
+		},
+		{
+			"name": "destination_location_id",
+			"label": "fields.destination_location_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "lot_ref",
+			"label": "fields.lot_ref",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"required_for_create": true,
+			"default_value": "",
+			"description": {
+				"en-US": "Lot or serial identifier of the goods this line moves. Empty string, never null, matching the quant dimension it must line up with (see inventory_stock_quant.lot_ref)."
+			}
+		},
+		{
+			"name": "package_ref",
+			"label": "fields.package_ref",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"required_for_create": true,
+			"default_value": "",
+			"description": {
+				"en-US": "Package the goods were taken from. Empty string, never null, for the same reason as lot_ref."
+			}
+		},
+		{
+			"name": "result_package_ref",
+			"label": "fields.result_package_ref",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"required_for_create": true,
+			"default_value": "",
+			"description": {
+				"en-US": "Package the goods end up in, which differs from package_ref when the operation repacks them."
+			}
+		},
+		{
+			"name": "owner_ref",
+			"label": "fields.owner_ref",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"required_for_create": true,
+			"default_value": "",
+			"description": {
+				"en-US": "Owner of the goods when they are not the company's. Empty string, never null, for the same reason as lot_ref."
+			}
+		},
+		{
+			"name": "picked",
+			"label": "fields.picked",
+			"data_type": "boolean",
+			"default_value": false
+		},
+		{
+			"name": "operation_at",
+			"label": "fields.operation_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this line was executed. Stamped by validate; its presence marks the line as a recorded movement rather than a reservation."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "invty_stock_mvlines_move_id", "fields": ["move_id"] },
+		{ "index_name": "invty_stock_mvlines_trf_id", "fields": ["transfer_id"] },
+		{ "index_name": "invty_stock_mvlines_pvar_id_src_loc", "fields": ["product_variant_id", "source_location_id"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "move",
+			"label": { "en-US": "Move" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_move",
+			"key_map": { "move_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "transfer",
+			"label": { "en-US": "Transfer" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_transfer",
+			"key_map": { "transfer_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "product_variant",
+			"label": { "en-US": "Product variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "product_variant_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "source_location",
+			"label": { "en-US": "Source location" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_location",
+			"key_map": { "source_location_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "destination_location",
+			"label": { "en-US": "Destination location" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_location",
+			"key_map": { "destination_location_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

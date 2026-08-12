@@ -44,7 +44,10 @@ func TicketCategoryRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		TableName("helpdesk_ticket_category_rel").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
-		CompositeUnique("ticket_id", "ticket_category_id").
+		CompositeUnique(dmodel.CompositeUniqueParam{
+			IndexName: "hd_ticket_cat_rel_tid_ticket_id_tcat_id",
+			Fields:    []string{"ticket_id", "ticket_category_id"},
+		}).
 		Field(basemodel.DefineFieldId("ticket_id").RequiredForCreate()).
 		Field(basemodel.DefineFieldId("ticket_category_id").RequiredForCreate())
 }

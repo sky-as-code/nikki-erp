@@ -79,21 +79,26 @@ func (this value) MarshalText() ([]byte, error) {
 
 type ModelSchema struct {
 	// Persistent fields
-	name                string
-	compositeUniques    [][]string
-	description         model.LangJson
-	etag                model.Etag
-	fieldsOrder         []string
-	label               model.LangJson
-	partialUniques      [][]string
-	partialUniqueGroups []PartialUniqueGroupParam
-	searchIndexGroups   []SearchIndexGroupParam
-	primaryKeys         []string
-	tableName           string
-	tenantKey           *string
+	name              string
+	compositeUniques  []CompositeUniqueParam
+	description       model.LangJson
+	etag              model.Etag
+	fieldsOrder       []string
+	label             model.LangJson
+	partialUniques    []PartialUniqueParam
+	searchIndexGroups []SearchIndexGroupParam
+	primaryKeys       []string
+	tableName         string
+	tenantKey         *string
 
 	// Computed fields
-	allUniqueKeys [][]string
+
+	// allUniqueKeys holds every UNIQUE constraint: one entry per field-level Unique() column
+	// (unnamed) followed by the validated composite uniques.
+	allUniqueKeys []CompositeUniqueParam
+	// allUniqueColumns is the column-only projection of allUniqueKeys, cached because callers
+	// that only compare column sets read it on every request.
+	allUniqueColumns [][]string
 
 	// toRelations: EdgeTo and Field().Foreign — drive FK constraints on the owning table.
 	toRelations []ModelRelation
@@ -227,20 +232,15 @@ func (this ModelSchema) TableName() string {
 }
 
 // CompositeUniques returns schema-level composite UNIQUE constraints (all columns NOT NULL).
-// Each inner slice is a group of field names.
-func (this ModelSchema) CompositeUniques() [][]string {
+func (this ModelSchema) CompositeUniques() []CompositeUniqueParam {
 	return this.compositeUniques
 }
 
-// PartialUniques returns pairs of field names for partial unique indexes: UNIQUE (required column)
-// WHERE (nullable column) IS NULL. Only populated after ShouldBuildDb / populateDbMetadata validation.
-func (this ModelSchema) PartialUniques() [][]string {
+// PartialUniques returns partial unique index definitions: UNIQUE (not-null columns, nullable column)
+// WHERE nullable IS NOT NULL, plus UNIQUE (not-null columns) WHERE nullable IS NULL.
+// Only populated after ShouldBuildDb / populateDbMetadata validation.
+func (this ModelSchema) PartialUniques() []PartialUniqueParam {
 	return this.partialUniques
-}
-
-// PartialUniqueGroups returns grouped partial unique index definitions.
-func (this ModelSchema) PartialUniqueGroups() []PartialUniqueGroupParam {
-	return this.partialUniqueGroups
 }
 
 // SearchIndexGroups returns grouped CREATE INDEX definitions.
@@ -290,8 +290,24 @@ func (this ModelSchema) IsTenantKey(name string) bool {
 }
 
 // Columns returns fields in definition order for SQL operations.
-// Model-typed fields (virtual edge fields) are excluded as they have no DB column.
+// Fields with no DB column are excluded: model-typed edge fields and virtual scalars alike.
+// This is the "physical column" list — use it for DDL and writes. For the set a client may
+// select and receive, use ReadableFields.
 func (this ModelSchema) Columns() []*ModelField {
+	result := make([]*ModelField, 0, len(this.fieldsOrder))
+	for _, name := range this.fieldsOrder {
+		if f, ok := this.fields[name]; ok && f != nil && !f.IsNonPhysical() {
+			result = append(result, f)
+		}
+	}
+	return result
+}
+
+// ReadableFields returns every field a client may select and receive in a result row, in
+// definition order: physical columns plus virtual scalars. Model-typed edge fields are excluded,
+// because an edge is selected by its own name and hydrated separately rather than being read as
+// a column.
+func (this ModelSchema) ReadableFields() []*ModelField {
 	result := make([]*ModelField, 0, len(this.fieldsOrder))
 	for _, name := range this.fieldsOrder {
 		if f, ok := this.fields[name]; ok && f != nil && !f.IsVirtualModelField() {
@@ -322,8 +338,15 @@ func (this ModelSchema) PrimaryKeys() []string {
 	return this.primaryKeys
 }
 
-// UniqueKeys returns all unique constraints (field-level and schema-level).
+// AllUniques returns the column groups of all unique constraints (field-level and schema-level),
+// for callers that only compare column sets. Use AllUniqueGroups when the index name matters.
 func (this ModelSchema) AllUniques() [][]string {
+	return this.allUniqueColumns
+}
+
+// AllUniqueGroups returns all unique constraints (field-level and schema-level) with their
+// optional index names. Field-level Unique() columns always carry an empty IndexName.
+func (this ModelSchema) AllUniqueGroups() []CompositeUniqueParam {
 	return this.allUniqueKeys
 }
 
@@ -355,6 +378,13 @@ func (this *ModelSchema) Validate(input DynamicFields, forEdit ...bool) (Dynamic
 
 	for _, name := range this.fieldsOrder {
 		field := this.fields[name]
+		// A field with no column is never written, so validating it would reject or sanitize a
+		// value that cannot be stored either way. Skipping here also keeps it out of `result`,
+		// which is what actually drops it from the write. Must come before the IsAutoGenerated
+		// branch below, which would otherwise plant a nil key for it.
+		if field.IsNonPhysical() {
+			continue
+		}
 		if field.IsAutoGenerated() && !isForEdit {
 			input[name] = nil // field.Validate() will populate value
 		} else if this.isSystemField(field) || this.isNoUpdate(field, isForEdit) {
@@ -395,7 +425,10 @@ func (this *ModelSchema) Validate(input DynamicFields, forEdit ...bool) (Dynamic
 
 func (this *ModelSchema) InjectServiceFields(ctx context.Context, result DynamicFields, forEdit bool) {
 	for _, field := range this.fields {
-		if !field.IsServiceInjected() || field.injectFn == nil {
+		// Injecting into a field with no column would only add a value the write then drops.
+		// Build() rejects the virtual + service-injected combination outright; this is the
+		// belt-and-braces for a schema assembled without the builder.
+		if field.IsNonPhysical() || !field.IsServiceInjected() || field.injectFn == nil {
 			continue
 		}
 		val := field.injectFn(ctx, forEdit)
@@ -582,7 +615,9 @@ type ModelField struct {
 	isTenantKey           bool
 	isUnique              bool
 	// Allows setting value on create but not on update.
-	noUpdate       bool
+	noUpdate bool
+	// Indicates a scalar field with no database column, filled by a service after the read.
+	isVirtual      bool
 	rules          []*FieldRule
 	defaultValue   *value
 	defaultFn      func() any
@@ -608,6 +643,21 @@ func (this *ModelField) IsVirtualModelField() bool {
 		return false
 	}
 	return IsFieldDataTypeModel(this.dataType)
+}
+
+// IsVirtual is true for a scalar field that has no database column and is filled by a service
+// after the read. Deliberately distinct from IsVirtualModelField, which means a model-typed edge
+// field: the two are reported separately to clients, so widening either would change an existing
+// contract.
+func (this *ModelField) IsVirtual() bool {
+	return this != nil && this.isVirtual
+}
+
+// IsNonPhysical is true when the field has no database column, for either reason. Use this
+// wherever the question is "can this be written, filtered or ordered"; use the two specific
+// predicates when the answer differs between an edge and a virtual scalar.
+func (this *ModelField) IsNonPhysical() bool {
+	return this.IsVirtualModelField() || this.IsVirtual()
 }
 
 func (this *ModelField) Description() model.LangJson {
@@ -688,6 +738,23 @@ func (this *ModelField) DefaultFn() func() any {
 	return this.defaultFn
 }
 
+// acceptsEmptyValue reports whether the empty string is a value this field genuinely holds,
+// rather than the absence of one.
+//
+// Only a string-like field declared with a minimum length of 0 qualifies, and only for a string
+// input: for every other type isNilOrEmpty's notion of empty (zero, empty slice, nil) really does
+// mean "not supplied", and treating it as present would defeat the required-field check.
+func (this *ModelField) acceptsEmptyValue(val any) bool {
+	if str, ok := val.(string); !ok || str != "" {
+		return false
+	}
+	if this.dataType == nil {
+		return false
+	}
+	length, ok := this.dataType.Options()[FieldDataTypeOptLength].([]int)
+	return ok && len(length) == 2 && length[0] == 0
+}
+
 // Validate invokes the field's data type Validate (which validates and may sanitize),
 // then applies field rules. Returns the validated value and technical error if any.
 // When value is empty: uses default if available; otherwise errors only when required with no fallback.
@@ -695,7 +762,14 @@ func (this *ModelField) Validate(val any, forEdit ...bool) (value, *ft.ClientErr
 	isForEdit := len(forEdit) > 0 && forEdit[0]
 
 	var wrappedVal value
-	if isNilOrEmpty(val) {
+	if isNilOrEmpty(val) && this.acceptsEmptyValue(val) {
+		// A string field declared with a minimum length of 0 counts the empty string as a real
+		// value, not an absent one, so it must skip the "missing" handling below and be validated
+		// like any other input. Product Variant's combination_key is the case that needs this:
+		// a template with no variant-generating attributes has exactly one variant, and the empty
+		// string is precisely that variant's combination.
+		wrappedVal = Value(val)
+	} else if isNilOrEmpty(val) {
 		if isForEdit {
 			if this.IsRequiredForUpdate() {
 				return Value(nil), NewMissingFieldErr(this.name)
@@ -758,6 +832,7 @@ func (this ModelField) ToSimplized() any {
 		IsPrimaryKey        bool           `json:"is_primary_key"`
 		IsSystemField       bool           `json:"is_system_field"`
 		IsVirtualModelField bool           `json:"is_virtual_model_field"`
+		IsVirtual           bool           `json:"is_virtual"`
 		NoUpdate            bool           `json:"no_update"`
 		Rules               []*FieldRule   `json:"rules,omitempty"`
 		DefaultValue        *value         `json:"default_value,omitempty"`
@@ -770,8 +845,12 @@ func (this ModelField) ToSimplized() any {
 		IsRequiredForCreate: this.IsRequiredForCreate(),
 		IsRequiredForUpdate: this.IsRequiredForUpdate(),
 		IsPrimaryKey:        this.IsPrimaryKey(),
-		IsSystemField:       this.IsPrimaryKey() || this.IsVersioningKey() || this.IsTenantKey() || this.IsVirtualModelField(),
+		// A virtual field is read-only to a client, so it joins the system fields here. Note
+		// is_virtual_model_field keeps its exact prior meaning: clients already depend on it.
+		IsSystemField: this.IsPrimaryKey() || this.IsVersioningKey() || this.IsTenantKey() ||
+			this.IsVirtualModelField() || this.IsVirtual(),
 		IsVirtualModelField: this.IsVirtualModelField(),
+		IsVirtual:           this.IsVirtual(),
 		NoUpdate:            this.IsNoUpdate(),
 		Rules:               this.Rules(),
 		DefaultValue:        this.Default(),
@@ -871,6 +950,7 @@ func (this *ModelField) Clone() *ModelField {
 		isPrimaryKey:        this.isPrimaryKey,
 		isTenantKey:         this.isTenantKey,
 		isUnique:            this.isUnique,
+		isVirtual:           this.isVirtual,
 		rules:               make([]*FieldRule, len(this.rules)),
 		defaultValue:        this.defaultValue,
 		defaultFn:           this.defaultFn,

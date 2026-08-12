@@ -20,7 +20,7 @@ func TeamMembershipSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		TableName("helpdesk_team_memberships").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
-		CompositeUnique(TeamMembershipFieldTeamId, TeamMembershipFieldUserId).
+		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{TeamMembershipFieldTeamId, TeamMembershipFieldUserId}}).
 		Field(basemodel.DefineFieldId(TeamMembershipFieldTeamId).RequiredForCreate()).
 		Field(basemodel.DefineFieldId(TeamMembershipFieldUserId).RequiredForCreate()).
 		Field(dmodel.DefineField().Name(TeamMembershipFieldRole).DataType(

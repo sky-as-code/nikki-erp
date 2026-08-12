@@ -1,0 +1,50 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "display_name", "email", "etag", "is_archived", "status"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "avatar_url": {
+            "type": "string",
+            "format": "uri"
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "display_name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "email": {
+            "type": "string",
+            "format": "email",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_owner": {
+            "type": "boolean"
+        },
+        "is_archived": {
+            "type": "boolean"
+        },
+        "status": {
+            "type": "string",
+            "minLength": 1
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "org_unit_id": {
+            "type": "string",
+            "minLength": 1
+        }
+    },
+    "additionalProperties": false
+}

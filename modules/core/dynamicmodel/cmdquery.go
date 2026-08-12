@@ -71,6 +71,11 @@ type SearchQuery struct {
 	// Optional language code to filter fields with LangJson type
 	Language *model.LanguageCode `json:"language" query:"language"`
 
+	// Optional flag to include archived records in the result.
+	// When omitted, crud.Search treats it as false, so archived records are hidden by default.
+	// Set it to true to search archived and active records together.
+	IncludeArchived *bool `json:"include_archived" query:"include_archived"`
+
 	// Determines the fields to be returned in the response.
 	// If not specified, return all fields that user has permission on.
 	// Otherwise, return fields specified by the search name.

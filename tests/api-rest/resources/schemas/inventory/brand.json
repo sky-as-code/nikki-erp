@@ -1,0 +1,49 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "code", "name", "etag", "is_archived", "org_id"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "code": {
+            "type": "string",
+            "minLength": 1
+        },
+        "name": {
+            "type": "object"
+        },
+        "logo_id": {
+            "type": ["string", "null"]
+        },
+        "country_id": {
+            "type": ["string", "null"]
+        },
+        "website": {
+            "type": ["string", "null"]
+        },
+        "description": {
+            "type": ["object", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        }
+    },
+    "additionalProperties": false
+}

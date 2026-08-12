@@ -9,7 +9,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 )
 
-
 func userEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.UserSchemaName,
@@ -40,21 +39,18 @@ func userKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 	return dmodel.DynamicFields{models.UserFieldId: params[models.UserFieldId]}
 }
 
-// processSendUserInvitation shows how a custom action reaches the record the engine
-// already fetched for it. Sending the actual email is left to the invitation feature.
+// processSendUserInvitation shows how a custom action reaches the record the engine already
+// fetched for it: KeysToFetch identified the user, and the pipeline hands it over as FoundModel,
+// so there is no second read. Sending the actual email is left to the invitation feature.
 func processSendUserInvitation(
-	ctx corectx.Context, input drif.ProcessInput,
+	_ corectx.Context, input drif.ProcessInput,
 ) (*drif.ActionResult, error) {
-	found, err := input.ResourceRepository.FindByKeys(ctx, userKeysToFetch(input.Params))
-	if err != nil {
-		return nil, errors.Wrap(err, "processSendUserInvitation")
-	}
-	if !found.HasData {
+	if input.FoundModel == nil {
 		return &drif.ActionResult{HasData: false}, nil
 	}
 
 	return &drif.ActionResult{
-		Data:    dmodel.DynamicFields{models.UserFieldEmail: found.Data[models.UserFieldEmail]},
+		Data:    dmodel.DynamicFields{models.UserFieldEmail: (*input.FoundModel)[models.UserFieldEmail]},
 		HasData: true,
 	}, nil
 }

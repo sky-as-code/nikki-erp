@@ -39,7 +39,10 @@ func PasswordStoreSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(PasswordStoreSchemaName).
 		TableName("iam_password_stores").
 		ShouldBuildDb().
-		CompositeUnique(PasswordStoreFieldPrincipalType, PasswordStoreFieldPrincipalId, PasswordStoreFieldType).
+		CompositeUnique(dmodel.CompositeUniqueParam{
+			IndexName: "iam_pwd_stores_tid_princ_type_princ_id_type",
+			Fields:    []string{PasswordStoreFieldPrincipalType, PasswordStoreFieldPrincipalId, PasswordStoreFieldType},
+		}).
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			DefinePrincipalTypeField(PasswordStoreFieldPrincipalType).

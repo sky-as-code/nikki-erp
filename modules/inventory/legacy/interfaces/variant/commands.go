@@ -1,0 +1,164 @@
+package variant
+
+import (
+	"mime/multipart"
+
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/legacy/domain"
+)
+
+func init() {
+	var req cqrs.Request
+	req = (*CreateVariantCommand)(nil)
+	req = (*DeleteVariantCommand)(nil)
+	req = (*VariantExistsQuery)(nil)
+	req = (*GetVariantQuery)(nil)
+	req = (*SearchVariantsQuery)(nil)
+	req = (*UpdateVariantCommand)(nil)
+	util.Unused(req)
+}
+
+var createVariantCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "variant",
+	Action:    "create",
+}
+
+type CreateVariantCommand struct {
+	domain.Variant
+	Attributes map[string]any `json:"attributes,omitempty"`
+}
+
+func (CreateVariantCommand) CqrsRequestType() cqrs.RequestType {
+	return createVariantCommandType
+}
+
+func (this CreateVariantCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.VariantSchemaName)
+}
+
+type CreateVariantResult = dyn.OpResult[domain.Variant]
+
+var deleteVariantCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "variant",
+	Action:    "delete",
+}
+
+type DeleteVariantCommand dyn.DeleteOneCommand
+
+func (DeleteVariantCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteVariantCommandType
+}
+
+type DeleteVariantResult = dyn.OpResult[dyn.MutateResultData]
+
+var getVariantQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "variant",
+	Action:    "getVariant",
+}
+
+type GetVariantQuery dyn.GetOneQuery
+
+func (GetVariantQuery) CqrsRequestType() cqrs.RequestType {
+	return getVariantQueryType
+}
+
+type GetVariantResult = dyn.OpResult[domain.Variant]
+
+var variantExistsQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "variant",
+	Action:    "variantExists",
+}
+
+type VariantExistsQuery dyn.ExistsQuery
+
+func (VariantExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return variantExistsQueryType
+}
+
+type VariantExistsResult = dyn.OpResult[dyn.ExistsResultData]
+
+var searchVariantsQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "variant",
+	Action:    "search",
+}
+
+type SearchVariantsQuery struct {
+	Columns         []string            `json:"columns" query:"columns"`
+	Graph           *dmodel.SearchGraph `json:"graph" query:"graph"`
+	Page            int                 `json:"page" query:"page"`
+	Size            int                 `json:"size" query:"size"`
+	IncludeArchived *bool               `json:"include_archived" query:"include_archived"`
+	ProductId       model.Id            `json:"product_id" param:"product_id"`
+}
+
+func (SearchVariantsQuery) CqrsRequestType() cqrs.RequestType {
+	return searchVariantsQueryType
+}
+
+func (SearchVariantsQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"inventory.search_variants_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(dyn.DefineFieldSearchFields()).
+				Field(dyn.DefineFieldSearchGraph()).
+				Field(dyn.DefineFieldSearchPage()).
+				Field(dyn.DefineFieldSearchSize()).
+				Field(dyn.DefineFieldIncludeArchived()).
+				Field(dmodel.DefineField().
+					Name("product_id").
+					DataType(dmodel.FieldDataTypeUlid()))
+		},
+	)
+}
+
+type SearchVariantsResultData = dyn.PagedResultData[domain.Variant]
+type SearchVariantsResult = dyn.OpResult[SearchVariantsResultData]
+
+type SearchAllVariantsQuery dyn.SearchQuery
+
+func (SearchAllVariantsQuery) CqrsRequestType() cqrs.RequestType {
+	return searchVariantsQueryType
+}
+
+type SearchAllVariantsResultData = dyn.PagedResultData[domain.Variant]
+type SearchAllVariantsResult = dyn.OpResult[SearchAllVariantsResultData]
+
+var updateVariantCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "variant",
+	Action:    "update",
+}
+
+type UpdateVariantCommand struct {
+	domain.Variant
+	Attributes map[string]any `json:"attributes,omitempty"`
+}
+
+func (UpdateVariantCommand) CqrsRequestType() cqrs.RequestType {
+	return updateVariantCommandType
+}
+
+func (this UpdateVariantCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.VariantSchemaName)
+}
+
+type UpdateVariantResult = dyn.OpResult[dyn.MutateResultData]
+
+type UploadVariantImageCommand struct {
+	ProductId  model.Id
+	VariantId  model.Id
+	File       multipart.File
+	FileHeader *multipart.FileHeader
+}
+
+type UploadVariantImageResult = dyn.OpResult[dyn.MutateResultData]

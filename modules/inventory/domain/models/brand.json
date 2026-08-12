@@ -1,0 +1,56 @@
+{
+	"name": "inventory_brand",
+	"label": "inventory_brand.label",
+	"table_name": "inventory_brands",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [{ "fields": ["code", "org_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "logo_id",
+			"label": "fields.logo_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "country_id",
+			"label": "fields.country_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "website",
+			"label": "fields.website",
+			"data_type": "url"
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "langjson", "min": 0, "max": 2000 }
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

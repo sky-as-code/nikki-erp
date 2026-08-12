@@ -1,0 +1,86 @@
+{
+	"name": "essential_uom",
+	"label": "essential_uom.label",
+	"table_name": "essential_uoms",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [{ "fields": ["symbol", "org_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "symbol",
+			"label": "fields.symbol",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "category_id",
+			"label": "fields.category_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "A UoM belongs to exactly one UoM Category and cannot exist outside one"
+			}
+		},
+		{
+			"name": "uom_type",
+			"label": "fields.uom_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["reference", "bigger_equal", "smaller"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "reference: factor is exactly 1 and there is one per category. bigger_equal: factor >= 1. smaller: 0 < factor < 1"
+			}
+		},
+		{
+			"name": "factor",
+			"label": "fields.factor",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 12 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Conversion factor relative to the category's Reference UoM. Quantity in Reference UoM = Quantity in this UoM x factor"
+			}
+		},
+		{
+			"name": "rounding",
+			"label": "fields.rounding",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 12 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Rounding precision applied when using this UoM, in the range 0 <= rounding <= 1. Independent of the conversion factor"
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "category",
+			"label": { "en-US": "UoM Category" },
+			"type": "many:one",
+			"dest_schema": "essential_uomcat",
+			"key_map": { "category_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

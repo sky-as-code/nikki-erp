@@ -1,0 +1,58 @@
+{
+	"name": "inventory_product_template_attribute",
+	"label": "inventory_product_template_attribute.label",
+	"table_name": "inventory_product_template_attributes",
+	"should_build_db": true,
+	"composite_uniques": [{ "index_name": "invty_prod_tpl_attrs_tid_ptpl_id_attr_id", "fields": ["product_template_id", "attribute_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "product_template_id",
+			"label": "fields.product_template_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "attribute_id",
+			"label": "fields.attribute_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "Which global attribute applies to this template. The subset of its values the template allows lives in inventory_product_template_attribute_value."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
+			"description": {
+				"en-US": "Per-template display order, which may differ from the attribute's own global sequence."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "template",
+			"label": { "en-US": "Product template" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_template",
+			"key_map": { "product_template_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "attribute",
+			"label": { "en-US": "Attribute" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_attribute",
+			"key_map": { "attribute_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

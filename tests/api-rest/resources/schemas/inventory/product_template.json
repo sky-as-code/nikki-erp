@@ -1,0 +1,81 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "name", "product_type_id", "category_id", "status", "etag", "is_archived", "org_id"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "name": {
+            "type": "object"
+        },
+        "short_name": {
+            "type": ["object", "null"]
+        },
+        "product_type_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "category_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "brand_id": {
+            "type": ["string", "null"]
+        },
+        "sale_ok": {
+            "type": "boolean"
+        },
+        "purchase_ok": {
+            "type": "boolean"
+        },
+        "description": {
+            "type": ["object", "null"]
+        },
+        "sales_description": {
+            "type": ["object", "null"]
+        },
+        "purchase_description": {
+            "type": ["object", "null"]
+        },
+        "default_image_id": {
+            "type": ["string", "null"]
+        },
+        "default_weight": {
+            "type": ["string", "number", "null"]
+        },
+        "default_length": {
+            "type": ["string", "number", "null"]
+        },
+        "default_width": {
+            "type": ["string", "number", "null"]
+        },
+        "default_height": {
+            "type": ["string", "number", "null"]
+        },
+        "status": {
+            "type": "string",
+            "enum": ["draft", "active", "discontinued"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        }
+    },
+    "additionalProperties": false
+}

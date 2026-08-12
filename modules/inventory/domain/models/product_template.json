@@ -1,0 +1,160 @@
+{
+	"name": "inventory_product_template",
+	"label": "inventory_product_template.label",
+	"table_name": "inventory_product_templates",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Template-owned. Variants inherit this rather than storing their own copy; a variant's display name is computed as template name + attribute values."
+			}
+		},
+		{
+			"name": "short_name",
+			"label": "fields.short_name",
+			"data_type": { "type": "langjson", "min": 0, "max": 100 }
+		},
+		{
+			"name": "product_type_id",
+			"label": "fields.product_type_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "category_id",
+			"label": "fields.category_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "brand_id",
+			"label": "fields.brand_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "sale_ok",
+			"label": "fields.sale_ok",
+			"data_type": "boolean",
+			"default_value": true
+		},
+		{
+			"name": "purchase_ok",
+			"label": "fields.purchase_ok",
+			"data_type": "boolean",
+			"default_value": true
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "langjson", "min": 0, "max": 4000 }
+		},
+		{
+			"name": "sales_description",
+			"label": "fields.sales_description",
+			"data_type": { "type": "langjson", "min": 0, "max": 4000 }
+		},
+		{
+			"name": "purchase_description",
+			"label": "fields.purchase_description",
+			"data_type": { "type": "langjson", "min": 0, "max": 4000 }
+		},
+		{
+			"name": "default_image_id",
+			"label": "fields.default_image_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Shared fallback image. A variant with no image of its own renders this one."
+			}
+		},
+		{
+			"name": "default_weight",
+			"label": "fields.default_weight",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": {
+				"en-US": "Fallback for variants that do not carry their own weight."
+			}
+		},
+		{
+			"name": "default_length",
+			"label": "fields.default_length",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+		},
+		{
+			"name": "default_width",
+			"label": "fields.default_width",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+		},
+		{
+			"name": "default_height",
+			"label": "fields.default_height",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "active", "discontinued"]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"description": {
+				"en-US": "Business lifecycle of the product line. Distinct from is_archived, which is system visibility: a discontinued product may deliberately stay unarchived so it still appears in discontinued-product listings."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "product_type",
+			"label": { "en-US": "Product type" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_type",
+			"key_map": { "product_type_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "category",
+			"label": { "en-US": "Category" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_category",
+			"key_map": { "category_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "brand",
+			"label": { "en-US": "Brand" },
+			"type": "many:one",
+			"dest_schema": "inventory_brand",
+			"key_map": { "brand_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	],
+
+	"edges_from": [
+		{
+			"edge": "variants",
+			"label": { "en-US": "Variants" },
+			"existing": { "src_schema": "inventory_product_variant", "src_edge": "template" }
+		}
+	]
+}

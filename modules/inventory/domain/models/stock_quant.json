@@ -1,0 +1,199 @@
+{
+	"name": "inventory_stock_quant",
+	"label": "inventory_stock_quant.label",
+	"table_name": "inventory_stock_quants",
+	"should_build_db": true,
+	"composite_uniques": [{
+		"index_name": "invty_stock_quants_tid_pvar_loc_lot_pkg_own",
+		"fields": ["product_variant_id", "location_id", "lot_ref", "package_ref", "owner_ref", "org_id"]
+	}],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The concrete variant this balance is held for. A stock transaction must reference a variant, never a template, because a template alone does not identify a physical article (BR 3.1)."
+			}
+		},
+		{
+			"name": "location_id",
+			"label": "fields.location_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "lot_ref",
+			"label": "fields.lot_ref",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"required_for_create": true,
+			"default_value": "",
+			"no_update": true,
+			"description": {
+				"en-US": "Lot or serial identifier. A plain string rather than a reference because no Lot master data exists yet. Empty string for 'not tracked', never null: it is part of the quant's unique key, and SQL uniqueness does not constrain null rows against each other. Required for create so the composite unique can include it; the default supplies the empty value."
+			}
+		},
+		{
+			"name": "package_ref",
+			"label": "fields.package_ref",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"required_for_create": true,
+			"default_value": "",
+			"no_update": true,
+			"description": {
+				"en-US": "Physical package identifier. Empty string, never null, for the same reason as lot_ref."
+			}
+		},
+		{
+			"name": "owner_ref",
+			"label": "fields.owner_ref",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"required_for_create": true,
+			"default_value": "",
+			"no_update": true,
+			"description": {
+				"en-US": "Owner of the goods when they are not the company's, e.g. consignment stock. Empty string, never null, for the same reason as lot_ref."
+			}
+		},
+		{
+			"name": "base_uom_id",
+			"label": "fields.base_uom_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The unit the stored quantities are expressed in. Quantities are always kept in the variant's base unit so that balances from different transactions can be added."
+			}
+		},
+		{
+			"name": "on_hand_quantity",
+			"label": "fields.on_hand_quantity",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "Physical quantity present. System-managed: it is changed only by a completed stock move, never by a client write, so that every change traces back to a movement (BR 3.3, AC-STOCK-002). Negative values are representable so that an oversell can be recorded and then corrected rather than silently clamped."
+			}
+		},
+		{
+			"name": "reserved_quantity",
+			"label": "fields.reserved_quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "Quantity promised to an outgoing move but not yet moved. System-managed by the reservation engine, and never negative (STOCK-INV-002)."
+			}
+		},
+		{
+			"name": "available_quantity",
+			"label": "fields.available_quantity",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"is_virtual": true,
+			"description": {
+				"en-US": "on_hand_quantity minus reserved_quantity, computed on read. Virtual: storing it would be a third number that can disagree with the two it derives from (BR 4.2.2.3)."
+			}
+		},
+		{
+			"name": "incoming_date",
+			"label": "fields.incoming_date",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this balance entered the location. Used by removal strategies such as FIFO."
+			}
+		},
+		{
+			"name": "counted_quantity",
+			"label": "fields.counted_quantity",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"description": {
+				"en-US": "Quantity a physical count found. Recording it does not change on_hand_quantity; only applying the adjustment does (BR 4.2.7.3)."
+			}
+		},
+		{
+			"name": "count_quantity_set",
+			"label": "fields.count_quantity_set",
+			"data_type": "boolean",
+			"default_value": false,
+			"description": {
+				"en-US": "Whether a count has been entered and is awaiting apply. Distinct from counted_quantity being zero, which is a legitimate count result."
+			}
+		},
+		{
+			"name": "count_snapshot_quantity",
+			"label": "fields.count_snapshot_quantity",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"description": {
+				"en-US": "on_hand_quantity as it stood when the count was entered. Apply must reject a count whose snapshot no longer matches, because the variance would otherwise be computed against a balance that has since moved (STOCK-INV-008)."
+			}
+		},
+		{
+			"name": "count_reason_code",
+			"label": "fields.count_reason_code",
+			"data_type": { "type": "string", "min": 0, "max": 50 }
+		},
+		{
+			"name": "count_reason_text",
+			"label": "fields.count_reason_text",
+			"data_type": { "type": "string", "min": 0, "max": 500 }
+		},
+		{
+			"name": "next_count_date",
+			"label": "fields.next_count_date",
+			"data_type": "date",
+			"description": {
+				"en-US": "When this balance is next due to be counted. Filtering on it is what produces a cycle-count worklist."
+			}
+		},
+		{
+			"name": "last_count_date",
+			"label": "fields.last_count_date",
+			"data_type": "date"
+		},
+		{
+			"name": "count_assigned_user_id",
+			"label": "fields.count_assigned_user_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "invty_stock_quants_pvar_id_loc_id", "fields": ["product_variant_id", "location_id"] },
+		{ "index_name": "invty_stock_quants_loc_id_pvar_id", "fields": ["location_id", "product_variant_id"] },
+		{ "index_name": "invty_stock_quants_next_count_date", "fields": ["next_count_date"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "product_variant",
+			"label": { "en-US": "Product variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "product_variant_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "location",
+			"label": { "en-US": "Location" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_location",
+			"key_map": { "location_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

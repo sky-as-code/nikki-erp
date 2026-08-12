@@ -3,7 +3,7 @@
 	"label": "iam_group_user_rel.label",
 	"table_name": "iam_group_user_rel",
 	"should_build_db": true,
-	"composite_uniques": [["group_id", "user_id"]],
+	"composite_uniques": [{ "fields": ["group_id", "user_id"] }],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [

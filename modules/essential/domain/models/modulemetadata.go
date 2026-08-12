@@ -24,7 +24,7 @@ func ModuleMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ModuleMetadataSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", ModuleMetadataSchemaName)).
 		TableName("essential_modules").
-		CompositeUnique(ModuleMetadataFieldName).
+		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{ModuleMetadataFieldName}}).
 		ShouldBuildDb().
 		Field(
 			basemodel.DefineFieldId(ModuleMetadataFieldId).

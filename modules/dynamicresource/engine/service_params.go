@@ -2,10 +2,12 @@ package engine
 
 import (
 	"encoding/json"
+	stdErr "errors"
 
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -23,6 +25,22 @@ func decodeParams(params dmodel.DynamicFields, target any) error {
 		return errors.Wrap(err, "decodeParams.Marshal")
 	}
 	return errors.Wrap(json.Unmarshal(raw, target), "decodeParams.Unmarshal")
+}
+
+// clientErrorsForDecodeFailure turns a decode failure caused by a wrong-typed query parameter
+// into the invalid-format error the caller should see.
+//
+// A value of the wrong type is the caller's mistake, so answering 500 would report our own
+// failure for their bad request. Only json.UnmarshalTypeError carries the offending field;
+// anything else is a genuine fault and is left to bubble up.
+func clientErrorsForDecodeFailure(err error) (ft.ClientErrors, bool) {
+	var typeErr *json.UnmarshalTypeError
+	if !stdErr.As(err, &typeErr) || typeErr.Field == "" {
+		return nil, false
+	}
+	cErrs := ft.ClientErrors{}
+	cErrs.Append(*dmodel.NewInvalidDataTypeErr(typeErr.Field, typeErr.Type.String()))
+	return cErrs, true
 }
 
 // paramsToDeleteCommand reads the record id out of params.

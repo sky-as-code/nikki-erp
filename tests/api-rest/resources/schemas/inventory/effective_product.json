@@ -1,0 +1,73 @@
+{
+    "type": "object",
+    "required": ["variant_id", "template_id", "display_name", "sale_ok", "purchase_ok",
+                 "is_template_archived", "is_variant_archived", "is_selectable"],
+    "properties": {
+        "variant_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "template_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "name": {
+            "type": ["object", "null"]
+        },
+        "display_name": {
+            "type": "string"
+        },
+        "product_type_id": {
+            "type": "string"
+        },
+        "category_id": {
+            "type": "string"
+        },
+        "brand_id": {
+            "type": "string"
+        },
+        "sale_ok": {
+            "type": "boolean"
+        },
+        "purchase_ok": {
+            "type": "boolean"
+        },
+        "sku": {
+            "type": "string"
+        },
+        "barcode": {
+            "type": "string"
+        },
+        "image_id": {
+            "type": "string"
+        },
+        "weight": {
+            "type": "string"
+        },
+        "length": {
+            "type": "string"
+        },
+        "width": {
+            "type": "string"
+        },
+        "height": {
+            "type": "string"
+        },
+        "template_status": {
+            "type": "string"
+        },
+        "variant_status": {
+            "type": "string"
+        },
+        "is_template_archived": {
+            "type": "boolean"
+        },
+        "is_variant_archived": {
+            "type": "boolean"
+        },
+        "is_selectable": {
+            "type": "boolean"
+        }
+    },
+    "additionalProperties": false
+}

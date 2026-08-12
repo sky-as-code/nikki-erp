@@ -102,6 +102,7 @@ func (this *DynamicResourceEngineImpl) ExecuteAction(
 
 	result, err = definition.MainProcess(ctx, it.ProcessInput{
 		Params:             params,
+		FoundModel:         foundModel,
 		ResourceService:    this.ResourceService(),
 		ResourceRepository: this.ResourceRepository(),
 	})
@@ -138,6 +139,13 @@ func (this *DynamicResourceEngineImpl) fetchByKeys(
 		return nil, errors.New("KeysToFetch returned no key")
 	}
 
+	// A key of the wrong shape can never match a row, and reporting it as "not found" hides
+	// the caller's actual mistake. Built-in actions declare no ParamSchema, so this is the
+	// first and only place a path-supplied key is checked against its declared data type.
+	if !this.assertKeysAreWellFormed(keys, vErrs) {
+		return nil, nil
+	}
+
 	found, err := this.ResourceRepository().FindByKeys(ctx, keys)
 	if err != nil {
 		return nil, err
@@ -152,4 +160,29 @@ func (this *DynamicResourceEngineImpl) fetchByKeys(
 	}
 
 	return &found.Data, nil
+}
+
+// assertKeysAreWellFormed validates each fetch key against the data type its schema field
+// declares, and reports false as soon as one of them is malformed. A key naming no schema
+// field is left alone: KeysToFetch may legitimately return a virtual or computed key.
+func (this *DynamicResourceEngineImpl) assertKeysAreWellFormed(
+	keys dmodel.DynamicFields, vErrs *ft.ClientErrors,
+) bool {
+	schema := this.Schema()
+	if schema == nil {
+		return true
+	}
+
+	wellFormed := true
+	for name, val := range keys {
+		field, exists := schema.Field(name)
+		if !exists || val == nil {
+			continue
+		}
+		if _, cErr := field.Validate(val); cErr != nil {
+			vErrs.Append(*cErr)
+			wellFormed = false
+		}
+	}
+	return wellFormed
 }

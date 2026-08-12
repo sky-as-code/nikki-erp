@@ -1,0 +1,247 @@
+{
+	"name": "inventory_stock_transfer",
+	"label": "inventory_stock_transfer.label",
+	"table_name": "inventory_stock_transfers",
+	"should_build_db": true,
+	"record_label_field": "transfer_number",
+	"composite_uniques": [{
+		"index_name": "invty_stock_trfs_tid_number_org_id",
+		"fields": ["transfer_number", "org_id"]
+	}],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "transfer_number",
+			"label": "fields.transfer_number",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Human-readable document number, generated at create time from the operation type's sequence, never supplied by the client. Immutable: it is the reference quoted on paperwork and in other documents, so renumbering a transfer would orphan every mention of it."
+			}
+		},
+		{
+			"name": "operation_type_id",
+			"label": "fields.operation_type_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "operation_code",
+			"label": "fields.operation_code",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["incoming", "outgoing", "internal"]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot of the operation type's direction, taken at create time (BR 4.2.3.4). Held on the transfer rather than read through the edge so that reconfiguring an operation type cannot reinterpret the direction of a movement already recorded."
+			}
+		},
+		{
+			"name": "origin_reference",
+			"label": "fields.origin_reference",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The upstream document that caused this transfer, e.g. a purchase or sales order number. A plain string because the originating modules are outside Inventory and may not exist."
+			}
+		},
+		{
+			"name": "source_location_id",
+			"label": "fields.source_location_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "destination_location_id",
+			"label": "fields.destination_location_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "waiting", "confirmed", "ready", "done", "cancelled"]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"no_update": true,
+			"description": {
+				"en-US": "System-managed lifecycle state. Immutable to clients: it is advanced only by confirm, reserve, validate and cancel, because a status set by hand would claim an outcome no movement produced (BR 6.1)."
+			}
+		},
+		{
+			"name": "priority",
+			"label": "fields.priority",
+			"data_type": { "type": "int32", "min": 0, "max": 100 },
+			"default_value": 0,
+			"description": {
+				"en-US": "Higher values are handled first when stock is scarce. Ordering only; it grants no claim on stock, which is what reservation is for."
+			}
+		},
+		{
+			"name": "reservation_method",
+			"label": "fields.reservation_method",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["at_confirmation", "manual", "before_scheduled_date"]
+			},
+			"required_for_create": true,
+			"default_value": "at_confirmation",
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot of the operation type's setting at create time (BR 4.2.1.4). See operation_code for why it is copied rather than referenced."
+			}
+		},
+		{
+			"name": "backorder_policy",
+			"label": "fields.backorder_policy",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["ask", "always", "never"]
+			},
+			"required_for_create": true,
+			"default_value": "ask",
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot taken at create time. What happens to the unprocessed remainder when a transfer is validated partially (BR 4.2.3.11)."
+			}
+		},
+		{
+			"name": "shipping_policy",
+			"label": "fields.shipping_policy",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["partial", "all_at_once"]
+			},
+			"required_for_create": true,
+			"default_value": "partial",
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot taken at create time. 'all_at_once' refuses to become ready until every move is fully allocated."
+			}
+		},
+		{
+			"name": "scheduled_at",
+			"label": "fields.scheduled_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the transfer is planned to happen. Drives 'before_scheduled_date' reservation."
+			}
+		},
+		{
+			"name": "deadline_at",
+			"label": "fields.deadline_at",
+			"data_type": "datetime"
+		},
+		{
+			"name": "completed_at",
+			"label": "fields.completed_at",
+			"data_type": "datetime",
+			"no_update": true,
+			"description": {
+				"en-US": "Stamped by validate, and by nothing else. Its presence is what makes a transfer historical."
+			}
+		},
+		{
+			"name": "backorder_of_id",
+			"label": "fields.backorder_of_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The transfer this one carries the remainder of. Set when a partial validate creates a backorder; the original is left Done with its demand intact (STOCK-INV-010, STOCK-INV-020)."
+			}
+		},
+		{
+			"name": "return_of_id",
+			"label": "fields.return_of_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The transfer this one reverses. Declared now and written by the reverse-transfer phase; a Done transfer is corrected by a reverse, never by an edit."
+			}
+		},
+		{
+			"name": "chain_group_id",
+			"label": "fields.chain_group_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Groups the steps of a multi-step flow, e.g. pick then pack then ship. Shared by every transfer in the chain (BR 7.7)."
+			}
+		},
+		{
+			"name": "idempotency_key",
+			"label": "fields.idempotency_key",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"no_update": true,
+			"description": {
+				"en-US": "The key of the validate that completed this transfer. A retried validate carrying the same key returns the prior result instead of moving stock again (BR 8.7). Null until the transfer is validated. Deliberately NOT a partial unique: the DSL's partial unique also emits an index over the rows where the field IS NULL, which would permit only one un-validated transfer per org. Replay is detected by the service reading this key back, and the row lock taken during validate is what serialises two concurrent retries."
+			}
+		},
+		{
+			"name": "note",
+			"label": "fields.note",
+			"data_type": { "type": "string", "min": 0, "max": 2000 }
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "invty_stock_trfs_status_sched_at", "fields": ["status", "scheduled_at"] },
+		{ "index_name": "invty_stock_trfs_org_id_idem_key", "fields": ["org_id", "idempotency_key"] },
+		{ "index_name": "invty_stock_trfs_op_type_id_status", "fields": ["operation_type_id", "status"] },
+		{ "index_name": "invty_stock_trfs_backorder_of_id", "fields": ["backorder_of_id"] },
+		{ "index_name": "invty_stock_trfs_chain_group_id", "fields": ["chain_group_id"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "operation_type",
+			"label": { "en-US": "Operation type" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_operation_type",
+			"key_map": { "operation_type_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "source_location",
+			"label": { "en-US": "Source location" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_location",
+			"key_map": { "source_location_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "destination_location",
+			"label": { "en-US": "Destination location" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_location",
+			"key_map": { "destination_location_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "backorder_of",
+			"label": { "en-US": "Backorder of" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_transfer",
+			"key_map": { "backorder_of_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

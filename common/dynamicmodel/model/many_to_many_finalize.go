@@ -18,7 +18,7 @@ func finalizeManyToManyRelationsUnlocked(reg *SchemaRegistry) error {
 }
 
 func resolveManyToManyPeers(reg *SchemaRegistry) error {
-	for _, srcSch := range reg.schemas {
+	for _, srcSch := range schemasInNameOrder(reg) {
 		for i := range srcSch.toRelations {
 			rel := &srcSch.toRelations[i]
 			if rel.RelationType != RelationTypeManyToMany {
@@ -225,7 +225,7 @@ func physicalColumnNames(s *ModelSchema) []string {
 	out := make([]string, 0, len(s.fieldsOrder))
 	for _, name := range s.fieldsOrder {
 		f := s.fields[name]
-		if f != nil && !f.IsVirtualModelField() {
+		if f != nil && !f.IsNonPhysical() {
 			out = append(out, name)
 		}
 	}
@@ -245,7 +245,7 @@ func ensureFieldTypesMatch(a *ModelSchema, aField string, b *ModelSchema, bField
 }
 
 func injectThroughSchemaManyToOnes(reg *SchemaRegistry) error {
-	for _, srcSch := range reg.schemas {
+	for _, srcSch := range schemasInNameOrder(reg) {
 		for i := range srcSch.toRelations {
 			rel := &srcSch.toRelations[i]
 			if rel.RelationType != RelationTypeManyToMany || rel.M2mDestFieldPrefix == "" {

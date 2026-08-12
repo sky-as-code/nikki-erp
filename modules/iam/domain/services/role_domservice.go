@@ -278,10 +278,11 @@ func (this *RoleDomainServiceImpl) SearchUserRoles(
 		DbRepoGetter:           this.roleRepo,
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 		Query: dyn.SearchQuery{
-			Fields: assignedRoleFields(query.Fields),
-			Graph:  assignmentGraph(domain.RoleEdgeAssignedUsers, query.UserId, query.Graph),
-			Page:   query.Page,
-			Size:   query.Size,
+			Fields:          assignedRoleFields(query.Fields),
+			Graph:           assignmentGraph(domain.RoleEdgeAssignedUsers, query.UserId, query.Graph),
+			Page:            query.Page,
+			Size:            query.Size,
+			IncludeArchived: query.IncludeArchived,
 		},
 	})
 }
@@ -306,10 +307,11 @@ func (this *RoleDomainServiceImpl) SearchGroupRoles(
 		DbRepoGetter:           this.roleRepo,
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 		Query: dyn.SearchQuery{
-			Fields: assignedRoleFields(query.Fields),
-			Graph:  assignmentGraph(domain.RoleEdgeAssignedGroups, query.GroupId, query.Graph),
-			Page:   query.Page,
-			Size:   query.Size,
+			Fields:          assignedRoleFields(query.Fields),
+			Graph:           assignmentGraph(domain.RoleEdgeAssignedGroups, query.GroupId, query.Graph),
+			Page:            query.Page,
+			Size:            query.Size,
+			IncludeArchived: query.IncludeArchived,
 		},
 	})
 }

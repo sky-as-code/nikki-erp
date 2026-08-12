@@ -48,7 +48,7 @@ func OrgUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		ShouldBuildDb().
 		// Add `id` column to cascade delete to user_permissions table
 		Extend(basemodel.BaseModelSchemaBuilder()).
-		CompositeUnique(OrgUsrRelFieldOrgId, OrgUsrRelFieldUserId).
+		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{OrgUsrRelFieldOrgId, OrgUsrRelFieldUserId}}).
 		Field(
 			basemodel.DefineFieldId(OrgUsrRelFieldOrgId).
 				RequiredForCreate(),

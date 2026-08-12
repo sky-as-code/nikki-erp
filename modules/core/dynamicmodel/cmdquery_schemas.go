@@ -55,7 +55,8 @@ func SearchQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(DefineFieldSearchGraph()).
 		Field(DefineFieldSearchPage()).
 		Field(DefineFieldSearchSize()).
-		Field(DefineFieldSearchName())
+		Field(DefineFieldSearchName()).
+		Field(DefineFieldIncludeArchived())
 }
 
 func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -99,6 +100,18 @@ func DefineFieldSearchGraph() *dmodel.FieldBuilder {
 	return dmodel.DefineField().
 		Name(basemodel.FieldGraph).
 		DataType(dmodel.FieldDataTypeModel())
+}
+
+// DefineFieldIncludeArchived defines the "include_archived" search query field.
+//
+// It deliberately carries no Default(false): ModelField.Validate materializes a non-empty
+// default into the *bool, which would erase the nil/false distinction before crud.Search
+// ever sees it. The public-API default is applied in crud.Search instead, so that callers
+// going straight to the repository keep the unfiltered legacy behaviour.
+func DefineFieldIncludeArchived() *dmodel.FieldBuilder {
+	return dmodel.DefineField().
+		Name(basemodel.FieldIncludeArchived).
+		DataType(dmodel.FieldDataTypeBoolean())
 }
 
 func DefineFieldSearchName() *dmodel.FieldBuilder {

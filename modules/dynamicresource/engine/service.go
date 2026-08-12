@@ -109,8 +109,11 @@ func (this *DynamicResourceServiceImpl) GetById(
 	if err != nil {
 		return nil, errors.Wrap(err, "DynamicResourceService.GetById")
 	}
+	// defaultFields is the *list view* projection a search falls back to (e.g. a user is
+	// listed by avatar/name/email/status). Fetching one record by its id is the detail
+	// view, so with no explicit selection it returns the whole record instead.
 	if len(query.Fields) == 0 {
-		query.Fields = this.defaultFields
+		query.Fields = columnNames(this.schema)
 	}
 
 	result, err := corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[it.DynamicEntity, *it.DynamicEntity]{
@@ -163,6 +166,11 @@ func (this *DynamicResourceServiceImpl) Search(
 ) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error) {
 	query, err := paramsToSearchQuery(params)
 	if err != nil {
+		// A query parameter of the wrong type is the caller's mistake; reporting it as a 500
+		// would blame the server for a bad request.
+		if cErrs, ok := clientErrorsForDecodeFailure(err); ok {
+			return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
+		}
 		return nil, errors.Wrap(err, "DynamicResourceService.Search")
 	}
 

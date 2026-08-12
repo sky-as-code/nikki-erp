@@ -1,0 +1,103 @@
+{
+    "type": "object",
+    "required": [
+        "id", "created_at", "product_variant_id", "demand_quantity", "base_demand_quantity",
+        "source_location_id", "destination_location_id", "status", "etag", "org_id"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "transfer_id": {
+            "type": ["string", "null"]
+        },
+        "sequence": {
+            "type": ["integer", "null"]
+        },
+        "product_variant_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "uom_id": {
+            "type": ["string", "null"]
+        },
+        "demand_quantity": {
+            "type": ["string", "number"]
+        },
+        "base_demand_quantity": {
+            "type": ["string", "number"]
+        },
+        "source_location_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "destination_location_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "final_location_id": {
+            "type": ["string", "null"]
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "draft", "waiting", "confirmed", "partially_available",
+                "assigned", "done", "cancelled"
+            ]
+        },
+        "priority": {
+            "type": ["integer", "null"]
+        },
+        "scheduled_at": {
+            "type": ["string", "null"]
+        },
+        "deadline_at": {
+            "type": ["string", "null"]
+        },
+        "reservation_date": {
+            "type": ["string", "null"]
+        },
+        "picked": {
+            "type": ["boolean", "null"]
+        },
+        "origin_move_id": {
+            "type": ["string", "null"]
+        },
+        "is_inventory_adjustment": {
+            "type": ["boolean", "null"]
+        },
+        "scrap_id": {
+            "type": ["string", "null"]
+        },
+        "valuation_value": {
+            "type": ["string", "number", "null"]
+        },
+        "remaining_quantity": {
+            "type": ["string", "number", "null"]
+        },
+        "remaining_value": {
+            "type": ["string", "number", "null"]
+        },
+        "currency_id": {
+            "type": ["string", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        }
+    },
+    "additionalProperties": false
+}

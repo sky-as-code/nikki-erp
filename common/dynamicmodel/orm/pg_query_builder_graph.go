@@ -30,6 +30,31 @@ type joinPlanner struct {
 	m2mTenantWheres []string
 	nextTableIdx    int
 	rootAlias       string
+	// hasFanOutJoin is set when a planned join can multiply root rows. Such a join makes the
+	// row set and COUNT(*) both report duplicates, so the query needs DISTINCT to keep the
+	// caller's grain.
+	hasFanOutJoin bool
+}
+
+// relationFansOut reports whether traversing rel can yield several destination rows per source
+// row. The cases mirror joinOnExpr's switch, so the two cannot disagree about direction.
+func relationFansOut(rel dmodel.ModelRelation) bool {
+	switch rel.RelationType {
+	case dmodel.RelationTypeOneToMany, dmodel.RelationTypeManyToMany:
+		return true
+	case dmodel.RelationTypeOneToOne:
+		// An inverse one:one joins dest.fk = parent.pk. Uniqueness there is a modelling promise
+		// rather than something the planner can see, and treating it as fan-out would force
+		// DISTINCT on every such query. Matches joinOnExpr's handling.
+		return false
+	default:
+		return false
+	}
+}
+
+// needsDistinct reports whether this plan produces duplicate root rows.
+func (p *joinPlanner) needsDistinct() bool {
+	return p != nil && p.hasFanOutJoin
 }
 
 func newJoinPlanner(qb *PgQueryBuilder, registry *dmodel.SchemaRegistry, root *dmodel.ModelSchema) *joinPlanner {
@@ -195,6 +220,9 @@ func (p *joinPlanner) appendJoinForEdgePrefix(edgeChain []string, cacheKey strin
 	if err := validateImplicitEdgeModelField(parentSch, edge); err != nil {
 		return "", nil, err
 	}
+	if relationFansOut(rel) {
+		p.hasFanOutJoin = true
+	}
 	if rel.RelationType == dmodel.RelationTypeManyToMany {
 		return p.appendManyToManyJoin(parentAlias, parentSch, rel, cacheKey)
 	}
@@ -289,8 +317,12 @@ func (p *joinPlanner) ensureFullPath(field string, maxDots int) error {
 	return p.validateLeafColumn(destSch, leaf, field)
 }
 
+// validateRootColumn answers "is this a legal path on the root schema?", which is a different
+// question from resolveFieldSqlRef's "give me SQL for it". A virtual scalar is legal to select —
+// it is dropped from the projection later and filled by a service — so it is accepted here while
+// resolveFieldSqlRef still rejects it.
 func (p *joinPlanner) validateRootColumn(col string) error {
-	field, ok := p.root.Column(col)
+	field, ok := p.root.Field(col)
 	if !ok || field.IsVirtualModelField() {
 		return errors.Wrap(&errClientUnknownField{Field: col}, "validateRootColumn")
 	}
@@ -333,6 +365,30 @@ func (p *joinPlanner) resolveFieldSqlRef(field string, maxDots int) (*dmodel.Mod
 		return nil, "", errors.Wrap(&errClientUnknownField{Field: field}, "resolveFieldSqlRef")
 	}
 	return fieldObj, fmt.Sprintf("%s.%s", alias, pgQuote(leaf)), nil
+}
+
+// isVirtualScalarPath reports whether a single-segment path names a virtual scalar on the root
+// schema. Such a field has no column to project: it is filled by a service after the read, so it
+// is dropped from the SELECT while still being a legal thing to ask for.
+func (p *joinPlanner) isVirtualScalarPath(path string) bool {
+	if strings.Contains(path, ".") {
+		return false
+	}
+	field, ok := p.root.Field(path)
+	return ok && field.IsVirtual()
+}
+
+// primaryKeySelectRefs returns SQL refs for the root schema's primary keys, used when every
+// requested column turned out to be virtual and the projection would otherwise be empty.
+func (p *joinPlanner) primaryKeySelectRefs() []string {
+	keys := p.root.PrimaryKeys()
+	refs := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if _, ref, err := p.resolveFieldSqlRef(key, 0); err == nil {
+			refs = append(refs, ref)
+		}
+	}
+	return refs
 }
 
 func (p *joinPlanner) selectExprForColumn(requested string) (string, error) {

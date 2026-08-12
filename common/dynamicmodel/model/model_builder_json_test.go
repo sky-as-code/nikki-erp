@@ -10,7 +10,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
-
 func TestParseModelJson_BasicShape(t *testing.T) {
 	builder := ParseModelJson(`{
 		"name": "test_basic",
@@ -213,14 +212,16 @@ func TestParseModelJson_Constraints(t *testing.T) {
 			{"name": "org_id", "data_type": "ulid"},
 			{"name": "user_id", "data_type": "ulid"}
 		],
-		"composite_uniques": [["name", "org_id"]],
+		"composite_uniques": [{"index_name": "tc_name_org", "fields": ["name", "org_id"]}],
 		"partial_uniques": [{"not_null_fields": ["name"], "nullable_field": "org_id"}],
 		"search_indexes": [{"fields": ["name"]}],
 		"exclusive_required_fields": [["org_id", "user_id"]]
 	}`).Build()
 
-	assert.Equal(t, [][]string{{"name", "org_id"}}, schema.CompositeUniques())
-	assert.Len(t, schema.PartialUniqueGroups(), 1)
+	assert.Equal(t,
+		[]CompositeUniqueParam{{IndexName: "tc_name_org", Fields: []string{"name", "org_id"}}},
+		schema.CompositeUniques())
+	assert.Len(t, schema.PartialUniques(), 1)
 	assert.Len(t, schema.SearchIndexGroups(), 1)
 }
 

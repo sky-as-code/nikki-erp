@@ -24,18 +24,6 @@ func NewRequestContext(ctx context.Context) Context {
 	}
 }
 
-func CloneRequestContext(ctx Context) Context {
-	// var dbTrx db.DbTransaction
-	// if ctx.GetDbTranx() != nil {
-	// 	dbTrx = ctx.GetDbTranx().(db.DbTransaction)
-	// }
-	return &RequestContext{
-		Context: ctx.InnerContext(),
-		logger:  ctx.GetLogger(),
-		repoTrx: ctx.GetDbTranx(),
-	}
-}
-
 // Deprecated: Use nikkierp/modules/core/context/context.go instead
 type RequestContext struct {
 	context.Context

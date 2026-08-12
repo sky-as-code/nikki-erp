@@ -39,7 +39,7 @@ func OrganizationalUnitSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Label(model.NewLangJsonRefSf("%s.label", OrganizationalUnitSchemaName)).
 		TableName("iam_org_units").
 		RecordLabelField(OrgUnitFieldName).
-		CompositeUnique(OrgUnitFieldName, OrgUnitFieldOrgId).
+		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{OrgUnitFieldName, OrgUnitFieldOrgId}}).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(

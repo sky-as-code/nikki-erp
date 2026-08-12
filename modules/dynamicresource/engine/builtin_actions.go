@@ -117,7 +117,17 @@ func processGetByUnique(ctx corectx.Context, input it.ProcessInput) (*it.ActionR
 
 func processSearch(ctx corectx.Context, input it.ProcessInput) (*it.ActionResult, error) {
 	result, err := input.ResourceService.Search(ctx, input.Params)
-	return toActionResult(result, err)
+	if err != nil {
+		return nil, err
+	}
+	// A search always has a payload, even when it matched nothing: the empty item list
+	// still carries total/page/size. Unlike the single-record actions, HasData=false here
+	// means "no rows", not "no result", so the data is attached either way.
+	return &it.ActionResult{
+		ClientErrors: result.ClientErrors,
+		HasData:      result.HasData,
+		Data:         result.Data,
+	}, nil
 }
 
 func processExists(ctx corectx.Context, input it.ProcessInput) (*it.ActionResult, error) {

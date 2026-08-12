@@ -5,10 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/sky-as-code/nikki-erp/common/model"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 )
-
 
 // newFieldsTestSchema builds a schema with three column-backed fields, so that a test
 // can tell a configured field list apart from the all-columns fallback.

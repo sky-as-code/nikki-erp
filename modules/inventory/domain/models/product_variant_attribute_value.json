@@ -1,0 +1,50 @@
+{
+	"name": "inventory_product_variant_attribute_value",
+	"label": "inventory_product_variant_attribute_value.label",
+	"table_name": "inventory_product_variant_attribute_values",
+	"should_build_db": true,
+	"composite_uniques": [{ "index_name": "invty_prod_var_attr_vals_tid_pvar_id_tav_id", "fields": ["product_variant_id", "template_attribute_value_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "template_attribute_value_id",
+			"label": "fields.template_attribute_value_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "Points at the template-scoped allowed value rather than the global attribute value, so a variant cannot be built from a value its template does not allow."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "variant",
+			"label": { "en-US": "Product variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "product_variant_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "template_attribute_value",
+			"label": { "en-US": "Template attribute value" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_template_attribute_value",
+			"key_map": { "template_attribute_value_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

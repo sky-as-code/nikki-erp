@@ -1,0 +1,40 @@
+{
+    "type": "array",
+    "minItems": 2,
+    "maxItems": 2,
+    "items": {
+        "type": "object",
+        "required": ["field", "key", "message", "type"],
+        "properties": {
+            "field": {
+                "type": "string",
+                "enum": ["display_name", "email"]
+            },
+            "key": {
+                "type": "string",
+                "enum": ["common:err_invalid_string_length", "common:err_invalid_email"]
+            },
+            "message": {
+                "type": "string",
+                "enum": ["string length must be between {{min}} and {{max}}", "must be a valid email address"]
+            },
+            "type": {
+                "type": "string",
+                "enum": ["validation"]
+            },
+            "vars": {
+                "type": "object",
+                "properties": {
+                    "max": {
+                        "type": "integer"
+                    },
+                    "min": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "additionalProperties": false
+    },
+    "additionalItems": false
+}

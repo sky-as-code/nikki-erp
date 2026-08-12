@@ -1,0 +1,36 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "name", "etag", "is_archived", "org_id"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "name": {
+            "type": "object"
+        },
+        "reference_uom_id": {
+            "type": ["string", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        }
+    },
+    "additionalProperties": false
+}
