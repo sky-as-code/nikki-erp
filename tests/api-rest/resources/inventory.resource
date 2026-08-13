@@ -28,6 +28,7 @@ ${STOCK_TRANSFER_API}               /v1/inventory/inventory_stock_transfer
 ${STOCK_MOVE_API}                   /v1/inventory/inventory_stock_move
 ${STOCK_MOVE_LINE_API}              /v1/inventory/inventory_stock_move_line
 ${STOCK_MOVE_DEPENDENCY_API}        /v1/inventory/inventory_stock_move_dependency
+${STOCK_SCRAP_API}                  /v1/inventory/inventory_stock_scrap
 ${INVENTORY_SCHEMA_DIR}     ${CURDIR}/schemas/inventory
 
 
@@ -489,6 +490,101 @@ Ensure Receipt Operation Type Under Test
     ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${RECEIPT_OPERATION_TYPE_ID}    ${id}
+
+Ensure Inventory Loss Location Under Test
+    [Documentation]    The 'inventory_loss' virtual location an adjustment balances against
+    ...    (BR §4.2.7.2). A count that finds more than the books said has to take the difference
+    ...    from somewhere, and this is the somewhere.
+    ${id}=    Get Variable Value    ${INVENTORY_LOSS_LOCATION_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${name}=    Unique Display Name    Robot Inventory Loss
+    ${code}=    Unique Code    stkloss
+    ${resp}=    POST On Session    api    ${STOCK_LOCATION_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_type': 'inventory_loss', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${INVENTORY_LOSS_LOCATION_ID}    ${id}
+
+Ensure Scrap Location Under Test
+    [Documentation]    The 'scrap' virtual location written-off goods move to (BR §4.2.9.1). Stock
+    ...    that lands here has left usable inventory without being deleted, which is what makes a
+    ...    scrap auditable rather than a disappearance.
+    ${id}=    Get Variable Value    ${SCRAP_LOCATION_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${name}=    Unique Display Name    Robot Scrap Location
+    ${code}=    Unique Code    stkscrp
+    ${resp}=    POST On Session    api    ${STOCK_LOCATION_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_type': 'scrap', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${SCRAP_LOCATION_ID}    ${id}
+
+Ensure Correction Operation Type Under Test
+    [Documentation]    The internal operation type adjustments and scraps generate their movements
+    ...    through (decision F3).
+    ...
+    ...    Its code is the fixed 'INV_CORRECTION', not a Unique Code like the other fixtures: the
+    ...    correction helper resolves it by that exact string, and the constant it matches is
+    ...    models.StockCorrectionOperationTypeCode. A randomised code here would make every
+    ...    adjustment and scrap fail with "no internal operation type", which reads as a data
+    ...    problem rather than a fixture mismatch.
+    ...
+    ...    Because the code is fixed it can already exist from an earlier run, so a conflict is
+    ...    tolerated and the existing record reused.
+    ${id}=    Get Variable Value    ${CORRECTION_OPERATION_TYPE_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    Ensure Stock Location Under Test
+    Ensure Inventory Loss Location Under Test
+    ${name}=    Unique Display Name    Robot Correction Type
+    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
+    ...    json=${{ {'code': 'INV_CORRECTION', 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ...    expected_status=any
+    IF    ${resp.status_code} == 200 or ${resp.status_code} == 201
+        ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    ELSE
+        ${id}=    Find Operation Type By Code    INV_CORRECTION
+    END
+    Set Global Variable    ${CORRECTION_OPERATION_TYPE_ID}    ${id}
+
+Find Operation Type By Code
+    [Documentation]    Reads back an operation type by its code, for the fixed-code fixture above.
+    [Arguments]    ${code}
+    ${resp}=    GET On Session    api    ${STOCK_OPERATION_TYPE_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    Response Status Should Be    ${resp}    200
+    FOR    ${item}    IN    @{resp.json()}[items]
+        IF    $item.get('code') == $code    RETURN    ${item}[id]
+    END
+    Fail    No operation type with code '${code}' exists; the correction fixture cannot continue
+
+Ensure Correction Fixtures
+    [Documentation]    Everything an adjustment or a scrap needs before it can generate a movement.
+    Ensure Correction Operation Type Under Test
+    Ensure Inventory Loss Location Under Test
+    Ensure Scrap Location Under Test
+
+Read Stock Quant Id
+    [Documentation]    Finds the balance row for a variant in a location, which the count actions
+    ...    address by id. Fails loudly when absent: every caller here has just received stock, so a
+    ...    missing balance means the receipt did not land and the test should say so.
+    [Arguments]    ${variant_id}    ${location_id}
+    ${resp}=    GET On Session    api    ${STOCK_QUANT_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    Response Status Should Be    ${resp}    200
+    FOR    ${item}    IN    @{resp.json()}[items]
+        IF    $item.get('product_variant_id') == $variant_id and $item.get('location_id') == $location_id
+            RETURN    ${item}[id]
+        END
+    END
+    Fail    No stock balance for variant '${variant_id}' in location '${location_id}'
+
+Read Stock Quant Field
+    [Documentation]    Reads one field off a balance, for asserting count metadata.
+    [Arguments]    ${quant_id}    ${field}
+    ${resp}=    GET On Session    api    ${STOCK_QUANT_API}/${quant_id}
+    Response Status Should Be    ${resp}    200
+    RETURN    ${resp.json()}[data].get('${field}')
 
 Receive Stock Into Location
     [Documentation]    Puts a quantity of a variant into a location by running a real receipt:

@@ -72,6 +72,9 @@ func (*InventoryModule) Init() error {
 	if err := initStockTransferService(); err != nil {
 		return err
 	}
+	if err := initStockScrapService(); err != nil {
+		return err
+	}
 	return restful.InitRestfulHandlers()
 }
 
@@ -101,6 +104,22 @@ func initStockQuantService() error {
 	}
 
 	quantEngine.SetResourceService(services.NewStockQuantDomainService(quantEngine.ResourceService()))
+	return nil
+}
+
+// initStockScrapService installs the derived scrap service on the Stock Scrap engine.
+//
+// Two things depend on it: Do Scrap type-asserts to the derived type, and the create/update/delete
+// overrides are what stop a done scrap being edited or deleted. Without this the document rules
+// would silently not apply — the CRUD would still work, which is what makes the omission easy to
+// miss.
+func initStockScrapService() error {
+	scrapEngine, ok := dynamicresource.Registry().GetEngine(models.StockScrapSchemaName)
+	if !ok {
+		return errors.New("the '" + models.StockScrapSchemaName + "' engine is not registered")
+	}
+
+	scrapEngine.SetResourceService(services.NewStockScrapDomainService(scrapEngine.ResourceService()))
 	return nil
 }
 
@@ -190,5 +209,9 @@ func (*InventoryModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.StockMoveSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.StockMoveLineSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.StockMoveDependencySchemaBuilder()),
+
+		// Corrections. The scrap references the transfer, the variant and two locations, all
+		// registered above, so it comes last.
+		dmodel.RegisterSchemaB(models.StockScrapSchemaBuilder()),
 	)
 }

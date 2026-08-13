@@ -30,6 +30,7 @@ func TestEngineSchemaNamesCoverEveryProductResource(t *testing.T) {
 			models.StockMoveSchemaName,
 			models.StockMoveLineSchemaName,
 			models.StockMoveDependencySchemaName,
+			models.StockScrapSchemaName,
 		},
 		EngineSchemaNames())
 }
@@ -48,6 +49,9 @@ func TestRuleBearingResourcesDefineActions(t *testing.T) {
 		models.StockTransferSchemaName: true,
 		// Losing this one would let a client write an allocation the balance knows nothing about.
 		models.StockMoveLineSchemaName: true,
+		// Do Scrap lives here; without it a scrap could be raised but never executed, and the
+		// resource would still serve CRUD so nothing would look broken.
+		models.StockScrapSchemaName: true,
 	}
 
 	for _, spec := range engineSpecs {

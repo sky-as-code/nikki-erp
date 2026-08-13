@@ -30,6 +30,9 @@ const (
 	PermissionUnreserve         = "unreserve"
 	PermissionValidate          = "validate"
 	PermissionCancel            = "cancel"
+	// Raising a return commits the company to taking goods back, which is a commercial decision
+	// rather than an edit to a shipping document, so it carries its own permission.
+	PermissionCreateReturn = "create_return"
 )
 
 // Action names, namespaced by resource in the same style as the built-ins.
@@ -40,6 +43,7 @@ const (
 	ActionUnreserve         = "unreserve"
 	ActionValidate          = "validate"
 	ActionCancel            = "cancel"
+	ActionCreateReturn      = "create_return"
 )
 
 // Param names the movement actions read from the request.
@@ -47,6 +51,9 @@ const (
 	paramTransferId      = "id"
 	paramIdempotencyKey  = "idempotency_key"
 	paramCreateBackorder = "create_backorder"
+	paramReturnLines     = "lines"
+	paramReturnMoveId    = "move_id"
+	paramReturnQuantity  = "quantity"
 )
 
 func stockTransferEngineSpec() engineSpec {
@@ -194,7 +201,87 @@ func defineStockTransferActions(engine drif.DynamicResourceEngine) error {
 			Permission:  PermissionCancel,
 			MainProcess: processCancel,
 		}),
+		engine.DefineAction(drif.DynamicActionDefinition{
+			ActionName:  ActionCreateReturn,
+			ActionType:  drif.ActionTypeGeneric,
+			RestPath:    ":id/create_return",
+			Permission:  PermissionCreateReturn,
+			MainProcess: processCreateReturn,
+		}),
 	)
+}
+
+func processCreateReturn(ctx corectx.Context, input drif.ProcessInput) (*drif.ActionResult, error) {
+	service, err := transferServiceOf(input)
+	if err != nil {
+		return nil, err
+	}
+
+	request, vErrs := readReturnRequest(input.Params)
+	if vErrs.Count() > 0 {
+		return &drif.ActionResult{ClientErrors: *vErrs}, nil
+	}
+
+	result, err := service.CreateReturn(ctx, readActionId(input), request)
+	return toMutateActionResult(result, err)
+}
+
+// readReturnRequest reads the optional per-line quantities from the request body.
+//
+// Absent `lines` means "return everything still returnable" (F9), which is what the contextual
+// action on the transfer page sends: the return lands as a draft and the user adjusts its move
+// quantities through ordinary CRUD before confirming. An API caller that wants a partial return
+// names the moves explicitly.
+func readReturnRequest(params dmodel.DynamicFields) (services.ReturnRequest, *ft.ClientErrors) {
+	vErrs := ft.NewClientErrors()
+	request := services.ReturnRequest{}
+
+	raw, present := params[paramReturnLines]
+	if !present || raw == nil {
+		return request, vErrs
+	}
+
+	items, ok := raw.([]any)
+	if !ok {
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockTransferSchemaName, "stock_return.lines_malformed",
+			"'lines' must be a list of {move_id, quantity} entries"))
+		return request, vErrs
+	}
+
+	for _, item := range items {
+		line, vErr := readReturnLine(item)
+		if vErr != nil {
+			vErrs.Append(*vErr)
+			continue
+		}
+		request.Lines = append(request.Lines, line)
+	}
+	return request, vErrs
+}
+
+func readReturnLine(item any) (services.ReturnLineRequest, *ft.ClientErrorItem) {
+	fields, ok := item.(map[string]any)
+	if !ok {
+		return services.ReturnLineRequest{}, ft.NewBusinessViolation(
+			models.StockTransferSchemaName, "stock_return.line_malformed",
+			"each return line must be an object with move_id and quantity")
+	}
+
+	moveId, _ := fields[paramReturnMoveId].(string)
+	if moveId == "" {
+		return services.ReturnLineRequest{}, ft.NewBusinessViolation(
+			models.StockTransferSchemaName, "stock_return.line_move_id_required",
+			"each return line must name a move_id")
+	}
+
+	quantity, vErrs := readDecimalField(fields, paramReturnQuantity)
+	if vErrs.Count() > 0 {
+		return services.ReturnLineRequest{}, ft.NewBusinessViolation(
+			models.StockTransferSchemaName, "stock_return.line_quantity_malformed",
+			"return line for move '"+moveId+"' must carry a decimal quantity")
+	}
+	return services.ReturnLineRequest{MoveId: moveId, Quantity: quantity}, nil
 }
 
 // transferServiceOf reaches the derived service the module installed during Init.

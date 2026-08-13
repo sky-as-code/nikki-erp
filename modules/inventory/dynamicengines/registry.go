@@ -54,6 +54,7 @@ var engineSpecs = []engineSpec{
 	stockMoveEngineSpec(),
 	stockMoveLineEngineSpec(),
 	stockMoveDependencyEngineSpec(),
+	stockScrapEngineSpec(),
 }
 
 // EngineSchemaNames lists the schemas Inventory creates an engine for, so that route

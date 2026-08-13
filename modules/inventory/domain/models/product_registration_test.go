@@ -34,6 +34,7 @@ func TestProductSchemasRegisterInOrder(t *testing.T) {
 		StockMoveSchemaBuilder(),
 		StockMoveLineSchemaBuilder(),
 		StockMoveDependencySchemaBuilder(),
+		StockScrapSchemaBuilder(),
 	}
 
 	for _, builder := range builders {

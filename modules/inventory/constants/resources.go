@@ -22,4 +22,6 @@ const (
 	ResourceStockMove           = "inventory_stock_move"
 	ResourceStockMoveLine       = "inventory_stock_move_line"
 	ResourceStockMoveDependency = "inventory_stock_move_dependency"
+
+	ResourceStockScrap = "inventory_stock_scrap"
 )

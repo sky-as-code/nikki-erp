@@ -1328,30 +1328,60 @@ func (this *PgQueryBuilder) resolveOrderField(
 	return ctx.planner.resolveFieldSqlRef(fieldName, MaxOrderGraphFieldDots)
 }
 
-// parseNikkiDateTimeInput converts string (RFC3339 Z) or int64 (Unix milliseconds) to ModelDateTime
-// when the schema column is nikkiDateTime; otherwise returns value unchanged.
+// parseNikkiDateTimeInput converts a filter-graph value to the schema column's date/time wrapper
+// type — ModelDate for nikkiDate, ModelTime for nikkiTime, ModelDateTime for nikkiDateTime (string
+// RFC3339 Z or int64 Unix milliseconds) — so it reaches convertValue's valueAllowed check already
+// typed. Any other column type, or a value it does not know how to parse (e.g. already-typed), is
+// returned unchanged.
 func parseNikkiDateTimeInput(fieldName, columnType string, value any) (any, ft.ClientErrors, error) {
-	if columnType != dmodel.FieldDataTypeNameModelDateTime {
-		return value, nil, nil
-	}
-	v, ok := unwrapValue(reflect.ValueOf(value))
-	if !ok {
-		return value, nil, nil
-	}
-	switch v.Kind() {
-	case reflect.String:
-		mt, err := cmodel.ParseModelDateTime(v.String())
-		if err != nil {
-			return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(
-				fieldName, "RFC3339 UTC datetime (Z)")}, nil
+	switch columnType {
+	case dmodel.FieldDataTypeNameModelDate:
+		return parseNikkiStringInput(fieldName, value, "date (YYYY-MM-DD)", func(s string) (any, error) {
+			return cmodel.ParseModelDate(s)
+		})
+	case dmodel.FieldDataTypeNameModelTime:
+		return parseNikkiStringInput(fieldName, value, "time (HH:MM:SS)", func(s string) (any, error) {
+			return cmodel.ParseModelTime(s)
+		})
+	case dmodel.FieldDataTypeNameModelDateTime:
+		v, ok := unwrapValue(reflect.ValueOf(value))
+		if !ok {
+			return value, nil, nil
 		}
-		return mt, nil, nil
-	case reflect.Int64:
-		t := time.UnixMilli(v.Int()).UTC()
-		return cmodel.WrapModelDateTime(t), nil, nil
+		switch v.Kind() {
+		case reflect.String:
+			mt, err := cmodel.ParseModelDateTime(v.String())
+			if err != nil {
+				return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(
+					fieldName, "RFC3339 UTC datetime (Z)")}, nil
+			}
+			return mt, nil, nil
+		case reflect.Int64:
+			t := time.UnixMilli(v.Int()).UTC()
+			return cmodel.WrapModelDateTime(t), nil, nil
+		default:
+			return value, nil, nil
+		}
 	default:
 		return value, nil, nil
 	}
+}
+
+// parseNikkiStringInput is the shared shape of the nikkiDate/nikkiTime branches above: parse a
+// string value with the given function, or pass any non-string value through unchanged (it may
+// already be typed, and valueAllowed rejects it downstream if not).
+func parseNikkiStringInput(
+	fieldName string, value any, typeLabel string, parse func(string) (any, error),
+) (any, ft.ClientErrors, error) {
+	v, ok := unwrapValue(reflect.ValueOf(value))
+	if !ok || v.Kind() != reflect.String {
+		return value, nil, nil
+	}
+	parsed, err := parse(v.String())
+	if err != nil {
+		return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(fieldName, typeLabel)}, nil
+	}
+	return parsed, nil, nil
 }
 
 func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (any, ft.ClientErrors, error) {
@@ -1383,13 +1413,13 @@ func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (a
 		return nil, nil, errors.Errorf("convertValue: field '%s' does not allow NULL", field.Name())
 	}
 	if !valueAllowed(columnCategoryFor(field.ColumnType()), v) {
-		return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name())}, nil
+		return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name(), fieldTypeLabel(field))}, nil
 	}
 
 	if columnCategoryFor(field.ColumnType()) == columnJSON {
 		raw, err := json.Marshal(v.Interface())
 		if err != nil {
-			return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name())}, errors.Wrapf(err, "convertValue: field '%s': marshal json", field.Name())
+			return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name(), fieldTypeLabel(field))}, errors.Wrapf(err, "convertValue: field '%s': marshal json", field.Name())
 		}
 
 		return string(raw), nil, nil
@@ -1398,7 +1428,7 @@ func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (a
 	if columnCategoryFor(field.ColumnType()) == columnTime {
 		t, timeErr := modelTimeFromReflect(v)
 		if timeErr != nil {
-			return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name())}, errors.Wrapf(
+			return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name(), fieldTypeLabel(field))}, errors.Wrapf(
 				timeErr, "convertValue: field '%s'", field.Name(),
 			)
 		}
@@ -1407,6 +1437,16 @@ func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (a
 	}
 
 	return v.Interface(), nil, nil
+}
+
+// fieldTypeLabel is the best-effort type name for an invalid-data-type error's `{{typeName}}`
+// var: the resolved PG type when known, or the raw schema column type otherwise. It is a message
+// label, not business logic, so a resolution failure falls back rather than propagating.
+func fieldTypeLabel(field *dmodel.ModelField) string {
+	if pgType, err := resolveGenericToPgType(field.ColumnType()); err == nil {
+		return pgType
+	}
+	return field.ColumnType()
 }
 
 func convertArrayFieldValue(field *dmodel.ModelField, value any) (any, ft.ClientErrors, error) {
@@ -1424,7 +1464,7 @@ func convertArrayFieldValue(field *dmodel.ModelField, value any) (any, ft.Client
 		return nil, nil, errors.Errorf("convertArrayFieldValue: field '%s' does not allow NULL", field.Name())
 	}
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
-		return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name())}, nil
+		return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name(), "array")}, nil
 	}
 	cat := columnCategoryFor(field.ColumnType())
 	raw, err := buildPgArrayRaw(field, cat, v)
