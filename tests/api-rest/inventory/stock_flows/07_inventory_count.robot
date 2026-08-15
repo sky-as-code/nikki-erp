@@ -10,7 +10,7 @@ Documentation     Physical inventory: enter a count, reset it, apply it as an ad
 ...               (AC-STOCK-002) and validating an incoming transfer is the only way stock enters.
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Stock Location Under Test
+...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Product Variant Under Test
 ...               AND    Ensure Correction Fixtures
 Test Tags         inventory    stock_flows    inventory_count
@@ -21,17 +21,17 @@ Entering A Count Does Not Change On Hand
     [Documentation]    AC-STOCK-014. Recording what a counter found is not a correction; only
     ...    applying it is. If entering a count moved stock, a miscount would be unrecoverable.
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
-    ...    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}    40
+    ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    40
     POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
     ...    json=${{ {} }}    expected_status=any
-    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
-    ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
+    ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
 
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/enter_count
     ...    json=${{ {'counted_quantity': '37', 'count_reason_code': 'missing'} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
-    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     Should Be Equal As Numbers    ${after}    ${before}
     ...    msg=Entering a count must not move stock
 
@@ -54,7 +54,7 @@ Applying A Count Moves The Balance To What Was Counted
     ...    json=${{ {} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
-    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     Should Be Equal As Numbers    ${after}    37
     ...    msg=Applying a count of 37 must leave the balance at exactly 37
 
@@ -93,14 +93,14 @@ A Stale Count Is Refused
     ...    a count is entered, stock moves before it is applied, and the apply must refuse rather
     ...    than compute the variance against a balance nobody counted.
     [Tags]    negative
-    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/enter_count
     ...    json=${{ {'counted_quantity': '30'} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
     # The delivery that lands between the count and the apply.
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
-    ...    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}    10
+    ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    10
     POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
     ...    json=${{ {} }}    expected_status=any
 
@@ -112,8 +112,8 @@ A Stale Count Is Refused
 Resetting A Count Clears It And Leaves The Balance Alone
     [Documentation]    BR §4.2.7.6. Reset abandons a count entered in error; it is not itself a
     ...    correction, so the balance must be untouched.
-    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
-    ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
+    ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
 
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/reset_count
     ...    json=${{ {} }}    expected_status=any
@@ -121,15 +121,15 @@ Resetting A Count Clears It And Leaves The Balance Alone
 
     ${flag}=    Read Stock Quant Field    ${quant_id}    count_quantity_set
     Should Not Be True    ${flag}    msg=Reset must clear the pending count
-    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     Should Be Equal As Numbers    ${after}    ${before}
     ...    msg=Reset must not change the balance
 
 A Zero Variance Still Resolves The Count
     [Documentation]    BR §4.2.7.5. A counter who confirms the balance was right has done their
     ...    job; skipping the stamp would leave that balance permanently overdue on the worklist.
-    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
-    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
+    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${counted}=    Convert To String    ${on_hand}
 
     POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/enter_count
@@ -140,7 +140,7 @@ A Zero Variance Still Resolves The Count
 
     ${flag}=    Read Stock Quant Field    ${quant_id}    count_quantity_set
     Should Not Be True    ${flag}    msg=A zero-variance apply must still clear the pending count
-    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     Should Be Equal As Numbers    ${after}    ${on_hand}
     ...    msg=A zero variance must leave the balance exactly where it was
 
@@ -148,7 +148,7 @@ A Negative Counted Quantity Is Refused
     [Documentation]    Nothing physical is present in a negative amount. Zero is allowed, and is
     ...    tested separately, because "the shelf is empty" is a legitimate count.
     [Tags]    negative
-    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/enter_count
     ...    json=${{ {'counted_quantity': '-1'} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
@@ -157,7 +157,7 @@ A Negative Counted Quantity Is Refused
 Scheduling And Assigning A Count Are Plain Field Writes
     [Documentation]    BR §4.2.8. Cycle counting needs no ledger of its own: the worklist is a
     ...    filtered search over next_count_date, so scheduling is a field write and nothing more.
-    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
 
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/schedule_count
     ...    json=${{ {'next_count_date': '2026-12-01'} }}    expected_status=any
@@ -188,7 +188,7 @@ Direct Writes To A Balance Are Still Refused
     [Documentation]    AC-STOCK-002 still holds. The count actions write count metadata and never
     ...    on_hand_quantity, so adding them must not have reopened the resource to client writes.
     [Tags]    negative
-    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${resp}=    PUT On Session    api    ${STOCK_QUANT_API}/${quant_id}
     ...    json=${{ {'on_hand_quantity': '999'} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200

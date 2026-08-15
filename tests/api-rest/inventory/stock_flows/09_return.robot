@@ -12,7 +12,7 @@ Documentation     Reverse transfer / return: goods physically coming back (BR §
 ...               override the AC anticipates but that is deliberately not built.
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Stock Location Under Test
+...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Product Variant Under Test
 ...               AND    Ensure Correction Fixtures
 Test Tags         inventory    stock_flows    return
@@ -23,7 +23,7 @@ A Done Transfer Can Raise A Return
     [Documentation]    AC-STOCK-021. The return is a new transfer, in draft, pointing back at the
     ...    one it reverses.
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
-    ...    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}    60
+    ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    60
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
     ...    json=${{ {} }}    expected_status=any
     Response Status Should Be    ${resp}    200
@@ -112,7 +112,7 @@ Returning A Transfer That Is Not Done Is Refused
     [Documentation]    BR §4.2.10.2. There is nothing to send back until the goods have gone out.
     [Tags]    negative
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
-    ...    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}    5
+    ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    5
 
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/create_return
     ...    json=${{ {} }}    expected_status=any

@@ -7,7 +7,7 @@ Documentation     Replayed validation (BR §8.7).
 ...               wrong number in a record — nothing can un-ship a second delivery.
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Stock Location Under Test
+...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Stock Destination Location Under Test
 ...               AND    Ensure Internal Operation Type Under Test
 ...               AND    Ensure Product Variant Under Test
@@ -24,14 +24,14 @@ Replayed Validate Does Not Move Stock Twice
     POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {} }}    expected_status=any
     POST On Session    api    ${STOCK_TRANSFER_API}/${id}/reserve    json=${{ {} }}    expected_status=any
 
-    ${source_before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${source_before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${dest_before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_DEST_LOCATION_ID}
 
     ${first}=    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/validate
     ...    json=${{ {'idempotency_key': $key} }}    expected_status=any
     Response Status Should Be    ${first}    200
 
-    ${source_once}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${source_once}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${dest_once}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_DEST_LOCATION_ID}
 
     #    The retry a timed-out client sends: same transfer, same key.
@@ -41,7 +41,7 @@ Replayed Validate Does Not Move Stock Twice
     #    attempt did in fact work, it just never saw the response.
     Response Status Should Be    ${second}    200
 
-    ${source_twice}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${source_twice}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${dest_twice}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_DEST_LOCATION_ID}
     Should Be Equal As Numbers    ${source_twice}    ${source_once}
     ...    msg=The retry must not take from the source a second time
@@ -84,9 +84,9 @@ Validate Without A Key Gets No Replay Protection
 
 *** Keywords ***
 Seed Stock For Idempotency
-    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     IF    ${on_hand} >= 50    RETURN
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
-    ...    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}    100
+    ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    100
     POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
     ...    json=${{ {} }}    expected_status=any

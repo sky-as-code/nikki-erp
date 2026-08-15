@@ -6,7 +6,7 @@ Documentation     The transfer state machine over HTTP (BR §6.1, §4.2.3.6, §4
 ...               real quantities live in inventory/stock_flows.
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Stock Location Under Test
+...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Stock Destination Location Under Test
 ...               AND    Ensure Internal Operation Type Under Test
 ...               AND    Ensure Product Variant Under Test
@@ -45,12 +45,12 @@ Confirming A Draft Transfer Succeeds
 Confirming Does Not Change On Hand
     [Documentation]    AC-STOCK-004. Confirming commits to the demand, not to any stock having
     ...    moved; only validate changes an on-hand quantity.
-    ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${id}    ${etag}=    Create Stock Transfer    ${INTERNAL_OPERATION_TYPE_ID}
     ${move_id}=    Add Stock Move    ${id}    ${PRODUCT_VARIANT_ID}    5
     POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {} }}    expected_status=any
 
-    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     Should Be Equal As Numbers    ${after}    ${before}
     ...    msg=Confirming a transfer must not change any on-hand quantity
 

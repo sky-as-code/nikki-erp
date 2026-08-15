@@ -23,7 +23,11 @@ func TestEngineSchemaNamesCoverEveryProductResource(t *testing.T) {
 			models.ProductTemplateAttributeValueSchemaName,
 			models.ProductVariantSchemaName,
 			models.ProductVariantAttributeValueSchemaName,
-			models.StockLocationSchemaName,
+			models.WarehouseSchemaName,
+			models.StorageCategorySchemaName,
+			models.InventoryLocationSchemaName,
+			models.WarehouseSupplyRelationSchemaName,
+			models.PutawayRuleSchemaName,
 			models.StockOperationTypeSchemaName,
 			models.StockQuantSchemaName,
 			models.StockTransferSchemaName,
@@ -35,8 +39,12 @@ func TestEngineSchemaNamesCoverEveryProductResource(t *testing.T) {
 		EngineSchemaNames())
 }
 
-// The two resources carrying business rules must declare DefineActions; a spec that loses it
-// still serves CRUD, so the rules would go missing without any visible failure.
+// The resources carrying business rules must declare DefineActions; a spec that loses it still
+// serves CRUD, so the rules would go missing without any visible failure.
+//
+// Storage Category and Supply Relation are deliberately absent: their rules live in overrides of
+// the built-in actions rather than in actions of their own, because neither has an operation
+// beyond create, update, archive and delete.
 func TestRuleBearingResourcesDefineActions(t *testing.T) {
 	withActions := map[string]bool{
 		models.ProductCategorySchemaName: true,
@@ -52,6 +60,15 @@ func TestRuleBearingResourcesDefineActions(t *testing.T) {
 		// Do Scrap lives here; without it a scrap could be raised but never executed, and the
 		// resource would still serve CRUD so nothing would look broken.
 		models.StockScrapSchemaName: true,
+		// Suspend, resume and the two flow reconfigurations. Losing them would leave a warehouse
+		// that can only be archived, with no way to close it for a stocktake and reopen it.
+		models.WarehouseSchemaName: true,
+		// Suspend, resume and move. Without move, re-parenting would fall back to a plain update,
+		// which cannot rewrite the cached paths of everything underneath.
+		models.InventoryLocationSchemaName: true,
+		// The suggestion lookup is the only thing a putaway rule is for; without it the rules
+		// would be stored and never consulted.
+		models.PutawayRuleSchemaName: true,
 	}
 
 	for _, spec := range engineSpecs {

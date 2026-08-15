@@ -8,7 +8,7 @@ Documentation     The scrap path: raise a draft, execute it, and find the goods 
 ...               document would leave that movement unexplained.
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Stock Location Under Test
+...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Product Variant Under Test
 ...               AND    Ensure Correction Fixtures
 Test Tags         inventory    stock_flows    scrap
@@ -19,16 +19,16 @@ A Draft Scrap Changes Nothing
     [Documentation]    BR §4.2.9.3. Raising the document is a statement of intent; only Do Scrap
     ...    moves goods.
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
-    ...    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}    50
+    ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    50
     POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
     ...    json=${{ {} }}    expected_status=any
-    ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
 
     ${resp}=    POST On Session    api    ${STOCK_SCRAP_API}
-    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'source_location_id': $STOCK_LOCATION_ID, 'scrap_location_id': $SCRAP_LOCATION_ID, 'quantity': '5', 'reason_code': 'damage', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'scrap_location_id': $SCRAP_LOCATION_ID, 'quantity': '5', 'reason_code': 'damage', 'org_id': $INV_ORG_ID} }}
     ${scrap_id}    ${etag}=    Response Should Be Create Success    ${resp}
 
-    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     Should Be Equal As Numbers    ${after}    ${before}
     ...    msg=A draft scrap must not move stock
 
@@ -51,7 +51,7 @@ Do Scrap Removes The Goods From Usable Stock
     ...    json=${{ {} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
-    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${expected}=    Evaluate    ${SCRAP_BEFORE} - 5
     Should Be Equal As Numbers    ${after}    ${expected}
     ...    msg=Do Scrap must reduce on-hand by exactly the scrapped quantity
@@ -91,7 +91,7 @@ A Draft Scrap Can Be Deleted
     [Documentation]    BR §4.2.9.6. Nothing has happened yet, so there is no side effect to
     ...    orphan.
     ${resp}=    POST On Session    api    ${STOCK_SCRAP_API}
-    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'source_location_id': $STOCK_LOCATION_ID, 'scrap_location_id': $SCRAP_LOCATION_ID, 'quantity': '1', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'scrap_location_id': $SCRAP_LOCATION_ID, 'quantity': '1', 'org_id': $INV_ORG_ID} }}
     ${draft_id}    ${etag}=    Response Should Be Create Success    ${resp}
 
     ${resp}=    DELETE On Session    api    ${STOCK_SCRAP_API}/${draft_id}    expected_status=any
@@ -101,12 +101,12 @@ Scrapping More Than Is Available Is Refused
     [Documentation]    The check is against available, not on-hand: reserved stock is promised to
     ...    a transfer, and scrapping it would leave that transfer unable to ship.
     [Tags]    negative
-    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${too_much}=    Evaluate    ${on_hand} + 1000
     ${qty}=    Convert To String    ${too_much}
 
     ${resp}=    POST On Session    api    ${STOCK_SCRAP_API}
-    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'source_location_id': $STOCK_LOCATION_ID, 'scrap_location_id': $SCRAP_LOCATION_ID, 'quantity': $qty, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'scrap_location_id': $SCRAP_LOCATION_ID, 'quantity': $qty, 'org_id': $INV_ORG_ID} }}
     ${scrap_id}    ${etag}=    Response Should Be Create Success    ${resp}
 
     ${resp}=    POST On Session    api    ${STOCK_SCRAP_API}/${scrap_id}/do_scrap
@@ -118,7 +118,7 @@ A Zero Quantity Scrap Is Refused
     [Documentation]    A scrap of nothing is a document asserting a movement that never happened.
     [Tags]    negative
     ${resp}=    POST On Session    api    ${STOCK_SCRAP_API}
-    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'source_location_id': $STOCK_LOCATION_ID, 'scrap_location_id': $SCRAP_LOCATION_ID, 'quantity': '0', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'scrap_location_id': $SCRAP_LOCATION_ID, 'quantity': '0', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A scrap must remove a quantity greater than zero

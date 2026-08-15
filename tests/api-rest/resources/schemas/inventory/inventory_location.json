@@ -1,0 +1,80 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "code", "name", "location_usage", "status", "etag", "is_archived", "org_id"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "code": {
+            "type": "string",
+            "minLength": 1
+        },
+        "name": {
+            "type": "object"
+        },
+        "location_usage": {
+            "type": "string",
+            "enum": ["internal", "customer", "vendor", "inventory_loss", "scrap", "transit", "virtual"]
+        },
+        "purpose": {
+            "type": ["string", "null"],
+            "enum": ["storage", "receiving", "quality", "picking", "packing", "output", "other", null]
+        },
+        "warehouse_id": {
+            "type": ["string", "null"]
+        },
+        "parent_location_id": {
+            "type": ["string", "null"]
+        },
+        "complete_path": {
+            "type": ["string", "null"]
+        },
+        "hierarchy_depth": {
+            "type": ["integer", "null"]
+        },
+        "barcode": {
+            "type": ["string", "null"]
+        },
+        "storage_category_id": {
+            "type": ["string", "null"]
+        },
+        "removal_strategy": {
+            "type": ["string", "null"],
+            "enum": ["fifo", "lifo", "fefo", "closest", "least_packages", null]
+        },
+        "is_replenishment_destination": {
+            "type": "boolean"
+        },
+        "is_system_generated": {
+            "type": "boolean"
+        },
+        "status": {
+            "type": "string",
+            "enum": ["active", "suspended"]
+        },
+        "description": {
+            "type": ["object", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        }
+    },
+    "additionalProperties": false
+}

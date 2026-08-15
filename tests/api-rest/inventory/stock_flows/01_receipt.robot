@@ -6,7 +6,7 @@ Documentation     The receipt path: create -> confirm -> validate -> on-hand inc
 ...               enter the system at all (AC-STOCK-002).
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Stock Location Under Test
+...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Product Variant Under Test
 Test Tags         inventory    stock_flows    receipt
 
@@ -15,15 +15,15 @@ Test Tags         inventory    stock_flows    receipt
 Receipt Raises On Hand By The Processed Quantity
     [Documentation]    AC-STOCK-006. The destination balance goes up by exactly what was
     ...    processed — not by the demand, and not by a rounded figure.
-    ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
 
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
-    ...    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}    25
+    ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    25
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
     ...    json=${{ {} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
-    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${expected}=    Evaluate    ${before} + 25
     Should Be Equal As Numbers    ${after}    ${expected}
     ...    msg=A validated receipt must raise on-hand by exactly the quantity it processed
@@ -67,6 +67,6 @@ Cancelling A Done Transfer Is Refused
 Validating Does Not Reserve Anything At The Destination
     [Documentation]    Goods that have arrived are available, not spoken for. A receipt that left
     ...    them reserved would hide them from every later demand.
-    ${reserved}=    Read Stock Reserved    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${reserved}=    Read Stock Reserved    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     Should Be Equal As Numbers    ${reserved}    0
     ...    msg=Received stock must arrive unreserved

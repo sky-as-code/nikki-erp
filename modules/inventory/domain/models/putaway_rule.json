@@ -1,0 +1,147 @@
+{
+	"name": "inventory_putaway_rule",
+	"label": "inventory_putaway_rule.label",
+	"table_name": "inventory_putaway_rules",
+	"should_build_db": true,
+	"composite_uniques": [{ "index_name": "invty_putaway_tid_code_org_id", "fields": ["code", "org_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "warehouse_id",
+			"label": "fields.warehouse_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "source_location_id",
+			"label": "fields.source_location_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "Where goods arrive for this rule to apply. The rule answers 'something landed here, where should it go next' and returns a suggestion only — it never moves anything."
+			}
+		},
+		{
+			"name": "destination_location_id",
+			"label": "fields.destination_location_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "Where the goods should be put. Must be able to hold stock and belong to the same warehouse as the source: a putaway rule is not a way to move goods between warehouses, which needs a transfer."
+			}
+		},
+		{
+			"name": "storage_category_id",
+			"label": "fields.storage_category_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Narrows the rule to destinations in a given storage category. Optional."
+			}
+		},
+		{
+			"name": "product_id",
+			"label": "fields.product_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Optional external reference. Warehouse does not own the Product lifecycle and holds no foreign key to it."
+			}
+		},
+		{
+			"name": "product_category_id",
+			"label": "fields.product_category_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Optional external reference, matched when the rule applies to a whole product category rather than one product."
+			}
+		},
+		{
+			"name": "package_type_id",
+			"label": "fields.package_type_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Optional external reference. No Package master data exists yet, so this is carried for forward compatibility and matched only when supplied."
+			}
+		},
+		{
+			"name": "priority",
+			"label": "fields.priority",
+			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
+			"required_for_create": true,
+			"default_value": 1,
+			"description": {
+				"en-US": "Order in which matching rules are considered. Lower is considered first, and the first valid candidate wins."
+			}
+		},
+		{
+			"name": "sublocation_strategy",
+			"label": "fields.sublocation_strategy",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["fixed", "last_used", "category"]
+			},
+			"required_for_create": true,
+			"default_value": "fixed",
+			"description": {
+				"en-US": "How a sublocation under the destination is chosen: always the destination itself, the one used most recently, or any matching the storage category."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "invty_putaway_wh_src_priority", "fields": ["warehouse_id", "source_location_id", "priority"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "warehouse",
+			"label": { "en-US": "Warehouse" },
+			"type": "many:one",
+			"dest_schema": "inventory_warehouse",
+			"key_map": { "warehouse_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "source_location",
+			"label": { "en-US": "Source location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "source_location_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "destination_location",
+			"label": { "en-US": "Destination location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "destination_location_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "storage_category",
+			"label": { "en-US": "Storage category" },
+			"type": "many:one",
+			"dest_schema": "inventory_storage_category",
+			"key_map": { "storage_category_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

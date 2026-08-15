@@ -361,17 +361,17 @@ func assertCorrectionComplete(outcomes []moveOutcome) error {
 // configuration problem, and picking one deterministically beats refusing to scrap at all.
 func FindLocationByType(
 	ctx corectx.Context, orgId string, locationType string,
-) (*models.StockLocation, error) {
-	engine, err := engineFor(models.StockLocationSchemaName)
+) (*models.InventoryLocation, error) {
+	engine, err := engineFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
 	graph := &dmodel.SearchGraph{}
 	graph.And(
-		*dmodel.NewSearchNode().NewCondition(models.StockLocationFieldOrgId, dmodel.Equals, orgId),
+		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldOrgId, dmodel.Equals, orgId),
 		*dmodel.NewSearchNode().NewCondition(
-			models.StockLocationFieldLocationType, dmodel.Equals, locationType),
+			models.InventoryLocationFieldLocationUsage, dmodel.Equals, locationType),
 	)
 
 	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
@@ -385,7 +385,7 @@ func FindLocationByType(
 	if found == nil || !found.HasData || len(found.Data.Items) == 0 {
 		return nil, nil
 	}
-	return models.NewStockLocationFrom(found.Data.Items[0]), nil
+	return models.NewInventoryLocationFrom(found.Data.Items[0]), nil
 }
 
 // findCorrectionOperationType resolves the seeded internal operation type corrections run through.

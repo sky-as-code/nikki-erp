@@ -1,0 +1,132 @@
+{
+	"name": "inventory_warehouse",
+	"label": "inventory_warehouse.label",
+	"table_name": "inventory_warehouses",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [{ "index_name": "invty_whs_tid_code_org_id", "fields": ["code", "org_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 5 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Short name, at most 5 characters, unique within the org. It is the prefix of every system-generated location path under this warehouse ('MAIN/Stock'), which is why changing it after the warehouse is in use needs a dedicated operation rather than a plain update."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "warehouse_role",
+			"label": "fields.warehouse_role",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["central", "sub", "pos", "other"]
+			},
+			"required_for_create": true,
+			"default_value": "other",
+			"description": {
+				"en-US": "What the warehouse is for organisationally. It carries no behaviour: a POS warehouse and a central warehouse are configured and moved against identically, and only reporting and selection lists read this."
+			}
+		},
+		{
+			"name": "parent_warehouse_id",
+			"label": "fields.parent_warehouse_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Parent in the warehouse hierarchy, null for a root warehouse. This is an organisational relationship only. Stock at the parent is NOT stock at the child, and re-parenting never moves inventory or creates a transfer. Which warehouse may supply which is a separate concern, held by inventory_warehouse_supply_relation."
+			}
+		},
+		{
+			"name": "address",
+			"label": "fields.address",
+			"data_type": { "type": "string", "min": 0, "max": 500 }
+		},
+		{
+			"name": "manager_user_id",
+			"label": "fields.manager_user_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The person responsible for the warehouse. An external reference into IAM with no foreign key, because Inventory does not own the user lifecycle."
+			}
+		},
+		{
+			"name": "incoming_flow",
+			"label": "fields.incoming_flow",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["one_step", "two_step", "three_step"]
+			},
+			"required_for_create": true,
+			"default_value": "one_step",
+			"description": {
+				"en-US": "How many stops goods make on the way in: direct to Stock, via Input, or via Input then Quality Control. This is policy, not execution. Changing it provisions the locations the new flow needs and nothing else — it creates no move, and a receipt already in progress keeps the flow it was created under."
+			}
+		},
+		{
+			"name": "outgoing_flow",
+			"label": "fields.outgoing_flow",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["one_step", "two_step", "three_step"]
+			},
+			"required_for_create": true,
+			"default_value": "one_step",
+			"description": {
+				"en-US": "How many stops goods make on the way out: straight from Stock, via Output, or via Packing then Output. Same policy-not-execution rule as incoming_flow."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["active", "suspended"]
+			},
+			"required_for_create": true,
+			"default_value": "active",
+			"description": {
+				"en-US": "Operational state, and deliberately separate from is_archived. 'suspended' means temporarily closed — for repairs, a stock count, an incident — and is reversible by Resume. Archive means withdrawn from the master data used for new work. A resource is usable only when status is 'active' AND is_archived is false; there is no 'archived' status value."
+			}
+		},
+		{
+			"name": "notes",
+			"label": "fields.notes",
+			"data_type": { "type": "string", "min": 0, "max": 2000 }
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "invty_whs_parent_warehouse_id", "fields": ["parent_warehouse_id"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "parent_warehouse",
+			"label": { "en-US": "Parent warehouse" },
+			"type": "many:one",
+			"dest_schema": "inventory_warehouse",
+			"key_map": { "parent_warehouse_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

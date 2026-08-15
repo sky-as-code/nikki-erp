@@ -14,21 +14,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 )
 
-// Stock Location and Stock Operation Type are plain CRUD master data: everything they need is
-// already expressed by their schema. Stock Quant is not — it is current state rather than a
-// document, so its engine takes its write actions away.
-
-func stockLocationEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.StockLocationSchemaName,
-		DefaultFields: []string{
-			models.StockLocationFieldCode,
-			models.StockLocationFieldName,
-			models.StockLocationFieldLocationType,
-			models.StockLocationFieldParentLocationId,
-		},
-	}
-}
+// Stock Operation Type is plain CRUD master data: everything it needs is already expressed by its
+// schema. Stock Quant is not — it is current state rather than a document, so its engine takes its
+// write actions away.
+//
+// Inventory Location used to live here too. It moved to inventory_location.go when it became the
+// module's shared location master rather than a stock-owned resource.
 
 func stockOperationTypeEngineSpec() engineSpec {
 	return engineSpec{

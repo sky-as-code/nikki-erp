@@ -262,14 +262,14 @@ func generateAdjustmentMovement(
 	ctx corectx.Context, quant models.StockQuant, locked LockedQuant, variance decimal.Decimal,
 ) (*ft.ClientErrors, error) {
 	orgId := derefString(quant.GetOrgId())
-	lossLocation, err := FindLocationByType(ctx, orgId, models.StockLocationTypeInventoryLoss)
+	lossLocation, err := FindLocationByType(ctx, orgId, models.InventoryLocationUsageInventoryLoss)
 	if err != nil {
 		return nil, err
 	}
 	if lossLocation == nil {
 		vErrs := ft.NewClientErrors()
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockLocationSchemaName,
+			models.InventoryLocationSchemaName,
 			"stock_quant.no_inventory_loss_location",
 			"this organisation has no inventory-loss location for an adjustment to balance against"))
 		return vErrs, nil

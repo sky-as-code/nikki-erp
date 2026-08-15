@@ -207,25 +207,25 @@ func loadScrapDestination(
 ) (string, error) {
 	named := derefString(scrap.GetScrapLocationId())
 	if named != "" {
-		engine, err := engineFor(models.StockLocationSchemaName)
+		engine, err := engineFor(models.InventoryLocationSchemaName)
 		if err != nil {
 			return "", err
 		}
 		found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
-			models.StockLocationFieldId: named,
+			models.InventoryLocationFieldId: named,
 		})
 		if err != nil {
 			return "", errors.Wrap(err, "loadScrapDestination")
 		}
 		if found != nil && found.HasData {
-			location := models.NewStockLocationFrom(found.Data)
-			if derefString(location.GetLocationType()) == models.StockLocationTypeScrap {
+			location := models.NewInventoryLocationFrom(found.Data)
+			if derefString(location.GetLocationUsage()) == models.InventoryLocationUsageScrap {
 				return named, nil
 			}
 		}
 	}
 
-	fallback, err := FindLocationByType(ctx, orgId, models.StockLocationTypeScrap)
+	fallback, err := FindLocationByType(ctx, orgId, models.InventoryLocationUsageScrap)
 	if err != nil || fallback == nil {
 		return "", err
 	}

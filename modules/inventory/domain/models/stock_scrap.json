@@ -192,7 +192,7 @@
 			"edge": "source_location",
 			"label": { "en-US": "Source location" },
 			"type": "many:one",
-			"dest_schema": "inventory_stock_location",
+			"dest_schema": "inventory_location",
 			"key_map": { "source_location_id": "id" },
 			"on_delete": "NO ACTION"
 		},
@@ -200,7 +200,7 @@
 			"edge": "scrap_location",
 			"label": { "en-US": "Scrap location" },
 			"type": "many:one",
-			"dest_schema": "inventory_stock_location",
+			"dest_schema": "inventory_location",
 			"key_map": { "scrap_location_id": "id" },
 			"on_delete": "NO ACTION"
 		}

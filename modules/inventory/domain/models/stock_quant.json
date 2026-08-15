@@ -191,7 +191,7 @@
 			"edge": "location",
 			"label": { "en-US": "Location" },
 			"type": "many:one",
-			"dest_schema": "inventory_stock_location",
+			"dest_schema": "inventory_location",
 			"key_map": { "location_id": "id" },
 			"on_delete": "NO ACTION"
 		}
