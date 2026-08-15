@@ -212,7 +212,7 @@ func decimalFromAny(value any) (decimal.Decimal, error) {
 	}
 }
 
-// applyEmptyStringDefault keeps the dimension fields as '' rather than NULL.
+// applyEmptyStringDefault keeps the dimension fields as ” rather than NULL.
 //
 // The quant and the move line use the same convention, and they must agree: a scrap whose lot_ref
 // is NULL would not line up with the balance it draws from. Revisit all three together if real

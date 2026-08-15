@@ -11,17 +11,17 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	m "github.com/sky-as-code/nikki-erp/modules/iam/app/methods"
-	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
-	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
-	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/login"
-	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 	coretoken "github.com/sky-as-code/nikki-erp/modules/core/authtoken"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	m "github.com/sky-as-code/nikki-erp/modules/iam/app/methods"
+	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
+	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
+	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/login"
+	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
 type NewLoginServiceParam struct {

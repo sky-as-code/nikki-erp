@@ -2,8 +2,8 @@ package login
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 )
 
 type FindByIdParam = GetAttemptQuery

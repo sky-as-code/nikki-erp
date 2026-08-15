@@ -5,8 +5,8 @@ import (
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/password"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/password"
 )
 
 type passwordRestParam struct {

@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+
 	"go.bryk.io/pkg/errors"
 
 	dmjson "github.com/sky-as-code/nikki-erp/common/dynamicmodel/json"
@@ -55,6 +57,10 @@ type fieldJsonDto struct {
 
 	DefaultValue   any  `json:"default_value"`
 	UseTypeDefault bool `json:"use_type_default"`
+
+	// Kept raw: the computed package owns the block's shape, and decoding it here would require
+	// importing that package, which imports this one. See computed_hooks.go.
+	Computed json.RawMessage `json:"computed"`
 
 	Rules []ruleJsonDto `json:"rules"`
 }
@@ -238,6 +244,10 @@ func buildFieldFromDto(dto *fieldJsonDto) *FieldBuilder {
 	}
 	field.DataType(decodeDataType(dto.DataType, dto.Name))
 
+	if len(dto.Computed) > 0 {
+		applyComputedFromJson(field, dto)
+	}
+
 	applyFieldFlags(field, dto)
 
 	if dto.DefaultValue != nil {
@@ -251,6 +261,22 @@ func buildFieldFromDto(dto *fieldJsonDto) *FieldBuilder {
 	}
 
 	return field
+}
+
+// applyComputedFromJson decodes the "computed" block through the parser the computed package
+// registered (see computed_hooks.go). It panics on failure, matching the builder API's treatment
+// of a malformed schema definition as a programming error.
+func applyComputedFromJson(field *FieldBuilder, dto *fieldJsonDto) {
+	if computedJsonParser == nil {
+		panic(errors.Errorf(
+			"field %q declares \"computed\" but the computed package is not linked in; "+
+				"import common/dynamicmodel/computed", dto.Name))
+	}
+	expression, isStored, err := computedJsonParser(dto.Computed, dto.Name)
+	if err != nil {
+		panic(errors.Wrapf(err, "field %q", dto.Name))
+	}
+	field.Computed(isStored, expression)
 }
 
 // applyFieldFlags applies the boolean options. PrimaryKey, TenantKey and VersioningKey come

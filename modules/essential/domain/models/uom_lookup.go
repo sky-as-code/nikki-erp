@@ -8,7 +8,6 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
-
 // UomSearcher is the slice of a resource repository the UoM lookups need. Declaring it
 // here rather than importing the dynamicresource interface keeps the domain model free of
 // a dependency on the engine that happens to implement it.

@@ -6,8 +6,8 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/login"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/login"
 )
 
 type loginRestParams struct {

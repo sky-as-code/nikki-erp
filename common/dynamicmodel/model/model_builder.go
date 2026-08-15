@@ -396,6 +396,11 @@ func (this *ModelSchemaBuilder) Build() *ModelSchema {
 	if err := validateVirtualFields(schema); err != nil {
 		panic(errors.Wrap(err, "Build"))
 	}
+	// A computed field is virtual, so validateVirtualFields above already rejects every
+	// role-contradiction (key, required, indexed, ...) for it; only computed-specific rules run here.
+	if err := validateComputedFields(schema); err != nil {
+		panic(errors.Wrap(err, "Build"))
+	}
 	if this.shouldBuildDb {
 		ft.PanicOnErr(populateDbMetadata(schema))
 	}
@@ -435,6 +440,24 @@ func validateVirtualFields(schema *ModelSchema) error {
 		}
 		if err := assertVirtualFieldNotIndexed(schema, name); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+// validateComputedFields applies the computed-specific rules on top of the virtual-field rules
+// (a computed field is virtual, so validateVirtualFields has already run for it). The expression
+// itself is validated at schema finalize time, when the whole registry is available for
+// resolving cross-schema references.
+func validateComputedFields(schema *ModelSchema) error {
+	for _, name := range schema.fieldsOrder {
+		field, ok := schema.fields[name]
+		if !ok || !field.IsComputed() {
+			continue
+		}
+		if field.ComputedIsStored() {
+			return errors.Errorf(
+				"field %q: stored computed fields are not yet supported; declare is_stored: false", name)
 		}
 	}
 	return nil
@@ -684,6 +707,26 @@ func (this *FieldBuilder) NoUpdate() *FieldBuilder {
 // rewrites it to the edge path it derives from. A service fills it after the read.
 func (this *FieldBuilder) Virtual() *FieldBuilder {
 	this.field.isVirtual = true
+	return this
+}
+
+// Computed marks the field's value as the result of a declared calculation, never user input.
+// The expression comes from the computed package's chained constructors:
+//
+//	Computed(false, computed.Sub(computed.F("on_hand_quantity"), computed.F("reserved_quantity")))
+//	Computed(false, computed.Related("template.name"))
+//
+// isStored=false computes the value when the resource is read; the field is virtual (no column).
+// isStored=true — compute at write time with source-change propagation — is reserved for a
+// future phase and rejected at Build(). The expression is typed `any` to avoid an import cycle
+// with the computed package; it is validated and resolved at schema finalize time.
+func (this *FieldBuilder) Computed(isStored bool, expression any) *FieldBuilder {
+	if isNil(expression) {
+		panic(errors.Errorf("field %q: Computed requires an expression", this.field.name))
+	}
+	this.field.isVirtual = true
+	this.field.computedExpr = expression
+	this.field.computedIsStored = isStored
 	return this
 }
 

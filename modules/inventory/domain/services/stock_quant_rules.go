@@ -3,7 +3,6 @@ package services
 import (
 	"github.com/shopspring/decimal"
 
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
@@ -43,36 +42,6 @@ func AssertQuantNotClientWritable(vErrs *ft.ClientErrors) {
 	))
 }
 
-// FillAvailableQuantity writes the derived available quantity onto a quant's field bag.
-//
-// The engine serves `available_quantity` as a virtual field, which means it has no column and is
-// absent from every row the repository returns. Without this the field would be advertised in
-// meta/schema and then always read as null.
-func FillAvailableQuantity(fields dmodel.DynamicFields) {
-	quant := models.NewStockQuantFrom(fields)
-	available := AvailableQuantity(quant.GetOnHandQuantity(), quant.GetReservedQuantity())
-	quant.SetAvailableQuantity(&available)
-}
-
-// availableQuantityOperands are the columns the derived quantity is computed from. A projection
-// that names available_quantity must carry them, or there is nothing to subtract.
-func availableQuantityOperands() []string {
-	return []string{
-		models.StockQuantFieldOnHandQuantity,
-		models.StockQuantFieldReservedQuantity,
-	}
-}
-
-// wantsAvailableQuantity reports whether a read should compute the derived quantity. An empty
-// projection means "the resource's default field set", which includes it.
-func wantsAvailableQuantity(requested []string) bool {
-	if len(requested) == 0 {
-		return true
-	}
-	for _, field := range requested {
-		if field == models.StockQuantFieldAvailableQuantity {
-			return true
-		}
-	}
-	return false
-}
+// available_quantity is served by the engine's computed-field layer: the schema declares it in
+// stock_quant.json, so no fill/projection helpers live here anymore. AvailableQuantity above
+// stays as the pure rule the reservation logic (and the schema's formula) both express.

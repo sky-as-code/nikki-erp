@@ -12,7 +12,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
-
 // BR-UOM-ESS-006 and BR-UOM-ESS-009: the conversion factor must agree with the UoM type.
 func TestAssertFactorMatchesUomType(t *testing.T) {
 	testCases := []struct {

@@ -14,7 +14,6 @@ import (
 	"go.bryk.io/pkg/errors"
 )
 
-
 // schemaResourceUrl is the in-memory URL the schema document is registered under.
 // It never leaves the process; the compiler only needs a stable key.
 const schemaResourceUrl = "https://sky-as-code.github.io/nikki-erp/schemas/model_schema.json"

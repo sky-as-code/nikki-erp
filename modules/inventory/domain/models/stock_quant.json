@@ -92,9 +92,19 @@
 			"name": "available_quantity",
 			"label": "fields.available_quantity",
 			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
-			"is_virtual": true,
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"op": "subtract",
+					"args": [
+						{ "function": "coalesce", "args": [{ "field": "on_hand_quantity" }, { "value": 0.0 }] },
+						{ "function": "coalesce", "args": [{ "field": "reserved_quantity" }, { "value": 0.0 }] }
+					]
+				}
+			},
 			"description": {
-				"en-US": "on_hand_quantity minus reserved_quantity, computed on read. Virtual: storing it would be a third number that can disagree with the two it derives from (BR 4.2.2.3)."
+				"en-US": "on_hand_quantity minus reserved_quantity, computed on read. Not stored: a column would be a third number that can disagree with the two it derives from (BR 4.2.2.3). The coalesce keeps BR 4.2.2.3's rule that an unwritten operand reads as zero, not as unknown."
 			}
 		},
 		{

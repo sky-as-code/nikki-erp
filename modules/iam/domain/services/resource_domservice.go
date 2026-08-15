@@ -33,10 +33,10 @@ func (this *ResourceDomainServiceImpl) CreateResource(
 ) (*itRes.CreateResourceResult, error) {
 	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.Resource]{})
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.Resource, *domain.Resource]{
-		Action:         "create resource",
-		BaseRepoGetter: this.resourceRepo,
-		Data:           cmd,
-		ValidateExtra:  validateNewResourceScope,
+		Action:                 "create resource",
+		BaseRepoGetter:         this.resourceRepo,
+		Data:                   cmd,
+		ValidateExtra:          validateNewResourceScope,
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }

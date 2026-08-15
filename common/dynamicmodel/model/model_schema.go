@@ -617,11 +617,20 @@ type ModelField struct {
 	// Allows setting value on create but not on update.
 	noUpdate bool
 	// Indicates a scalar field with no database column, filled by a service after the read.
-	isVirtual      bool
-	rules          []*FieldRule
-	defaultValue   *value
-	defaultFn      func() any
-	useTypeDefault bool
+	isVirtual bool
+	// The computed-field definition's root expression, when this field is computed. Typed as
+	// `any` to keep this package free of a dependency on common/dynamicmodel/computed (which
+	// itself imports this package); computed.DefOf is the typed accessor. A computed field is
+	// always virtual: FieldBuilder.Computed sets isVirtual, so every existing virtual-field
+	// behavior (no column, dropped from writes, kept readable) applies unchanged.
+	computedExpr any
+	// Whether the computed value is stored in a column and refreshed on writes. Only false
+	// (compute at read time) is implemented; Build() rejects true until a future phase.
+	computedIsStored bool
+	rules            []*FieldRule
+	defaultValue     *value
+	defaultFn        func() any
+	useTypeDefault   bool
 }
 
 // Getter methods
@@ -658,6 +667,27 @@ func (this *ModelField) IsVirtual() bool {
 // predicates when the answer differs between an edge and a virtual scalar.
 func (this *ModelField) IsNonPhysical() bool {
 	return this.IsVirtualModelField() || this.IsVirtual()
+}
+
+// IsComputed is true for a virtual field whose value is produced by a declared computation
+// instead of ad hoc service code. Being virtual, it already inherits every no-column behavior;
+// the definition only adds "and this is HOW the value is derived".
+func (this *ModelField) IsComputed() bool {
+	return this != nil && this.computedExpr != nil
+}
+
+// RawComputedExpr returns the untyped computed expression. Callers outside this package use
+// computed.DefOf for the typed view; the indirection exists solely to avoid an import cycle.
+func (this *ModelField) RawComputedExpr() any {
+	if this == nil {
+		return nil
+	}
+	return this.computedExpr
+}
+
+// ComputedIsStored reports the declared is_stored setting. Always false in this phase.
+func (this *ModelField) ComputedIsStored() bool {
+	return this != nil && this.computedIsStored
 }
 
 func (this *ModelField) Description() model.LangJson {
@@ -833,6 +863,8 @@ func (this ModelField) ToSimplized() any {
 		IsSystemField       bool           `json:"is_system_field"`
 		IsVirtualModelField bool           `json:"is_virtual_model_field"`
 		IsVirtual           bool           `json:"is_virtual"`
+		IsComputed          bool           `json:"is_computed"`
+		ComputedIsStored    bool           `json:"computed_is_stored"`
 		NoUpdate            bool           `json:"no_update"`
 		Rules               []*FieldRule   `json:"rules,omitempty"`
 		DefaultValue        *value         `json:"default_value,omitempty"`
@@ -851,6 +883,8 @@ func (this ModelField) ToSimplized() any {
 			this.IsVirtualModelField() || this.IsVirtual(),
 		IsVirtualModelField: this.IsVirtualModelField(),
 		IsVirtual:           this.IsVirtual(),
+		IsComputed:          this.IsComputed(),
+		ComputedIsStored:    this.ComputedIsStored(),
 		NoUpdate:            this.IsNoUpdate(),
 		Rules:               this.Rules(),
 		DefaultValue:        this.Default(),
@@ -951,6 +985,8 @@ func (this *ModelField) Clone() *ModelField {
 		isTenantKey:         this.isTenantKey,
 		isUnique:            this.isUnique,
 		isVirtual:           this.isVirtual,
+		computedExpr:        this.computedExpr,
+		computedIsStored:    this.computedIsStored,
 		rules:               make([]*FieldRule, len(this.rules)),
 		defaultValue:        this.defaultValue,
 		defaultFn:           this.defaultFn,

@@ -8,7 +8,6 @@ import (
 	cjson "github.com/sky-as-code/nikki-erp/common/json"
 )
 
-
 // decodeDataType turns the JSON "data_type" value into a FieldDataType.
 //
 // It always calls the real constructors rather than writing into an Options map, because

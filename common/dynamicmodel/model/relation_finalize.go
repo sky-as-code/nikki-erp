@@ -13,6 +13,20 @@ import (
 // Internal helpers must index reg.schemas directly instead of Get, because this method holds
 // reg.mu.Lock and Get uses RLock (same goroutine would deadlock: RWMutex is not reentrant).
 func (this *SchemaRegistry) FinalizeRelations() error {
+	if err := this.finalizeCoreRelations(); err != nil {
+		return err
+	}
+	// Computed-field validation needs the finalized relations (related paths resolve through
+	// them), and runs outside the lock so it may use the ordinary read-locking accessors. The
+	// hook is nil only when the computed package is not linked in, in which case no schema can
+	// declare a computed field either (the JSON parser hook would have panicked).
+	if computedFinalizer != nil {
+		return computedFinalizer(this)
+	}
+	return nil
+}
+
+func (this *SchemaRegistry) finalizeCoreRelations() error {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 	if err := normalizeAllForeignKeyMapsUnlocked(this); err != nil {

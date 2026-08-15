@@ -2,9 +2,9 @@ package methods
 
 import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	itLogin "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/login"
 	itPass "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/password"
-	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 const LoginPassword = "password"

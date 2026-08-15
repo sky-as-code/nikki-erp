@@ -1,0 +1,29 @@
+package computed
+
+import (
+	"fmt"
+
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+)
+
+// ErrKeyComputedFieldNotWritable identifies an explicit write to a computed field.
+const ErrKeyComputedFieldNotWritable = "err_computed_field_not_writable"
+
+// RejectWrites reports a client error for every computed field the input tries to write. The
+// generic write path already silently strips virtual fields, so a stray computed value could
+// never reach a column — this check exists to tell the client explicitly instead of letting the
+// value quietly vanish (spec §25's recommendation).
+func RejectWrites(schema *dmodel.ModelSchema, input dmodel.DynamicFields) ft.ClientErrors {
+	var errs ft.ClientErrors
+	for name := range input {
+		field, ok := schema.Field(name)
+		if !ok || !field.IsComputed() {
+			continue
+		}
+		errs.Append(*ft.NewValidationError(name,
+			ft.ErrorKey(ErrKeyComputedFieldNotWritable),
+			fmt.Sprintf("Field %q is computed and cannot be written", name)))
+	}
+	return errs
+}

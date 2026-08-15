@@ -16,7 +16,6 @@ import (
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
-
 // engineSpec declares one resource engine the Essential module owns.
 type engineSpec struct {
 	// SchemaName is the dynamic-model schema the engine serves. It must be an

@@ -115,52 +115,52 @@
 			"name": "template_name",
 			"label": "fields.template_name",
 			"data_type": { "type": "langjson", "min": 1, "max": 200 },
-			"is_virtual": true,
+			"computed": { "kind": "related", "is_stored": false, "field": "template.name" },
 			"description": {
-				"en-US": "Copied from the owning template when the variant is read. Virtual: the name lives on the template, so storing a second copy here would go stale the moment the template is renamed."
+				"en-US": "Copied from the owning template when the variant is read. Computed rather than stored: the name lives on the template, so a second copy here would go stale the moment the template is renamed."
 			}
 		},
 		{
 			"name": "template_short_name",
 			"label": "fields.template_short_name",
 			"data_type": { "type": "langjson", "min": 0, "max": 100 },
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.short_name" }
 		},
 		{
 			"name": "template_description",
 			"label": "fields.template_description",
 			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.description" }
 		},
 		{
 			"name": "template_sales_description",
 			"label": "fields.template_sales_description",
 			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.sales_description" }
 		},
 		{
 			"name": "template_purchase_description",
 			"label": "fields.template_purchase_description",
 			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.purchase_description" }
 		},
 		{
 			"name": "template_category_id",
 			"label": "fields.template_category_id",
 			"data_type": "ulid",
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.category_id" }
 		},
 		{
 			"name": "template_brand_id",
 			"label": "fields.template_brand_id",
 			"data_type": "ulid",
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.brand_id" }
 		},
 		{
 			"name": "template_product_type_id",
 			"label": "fields.template_product_type_id",
 			"data_type": "ulid",
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.product_type_id" }
 		},
 		{
 			"name": "template_status",
@@ -169,7 +169,7 @@
 				"type": "enum_string",
 				"values": ["draft", "active", "discontinued"]
 			},
-			"is_virtual": true,
+			"computed": { "kind": "related", "is_stored": false, "field": "template.status" },
 			"description": {
 				"en-US": "The template's lifecycle, distinct from this variant's own status: an active variant of a discontinued template is a real and meaningful state."
 			}
@@ -178,7 +178,7 @@
 			"name": "template_sale_ok",
 			"label": "fields.template_sale_ok",
 			"data_type": "boolean",
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.sale_ok" }
 		}
 	],
 

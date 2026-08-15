@@ -11,7 +11,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-
 // The JSON model files are parsed at start-up by RegisterModels; a malformed file panics the
 // whole app. These tests turn that into a test failure instead, and pin the field set the
 // UoM business rules depend on.

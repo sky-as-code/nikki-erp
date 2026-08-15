@@ -1,8 +1,8 @@
 package app
 
 import (
-	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/password"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/password"
 )
 
 func NewPasswordApplicationServiceImpl(passwordSvc it.PasswordDomainService) it.PasswordAppService {

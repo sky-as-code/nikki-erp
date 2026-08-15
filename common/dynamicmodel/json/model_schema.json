@@ -125,10 +125,105 @@
 				},
 				"use_type_default": { "type": "boolean" },
 
+				"computed": { "$ref": "#/$defs/computed" },
+
 				"rules": {
 					"type": "array",
 					"items": { "$ref": "#/$defs/rule" }
 				}
+			}
+		},
+
+		"computed": {
+			"description": "Declares the field's value as a calculation result, never user input. The field becomes virtual (no column) and the value is computed in Go when the resource is read.",
+			"type": "object",
+			"required": ["kind", "is_stored"],
+			"additionalProperties": false,
+			"properties": {
+				"kind": { "type": "string", "enum": ["expression", "related"] },
+				"is_stored": {
+					"description": "false: computed at read time (current scope). true: computed at write time with source-change propagation — reserved, rejected until a future phase.",
+					"type": "boolean"
+				},
+				"field": {
+					"description": "related only: dotted to-one edge path to the source leaf, e.g. \"template.name\".",
+					"type": "string",
+					"minLength": 1
+				},
+				"expression": { "$ref": "#/$defs/computedExpr" }
+			},
+			"allOf": [
+				{
+					"if": { "properties": { "kind": { "const": "related" } }, "required": ["kind"] },
+					"then": { "required": ["field"], "properties": { "expression": false } },
+					"else": { "required": ["expression"], "properties": { "field": false } }
+				}
+			]
+		},
+
+		"computedExpr": {
+			"description": "Recursive expression node: exactly one of field / value / op+args / function+args / case.",
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"field": {
+					"description": "Reference to a field on the same schema.",
+					"type": "string",
+					"minLength": 1
+				},
+				"value": {
+					"description": "A literal operand: scalar only. Evaluated in Go; never rendered into SQL.",
+					"type": ["string", "number", "boolean", "null"]
+				},
+				"op": {
+					"type": "string",
+					"enum": [
+						"add", "subtract", "multiply", "divide", "modulo",
+						"eq", "neq", "gt", "gte", "lt", "lte",
+						"and", "or",
+						"not", "negate", "is_null", "is_not_null"
+					]
+				},
+				"function": {
+					"description": "Name of a function in the fixed registry (concat, lower, round, coalesce, today, ...).",
+					"type": "string",
+					"minLength": 1
+				},
+				"args": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/computedExpr" },
+					"minItems": 1
+				},
+				"case": { "$ref": "#/$defs/computedCase" }
+			},
+			"oneOf": [
+				{ "required": ["field"] },
+				{ "required": ["value"] },
+				{ "required": ["op", "args"] },
+				{ "required": ["function"] },
+				{ "required": ["case"] }
+			]
+		},
+
+		"computedCase": {
+			"type": "object",
+			"required": ["when", "else"],
+			"additionalProperties": false,
+			"properties": {
+				"when": {
+					"type": "array",
+					"minItems": 1,
+					"items": {
+						"type": "object",
+						"required": ["if", "then"],
+						"additionalProperties": false,
+						"properties": {
+							"if": { "$ref": "#/$defs/computedExpr" },
+							"then": { "$ref": "#/$defs/computedExpr" }
+						}
+					}
+				},
+				"else": { "$ref": "#/$defs/computedExpr" }
 			}
 		},
 

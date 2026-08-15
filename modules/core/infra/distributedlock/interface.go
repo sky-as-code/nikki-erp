@@ -22,4 +22,3 @@ type DistributedLock interface {
 
 	Release(ctx context.Context, key string) error
 }
-

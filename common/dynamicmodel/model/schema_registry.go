@@ -115,20 +115,36 @@ func RegisterSchemaB(schemaBuilder *ModelSchemaBuilder) error {
 // RegisterSchema registers a schema using its name as the registry key.
 // Returns an error if a schema with the same name is already registered.
 func RegisterSchema(schema *ModelSchema) error {
+	return schemaRegistry.Register(schema)
+}
+
+// NewSchemaRegistry creates an empty, standalone registry. The application works with the
+// package singleton (GetSchemaRegistry); standalone instances serve tests that must register
+// and finalize a schema set in isolation.
+func NewSchemaRegistry() *SchemaRegistry {
+	return &SchemaRegistry{
+		schemas: make(map[string]*ModelSchema),
+		mu:      &sync.RWMutex{},
+	}
+}
+
+// Register registers a schema on this registry instance, keyed by its name.
+// Returns an error if a schema with the same name is already registered.
+func (this *SchemaRegistry) Register(schema *ModelSchema) error {
 	name := schema.Name()
 	if name == "" {
 		return errors.New("RegisterSchema: schema name must not be empty")
 	}
 
-	schemaRegistry.mu.Lock()
-	defer schemaRegistry.mu.Unlock()
+	this.mu.Lock()
+	defer this.mu.Unlock()
 
-	if _, exists := schemaRegistry.schemas[name]; exists {
+	if _, exists := this.schemas[name]; exists {
 		return errors.Errorf("RegisterSchema: schema '%s' already registered", name)
 	}
 
-	schemaRegistry.schemas[name] = schema
-	schemaRegistry.orderedNames = computeTopoOrder(schemaRegistry.schemas)
+	this.schemas[name] = schema
+	this.orderedNames = computeTopoOrder(this.schemas)
 	return nil
 }
 

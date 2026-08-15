@@ -1,9 +1,9 @@
 package login
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 )
 
 type AttemptRepository interface {
