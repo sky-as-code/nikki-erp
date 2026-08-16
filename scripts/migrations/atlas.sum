@@ -1,4 +1,4 @@
-h1:r/ZrBuLZ5cSN5yyDPTGySGWzLx6h67fkZeVewyT2Zvw=
+h1:a6UKhgmfQ224qVbRXOPrvXp5c9cxFb2RgK+hL6oat8Y=
 0001001_essential_schema.sql h1:9q5kda5DD4vKQh4vGFkwevqgQdXNBTuKmmNHtXvYn+Q=
 0001002_essential_seeds.sql h1:mvnn2rmtpdgcgXswRN94UfTcDMPxrXRl11E/2R1Wl4w=
 0002001_iam_identity_schema.sql h1:iMXDM+pVq8qhuV28MlyAQpskAJOtb3VwNv9ugSrMbBc=
@@ -10,3 +10,5 @@ h1:r/ZrBuLZ5cSN5yyDPTGySGWzLx6h67fkZeVewyT2Zvw=
 0005001_inventory _schema.sql h1:jJbrSZxrFIsZXu1MKwTx3VfXgggulGZAOSrvB98bDWY=
 0005002_inventory_iam.sql h1:pcnWh/zfxytsSr+UKrR1oin/1xLFMI0XCQuOYpnrESg=
 0005004_inventory_seeds.sql h1:1UtJpegsTHI/eK+RADadObsD3kp8fJh2xwwHO8GZc24=
+0005005_inventory_stock_product_config.sql h1:5Nw+1BYIE1kuEK+Za5dp4Rtm2/0DgSiR70rHN9VrAdE=
+0005006_inventory_product_stock_iam.sql h1:1TKBOlTXvbEIEOL1UZNO3+poHGvcP6hzH93Bc/ieEB0=

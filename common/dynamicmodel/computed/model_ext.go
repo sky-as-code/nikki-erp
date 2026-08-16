@@ -10,8 +10,12 @@ import (
 // expression untyped (this package imports model, so model cannot import this package back);
 // DefOf recovers the typed view and derives the definition's kind. It returns (nil, nil) for a
 // field that is not computed.
+//
+// An edge-model field is computed in the sense that its value is derived rather than supplied,
+// but it carries no expression — the repository hydrates it from the peer schema. Excluded
+// here so the type assertion below cannot trip over its nil expression.
 func DefOf(field *dmodel.ModelField) (*Definition, error) {
-	if !field.IsComputed() {
+	if !field.IsComputed() || field.IsEdgeModel() {
 		return nil, nil
 	}
 	expr, ok := field.RawComputedExpr().(Expr)
@@ -20,6 +24,6 @@ func DefOf(field *dmodel.ModelField) (*Definition, error) {
 			"field %q: computed expression is a %T, not a computed.Expr — pass a value built with "+
 				"the computed package's constructors", field.Name(), field.RawComputedExpr())
 	}
-	def, err := NewDefinition(field.ComputedIsStored(), expr)
+	def, err := NewDefinition(field.IsPersisted(), expr)
 	return def, errors.Wrapf(err, "field %q", field.Name())
 }

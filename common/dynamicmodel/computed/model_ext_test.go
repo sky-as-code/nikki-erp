@@ -36,8 +36,7 @@ func TestComputedField_IsVirtualAndComputed(t *testing.T) {
 
 	assert.True(t, field.IsComputed())
 	assert.True(t, field.IsVirtual(), "a computed field must be virtual: every no-column behavior is inherited")
-	assert.True(t, field.IsNonPhysical())
-	assert.False(t, field.ComputedIsStored())
+	assert.False(t, field.IsPersisted())
 
 	plain, ok := schema.Field("on_hand_quantity")
 	require.True(t, ok)
@@ -161,8 +160,11 @@ func TestComputedField_ToSimplizedReportsComputedFlags(t *testing.T) {
 	asMap := toJsonMap(t, simplized)
 	assert.Equal(t, true, asMap["is_computed"])
 	assert.Equal(t, true, asMap["is_virtual"])
-	assert.Equal(t, false, asMap["computed_is_stored"])
-	assert.Equal(t, true, asMap["is_system_field"])
+	assert.Equal(t, false, asMap["is_persisted"])
+	assert.Equal(t, false, asMap["is_edge_model"])
+	// Read-only, but not server-owned: a computed field carries business meaning and must stay
+	// available to a client's column picker.
+	assert.Equal(t, false, asMap["is_system_field"])
 }
 
 func toJsonMap(t *testing.T, value any) map[string]any {

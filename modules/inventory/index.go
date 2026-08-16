@@ -298,5 +298,10 @@ func (*InventoryModule) RegisterModels() error {
 		// Corrections. The scrap references the transfer, the variant and two locations, all
 		// registered above, so it comes last.
 		dmodel.RegisterSchemaB(models.StockScrapSchemaBuilder()),
+
+		// Stock's settings for a product line, currently its inventory unit. It references the
+		// product template, so it comes after it. The UoM it names lives in Essential and is held
+		// as a plain id, which is why nothing from that module has to be registered first.
+		dmodel.RegisterSchemaB(models.StockProductConfigSchemaBuilder()),
 	)
 }

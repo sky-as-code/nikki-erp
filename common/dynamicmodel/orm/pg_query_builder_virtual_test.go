@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/computed"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
@@ -27,7 +28,8 @@ func virtualSchema(t *testing.T) (*dmodel.ModelSchema, *dmodel.SchemaRegistry) {
 		Field(dmodel.DefineField().Name("sku").
 			DataType(dmodel.FieldDataTypeString(1, 100)).RequiredForCreate()).
 		Field(dmodel.DefineField().Name("template_name").
-			DataType(dmodel.FieldDataTypeString(0, 200)).Virtual())
+			DataType(dmodel.FieldDataTypeString(0, 200)).
+			Computed(false, computed.Related("template.name")))
 
 	require.NoError(t, dmodel.RegisterSchemaB(builder))
 	return registry.Get(virtualTestSchemaName), registry

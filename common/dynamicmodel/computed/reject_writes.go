@@ -11,9 +11,13 @@ import (
 const ErrKeyComputedFieldNotWritable = "err_computed_field_not_writable"
 
 // RejectWrites reports a client error for every computed field the input tries to write. The
-// generic write path already silently strips virtual fields, so a stray computed value could
+// generic write path already silently strips column-less fields, so a stray computed value could
 // never reach a column — this check exists to tell the client explicitly instead of letting the
 // value quietly vanish (spec §25's recommendation).
+//
+// Edge-model fields are computed too, so echoing a hydrated edge back from a GET into a write is
+// reported rather than ignored, on the same reasoning: a value the server will discard is better
+// named than silently dropped.
 func RejectWrites(schema *dmodel.ModelSchema, input dmodel.DynamicFields) ft.ClientErrors {
 	var errs ft.ClientErrors
 	for name := range input {

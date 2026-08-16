@@ -100,10 +100,6 @@
 				"required_with": { "type": "string", "minLength": 1 },
 
 				"no_update": { "type": "boolean" },
-				"is_virtual": {
-					"description": "Scalar field with no database column, filled by a service after the read. Selectable and returned, never written.",
-					"type": "boolean"
-				},
 				"unique": { "type": "boolean" },
 				"auto_generated": { "type": "boolean" },
 				"tenant_key": { "type": "boolean" },

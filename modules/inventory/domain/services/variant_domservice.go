@@ -62,6 +62,14 @@ var _ drif.DynamicResourceService = (*ProductVariantDomainServiceImpl)(nil)
 func (this *ProductVariantDomainServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
+	// The stock guard runs before the write, not after it. Archiving must never be a way to make
+	// stock disappear: a variant still holding goods, owing them to a reservation, or named by
+	// work in flight is refused outright, and nothing about its stock is touched either way
+	// (CR §14.1, §14.4, PROD-INT-INV-013..016).
+	if guarded, err := guardVariantStockUsage(ctx, params); err != nil || guarded != nil {
+		return guarded, err
+	}
+
 	result, err := this.DynamicResourceService.SetArchived(ctx, params)
 	if err != nil || result == nil || result.ClientErrors.Count() > 0 {
 		return result, err

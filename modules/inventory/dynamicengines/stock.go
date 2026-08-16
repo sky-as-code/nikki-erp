@@ -69,7 +69,12 @@ func defineStockQuantActions(engine drif.DynamicResourceEngine) error {
 			return errors.Wrapf(err, "failed to attach the stock quant '%s' guard", action)
 		}
 	}
-	return defineStockCountActions(engine)
+	if err := defineStockCountActions(engine); err != nil {
+		return err
+	}
+	// The product-facing reads live here too: what they read is quants, and putting them on the
+	// product engines would have Product owning a stock query. See product_stock_actions.go.
+	return defineProductStockActions(engine)
 }
 
 // Permission codes for the counting operations.

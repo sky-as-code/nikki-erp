@@ -35,6 +35,7 @@ func TestEngineSchemaNamesCoverEveryProductResource(t *testing.T) {
 			models.StockMoveLineSchemaName,
 			models.StockMoveDependencySchemaName,
 			models.StockScrapSchemaName,
+			models.StockProductConfigSchemaName,
 		},
 		EngineSchemaNames())
 }
@@ -69,6 +70,9 @@ func TestRuleBearingResourcesDefineActions(t *testing.T) {
 		// The suggestion lookup is the only thing a putaway rule is for; without it the rules
 		// would be stored and never consulted.
 		models.PutawayRuleSchemaName: true,
+		// The inventory-unit guards. Losing them would let a product's unit be changed after it
+		// had moved stock, silently reinterpreting every quantity ever recorded against it.
+		models.StockProductConfigSchemaName: true,
 	}
 
 	for _, spec := range engineSpecs {

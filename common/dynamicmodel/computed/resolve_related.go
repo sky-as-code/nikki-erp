@@ -117,10 +117,10 @@ func (this *resolver) resolveRelatedLeaf(
 	if !ok {
 		return nil, nil, errors.Errorf("Unknown field %q", destSchemaName+"."+leafName)
 	}
-	if leaf.IsVirtualModelField() {
+	if leaf.IsEdgeModel() {
 		return nil, nil, errors.Errorf("field %q is an edge, not a scalar leaf", leafName)
 	}
-	if leaf.IsComputed() || leaf.IsVirtual() {
+	if leaf.IsComputed() {
 		return nil, nil, errors.Errorf(
 			"field %q on schema %q is itself derived; a related computed field must end at a "+
 				"physical column in this phase", leafName, destSchemaName)

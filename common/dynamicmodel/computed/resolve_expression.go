@@ -44,7 +44,7 @@ func (this *resolver) fieldTypeResolver(
 		if !ok {
 			return TypeUnknown, errors.Errorf("Unknown field %q", schema.Name()+"."+name)
 		}
-		if referenced.IsVirtualModelField() {
+		if referenced.IsEdgeModel() {
 			return TypeUnknown, errors.Errorf(
 				"field %q is an edge, not a scalar; reference a leaf through a related computed field instead", name)
 		}

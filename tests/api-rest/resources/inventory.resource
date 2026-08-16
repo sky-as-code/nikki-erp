@@ -33,6 +33,7 @@ ${STOCK_MOVE_API}                   /v1/inventory/inventory_stock_move
 ${STOCK_MOVE_LINE_API}              /v1/inventory/inventory_stock_move_line
 ${STOCK_MOVE_DEPENDENCY_API}        /v1/inventory/inventory_stock_move_dependency
 ${STOCK_SCRAP_API}                  /v1/inventory/inventory_stock_scrap
+${STOCK_PRODUCT_CONFIG_API}         /v1/inventory/inventory_stock_product_config
 ${INVENTORY_SCHEMA_DIR}     ${CURDIR}/schemas/inventory
 
 

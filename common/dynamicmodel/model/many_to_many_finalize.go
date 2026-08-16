@@ -225,7 +225,7 @@ func physicalColumnNames(s *ModelSchema) []string {
 	out := make([]string, 0, len(s.fieldsOrder))
 	for _, name := range s.fieldsOrder {
 		f := s.fields[name]
-		if f != nil && !f.IsNonPhysical() {
+		if f != nil && !f.IsVirtual() {
 			out = append(out, name)
 		}
 	}
@@ -304,6 +304,11 @@ func throughFkImplicitEdgeName(fkCol string) string {
 }
 
 func appendManyToOneToThroughSchema(through *ModelSchema, rel ModelRelation) {
+	// Marked before the duplicate guard below: the junction's association columns are foreign
+	// keys whether or not this particular relation is the one that gets appended.
+	for _, pair := range rel.EffectiveForeignKeys() {
+		markFieldAsForeignKey(through, pair.FkColumn)
+	}
 	for _, existing := range through.toRelations {
 		if existing.DestSchemaName == rel.DestSchemaName && relationHasSameFkColumns(existing, rel) {
 			return

@@ -930,7 +930,7 @@ func (this *PgQueryBuilder) resolveColumnValues(
 			return nil, false, nil, nil
 		}
 		field, ok := schema.Column(col)
-		if !ok || field.IsNonPhysical() {
+		if !ok || field.IsVirtual() {
 			return nil, false, nil, errors.Wrap(&errClientUnknownField{Field: col}, "resolveColumnValues")
 		}
 		converted, cErrs, err := this.convertValue(field, v)
@@ -1001,7 +1001,7 @@ func (this *PgQueryBuilder) rowFromMap(
 		if !ok {
 			return rowData{}, nil, errors.Wrap(&errClientUnknownField{Field: key}, "rowFromMap")
 		}
-		if field.IsNonPhysical() {
+		if field.IsVirtual() {
 			continue
 		}
 		keys = append(keys, key)
@@ -1154,7 +1154,7 @@ func (this *PgQueryBuilder) prepareColName(
 	if !ok {
 		return nil, "", errors.Wrap(&errClientUnknownField{Field: fieldName}, "prepareColName")
 	}
-	if field.IsNonPhysical() {
+	if field.IsVirtual() {
 		return nil, "", wrapClientSqlErrors(clientErrorsVirtualFieldUnavailable(fieldName))
 	}
 	return field, pgQuote(field.Name()), nil
@@ -1307,7 +1307,7 @@ func (this *PgQueryBuilder) orderExprs(
 		}
 		// A field with no column cannot be ordered on. The caller can fix that by dropping the
 		// sort, so it is a client error rather than the 500 this used to raise.
-		if field == nil || field.IsNonPhysical() {
+		if field == nil || field.IsVirtual() {
 			return nil, wrapClientSqlErrors(clientErrorsFieldNotSortable(fieldName))
 		}
 		dir := "ASC"
@@ -1385,7 +1385,7 @@ func parseNikkiStringInput(
 }
 
 func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (any, ft.ClientErrors, error) {
-	if field.IsNonPhysical() {
+	if field.IsVirtual() {
 		return nil, clientErrorsVirtualFieldUnavailable(field.Name()), nil
 	}
 	if field.IsArray() {
@@ -1598,7 +1598,7 @@ func modelTimeFromReflect(v reflect.Value) (time.Time, error) {
 }
 
 func resolveModelFieldToPgType(col *dmodel.ModelField) (string, error) {
-	if col.IsNonPhysical() {
+	if col.IsVirtual() {
 		return "", errors.Errorf("resolveModelFieldToPgType: virtual field '%s' has no SQL type", col.Name())
 	}
 	base, err := resolveGenericToPgType(col.ColumnType())
