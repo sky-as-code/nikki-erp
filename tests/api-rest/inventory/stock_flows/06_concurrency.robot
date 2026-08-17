@@ -13,7 +13,7 @@ Library           Collections
 Library           Process
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Stock Location Under Test
+...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Stock Destination Location Under Test
 ...               AND    Ensure Internal Operation Type Under Test
 ...               AND    Ensure Product Variant Under Test
@@ -44,8 +44,8 @@ Two Reservations Against One Balance Do Not Over Reserve
     POST On Session    api    ${STOCK_TRANSFER_API}/${first_id}/reserve    json=${{ {} }}    expected_status=any
     POST On Session    api    ${STOCK_TRANSFER_API}/${second_id}/reserve    json=${{ {} }}    expected_status=any
 
-    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
-    ${reserved}=    Read Stock Reserved    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
+    ${reserved}=    Read Stock Reserved    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     Should Be True    ${reserved} <= ${on_hand}
     ...    msg=Reserved (${reserved}) must never exceed on-hand (${on_hand}): two requests both reserved the same stock
 
@@ -95,16 +95,16 @@ Seed Exact Stock For Contention
     [Documentation]    Records how much is on hand and makes the contended demand equal to it, so
     ...    that two transfers asking for it are guaranteed to overlap. Receives stock first when
     ...    the location is empty, since a contention test over zero stock proves nothing.
-    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
-    ${reserved}=    Read Stock Reserved    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
+    ${reserved}=    Read Stock Reserved    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${free}=    Evaluate    ${on_hand} - ${reserved}
     IF    ${free} < 10
         ${transfer_id}    ${move_id}=    Receive Stock Into Location
-        ...    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}    60
+        ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    60
         POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
         ...    json=${{ {} }}    expected_status=any
-        ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
-        ${reserved}=    Read Stock Reserved    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+        ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
+        ${reserved}=    Read Stock Reserved    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
         ${free}=    Evaluate    ${on_hand} - ${reserved}
     END
     ${contended}=    Evaluate    int(${free})

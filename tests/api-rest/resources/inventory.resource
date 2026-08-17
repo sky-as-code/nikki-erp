@@ -21,13 +21,19 @@ ${PRODUCT_TEMPLATE_API}     /v1/inventory/inventory_product_template
 ${PRODUCT_VARIANT_API}      /v1/inventory/inventory_product_variant
 ${TEMPLATE_ATTRIBUTE_API}           /v1/inventory/inventory_product_template_attribute
 ${TEMPLATE_ATTRIBUTE_VALUE_API}     /v1/inventory/inventory_product_template_attribute_value
-${STOCK_LOCATION_API}               /v1/inventory/inventory_stock_location
+${INVENTORY_LOCATION_API}               /v1/inventory/inventory_location
+${WAREHOUSE_API}                    /v1/inventory/inventory_warehouse
+${STORAGE_CATEGORY_API}             /v1/inventory/inventory_storage_category
+${SUPPLY_RELATION_API}              /v1/inventory/inventory_warehouse_supply_relation
+${PUTAWAY_RULE_API}                 /v1/inventory/inventory_putaway_rule
 ${STOCK_OPERATION_TYPE_API}         /v1/inventory/inventory_stock_operation_type
 ${STOCK_QUANT_API}                  /v1/inventory/inventory_stock_quant
 ${STOCK_TRANSFER_API}               /v1/inventory/inventory_stock_transfer
 ${STOCK_MOVE_API}                   /v1/inventory/inventory_stock_move
 ${STOCK_MOVE_LINE_API}              /v1/inventory/inventory_stock_move_line
 ${STOCK_MOVE_DEPENDENCY_API}        /v1/inventory/inventory_stock_move_dependency
+${STOCK_SCRAP_API}                  /v1/inventory/inventory_stock_scrap
+${STOCK_PRODUCT_CONFIG_API}         /v1/inventory/inventory_stock_product_config
 ${INVENTORY_SCHEMA_DIR}     ${CURDIR}/schemas/inventory
 
 
@@ -350,6 +356,23 @@ Delete Inventory Fixture
         Set Global Variable    ${${variable_name}}    ${EMPTY}
     END
 
+Archive Inventory Fixture
+    [Documentation]    Best-effort archive of one record, for the resources a delete cannot
+    ...    reach. A warehouse owns the locations it created for itself, and those refuse to be
+    ...    archived while the warehouse is live, so the warehouse is withdrawn instead of
+    ...    removed — which is what archiving is for. Clears the global either way.
+    [Arguments]    ${api}    ${variable_name}
+    ${id}=    Get Variable Value    ${${variable_name}}    ${EMPTY}
+    IF    $id
+        ${resp}=    GET On Session    api    ${api}/${id}    expected_status=any
+        IF    ${resp.status_code} == 200
+            ${etag}=    Set Variable    ${resp.json()}[etag]
+            POST On Session    api    ${api}/${id}/archived
+            ...    json=${{ {'is_archived': True, 'etag': $etag} }}    expected_status=any
+        END
+        Set Global Variable    ${${variable_name}}    ${EMPTY}
+    END
+
 Delete Matrix Template Fixture
     [Documentation]    Removes the 2x2 generation fixture. Its variants were created by the
     ...    generator rather than by a test, so they are found by search instead of by a
@@ -369,26 +392,26 @@ Delete Matrix Template Fixture
 
 # --- Stock ----------------------------------------------------------------------------
 
-Ensure Stock Location Under Test
+Ensure Inventory Location Under Test
     [Documentation]    The internal location the stock suites exercise. Internal is the only
     ...    type that holds company-owned stock, so it is what a quant hangs off.
-    ${id}=    Get Variable Value    ${STOCK_LOCATION_ID}    ${EMPTY}
+    ${id}=    Get Variable Value    ${INVENTORY_LOCATION_ID}    ${EMPTY}
     IF    $id    RETURN
     Ensure Inventory Org
-    ${name}=    Unique Display Name    Robot Stock Location
+    ${name}=    Unique Display Name    Robot Inventory Location
     ${code}=    Unique Code    stkloc
-    ${resp}=    POST On Session    api    ${STOCK_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
+    ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    Set Global Variable    ${STOCK_LOCATION_ID}    ${id}
-    Set Global Variable    ${STOCK_LOCATION_ETAG}    ${etag}
-    Set Global Variable    ${STOCK_LOCATION_CODE}    ${code}
+    Set Global Variable    ${INVENTORY_LOCATION_ID}    ${id}
+    Set Global Variable    ${INVENTORY_LOCATION_ETAG}    ${etag}
+    Set Global Variable    ${INVENTORY_LOCATION_CODE}    ${code}
 
 Ensure Stock Operation Type Under Test
     [Documentation]    The receipt operation type the stock_operation_type suite exercises.
     ${id}=    Get Variable Value    ${STOCK_OPERATION_TYPE_ID}    ${EMPTY}
     IF    $id    RETURN
-    Ensure Stock Location Under Test
+    Ensure Inventory Location Under Test
     ${name}=    Unique Display Name    Robot Receipt Type
     ${code}=    Unique Code    stkop
     ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
@@ -407,8 +430,8 @@ Ensure Stock Destination Location Under Test
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Stock Destination
     ${code}=    Unique Code    stkdst
-    ${resp}=    POST On Session    api    ${STOCK_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
+    ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${STOCK_DEST_LOCATION_ID}    ${id}
 
@@ -418,7 +441,7 @@ Ensure Stock Transfer Under Test
     ...    be real locations for the balance assertions to have something to read on each side.
     ${id}=    Get Variable Value    ${STOCK_TRANSFER_ID}    ${EMPTY}
     IF    $id    RETURN
-    Ensure Stock Location Under Test
+    Ensure Inventory Location Under Test
     Ensure Stock Destination Location Under Test
     Ensure Internal Operation Type Under Test
     Ensure Product Variant Under Test
@@ -434,7 +457,7 @@ Ensure Internal Operation Type Under Test
     ...    two suites do not fight over one record.
     ${id}=    Get Variable Value    ${INTERNAL_OPERATION_TYPE_ID}    ${EMPTY}
     IF    $id    RETURN
-    Ensure Stock Location Under Test
+    Ensure Inventory Location Under Test
     Ensure Stock Destination Location Under Test
     ${name}=    Unique Display Name    Robot Internal Type
     ${code}=    Unique Code    stkint
@@ -448,7 +471,7 @@ Create Stock Transfer
     ...    is generated server-side, so none is sent: a client-supplied one is overwritten.
     [Arguments]    ${operation_type_id}
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
-    ...    json=${{ {'operation_type_id': $operation_type_id, 'source_location_id': $STOCK_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'operation_type_id': $operation_type_id, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}    ${etag}
 
@@ -459,21 +482,85 @@ Add Stock Move
     [Arguments]    ${transfer_id}    ${variant_id}    ${quantity}
     ${qty}=    Convert To String    ${quantity}
     ${resp}=    POST On Session    api    ${STOCK_MOVE_API}
-    ...    json=${{ {'transfer_id': $transfer_id, 'product_variant_id': $variant_id, 'demand_quantity': $qty, 'base_demand_quantity': $qty, 'source_location_id': $STOCK_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'transfer_id': $transfer_id, 'product_variant_id': $variant_id, 'demand_quantity': $qty, 'base_demand_quantity': $qty, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 
+Ensure Warehouse Under Test
+    [Documentation]    A warehouse and, with it, the locations it creates for itself: a root
+    ...    named after its code, and a Stock location beneath. One-step flows both ways, so
+    ...    those two are the whole tree until a test reconfigures a flow.
+    ${id}=    Get Variable Value    ${WAREHOUSE_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${name}=    Unique Display Name    Robot Warehouse
+    ${code}=    Unique Warehouse Code    W
+    ${resp}=    POST On Session    api    ${WAREHOUSE_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'warehouse_role': 'central', 'incoming_flow': 'one_step', 'outgoing_flow': 'one_step', 'status': 'active', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${WAREHOUSE_ID}    ${id}
+    Set Global Variable    ${WAREHOUSE_ETAG}    ${etag}
+    Set Global Variable    ${WAREHOUSE_CODE}    ${code}
+
+Ensure Secondary Warehouse Under Test
+    [Documentation]    A second warehouse, for the rules that need two: a supply route runs
+    ...    between different warehouses, and a hierarchy needs somewhere to hang from.
+    ${id}=    Get Variable Value    ${SECONDARY_WAREHOUSE_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${name}=    Unique Display Name    Robot Second Warehouse
+    ${code}=    Unique Warehouse Code    S
+    ${resp}=    POST On Session    api    ${WAREHOUSE_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'warehouse_role': 'pos', 'incoming_flow': 'one_step', 'outgoing_flow': 'one_step', 'status': 'active', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${SECONDARY_WAREHOUSE_ID}    ${id}
+    Set Global Variable    ${SECONDARY_WAREHOUSE_ETAG}    ${etag}
+
+Ensure Storage Category Under Test
+    [Documentation]    A capacity and mixing policy a location may carry.
+    ${id}=    Get Variable Value    ${STORAGE_CATEGORY_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${name}=    Unique Display Name    Robot Storage Category
+    ${code}=    Unique Code    storcat
+    ${resp}=    POST On Session    api    ${STORAGE_CATEGORY_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'allow_new_item_policy': 'allow', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${STORAGE_CATEGORY_ID}    ${id}
+    Set Global Variable    ${STORAGE_CATEGORY_ETAG}    ${etag}
+
+Find Warehouse Location By Code
+    [Documentation]    Resolves one of a warehouse's own locations. The system-generated ones
+    ...    carry the codes the flow topology names, so 'Stock' finds the place goods live.
+    [Arguments]    ${warehouse_id}    ${code}
+    ${graph}=    Set Variable    {"and":[{"if":["warehouse_id","=","${warehouse_id}"]},{"if":["code","=","${code}"]}]}
+    ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'graph': $graph} }}
+    Response Status Should Be    ${resp}    200
+    ${items}=    Set Variable    ${resp.json()}[items]
+    IF    len($items) == 0    RETURN    ${EMPTY}
+    RETURN    ${items}[0][id]
+
+Unique Warehouse Code
+    [Documentation]    A warehouse code is at most five characters, because it is the first
+    ...    segment of every location path beneath it. The shared Unique Code keyword produces
+    ...    longer values, so warehouses get their own.
+    [Arguments]    ${prefix}
+    ${suffix}=    Unique Suffix
+    ${code}=    Set Variable    ${prefix}${suffix}
+    RETURN    ${code[:5]}
+
 Ensure Supplier Location Under Test
-    [Documentation]    The 'supplier' virtual location a receipt draws from. A receipt has to have
-    ...    a source, and it is not a place the company holds stock — which is why location_type
+    [Documentation]    The 'vendor' virtual location a receipt draws from. A receipt has to have
+    ...    a source, and it is not a place the company holds stock — which is why location_usage
     ...    exists and why only 'internal' counts as company-owned (BR §4.2.2).
     ${id}=    Get Variable Value    ${SUPPLIER_LOCATION_ID}    ${EMPTY}
     IF    $id    RETURN
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Supplier
     ${code}=    Unique Code    stksup
-    ${resp}=    POST On Session    api    ${STOCK_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_type': 'supplier', 'org_id': $INV_ORG_ID} }}
+    ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'vendor', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${SUPPLIER_LOCATION_ID}    ${id}
 
@@ -489,6 +576,101 @@ Ensure Receipt Operation Type Under Test
     ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${RECEIPT_OPERATION_TYPE_ID}    ${id}
+
+Ensure Inventory Loss Location Under Test
+    [Documentation]    The 'inventory_loss' virtual location an adjustment balances against
+    ...    (BR §4.2.7.2). A count that finds more than the books said has to take the difference
+    ...    from somewhere, and this is the somewhere.
+    ${id}=    Get Variable Value    ${INVENTORY_LOSS_LOCATION_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${name}=    Unique Display Name    Robot Inventory Loss
+    ${code}=    Unique Code    stkloss
+    ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'inventory_loss', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${INVENTORY_LOSS_LOCATION_ID}    ${id}
+
+Ensure Scrap Location Under Test
+    [Documentation]    The 'scrap' virtual location written-off goods move to (BR §4.2.9.1). Stock
+    ...    that lands here has left usable inventory without being deleted, which is what makes a
+    ...    scrap auditable rather than a disappearance.
+    ${id}=    Get Variable Value    ${SCRAP_LOCATION_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${name}=    Unique Display Name    Robot Scrap Location
+    ${code}=    Unique Code    stkscrp
+    ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'scrap', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set Global Variable    ${SCRAP_LOCATION_ID}    ${id}
+
+Ensure Correction Operation Type Under Test
+    [Documentation]    The internal operation type adjustments and scraps generate their movements
+    ...    through (decision F3).
+    ...
+    ...    Its code is the fixed 'INV_CORRECTION', not a Unique Code like the other fixtures: the
+    ...    correction helper resolves it by that exact string, and the constant it matches is
+    ...    models.StockCorrectionOperationTypeCode. A randomised code here would make every
+    ...    adjustment and scrap fail with "no internal operation type", which reads as a data
+    ...    problem rather than a fixture mismatch.
+    ...
+    ...    Because the code is fixed it can already exist from an earlier run, so a conflict is
+    ...    tolerated and the existing record reused.
+    ${id}=    Get Variable Value    ${CORRECTION_OPERATION_TYPE_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    Ensure Inventory Location Under Test
+    Ensure Inventory Loss Location Under Test
+    ${name}=    Unique Display Name    Robot Correction Type
+    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
+    ...    json=${{ {'code': 'INV_CORRECTION', 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ...    expected_status=any
+    IF    ${resp.status_code} == 200 or ${resp.status_code} == 201
+        ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    ELSE
+        ${id}=    Find Operation Type By Code    INV_CORRECTION
+    END
+    Set Global Variable    ${CORRECTION_OPERATION_TYPE_ID}    ${id}
+
+Find Operation Type By Code
+    [Documentation]    Reads back an operation type by its code, for the fixed-code fixture above.
+    [Arguments]    ${code}
+    ${resp}=    GET On Session    api    ${STOCK_OPERATION_TYPE_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    Response Status Should Be    ${resp}    200
+    FOR    ${item}    IN    @{resp.json()}[items]
+        IF    $item.get('code') == $code    RETURN    ${item}[id]
+    END
+    Fail    No operation type with code '${code}' exists; the correction fixture cannot continue
+
+Ensure Correction Fixtures
+    [Documentation]    Everything an adjustment or a scrap needs before it can generate a movement.
+    Ensure Correction Operation Type Under Test
+    Ensure Inventory Loss Location Under Test
+    Ensure Scrap Location Under Test
+
+Read Stock Quant Id
+    [Documentation]    Finds the balance row for a variant in a location, which the count actions
+    ...    address by id. Fails loudly when absent: every caller here has just received stock, so a
+    ...    missing balance means the receipt did not land and the test should say so.
+    [Arguments]    ${variant_id}    ${location_id}
+    ${resp}=    GET On Session    api    ${STOCK_QUANT_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    Response Status Should Be    ${resp}    200
+    FOR    ${item}    IN    @{resp.json()}[items]
+        IF    $item.get('product_variant_id') == $variant_id and $item.get('location_id') == $location_id
+            RETURN    ${item}[id]
+        END
+    END
+    Fail    No stock balance for variant '${variant_id}' in location '${location_id}'
+
+Read Stock Quant Field
+    [Documentation]    Reads one field off a balance, for asserting count metadata.
+    [Arguments]    ${quant_id}    ${field}
+    ${resp}=    GET On Session    api    ${STOCK_QUANT_API}/${quant_id}
+    Response Status Should Be    ${resp}    200
+    RETURN    ${resp.json()}[data].get('${field}')
 
 Receive Stock Into Location
     [Documentation]    Puts a quantity of a variant into a location by running a real receipt:
@@ -568,10 +750,22 @@ Delete Inventory Seed Data
     #    and a variant, so stock unwinds before the products it references.
     Delete Inventory Fixture    ${STOCK_OPERATION_TYPE_API}    INTERNAL_OPERATION_TYPE_ID
     Delete Inventory Fixture    ${STOCK_OPERATION_TYPE_API}    STOCK_OPERATION_TYPE_ID
+    #    Warehouse configuration points at warehouses and locations, so it unwinds before both.
+    #    A putaway rule names two locations and a warehouse; a supply relation names two
+    #    warehouses.
+    Delete Inventory Fixture    ${PUTAWAY_RULE_API}    PUTAWAY_RULE_ID
+    Delete Inventory Fixture    ${SUPPLY_RELATION_API}    SUPPLY_RELATION_ID
     #    The child points at the location under test, so it must go first.
-    Delete Inventory Fixture    ${STOCK_LOCATION_API}    CHILD_STOCK_LOCATION_ID
-    Delete Inventory Fixture    ${STOCK_LOCATION_API}    STOCK_DEST_LOCATION_ID
-    Delete Inventory Fixture    ${STOCK_LOCATION_API}    STOCK_LOCATION_ID
+    Delete Inventory Fixture    ${INVENTORY_LOCATION_API}    CHILD_INVENTORY_LOCATION_ID
+    Delete Inventory Fixture    ${INVENTORY_LOCATION_API}    STOCK_DEST_LOCATION_ID
+    Delete Inventory Fixture    ${INVENTORY_LOCATION_API}    INVENTORY_LOCATION_ID
+    #    A warehouse creates its own locations, which point back at it, so those go first. They
+    #    are system-generated and refuse a normal delete while the warehouse is live, which is
+    #    why the warehouse is archived rather than deleted here.
+    Archive Inventory Fixture    ${WAREHOUSE_API}    SECONDARY_WAREHOUSE_ID
+    Archive Inventory Fixture    ${WAREHOUSE_API}    WAREHOUSE_ID
+    #    A location may carry a storage category, so the category outlives the locations.
+    Delete Inventory Fixture    ${STORAGE_CATEGORY_API}    STORAGE_CATEGORY_ID
     Delete Matrix Template Fixture
     Delete Inventory Fixture    ${PRODUCT_VARIANT_API}    PRODUCT_VARIANT_ID
     Delete Inventory Fixture    ${PRODUCT_TEMPLATE_API}    PRODUCT_TEMPLATE_ID

@@ -81,3 +81,40 @@ Schema Declares Sku As The Record Label
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
     Response Status Should Be    ${resp}    200
     Should Be Equal    ${resp.json()}[record_label_field]    sku
+
+Schema Marks Template Fields Computed But Not System
+    [Documentation]    A template_* field is copied from the template on read, so it is
+    ...    computed and unpersisted. It is deliberately NOT a system field: it carries
+    ...    business meaning and must stay available to a client's column picker. Folding
+    ...    "no column" into "system field" is what used to hide these from the field list.
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
+    Response Status Should Be    ${resp}    200
+    ${field}=    Set Variable    ${resp.json()}[fields][template_name]
+    Should Be Equal    ${field}[is_computed]    ${True}
+    Should Be Equal    ${field}[is_persisted]    ${False}
+    Should Be Equal    ${field}[is_virtual]    ${True}
+    Should Be Equal    ${field}[is_edge_model]    ${False}
+    Should Be Equal    ${field}[is_system_field]    ${False}
+
+Schema Marks The Template Foreign Key A System Field
+    [Documentation]    product_template_id wires the variant to its template, so the server
+    ...    owns its meaning: it is a foreign key and therefore a system field, while an
+    ...    ordinary business column like sku is neither.
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
+    Response Status Should Be    ${resp}    200
+    ${fields}=    Set Variable    ${resp.json()}[fields]
+    Should Be Equal    ${fields}[product_template_id][is_foreign_key]    ${True}
+    Should Be Equal    ${fields}[product_template_id][is_system_field]    ${True}
+    Should Be Equal    ${fields}[sku][is_foreign_key]    ${False}
+    Should Be Equal    ${fields}[sku][is_system_field]    ${False}
+
+Schema Marks The Template Edge An Edge Model
+    [Documentation]    The edge stands for the relation itself rather than a column, which is
+    ...    what is_edge_model tells a client that must not offer it as a selectable column.
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
+    Response Status Should Be    ${resp}    200
+    ${field}=    Set Variable    ${resp.json()}[fields][template]
+    Should Be Equal    ${field}[is_edge_model]    ${True}
+    Should Be Equal    ${field}[is_computed]    ${True}
+    Should Be Equal    ${field}[is_persisted]    ${False}
+    Should Be Equal    ${field}[is_virtual]    ${True}

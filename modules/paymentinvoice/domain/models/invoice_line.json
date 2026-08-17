@@ -1,0 +1,91 @@
+{
+	"name": "paymentinvoice_invoice_line",
+	"label": "paymentinvoice_invoice_line.label",
+	"table_name": "paymentinvoice_invoice_lines",
+	"should_build_db": true,
+	"record_label_field": "description",
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "invoice_id",
+			"label": "fields.invoice_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 1, "max": 500 },
+			"required_for_create": true
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "int32", "min": 1, "max": 1000000 },
+			"required_for_create": true,
+			"default_value": 1,
+			"description": {
+				"en-US": "How many units are charged. int32 because the bound is a million: a wider column would represent quantities no line can hold and would suggest the bound had not been chosen."
+			}
+		},
+		{
+			"name": "unit_price",
+			"label": "fields.unit_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Price of one unit, in the invoice's currency. Decimal rather than an integer of minor units, because the number of minor units is a property of the currency and storing it that way pushes a per-currency scale into everything that reads the column."
+			}
+		},
+		{
+			"name": "tax_rate_percent",
+			"label": "fields.tax_rate_percent",
+			"data_type": { "type": "decimal", "min": "0", "max": "100", "scale": 2 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "VAT rate applied to this line, as a percentage. Decimal because rates are not whole numbers in general, and an integer column would truncate a rate like 8.5 rather than reject it. Held per line because one invoice can carry goods taxed at different rates."
+			}
+		},
+		{
+			"name": "amount",
+			"label": "fields.amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "quantity multiplied by unit_price, before tax. System-managed: recomputed on issue rather than accepted from a client, so a line cannot claim a total its own quantity and price do not produce."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "payinv_inv_lines_invoice_id", "fields": ["invoice_id"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "invoice",
+			"label": { "en-US": "Invoice" },
+			"type": "many:one",
+			"dest_schema": "paymentinvoice_invoice",
+			"key_map": { "invoice_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

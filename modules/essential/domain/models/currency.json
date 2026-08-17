@@ -1,0 +1,76 @@
+{
+	"name": "essential_currency",
+	"label": "essential_currency.label",
+	"table_name": "essential_currencies",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [
+		{ "index_name": "essent_currencies_code", "fields": ["code"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 3, "max": 3, "regex": "^[A-Z]{3}$" },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The ISO 4217 alphabetic code: VND, USD, EUR. The regex enforces upper case rather than a sanitizer folding it, because the only sanitizers available are none/html/plaintext and a lower-case code should be rejected rather than quietly rewritten. Immutable, because it is what every amount elsewhere in the system is denominated by; changing it would silently reinterpret money already recorded."
+			}
+		},
+		{
+			"name": "numeric_code",
+			"label": "fields.numeric_code",
+			"data_type": { "type": "string", "min": 0, "max": 3 },
+			"description": {
+				"en-US": "The ISO 4217 numeric code, e.g. 704 for VND. Kept as a string because it is an identifier with significant leading zeros, not a quantity."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "symbol",
+			"label": "fields.symbol",
+			"data_type": { "type": "string", "min": 0, "max": 10 },
+			"description": {
+				"en-US": "What is shown next to an amount: ₫, $, €."
+			}
+		},
+		{
+			"name": "decimal_places",
+			"label": "fields.decimal_places",
+			"data_type": { "type": "int32", "min": 0, "max": 6 },
+			"required_for_create": true,
+			"default_value": 2,
+			"description": {
+				"en-US": "How many fractional digits this currency is quoted to: 0 for VND, 2 for USD, 3 for KWD. This is why money is stored as decimal rather than as an integer count of minor units — the count is a property of the currency, and holding amounts that way would push this number into every caller that reads one."
+			}
+		},
+		{
+			"name": "is_active",
+			"label": "fields.is_active",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"description": {
+				"en-US": "Whether new transactions may be denominated in this currency. Distinct from archiving: a currency withdrawn from use must remain readable, because amounts already recorded in it still refer to it."
+			}
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "essent_currencies_is_active", "fields": ["is_active"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

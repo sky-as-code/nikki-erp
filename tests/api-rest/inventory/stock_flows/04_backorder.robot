@@ -8,7 +8,7 @@ Documentation     Partial processing and backorder (BR §4.2.3.11, AC-STOCK-008,
 ...               is precisely the question a backorder exists to answer.
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Stock Location Under Test
+...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Stock Destination Location Under Test
 ...               AND    Ensure Internal Operation Type Under Test
 ...               AND    Ensure Product Variant Under Test
@@ -20,7 +20,7 @@ Test Tags         inventory    stock_flows    backorder
 Partial Processing Leaves The Original Demand Intact
     [Documentation]    STOCK-INV-020 and AC-STOCK-008. Rewriting the demand to the processed
     ...    quantity would erase the fact that more was promised than delivered.
-    ${available}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${available}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${demand}=    Evaluate    int(${available}) + 50
 
     ${id}    ${etag}=    Create Stock Transfer    ${INTERNAL_OPERATION_TYPE_ID}
@@ -95,10 +95,10 @@ Ask Policy Requires An Explicit Decision
     ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
     ${type_id}    ${type_etag}=    Response Should Be Create Success    ${resp}
 
-    ${available}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${available}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${demand}=    Evaluate    int(${available}) + 50
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
-    ...    json=${{ {'operation_type_id': $type_id, 'source_location_id': $STOCK_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'operation_type_id': $type_id, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${move_id}=    Add Stock Move    ${id}    ${PRODUCT_VARIANT_ID}    ${demand}
     POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {} }}    expected_status=any
@@ -119,9 +119,9 @@ Ask Policy Requires An Explicit Decision
 Seed Stock For Backorder
     [Documentation]    Leaves a modest, known quantity in the source location, so that a demand
     ...    larger than it is guaranteed to be only partly deliverable.
-    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     IF    ${on_hand} >= 20    RETURN
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
-    ...    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}    40
+    ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    40
     POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
     ...    json=${{ {} }}    expected_status=any

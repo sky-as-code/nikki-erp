@@ -1,0 +1,23 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "code", "name", "warehouse_role", "incoming_flow", "outgoing_flow", "status", "etag", "is_archived", "org_id"],
+    "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "created_at": { "type": "string", "minLength": 20 },
+        "updated_at": { "type": "string", "minLength": 20 },
+        "code": { "type": "string", "minLength": 1, "maxLength": 5 },
+        "name": { "type": "object" },
+        "warehouse_role": { "type": "string", "enum": ["central", "sub", "pos", "other"] },
+        "parent_warehouse_id": { "type": ["string", "null"] },
+        "address": { "type": ["string", "null"] },
+        "manager_user_id": { "type": ["string", "null"] },
+        "incoming_flow": { "type": "string", "enum": ["one_step", "two_step", "three_step"] },
+        "outgoing_flow": { "type": "string", "enum": ["one_step", "two_step", "three_step"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "notes": { "type": ["string", "null"] },
+        "org_id": { "type": "string", "minLength": 1 },
+        "etag": { "type": "string", "minLength": 1 },
+        "is_archived": { "type": "boolean" }
+    },
+    "additionalProperties": false
+}

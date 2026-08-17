@@ -5,10 +5,10 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
-	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
+	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
 type principalHelper struct {

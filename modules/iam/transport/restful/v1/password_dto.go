@@ -1,8 +1,8 @@
 package v1
 
 import (
-	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/password"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/password"
 )
 
 type CreateOtpPasswordRequest = it.CreatePasswordOtpCommand

@@ -27,13 +27,18 @@ func TestProductSchemasRegisterInOrder(t *testing.T) {
 		ProductTemplateAttributeValueSchemaBuilder(),
 		ProductVariantSchemaBuilder(),
 		ProductVariantAttributeValueSchemaBuilder(),
-		StockLocationSchemaBuilder(),
+		WarehouseSchemaBuilder(),
+		StorageCategorySchemaBuilder(),
+		InventoryLocationSchemaBuilder(),
+		WarehouseSupplyRelationSchemaBuilder(),
+		PutawayRuleSchemaBuilder(),
 		StockOperationTypeSchemaBuilder(),
 		StockQuantSchemaBuilder(),
 		StockTransferSchemaBuilder(),
 		StockMoveSchemaBuilder(),
 		StockMoveLineSchemaBuilder(),
 		StockMoveDependencySchemaBuilder(),
+		StockScrapSchemaBuilder(),
 	}
 
 	for _, builder := range builders {

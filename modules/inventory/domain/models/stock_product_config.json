@@ -1,0 +1,55 @@
+{
+	"name": "inventory_stock_product_config",
+	"label": "inventory_stock_product_config.label",
+	"table_name": "inventory_stock_product_configs",
+	"should_build_db": true,
+	"record_label_field": "product_template_id",
+	"composite_uniques": [{
+		"index_name": "invty_stk_prod_cfgs_tid_ptpl_id",
+		"fields": ["product_template_id", "org_id"]
+	}],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "product_template_id",
+			"label": "fields.product_template_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The product line this configures. One row per template, which is what the unique index enforces: a second row would give one product two inventory units and no way to say which the balances are in. Configuration sits at template level and every variant inherits it (CR 11.5, PROD-INT-INV-011)."
+			}
+		},
+		{
+			"name": "inventory_uom_id",
+			"label": "fields.inventory_uom_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The unit this product's stock is counted and stored in. A reference into Essential's UoM master, held as a plain id rather than an edge: the UoM belongs to another module, and a foreign key across that boundary would make Inventory's schema depend on Essential's table. The unit itself, its category, its conversion factors and its rounding all stay in Essential (CR 11.1, PROD-INT-INV-009)."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"edges_to": [
+		{
+			"edge": "product_template",
+			"label": { "en-US": "Product template" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_template",
+			"key_map": { "product_template_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

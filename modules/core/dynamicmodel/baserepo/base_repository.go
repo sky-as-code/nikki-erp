@@ -901,16 +901,16 @@ type nestedSelectPlan struct {
 // hasNestedOrEdgeColumns reports whether a request must take the nested-hydration path, which
 // costs one follow-up query per row per edge.
 //
-// The edge test is deliberately IsVirtualModelField and NOT IsNonPhysical: a virtual scalar is
+// The edge test is deliberately IsEdgeModel and NOT IsVirtual: a virtual scalar is
 // filled by its service after a single read and must stay on the plain path. Widening this to
-// IsNonPhysical would silently turn every request selecting one into an N+1.
+// IsVirtual would silently turn every request selecting one into an N+1.
 func (this *BaseDynamicRepositoryImpl) hasNestedOrEdgeColumns(columns []string) bool {
 	for _, col := range columns {
 		if strings.Contains(col, ".") {
 			return true
 		}
 		field, ok := this.schema.Field(col)
-		if ok && field.IsVirtualModelField() {
+		if ok && field.IsEdgeModel() {
 			return true
 		}
 	}
@@ -927,7 +927,7 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 	for _, col := range columns {
 		if strings.Count(col, ".") == 0 {
 			field, ok := this.schema.Field(col)
-			if ok && field.IsVirtualModelField() {
+			if ok && field.IsEdgeModel() {
 				rel, hasRel := this.relationByEdge(col)
 				if !hasRel {
 					errs.Append(*ft.NewValidationError(
@@ -991,7 +991,7 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 				continue
 			}
 			f, hasField := destSchema.Column(leaf)
-			if !hasField || f.IsVirtualModelField() {
+			if !hasField || f.IsEdgeModel() {
 				errs.Append(*ft.NewValidationError(
 					col, ft.ErrorKey("err_unknown_schema_field"), "field is not defined on edge schema",
 				))
@@ -1050,7 +1050,7 @@ func (this *BaseDynamicRepositoryImpl) parseNestedColumn(col string) ([]string, 
 		return nil, ft.NewAnonymousValidationError(ft.ErrorKey("err_schema_not_found"), "edge destination schema not found", nil)
 	}
 	f, ok := destSchema.Column(parts[1])
-	if !ok || f.IsVirtualModelField() {
+	if !ok || f.IsEdgeModel() {
 		return nil, ft.NewValidationError(col, ft.ErrorKey("err_unknown_schema_field"), "field is not defined on edge schema")
 	}
 	return parts, nil
@@ -1354,10 +1354,11 @@ func (this *BaseDynamicRepositoryImpl) runSelectGraphScan(
 ) ([]dmodel.DynamicFields, ft.ClientErrors, error) {
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(
 		this.schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-			Columns:  orm.ToSelectColumns(param.Fields),
-			Page:     param.Page,
-			Size:     param.Size,
-			Language: param.Language,
+			Columns:         orm.ToSelectColumns(param.Fields),
+			Page:            param.Page,
+			Size:            param.Size,
+			Language:        param.Language,
+			ComputedContext: param.ComputedContext,
 		})
 	if err != nil {
 		return nil, nil, err
@@ -1542,7 +1543,7 @@ func (this *BaseDynamicRepositoryImpl) validateKeyMap(keys dmodel.DynamicFields)
 func (this *BaseDynamicRepositoryImpl) validateSelectColumns(columns []string) *ft.ClientErrorItem {
 	for _, col := range columns {
 		field, hasField := this.schema.Field(col)
-		if hasField && field.IsVirtualModelField() {
+		if hasField && field.IsEdgeModel() {
 			if _, ok := this.relationByEdge(col); !ok {
 				return ft.NewValidationError(
 					col,
@@ -1560,7 +1561,7 @@ func (this *BaseDynamicRepositoryImpl) validateSelectColumns(columns []string) *
 		}
 		// Field rather than Column: a virtual scalar has no column but is a legal thing to
 		// select, so it must pass here and be dropped from the projection later.
-		if !hasField || field.IsVirtualModelField() {
+		if !hasField || field.IsEdgeModel() {
 			return ft.NewValidationError(
 				col,
 				ft.ErrorKey("err_unknown_schema_field"),
@@ -1587,7 +1588,7 @@ func (this *BaseDynamicRepositoryImpl) validateGetOneColumnsAndFilter(
 		// A GetOne filter must resolve to a primary or unique key, which a virtual field can
 		// never be. Report it as unavailable rather than unknown, so the caller learns the field
 		// exists but cannot identify a record.
-		if field, hasField := this.schema.Field(k); hasField && field.IsNonPhysical() {
+		if field, hasField := this.schema.Field(k); hasField && field.IsVirtual() {
 			return ft.NewValidationError(
 				k,
 				ft.ErrorKey("err_virtual_field_unavailable"),

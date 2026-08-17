@@ -2,8 +2,8 @@ package methods
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	itLogin "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/login"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	itLogin "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/login"
 )
 
 var (

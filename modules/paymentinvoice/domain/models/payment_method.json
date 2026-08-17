@@ -1,0 +1,97 @@
+{
+	"name": "paymentinvoice_payment_method",
+	"label": "paymentinvoice_payment_method.label",
+	"table_name": "paymentinvoice_payment_methods",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [
+		{ "index_name": "payinv_pay_methods_code", "fields": ["code"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "How this method is referred to everywhere else: momo, vietqr, mpos. Immutable, because orders already taken record it and a rename would detach them from the method they were paid by."
+			}
+		},
+		{
+			"name": "adapter_code",
+			"label": "fields.adapter_code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Which gateway adapter carries out a payment through this method. Separate from code so that two methods can be served by one adapter — a second MoMo merchant account, say — without either of them having to be named after the adapter."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "langjson", "min": 0, "max": 2000 }
+		},
+		{
+			"name": "currency_id",
+			"label": "fields.currency_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The single currency this method settles in, when it settles in only one. Null means it imposes no restriction of its own. A reference into Essential's currency master, held as a plain id rather than an edge, because a foreign key across a module boundary would make this module's schema depend on Essential's table."
+			}
+		},
+		{
+			"name": "min_amount",
+			"label": "fields.min_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": {
+				"en-US": "Smallest amount the gateway will accept. Held as data because each gateway sets its own floor and they change by contract, not by release."
+			}
+		},
+		{
+			"name": "max_amount",
+			"label": "fields.max_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": {
+				"en-US": "Largest amount the gateway will accept."
+			}
+		},
+		{
+			"name": "is_active",
+			"label": "fields.is_active",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"description": {
+				"en-US": "Whether new payments may be taken through this method. Orders already taken through it stay readable when it is switched off, which is why this is not archiving."
+			}
+		},
+		{
+			"name": "config",
+			"label": "fields.config",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "Non-secret, per-method settings the adapter reads, such as a terminal group or a merchant sub-account. Credentials never live here: they come from configuration through the secret-file convention, because this table is readable through the API."
+			}
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "payinv_pay_methods_is_active", "fields": ["is_active"] },
+		{ "index_name": "payinv_pay_methods_adapter", "fields": ["adapter_code"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

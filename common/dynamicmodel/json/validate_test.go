@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestValidateSchemaJson_Valid(t *testing.T) {
 	modelJson := `{
 		"name": "iam_role",

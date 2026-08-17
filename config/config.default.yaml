@@ -145,3 +145,59 @@ CORE:
 IAM:
   # Number of seconds before a login attempt expires
   LOGIN_ATTEMPT_DURATION_SECS: 300
+
+PAYMENTINVOICE:
+  # Each gateway is off unless its ENABLED flag is set, and a gateway that is off is not
+  # registered at all: asking to pay through it is refused as a client error rather than
+  # attempted against credentials that were never supplied.
+  #
+  # The SECRET_KEY values and the passwords below are credentials and are deliberately left
+  # empty here. This file is committed and embedded into the binary. Supply them per
+  # environment through config/local.env for local work, or through the {KEY}_FILE
+  # secret-file convention in a deployed environment.
+  MOMO:
+    ENABLED: false
+    PARTNER_CODE: ""
+    ACCESS_KEY: ""
+    SECRET_KEY: ""
+    API_ENDPOINT: "https://test-payment.momo.vn/v2/gateway/api"
+    # Where MoMo posts the payment result. Sent to MoMo on every create, so changing it
+    # needs nothing done on MoMo's side.
+    IPN_URL: ""
+    # Where the payer's browser is sent afterwards. A human destination: nothing is
+    # settled by a visit to it.
+    REDIRECT_URL: ""
+
+  MPOS:
+    ENABLED: false
+    MERCHANT_ID: ""
+    SECRET_KEY: ""
+    API_ENDPOINT: ""
+
+  VIETQR:
+    ENABLED: false
+    API_ENDPOINT: ""
+    # The credentials this module presents when it calls VietQR.
+    USERNAME: ""
+    PASSWORD: ""
+    SECRET_KEY: ""
+    # The credentials the bank presents when it calls this module. VietQR's integration has
+    # the partner host the token endpoint, so these are a separate pair from the two above.
+    INBOUND_USERNAME: ""
+    INBOUND_PASSWORD: ""
+    INBOUND_JWT_SECRET: ""
+    BANK_NUMBER: ""
+    BANK_NAME: ""
+    BANK_CODE: ""
+
+  ORDER:
+    # How long an order may sit unpaid before the watchdog asks the gateway for a verdict
+    # and, failing one, expires it.
+    EXPIRE_AFTER_MINS: 15
+    # How long an unpaid or expired order is kept before deletion.
+    CLEAN_AFTER_HOURS: 24
+
+  SYNC:
+    # Bounds one attempt to notify the ordering system of a payment result.
+    TIMEOUT_SECS: 5
+    MAX_RETRIES: 3

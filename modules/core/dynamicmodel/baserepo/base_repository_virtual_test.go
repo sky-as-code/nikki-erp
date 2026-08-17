@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/computed"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
@@ -37,7 +38,8 @@ func virtualRepo(t *testing.T) *BaseDynamicRepositoryImpl {
 				Field(dmodel.DefineField().Name("sku").
 					DataType(dmodel.FieldDataTypeString(1, 100)).RequiredForCreate().Unique()).
 				Field(dmodel.DefineField().Name("peer_name").
-					DataType(dmodel.FieldDataTypeString(0, 200)).Virtual()).
+					DataType(dmodel.FieldDataTypeString(0, 200)).
+					Computed(false, computed.Related("peer.name"))).
 				EdgeTo(dmodel.Edge("peer").ManyToOne(
 					virtualRepoSchemaName+"_peer",
 					dmodel.DynamicFields{"peer_id": "id"}))))
@@ -54,7 +56,7 @@ func virtualRepo(t *testing.T) *BaseDynamicRepositoryImpl {
 //
 // hasNestedOrEdgeColumns decides whether a request takes the per-row hydration path, which costs
 // one follow-up query per row. A virtual scalar is filled by its service from a single batched
-// read, so it must NOT trigger that path. Widening the check to IsNonPhysical would silently turn
+// read, so it must NOT trigger that path. Widening the check to IsVirtual would silently turn
 // every request selecting a virtual field into an N+1 -- invisible in behaviour, fatal in cost.
 func TestVirtual_ScalarDoesNotTriggerNestedHydration(t *testing.T) {
 	repo := virtualRepo(t)

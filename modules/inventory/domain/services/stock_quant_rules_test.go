@@ -1,11 +1,13 @@
 package services
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/computed"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 
@@ -52,28 +54,49 @@ func TestAvailableQuantityKeepsDecimalPrecision(t *testing.T) {
 	assert.Equal(t, "0.2", AvailableQuantity(&onHand, &reserved).String())
 }
 
-func TestFillAvailableQuantityWritesTheDerivedField(t *testing.T) {
-	onHand := dec(t, "12")
-	reserved := dec(t, "5")
-	quant := models.NewStockQuant()
-	quant.SetOnHandQuantity(&onHand)
-	quant.SetReservedQuantity(&reserved)
+// The schema now declares available_quantity as a computed field, so the read-time fill runs in
+// the engine's computed-field layer instead of hand-written service overrides. This test pins
+// the declared formula to the pure rule above: whatever values AvailableQuantity gives for a
+// row, evaluating the schema's expression over that row must give the same number.
+func TestComputedDefinitionMatchesAvailableQuantityRule(t *testing.T) {
+	schema := models.StockQuantSchemaBuilder().Build()
+	field, ok := schema.Field(models.StockQuantFieldAvailableQuantity)
+	assert.True(t, ok)
+	assert.True(t, field.IsComputed())
+	assert.True(t, field.IsVirtual())
 
-	FillAvailableQuantity(quant.GetFieldData())
+	cases := []struct {
+		name             string
+		onHand, reserved *decimal.Decimal
+	}{
+		{"both set", ptrDec(t, "10.5"), ptrDec(t, "4.25")},
+		{"nil reserved reads as zero", ptrDec(t, "7"), nil},
+		{"nil on-hand reads as zero", nil, ptrDec(t, "7")},
+		{"both nil is zero", nil, nil},
+		{"decimal precision survives", ptrDec(t, "0.3"), ptrDec(t, "0.1")},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			row := dmodel.DynamicFields{
+				models.StockQuantFieldOnHandQuantity:   tc.onHand,
+				models.StockQuantFieldReservedQuantity: tc.reserved,
+			}
+			def, err := computed.DefOf(field)
+			assert.NoError(t, err)
+			got, err := computed.Eval(def.Expression, row)
+			assert.NoError(t, err)
 
-	filled := quant.GetAvailableQuantity()
-	assert.NotNil(t, filled)
-	assert.True(t, filled.Equal(dec(t, "7")))
+			want := AvailableQuantity(tc.onHand, tc.reserved)
+			gotDec, convErr := decimal.NewFromString(fmt.Sprint(got))
+			assert.NoError(t, convErr)
+			assert.True(t, want.Equal(gotDec), "want %s, got %v", want, got)
+		})
+	}
 }
 
-func TestFillAvailableQuantityOnEmptyRowIsZero(t *testing.T) {
-	fields := dmodel.DynamicFields{}
-
-	FillAvailableQuantity(fields)
-
-	filled := models.NewStockQuantFrom(fields).GetAvailableQuantity()
-	assert.NotNil(t, filled)
-	assert.True(t, filled.IsZero())
+func ptrDec(t *testing.T, value string) *decimal.Decimal {
+	parsed := dec(t, value)
+	return &parsed
 }
 
 func TestAssertQuantNotClientWritableReportsABusinessViolation(t *testing.T) {
@@ -82,19 +105,4 @@ func TestAssertQuantNotClientWritableReportsABusinessViolation(t *testing.T) {
 	AssertQuantNotClientWritable(vErrs)
 
 	assert.Equal(t, 1, vErrs.Count())
-}
-
-// An empty projection means "the default field set", which includes the derived quantity.
-func TestWantsAvailableQuantity(t *testing.T) {
-	assert.True(t, wantsAvailableQuantity(nil))
-	assert.True(t, wantsAvailableQuantity([]string{}))
-	assert.True(t, wantsAvailableQuantity([]string{models.StockQuantFieldAvailableQuantity}))
-	assert.False(t, wantsAvailableQuantity([]string{models.StockQuantFieldOnHandQuantity}))
-}
-
-// The operands must be fetched, or the arithmetic has nothing to work from.
-func TestAvailableQuantityOperands(t *testing.T) {
-	assert.ElementsMatch(t,
-		[]string{models.StockQuantFieldOnHandQuantity, models.StockQuantFieldReservedQuantity},
-		availableQuantityOperands())
 }

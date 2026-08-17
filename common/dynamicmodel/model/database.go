@@ -411,7 +411,7 @@ func buildDbMetadata(
 		if err := validateFieldName(field); err != nil {
 			return nil, nil, "", nil, errors.Wrapf(err, "buildDbMetadata: model '%s'", schemaName)
 		}
-		if field.IsNonPhysical() {
+		if field.IsVirtual() {
 			continue
 		}
 		columnName := field.Name()

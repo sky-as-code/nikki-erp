@@ -8,7 +8,6 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 )
 
-
 const (
 	// ErrKeyMalformed is reported when the input is not parseable JSON at all.
 	ErrKeyMalformed = "dynamicmodel.json.malformed"

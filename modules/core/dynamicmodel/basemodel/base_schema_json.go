@@ -7,7 +7,6 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
-
 // The JSON twins of the builders in base_schema.go. The Go builders are kept as-is; these
 // exist so that JSON models can reference the same base schemas from "extend_before" /
 // "extend_after", which resolve by name through the builder registry.

@@ -155,9 +155,19 @@ func runCascadeRaw(
 	original := engineFor
 	t.Cleanup(func() { engineFor = original })
 	engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
-		require.Equal(t, models.ProductVariantSchemaName, schemaName,
-			"the cascade writes variant rows, so it must use the variant engine")
-		return &stubEngine{repo: repo}, nil
+		// Two schemas are legitimately reached. The cascade writes variant rows, so its writes
+		// must go through the variant engine. The stock guard that runs first asks the quant
+		// engine what the variants hold — and is answered here with an error, which the guard
+		// treats as "stock is not wired in this deployment" and lets the archive proceed. That
+		// keeps these tests about the cascade; the guard has its own.
+		switch schemaName {
+		case models.ProductVariantSchemaName:
+			return &stubEngine{repo: repo}, nil
+		case models.StockQuantSchemaName:
+			return nil, errors.New("no stock engine in this test")
+		}
+		require.Failf(t, "unexpected engine", "the cascade reached the '%s' engine", schemaName)
+		return nil, nil
 	}
 
 	service := &ProductTemplateDomainServiceImpl{DynamicResourceService: base}

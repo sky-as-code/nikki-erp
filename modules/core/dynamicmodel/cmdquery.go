@@ -80,6 +80,11 @@ type SearchQuery struct {
 	// If not specified, return all fields that user has permission on.
 	// Otherwise, return fields specified by the search name.
 	SearchName *string `json:"search_name" query:"search_name"`
+
+	// Optional whitelisted context values for SQL-computed fields (aggregate/exists/lookup)
+	// whose filter declares context dependencies. Each value binds a "${ctx.key}" reference;
+	// a computed field whose declared key is absent here fails with a validation error.
+	Context map[string]any `json:"context" query:"context"`
 }
 
 func (SearchQuery) GetSchema() *dmodel.ModelSchema {

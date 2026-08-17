@@ -56,7 +56,8 @@ func SearchQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(DefineFieldSearchPage()).
 		Field(DefineFieldSearchSize()).
 		Field(DefineFieldSearchName()).
-		Field(DefineFieldIncludeArchived())
+		Field(DefineFieldIncludeArchived()).
+		Field(DefineFieldSearchContext())
 }
 
 func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -112,6 +113,15 @@ func DefineFieldIncludeArchived() *dmodel.FieldBuilder {
 	return dmodel.DefineField().
 		Name(basemodel.FieldIncludeArchived).
 		DataType(dmodel.FieldDataTypeBoolean())
+}
+
+// DefineFieldSearchContext defines the "context" search query field: the whitelisted request
+// values SQL-computed fields may bind inside their filters. It is a free-form JSON object here;
+// the per-definition whitelist and type conversion are enforced where the subquery compiles.
+func DefineFieldSearchContext() *dmodel.FieldBuilder {
+	return dmodel.DefineField().
+		Name(basemodel.FieldContext).
+		DataType(dmodel.FieldDataTypeJsonMap())
 }
 
 func DefineFieldSearchName() *dmodel.FieldBuilder {

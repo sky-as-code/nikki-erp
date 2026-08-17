@@ -7,14 +7,17 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/dynamicengines"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
+	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/transport/restful"
 
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
 var ModuleSingleton modules.InCodeModule = &InventoryModule{}
@@ -72,7 +75,73 @@ func (*InventoryModule) Init() error {
 	if err := initStockTransferService(); err != nil {
 		return err
 	}
+	if err := initStockScrapService(); err != nil {
+		return err
+	}
+	// After the quant service, which is what answers the location lifecycle guards, and before the
+	// application layer, which composes both of the services created here.
+	if err := initWarehouseServices(); err != nil {
+		return err
+	}
 	return restful.InitRestfulHandlers()
+}
+
+// initWarehouseServices installs the warehouse and location services and the layer above them.
+//
+// The order inside is load-bearing twice over: the location service needs the quant service's
+// usage port, published by initStockQuantService above, and the application service composes both
+// of the services created here.
+func initWarehouseServices() error {
+	warehouseEngine, ok := dynamicresource.Registry().GetEngine(models.WarehouseSchemaName)
+	if !ok {
+		return errors.New("the '" + models.WarehouseSchemaName + "' engine is not registered")
+	}
+	locationEngine, ok := dynamicresource.Registry().GetEngine(models.InventoryLocationSchemaName)
+	if !ok {
+		return errors.New("the '" + models.InventoryLocationSchemaName + "' engine is not registered")
+	}
+
+	var usageReader itStock.LocationUsageReadService
+	if err := deps.Invoke(func(reader itStock.LocationUsageReadService) { usageReader = reader }); err != nil {
+		return errors.Join(errors.New("the stock usage reader is not registered"), err)
+	}
+
+	warehouseSvc := services.NewWarehouseDomainService(warehouseEngine.ResourceService())
+	warehouseEngine.SetResourceService(warehouseSvc)
+
+	locationSvc := services.NewInventoryLocationDomainService(locationEngine.ResourceService(), usageReader)
+	locationEngine.SetResourceService(locationSvc)
+
+	if err := installDerivedService(models.StorageCategorySchemaName,
+		func(base drif.DynamicResourceService) drif.DynamicResourceService {
+			return services.NewStorageCategoryDomainService(base)
+		}); err != nil {
+		return err
+	}
+	if err := installDerivedService(models.WarehouseSupplyRelationSchemaName,
+		func(base drif.DynamicResourceService) drif.DynamicResourceService {
+			return services.NewSupplyRelationDomainService(base)
+		}); err != nil {
+		return err
+	}
+
+	return app.InitApplicationServices(warehouseSvc, locationSvc)
+}
+
+// installDerivedService replaces one engine's resource service with a derived one.
+//
+// The warehouse and location services are built by hand above because the layer over them needs
+// the concrete types; these two are only ever reached through their engine, so the wiring is the
+// same three lines each and is written once.
+func installDerivedService(
+	schemaName string, derive func(drif.DynamicResourceService) drif.DynamicResourceService,
+) error {
+	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
+	if !ok {
+		return errors.New("the '" + schemaName + "' engine is not registered")
+	}
+	engine.SetResourceService(derive(engine.ResourceService()))
+	return nil
 }
 
 // initStockTransferService installs the derived transfer service on the Stock Transfer engine.
@@ -100,7 +169,28 @@ func initStockQuantService() error {
 		return errors.New("the '" + models.StockQuantSchemaName + "' engine is not registered")
 	}
 
-	quantEngine.SetResourceService(services.NewStockQuantDomainService(quantEngine.ResourceService()))
+	derived := services.NewStockQuantDomainService(quantEngine.ResourceService())
+	quantEngine.SetResourceService(derived)
+
+	// The same instance also answers what Stock holds at a location, which is what Warehouse
+	// Management consults before suspending or archiving one. Publishing it as a port keeps the
+	// dependency one-way: the warehouse services read this contract and never a stock table.
+	return deps.Register(func() itStock.LocationUsageReadService { return derived })
+}
+
+// initStockScrapService installs the derived scrap service on the Stock Scrap engine.
+//
+// Two things depend on it: Do Scrap type-asserts to the derived type, and the create/update/delete
+// overrides are what stop a done scrap being edited or deleted. Without this the document rules
+// would silently not apply — the CRUD would still work, which is what makes the omission easy to
+// miss.
+func initStockScrapService() error {
+	scrapEngine, ok := dynamicresource.Registry().GetEngine(models.StockScrapSchemaName)
+	if !ok {
+		return errors.New("the '" + models.StockScrapSchemaName + "' engine is not registered")
+	}
+
+	scrapEngine.SetResourceService(services.NewStockScrapDomainService(scrapEngine.ResourceService()))
 	return nil
 }
 
@@ -177,9 +267,23 @@ func (*InventoryModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.ProductVariantSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.ProductVariantAttributeValueSchemaBuilder()),
 
-		// Stock. The location is referenced by both of the others, and the quant references the
-		// variant registered above, so this order is the only one that resolves.
-		dmodel.RegisterSchemaB(models.StockLocationSchemaBuilder()),
+		// Warehouse topology. The warehouse and the storage category are both referenced by a
+		// location, so they precede it; the supply relation and the putaway rule reference the
+		// warehouse and locations, so they follow further below.
+		dmodel.RegisterSchemaB(models.WarehouseSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.StorageCategorySchemaBuilder()),
+
+		// The shared location master, owned by neither Warehouse nor Stock. It comes before the
+		// stock schemas because both of the two below reference it, and the quant also references
+		// the variant registered above, so this order is the only one that resolves.
+		dmodel.RegisterSchemaB(models.InventoryLocationSchemaBuilder()),
+
+		// Warehouse configuration that points at both a warehouse and a location, so it comes
+		// after each of them.
+		dmodel.RegisterSchemaB(models.WarehouseSupplyRelationSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.PutawayRuleSchemaBuilder()),
+
+		// Stock.
 		dmodel.RegisterSchemaB(models.StockOperationTypeSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.StockQuantSchemaBuilder()),
 
@@ -190,5 +294,14 @@ func (*InventoryModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.StockMoveSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.StockMoveLineSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.StockMoveDependencySchemaBuilder()),
+
+		// Corrections. The scrap references the transfer, the variant and two locations, all
+		// registered above, so it comes last.
+		dmodel.RegisterSchemaB(models.StockScrapSchemaBuilder()),
+
+		// Stock's settings for a product line, currently its inventory unit. It references the
+		// product template, so it comes after it. The UoM it names lives in Essential and is held
+		// as a plain id, which is why nothing from that module has to be registered first.
+		dmodel.RegisterSchemaB(models.StockProductConfigSchemaBuilder()),
 	)
 }

@@ -36,6 +36,15 @@ const (
 	StockShippingPolicyAllAtOnce = "all_at_once"
 )
 
+// StockCorrectionOperationTypeCode is the `code` of the operation type that inventory adjustments
+// and scraps generate their movements through (decision F3).
+//
+// It is seeded once per org. Corrections resolve it by this code rather than taking one from the
+// caller, so that every correction in an org lands under the same recognisable type in the
+// Transfers list. The seed and this constant must agree exactly: a mismatch makes every correction
+// fail with "no internal operation type", which reads as a data problem rather than a typo.
+const StockCorrectionOperationTypeCode = "INV_CORRECTION"
+
 const (
 	StockOperationTypeSchemaName = "inventory_stock_operation_type"
 

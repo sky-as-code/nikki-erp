@@ -1,0 +1,86 @@
+{
+	"name": "inventory_warehouse_supply_relation",
+	"label": "inventory_warehouse_supply_relation.label",
+	"table_name": "inventory_warehouse_supply_relations",
+	"should_build_db": true,
+	"composite_uniques": [
+		{ "index_name": "invty_wh_supply_tid_src_dest", "fields": ["source_warehouse_id", "destination_warehouse_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "source_warehouse_id",
+			"label": "fields.source_warehouse_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The warehouse that may supply the destination. Declaring the relation reserves nothing and moves nothing: it states which resupply routes are permitted, and the Stock movement engine is what creates a transfer when replenishment actually happens."
+			}
+		},
+		{
+			"name": "destination_warehouse_id",
+			"label": "fields.destination_warehouse_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The warehouse being supplied. It must differ from the source, and a destination may have several sources ranked by priority."
+			}
+		},
+		{
+			"name": "priority",
+			"label": "fields.priority",
+			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
+			"required_for_create": true,
+			"default_value": 1,
+			"description": {
+				"en-US": "Order in which sources are considered for a destination. Lower is considered first."
+			}
+		},
+		{
+			"name": "is_default",
+			"label": "fields.is_default",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"description": {
+				"en-US": "The source chosen when nothing else narrows it down. At most one unarchived relation per destination may set this."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "invty_wh_supply_dest_priority", "fields": ["destination_warehouse_id", "priority"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "source_warehouse",
+			"label": { "en-US": "Source warehouse" },
+			"type": "many:one",
+			"dest_schema": "inventory_warehouse",
+			"key_map": { "source_warehouse_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "destination_warehouse",
+			"label": { "en-US": "Destination warehouse" },
+			"type": "many:one",
+			"dest_schema": "inventory_warehouse",
+			"key_map": { "destination_warehouse_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

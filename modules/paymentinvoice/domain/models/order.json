@@ -1,0 +1,181 @@
+{
+	"name": "paymentinvoice_order",
+	"label": "paymentinvoice_order.label",
+	"table_name": "paymentinvoice_orders",
+	"should_build_db": true,
+	"record_label_field": "order_id",
+	"composite_uniques": [
+		{ "index_name": "payinv_orders_order_id", "fields": ["order_id"] },
+		{ "index_name": "payinv_orders_order_code", "fields": ["order_code"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "order_id",
+			"label": "fields.order_id",
+			"data_type": { "type": "string", "min": 10, "max": 30 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The business identifier quoted to the ordering system and to support: a 4-character source code, a 3-character method code and the order code. It is generated, never supplied, so that its three parts always agree with the record they describe."
+			}
+		},
+		{
+			"name": "order_code",
+			"label": "fields.order_code",
+			"data_type": { "type": "string", "min": 6, "max": 20 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The identifier the gateway knows this order by, and the key every callback arrives under. Distinct from order_id because the gateways limit what they will carry, and because a callback must be matched without parsing anything out of it."
+			}
+		},
+		{
+			"name": "source",
+			"label": "fields.source",
+			"data_type": { "type": "string", "min": 1, "max": 128 },
+			"required_for_create": true,
+			"default_value": "VDMC",
+			"no_update": true,
+			"description": {
+				"en-US": "Which system asked for the payment. The default names the vending machines, which were the only caller of the service this module supersedes."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"pending",
+					"processing",
+					"payment_success",
+					"payment_failed",
+					"canceled",
+					"refund_success",
+					"refund_failed",
+					"expired"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"no_update": true,
+			"description": {
+				"en-US": "System-managed lifecycle state. Immutable to clients: it is advanced only by create_payment, by refund, by a gateway callback and by the watchdog, because a status set by hand would claim money moved that nothing moved."
+			}
+		},
+		{
+			"name": "amount",
+			"label": "fields.amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Amount to collect, in the order's currency. Decimal rather than an integer count of minor units, because how many minor units a currency has is a property of the currency: storing amounts that way would push a per-currency scale into everything that reads one."
+			}
+		},
+		{
+			"name": "refund_amount",
+			"label": "fields.refund_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "How much of amount has been given back. System-managed by the refund action, which is also what keeps it from exceeding amount."
+			}
+		},
+		{
+			"name": "currency_id",
+			"label": "fields.currency_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The currency this order is denominated in. A reference into Essential's currency master, held as a plain id rather than an edge: the currency belongs to another module, and a foreign key across that boundary would make this module's schema depend on Essential's table. Its code, symbol and decimal places all stay in Essential."
+			}
+		},
+		{
+			"name": "payment_method_id",
+			"label": "fields.payment_method_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "How the payer pays. A reference to a configured method rather than an enum value, so that offering a gateway under a second merchant account, or withdrawing one, is a data change rather than a release."
+			}
+		},
+		{
+			"name": "content",
+			"label": "fields.content",
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": {
+				"en-US": "What the payer sees the payment described as."
+			}
+		},
+		{
+			"name": "return_url",
+			"label": "fields.return_url",
+			"data_type": "url",
+			"description": {
+				"en-US": "Where the ordering system is notified once the payment settles. Held per order rather than configured, because one deployment serves several ordering systems."
+			}
+		},
+		{
+			"name": "last_sync_status",
+			"label": "fields.last_sync_status",
+			"data_type": { "type": "enum_string", "values": ["success", "failure"] },
+			"no_update": true,
+			"description": {
+				"en-US": "How the most recent attempt to notify return_url ended. A failure is what the retry job looks for."
+			}
+		},
+		{
+			"name": "sync_logs",
+			"label": "fields.sync_logs",
+			"data_type": "jsonmap",
+			"no_update": true,
+			"description": {
+				"en-US": "History of the notification attempts, as {\"entries\": [{status, type, timestamp}]}. Wrapped in an object because this type has no array form. It is what stops the retry job re-notifying forever."
+			}
+		},
+		{
+			"name": "metadata",
+			"label": "fields.metadata",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "Everything about this order that is specific to the method paying it: the inputs the adapter required at create time — a terminal id for a card terminal, nothing at all for a wallet — alongside the gateway's own create and refund responses, kept verbatim as the evidence when a payment is disputed.\n\nThis is a map rather than a column per method because the set of methods is data: a column named for one gateway's needs would be dead weight on every order paid another way, and adding a gateway would mean a migration. Each adapter declares which keys it requires and validates its own, so no code outside the adapter knows what a given method needs."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "payinv_orders_status_created", "fields": ["status", "created_at"] },
+		{ "index_name": "payinv_orders_sync_status", "fields": ["last_sync_status"] },
+		{ "index_name": "payinv_orders_pay_method", "fields": ["payment_method_id"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "payment_method",
+			"label": { "en-US": "Payment method" },
+			"type": "many:one",
+			"dest_schema": "paymentinvoice_payment_method",
+			"key_map": { "payment_method_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

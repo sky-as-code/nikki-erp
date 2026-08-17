@@ -12,7 +12,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
-
 func uomCatEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.UomCatSchemaName,

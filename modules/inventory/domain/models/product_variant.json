@@ -115,52 +115,52 @@
 			"name": "template_name",
 			"label": "fields.template_name",
 			"data_type": { "type": "langjson", "min": 1, "max": 200 },
-			"is_virtual": true,
+			"computed": { "kind": "related", "is_stored": false, "field": "template.name" },
 			"description": {
-				"en-US": "Copied from the owning template when the variant is read. Virtual: the name lives on the template, so storing a second copy here would go stale the moment the template is renamed."
+				"en-US": "Copied from the owning template when the variant is read. Computed rather than stored: the name lives on the template, so a second copy here would go stale the moment the template is renamed."
 			}
 		},
 		{
 			"name": "template_short_name",
 			"label": "fields.template_short_name",
 			"data_type": { "type": "langjson", "min": 0, "max": 100 },
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.short_name" }
 		},
 		{
 			"name": "template_description",
 			"label": "fields.template_description",
 			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.description" }
 		},
 		{
 			"name": "template_sales_description",
 			"label": "fields.template_sales_description",
 			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.sales_description" }
 		},
 		{
 			"name": "template_purchase_description",
 			"label": "fields.template_purchase_description",
 			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.purchase_description" }
 		},
 		{
 			"name": "template_category_id",
 			"label": "fields.template_category_id",
 			"data_type": "ulid",
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.category_id" }
 		},
 		{
 			"name": "template_brand_id",
 			"label": "fields.template_brand_id",
 			"data_type": "ulid",
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.brand_id" }
 		},
 		{
 			"name": "template_product_type_id",
 			"label": "fields.template_product_type_id",
 			"data_type": "ulid",
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.product_type_id" }
 		},
 		{
 			"name": "template_status",
@@ -169,7 +169,7 @@
 				"type": "enum_string",
 				"values": ["draft", "active", "discontinued"]
 			},
-			"is_virtual": true,
+			"computed": { "kind": "related", "is_stored": false, "field": "template.status" },
 			"description": {
 				"en-US": "The template's lifecycle, distinct from this variant's own status: an active variant of a discontinued template is a real and meaningful state."
 			}
@@ -178,7 +178,58 @@
 			"name": "template_sale_ok",
 			"label": "fields.template_sale_ok",
 			"data_type": "boolean",
-			"is_virtual": true
+			"computed": { "kind": "related", "is_stored": false, "field": "template.sale_ok" }
+		},
+		{
+			"name": "on_hand_quantity",
+			"label": "fields.on_hand_quantity",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"computed": {
+				"kind": "aggregate",
+				"is_stored": false,
+				"source": "quants",
+				"function": "sum",
+				"field": "on_hand_quantity",
+				"default": 0.0
+			},
+			"description": {
+				"en-US": "Total stock on hand across every location, summed from the variant's quants when the field is explicitly requested. Product stores no quantity of its own (CR 4.4): this is a read of Stock's balances, not a copy of them. SUM over zero rows is NULL, so a variant with no quants defaults to 0 — the CR's rule that a product with no stock answers zero rather than nothing (AC-PROD-INT-004)."
+			}
+		},
+		{
+			"name": "reserved_quantity",
+			"label": "fields.reserved_quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"computed": {
+				"kind": "aggregate",
+				"is_stored": false,
+				"source": "quants",
+				"function": "sum",
+				"field": "reserved_quantity",
+				"default": 0.0
+			},
+			"description": {
+				"en-US": "Total reserved across every location, summed from the variant's quants. Defaults to 0 for the same reason as on_hand_quantity."
+			}
+		},
+		{
+			"name": "available_quantity",
+			"label": "fields.available_quantity",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"op": "subtract",
+					"args": [
+						{ "function": "coalesce", "args": [{ "field": "on_hand_quantity" }, { "value": 0.0 }] },
+						{ "function": "coalesce", "args": [{ "field": "reserved_quantity" }, { "value": 0.0 }] }
+					]
+				}
+			},
+			"description": {
+				"en-US": "on_hand_quantity minus reserved_quantity, derived from the two aggregates above rather than summed separately. Deriving it here keeps the identity available = on_hand - reserved true by construction at the variant level, exactly as inventory_stock_quant.available_quantity does per location (BR 4.2.2.3). A computed field may depend on another computed field; the dependency graph stays acyclic."
+			}
 		}
 	],
 
@@ -196,6 +247,14 @@
 			"dest_schema": "inventory_product_template",
 			"key_map": { "product_template_id": "id" },
 			"on_delete": "NO ACTION"
+		}
+	],
+
+	"edges_from": [
+		{
+			"edge": "quants",
+			"label": { "en-US": "Stock balances" },
+			"existing": { "src_schema": "inventory_stock_quant", "src_edge": "product_variant" }
 		}
 	]
 }

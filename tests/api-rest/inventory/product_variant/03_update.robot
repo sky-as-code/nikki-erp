@@ -92,6 +92,28 @@ Update Reparenting To Another Template Fails
     ...    msg=product_template_id is immutable; re-parenting must be refused
     DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}    expected_status=any
 
+Update Writing A Computed Field Is Refused
+    [Documentation]    template_name is copied from the template on read and has no column of
+    ...    its own. Writing it is reported rather than silently dropped, so a client learns the
+    ...    value it sent was never going to be kept.
+    [Tags]    negative
+    ${resp}=    PATCH On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
+    ...    json=${{ {'template_name': 'Renamed Via Variant', 'etag': $PRODUCT_VARIANT_ETAG} }}
+    ...    expected_status=any
+    Should Not Be Equal As Integers    ${resp.status_code}    200
+    ...    msg=Writing a computed field must be refused, not quietly ignored
+
+Update Writing An Edge Is Refused
+    [Documentation]    An edge is hydrated from the peer schema, so echoing a GET response
+    ...    straight back into a PATCH must be reported rather than silently dropped — the
+    ...    value would never have been stored either way.
+    [Tags]    negative
+    ${resp}=    PATCH On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
+    ...    json=${{ {'template': {'id': $PRODUCT_TEMPLATE_ID}, 'etag': $PRODUCT_VARIANT_ETAG} }}
+    ...    expected_status=any
+    Should Not Be Equal As Integers    ${resp.status_code}    200
+    ...    msg=Writing an edge field must be refused, not quietly ignored
+
 Update With Missing Etag Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}

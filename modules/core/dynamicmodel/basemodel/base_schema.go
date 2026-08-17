@@ -42,6 +42,10 @@ const (
 	// It is deliberately distinct from FieldIsArchived: ModelSchema.Validate keys off the
 	// field name, so reusing the column name would make the query field collide with it.
 	FieldIncludeArchived = "include_archived"
+
+	// FieldContext is the search query parameter carrying whitelisted context values for
+	// SQL-computed fields (aggregate/exists/lookup), not a model column.
+	FieldContext = "context"
 )
 
 func DefineFieldId(fieldName string) *dmodel.FieldBuilder {

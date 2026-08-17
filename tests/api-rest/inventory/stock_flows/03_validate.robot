@@ -7,7 +7,7 @@ Documentation     Validating an internal transfer: the only operation that moves
 ...               exist, and no report could explain where it went.
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Stock Location Under Test
+...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Stock Destination Location Under Test
 ...               AND    Ensure Internal Operation Type Under Test
 ...               AND    Ensure Product Variant Under Test
@@ -17,7 +17,7 @@ Test Tags         inventory    stock_flows    validate
 
 *** Test Cases ***
 Validating Moves Stock From Source To Destination
-    ${source_before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${source_before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${dest_before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_DEST_LOCATION_ID}
 
     ${id}    ${etag}=    Create Stock Transfer    ${INTERNAL_OPERATION_TYPE_ID}
@@ -28,7 +28,7 @@ Validating Moves Stock From Source To Destination
     ...    json=${{ {} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
-    ${source_after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${source_after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${dest_after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_DEST_LOCATION_ID}
     ${source_expected}=    Evaluate    ${source_before} - 30
     ${dest_expected}=    Evaluate    ${dest_before} + 30
@@ -43,7 +43,7 @@ Validating Moves Stock From Source To Destination
 Validating Conserves The Total
     [Documentation]    An internal transfer moves stock; it does not create or destroy any. The
     ...    sum across both locations is what a stocktake would have to reconcile against.
-    ${source}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${source}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${dest}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_DEST_LOCATION_ID}
     ${total}=    Evaluate    ${source} + ${dest}
     Should Be Equal As Numbers    ${total}    ${SEEDED_TOTAL}
@@ -52,7 +52,7 @@ Validating Conserves The Total
 Validating Consumes The Reservation
     [Documentation]    The reserved quantity is spent, not left standing: the goods it was holding
     ...    have gone. Leaving it would keep hiding stock that is no longer there.
-    ${reserved}=    Read Stock Reserved    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${reserved}=    Read Stock Reserved    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     Should Be Equal As Numbers    ${reserved}    0
     ...    msg=Validating must consume the reservation it moved against
 
@@ -73,14 +73,14 @@ Validating An Unreserved Internal Transfer Moves Nothing
     [Documentation]    An internal move draws from a balance, so with no reservation there is
     ...    nothing to take. It must not silently help itself to whatever is on hand: that stock
     ...    may be promised to someone else.
-    ${source_before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${source_before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
 
     ${id}    ${etag}=    Create Stock Transfer    ${INTERNAL_OPERATION_TYPE_ID}
     ${move_id}=    Add Stock Move    ${id}    ${PRODUCT_VARIANT_ID}    5
     POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {} }}    expected_status=any
     POST On Session    api    ${STOCK_TRANSFER_API}/${id}/validate    json=${{ {} }}    expected_status=any
 
-    ${source_after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${source_after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     Should Be Equal As Numbers    ${source_after}    ${source_before}
     ...    msg=Validating without a reservation must not move stock
 
@@ -93,14 +93,14 @@ Validating An Unreserved Internal Transfer Moves Nothing
 Seed Stock For Validation
     [Documentation]    Ensures the source location holds enough to move, and records the total
     ...    across both locations so the conservation assertion has a baseline.
-    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${on_hand}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     IF    ${on_hand} < 100
         ${transfer_id}    ${move_id}=    Receive Stock Into Location
-        ...    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}    200
+        ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    200
         POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
         ...    json=${{ {} }}    expected_status=any
     END
-    ${source}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_LOCATION_ID}
+    ${source}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${dest}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_DEST_LOCATION_ID}
     ${total}=    Evaluate    ${source} + ${dest}
     Set Suite Variable    ${SEEDED_TOTAL}    ${total}

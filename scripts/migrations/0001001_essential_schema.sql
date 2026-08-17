@@ -1,3 +1,21 @@
+-- Create "essential_currencies" table
+CREATE TABLE "essential_currencies" (
+  "id" character varying NOT NULL,
+  "code" character varying NOT NULL,
+  "numeric_code" character varying NULL,
+  "name" jsonb NOT NULL,
+  "symbol" character varying NULL,
+  "decimal_places" integer NOT NULL,
+  "is_active" boolean NOT NULL,
+  "is_archived" boolean NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "essent_currencies_code_ukey" UNIQUE ("code")
+);
+-- Create index "essent_currencies_is_active_idx" to table: "essential_currencies"
+CREATE INDEX "essent_currencies_is_active_idx" ON "essential_currencies" ("is_active");
 -- Create "essential_enums" table
 CREATE TABLE "essential_enums" (
   "id" character varying NOT NULL,
@@ -82,31 +100,34 @@ CREATE TABLE "essential_field_metadata" (
   CONSTRAINT "essential_field_metadata_model_metadata_id_code_ukey" UNIQUE ("model_metadata_id", "code"),
   CONSTRAINT "essential_field_metadata_model_metadata_id_fkey" FOREIGN KEY ("model_metadata_id") REFERENCES "essential_model_metadata" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
--- Create "essential_unit_categories" table
-CREATE TABLE "essential_unit_categories" (
+-- Create "essential_uomcats" table
+CREATE TABLE "essential_uomcats" (
   "id" character varying NOT NULL,
   "name" jsonb NOT NULL,
+  "reference_uom_id" character varying NULL,
   "org_id" character varying NOT NULL,
-  "etag" character varying NOT NULL,
+  "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "essential_unit_categories_name_org_id_ukey" UNIQUE ("name", "org_id")
+  CONSTRAINT "essential_uomcats_name_org_id_ukey" UNIQUE ("name", "org_id")
 );
--- Create "essential_units" table
-CREATE TABLE "essential_units" (
+-- Create "essential_uoms" table
+CREATE TABLE "essential_uoms" (
   "id" character varying NOT NULL,
   "name" jsonb NOT NULL,
   "symbol" character varying NOT NULL,
-  "status" character varying NOT NULL,
-  "base_unit" character varying NULL,
-  "multiplier" bigint NULL,
-  "category_id" character varying NULL,
+  "category_id" character varying NOT NULL,
+  "uom_type" character varying NOT NULL,
+  "factor" numeric NOT NULL,
+  "rounding" numeric NOT NULL,
   "org_id" character varying NOT NULL,
-  "etag" character varying NOT NULL,
+  "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "essential_units_symbol_org_id_ukey" UNIQUE ("symbol", "org_id"),
-  CONSTRAINT "essential_units_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "essential_unit_categories" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "essential_uoms_symbol_org_id_ukey" UNIQUE ("symbol", "org_id"),
+  CONSTRAINT "essential_uoms_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "essential_uomcats" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );

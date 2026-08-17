@@ -226,7 +226,7 @@
 			"edge": "source_location",
 			"label": { "en-US": "Source location" },
 			"type": "many:one",
-			"dest_schema": "inventory_stock_location",
+			"dest_schema": "inventory_location",
 			"key_map": { "source_location_id": "id" },
 			"on_delete": "NO ACTION"
 		},
@@ -234,7 +234,7 @@
 			"edge": "destination_location",
 			"label": { "en-US": "Destination location" },
 			"type": "many:one",
-			"dest_schema": "inventory_stock_location",
+			"dest_schema": "inventory_location",
 			"key_map": { "destination_location_id": "id" },
 			"on_delete": "NO ACTION"
 		}

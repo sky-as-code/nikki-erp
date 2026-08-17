@@ -14,7 +14,16 @@ const (
 	ResourceProductAttributeValue = "inventory_product_attribute_value"
 	ResourceBrand                 = "inventory_brand"
 
-	ResourceStockLocation      = "inventory_stock_location"
+	// The canonical location resource of the whole Inventory module, owned by neither Warehouse
+	// nor Stock. It is named for the module rather than for Stock because Warehouse configures it
+	// and Stock only references its id. See the change request §4 and §7.
+	ResourceInventoryLocation = "inventory_location"
+
+	ResourceWarehouse               = "inventory_warehouse"
+	ResourceStorageCategory         = "inventory_storage_category"
+	ResourceWarehouseSupplyRelation = "inventory_warehouse_supply_relation"
+	ResourcePutawayRule             = "inventory_putaway_rule"
+
 	ResourceStockOperationType = "inventory_stock_operation_type"
 	ResourceStockQuant         = "inventory_stock_quant"
 
@@ -22,4 +31,6 @@ const (
 	ResourceStockMove           = "inventory_stock_move"
 	ResourceStockMoveLine       = "inventory_stock_move_line"
 	ResourceStockMoveDependency = "inventory_stock_move_dependency"
+
+	ResourceStockScrap = "inventory_stock_scrap"
 )

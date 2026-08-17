@@ -27,6 +27,7 @@ __debug_bin*
 
 dist
 config/config.yaml
+**/scripts/migrations-tmp
 
 # Certificate
 scripts/cert/pki/*/signed-certs/*.pem

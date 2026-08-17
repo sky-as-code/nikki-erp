@@ -47,13 +47,20 @@ var engineSpecs = []engineSpec{
 	productTemplateAttributeValueEngineSpec(),
 	productVariantEngineSpec(),
 	productVariantAttributeValueEngineSpec(),
-	stockLocationEngineSpec(),
+	warehouseEngineSpec(),
+	storageCategoryEngineSpec(),
+	inventoryLocationEngineSpec(),
+	warehouseSupplyRelationEngineSpec(),
+	putawayRuleEngineSpec(),
 	stockOperationTypeEngineSpec(),
 	stockQuantEngineSpec(),
 	stockTransferEngineSpec(),
 	stockMoveEngineSpec(),
 	stockMoveLineEngineSpec(),
 	stockMoveDependencyEngineSpec(),
+	stockScrapEngineSpec(),
+	// Stock's settings for a product line: which unit its balances are counted in.
+	stockProductConfigEngineSpec(),
 }
 
 // EngineSchemaNames lists the schemas Inventory creates an engine for, so that route

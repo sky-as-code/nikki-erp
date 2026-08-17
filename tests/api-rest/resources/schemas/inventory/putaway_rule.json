@@ -1,0 +1,23 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "code", "warehouse_id", "source_location_id", "destination_location_id", "priority", "sublocation_strategy", "etag", "is_archived", "org_id"],
+    "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "created_at": { "type": "string", "minLength": 20 },
+        "updated_at": { "type": "string", "minLength": 20 },
+        "code": { "type": "string", "minLength": 1 },
+        "warehouse_id": { "type": "string", "minLength": 1 },
+        "source_location_id": { "type": "string", "minLength": 1 },
+        "destination_location_id": { "type": "string", "minLength": 1 },
+        "storage_category_id": { "type": ["string", "null"] },
+        "product_id": { "type": ["string", "null"] },
+        "product_category_id": { "type": ["string", "null"] },
+        "package_type_id": { "type": ["string", "null"] },
+        "priority": { "type": "integer" },
+        "sublocation_strategy": { "type": "string", "enum": ["fixed", "last_used", "category"] },
+        "org_id": { "type": "string", "minLength": 1 },
+        "etag": { "type": "string", "minLength": 1 },
+        "is_archived": { "type": "boolean" }
+    },
+    "additionalProperties": false
+}

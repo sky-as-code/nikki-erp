@@ -1,0 +1,62 @@
+{
+	"name": "inventory_storage_category",
+	"label": "inventory_storage_category.label",
+	"table_name": "inventory_storage_categories",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [{ "index_name": "invty_stor_cats_tid_code_org_id", "fields": ["code", "org_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "max_weight",
+			"label": "fields.max_weight",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": {
+				"en-US": "Weight a location in this category may hold, if the limit applies. Null means unlimited. What is currently stored is NOT held here: used and available capacity depend on actual inventory and are computed from Stock, because a number cached on master data goes stale the moment a move commits."
+			}
+		},
+		{
+			"name": "allow_new_item_policy",
+			"label": "fields.allow_new_item_policy",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["allow", "same_product_only", "empty_only"]
+			},
+			"required_for_create": true,
+			"default_value": "allow",
+			"description": {
+				"en-US": "Whether goods arriving may be mixed into a location that already holds something: freely, only alongside the same product, or only when the location is empty."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "langjson", "min": 0, "max": 2000 }
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

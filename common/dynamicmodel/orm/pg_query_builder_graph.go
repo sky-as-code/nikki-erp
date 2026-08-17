@@ -323,7 +323,7 @@ func (p *joinPlanner) ensureFullPath(field string, maxDots int) error {
 // resolveFieldSqlRef still rejects it.
 func (p *joinPlanner) validateRootColumn(col string) error {
 	field, ok := p.root.Field(col)
-	if !ok || field.IsVirtualModelField() {
+	if !ok || field.IsEdgeModel() {
 		return errors.Wrap(&errClientUnknownField{Field: col}, "validateRootColumn")
 	}
 	return nil
@@ -331,7 +331,7 @@ func (p *joinPlanner) validateRootColumn(col string) error {
 
 func (p *joinPlanner) validateLeafColumn(schema *dmodel.ModelSchema, leaf, fullPath string) error {
 	field, ok := schema.Column(leaf)
-	if !ok || field.IsVirtualModelField() {
+	if !ok || field.IsEdgeModel() {
 		return errors.Wrap(&errClientUnknownField{Field: fullPath}, "validateLeafColumn")
 	}
 	return nil
@@ -345,7 +345,7 @@ func (p *joinPlanner) resolveFieldSqlRef(field string, maxDots int) (*dmodel.Mod
 	if len(segments) == 1 {
 		col := segments[0]
 		fieldObj, ok := p.root.Column(col)
-		if !ok || fieldObj.IsVirtualModelField() {
+		if !ok || fieldObj.IsEdgeModel() {
 			return nil, "", errors.Wrap(&errClientUnknownField{Field: field}, "resolveFieldSqlRef")
 		}
 		if p.usesJoins() {
@@ -361,7 +361,7 @@ func (p *joinPlanner) resolveFieldSqlRef(field string, maxDots int) (*dmodel.Mod
 		return nil, "", err
 	}
 	fieldObj, ok := destSch.Column(leaf)
-	if !ok || fieldObj.IsVirtualModelField() {
+	if !ok || fieldObj.IsEdgeModel() {
 		return nil, "", errors.Wrap(&errClientUnknownField{Field: field}, "resolveFieldSqlRef")
 	}
 	return fieldObj, fmt.Sprintf("%s.%s", alias, pgQuote(leaf)), nil
@@ -370,12 +370,16 @@ func (p *joinPlanner) resolveFieldSqlRef(field string, maxDots int) (*dmodel.Mod
 // isVirtualScalarPath reports whether a single-segment path names a virtual scalar on the root
 // schema. Such a field has no column to project: it is filled by a service after the read, so it
 // is dropped from the SELECT while still being a legal thing to ask for.
+//
+// Scalars only, deliberately. This resolves through Field, so an edge-model field is reachable
+// here, and an edge is virtual too — but dropping one from the projection would silently discard
+// a caller's request instead of letting resolveFieldSqlRef report it.
 func (p *joinPlanner) isVirtualScalarPath(path string) bool {
 	if strings.Contains(path, ".") {
 		return false
 	}
 	field, ok := p.root.Field(path)
-	return ok && field.IsVirtual()
+	return ok && field.IsVirtual() && !field.IsEdgeModel()
 }
 
 // primaryKeySelectRefs returns SQL refs for the root schema's primary keys, used when every

@@ -13,6 +13,20 @@ import (
 // Internal helpers must index reg.schemas directly instead of Get, because this method holds
 // reg.mu.Lock and Get uses RLock (same goroutine would deadlock: RWMutex is not reentrant).
 func (this *SchemaRegistry) FinalizeRelations() error {
+	if err := this.finalizeCoreRelations(); err != nil {
+		return err
+	}
+	// Computed-field validation needs the finalized relations (related paths resolve through
+	// them), and runs outside the lock so it may use the ordinary read-locking accessors. The
+	// hook is nil only when the computed package is not linked in, in which case no schema can
+	// declare a computed field either (the JSON parser hook would have panicked).
+	if computedFinalizer != nil {
+		return computedFinalizer(this)
+	}
+	return nil
+}
+
+func (this *SchemaRegistry) finalizeCoreRelations() error {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 	if err := normalizeAllForeignKeyMapsUnlocked(this); err != nil {
@@ -21,7 +35,50 @@ func (this *SchemaRegistry) FinalizeRelations() error {
 	if err := finalizePeerInverseEdgesUnlocked(this); err != nil {
 		return err
 	}
-	return finalizeManyToManyRelationsUnlocked(this)
+	if err := finalizeManyToManyRelationsUnlocked(this); err != nil {
+		return err
+	}
+	markForeignKeyFieldsUnlocked(this)
+	return nil
+}
+
+// markForeignKeyFieldsUnlocked flags every field that is the local side of a foreign key. It
+// runs after the whole finalize pipeline because that is the first point at which each FK
+// column's owning schema is known: the key map alone does not say which side holds the column.
+func markForeignKeyFieldsUnlocked(reg *SchemaRegistry) {
+	for _, sch := range schemasInNameOrder(reg) {
+		for i := range sch.toRelations {
+			markRelationForeignKeys(reg, sch, &sch.toRelations[i])
+		}
+	}
+}
+
+// markRelationForeignKeys marks the FK columns of one relation on whichever schema holds them.
+// For many:one and one:one that is the owner; for one:many the child, which is why this reads
+// the relation type rather than assuming the owner. Inverse edges (EdgeFrom) are skipped: they
+// mirror a forward relation whose columns are already marked from the owning side, and their
+// pairs describe the peer's table. Many:many owns no column on either peer, and its junction
+// columns are marked in appendManyToOneToThroughSchema instead.
+func markRelationForeignKeys(reg *SchemaRegistry, owner *ModelSchema, rel *ModelRelation) {
+	if rel.RelationType == RelationTypeManyToMany || rel.IsInverse || rel.InversePeerSchemaName != "" {
+		return
+	}
+	holder := owner
+	if rel.RelationType == RelationTypeOneToMany {
+		holder = reg.schemas[rel.DestSchemaName]
+	}
+	if holder == nil {
+		return
+	}
+	for _, pair := range rel.EffectiveForeignKeys() {
+		markFieldAsForeignKey(holder, pair.FkColumn)
+	}
+}
+
+func markFieldAsForeignKey(schema *ModelSchema, fieldName string) {
+	if field, ok := schema.fields[fieldName]; ok && field != nil {
+		field.isForeignKey = true
+	}
 }
 
 func normalizeAllForeignKeyMapsUnlocked(reg *SchemaRegistry) error {

@@ -74,8 +74,9 @@ const (
 	ProductVariantFieldArchiveSource     = "archive_source"
 	ProductVariantFieldOrgId             = "org_id"
 
-	// Virtual fields, copied from the owning template when a variant is read. They have no
-	// database column: FillFromTemplate populates them, and nothing ever writes them back.
+	// Computed fields, copied from the owning template when a variant is read. They have no
+	// database column: each is declared in product_variant.json as a related computed field
+	// (template_name copies template.name, ...), filled by the engine's computed-field layer.
 	ProductVariantFieldTemplateName                = "template_name"
 	ProductVariantFieldTemplateShortName           = "template_short_name"
 	ProductVariantFieldTemplateDescription         = "template_description"

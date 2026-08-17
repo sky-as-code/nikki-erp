@@ -7,7 +7,7 @@ Documentation     Creating Stock Transfers (BR §4.2.3.4, AC-STOCK-003). The fir
 ...               balance changes until the transfer is reserved and then validated.
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Stock Location Under Test
+...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Stock Destination Location Under Test
 ...               AND    Ensure Internal Operation Type Under Test
 Test Tags         inventory    stock_transfer    create
@@ -16,7 +16,7 @@ Test Tags         inventory    stock_transfer    create
 *** Test Cases ***
 Create With Required Fields Succeeds
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
-    ...    json=${{ {'operation_type_id': $INTERNAL_OPERATION_TYPE_ID, 'source_location_id': $STOCK_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'operation_type_id': $INTERNAL_OPERATION_TYPE_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${STOCK_TRANSFER_ID}    ${id}
     Set Global Variable    ${STOCK_TRANSFER_ETAG}    ${etag}
@@ -54,7 +54,7 @@ Create Overrides A Client Supplied Status
     ...    must not be able to create a transfer that claims to be done either. The server-owned
     ...    field is stamped over rather than rejected.
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
-    ...    json=${{ {'operation_type_id': $INTERNAL_OPERATION_TYPE_ID, 'source_location_id': $STOCK_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'status': 'done', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'operation_type_id': $INTERNAL_OPERATION_TYPE_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'status': 'done', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     IF    ${resp.status_code} == 201
         ${id}=    Set Variable    ${resp.json()}[data][id]
@@ -69,7 +69,7 @@ Create With The Same Source And Destination Fails
     ...    and consume reservations against the balance it is about to put straight back.
     [Tags]    negative
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
-    ...    json=${{ {'operation_type_id': $INTERNAL_OPERATION_TYPE_ID, 'source_location_id': $STOCK_LOCATION_ID, 'destination_location_id': $STOCK_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'operation_type_id': $INTERNAL_OPERATION_TYPE_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $INVENTORY_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
     ...    msg=A transfer's source and destination must differ
@@ -77,7 +77,7 @@ Create With The Same Source And Destination Fails
 Create With An Unknown Operation Type Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
-    ...    json=${{ {'operation_type_id': $NOT_FOUND_ID, 'source_location_id': $STOCK_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'operation_type_id': $NOT_FOUND_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
     ...    msg=A transfer must reference an operation type that exists
@@ -97,7 +97,7 @@ Create With An Archived Operation Type Fails
     ...    json=${{ {'is_archived': True, 'etag': $type_etag} }}    expected_status=any
 
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
-    ...    json=${{ {'operation_type_id': $type_id, 'source_location_id': $STOCK_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'operation_type_id': $type_id, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
     ...    msg=An archived operation type must not start a new transfer

@@ -16,9 +16,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpclient"
 	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/core/language"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
+	"github.com/sky-as-code/nikki-erp/modules/core/language"
 	"github.com/sky-as-code/nikki-erp/modules/core/message"
 )
 

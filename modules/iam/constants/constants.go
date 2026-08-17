@@ -20,8 +20,8 @@ const (
 	ResourceIamRole         = "iam_role"
 	ResourceIamGrantRequest = "iam_grant_request"
 	ResourceIamEntitlement  = "iam_entitlement"
-	ResourceIamUser              = "iam_user"
-	ResourceIamGroup             = "iam_group"
-	ResourceIamOrganization      = "iam_org"
-	ResourceIamOrgUnit           = "iam_orgunit"
+	ResourceIamUser         = "iam_user"
+	ResourceIamGroup        = "iam_group"
+	ResourceIamOrganization = "iam_org"
+	ResourceIamOrgUnit      = "iam_orgunit"
 )

@@ -10,6 +10,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/engine"
@@ -146,6 +147,10 @@ func buildEngine(
 		Repository:    repository,
 		DefaultFields: options.DefaultSearchFields,
 	})
+	// Every resource gets computed-field evaluation; a schema without computed fields passes
+	// through untouched. A module's extended service embeds this wrapped one, so its overrides
+	// keep layering on top.
+	service = engine.WithComputedFields(service, searchSourceRowsForComputed)
 
 	newEngine := engine.NewDynamicResourceEngine(engine.NewEngineParam{
 		Schema:     schema,
@@ -156,6 +161,38 @@ func buildEngine(
 		return nil, errors.Wrapf(err, "failed to define built-in actions of '%s'", schema.Name())
 	}
 	return newEngine, nil
+}
+
+// searchSourceRowsForComputed is the batched read behind related computed fields: the rows of
+// schemaName whose keyColumn is IN keys, projected down to fields. It goes through the source
+// resource's own repository, so tenant/archive handling stays what a direct read would get.
+func searchSourceRowsForComputed(
+	ctx corectx.Context, schemaName string, keyColumn string, keys []any, fields []string,
+) ([]dmodel.DynamicFields, error) {
+	sourceEngine, ok := registrySingleton.GetEngine(schemaName)
+	if !ok {
+		return nil, errors.Errorf("no resource engine for computed-field source '%s'", schemaName)
+	}
+	graph := dmodel.NewSearchGraph()
+	graph.NewCondition(keyColumn, dmodel.In, keys...)
+
+	found, err := sourceEngine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		Fields: fields,
+		Graph:  graph,
+		Page:   0,
+		Size:   len(keys),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if found != nil && found.ClientErrors.Count() > 0 {
+		return nil, errors.Errorf(
+			"computed-field source read of '%s' failed: %v", schemaName, found.ClientErrors.ToError())
+	}
+	if found == nil || !found.HasData {
+		return nil, nil
+	}
+	return found.Data.Items, nil
 }
 
 func (this *engineRegistry) GetEngine(schemaName string) (it.DynamicResourceEngine, bool) {

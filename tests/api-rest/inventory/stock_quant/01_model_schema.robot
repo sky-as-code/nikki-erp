@@ -33,6 +33,12 @@ Schema Declares Available Quantity As Virtual
     Response Status Should Be    ${resp}    200
     ${field}=    Set Variable    ${resp.json()}[fields][available_quantity]
     Should Be Equal    ${field}[is_virtual]    ${True}
+    Should Be Equal    ${field}[is_computed]    ${True}
+    Should Be Equal    ${field}[is_persisted]    ${False}
+    Should Be Equal    ${field}[is_edge_model]    ${False}
+    # Read-only but not server-owned: a computed field carries business meaning, so it stays
+    # selectable as a column rather than being filtered out with the keys.
+    Should Be Equal    ${field}[is_system_field]    ${False}
 
 Schema Declares No Status Or Archive Field
     [Documentation]    BR §4.2.2.2: a quant is current state, so it has neither a business

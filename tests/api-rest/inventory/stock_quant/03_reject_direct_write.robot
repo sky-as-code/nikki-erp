@@ -9,7 +9,7 @@ Documentation     AC-STOCK-002 and BR §3.3/§4.2.2.6: no business API may chang
 ...               explain and no audit can reconstruct.
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Stock Location Under Test
+...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Product Variant Under Test
 Test Tags         inventory    stock_quant    negative
 
@@ -19,7 +19,7 @@ Create Is Refused
     [Documentation]    A well-formed create is used deliberately: the request must be
     ...    refused because balances are not client-writable, not because it was malformed.
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}
-    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'location_id': $STOCK_LOCATION_ID, 'lot_ref': '', 'package_ref': '', 'owner_ref': '', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'location_id': $INVENTORY_LOCATION_ID, 'lot_ref': '', 'package_ref': '', 'owner_ref': '', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
     ...    msg=A stock balance must not be creatable through the API
@@ -27,7 +27,7 @@ Create Is Refused
 Create With Quantities Is Refused
     [Documentation]    The form that matters most: "set product X at location Y to 100".
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}
-    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'location_id': $STOCK_LOCATION_ID, 'lot_ref': '', 'package_ref': '', 'owner_ref': '', 'on_hand_quantity': '100', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID, 'location_id': $INVENTORY_LOCATION_ID, 'lot_ref': '', 'package_ref': '', 'owner_ref': '', 'on_hand_quantity': '100', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
     ...    msg=Setting an on-hand quantity directly must not be accepted

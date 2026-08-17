@@ -1,0 +1,17 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "source_warehouse_id", "destination_warehouse_id", "priority", "is_default", "etag", "is_archived", "org_id"],
+    "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "created_at": { "type": "string", "minLength": 20 },
+        "updated_at": { "type": "string", "minLength": 20 },
+        "source_warehouse_id": { "type": "string", "minLength": 1 },
+        "destination_warehouse_id": { "type": "string", "minLength": 1 },
+        "priority": { "type": "integer" },
+        "is_default": { "type": "boolean" },
+        "org_id": { "type": "string", "minLength": 1 },
+        "etag": { "type": "string", "minLength": 1 },
+        "is_archived": { "type": "boolean" }
+    },
+    "additionalProperties": false
+}

@@ -18,7 +18,9 @@ CREATE TABLE "contacts_parties" (
   "etag" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
-  PRIMARY KEY ("id")
+  PRIMARY KEY ("id"),
+  CONSTRAINT "contacts_parties_tax_id_ukey" UNIQUE ("tax_id"),
+  CONSTRAINT "contacts_parties_website_ukey" UNIQUE ("website")
 );
 -- Create "contacts_comm_channels" table
 CREATE TABLE "contacts_comm_channels" (

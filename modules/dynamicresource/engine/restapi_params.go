@@ -23,6 +23,7 @@ const (
 	queryParamPage     = "page"
 	queryParamSize     = "size"
 	queryParamGraph    = "graph"
+	queryParamContext  = basemodel.FieldContext
 	queryParamLanguage = "language"
 	queryParamName     = "search_name"
 	// queryParamIncludeArchived is tri-state: absent means "hide archived", which crud.Search
@@ -230,6 +231,14 @@ func (this *DynamicRestApiImpl) searchParams(echoCtx *echo.Context) (dmodel.Dyna
 			return nil, echo.NewHTTPError(400, "malformed 'graph' query parameter")
 		}
 		params[queryParamGraph] = graph
+	}
+
+	if raw := echoCtx.QueryParam(queryParamContext); raw != "" {
+		contextValues := map[string]any{}
+		if err := json.Unmarshal([]byte(raw), &contextValues); err != nil {
+			return nil, echo.NewHTTPError(400, "malformed 'context' query parameter")
+		}
+		params[queryParamContext] = contextValues
 	}
 
 	return params, nil

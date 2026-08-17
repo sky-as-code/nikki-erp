@@ -51,9 +51,9 @@ func (this *EntitlementDomainServiceImpl) CreateEntitlement(
 ) (*itEnt.CreateEntitlementResult, error) {
 	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.Entitlement]{})
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.Entitlement, *domain.Entitlement]{
-		Action:         "create entitlement",
-		BaseRepoGetter: this.entitlementRepo,
-		Data:           cmd,
+		Action:                 "create entitlement",
+		BaseRepoGetter:         this.entitlementRepo,
+		Data:                   cmd,
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 		BeforeValidation: func(ctx corectx.Context, ent *domain.Entitlement, vErrs *ft.ClientErrors) (*domain.Entitlement, error) {
 			ent.CalculateExpression()

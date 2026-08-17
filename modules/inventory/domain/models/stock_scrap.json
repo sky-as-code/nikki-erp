@@ -1,0 +1,208 @@
+{
+	"name": "inventory_stock_scrap",
+	"label": "inventory_stock_scrap.label",
+	"table_name": "inventory_stock_scraps",
+	"should_build_db": true,
+	"record_label_field": "scrap_number",
+	"composite_uniques": [{
+		"index_name": "invty_stock_scraps_number_org_id",
+		"fields": ["scrap_number", "org_id"]
+	}],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "scrap_number",
+			"label": "fields.scrap_number",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Human-readable document number, generated at create time and never supplied by the client. Immutable, for the same reason as inventory_stock_transfer.transfer_number: it is the reference quoted on paperwork, so renumbering would orphan every mention of it."
+			}
+		},
+		{
+			"name": "origin_reference",
+			"label": "fields.origin_reference",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The upstream document that caused this scrap. A plain string because the originating modules are outside Inventory and may not exist."
+			}
+		},
+		{
+			"name": "transfer_id",
+			"label": "fields.transfer_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The transfer this scrap arose from, when damage was found while processing one (BR 4.2.9.2, optional). Not the movement this scrap generates — that is move_id."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "base_uom_id",
+			"label": "fields.base_uom_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "Unit the quantity is expressed in. Named base_uom_id to match inventory_stock_quant rather than the requirement's uom_id, because a scrap quantity has to line up with the balance it is drawn from. Optional for the same reason it is optional on the quant: quantities are always kept in the variant's base unit, so the unit is derivable from the variant and naming it is a convenience rather than a fact the document owns. BR 4.2.9.2 lists uom_id as required, but requiring an id no caller can resolve yet would block every scrap until Uom master data is wired in."
+			}
+		},
+		{
+			"name": "lot_ref",
+			"label": "fields.lot_ref",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Lot or serial identifier of the goods scrapped. Empty string, never null, matching the quant dimension it must line up with (see inventory_stock_quant.lot_ref)."
+			}
+		},
+		{
+			"name": "package_ref",
+			"label": "fields.package_ref",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Package the goods were taken from. Empty string, never null, for the same reason as lot_ref."
+			}
+		},
+		{
+			"name": "owner_ref",
+			"label": "fields.owner_ref",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Owner of the goods when they are not the company's. Empty string, never null, for the same reason as lot_ref."
+			}
+		},
+		{
+			"name": "source_location_id",
+			"label": "fields.source_location_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "Where the goods are scrapped from. Must hold the balance the scrap draws down."
+			}
+		},
+		{
+			"name": "scrap_location_id",
+			"label": "fields.scrap_location_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "Where the goods go. A location of kind 'scrap', which is outside usable stock, so the movement removes them from availability without deleting the history (BR 4.2.9.1)."
+			}
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "How much to scrap, strictly greater than zero (BR 4.2.9.3). The zero lower bound here is the storage floor; the service rejects zero, which a schema minimum cannot express."
+			}
+		},
+		{
+			"name": "reason_code",
+			"label": "fields.reason_code",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"description": {
+				"en-US": "Why the goods were scrapped, as a short code. A plain string rather than an enum because the reason list is configuration a deployment sets, not a domain constant."
+			}
+		},
+		{
+			"name": "reason",
+			"label": "fields.reason",
+			"data_type": { "type": "string", "min": 0, "max": 500 }
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "done"]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"description": {
+				"en-US": "Two states only (BR 4.2.9.2). There is no cancelled: an unwanted draft is deleted, and a done scrap is corrected by a reverse movement, never by reopening it."
+			}
+		},
+		{
+			"name": "move_id",
+			"label": "fields.move_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The movement Do Scrap generated. Empty until the scrap is done, and the audit trail from the document to the stock it removed."
+			}
+		},
+		{
+			"name": "completed_at",
+			"label": "fields.completed_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When Do Scrap ran. Set together with status 'done' and the move, never independently."
+			}
+		},
+		{
+			"name": "note",
+			"label": "fields.note",
+			"data_type": { "type": "string", "min": 0, "max": 1000 }
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "invty_stock_scraps_status", "fields": ["status"] },
+		{ "index_name": "invty_stock_scraps_pvar_id", "fields": ["product_variant_id"] },
+		{ "index_name": "invty_stock_scraps_trf_id", "fields": ["transfer_id"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "transfer",
+			"label": { "en-US": "Transfer" },
+			"type": "many:one",
+			"dest_schema": "inventory_stock_transfer",
+			"key_map": { "transfer_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "product_variant",
+			"label": { "en-US": "Product variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "product_variant_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "source_location",
+			"label": { "en-US": "Source location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "source_location_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "scrap_location",
+			"label": { "en-US": "Scrap location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "scrap_location_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

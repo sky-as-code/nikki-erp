@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 // BR-UOM-ESS-015: rounding precision is a step, not a digit count.
 func TestApplyRounding(t *testing.T) {
 	testCases := []struct {

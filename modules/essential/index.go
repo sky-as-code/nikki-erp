@@ -14,8 +14,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	models "github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/essential/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/services"
+	"github.com/sky-as-code/nikki-erp/modules/essential/dynamicengines"
 	repo "github.com/sky-as-code/nikki-erp/modules/essential/infra/repository"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 	"github.com/sky-as-code/nikki-erp/modules/essential/transport"
@@ -79,6 +79,7 @@ func (*EssentialModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.ModelMetadataSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.LanguageSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.TagSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.CurrencySchemaBuilder()),
 		// The category must be registered before the UoM: the UoM's edge points at it.
 		dmodel.RegisterSchemaB(models.UomCatSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.UomSchemaBuilder()),

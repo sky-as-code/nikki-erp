@@ -1,3 +1,15 @@
+-- Create "iam_method_settings" table
+CREATE TABLE "iam_method_settings" (
+  "id" character varying NOT NULL,
+  "method" character varying NOT NULL,
+  "order" integer NOT NULL,
+  "max_failures" integer NOT NULL,
+  "lock_duration_secs" bigint NULL,
+  "subject_type" character varying NOT NULL,
+  "subject_ref" character varying NULL,
+  "subject_source_ref" character varying NULL,
+  PRIMARY KEY ("id")
+);
 -- Create "iam_attempts" table
 CREATE TABLE "iam_attempts" (
   "id" character varying NOT NULL,
@@ -9,21 +21,10 @@ CREATE TABLE "iam_attempts" (
   "device_name" character varying NULL,
   "device_location" character varying NULL,
   "expires_at" timestamptz NOT NULL,
+  "revoked_at" timestamptz NULL,
   "principal_type" character varying NOT NULL,
   "status" character varying NOT NULL,
   "username" character varying NOT NULL,
-  PRIMARY KEY ("id")
-);
--- Create "iam_method_settings" table
-CREATE TABLE "iam_method_settings" (
-  "id" character varying NOT NULL,
-  "method" character varying NOT NULL,
-  "order" integer NOT NULL,
-  "max_failures" integer NOT NULL,
-  "lock_duration_secs" bigint NULL,
-  "subject_type" character varying NOT NULL,
-  "subject_ref" character varying NULL,
-  "subject_source_ref" character varying NULL,
   PRIMARY KEY ("id")
 );
 -- Create "iam_resources" table
@@ -41,6 +42,18 @@ CREATE TABLE "iam_resources" (
   PRIMARY KEY ("id"),
   CONSTRAINT "iam_resources_code_ukey" UNIQUE ("code"),
   CONSTRAINT "iam_resources_name_ukey" UNIQUE ("name")
+);
+-- Create "iam_password_stores" table
+CREATE TABLE "iam_password_stores" (
+  "id" character varying NOT NULL,
+  "principal_type" character varying NOT NULL,
+  "principal_id" character varying NOT NULL,
+  "type" character varying NOT NULL,
+  "hash" character varying NULL,
+  "last_used_at" timestamptz NULL,
+  "expires_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "iam_pwd_stores_tid_princ_type_princ_id_type_ukey" UNIQUE ("principal_type", "principal_id", "type")
 );
 -- Create "iam_actions" table
 CREATE TABLE "iam_actions" (
@@ -97,14 +110,6 @@ CREATE TABLE "iam_users" (
   "status" character varying NOT NULL,
   "is_owner" boolean NULL,
   "org_unit_id" character varying NULL,
-  "password" character varying NULL,
-  "password_expires_at" timestamptz NULL,
-  "password_updated_at" timestamptz NULL,
-  "passwordtmp" character varying NULL,
-  "passwordtmp_expires_at" timestamptz NULL,
-  "passwordotp" character varying NULL,
-  "passwordotp_expires_at" timestamptz NULL,
-  "passwordotp_recovery" character varying[] NULL,
   "is_archived" boolean NOT NULL,
   "etag" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
@@ -174,6 +179,7 @@ CREATE TABLE "iam_entitlements" (
   CONSTRAINT "iam_entitlements_action_id_fkey" FOREIGN KEY ("action_id") REFERENCES "iam_actions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "iam_entitlements_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "iam_organizations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "iam_entitlements_org_unit_id_fkey" FOREIGN KEY ("org_unit_id") REFERENCES "iam_org_units" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "iam_entitlements_resource_id_fkey" FOREIGN KEY ("resource_id") REFERENCES "iam_resources" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "iam_entitlements_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "iam_roles" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "iam_grant_requests" table
@@ -231,7 +237,7 @@ CREATE TABLE "iam_role_group_assignments" (
   "expires_at" timestamptz NULL,
   "created_at" timestamptz NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "iam_role_group_assignments_role_id_receiver_group_id_ukey" UNIQUE ("role_id", "receiver_group_id"),
+  CONSTRAINT "iam_role_grp_assigns_tid_role_id_rcv_grp_id_ukey" UNIQUE ("role_id", "receiver_group_id"),
   CONSTRAINT "iam_role_group_assignments_approver_id_fkey" FOREIGN KEY ("approver_id") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "iam_role_group_assignments_receiver_group_id_fkey" FOREIGN KEY ("receiver_group_id") REFERENCES "iam_groups" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "iam_role_group_assignments_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "iam_roles" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -247,7 +253,7 @@ CREATE TABLE "iam_role_user_assignments" (
   "role_request_id" character varying NULL,
   "expires_at" timestamptz NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "iam_role_user_assignments_role_id_receiver_user_id_ukey" UNIQUE ("role_id", "receiver_user_id"),
+  CONSTRAINT "iam_role_usr_assigns_tid_role_id_rcv_usr_id_ukey" UNIQUE ("role_id", "receiver_user_id"),
   CONSTRAINT "iam_role_user_assignments_approver_id_fkey" FOREIGN KEY ("approver_id") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "iam_role_user_assignments_receiver_user_id_fkey" FOREIGN KEY ("receiver_user_id") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "iam_role_user_assignments_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "iam_roles" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,

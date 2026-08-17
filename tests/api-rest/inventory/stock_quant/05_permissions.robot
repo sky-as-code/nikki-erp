@@ -26,8 +26,8 @@ Plain User Is Refused Stock Balance Read
     Should Be Equal As Integers    ${resp.status_code}    403
     ...    msg=A user holding only the system User role must not read stock balances
 
-Plain User Is Refused Stock Location Read
-    ${resp}=    GET On Session    plain_user    ${STOCK_LOCATION_API}
+Plain User Is Refused Inventory Location Read
+    ${resp}=    GET On Session    plain_user    ${INVENTORY_LOCATION_API}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    403
     ...    msg=A user holding only the system User role must not read stock locations
@@ -38,13 +38,13 @@ Plain User Is Refused Stock Operation Type Read
     Should Be Equal As Integers    ${resp.status_code}    403
     ...    msg=A user holding only the system User role must not read stock operation types
 
-Plain User Is Refused Stock Location Create
+Plain User Is Refused Inventory Location Create
     [Documentation]    Write is refused for the same reason as read: the role carries no
     ...    Inventory entitlement at all, so no action on the resource is permitted.
     ${name}=    Unique Display Name    Robot Forbidden Location
     ${code}=    Unique Code    forbidloc
-    ${resp}=    POST On Session    plain_user    ${STOCK_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
+    ${resp}=    POST On Session    plain_user    ${INVENTORY_LOCATION_API}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    403
     ...    msg=Permission must be refused before the payload is ever validated
