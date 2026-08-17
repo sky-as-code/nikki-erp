@@ -13,15 +13,21 @@ type Limits struct {
 	MaxRelatedPathDepth int
 	// MaxComputedFieldsPerRequest bounds how many computed fields one read may evaluate.
 	MaxComputedFieldsPerRequest int
+	// MaxFilterNestingDepth bounds how deep an SQL-kind filter (and/or tree) may nest.
+	MaxFilterNestingDepth int
+	// MaxSqlComputedFieldsPerRequest bounds how many correlated subqueries one read may project.
+	MaxSqlComputedFieldsPerRequest int
 }
 
 // DefaultLimits returns the standard guardrails. Override with SetLimits at application start.
 func DefaultLimits() Limits {
 	return Limits{
-		MaxExpressionNestingDepth:   10,
-		MaxComputedDependencyDepth:  5,
-		MaxRelatedPathDepth:         1,
-		MaxComputedFieldsPerRequest: 15,
+		MaxExpressionNestingDepth:      10,
+		MaxComputedDependencyDepth:     5,
+		MaxRelatedPathDepth:            1,
+		MaxComputedFieldsPerRequest:    15,
+		MaxFilterNestingDepth:          5,
+		MaxSqlComputedFieldsPerRequest: 10,
 	}
 }
 

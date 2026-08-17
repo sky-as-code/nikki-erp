@@ -173,3 +173,77 @@ func TestRejectWrites(t *testing.T) {
 	errs = computed.RejectWrites(schema, dmodel.DynamicFields{"on_hand_quantity": "10"})
 	assert.Equal(t, 0, errs.Count())
 }
+
+// finalizeSqlSplitFixture registers an order schema with one SQL-computed aggregate, a Go
+// expression depending on it, and an independent Go expression.
+func finalizeSqlSplitFixture(t *testing.T) {
+	t.Helper()
+	reg := newRegistryWith(t, sqlLineSchema(), sqlOrderSchema(
+		dmodel.DefineField().Name("line_count").DataType(dmodel.FieldDataTypeInt64(0, 1000000)).
+			Computed(false, computed.Aggregate("lines", computed.AggCount)),
+		dmodel.DefineField().Name("is_busy").DataType(dmodel.FieldDataTypeBoolean()).
+			Computed(false, computed.Gt(computed.F("line_count"), computed.Lit(int64(10)))),
+		dmodel.DefineField().Name("customer_upper").DataType(dmodel.FieldDataTypeString(0, 100)).
+			Computed(false, computed.Fn("upper", computed.F("customer"))),
+	))
+	require.NoError(t, reg.FinalizeRelations())
+}
+
+func TestBuildEvalPlan_SqlFieldRequestedExplicitly(t *testing.T) {
+	finalizeSqlSplitFixture(t)
+
+	plan, errs := computed.BuildEvalPlan("cf_sql_order", []string{"id", "line_count"})
+	require.Equal(t, 0, errs.Count())
+	require.NotNil(t, plan)
+	assert.Equal(t, []string{"line_count"}, plan.Wanted)
+	assert.Empty(t, plan.ExtraFields, "the SQL field is already in the projection; its subquery fills it")
+	assert.Empty(t, plan.RelatedReads)
+}
+
+func TestBuildEvalPlan_GoFieldPullsItsSqlDependencyIntoProjection(t *testing.T) {
+	finalizeSqlSplitFixture(t)
+
+	plan, errs := computed.BuildEvalPlan("cf_sql_order", []string{"id", "is_busy"})
+	require.Equal(t, 0, errs.Count())
+	require.NotNil(t, plan)
+	assert.Equal(t, []string{"line_count", "is_busy"}, plan.Wanted, "the SQL dependency evaluates first")
+	assert.Equal(t, []string{"line_count"}, plan.ExtraFields,
+		"the SQL dependency's NAME must join the projection so its subquery runs")
+}
+
+func TestBuildEvalPlan_DefaultProjectionExcludesSqlComputedAndDependents(t *testing.T) {
+	finalizeSqlSplitFixture(t)
+
+	plan, errs := computed.BuildEvalPlan("cf_sql_order", nil)
+	require.Equal(t, 0, errs.Count())
+	require.NotNil(t, plan)
+	assert.Equal(t, []string{"customer_upper"}, plan.Wanted,
+		"SQL-computed fields and their dependents are opt-in; the default set carries neither")
+	assert.Empty(t, plan.ExtraFields)
+}
+
+func TestEvalPlanApply_SqlFieldArrivesPrefilledAndFeedsGoExpression(t *testing.T) {
+	finalizeSqlSplitFixture(t)
+
+	plan, errs := computed.BuildEvalPlan("cf_sql_order", []string{"id", "is_busy"})
+	require.Equal(t, 0, errs.Count())
+	rows := []dmodel.DynamicFields{
+		{"id": "o1", "line_count": int64(12)},
+		{"id": "o2", "line_count": int64(3)},
+	}
+	require.NoError(t, plan.Apply(rows, nil))
+
+	assert.Equal(t, true, rows[0]["is_busy"])
+	assert.Equal(t, false, rows[1]["is_busy"])
+	assert.Equal(t, int64(12), rows[0]["line_count"], "the SQL value must pass through untouched")
+}
+
+func TestRejectWrites_CoversSqlComputedFields(t *testing.T) {
+	schema := sqlOrderSchema(
+		dmodel.DefineField().Name("line_count").DataType(dmodel.FieldDataTypeInt64(0, 1000000)).
+			Computed(false, computed.Aggregate("lines", computed.AggCount)))
+
+	errs := computed.RejectWrites(schema, dmodel.DynamicFields{"line_count": 5})
+	require.Equal(t, 1, errs.Count())
+	assert.Contains(t, errs.ToError().Error(), `Field "line_count" is computed and cannot be written`)
+}

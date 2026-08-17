@@ -419,7 +419,8 @@ func (this *PgQueryBuilder) buildSqlSelectGraph(
 			return "", nil, err
 		}
 	}
-	if err := this.applySelectColumns(sb, planner, opts.Columns, orderRefsForDistinct(isDistinct, orderExprs)...); err != nil {
+	if err := this.applySelectColumns(sb, planner, opts.Columns, opts.ComputedContext,
+		orderRefsForDistinct(isDistinct, orderExprs)...); err != nil {
 		return "", nil, err
 	}
 	this.applyFromWithJoins(sb, schema, planner)
@@ -545,7 +546,7 @@ func (this *PgQueryBuilder) buildSqlCountGraphAsDistinctSubquery(
 	ctx := &graphSelectCtx{planner: planner, language: opts.Language}
 	inner := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	inner.Distinct()
-	if err := this.applySelectColumns(inner, planner, opts.Columns); err != nil {
+	if err := this.applySelectColumns(inner, planner, opts.Columns, opts.ComputedContext); err != nil {
 		return "", nil, err
 	}
 	this.applyFromWithJoins(inner, schema, planner)

@@ -1,11 +1,14 @@
 package computed
 
 import (
+	"fmt"
+
 	"go.bryk.io/pkg/errors"
 )
 
-// ComputeKind discriminates how a computed field's value is produced. This phase implements the
-// two Go-executed kinds; aggregate/exists/lookup need SQL and belong to a later phase.
+// ComputeKind discriminates how a computed field's value is produced. Expression and related are
+// Go-executed after the read; aggregate, exists and lookup compile to one correlated scalar
+// subquery each, projected inside the SELECT.
 type ComputeKind string
 
 const (
@@ -13,6 +16,12 @@ const (
 	ComputeExpression ComputeKind = "expression"
 	// ComputeRelated copies a scalar leaf reached through a chain of to-one edges.
 	ComputeRelated ComputeKind = "related"
+	// ComputeAggregate aggregates a collection edge (COUNT/SUM/AVG/MIN/MAX) in SQL.
+	ComputeAggregate ComputeKind = "aggregate"
+	// ComputeExists is a boolean EXISTS(SELECT 1 ...) over a filtered collection edge.
+	ComputeExists ComputeKind = "exists"
+	// ComputeLookup copies one scalar from the first source record after filter + ordering.
+	ComputeLookup ComputeKind = "lookup"
 )
 
 // Definition describes how a computed field gets its value. It is attached to a ModelField
@@ -31,66 +40,105 @@ type Definition struct {
 
 	// Related is the dotted to-one edge path when Kind is ComputeRelated, e.g. "template.name".
 	Related string
+
+	// Exactly one of these is set for the SQL-compiled kinds.
+	Aggregate *AggregateExpr
+	Exists    *ExistsExpr
+	Lookup    *LookupExpr
 }
 
-// NewDefinition builds a Definition from a root expression, deriving the kind: a RelatedExpr
-// root means "related", anything else means "expression". This is what lets the field builder
-// accept both forms through one parameter: Computed(false, computed.Sub(...)) and
-// Computed(false, computed.Related("template.name")).
+// NewDefinition builds a Definition from a root expression, deriving the kind from the root's
+// type. This is what lets the field builder accept every kind through one parameter:
+// Computed(false, computed.Sub(...)), Computed(false, computed.Related("template.name")),
+// Computed(false, computed.Aggregate("lines", computed.AggCount)).
 func NewDefinition(isStored bool, root Expr) (*Definition, error) {
 	if root == nil {
 		return nil, errors.New("computed definition requires an expression")
 	}
+	if def, matched, err := newSqlKindDefinition(isStored, root); matched {
+		return def, err
+	}
 	if related, ok := root.(RelatedExpr); ok {
 		return &Definition{Kind: ComputeRelated, IsStored: isStored, Related: related.Path}, nil
 	}
-	if nested := findNestedRelated(root); nested != "" {
+	if nested := findRootOnlyNode(root); nested != "" {
 		return nil, errors.Errorf(
-			"related reference %q is only allowed as the whole definition, not inside an expression", nested)
+			"%s is only allowed as the whole definition, not inside an expression", nested)
 	}
 	return &Definition{Kind: ComputeExpression, IsStored: isStored, Expression: root}, nil
 }
 
-// findNestedRelated returns the path of the first RelatedExpr found below the root, or "" when
-// the tree is clean. A related copy costs a second query, so it must never hide inside arithmetic.
-func findNestedRelated(expr Expr) string {
+// newSqlKindDefinition matches the SQL-compiled roots. The node's structural validation runs
+// here so the chained API and the JSON parser share one chokepoint.
+func newSqlKindDefinition(isStored bool, root Expr) (*Definition, bool, error) {
+	var def *Definition
+	var err error
+	switch node := root.(type) {
+	case AggregateExpr:
+		def = &Definition{Kind: ComputeAggregate, IsStored: isStored, Aggregate: &node}
+		err = node.validate()
+	case ExistsExpr:
+		def = &Definition{Kind: ComputeExists, IsStored: isStored, Exists: &node}
+		err = node.validate()
+	case LookupExpr:
+		def = &Definition{Kind: ComputeLookup, IsStored: isStored, Lookup: &node}
+		err = node.validate()
+	default:
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, true, err
+	}
+	return def, true, nil
+}
+
+// findRootOnlyNode returns a description of the first root-only node found BELOW the root, or ""
+// when the tree is clean. A related copy or a subquery costs a second query, so it must never
+// hide inside arithmetic.
+func findRootOnlyNode(expr Expr) string {
 	switch node := expr.(type) {
 	case RelatedExpr:
-		return node.Path
+		return fmt.Sprintf("related reference %q", node.Path)
+	case AggregateExpr:
+		return fmt.Sprintf("aggregate over edge %q", node.Source)
+	case ExistsExpr:
+		return fmt.Sprintf("exists check over edge %q", node.Source)
+	case LookupExpr:
+		return fmt.Sprintf("lookup over edge %q", node.Source)
 	case BinaryExpr:
-		if path := findNestedRelated(node.Left); path != "" {
-			return path
+		if found := findRootOnlyNode(node.Left); found != "" {
+			return found
 		}
-		return findNestedRelated(node.Right)
+		return findRootOnlyNode(node.Right)
 	case UnaryExpr:
-		return findNestedRelated(node.Operand)
+		return findRootOnlyNode(node.Operand)
 	case FunctionExpr:
-		return firstNestedRelated(node.Args)
+		return firstRootOnlyNode(node.Args)
 	case CaseExpr:
-		return findNestedRelatedInCase(node)
+		return findRootOnlyNodeInCase(node)
 	}
 	return ""
 }
 
-func findNestedRelatedInCase(node CaseExpr) string {
+func findRootOnlyNodeInCase(node CaseExpr) string {
 	for _, branch := range node.Whens {
-		if path := findNestedRelated(branch.When); path != "" {
-			return path
+		if found := findRootOnlyNode(branch.When); found != "" {
+			return found
 		}
-		if path := findNestedRelated(branch.Then); path != "" {
-			return path
+		if found := findRootOnlyNode(branch.Then); found != "" {
+			return found
 		}
 	}
 	if node.Else != nil {
-		return findNestedRelated(node.Else)
+		return findRootOnlyNode(node.Else)
 	}
 	return ""
 }
 
-func firstNestedRelated(exprs []Expr) string {
+func firstRootOnlyNode(exprs []Expr) string {
 	for _, arg := range exprs {
-		if path := findNestedRelated(arg); path != "" {
-			return path
+		if found := findRootOnlyNode(arg); found != "" {
+			return found
 		}
 	}
 	return ""

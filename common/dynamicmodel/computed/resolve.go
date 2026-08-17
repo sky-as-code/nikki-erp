@@ -31,9 +31,35 @@ type FieldPlan struct {
 	RelatedFkColumn  string
 	RelatedRefColumn string
 
+	// SqlSource describes the collection edge an SQL-compiled kind (aggregate/exists/lookup)
+	// correlates through. Set only for those kinds; the subquery emitter consumes it.
+	SqlSource *SqlSourcePlan
+
 	// Dependencies is the full metadata for impact analysis: every schema element this field's
 	// definition points at (operand fields, the related edge, FK and leaf columns).
 	Dependencies []FieldRef
+}
+
+// SqlSourcePlan is the resolved correlation between a schema and the collection edge an
+// SQL-compiled computed field aggregates over. Single-column keys only in this phase.
+type SqlSourcePlan struct {
+	Edge             string
+	SourceSchemaName string
+	// Many is true for a many:many edge, correlated through the junction schema below;
+	// false for one:many, correlated by SourceFkColumn = root RootRefColumn.
+	Many bool
+
+	// one:many correlation.
+	SourceFkColumn string
+	RootRefColumn  string
+
+	// many:many correlation: through.ThroughSrcColumn = root.RootPkColumn and
+	// through.ThroughDestColumn = source.SourcePkColumn.
+	ThroughSchemaName string
+	ThroughSrcColumn  string
+	ThroughDestColumn string
+	SourcePkColumn    string
+	RootPkColumn      string
 }
 
 // SchemaPlan holds every computed field of one schema plus a dependency-safe evaluation order.
@@ -165,6 +191,8 @@ func (this *resolver) buildFieldPlan(schema *dmodel.ModelSchema, field *dmodel.M
 		err = this.buildExpressionPlan(schema, field, plan)
 	case ComputeRelated:
 		err = this.buildRelatedPlan(schema, field, plan)
+	case ComputeAggregate, ComputeExists, ComputeLookup:
+		err = this.buildSqlKindPlan(schema, field, plan)
 	default:
 		err = errors.Errorf("computed field %s.%s has unsupported kind %q", schema.Name(), field.Name(), def.Kind)
 	}

@@ -255,7 +255,7 @@ func TestVirtualField_AsRecordLabelPanicsAtBuild(t *testing.T) {
 			"fields": [
 				{"name": "id", "data_type": "ulid", "primary_key": true, "use_type_default": true},
 				{"name": "bad", "data_type": {"type": "string", "min": 0, "max": 10}, ` +
-		computedFieldJson + `}
+			computedFieldJson + `}
 			]
 		}`).Build()
 	})

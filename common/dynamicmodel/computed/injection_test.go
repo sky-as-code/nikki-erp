@@ -15,13 +15,16 @@ import (
 
 // The DSL's injection surface, attacked seam by seam. The framework's core defense is that every
 // identifier in a definition must resolve through the schema registry at finalize time, and
-// every literal is evaluated in Go, never rendered into SQL. These tests prove a hostile
-// definition dies at validation, and hostile VALUES that do reach SQL (the batched IN read) go
-// through the query builder's escaping.
+// every value that reaches SQL — expression literals never do; filter values, context values,
+// defaults and batched IN keys do — goes through the query builder's conversion and escaping.
 //
-// Deferred to the SQL-based phase (aggregate/exists/lookup, stored computed fields): fan-out
-// prevention, computed-field filter/sort/pagination, and query-context tests — those features do
-// not exist in the Go-executed phase, so there is nothing to attack yet.
+// The SQL-compiled kinds (aggregate/exists/lookup) are attacked here for their identifiers
+// (source edges, filter fields, order_by fields) and in orm/pg_query_builder_computed_test.go
+// for their values (filter/context/default escaping) and fan-out safety, next to the emitter
+// they exercise.
+//
+// Still deferred to the stored-computed phase: computed-field filter/sort/pagination tests —
+// filtering or sorting BY a computed field does not exist yet, so there is nothing to attack.
 
 // hostileNames are identifier payloads an attacker might plant in a definition.
 func hostileNames() []string {
@@ -166,4 +169,98 @@ func TestInjection_ExpressionLiteralsStayInGo(t *testing.T) {
 	got, err := computed.Eval(expr, dmodel.DynamicFields{})
 	require.NoError(t, err)
 	assert.Equal(t, "a"+payload, got, "the literal is just a Go string value, produced verbatim")
+}
+
+// The SQL-kind identifier seams: a hostile name planted as a source edge, a filter field or an
+// order_by field must die at registry/schema resolution — it never reaches the subquery emitter.
+
+func TestInjection_HostileAggregateSourcesFailResolution(t *testing.T) {
+	for i, hostile := range hostileNames() {
+		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
+			reg := newRegistryWith(t, sqlLineSchema(), sqlOrderSchema(
+				dmodel.DefineField().Name("evil").DataType(dmodel.FieldDataTypeInt64(0, 10)).
+					Computed(false, computed.Aggregate(hostile, computed.AggCount))))
+
+			err := reg.FinalizeRelations()
+			require.Error(t, err, "hostile source edge %q must fail resolution", hostile)
+		})
+	}
+}
+
+func TestInjection_HostileFilterFieldsFailResolution(t *testing.T) {
+	for i, hostile := range hostileNames() {
+		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
+			reg := newRegistryWith(t, sqlLineSchema(), sqlOrderSchema(
+				dmodel.DefineField().Name("evil").DataType(dmodel.FieldDataTypeBoolean()).
+					Computed(false, computed.Exists("lines",
+						dmodel.NewSearchNode().NewCondition(hostile, dmodel.Equals, "x")))))
+
+			err := reg.FinalizeRelations()
+			require.Error(t, err, "hostile filter field %q must fail resolution", hostile)
+		})
+	}
+}
+
+func TestInjection_HostileOrderByFieldsFailResolution(t *testing.T) {
+	for i, hostile := range hostileNames() {
+		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
+			reg := newRegistryWith(t, sqlLineSchema(), sqlOrderSchema(
+				dmodel.DefineField().Name("evil").DataType(dmodel.FieldDataTypeDecimal("0", "9", 2)).
+					Computed(false, computed.Lookup("lines", "unit_price", computed.Desc(hostile)))))
+
+			err := reg.FinalizeRelations()
+			require.Error(t, err, "hostile order_by field %q must fail resolution", hostile)
+		})
+	}
+}
+
+// Hostile aggregated operands: the operand field resolves through the source schema exactly like
+// a filter field, and a lookup's copied field does too.
+func TestInjection_HostileOperandFieldsFailResolution(t *testing.T) {
+	for i, hostile := range hostileNames() {
+		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
+			reg := newRegistryWith(t, sqlLineSchema(), sqlOrderSchema(
+				dmodel.DefineField().Name("evil").DataType(dmodel.FieldDataTypeDecimal("0", "9", 2)).
+					Computed(false, computed.Aggregate("lines", computed.AggSum, computed.AggField(hostile)))))
+
+			err := reg.FinalizeRelations()
+			require.Error(t, err, "hostile operand field %q must fail resolution", hostile)
+		})
+	}
+}
+
+// The JSON authoring path for SQL kinds: raw-SQL smuggling shapes must die at the JSON Schema or
+// at finalize — never reaching the emitter.
+func TestInjection_HostileSqlKindJsonRejected(t *testing.T) {
+	template := `{
+		"name": "cf_inj_sqljson",
+		"fields": [
+			{"name": "id", "data_type": "ulid", "primary_key": true},
+			{"name": "evil", "data_type": {"type": "int64", "min": 0, "max": 100}, "computed": %s}
+		]
+	}`
+	blocks := map[string]string{
+		"raw sql in filter": `{"kind": "exists", "is_stored": false, "source": "lines",
+			"filter": {"sql": "1=1; DROP TABLE x"}}`,
+		"subquery smuggled as source": `{"kind": "aggregate", "is_stored": false,
+			"source": "(SELECT pg_sleep(10))", "function": "count"}`,
+		"order_by with expression": `{"kind": "lookup", "is_stored": false, "source": "lines",
+			"field": "unit_price", "order_by": [{"field": "id; DROP TABLE x", "direction": "desc"}]}`,
+		"object filter value": `{"kind": "exists", "is_stored": false, "source": "lines",
+			"filter": {"if": ["status", "=", {"$raw": "1=1"}]}}`,
+	}
+	for name, block := range blocks {
+		t.Run(name, func(t *testing.T) {
+			modelJson := fmt.Sprintf(template, block)
+			_, errs := dmodel.ParseModelJsonSafe(modelJson)
+			if errs.Count() > 0 {
+				return // rejected by the JSON Schema — first line of defense
+			}
+			schema := dmodel.ParseModelJson(modelJson).Build()
+			reg := dmodel.NewSchemaRegistry()
+			require.NoError(t, reg.Register(schema))
+			require.NoError(t, reg.Register(sqlLineSchema()))
+			require.Error(t, reg.FinalizeRelations())
+		})
+	}
 }

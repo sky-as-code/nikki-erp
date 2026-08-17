@@ -149,10 +149,12 @@ func orderRefsForDistinct(isDistinct bool, orderExprs []string) []string {
 	return refs
 }
 
-// applySelectColumns writes the projection. extraRefs are already-resolved SQL refs appended
-// when they are not already projected; see orderRefsForDistinct.
+// applySelectColumns writes the projection. ctxValues binds "${ctx.key}" references of
+// SQL-computed fields; extraRefs are already-resolved SQL refs appended when they are not
+// already projected; see orderRefsForDistinct.
 func (this *PgQueryBuilder) applySelectColumns(
-	sb *sqlbuilder.SelectBuilder, planner *joinPlanner, columns []SelectColumn, extraRefs ...string,
+	sb *sqlbuilder.SelectBuilder, planner *joinPlanner, columns []SelectColumn,
+	ctxValues map[string]any, extraRefs ...string,
 ) error {
 	if len(columns) == 0 {
 		wildcard := "*"
@@ -167,6 +169,7 @@ func (this *PgQueryBuilder) applySelectColumns(
 		return nil
 	}
 	selectCols := make([]string, 0, len(columns))
+	sqlComputedCount := 0
 	for _, col := range columns {
 		if fn, inner, ok := parseAllowedAggregate(col); ok {
 			expr, cErrs, err := buildAggregateSelectExpr(planner, col, fn, inner)
@@ -183,9 +186,17 @@ func (this *PgQueryBuilder) applySelectColumns(
 		if strings.Contains(path, "(") {
 			return wrapClientSqlErrors(clientErrorsInvalidSelectAggregate(col.rawString()))
 		}
-		// A virtual scalar has no column to project. It stays a legal request — a service fills
-		// it after the read — so it is skipped here rather than rejected.
+		// A virtual scalar has no column to project. An SQL-computed one (aggregate/exists/
+		// lookup) materializes as a correlated subquery right here; any other virtual scalar
+		// stays a legal request that a service fills after the read, so it is skipped.
 		if planner != nil && planner.isVirtualScalarPath(path) {
+			expr, emitted, err := this.computedSelectExpr(planner, path, ctxValues, &sqlComputedCount)
+			if err != nil {
+				return err
+			}
+			if emitted {
+				selectCols = append(selectCols, expr)
+			}
 			continue
 		}
 		expr, err := planner.selectExprForColumn(path)

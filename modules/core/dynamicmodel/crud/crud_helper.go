@@ -647,6 +647,7 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 		Graph:           sanitizedQuery.Graph,
 		Language:        sanitizedQuery.Language,
 		IncludeArchived: includeArchived,
+		ComputedContext: sanitizedQuery.Context,
 	})
 	return result, errors.Wrap(err, "Search")
 }

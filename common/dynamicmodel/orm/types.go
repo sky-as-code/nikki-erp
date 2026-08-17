@@ -49,6 +49,9 @@ type SqlSelectGraphOpts struct {
 	Size int
 	// Optional language code used when filtering LangJson fields.
 	Language *model.LanguageCode
+	// ComputedContext binds the request's whitelisted context values for SQL-computed fields
+	// (aggregate/exists/lookup). Consumed when the projection names such a field.
+	ComputedContext map[string]any
 }
 
 // SqlCheckUniqueCollisionsData holds parameterized SQL and arguments from SqlCheckUniqueCollisions.

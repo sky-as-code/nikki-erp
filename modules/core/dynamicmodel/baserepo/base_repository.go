@@ -1354,10 +1354,11 @@ func (this *BaseDynamicRepositoryImpl) runSelectGraphScan(
 ) ([]dmodel.DynamicFields, ft.ClientErrors, error) {
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(
 		this.schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-			Columns:  orm.ToSelectColumns(param.Fields),
-			Page:     param.Page,
-			Size:     param.Size,
-			Language: param.Language,
+			Columns:         orm.ToSelectColumns(param.Fields),
+			Page:            param.Page,
+			Size:            param.Size,
+			Language:        param.Language,
+			ComputedContext: param.ComputedContext,
 		})
 	if err != nil {
 		return nil, nil, err

@@ -53,3 +53,18 @@ func TestNewServiceFallsBackToAllColumns(t *testing.T) {
 	assert.Equal(t, columnNames(schema), service.defaultFields)
 	assert.Contains(t, service.defaultFields, "secret")
 }
+
+func TestParamsToSearchQuery_DecodesComputedContext(t *testing.T) {
+	query, err := paramsToSearchQuery(dmodel.DynamicFields{
+		"fields":  []string{"id", "available_qty"},
+		"context": map[string]any{"warehouse_id": "wh1", "company_id": "co1"},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]any{"warehouse_id": "wh1", "company_id": "co1"}, query.Context)
+}
+
+func TestParamsToSearchQuery_NoContextStaysNil(t *testing.T) {
+	query, err := paramsToSearchQuery(dmodel.DynamicFields{"fields": []string{"id"}})
+	assert.NoError(t, err)
+	assert.Nil(t, query.Context)
+}

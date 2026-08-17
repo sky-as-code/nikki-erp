@@ -114,6 +114,20 @@
 			"label": "fields.org_id",
 			"data_type": "ulid",
 			"required_for_create": true
+		},
+		{
+			"name": "variant_count",
+			"label": "fields.variant_count",
+			"data_type": { "type": "int64", "min": 0, "max": 1000000000 },
+			"computed": {
+				"kind": "aggregate",
+				"is_stored": false,
+				"source": "variants",
+				"function": "count"
+			},
+			"description": {
+				"en-US": "Number of active (unarchived) variants, computed as a correlated COUNT subquery when the field is explicitly requested. Archived variants are excluded by the framework's archive scoping; COUNT itself reads 0 for a variant-less template, so no default is needed."
+			}
 		}
 	],
 

@@ -29,6 +29,14 @@ type definitionJsonDto struct {
 	IsStored   *bool        `json:"is_stored"`
 	Field      string       `json:"field"`
 	Expression *exprJsonDto `json:"expression"`
+
+	// SQL-compiled kinds (aggregate / exists / lookup); see schema_parse_sql.go.
+	Source   string           `json:"source"`
+	Function string           `json:"function"`
+	Filter   json.RawMessage  `json:"filter"`
+	OrderBy  []orderByJsonDto `json:"order_by"`
+	Context  []string         `json:"context"`
+	Default  json.RawMessage  `json:"default"`
 }
 
 type exprJsonDto struct {
@@ -80,6 +88,12 @@ func parseDefinitionRoot(dto *definitionJsonDto, fieldName string) (Expr, error)
 		}
 		expr, err := parseExprDto(dto.Expression)
 		return expr, errors.Wrapf(err, "computed field %q", fieldName)
+	case ComputeAggregate:
+		return parseAggregateJson(dto, fieldName)
+	case ComputeExists:
+		return parseExistsJson(dto, fieldName)
+	case ComputeLookup:
+		return parseLookupJson(dto, fieldName)
 	}
 	return nil, errors.Errorf("computed field %q has unsupported kind %q", fieldName, dto.Kind)
 }

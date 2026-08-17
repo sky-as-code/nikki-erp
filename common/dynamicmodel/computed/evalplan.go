@@ -58,12 +58,17 @@ func BuildEvalPlan(schemaName string, requested []string) (*EvalPlan, ft.ClientE
 }
 
 // wantedFields intersects the request with the schema's computed fields and closes over their
-// computed dependencies, keeping the schema plan's dependency-safe order.
+// computed dependencies, keeping the schema plan's dependency-safe order. The default field set
+// (no explicit projection) excludes SQL-computed fields AND anything depending on one: each
+// costs a correlated subquery, so that price is only ever paid by naming the field explicitly —
+// and an unnamed default projection cannot be augmented without narrowing it.
 func wantedFields(schemaPlan *SchemaPlan, requested []string) []string {
 	include := map[string]bool{}
 	if len(requested) == 0 {
 		for name := range schemaPlan.Fields {
-			include[name] = true
+			if !dependsOnSqlComputed(schemaPlan, name) {
+				include[name] = true
+			}
 		}
 	} else {
 		for _, name := range requested {
@@ -82,6 +87,19 @@ func wantedFields(schemaPlan *SchemaPlan, requested []string) []string {
 	return wanted
 }
 
+func dependsOnSqlComputed(schemaPlan *SchemaPlan, name string) bool {
+	fieldPlan := schemaPlan.Fields[name]
+	if fieldPlan.SqlSource != nil {
+		return true
+	}
+	for _, dep := range fieldPlan.ComputedDeps {
+		if dependsOnSqlComputed(schemaPlan, dep) {
+			return true
+		}
+	}
+	return false
+}
+
 func markWithDeps(schemaPlan *SchemaPlan, name string, include map[string]bool) {
 	if include[name] {
 		return
@@ -93,22 +111,32 @@ func markWithDeps(schemaPlan *SchemaPlan, name string, include map[string]bool) 
 }
 
 // missingOperands lists the physical operands of the wanted fields that the explicit projection
-// does not already carry. With no explicit projection every column comes back anyway.
+// does not already carry. With no explicit projection every column comes back anyway — except an
+// SQL-computed dependency, whose subquery only runs when its NAME is in the projection, so it is
+// appended regardless.
 func missingOperands(schemaPlan *SchemaPlan, wanted []string, requested []string) []string {
-	if len(requested) == 0 {
-		return nil
-	}
 	present := map[string]bool{}
 	for _, name := range requested {
 		present[name] = true
 	}
 	var extra []string
+	appendMissing := func(name string) {
+		if !present[name] {
+			present[name] = true
+			extra = append(extra, name)
+		}
+	}
 	for _, name := range wanted {
-		for _, operand := range schemaPlan.Fields[name].PhysicalOperands {
-			if !present[operand] {
-				present[operand] = true
-				extra = append(extra, operand)
-			}
+		fieldPlan := schemaPlan.Fields[name]
+		if fieldPlan.SqlSource != nil {
+			appendMissing(name)
+			continue
+		}
+		if len(requested) == 0 {
+			continue
+		}
+		for _, operand := range fieldPlan.PhysicalOperands {
+			appendMissing(operand)
 		}
 	}
 	return extra

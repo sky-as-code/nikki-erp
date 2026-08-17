@@ -75,6 +75,10 @@ type RepoSearchParam struct {
 	Graph    *dmodel.SearchGraph
 	Language *model.LanguageCode
 
+	// ComputedContext carries the request's whitelisted context values for SQL-computed
+	// fields; the query builder binds them into "${ctx.key}" filter references.
+	ComputedContext map[string]any
+
 	// IncludeArchived controls whether archived records take part in the search.
 	// It is tri-state on purpose:
 	//   - nil: no filtering at all. This is the legacy contract that every internal lookup
