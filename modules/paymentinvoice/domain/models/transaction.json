@@ -1,0 +1,136 @@
+{
+	"name": "paymentinvoice_transaction",
+	"label": "paymentinvoice_transaction.label",
+	"table_name": "paymentinvoice_transactions",
+	"should_build_db": true,
+	"record_label_field": "order_business_id",
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "order_id",
+			"label": "fields.order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order this attempt belongs to. An order has one payment transaction and one further transaction per refund, which is what makes the money actually moved reconstructable from the transactions alone."
+			}
+		},
+		{
+			"name": "order_business_id",
+			"label": "fields.order_business_id",
+			"data_type": { "type": "string", "min": 10, "max": 30 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order's quoted identifier, copied here at create time. Duplicated deliberately: reconciling against a gateway's statement is a lookup by this value, and it should not need a join."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["pending", "completed", "failed", "canceled"]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"no_update": true,
+			"description": {
+				"en-US": "System-managed. Advanced only by a gateway callback or by the watchdog's verdict."
+			}
+		},
+		{
+			"name": "amount",
+			"label": "fields.amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Amount of this attempt, in the order's currency. For a refund it is what that refund returned, not the order total."
+			}
+		},
+		{
+			"name": "currency_id",
+			"label": "fields.currency_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "payment_method_id",
+			"label": "fields.payment_method_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "transaction_type",
+			"label": "fields.transaction_type",
+			"data_type": { "type": "enum_string", "values": ["payment", "refund"] },
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "content",
+			"label": "fields.content",
+			"data_type": { "type": "string", "min": 0, "max": 500 }
+		},
+		{
+			"name": "ref_transaction_id",
+			"label": "fields.ref_transaction_id",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"no_update": true,
+			"description": {
+				"en-US": "The gateway's own identifier for this attempt. It is what a refund is filed against and what reconciliation matches on, and each gateway calls it something different."
+			}
+		},
+		{
+			"name": "ref_payload",
+			"label": "fields.ref_payload",
+			"data_type": "jsonmap",
+			"no_update": true,
+			"description": {
+				"en-US": "The gateway's response or callback body, kept verbatim as the evidence for this attempt."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "payinv_trans_order_id", "fields": ["order_id"] },
+		{ "index_name": "payinv_trans_order_biz_id", "fields": ["order_business_id"] },
+		{ "index_name": "payinv_trans_ref_tran_id", "fields": ["ref_transaction_id"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "order",
+			"label": { "en-US": "Order" },
+			"type": "many:one",
+			"dest_schema": "paymentinvoice_order",
+			"key_map": { "order_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "payment_method",
+			"label": { "en-US": "Payment method" },
+			"type": "many:one",
+			"dest_schema": "paymentinvoice_payment_method",
+			"key_map": { "payment_method_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

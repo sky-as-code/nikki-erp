@@ -13,9 +13,13 @@ import (
 
 // EngineSchemaNames drives both engine creation and REST route registration, so a drift
 // between it and the registered schemas silently unserves a resource.
-func TestEngineSchemaNamesCoverBothUomResources(t *testing.T) {
+func TestEngineSchemaNamesCoverEveryResource(t *testing.T) {
 	assert.ElementsMatch(t,
-		[]string{models.UomCatSchemaName, models.UomSchemaName},
+		[]string{
+			models.CurrencySchemaName,
+			models.UomCatSchemaName,
+			models.UomSchemaName,
+		},
 		EngineSchemaNames())
 }
 

@@ -34,6 +34,7 @@ type engineSpec struct {
 // engineSpecs lists the resources Essential serves through the dynamic resource engine,
 // each with the field set its listing UI needs.
 var engineSpecs = []engineSpec{
+	currencyEngineSpec(),
 	uomCatEngineSpec(),
 	uomEngineSpec(),
 }

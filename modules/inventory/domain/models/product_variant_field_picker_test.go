@@ -32,6 +32,14 @@ func finalizedVariantSchema(t *testing.T) *dmodel.ModelSchema {
 			dmodel.RegisterSchemaB(BrandSchemaBuilder()),
 			dmodel.RegisterSchemaB(ProductTemplateSchemaBuilder()),
 			dmodel.RegisterSchemaB(ProductVariantSchemaBuilder()),
+			// The variant's stock aggregates resolve through its `quants` inverse edge, so the
+			// quant must be present for FinalizeRelations to reach it — and finalize resolves
+			// every edge of every registered schema, not just the ones under test, so the
+			// quant's own peers (and the location's) come along too.
+			dmodel.RegisterSchemaB(StorageCategorySchemaBuilder()),
+			dmodel.RegisterSchemaB(WarehouseSchemaBuilder()),
+			dmodel.RegisterSchemaB(InventoryLocationSchemaBuilder()),
+			dmodel.RegisterSchemaB(StockQuantSchemaBuilder()),
 		))
 	}
 	require.NoError(t, registry.FinalizeRelations())

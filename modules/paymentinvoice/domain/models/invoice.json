@@ -1,0 +1,142 @@
+{
+	"name": "paymentinvoice_invoice",
+	"label": "paymentinvoice_invoice.label",
+	"table_name": "paymentinvoice_invoices",
+	"should_build_db": true,
+	"record_label_field": "number",
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "number",
+			"label": "fields.number",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"unique": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The invoice number, in the form INV-{year}-{sequence}. Absent while the invoice is a draft and assigned by the issue action, because a number handed out before issue would leave a gap in the sequence if the draft were abandoned."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "issued", "paid", "void"]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"no_update": true,
+			"description": {
+				"en-US": "System-managed. A draft becomes issued only through the issue action, which is what guarantees an issued invoice has a number and totals that match its lines."
+			}
+		},
+		{
+			"name": "order_id",
+			"label": "fields.order_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The payment order being accounted for, when there is one. Optional because an invoice may be raised for a sale settled outside these gateways."
+			}
+		},
+		{
+			"name": "partner_name",
+			"label": "fields.partner_name",
+			"data_type": { "type": "string", "min": 1, "max": 300 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Who the invoice is made out to. Copied onto the invoice rather than referenced, so that a later change to a customer record cannot alter an invoice already issued."
+			}
+		},
+		{
+			"name": "partner_tax_code",
+			"label": "fields.partner_tax_code",
+			"data_type": { "type": "string", "min": 0, "max": 50 }
+		},
+		{
+			"name": "partner_address",
+			"label": "fields.partner_address",
+			"data_type": { "type": "string", "min": 0, "max": 500 }
+		},
+		{
+			"name": "currency_id",
+			"label": "fields.currency_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The currency this invoice is denominated in, from Essential's currency master."
+			}
+		},
+		{
+			"name": "subtotal_amount",
+			"label": "fields.subtotal_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "Sum of the lines before tax. System-managed: recomputed from the lines on issue, never accepted from a client, so that the total cannot disagree with what it totals."
+			}
+		},
+		{
+			"name": "tax_amount",
+			"label": "fields.tax_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"no_update": true
+		},
+		{
+			"name": "total_amount",
+			"label": "fields.total_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"no_update": true
+		},
+		{
+			"name": "issued_at",
+			"label": "fields.issued_at",
+			"data_type": "datetime",
+			"no_update": true,
+			"description": {
+				"en-US": "When the invoice was issued. Stamped by the issue action and absent on a draft."
+			}
+		},
+		{
+			"name": "note",
+			"label": "fields.note",
+			"data_type": { "type": "string", "min": 0, "max": 2000 }
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "payinv_invoices_status", "fields": ["status"] },
+		{ "index_name": "payinv_invoices_order_id", "fields": ["order_id"] },
+		{ "index_name": "payinv_invoices_issued_at", "fields": ["issued_at"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "order",
+			"label": { "en-US": "Payment order" },
+			"type": "many:one",
+			"dest_schema": "paymentinvoice_order",
+			"key_map": { "order_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

@@ -1,3 +1,21 @@
+-- Create "essential_currencies" table
+CREATE TABLE "essential_currencies" (
+  "id" character varying NOT NULL,
+  "code" character varying NOT NULL,
+  "numeric_code" character varying NULL,
+  "name" jsonb NOT NULL,
+  "symbol" character varying NULL,
+  "decimal_places" integer NOT NULL,
+  "is_active" boolean NOT NULL,
+  "is_archived" boolean NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "essent_currencies_code_ukey" UNIQUE ("code")
+);
+-- Create index "essent_currencies_is_active_idx" to table: "essential_currencies"
+CREATE INDEX "essent_currencies_is_active_idx" ON "essential_currencies" ("is_active");
 -- Create "essential_enums" table
 CREATE TABLE "essential_enums" (
   "id" character varying NOT NULL,
