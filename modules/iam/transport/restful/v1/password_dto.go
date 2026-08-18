@@ -43,12 +43,17 @@ type CreateTempPasswordRequest = it.CreatePasswordTempCommand
 type CreateTempPasswordResponse struct {
 	CreatedAt string `json:"created_at"`
 	ExpiredAt string `json:"expired_at"`
+
+	// Present only for callers holding `manage_credentials` on iam_user. The
+	// omitempty matters: everyone else must see no password key at all.
+	Password *string `json:"password,omitempty"`
 }
 
 func NewCreateTempPasswordResponse(data it.CreatePasswordTempResultData) CreateTempPasswordResponse {
 	response := CreateTempPasswordResponse{
 		CreatedAt: data.CreatedAt.String(),
 		ExpiredAt: data.ExpiresAt.String(),
+		Password:  data.Password,
 	}
 	return response
 }

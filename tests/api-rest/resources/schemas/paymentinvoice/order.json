@@ -1,0 +1,78 @@
+{
+    "type": "object",
+    "required": [
+        "id", "created_at", "order_id", "order_code", "source", "status",
+        "amount", "refund_amount", "currency_id", "payment_method_id", "org_id", "etag"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "order_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "order_code": {
+            "type": "string",
+            "minLength": 1
+        },
+        "source": {
+            "type": "string",
+            "minLength": 1
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "pending", "processing", "payment_success", "payment_failed",
+                "canceled", "refund_success", "refund_failed", "expired"
+            ]
+        },
+        "amount": {
+            "type": ["string", "number"]
+        },
+        "refund_amount": {
+            "type": ["string", "number"]
+        },
+        "currency_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "payment_method_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "content": {
+            "type": ["string", "null"]
+        },
+        "return_url": {
+            "type": ["string", "null"]
+        },
+        "last_sync_status": {
+            "type": ["string", "null"]
+        },
+        "sync_logs": {
+            "type": ["object", "null"]
+        },
+        "metadata": {
+            "type": ["object", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        }
+    },
+    "additionalProperties": false
+}

@@ -1,41 +1,102 @@
 package services
 
 import (
+	"go.bryk.io/pkg/errors"
+
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
+	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
-	it "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/purchaseorder"
 )
 
-func NewPurchaseOrderDomainServiceImpl(repo it.PurchaseOrderRepository) it.PurchaseOrderDomainService {
-	return &PurchaseOrderDomainServiceImpl{repo: repo}
+// NewPurchaseOrderDomainService derives the order service from the engine's default one.
+//
+// The lifecycle operations — confirm, approve, cancel and the rest — live on this type and nowhere
+// else, which is why the module must install it: the action callbacks reach them by type-asserting
+// the engine's service, and without this every one of them fails at the assertion.
+func NewPurchaseOrderDomainService(
+	base drif.DynamicResourceService, references *OrderReferenceValidator,
+) *PurchaseOrderDomainServiceImpl {
+	return &PurchaseOrderDomainServiceImpl{DynamicResourceService: base, references: references}
 }
 
-type PurchaseOrderDomainServiceImpl struct{ repo it.PurchaseOrderRepository }
+type PurchaseOrderDomainServiceImpl struct {
+	drif.DynamicResourceService
 
-func (this *PurchaseOrderDomainServiceImpl) CreatePurchaseOrder(ctx corectx.Context, cmd it.CreatePurchaseOrderCommand) (*it.CreatePurchaseOrderResult, error) {
-	return corecrud.Create(ctx, corecrud.CreateParam[models.PurchaseOrder, *models.PurchaseOrder]{
-		Action: "create purchase order", BaseRepoGetter: this.repo, Data: cmd,
-	})
+	// references validates the vendor and currency and defaults the currency from the vendor. It
+	// is nil in tests that exercise only the lifecycle rules, which need no ports.
+	references *OrderReferenceValidator
 }
-func (this *PurchaseOrderDomainServiceImpl) DeletePurchaseOrder(ctx corectx.Context, cmd it.DeletePurchaseOrderCommand) (*it.DeletePurchaseOrderResult, error) {
-	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{Action: "delete purchase order", DbRepoGetter: this.repo, Cmd: dyn.DeleteOneCommand(cmd)})
+
+var _ drif.DynamicResourceService = (*PurchaseOrderDomainServiceImpl)(nil)
+
+// Create stamps the fields a client may not choose.
+//
+// Five things happen that a plain CRUD create would not:
+//
+//   - The code is generated. It identifies the order on paperwork and to the vendor, so letting a
+//     client pick it would let two orders collide, or one impersonate another's reference.
+//   - The status is forced to RFQ. An order that could be created `purchase_order` would be a
+//     commitment with no confirmation behind it, and one created `cancelled` would be a document
+//     that never existed. Every order starts as a request for quotation and earns the rest.
+//   - The three totals are zeroed. They are a summary of lines that do not exist yet.
+//   - is_locked and vendor_acknowledged start false: both are things that happen TO an order later,
+//     and neither is true of one that has just been typed in.
+//   - approval_required starts false. Whether approval is needed is decided at confirm time
+//     against the org's configuration and the order's total, neither of which is knowable now.
+//
+// Client values for these are overwritten rather than rejected: they are not part of the request's
+// meaning, and a client echoing a record back should not fail for carrying them.
+func (this *PurchaseOrderDomainServiceImpl) Create(
+	ctx corectx.Context, params dmodel.DynamicFields,
+) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	code, err := generateOrderCode()
+	if err != nil {
+		return nil, err
+	}
+
+	prepared := make(dmodel.DynamicFields, len(params)+7)
+	for key, value := range params {
+		prepared[key] = value
+	}
+
+	prepared[models.PurchaseOrderFieldCode] = code
+	prepared[models.PurchaseOrderFieldStatus] = string(models.PurchaseOrderStatusRfq)
+	prepared[models.PurchaseOrderFieldIsLocked] = false
+	prepared[models.PurchaseOrderFieldVendorAcknowledged] = false
+	prepared[models.PurchaseOrderFieldApprovalRequired] = false
+	StampOrderTotalsForCreate(prepared)
+
+	if this.references != nil {
+		vErrs := ft.NewClientErrors()
+		if err := this.references.PrepareOrder(ctx, prepared, vErrs); err != nil {
+			return nil, err
+		}
+		if vErrs.Count() > 0 {
+			return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
+		}
+	}
+
+	return this.DynamicResourceService.Create(ctx, prepared)
 }
-func (this *PurchaseOrderDomainServiceImpl) PurchaseOrderExists(ctx corectx.Context, query it.PurchaseOrderExistsQuery) (*it.PurchaseOrderExistsResult, error) {
-	return corecrud.Exists(ctx, corecrud.ExistsParam{Action: "check if purchase orders exist", DbRepoGetter: this.repo, Query: dyn.ExistsQuery(query)})
-}
-func (this *PurchaseOrderDomainServiceImpl) GetPurchaseOrder(ctx corectx.Context, query it.GetPurchaseOrderQuery) (*it.GetPurchaseOrderResult, error) {
-	return corecrud.GetOne[models.PurchaseOrder](ctx, corecrud.GetOneParam{Action: "get purchase order", DbRepoGetter: this.repo, Query: dyn.GetOneQuery(query)})
-}
-func (this *PurchaseOrderDomainServiceImpl) SearchPurchaseOrders(ctx corectx.Context, query it.SearchPurchaseOrdersQuery) (*it.SearchPurchaseOrdersResult, error) {
-	return corecrud.Search[models.PurchaseOrder](ctx, corecrud.SearchParam{Action: "search purchase orders", DbRepoGetter: this.repo, Query: dyn.SearchQuery(query)})
-}
-func (this *PurchaseOrderDomainServiceImpl) SetPurchaseOrderIsArchived(ctx corectx.Context, cmd it.SetPurchaseOrderIsArchivedCommand) (*it.SetPurchaseOrderIsArchivedResult, error) {
-	return corecrud.SetIsArchived(ctx, this.repo, dyn.SetIsArchivedCommand(cmd))
-}
-func (this *PurchaseOrderDomainServiceImpl) UpdatePurchaseOrder(ctx corectx.Context, cmd it.UpdatePurchaseOrderCommand) (*it.UpdatePurchaseOrderResult, error) {
-	return corecrud.Update(ctx, corecrud.UpdateParam[models.PurchaseOrder, *models.PurchaseOrder]{
-		Action: "update purchase order", DbRepoGetter: this.repo, Data: cmd,
-	})
+
+// generateOrderCode mints the order's human-facing reference.
+//
+// The prefix is "PO" for every order regardless of status, and deliberately so: an RFQ and the
+// purchase order it becomes are one record, so a code that encoded the status would have to change
+// when the status did — and the vendor is holding a document quoting the old one. See PUR-R1.
+//
+// The suffix is a ULID rather than a per-org counter. A counter needs a sequence or a locked
+// read-modify-write to stay gap-free under concurrency, and BR 25's numbering scheme is not in
+// this phase; a ULID is unique without coordination and still sorts by creation time.
+func generateOrderCode() (string, error) {
+	id, err := model.NewId()
+	if err != nil {
+		return "", errors.Wrap(err, "generateOrderCode")
+	}
+	return "PO-" + *id, nil
 }

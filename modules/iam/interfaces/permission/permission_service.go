@@ -14,4 +14,7 @@ type PermissionDomainService interface {
 type PermissionAppService interface {
 	IsAuthorized(ctx corectx.Context, query IsAuthorizedQuery) (*IsAuthorizedResult, error)
 	GetUserEntitlements(ctx corectx.Context, query GetUserEntitlementsQuery) (*GetUserEntitlementsResult, error)
+	// TestMyPermissions answers whether the CALLER is granted the expression, and
+	// when they are, which grant paths answer for it.
+	TestMyPermissions(ctx corectx.Context, query TestMyPermissionsQuery) (*TestMyPermissionsResult, error)
 }

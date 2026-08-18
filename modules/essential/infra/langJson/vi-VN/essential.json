@@ -1,4 +1,7 @@
 {
+	"currency.archived": "Tiền tệ này đã được lưu trữ và không thể dùng cho bản ghi mới",
+	"currency.not_active": "Tiền tệ này không còn được sử dụng và không thể chọn",
+	"currency.not_found": "Tiền tệ không tồn tại",
 	"essential_currency.label": "Tiền tệ",
 	"essential_uom.label": "Đơn vị tính",
 	"essential_uomcat.label": "Nhóm đơn vị tính",

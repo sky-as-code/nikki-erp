@@ -1,0 +1,96 @@
+{
+	"name": "contacts_vendor_profile",
+	"label": "contacts_vendor_profile.label",
+	"table_name": "contacts_vendor_profiles",
+	"should_build_db": true,
+	"record_label_field": "party_id",
+	"composite_uniques": [
+		{ "index_name": "contacts_vnd_profiles_tid_party_id", "fields": ["party_id", "org_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "party_id",
+			"label": "fields.party_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The contact this profile makes a vendor. One row per party per organization, which is what the unique index enforces — a second row would give one supplier two sets of payment terms with no way to say which applies. Immutable: moving a profile to a different party would silently reassign every purchase order that named the first."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["proposed", "active", "suspended", "blacklisted"]
+			},
+			"required_for_create": true,
+			"default_value": "proposed",
+			"description": {
+				"en-US": "How far the vendor has got through qualification. It is an ordinary field rather than a state machine in this phase: no transition here has side effects, so there is nothing for a domain action to protect. Only 'active' should be orderable from, and Purchase enforces that at order confirmation rather than the schema, because the rule belongs to Purchase."
+			}
+		},
+		{
+			"name": "status_reason",
+			"label": "fields.status_reason",
+			"data_type": { "type": "string", "min": 0, "max": 3000 },
+			"description": {
+				"en-US": "Why the vendor is suspended or blacklisted. Free text, because the reasons are not enumerable in advance and a wrong enum value is worse than a sentence someone can read."
+			}
+		},
+		{
+			"name": "default_currency_id",
+			"label": "fields.default_currency_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The currency this vendor normally invoices in, used to default a purchase order's currency. A plain id with no edge: the currency belongs to Essential, and a foreign key across a module boundary would make Contacts' schema depend on Essential's table. Validated by a port call instead."
+			}
+		},
+		{
+			"name": "payment_terms",
+			"label": "fields.payment_terms",
+			"data_type": { "type": "string", "min": 0, "max": 200 },
+			"description": {
+				"en-US": "The agreed terms, as text — 'Net 30', '50% deposit'. Deliberately not a structured due-date rule: there is no payment-terms master anywhere in the system yet, and inventing a half-model here would have to be migrated when a real one arrives."
+			}
+		},
+		{
+			"name": "lead_time_days",
+			"label": "fields.lead_time_days",
+			"data_type": { "type": "int32", "min": 0, "max": 3650 },
+			"description": {
+				"en-US": "How many days this vendor usually takes to deliver, used to default a purchase order's expected arrival. Capped at ten years, which is not a business rule so much as a guard against a typo becoming a delivery date centuries away."
+			}
+		},
+		{
+			"name": "note",
+			"label": "fields.note",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "contacts_vnd_profiles_tid_org_id", "fields": ["org_id"] },
+		{ "index_name": "contacts_vnd_profiles_tid_status", "fields": ["status"] }
+	],
+
+	"edges_to": [
+		{
+			"edge": "party",
+			"label": { "en-US": "Party" },
+			"type": "many:one",
+			"dest_schema": "contacts_party",
+			"key_map": { "party_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	]
+}

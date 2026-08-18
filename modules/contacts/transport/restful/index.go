@@ -4,37 +4,36 @@ import (
 	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	v1 "github.com/sky-as-code/nikki-erp/modules/contacts/transport/restful/v1"
+	"github.com/sky-as-code/nikki-erp/modules/contacts/dynamicengines"
+	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func InitRestfulHandlers() error {
-	deps.Register(
-		v1.NewPartyRest,
-		v1.NewRelationshipRest,
-		v1.NewCommChannelRest,
-	)
-	return deps.Invoke(func(route *echo.Group, partyRest *v1.PartyRest, relationshipRest *v1.RelationshipRest, commChannelRest *v1.CommChannelRest) {
-		v1 := route.Group("/v1/:org_id/contacts")
-		initV1(v1, partyRest, relationshipRest, commChannelRest)
+	return initContactsV1()
+}
+
+// initContactsV1 mounts the engine routes under /v1/contacts.
+//
+// This replaced a hand-written route table under "/v1/:org_id/contacts", where a party's channels
+// and relationships were nested paths ("/parties/:party_id/channels"). The engine addresses every
+// resource by its own schema name instead, so those nested lists became graph filters on party_id
+// and the organization moved from the path into a query parameter.
+func initContactsV1() error {
+	return deps.Invoke(func(route *echo.Group) error {
+		registerEngineRoutes(route.Group("/v1/contacts"))
+		return nil
 	})
 }
 
-func initV1(route *echo.Group, partyRest *v1.PartyRest, relationshipRest *v1.RelationshipRest, commChannelRest *v1.CommChannelRest) {
-	route.POST("/parties", partyRest.CreateParty)
-	route.DELETE("/parties/:id", partyRest.DeleteParty)
-	route.GET("/parties/:id", partyRest.GetParty)
-	route.GET("/parties", partyRest.SearchParties)
-	route.PUT("/parties/:id", partyRest.UpdateParty)
-
-	route.POST("/parties/:party_id/relationships", relationshipRest.CreateRelationship)
-	route.DELETE("/parties/:party_id/relationships/:id", relationshipRest.DeleteRelationship)
-	route.GET("/parties/:party_id/relationships/:id", relationshipRest.GetRelationship)
-	route.GET("/parties/:party_id/relationships", relationshipRest.SearchRelationships)
-	route.PUT("/parties/:party_id/relationships/:id", relationshipRest.UpdateRelationship)
-
-	route.POST("/parties/:party_id/channels", commChannelRest.CreateCommChannel)
-	route.DELETE("/parties/:party_id/channels/:id", commChannelRest.DeleteCommChannel)
-	route.GET("/parties/:party_id/channels/:id", commChannelRest.GetCommChannel)
-	route.GET("/parties/:party_id/channels", commChannelRest.SearchCommChannels)
-	route.PUT("/parties/:party_id/channels/:id", commChannelRest.UpdateCommChannel)
+// registerEngineRoutes exposes every Contacts resource engine over HTTP.
+// A missing engine is skipped, so that a build which drops one still starts.
+func registerEngineRoutes(routeV1 *echo.Group) {
+	for _, schemaName := range dynamicengines.EngineSchemaNames() {
+		engine, exists := dynamicresource.Registry().GetEngine(schemaName)
+		if !exists {
+			continue
+		}
+		engine.RestApi().RegisterRoutes(routeV1, m.SmokeAuthz())
+	}
 }

@@ -1,0 +1,72 @@
+{
+    "type": "object",
+    "required": [
+        "id", "created_at", "status", "partner_name", "currency_id",
+        "subtotal_amount", "tax_amount", "total_amount", "org_id", "etag", "is_archived"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "number": {
+            "type": ["string", "null"]
+        },
+        "status": {
+            "type": "string",
+            "enum": ["draft", "issued", "paid", "void"]
+        },
+        "order_id": {
+            "type": ["string", "null"]
+        },
+        "partner_name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "partner_tax_code": {
+            "type": ["string", "null"]
+        },
+        "partner_address": {
+            "type": ["string", "null"]
+        },
+        "currency_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "subtotal_amount": {
+            "type": ["string", "number"]
+        },
+        "tax_amount": {
+            "type": ["string", "number"]
+        },
+        "total_amount": {
+            "type": ["string", "number"]
+        },
+        "issued_at": {
+            "type": ["string", "null"]
+        },
+        "note": {
+            "type": ["string", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        }
+    },
+    "additionalProperties": false
+}

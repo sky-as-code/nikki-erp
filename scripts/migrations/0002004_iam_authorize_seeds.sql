@@ -67,6 +67,7 @@ BEGIN
 		('01JWNZ3XVWDP73JGHRRBFAHQYJ', 'Read', 'read', NULL, '01JWNYQ2A04PPV4135QGXX7W0M', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01KNV107H943VH4YJ2PFCQXH01', 'Set archived status', 'set_archived', NULL, '01JWNYQ2A04PPV4135QGXX7W0M', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01KNRA5MGRAS5GNXKW3VBQZ001', 'Manage role assignments', 'manage_role_assignments', 'Assign or remove roles of a user', '01JWNYQ2A04PPV4135QGXX7W0M', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KNVA5MGRAS5GNXKW3VBQZ777', 'Manage credentials', 'manage_credentials', 'Issue a temporary password and read it back, for account recovery', '01JWNYQ2A04PPV4135QGXX7W0M', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- IdentityGroup
 		('01JWNZ4QY0ECRHAKR0ERQW97HW', 'Create', 'create', NULL, '01JWNYQNN68RKN62TNG5K0CPCE', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWNZ4V0ZDTEEMZPRZF6282SP', 'Delete', 'delete', NULL, '01JWNYQNN68RKN62TNG5K0CPCE', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),

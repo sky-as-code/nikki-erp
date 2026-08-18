@@ -1,0 +1,73 @@
+{
+	"name": "purchase_audit_event",
+	"label": "purchase_audit_event.label",
+	"table_name": "purchase_audit_events",
+	"should_build_db": true,
+	"record_label_field": "action",
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "entity_type",
+			"label": "fields.entity_type",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The schema name of the record this event is about: purchase_order or purchase_agreement. A plain string rather than an enum, because a new auditable resource must not require a schema migration to be recordable."
+			}
+		},
+		{
+			"name": "entity_id",
+			"label": "fields.entity_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The record the event is about. No foreign key: an audit event must outlive the record it describes, and a cascade would delete exactly the history someone is auditing."
+			}
+		},
+		{
+			"name": "action",
+			"label": "fields.action",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true
+		},
+		{
+			"name": "actor_id",
+			"label": "fields.actor_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Who did it. Optional because a transition may be made by a scheduled job rather than a person, and recording a fake user id would be worse than recording none."
+			}
+		},
+		{
+			"name": "from_status",
+			"label": "fields.from_status",
+			"data_type": { "type": "string", "min": 0, "max": 50 }
+		},
+		{
+			"name": "to_status",
+			"label": "fields.to_status",
+			"data_type": { "type": "string", "min": 0, "max": 50 }
+		},
+		{
+			"name": "reason",
+			"label": "fields.reason",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "metadata",
+			"label": "fields.metadata",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "Whatever else the action needs recorded — the merged order ids, the alternatives cancelled. Free-form on purpose: pinning a column per action would make every new action a migration."
+			}
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "purch_audit_evts_tid_entity", "fields": ["entity_type", "entity_id"] },
+		{ "index_name": "purch_audit_evts_tid_org_id", "fields": ["org_id"] }
+	],
+
+	"extend_after": ["core.basemodel.auditable_readonly_model"]
+}

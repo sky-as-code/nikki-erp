@@ -1,0 +1,47 @@
+{
+	"name": "purchase_configuration",
+	"label": "purchase_configuration.label",
+	"table_name": "purchase_configurations",
+	"should_build_db": true,
+	"record_label_field": "approval_mode",
+	"composite_uniques": [
+		{ "index_name": "purch_configs_tid_org_id", "fields": ["org_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "approval_mode",
+			"label": "fields.approval_mode",
+			"data_type": { "type": "enum_string", "values": ["one_step", "two_step"] },
+			"required_for_create": true,
+			"default_value": "one_step",
+			"description": {
+				"en-US": "Whether confirming an order sends it straight to PURCHASE_ORDER (one_step) or through TO_APPROVE first (two_step). One row per organization, which is what the unique index enforces: two rows would make 'does this order need approval?' depend on which was read (BR 47.1)."
+			}
+		},
+		{
+			"name": "approval_threshold",
+			"label": "fields.approval_threshold",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": {
+				"en-US": "The order total at or above which approval is required. Meaningful only when approval_mode is two_step, so it is optional rather than defaulted: a zero would read as 'approve everything', which is a different policy from 'no threshold set' (BR 47.2)."
+			}
+		},
+		{
+			"name": "po_modification_policy",
+			"label": "fields.po_modification_policy",
+			"data_type": { "type": "enum_string", "values": ["allow_edit", "auto_lock"] },
+			"required_for_create": true,
+			"default_value": "allow_edit",
+			"description": {
+				"en-US": "What happens to an order when it is confirmed: stay editable, or lock automatically. auto_lock sets is_locked at confirmation, which is why lock is a boolean on the order and not a status (BR 47.3)."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

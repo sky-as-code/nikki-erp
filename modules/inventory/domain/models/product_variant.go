@@ -87,6 +87,7 @@ const (
 	ProductVariantFieldTemplateProductTypeId       = "template_product_type_id"
 	ProductVariantFieldTemplateStatus              = "template_status"
 	ProductVariantFieldTemplateSaleOk              = "template_sale_ok"
+	ProductVariantFieldTemplatePurchaseOk          = "template_purchase_ok"
 
 	ProductVariantEdgeTemplate = "template"
 

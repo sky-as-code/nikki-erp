@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"math"
+	"time"
 
 	"go.uber.org/dig"
 
@@ -13,6 +14,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
+	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
@@ -67,7 +69,12 @@ func (this *PermissionDomainServiceImpl) IsAuthorized(
 
 	resUser, err := this.userRepo.GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: filter,
-		Fields: []string{domain.UserFieldId, domain.UserFieldIsOwner, domain.UserFieldStatus, basemodel.FieldIsArchived},
+		Fields: []string{
+			domain.UserFieldId, domain.UserFieldIsOwner, domain.UserFieldStatus, basemodel.FieldIsArchived,
+			domain.UserFieldOrgUnitId,
+			fmt.Sprintf("%s.%s", domain.UserEdgeOrgUnit, domain.OrgUnitFieldOrgId),
+			fmt.Sprintf("%s.%s", domain.UserEdgeOrgs, domain.OrgFieldId),
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -97,6 +104,15 @@ func (this *PermissionDomainServiceImpl) IsAuthorized(
 		ActionCode:   query.ActionCode,
 		Scope:        query.Scope,
 		ScopeId:      query.ScopeId,
+		// The subject's own memberships, not the calling module's: this query
+		// answers "may THIS user do it", so the bare org/unit grants must be
+		// judged against the memberships of the user being asked about.
+		EvalContext: reguard.EvalContext{
+			UserOrgIds:   foundUser.GetOrgIds(),
+			OrgUnitId:    foundUser.GetOrgUnitId(),
+			OrgUnitOrgId: foundUser.GetOrgUnitOrgId(),
+		},
+		IsRecordOwnedByCaller: query.IsRecordOwnedByCaller,
 	})
 	if err != nil {
 		return nil, err
@@ -122,13 +138,25 @@ func (this *PermissionDomainServiceImpl) ListAllUserPermissions(
 	}
 	query = *sanitized.(*itPerm.ListAllUserPermissionsQuery)
 
-	graph := &dmodel.SearchGraph{}
+	userNode := dmodel.NewSearchNode()
 	if query.UserId != nil {
-		graph.NewCondition(models.UserPermFieldUserId, dmodel.Equals, *query.UserId)
+		userNode.NewCondition(models.UserPermFieldUserId, dmodel.Equals, *query.UserId)
 	}
 	if query.UserEmail != nil {
-		graph.NewCondition(fmt.Sprintf("%s.%s", models.UserPermEdgeUser, models.UserFieldEmail), dmodel.Equals, *query.UserEmail)
+		userNode.NewCondition(fmt.Sprintf("%s.%s", models.UserPermEdgeUser, models.UserFieldEmail), dmodel.Equals, *query.UserEmail)
 	}
+
+	// Expired grants must not reach the request context. They are filtered here
+	// rather than swept on a schedule, so expiry takes effect on the next request
+	// instead of on the next rebuild.
+	graph := dmodel.NewSearchGraph()
+	graph.And(
+		*userNode,
+		*dmodel.NewSearchNode().Or(
+			*dmodel.NewSearchNode().NewCondition(models.UserPermFieldExpiresAt, dmodel.IsNotSet),
+			*dmodel.NewSearchNode().NewCondition(models.UserPermFieldExpiresAt, dmodel.GreaterThan, time.Now()),
+		),
+	)
 
 	result, err := baserepo.Search[models.UserPermission](ctx, this.permissionRepo.GetBaseRepo(), dyn.RepoSearchParam{
 		Graph:  graph,

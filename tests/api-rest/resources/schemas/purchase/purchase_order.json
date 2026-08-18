@@ -1,0 +1,36 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "code", "status", "vendor_id", "buyer_id", "etag", "org_id"],
+    "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "created_at": { "type": "string", "minLength": 20 },
+        "updated_at": { "type": "string", "minLength": 20 },
+        "code": { "type": "string", "minLength": 1 },
+        "status": {
+            "type": "string",
+            "enum": ["rfq", "rfq_sent", "to_approve", "purchase_order", "cancelled"]
+        },
+        "vendor_id": { "type": "string", "minLength": 1 },
+        "vendor_reference": { "type": ["string", "null"] },
+        "source_reference": { "type": ["string", "null"] },
+        "buyer_id": { "type": "string", "minLength": 1 },
+        "currency_id": { "type": ["string", "null"] },
+        "order_deadline": { "type": ["string", "null"] },
+        "expected_arrival": { "type": ["string", "null"] },
+        "confirmed_at": { "type": ["string", "null"] },
+        "agreement_id": { "type": ["string", "null"] },
+        "sourcing_group_id": { "type": ["string", "null"] },
+        "priority": { "type": "string", "enum": ["normal", "urgent"] },
+        "terms_conditions": { "type": ["string", "null"] },
+        "is_locked": { "type": "boolean" },
+        "vendor_acknowledged": { "type": "boolean" },
+        "untaxed_amount": { "type": ["string", "number"] },
+        "tax_amount": { "type": ["string", "number"] },
+        "total_amount": { "type": ["string", "number"] },
+        "approval_required": { "type": "boolean" },
+        "approved_by": { "type": ["string", "null"] },
+        "approved_at": { "type": ["string", "null"] },
+        "etag": { "type": "string", "minLength": 1 },
+        "org_id": { "type": "string", "minLength": 1 }
+    }
+}

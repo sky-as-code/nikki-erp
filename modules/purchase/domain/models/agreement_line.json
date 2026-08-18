@@ -1,0 +1,93 @@
+{
+	"name": "purchase_agreement_line",
+	"label": "purchase_agreement_line.label",
+	"table_name": "purchase_agreement_lines",
+	"should_build_db": true,
+	"record_label_field": "description",
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "purchase_agreement_id",
+			"label": "fields.purchase_agreement_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The agreement this line belongs to. Immutable: moving a line to another agreement would silently transfer whatever has already been ordered against it."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 100000 },
+			"required_for_create": true,
+			"default_value": 0,
+			"description": {
+				"en-US": "Display order within the agreement."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The transactable product this line commits to. The variant, not the template: the variant is what a price and a quantity attach to. A plain ulid — the product belongs to Inventory. Validated through a port, which also checks the parent template is marked purchasable."
+			}
+		},
+		{
+			"name": "uom_id",
+			"label": "fields.uom_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The unit the agreed quantity and price are expressed in. A plain ulid — the unit belongs to Essential, which also owns the conversion factors."
+			}
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The quantity committed to over the life of the agreement. What has actually been ordered against it is derived by counting confirmed orders, never stored here: a stored running total would need invalidating from the order side and would be wrong whenever that failed (BR 41)."
+			}
+		},
+		{
+			"name": "unit_price",
+			"label": "fields.unit_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The agreed price per unit, which an order drawn against this agreement defaults to."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "purch_agr_lines_tid_agr_id_seq", "fields": ["purchase_agreement_id", "sequence"] },
+		{ "index_name": "purch_agr_lines_tid_pvar_id", "fields": ["product_variant_id"] }
+	],
+
+	"edges_to": [
+		{
+			"edge": "agreement",
+			"label": { "en-US": "Purchase Agreement" },
+			"type": "many:one",
+			"dest_schema": "purchase_agreement",
+			"key_map": { "purchase_agreement_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

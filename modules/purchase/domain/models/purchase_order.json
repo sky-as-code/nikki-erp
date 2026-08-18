@@ -1,0 +1,224 @@
+{
+	"name": "purchase_order",
+	"label": "purchase_order.label",
+	"table_name": "purchase_orders",
+	"should_build_db": true,
+	"record_label_field": "code",
+	"composite_uniques": [
+		{ "index_name": "purch_orders_tid_code_org_id", "fields": ["code", "org_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The human reference, unique within its organization. Immutable: it is quoted to the vendor on the RFQ and must still identify the same document after confirmation, because an RFQ and the order it becomes are one record (BR 5.1, 55.1)."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["rfq", "rfq_sent", "to_approve", "purchase_order", "cancelled"]
+			},
+			"required_for_create": true,
+			"default_value": "rfq",
+			"no_update": true,
+			"description": {
+				"en-US": "The business lifecycle, and nothing else. It carries no received, billed or paid value: those belong to Inventory and to Payment, and mirroring them here would let this copy disagree with the module that owns the fact (BR 6, 55.2-55.5). Written only by the lifecycle actions, never by a plain update, so no transition can happen without its audit event (PUR-R3, PUR-R6)."
+			}
+		},
+		{
+			"name": "vendor_id",
+			"label": "fields.vendor_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The supplier. A plain ulid with no edge: the party belongs to Contacts, and a foreign key across a module boundary would make Purchase's schema depend on Contacts' table. Validated through a port, which checks the party has an active vendor profile rather than merely existing."
+			}
+		},
+		{
+			"name": "vendor_reference",
+			"label": "fields.vendor_reference",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The vendor's own number for this order, as quoted back by them."
+			}
+		},
+		{
+			"name": "source_reference",
+			"label": "fields.source_reference",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Where the order came from, when it was raised on behalf of something else."
+			}
+		},
+		{
+			"name": "buyer_id",
+			"label": "fields.buyer_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "currency_id",
+			"label": "fields.currency_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "What every amount on this order is denominated in. A plain ulid: the currency belongs to Essential. There is no exchange-rate model, so one order is in one currency and the totals never cross currencies; the currency's decimal_places is what the computed totals are rounded to."
+			}
+		},
+		{
+			"name": "order_deadline",
+			"label": "fields.order_deadline",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the quotation must be answered by."
+			}
+		},
+		{
+			"name": "expected_arrival",
+			"label": "fields.expected_arrival",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the goods are expected. Defaulted from the vendor's lead time at confirmation when it is not stated."
+			}
+		},
+		{
+			"name": "confirmed_at",
+			"label": "fields.confirmed_at",
+			"data_type": "datetime",
+			"no_update": true,
+			"description": {
+				"en-US": "When the order was confirmed. Written by the confirm action alone: it is the evidence that a commitment was made at a particular moment, so a client that could set it could backdate a purchase."
+			}
+		},
+		{
+			"name": "agreement_id",
+			"label": "fields.agreement_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The agreement this order draws against, when it does. Optional: most orders are one-off."
+			}
+		},
+		{
+			"name": "sourcing_group_id",
+			"label": "fields.sourcing_group_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Set when this order is one of several alternatives being compared for the same requirement. The group is a technical record with no business meaning of its own (BR 28)."
+			}
+		},
+		{
+			"name": "priority",
+			"label": "fields.priority",
+			"data_type": { "type": "enum_string", "values": ["normal", "urgent"] },
+			"required_for_create": true,
+			"default_value": "normal"
+		},
+		{
+			"name": "terms_conditions",
+			"label": "fields.terms_conditions",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "is_locked",
+			"label": "fields.is_locked",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"no_update": true,
+			"description": {
+				"en-US": "Whether the order is closed to editing. A boolean and NOT a status value: an order can be locked in more than one status, and folding it into status would multiply the states and lose the distinction between confirmed-and-editable and confirmed-and-locked (BR 7, 55.2). Written by the lock and unlock actions, and by confirm when the organization's policy is auto_lock."
+			}
+		},
+		{
+			"name": "vendor_acknowledged",
+			"label": "fields.vendor_acknowledged",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"no_update": true,
+			"description": {
+				"en-US": "Whether the vendor has confirmed receipt of the order. Written by the acknowledge action alone: it is a statement about what the counterparty did, so a buyer being able to set it would make it worthless as evidence (BR 22)."
+			}
+		},
+		{
+			"name": "untaxed_amount",
+			"label": "fields.untaxed_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "Sum of the lines before tax. System-computed and never accepted from a client, so that the total cannot disagree with what it totals: the lines are what a reader can verify, so the lines win (BR 10.2, 55.12)."
+			}
+		},
+		{
+			"name": "tax_amount",
+			"label": "fields.tax_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "Sum of the lines' tax. Each line's tax is supplied by the client rather than calculated: there is no tax engine in this system and the requirement forbids building one here, so the server sums what it is given."
+			}
+		},
+		{
+			"name": "total_amount",
+			"label": "fields.total_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "Untaxed plus tax. Stored rather than computed on read so that the approval threshold comparison and the total-range filter stay plain SQL instead of a per-row computation."
+			}
+		},
+		{
+			"name": "approval_required",
+			"label": "fields.approval_required",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"no_update": true,
+			"description": {
+				"en-US": "Whether this order needed approval, decided at confirmation from the organization's approval mode and threshold. Recorded rather than re-derived on read, because the policy may change afterwards and the question of whether this order needed approval when it was confirmed must keep its original answer."
+			}
+		},
+		{
+			"name": "approved_by",
+			"label": "fields.approved_by",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "Who approved it. Written by the approve action alone: a client that could set this could approve its own order."
+			}
+		},
+		{
+			"name": "approved_at",
+			"label": "fields.approved_at",
+			"data_type": "datetime",
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "purch_orders_tid_org_id_status", "fields": ["org_id", "status"] },
+		{ "index_name": "purch_orders_tid_vendor_id", "fields": ["vendor_id"] },
+		{ "index_name": "purch_orders_tid_agreement_id", "fields": ["agreement_id"] },
+		{ "index_name": "purch_orders_tid_srcgroup_id", "fields": ["sourcing_group_id"] },
+		{ "index_name": "purch_orders_tid_total_amount", "fields": ["total_amount"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

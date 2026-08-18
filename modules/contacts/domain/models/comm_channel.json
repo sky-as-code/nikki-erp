@@ -1,0 +1,72 @@
+{
+	"name": "contacts_comm_channel",
+	"label": "contacts_comm_channel.label",
+	"table_name": "contacts_comm_channels",
+	"should_build_db": true,
+	"record_label_field": "value",
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "note",
+			"label": "fields.note",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "party_id",
+			"label": "fields.party_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The contact this channel reaches. A channel has no meaning apart from its party, which is why the edge cascades on delete."
+			}
+		},
+		{
+			"name": "type",
+			"label": "fields.type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["phone", "zalo", "facebook", "email", "post"]
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "value",
+			"label": "fields.value",
+			"data_type": { "type": "string", "min": 0, "max": 255 },
+			"description": {
+				"en-US": "The address itself: the phone number, the email address, the account handle. Held as free text rather than as a typed email or phone field because the type column decides what it means, and a single typed column cannot be all five at once."
+			}
+		},
+		{
+			"name": "value_json",
+			"label": "fields.value_json",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "The structured form for channels that are not a single string — a postal address has a street, a city and a country. Only one of value and value_json is meaningful for a given type."
+			}
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "contacts_comm_chans_tid_party_id", "fields": ["party_id"] },
+		{ "index_name": "contacts_comm_chans_tid_org_id", "fields": ["org_id"] }
+	],
+
+	"edges_to": [
+		{
+			"edge": "party",
+			"label": { "en-US": "Party" },
+			"type": "many:one",
+			"dest_schema": "contacts_party",
+			"key_map": { "party_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	]
+}

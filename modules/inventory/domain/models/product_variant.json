@@ -181,6 +181,15 @@
 			"computed": { "kind": "related", "is_stored": false, "field": "template.sale_ok" }
 		},
 		{
+			"name": "template_purchase_ok",
+			"label": "fields.template_purchase_ok",
+			"data_type": "boolean",
+			"computed": { "kind": "related", "is_stored": false, "field": "template.purchase_ok" },
+			"description": {
+				"en-US": "Whether this product line may be bought, copied from the template. It sits on the template because 'we buy this product' is a decision about the product line rather than about one colour of it. Purchase reads it here so that validating a line costs one read instead of two (D4)."
+			}
+		},
+		{
 			"name": "on_hand_quantity",
 			"label": "fields.on_hand_quantity",
 			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },

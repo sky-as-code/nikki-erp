@@ -181,6 +181,7 @@
 	"fields.template_name": "Name",
 	"fields.template_product_type_id": "Product type",
 	"fields.template_purchase_description": "Purchase description",
+	"fields.template_purchase_ok": "Can be purchased",
 	"fields.template_sale_ok": "Can be sold",
 	"fields.template_sales_description": "Sales description",
 	"fields.template_short_name": "Short name",

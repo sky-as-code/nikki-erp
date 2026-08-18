@@ -1,0 +1,170 @@
+{
+	"name": "purchase_order_line",
+	"label": "purchase_order_line.label",
+	"table_name": "purchase_order_lines",
+	"should_build_db": true,
+	"record_label_field": "description",
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "purchase_order_id",
+			"label": "fields.purchase_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order this line belongs to. Immutable: moving a line between orders would change two orders' totals at once, and the one it left would keep a total it can no longer justify."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 100000 },
+			"required_for_create": true,
+			"default_value": 0,
+			"description": {
+				"en-US": "Display order within the order. It matters more here than on most documents because section and note lines organize the ones around them, and a reordered list would regroup them."
+			}
+		},
+		{
+			"name": "line_type",
+			"label": "fields.line_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["product", "section", "subsection", "note"]
+			},
+			"required_for_create": true,
+			"default_value": "product",
+			"description": {
+				"en-US": "Whether this line buys something or merely organizes the document. Only a product line carries a quantity and a price and contributes to the totals; section, subsection and note lines are layout. The fields a product line requires are enforced by the domain service rather than by required_for_create, because the schema cannot express a requirement conditional on another field."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "What is being bought. The variant, not the template: the variant is the transactable unit, while whether it may be purchased at all is a flag on its parent template. A plain ulid, since the product belongs to Inventory. Required for a product line, absent on the others."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 3000 },
+			"description": {
+				"en-US": "What appears on the printed order. For a section or note line this is the whole content of the line."
+			}
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "How much is being ordered, expressed in uom_id. This value and its unit are what the buyer chose, and neither is ever overwritten by a conversion (BR-UOM-PUR-004)."
+			}
+		},
+		{
+			"name": "uom_id",
+			"label": "fields.uom_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The unit the buyer is ordering in, which need not be the unit stock is counted in: a case of twelve is bought by the case and stocked by the unit. It must share a category with the product's inventory unit, which is checked through Essential's conversion port (BR-UOM-PUR-001, 009)."
+			}
+		},
+		{
+			"name": "inventory_quantity",
+			"label": "fields.inventory_quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "The same quantity converted into the product's inventory unit, so that a receipt does not have to re-derive it. Computed, never accepted from a client: a supplied value could disagree with the conversion and would then be believed by whatever books the goods in (BR-UOM-PUR-003)."
+			}
+		},
+		{
+			"name": "unit_price",
+			"label": "fields.unit_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Price per unit of uom_id, in the order's currency. Defaulted from the agreement line when the order draws against one."
+			}
+		},
+		{
+			"name": "discount_percent",
+			"label": "fields.discount_percent",
+			"data_type": { "type": "decimal", "min": "0", "max": "100", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "A percentage off this line, bounded at 100 because a discount that exceeds the price would make the vendor pay the buyer."
+			}
+		},
+		{
+			"name": "expected_arrival",
+			"label": "fields.expected_arrival",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this particular line is expected, which may differ from the order's date when one item is back-ordered."
+			}
+		},
+		{
+			"name": "subtotal",
+			"label": "fields.subtotal",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "Quantity times unit price, less the discount, before tax. Stored rather than computed on read so that the order's totals are a plain sum; recomputed by the domain service on every line write."
+			}
+		},
+		{
+			"name": "tax_amount",
+			"label": "fields.tax_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The tax on this line. Deliberately an input, not a calculation: there is no tax engine and the requirement forbids building one here, so the client states the tax and the server sums it. This is the one amount on a line that is not no_update."
+			}
+		},
+		{
+			"name": "total",
+			"label": "fields.total",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "Subtotal plus tax."
+			}
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "purch_ord_lines_tid_ord_id_seq", "fields": ["purchase_order_id", "sequence"] },
+		{ "index_name": "purch_ord_lines_tid_pvar_id", "fields": ["product_variant_id"] }
+	],
+
+	"edges_to": [
+		{
+			"edge": "order",
+			"label": { "en-US": "Purchase Order" },
+			"type": "many:one",
+			"dest_schema": "purchase_order",
+			"key_map": { "purchase_order_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

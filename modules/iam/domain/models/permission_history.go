@@ -156,6 +156,69 @@ func (this *PermissionHistory) SetFieldData(data dmodel.DynamicFields) {
 	this.modelData.SetFieldData(data)
 }
 
+func (this *PermissionHistory) SetId(v *model.Id) {
+	this.GetFieldData().SetModelId(basemodel.FieldId, v)
+}
+
+func (this PermissionHistory) GetId() *model.Id {
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
+}
+
+// SetCreatedAt stamps the row. The column is NOT NULL and the schema's generator
+// only runs on the validated CRUD path; the auditor inserts directly, so it sets
+// the timestamp itself.
+func (this *PermissionHistory) SetCreatedAt(v model.ModelDateTime) {
+	// Written as the underlying time value: the column is NOT NULL, and the
+	// schema's auto-generator only runs on the validated CRUD path, which the
+	// auditor bypasses by inserting directly.
+	this.GetFieldData()[basemodel.FieldCreatedAt] = v.GoTime()
+}
+
+func (this *PermissionHistory) SetEffect(v PermissionHistoryEffect) {
+	s := string(v)
+	this.GetFieldData().SetString(PermHistoryFieldEffect, &s)
+}
+
+func (this *PermissionHistory) SetReason(v PermissionHistoryReason) {
+	s := string(v)
+	this.GetFieldData().SetString(PermHistoryFieldReason, &s)
+}
+
+func (this *PermissionHistory) SetReceiverId(v *model.Id) {
+	this.GetFieldData().SetModelId(PermHistoryFieldReceiverId, v)
+}
+
+func (this *PermissionHistory) SetRoleId(v *model.Id) {
+	this.GetFieldData().SetModelId(PermHistoryFieldRoleId, v)
+}
+
+func (this *PermissionHistory) SetRoleName(v *string) {
+	this.GetFieldData().SetString(PermHistoryFieldRoleName, v)
+}
+
+func (this *PermissionHistory) SetEntitlementId(v *model.Id) {
+	this.GetFieldData().SetModelId(PermHistoryFieldEntitlementId, v)
+}
+
+func (this *PermissionHistory) SetEntitlementExpr(v *string) {
+	this.GetFieldData().SetString(PermHistoryFieldEntitlementExpr, v)
+}
+
+func (this *PermissionHistory) SetAssignmentId(v *model.Id) {
+	this.GetFieldData().SetModelId(PermHistoryFieldAssignmentId, v)
+}
+
+func (this *PermissionHistory) SetApproverId(v *model.Id) {
+	this.GetFieldData().SetModelId(PermHistoryFieldApproverId, v)
+}
+
+// Effects. A transition is either a grant or a revocation; there is no third kind,
+// which is what makes the trail answerable by counting.
+const (
+	PermissionHistoryEffectGrant  = PermissionHistoryEffect("grant")
+	PermissionHistoryEffectRevoke = PermissionHistoryEffect("revoke")
+)
+
 type PermissionHistoryEffect string
 
 type PermissionHistoryReason string

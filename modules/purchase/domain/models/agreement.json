@@ -1,0 +1,108 @@
+{
+	"name": "purchase_agreement",
+	"label": "purchase_agreement.label",
+	"table_name": "purchase_agreements",
+	"should_build_db": true,
+	"record_label_field": "code",
+	"composite_uniques": [
+		{ "index_name": "purch_agreements_tid_code_org_id", "fields": ["code", "org_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The human reference for this agreement, unique within its organization. Immutable: it is quoted to the vendor and cited on every order drawn against it, so changing it would strand those references."
+			}
+		},
+		{
+			"name": "reference",
+			"label": "fields.reference",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The vendor's own reference for the agreement, if they gave one."
+			}
+		},
+		{
+			"name": "agreement_type",
+			"label": "fields.agreement_type",
+			"data_type": { "type": "enum_string", "values": ["blanket_order", "purchase_template"] },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "A blanket order commits to quantities at agreed prices and tracks what has been drawn down; a purchase template is a reusable skeleton with no commitment. Immutable because the two are tracked differently and switching types would make the ordered quantities of the first meaningless (BR 32)."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": { "type": "enum_string", "values": ["draft", "confirmed", "closed", "cancelled"] },
+			"required_for_create": true,
+			"default_value": "draft",
+			"no_update": true,
+			"description": {
+				"en-US": "The business lifecycle. Written only by the confirm, close and cancel actions, never by a plain update, so that no transition can happen without its audit event (BR 33, PUR-R3, PUR-R6). Independent of is_archived: a closed agreement may be archived or not, and both combinations are meaningful (BR 34)."
+			}
+		},
+		{
+			"name": "vendor_id",
+			"label": "fields.vendor_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The supplier this agreement is with. Optional by type: a blanket order names one, a purchase template need not. A plain ulid with no edge — the party belongs to Contacts, and a foreign key across a module boundary would make Purchase's schema depend on Contacts' table. Validated through a port, which also checks the party has a vendor profile."
+			}
+		},
+		{
+			"name": "buyer_id",
+			"label": "fields.buyer_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The purchaser responsible. A plain ulid: the user belongs to IAM."
+			}
+		},
+		{
+			"name": "currency_id",
+			"label": "fields.currency_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "What the agreed prices are denominated in. A plain ulid: the currency belongs to Essential. There is no exchange-rate model, so one agreement is in one currency and its prices are never converted."
+			}
+		},
+		{
+			"name": "start_date",
+			"label": "fields.start_date",
+			"data_type": "date"
+		},
+		{
+			"name": "end_date",
+			"label": "fields.end_date",
+			"data_type": "date",
+			"description": {
+				"en-US": "When the agreement stops being drawable against. Not enforced by the schema — an expired agreement stays readable, and refusing a late order is the confirm action's decision, not a column's."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "purch_agreements_tid_org_id", "fields": ["org_id"] },
+		{ "index_name": "purch_agreements_tid_status", "fields": ["status"] },
+		{ "index_name": "purch_agreements_tid_vendor_id", "fields": ["vendor_id"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

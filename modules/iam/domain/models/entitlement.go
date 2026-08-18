@@ -93,7 +93,11 @@ func EntitlementSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Description(model.LangJson{"en-US": "If scope=org_unit, this field is required. "}).
 				NoUpdate(),
 		).
-		ExclusiveRequiredFields(EntitlementFieldOrgId, EntitlementFieldOrgUnitId).
+		// No ExclusiveRequiredFields here: it means "exactly one, always", which is
+		// only true for the org and orgunit scopes. Domain- and private-scoped
+		// entitlements carry neither id - as the seeded rows do - so the rule made
+		// them impossible to create through the API. Which id a scope requires is
+		// enforced in the domain service, where the scope is known.
 		// Field(
 		// 	dmodel.DefineField().Name(EntitlementFieldAttributeValue).
 		// 		DataType(dmodel.FieldDataTypeUlid()).
@@ -197,17 +201,32 @@ func NewEntitlementFrom(src dmodel.DynamicFields) *Entitlement {
 	return &Entitlement{basemodel.NewDynamicModel(src)}
 }
 
-func (this *Entitlement) CalculateExpression() string {
+// CalculateExpression derives and stores the entitlement's expression from the
+// action and resource **codes**.
+//
+// Codes, never ids: the runtime guard builds the expression it looks for from the
+// action/resource codes of the request, so an expression built from ULIDs can
+// never match one (plan defect D1). Both codes are declared NoUpdate precisely so
+// that this denormalization stays valid for the life of the row.
+//
+// A nil code means "all", i.e. the wildcard - that is how `*:iam_user:domain`
+// style grants are expressed.
+func (this *Entitlement) CalculateExpression(actionCode *string, resourceCode *string) string {
 	scope := this.GetScope()
+	// Scope is required, but validation runs after this: a request that omits it
+	// must come back as a "missing field" client error, not a nil dereference that
+	// the transport reports as a 500.
+	if scope == nil {
+		return ""
+	}
+
 	var scopeId *model.Id
-	if scope != nil && *scope == c.ResourceScopeOrgUnit {
+	if *scope == c.ResourceScopeOrgUnit {
 		scopeId = this.GetOrgUnitId()
-	} else if scope != nil {
+	} else {
 		scopeId = this.GetOrgId()
 	}
-	expr := EntitlementExpression(
-		this.GetActionId(), this.GetResourceId(), *this.GetScope(), scopeId,
-	)
+	expr := EntitlementExpression(actionCode, resourceCode, *scope, scopeId)
 	this.GetFieldData().SetString(EntitlementFieldExpression, &expr)
 	return expr
 }
@@ -244,6 +263,14 @@ func (this *Entitlement) SetScope(v *c.ResourceScope) {
 	}
 	s := string(*v)
 	this.GetFieldData().SetString(EntitlementFieldScope, &s)
+}
+
+func (this Entitlement) GetRoleId() *model.Id {
+	return this.GetFieldData().GetModelId(EntitlementFieldRoleId)
+}
+
+func (this *Entitlement) SetRoleId(v *model.Id) {
+	this.GetFieldData().SetModelId(EntitlementFieldRoleId, v)
 }
 
 func (this Entitlement) GetOrgId() *model.Id {

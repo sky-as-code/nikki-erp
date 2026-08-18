@@ -222,6 +222,20 @@ func (this *AttemptDomainServiceImpl) assertUserExists(
 		return nil, nil
 	}
 	user := userRes.Data
+	// Existence is not enough: a suspended or archived account must not be able to
+	// begin a sign-in attempt at all. Checking it only later, when the password is
+	// verified, still lets a disabled account probe for valid usernames and start
+	// attempts, and it is the same check the credential path already makes.
+	if status := user.GetStatus(); status == nil ||
+		(*status != models.UserStatusInvited && *status != models.UserStatusActive) {
+		cErrs.Append(*ft.NewBusinessViolation(
+			models.AttemptFieldUsername,
+			ft.ErrorKey("err_account_not_active", "iam"),
+			"Account not active.",
+		))
+		return nil, nil
+	}
+
 	return &attemptPrincipal{
 		Id:       *user.GetId(),
 		Name:     *user.GetDisplayName(),

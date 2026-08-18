@@ -1,0 +1,119 @@
+{
+	"name": "contacts_party",
+	"label": "contacts_party.label",
+	"table_name": "contacts_parties",
+	"should_build_db": true,
+	"record_label_field": "display_name",
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "avatar_url",
+			"label": "fields.avatar_url",
+			"data_type": "url"
+		},
+		{
+			"name": "display_name",
+			"label": "fields.display_name",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "What this contact is called in a list. It is the record label, so it is the one name a user sees when the party is referenced from somewhere else."
+			}
+		},
+		{
+			"name": "legal_name",
+			"label": "fields.legal_name",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The name on the contract or the invoice, which is frequently not the display name: 'Acme' in a list, 'Acme Trading Company Limited' on the paperwork."
+			}
+		},
+		{
+			"name": "legal_address",
+			"label": "fields.legal_address",
+			"data_type": { "type": "string", "min": 0, "max": 200 }
+		},
+		{
+			"name": "tax_id",
+			"label": "fields.tax_id",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The tax registration number. Indexed with org_id but deliberately NOT unique. It used to carry a global unique constraint, which was a multi-tenancy bug: the first organization to record a supplier locked every other organization in the deployment out of recording its own. Scoping that unique to the organization is not expressible here either — the framework's partial unique emits a companion 'IS NULL' index, which would allow only one party per organization to have no tax id at all, and most contacts have none. Duplicate detection belongs in the application layer, where it can warn rather than refuse."
+			}
+		},
+		{
+			"name": "job_position",
+			"label": "fields.job_position",
+			"data_type": { "type": "string", "min": 0, "max": 100 }
+		},
+		{
+			"name": "title",
+			"label": "fields.title",
+			"data_type": { "type": "string", "min": 0, "max": 50 }
+		},
+		{
+			"name": "type",
+			"label": "fields.type",
+			"data_type": { "type": "enum_string", "values": ["individual", "company"] },
+			"required_for_create": true,
+			"default_value": "individual",
+			"description": {
+				"en-US": "Whether this contact is a person or an organization. It is not a vendor/customer discriminator: what a party is *to the business* is expressed by the profile records that hang off it, so one party can be both a supplier and a customer without duplicating the contact."
+			}
+		},
+		{
+			"name": "note",
+			"label": "fields.note",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "nationality_id",
+			"label": "fields.nationality_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "language_id",
+			"label": "fields.language_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "website",
+			"label": "fields.website",
+			"data_type": "url",
+			"description": {
+				"en-US": "Indexed with org_id but not unique, for the same reasons as tax_id. Two branches of one group legitimately share a website."
+			}
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "contacts_parties_tid_org_id", "fields": ["org_id"] },
+		{ "index_name": "contacts_parties_tid_tax_id", "fields": ["org_id", "tax_id"] },
+		{ "index_name": "contacts_parties_tid_website", "fields": ["org_id", "website"] }
+	],
+
+	"edges_from": [
+		{
+			"edge": "comm_channels",
+			"label": { "en-US": "Communication Channels" },
+			"existing": { "src_schema": "contacts_comm_channel", "src_edge": "party" }
+		},
+		{
+			"edge": "relationships_as_source",
+			"label": { "en-US": "Relationships (as source)" },
+			"existing": { "src_schema": "contacts_relationship", "src_edge": "source_party" }
+		},
+		{
+			"edge": "relationships_as_target",
+			"label": { "en-US": "Relationships (as target)" },
+			"existing": { "src_schema": "contacts_relationship", "src_edge": "target_party" }
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	]
+}

@@ -1,0 +1,41 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "party_id", "target_party_id", "type", "etag", "is_archived"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "party_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "target_party_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "type": {
+            "type": "string",
+            "enum": ["employee", "spouse", "parent", "sibling", "emergency", "subsidiary"]
+        },
+        "note": {
+            "type": ["string", "null"]
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        }
+    },
+    "additionalProperties": false
+}
