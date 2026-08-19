@@ -79,7 +79,7 @@ func TestQuerySignatureMatchesReference(t *testing.T) {
 func TestVerifyIpnAcceptsAGenuineCallback(t *testing.T) {
 	adapter := newTestAdapter()
 
-	assert.True(t, adapter.VerifyIpn(genuineIpnPayload()))
+	assert.True(t, adapter.VerifyIpn(genuineIpnPayload(), nil))
 }
 
 func TestVerifyIpnAcceptsAnUpperCaseSignature(t *testing.T) {
@@ -89,7 +89,7 @@ func TestVerifyIpnAcceptsAnUpperCaseSignature(t *testing.T) {
 
 	// A callback that differed only in case would otherwise be discarded as forged, leaving a
 	// payment that really happened permanently unsettled.
-	assert.True(t, adapter.VerifyIpn(payload))
+	assert.True(t, adapter.VerifyIpn(payload, nil))
 }
 
 // Every field is signed, so tampering with any of them must invalidate the callback — otherwise
@@ -109,7 +109,7 @@ func TestVerifyIpnRejectsTampering(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			payload := genuineIpnPayload()
 			tamper(&payload)
-			assert.False(t, adapter.VerifyIpn(payload))
+			assert.False(t, adapter.VerifyIpn(payload, nil))
 		})
 	}
 }

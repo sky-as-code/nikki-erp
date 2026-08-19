@@ -107,6 +107,15 @@
 			}
 		},
 		{
+			"name": "payment_profile_id",
+			"label": "fields.payment_profile_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "Which merchant account collected this order, when it was not the deployment's own. Held as a plain id rather than an edge so that withdrawing a profile does not cascade into the orders it collected: the order is the record of money that moved, and it has to survive the account it moved through being closed.\n\nOptional. An order without one is collected with the credentials in this deployment's configuration, which is what every order taken before profiles existed did."
+			}
+		},
+		{
 			"name": "content",
 			"label": "fields.content",
 			"data_type": { "type": "string", "min": 0, "max": 500 },

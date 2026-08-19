@@ -96,6 +96,14 @@ func (this *OrderDomainService) reverse(
 		return nil, vErrs, err
 	}
 
+	// The refund goes back through the account the payment came in on. Any other account would
+	// have the gateway refuse it — it has no such transaction — and if it did not, the money would
+	// leave the wrong merchant's balance.
+	profileConfig, err := this.profileConfigForOrder(ctx, order)
+	if err != nil {
+		return nil, vErrs, err
+	}
+
 	refunded, gatewayErr := adapter.Refund(ctx, itGateway.RefundRequest{
 		OrderCode:        derefString(order.GetOrderCode()),
 		Amount:           cmd.Amount,
@@ -103,6 +111,7 @@ func (this *OrderDomainService) reverse(
 		RefTransactionId: paymentRefId,
 		Metadata:         order.GetMetadata(),
 		MethodConfig:     method.GetConfig(),
+		ProfileConfig:    profileConfig,
 	})
 
 	if gatewayErr != nil {

@@ -36,6 +36,14 @@ CORE:
     # Redis password can be specified in env var CORE_EVENT_REDIS_PASSWORD or
     # in config item CORE.EVENT.REDIS_PASSWORD_FILE which contains a secret file path.
     REDIS_PASSWORD: "nikki_password"
+  ENCRYPTION:
+    # Hex-encoded 32-byte AES key that sensitive field values are encrypted with before they are
+    # written to the database — today, the gateway credentials of a paymentinvoice payment profile.
+    # Left empty here because this file is committed and embedded into the binary: supply it
+    # through config/local.env, or through CORE_ENCRYPTION_EAS_32_BYTES_KEY_FILE in a deployed
+    # environment. A deployment that leaves it empty can neither store nor read a payment profile's
+    # credentials, and is warned about it at boot.
+    EAS_32_BYTES_KEY: ""
   EVENT:
     REDIS_HOST: localhost
     # A comma-separated list of Redis hosts for cluster mode
@@ -167,6 +175,9 @@ PAYMENTINVOICE:
     # Where the payer's browser is sent afterwards. A human destination: nothing is
     # settled by a visit to it.
     REDIRECT_URL: ""
+    # Names the merchant's store, for accounts whose settlement MoMo breaks down by one.
+    # Optional: an account with no such breakdown leaves it empty and it is not sent.
+    STORE_ID: ""
 
   MPOS:
     ENABLED: false

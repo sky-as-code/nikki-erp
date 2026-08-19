@@ -38,6 +38,7 @@ type engineSpec struct {
 // with the field set its listing UI needs.
 var engineSpecs = []engineSpec{
 	paymentMethodEngineSpec(),
+	paymentProfileEngineSpec(),
 	orderEngineSpec(),
 	transactionEngineSpec(),
 	invoiceEngineSpec(),

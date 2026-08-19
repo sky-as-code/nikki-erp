@@ -69,3 +69,33 @@ func (this *tokenCache) invalidate() {
 	this.token = ""
 	this.expiresAt = time.Time{}
 }
+
+// tokenStore holds one tokenCache per set of credentials.
+//
+// A token is issued to the account that logged in, so one cache shared across accounts would hand
+// a payment profile's request the bearer of whichever account authenticated first — and VietQR
+// would mint the QR code against that other merchant's bank account. The username is the key
+// because that is what the token is issued to; a profile that changes only its password
+// invalidates on the gateway's rejection, which the retry path already handles.
+type tokenStore struct {
+	mutex  sync.Mutex
+	caches map[string]*tokenCache
+	now    func() time.Time
+}
+
+func newTokenStore(now func() time.Time) *tokenStore {
+	return &tokenStore{caches: map[string]*tokenCache{}, now: now}
+}
+
+// cacheFor returns the cache belonging to one set of credentials, creating it on first use.
+func (this *tokenStore) cacheFor(username string) *tokenCache {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
+	cache, exists := this.caches[username]
+	if !exists {
+		cache = newTokenCache(this.now)
+		this.caches[username] = cache
+	}
+	return cache
+}

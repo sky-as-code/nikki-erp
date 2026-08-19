@@ -27,6 +27,10 @@ const (
 	// MomoRedirectUrl is where MoMo sends the payer's browser once they are done. It is a
 	// human destination, not a callback: nothing is settled by a visit to it.
 	MomoRedirectUrl core.ConfigName = "PAYMENTINVOICE.MOMO.REDIRECT_URL"
+
+	// MomoStoreId names the merchant's store, for accounts whose settlement MoMo breaks down by
+	// one. Optional: an account with no such breakdown leaves it unset and it is not sent.
+	MomoStoreId core.ConfigName = "PAYMENTINVOICE.MOMO.STORE_ID"
 )
 
 const (
@@ -71,3 +75,15 @@ const (
 	// SyncMaxRetries bounds how many times that notification is re-attempted.
 	SyncMaxRetries core.ConfigName = "PAYMENTINVOICE.SYNC.MAX_RETRIES"
 )
+
+// PaymentProfileEncryptionKey names the hex-encoded 32-byte AES key that a payment profile's
+// gateway credentials are encrypted with before they reach the database.
+//
+// It is deliberately the core key rather than one of this module's own. Coremart's vending-machine
+// module encrypts its payment configs with the same key, so a profile can be moved between the two
+// without being re-encrypted, and neither side can be rotated into a state where it cannot read
+// what the other wrote.
+//
+// It is a credential: supply it through config/local.env or the {KEY}_FILE secret-file convention,
+// never in config.default.yaml, which is committed and embedded into the binary.
+const PaymentProfileEncryptionKey core.ConfigName = "CORE.ENCRYPTION.EAS_32_BYTES_KEY"

@@ -76,7 +76,23 @@ func (this *WebhookRest) MomoIpn(echoCtx *echo.Context) error {
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
-	if !adapter.VerifyIpn(payload) {
+	reqCtx, ok := requestContext(echoCtx)
+	if !ok {
+		this.logger.Errorf("paymentinvoice: a webhook ran without a request context")
+		return echoCtx.NoContent(http.StatusNoContent)
+	}
+
+	// The signature is MoMo's, made with the secret of the account that took the money — so the
+	// order has to be found before the callback can be checked, to know which account that was.
+	// An unknown order code yields no credentials and the check then fails, which is the same
+	// answer an unknown code got before: a 204 that says nothing either way.
+	profileConfig, err := this.orders.ProfileConfigForOrderCode(reqCtx, payload.OrderId)
+	if err != nil {
+		this.logger.Errorf("paymentinvoice: resolving a MoMo IPN's payment profile failed: %s", err.Error())
+		return echoCtx.NoContent(http.StatusNoContent)
+	}
+
+	if !adapter.VerifyIpn(payload, profileConfig) {
 		// Deliberately not distinguished from a valid callback in the response: telling an
 		// unsigned caller that their signature was wrong helps them work out a correct one.
 		this.logger.Warnf("paymentinvoice: a MoMo IPN failed signature verification")
@@ -108,7 +124,21 @@ func (this *WebhookRest) MposWebhook(echoCtx *echo.Context) error {
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
-	payload, err := adapter.DecryptWebhook(envelope.ReqData)
+	reqCtx, ok := requestContext(echoCtx)
+	if !ok {
+		this.logger.Errorf("paymentinvoice: a webhook ran without a request context")
+		return echoCtx.NoContent(http.StatusNoContent)
+	}
+
+	profileConfig, found := this.mposProfileConfig(reqCtx, adapter, envelope.MerchantId)
+	if !found {
+		// The callback names a merchant account this deployment holds no credentials for, so there
+		// is nothing here that could read the body, let alone act on it.
+		this.logger.Warnf("paymentinvoice: an mPOS callback named an unknown merchant account")
+		return echoCtx.NoContent(http.StatusNoContent)
+	}
+
+	payload, err := adapter.DecryptWebhook(envelope.ReqData, profileConfig)
 	if err != nil {
 		// A body that will not decrypt did not come from mPOS, so it is refused rather than acted
 		// on. The reason is logged but not returned, for the same reason as MoMo's signature.
@@ -168,7 +198,7 @@ func (this *WebhookRest) VietQrTransactionSync(echoCtx *echo.Context) error {
 		return echoCtx.JSON(http.StatusBadRequest, vietqr.NewWebhookNotFound())
 	}
 
-	reqCtx, ok := echoCtx.Request().Context().(corectx.Context)
+	reqCtx, ok := requestContext(echoCtx)
 	if !ok {
 		return echoCtx.JSON(http.StatusInternalServerError, vietqr.NewWebhookNotFound())
 	}
@@ -198,7 +228,7 @@ func (this *WebhookRest) VietQrTransactionSync(echoCtx *echo.Context) error {
 // MoMo and mPOS are told nothing either way — both expect an empty 204 — so an unknown order or a
 // replayed callback has to be visible in the log or it is visible nowhere.
 func (this *WebhookRest) apply(echoCtx *echo.Context, result services.GatewayResult) {
-	reqCtx, ok := echoCtx.Request().Context().(corectx.Context)
+	reqCtx, ok := requestContext(echoCtx)
 	if !ok {
 		this.logger.Errorf("paymentinvoice: a webhook ran without a request context")
 		return
@@ -250,4 +280,43 @@ func asPayloadMap(payload any) map[string]any {
 		return nil
 	}
 	return decoded
+}
+
+// requestContext narrows the request's context to the module's own.
+func requestContext(echoCtx *echo.Context) (corectx.Context, bool) {
+	reqCtx, ok := echoCtx.Request().Context().(corectx.Context)
+	return reqCtx, ok
+}
+
+// mposProfileConfig finds the credentials that can read one inbound card-terminal callback.
+//
+// The callback carries the merchant account in the clear and everything else encrypted under that
+// account's secret, so the account has to be identified before the body can be read at all. The
+// deployment's own account is tried first because it is the common case and costs no query; only
+// then are the payment profiles scanned.
+//
+// It reports false when no account matches. That is not the same as a body that fails to decrypt:
+// here nothing was even attempted, and attempting it under the wrong secret would produce a
+// decrypt failure that reads as a forged callback rather than as a missing profile.
+func (this *WebhookRest) mposProfileConfig(
+	ctx corectx.Context, adapter *mpos.Adapter, merchantId string,
+) (map[string]any, bool) {
+	// A callback that names no merchant, or names this deployment's own, is served by the
+	// configured credentials — which is every callback on a deployment that has no profiles.
+	if merchantId == "" || merchantId == adapter.MerchantId() {
+		return nil, true
+	}
+
+	configs, err := this.orders.ProfileConfigsByMethod(ctx, models.PaymentProfileMethodMpos)
+	if err != nil {
+		this.logger.Errorf("paymentinvoice: reading the mPOS payment profiles failed: %s", err.Error())
+		return nil, false
+	}
+
+	for _, config := range configs {
+		if mpos.MerchantIdOf(config) == merchantId {
+			return config, true
+		}
+	}
+	return nil, false
 }

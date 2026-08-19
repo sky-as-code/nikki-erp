@@ -40,6 +40,10 @@ type Config struct {
 	// RedirectUrl is where the payer's browser lands afterwards. A human destination: nothing
 	// is settled by a visit to it.
 	RedirectUrl string
+
+	// StoreId names the merchant's store, for accounts whose settlement MoMo breaks down by one.
+	// Empty for an account with no such breakdown, in which case it is not sent at all.
+	StoreId string
 }
 
 // Adapter implements itGateway.PaymentGateway for MoMo.
@@ -78,22 +82,25 @@ func (this *Adapter) CreatePayment(
 		return nil, err
 	}
 
+	config := this.resolveConfig(req.ProfileConfig)
+
 	// MoMo knows the order by its order_code, never by our id or our quoted order_id: the code is
 	// what its callback will arrive under.
 	payload := createPaymentRequest{
-		PartnerCode: this.config.PartnerCode,
+		PartnerCode: config.PartnerCode,
 		RequestId:   uuid.NewString(),
 		Amount:      amount,
 		OrderId:     req.OrderCode,
 		OrderInfo:   orderInfoOf(req),
-		RedirectUrl: this.config.RedirectUrl,
-		IpnUrl:      this.config.IpnUrl,
+		RedirectUrl: config.RedirectUrl,
+		IpnUrl:      config.IpnUrl,
 		RequestType: requestTypeCaptureWallet,
 		ExtraData:   "",
 		Lang:        langVi,
+		StoreId:     config.StoreId,
 	}
 	payload.Signature = signingFields{
-		"accessKey":   this.config.AccessKey,
+		"accessKey":   config.AccessKey,
 		"amount":      strconv.FormatInt(payload.Amount, 10),
 		"extraData":   payload.ExtraData,
 		"ipnUrl":      payload.IpnUrl,
@@ -103,7 +110,7 @@ func (this *Adapter) CreatePayment(
 		"redirectUrl": payload.RedirectUrl,
 		"requestId":   payload.RequestId,
 		"requestType": payload.RequestType,
-	}.sign(this.config.SecretKey)
+	}.sign(config.SecretKey)
 
 	var response createPaymentResponse
 	raw, err := this.post(ctx, "/create", payload, &response)
@@ -139,8 +146,10 @@ func (this *Adapter) Refund(
 			"momo refund needs the gateway transaction id, got %q", req.RefTransactionId)
 	}
 
+	config := this.resolveConfig(req.ProfileConfig)
+
 	payload := refundRequest{
-		PartnerCode: this.config.PartnerCode,
+		PartnerCode: config.PartnerCode,
 		// A refund is its own operation to MoMo and needs an id distinct from the payment's.
 		OrderId:     uuid.NewString(),
 		RequestId:   uuid.NewString(),
@@ -150,14 +159,14 @@ func (this *Adapter) Refund(
 		Description: descriptionOf(req),
 	}
 	payload.Signature = signingFields{
-		"accessKey":   this.config.AccessKey,
+		"accessKey":   config.AccessKey,
 		"amount":      strconv.FormatInt(payload.Amount, 10),
 		"description": payload.Description,
 		"orderId":     payload.OrderId,
 		"partnerCode": payload.PartnerCode,
 		"requestId":   payload.RequestId,
 		"transId":     strconv.FormatInt(payload.TransId, 10),
-	}.sign(this.config.SecretKey)
+	}.sign(config.SecretKey)
 
 	var response refundResponse
 	raw, err := this.post(ctx, "/refund", payload, &response)
@@ -179,18 +188,20 @@ func (this *Adapter) Refund(
 func (this *Adapter) CheckOrder(
 	ctx corectx.Context, req itGateway.CheckOrderRequest,
 ) (*itGateway.CheckOrderResult, error) {
+	config := this.resolveConfig(req.ProfileConfig)
+
 	payload := queryRequest{
-		PartnerCode: this.config.PartnerCode,
+		PartnerCode: config.PartnerCode,
 		RequestId:   uuid.NewString(),
 		OrderId:     req.OrderCode,
 		Lang:        langVi,
 	}
 	payload.Signature = signingFields{
-		"accessKey":   this.config.AccessKey,
+		"accessKey":   config.AccessKey,
 		"orderId":     payload.OrderId,
 		"partnerCode": payload.PartnerCode,
 		"requestId":   payload.RequestId,
-	}.sign(this.config.SecretKey)
+	}.sign(config.SecretKey)
 
 	var response queryResponse
 	raw, err := this.post(ctx, "/query", payload, &response)
@@ -217,9 +228,16 @@ func (this *Adapter) CheckOrder(
 // The thirteen fields below are MoMo's IPN signing set, and it is not the same set as any of the
 // request signatures — notably it includes message, orderType, payType, responseTime and
 // resultCode, which no request signs.
-func (this *Adapter) VerifyIpn(payload IpnPayload) bool {
+//
+// profileConfig is the credentials of the payment profile the order named, and must be the ones
+// the payment was created with: MoMo signs its callback with the secret of the account that took
+// the money, so checking a profile's callback against the deployment's own secret would reject
+// every payment collected through a profile as a forgery.
+func (this *Adapter) VerifyIpn(payload IpnPayload, profileConfig map[string]any) bool {
+	config := this.resolveConfig(profileConfig)
+
 	return signingFields{
-		"accessKey":    this.config.AccessKey,
+		"accessKey":    config.AccessKey,
 		"amount":       strconv.FormatInt(payload.Amount, 10),
 		"extraData":    payload.ExtraData,
 		"message":      payload.Message,
@@ -232,7 +250,7 @@ func (this *Adapter) VerifyIpn(payload IpnPayload) bool {
 		"responseTime": strconv.FormatInt(payload.ResponseTime, 10),
 		"resultCode":   strconv.Itoa(payload.ResultCode),
 		"transId":      strconv.FormatInt(payload.TransId, 10),
-	}.verify(this.config.SecretKey, payload.Signature)
+	}.verify(config.SecretKey, payload.Signature)
 }
 
 // post sends one JSON request and decodes the reply into out, also returning it as a raw map so

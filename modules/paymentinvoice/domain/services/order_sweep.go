@@ -7,8 +7,8 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 )
 
@@ -36,8 +36,14 @@ type StaleOrder struct {
 
 	Status          string
 	PaymentMethodId string
-	ReturnUrl       string
-	Metadata        map[string]any
+
+	// PaymentProfileId is the merchant account the order was collected into, empty when it was
+	// collected with the deployment's own credentials. The gateway has to be asked about the order
+	// under the same account, or it answers that it has never seen it.
+	PaymentProfileId string
+
+	ReturnUrl string
+	Metadata  map[string]any
 }
 
 // FindStaleOrders returns orders still awaiting a verdict past the point they should have had one.
@@ -99,13 +105,14 @@ func findOrdersOlderThan(
 	for _, item := range found.Data.Items {
 		order := models.NewOrderFrom(item)
 		stale = append(stale, StaleOrder{
-			Pk:              derefString(order.GetId()),
-			OrderId:         derefString(order.GetOrderId()),
-			OrderCode:       derefString(order.GetOrderCode()),
-			Status:          derefString(order.GetStatus()),
-			PaymentMethodId: derefString((*string)(order.GetPaymentMethodId())),
-			ReturnUrl:       derefString(order.GetReturnUrl()),
-			Metadata:        order.GetMetadata(),
+			Pk:               derefString(order.GetId()),
+			OrderId:          derefString(order.GetOrderId()),
+			OrderCode:        derefString(order.GetOrderCode()),
+			Status:           derefString(order.GetStatus()),
+			PaymentMethodId:  derefString((*string)(order.GetPaymentMethodId())),
+			PaymentProfileId: derefString((*string)(order.GetPaymentProfileId())),
+			ReturnUrl:        derefString(order.GetReturnUrl()),
+			Metadata:         order.GetMetadata(),
 		})
 	}
 	return stale, nil

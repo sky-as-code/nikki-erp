@@ -63,7 +63,7 @@ func TestWebhookDecryptionMatchesReference(t *testing.T) {
 		"PpiqcdC1srkdIAGkiarydatWXctdF5tt+G/ASFwklHImPAwMIDVt6/GoTDY3HoXUMm+cEakKUImkXl4J"
 
 	adapter := NewAdapter(Config{MerchantId: "M1", SecretKey: testSecretKey}, nil)
-	payload, err := adapter.DecryptWebhook(reference)
+	payload, err := adapter.DecryptWebhook(reference, nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, ServiceUpdateTransaction, payload.ServiceName)
@@ -115,7 +115,7 @@ func TestMalformedCiphertextIsRefused(t *testing.T) {
 
 	for name, reqData := range cases {
 		t.Run(name, func(t *testing.T) {
-			_, err := adapter.DecryptWebhook(reqData)
+			_, err := adapter.DecryptWebhook(reqData, nil)
 			assert.Error(t, err)
 		})
 	}

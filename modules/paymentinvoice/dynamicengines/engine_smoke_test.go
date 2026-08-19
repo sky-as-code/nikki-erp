@@ -14,6 +14,7 @@ func TestEngineSchemaNamesCoverEveryResource(t *testing.T) {
 	assert.ElementsMatch(t,
 		[]string{
 			models.PaymentMethodSchemaName,
+			models.PaymentProfileSchemaName,
 			models.OrderSchemaName,
 			models.TransactionSchemaName,
 			models.InvoiceSchemaName,

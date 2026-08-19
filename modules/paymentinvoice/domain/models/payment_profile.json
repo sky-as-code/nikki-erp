@@ -1,0 +1,59 @@
+{
+	"name": "paymentinvoice_payment_profile",
+	"label": "paymentinvoice_payment_profile.label",
+	"table_name": "paymentinvoice_payment_profiles",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true,
+			"required_for_update": true,
+			"description": {
+				"en-US": "What an operator calls this set of gateway credentials, e.g. 'MoMo - Hanoi store'. Free text rather than an identifier: nothing keys on it, and two profiles for the same gateway are told apart by it in the picker."
+			}
+		},
+		{
+			"name": "method",
+			"label": "fields.method",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["momo", "vietqr", "mpos", "mbbank"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "Which gateway these credentials are for. The first three values are byte-identical to the adapter codes in payment_method.go, so a profile resolves to an adapter without a translation table in between; mbbank is carried over from the service this module supersedes and has no adapter here yet."
+			}
+		},
+		{
+			"name": "encrypted_config",
+			"label": "fields.encrypted_config",
+			"data_type": { "type": "string", "min": 0, "max": 3000 },
+			"description": {
+				"en-US": "The gateway credentials, AES-256-GCM encrypted and hex-encoded. This is the only form that reaches the database. Callers never send or read it directly: they use the plain 'config' field, which the CRUD actions encrypt on the way in and decrypt on the way out, so a row read straight out of the table discloses nothing."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "payinv_pay_profiles_method", "fields": ["method"] },
+		{ "index_name": "payinv_pay_profiles_org", "fields": ["org_id"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

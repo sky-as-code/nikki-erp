@@ -33,10 +33,15 @@ const (
 	paramAmount          = "amount"
 	paramSource          = "source"
 	paramPaymentMethodId = "payment_method_id"
-	paramContent         = "content"
-	paramReturnUrl       = "return_url"
-	paramMetadata        = "metadata"
-	paramPosId           = "pos_id"
+
+	// paramPaymentProfileId names the merchant account to collect into. Optional: a request
+	// without it is collected with the credentials in this deployment's configuration, which is
+	// what every caller did before profiles existed.
+	paramPaymentProfileId = "payment_profile_id"
+	paramContent          = "content"
+	paramReturnUrl        = "return_url"
+	paramMetadata         = "metadata"
+	paramPosId            = "pos_id"
 )
 
 // defineOrderActions adds create_payment, refund and remove_pos_orders.
@@ -134,7 +139,10 @@ func processCreatePayment(ctx corectx.Context, input drif.ProcessInput) (*drif.A
 	return &drif.ActionResult{
 		HasData: true,
 		Data: map[string]any{
-			"order_id":    result.OrderId,
+			"order_id": result.OrderId,
+			// order_code is what the gateway knows the order by and what its callback arrives
+			// under, so a caller reconciling against the gateway's own records needs it.
+			"order_code":  result.OrderCode,
 			"qr_code_url": result.QrCodeUrl,
 			"pay_url":     result.PayUrl,
 		},
@@ -182,11 +190,12 @@ func buildCreatePaymentCommand(
 ) (services.CreatePaymentCommand, *ft.ClientErrors) {
 	vErrs := ft.NewClientErrors()
 	cmd := services.CreatePaymentCommand{
-		Source:          readString(params, paramSource),
-		PaymentMethodId: readString(params, paramPaymentMethodId),
-		Content:         readOptionalString(params, paramContent),
-		ReturnUrl:       readOptionalString(params, paramReturnUrl),
-		Metadata:        buildCreateMetadata(params),
+		Source:           readString(params, paramSource),
+		PaymentMethodId:  readString(params, paramPaymentMethodId),
+		PaymentProfileId: readString(params, paramPaymentProfileId),
+		Content:          readOptionalString(params, paramContent),
+		ReturnUrl:        readOptionalString(params, paramReturnUrl),
+		Metadata:         buildCreateMetadata(params),
 	}
 
 	if cmd.PaymentMethodId == "" {

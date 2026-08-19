@@ -4,11 +4,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 )
 
-// The engine declarations of the module's four resources.
+// The engine declarations of the module's resources.
 //
-// None of them defines an action yet: create_payment, refund and remove_pos_orders arrive with the
-// order services, and issue with the invoice ones. Until then every resource is served by the
-// built-in CRUD alone, which is enough to read what the module has recorded.
+// A resource that names no DefineActions is served by the built-in CRUD alone, which is enough to
+// read what the module has recorded. The three that do add actions add them for different reasons:
+// the order and the invoice for operations that are not CRUD at all (taking money, giving it back,
+// closing a draft), the payment profile to encrypt its credentials either side of the CRUD it
+// already has.
 
 // The Payment Method engine.
 //
@@ -84,5 +86,25 @@ func invoiceLineEngineSpec() engineSpec {
 			models.InvoiceLineFieldTaxRatePercent,
 			models.InvoiceLineFieldAmount,
 		},
+	}
+}
+
+// The Payment Profile engine.
+//
+// It carries the merchant credentials a payment settles into, so its listing deliberately shows
+// only what identifies a profile: a search that selects nothing specific returns these three
+// fields and no credentials, which keeps the secrets out of every screen that merely lists what is
+// configured. Reading one profile still returns them, as does a search that names "config"
+// explicitly — both of which the read permission is what guards. See payment_profile_actions.go
+// for the encryption either side of the built-in CRUD.
+func paymentProfileEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName: models.PaymentProfileSchemaName,
+		DefaultFields: []string{
+			models.PaymentProfileFieldName,
+			models.PaymentProfileFieldMethod,
+			models.PaymentProfileFieldOrgId,
+		},
+		DefineActions: definePaymentProfileActions,
 	}
 }
