@@ -181,6 +181,7 @@
 	"fields.template_name": "Tên",
 	"fields.template_product_type_id": "Loại sản phẩm",
 	"fields.template_purchase_description": "Mô tả mua hàng",
+	"fields.template_purchase_ok": "Có thể mua",
 	"fields.template_sale_ok": "Có thể bán",
 	"fields.template_sales_description": "Mô tả bán hàng",
 	"fields.template_short_name": "Tên rút gọn",

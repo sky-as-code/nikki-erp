@@ -1,4 +1,7 @@
 {
+	"currency.archived": "This currency is archived and cannot be used for new records",
+	"currency.not_active": "This currency is no longer in use and cannot be selected",
+	"currency.not_found": "The currency does not exist",
 	"essential_currency.label": "Currency",
 	"essential_uom.label": "Unit of Measure",
 	"essential_uomcat.label": "UoM Category",

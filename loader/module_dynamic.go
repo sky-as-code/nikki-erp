@@ -1,5 +1,12 @@
-// //go:build dynamicmods
-// // +build dynamicmods
+// This file is the dynamic-plugin loader, kept commented out until plugin loading is revived.
+//
+// When it is revived it needs its build constraint restored as the first line of the file: the
+// go:build form naming the dynamicmods tag, plus the legacy paired line for older toolchains.
+//
+// The constraint is described here rather than written out, because vet matches a constraint-shaped
+// comment anywhere in a file's leading comment block even when it is commented out. It then reports
+// "possible malformed build comment" and fails `go test` for the entire loader package, while
+// `go build` still passes — so the damage shows up only as a package nobody can test.
 
 package loader
 

@@ -20,8 +20,25 @@ const (
 	UserPermFieldScope                 = "scope"
 	UserPermFieldOrgId                 = "org_id"
 	UserPermFieldOrgUnitId             = "org_unit_id"
-	UserPermFieldOrgMembershipId       = "org_membership_id"
 	UserPermFieldGroupMembershipId     = "group_membership_id"
+
+	// Provenance: which grant path produced this row. Together with user_id and
+	// ent_id they form the primary key, so two roles granting the same entitlement
+	// are two rows and removing one leaves the other standing.
+	UserPermFieldSourceKind = "source_kind"
+	UserPermFieldSourceId   = "source_id"
+
+	// Copied from the assignment. Filtered at read time, so a grant that expires
+	// between rebuilds stops answering immediately.
+	UserPermFieldExpiresAt = "expires_at"
+
+	// UserPermSourceKindDirect is a role assigned straight to the user;
+	// UserPermSourceKindGroup is a role assigned to a group they belong to.
+	UserPermSourceKindDirect = "direct"
+	UserPermSourceKindGroup  = "group"
+	// UserPermSourceKindOwner is never stored: it is what the permission probe
+	// reports for the owner account, whose access short-circuits the cache.
+	UserPermSourceKindOwner = "owner"
 
 	UserPermEdgeUser                = "user"
 	UserPermEdgeAction              = "action"
@@ -31,7 +48,6 @@ const (
 	UserPermEdgeRoleUserAssignment  = "role_user_assignment"
 	UserPermEdgeOrg                 = "org"
 	UserPermEdgeOrgUnit             = "org_unit"
-	UserPermEdgeOrgMembership       = "org_membership"
 	UserPermEdgeGroupMembership     = "group_membership"
 )
 
@@ -39,7 +55,6 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserPermissionSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", UserPermissionSchemaName)).
 		TableName("iam_user_permissions").
-		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{UserPermFieldUserId, UserPermFieldEntExpression}}).
 		ShouldBuildDb().
 		Field(
 			basemodel.DefineFieldId(UserPermFieldUserId).
@@ -48,6 +63,23 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			basemodel.DefineFieldId(UserPermFieldEntId).
 				PrimaryKey(),
+		).
+		Field(
+			dmodel.DefineField().Name(UserPermFieldSourceKind).
+				DataType(dmodel.FieldDataTypeEnumString([]string{
+					UserPermSourceKindDirect, UserPermSourceKindGroup,
+				})).
+				RequiredForCreate().
+				PrimaryKey(),
+		).
+		Field(
+			basemodel.DefineFieldId(UserPermFieldSourceId).
+				RequiredForCreate().
+				PrimaryKey(),
+		).
+		Field(
+			dmodel.DefineField().Name(UserPermFieldExpiresAt).
+				DataType(dmodel.FieldDataTypeDateTime()),
 		).
 		Field(
 			DefineEntitlementFieldExpression(UserPermFieldEntExpression).
@@ -75,9 +107,6 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		Field(
 			basemodel.DefineFieldId(UserPermFieldOrgId),
-		).
-		Field(
-			basemodel.DefineFieldId(UserPermFieldOrgMembershipId),
 		).
 		Field(
 			basemodel.DefineFieldId(UserPermFieldGroupMembershipId),
@@ -153,14 +182,6 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				OnDelete(dmodel.RelationCascadeCascade),
 		).
 		EdgeTo(
-			dmodel.Edge(UserPermEdgeOrgMembership).
-				Label(model.LangJson{"en-US": "Organization Membership"}).
-				ManyToOne(OrgUsrRelSchemaName, dmodel.DynamicFields{
-					UserPermFieldOrgMembershipId: OrgUsrRelFieldId,
-				}).
-				OnDelete(dmodel.RelationCascadeCascade),
-		).
-		EdgeTo(
 			dmodel.Edge(UserPermEdgeGroupMembership).
 				Label(model.LangJson{"en-US": "Group Membership"}).
 				ManyToOne(GrpUsrRelSchemaName, dmodel.DynamicFields{
@@ -195,6 +216,18 @@ func (this *UserPermission) SetFieldData(data dmodel.DynamicFields) {
 
 func (this UserPermission) GetEntExpression() *string {
 	return this.GetFieldData().GetString(UserPermFieldEntExpression)
+}
+
+func (this UserPermission) GetEntId() *model.Id {
+	return this.GetFieldData().GetModelId(UserPermFieldEntId)
+}
+
+func (this UserPermission) GetSourceKind() *string {
+	return this.GetFieldData().GetString(UserPermFieldSourceKind)
+}
+
+func (this UserPermission) GetSourceId() *model.Id {
+	return this.GetFieldData().GetModelId(UserPermFieldSourceId)
 }
 
 func (this UserPermission) MustGetEntExpression() string {

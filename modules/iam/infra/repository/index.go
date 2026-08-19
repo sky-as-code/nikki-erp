@@ -25,6 +25,7 @@ func InitRepositories() error {
 		deps.Register(NewOrganizationDynamicRepository),
 		deps.Register(NewOrgUnitDynamicRepository),
 		deps.Register(NewPermissionDynamicRepository),
+		deps.Register(NewPermissionHistoryDynamicRepository),
 		deps.Register(NewResourceDynamicRepository),
 		deps.Register(NewRoleDynamicRepository),
 		deps.Register(NewRoleRequestDynamicRepository),

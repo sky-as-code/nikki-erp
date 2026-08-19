@@ -1,0 +1,55 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "code", "adapter_code", "name", "is_active", "etag", "is_archived"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "code": {
+            "type": "string",
+            "minLength": 1
+        },
+        "adapter_code": {
+            "type": "string",
+            "minLength": 1
+        },
+        "name": {
+            "type": "object"
+        },
+        "description": {
+            "type": ["object", "null"]
+        },
+        "currency_id": {
+            "type": ["string", "null"]
+        },
+        "min_amount": {
+            "type": ["string", "number", "null"]
+        },
+        "max_amount": {
+            "type": ["string", "number", "null"]
+        },
+        "is_active": {
+            "type": "boolean"
+        },
+        "config": {
+            "type": ["object", "null"]
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        }
+    },
+    "additionalProperties": false
+}

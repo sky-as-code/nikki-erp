@@ -31,6 +31,10 @@ type IsAuthorizedQuery struct {
 	ResourceCode string          `json:"resource_code"`
 	Scope        c.ResourceScope `json:"scope"`
 	ScopeId      *model.Id       `json:"scope_id"`
+
+	// IsRecordOwnedByCaller answers the private scope. The calling module knows
+	// who owns the record; this service only knows about grants.
+	IsRecordOwnedByCaller bool `json:"is_record_owned_by_caller"`
 }
 
 func (IsAuthorizedQuery) CqrsRequestType() cqrs.RequestType {
@@ -128,3 +132,54 @@ type GetUserEntitlementsResultData struct {
 }
 
 type GetUserEntitlementsResult = dyn.OpResult[GetUserEntitlementsResultData]
+
+var testMyPermissionsQueryType = cqrs.RequestType{
+	Module:    "iam",
+	Submodule: "permission",
+	Action:    "testMyPermissions",
+}
+
+// TestMyPermissionsQuery asks "am I granted this?" about the CALLER.
+//
+// There is deliberately no user id here. Probing someone else's grants stays an
+// internal capability behind IsAuthorizedQuery; making the subject implicit means
+// there is no parameter that a future change could forget to authorize.
+type TestMyPermissionsQuery struct {
+	Expression string `json:"expression"`
+}
+
+func (TestMyPermissionsQuery) CqrsRequestType() cqrs.RequestType {
+	return testMyPermissionsQueryType
+}
+
+func (TestMyPermissionsQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"iam.test_my_permissions_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(domain.DefineEntitlementFieldExpression("expression").RequiredAlways())
+		},
+	)
+}
+
+// PermissionMatch is one grant path that answers the question.
+type PermissionMatch struct {
+	// SourceKind is direct, group or owner.
+	SourceKind string `json:"source_kind"`
+	// SourceId is the assignment id for direct/group, the user id for owner.
+	SourceId model.Id `json:"source_id"`
+	// SourceName is the role name for direct, the group name for group.
+	SourceName string `json:"source_name"`
+	// EntExpression is the stored grant that matched, which may be wider than the
+	// question - that is how the caller learns *why* they are allowed.
+	EntExpression string `json:"ent_expression"`
+}
+
+type TestMyPermissionsResultData struct {
+	IsGranted bool `json:"is_granted"`
+	// Every path that answers, not just the first. An empty slice on a denial:
+	// the negative answer carries no information beyond "no".
+	Matches []PermissionMatch `json:"matches"`
+}
+
+type TestMyPermissionsResult = dyn.OpResult[TestMyPermissionsResultData]

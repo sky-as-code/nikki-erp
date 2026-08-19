@@ -1,0 +1,53 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "party_id", "org_id", "status", "etag", "is_archived"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "party_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "status": {
+            "type": "string",
+            "enum": ["proposed", "active", "suspended", "blacklisted"]
+        },
+        "status_reason": {
+            "type": ["string", "null"]
+        },
+        "default_currency_id": {
+            "type": ["string", "null"]
+        },
+        "payment_terms": {
+            "type": ["string", "null"]
+        },
+        "lead_time_days": {
+            "type": ["integer", "null"]
+        },
+        "note": {
+            "type": ["string", "null"]
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        }
+    },
+    "additionalProperties": false
+}

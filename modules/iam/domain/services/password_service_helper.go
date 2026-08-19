@@ -326,15 +326,25 @@ func checkPasswordPolicy(password string) bool {
 func (this *PasswordDomainServiceImpl) findPasswordStoresByPrincipal(
 	ctx corectx.Context, principalType models.PrincipalType, principalId model.Id,
 ) (*principalPasswordStores, error) {
+	// The search must be expressed as a Graph: Search ignores the Filter field
+	// entirely, so the previous filter selected nothing and the query returned an
+	// arbitrary page of OTHER principals' stores. Every password check against a
+	// freshly provisioned account therefore failed as "incorrect password".
+	//
+	// Page numbering is zero-based, as everywhere else in the codebase.
+	graph := dmodel.NewSearchGraph()
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(
+			models.PasswordStoreFieldPrincipalType, dmodel.Equals, string(principalType),
+		),
+		*dmodel.NewSearchNode().NewCondition(
+			models.PasswordStoreFieldPrincipalId, dmodel.Equals, string(principalId),
+		),
+	)
 	searchResult, err := this.passwordStoreRepo.Search(ctx, dyn.RepoSearchParam{
-		Filter: []dmodel.DynamicFields{
-			{
-				models.PasswordStoreFieldPrincipalType: string(principalType),
-				models.PasswordStoreFieldPrincipalId:   string(principalId),
-			},
-		},
-		Page: 1,
-		Size: 10,
+		Graph: graph,
+		Page:  0,
+		Size:  10,
 	})
 	if err != nil {
 		return nil, err
@@ -391,6 +401,14 @@ func (this *PasswordDomainServiceImpl) upsertPasswordStoreHash(
 		record = existingResult.Data
 	} else {
 		record = *models.NewPasswordStore()
+		// The id is generated here rather than by the database: the column has no
+		// default, so inserting without one fails the NOT NULL constraint and no
+		// password could ever be stored for a principal that had none before.
+		newId, err := model.NewId()
+		if err != nil {
+			return err
+		}
+		record.SetId(newId)
 		record.SetPrincipalType(&principalType)
 		record.SetPrincipalId(&principalId)
 		record.SetType(&passwordType)

@@ -273,6 +273,26 @@ func (this *User) SetOrgUnitId(v *model.Id) {
 	this.GetFieldData().SetModelId(UserFieldOrgUnitId, v)
 }
 
+// GetOrgUnitOrgId returns the org that owns the user's org unit, when the
+// `org_unit.org_id` edge column was selected.
+//
+// Unit-scoped evaluation needs it: a grant held at the org level answers for a
+// record inside one of that org's units, and without this the fallback cannot be
+// computed at all.
+func (this User) GetOrgUnitOrgId() *model.Id {
+	anyOrgUnit := this.GetFieldData().GetAny(UserEdgeOrgUnit)
+	if anyOrgUnit == nil {
+		return nil
+	}
+	switch val := anyOrgUnit.(type) {
+	case dmodel.DynamicFields:
+		return NewOrganizationalUnitFrom(val).GetOrgId()
+	case map[string]any:
+		return NewOrganizationalUnitFrom(dmodel.DynamicFields(val)).GetOrgId()
+	}
+	return nil
+}
+
 func (this User) GetOrgs() []Organization {
 	anyOrgs := this.GetFieldData().GetAny(UserEdgeOrgs)
 	if anyOrgs == nil {

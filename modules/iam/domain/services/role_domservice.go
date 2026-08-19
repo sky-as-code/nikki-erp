@@ -17,6 +17,7 @@ import (
 	itEnt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/entitlement"
 	itOrgz "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/orgunit"
+	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 )
 
@@ -26,6 +27,7 @@ func NewRoleDomainServiceImpl(
 	orgRepo itOrgz.OrganizationRepository,
 	orgUnitRepo itOrg.OrgUnitRepository,
 	orgUnitSvc itOrg.OrgUnitDomainService,
+	permRepo itPerm.PermissionRepository,
 	cqrsBus cqrs.CqrsBus,
 ) itRole.RoleDomainService {
 	return &RoleDomainServiceImpl{
@@ -35,6 +37,7 @@ func NewRoleDomainServiceImpl(
 		orgRepo:         orgRepo,
 		orgUnitRepo:     orgUnitRepo,
 		orgUnitSvc:      orgUnitSvc,
+		permRepo:        permRepo,
 	}
 }
 
@@ -47,6 +50,7 @@ type RoleDomainServiceImpl struct {
 	orgRepo     itOrgz.OrganizationRepository
 	orgUnitRepo itOrg.OrgUnitRepository
 	orgUnitSvc  itOrg.OrgUnitDomainService
+	permRepo    itPerm.PermissionRepository
 }
 
 func (this *RoleDomainServiceImpl) CreateRole(
@@ -117,7 +121,7 @@ func (this *RoleDomainServiceImpl) ManageRoleEntitlements(
 			return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, nil
 		}
 	}
-	return corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
+	result, err := corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
 		Action:             "manage role entitlements",
 		DbRepoGetter:       this.roleRepo,
 		DestSchemaName:     domain.EntitlementSchemaName,
@@ -126,6 +130,14 @@ func (this *RoleDomainServiceImpl) ManageRoleEntitlements(
 		AssociatedIds:      cmd.Add,
 		DisassociatedIds:   cmd.Remove,
 	})
+	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
+		return result, err
+	}
+	// What this role grants has changed, so everyone holding it needs recomputing.
+	if err := this.permRepo.RebuildUserPermissionsForRole(ctx, cmd.RoleId); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
@@ -342,7 +354,17 @@ func assignmentGraph(edge string, principalId model.Id, caller *dmodel.SearchGra
 func (this *RoleDomainServiceImpl) SetRoleIsArchived(
 	ctx corectx.Context, cmd itRole.SetRoleIsArchivedCommand,
 ) (*itRole.SetRoleIsArchivedResult, error) {
-	return corecrud.SetIsArchived(ctx, this.roleRepo, dyn.SetIsArchivedCommand(cmd))
+	result, err := corecrud.SetIsArchived(ctx, this.roleRepo, dyn.SetIsArchivedCommand(cmd))
+	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
+		return result, err
+	}
+	// Archiving a role revokes it. Nothing cascades - the rebuild function filters
+	// archived roles out - so without this the role keeps answering for everyone
+	// who already holds it.
+	if err := this.permRepo.RebuildUserPermissionsForRole(ctx, cmd.Id); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (this *RoleDomainServiceImpl) UpdateRole(

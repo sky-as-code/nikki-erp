@@ -1,0 +1,47 @@
+{
+    "type": "object",
+    "required": ["id", "created_at", "party_id", "type", "etag", "is_archived", "org_id"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "party_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "type": {
+            "type": "string",
+            "enum": ["phone", "zalo", "facebook", "email", "post"]
+        },
+        "value": {
+            "type": ["string", "null"]
+        },
+        "value_json": {
+            "type": ["object", "null"]
+        },
+        "note": {
+            "type": ["string", "null"]
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "is_archived": {
+            "type": "boolean"
+        }
+    },
+    "additionalProperties": false
+}

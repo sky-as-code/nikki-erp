@@ -1,0 +1,70 @@
+{
+	"name": "contacts_relationship",
+	"label": "contacts_relationship.label",
+	"table_name": "contacts_relationships",
+	"should_build_db": true,
+	"record_label_field": "type",
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "party_id",
+			"label": "fields.party_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The party the relationship is stated from. The pair is directed: 'A employs B' and 'B employs A' are different facts, so source and target are not interchangeable."
+			}
+		},
+		{
+			"name": "target_party_id",
+			"label": "fields.target_party_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "type",
+			"label": "fields.type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["employee", "spouse", "parent", "sibling", "emergency", "subsidiary"]
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "note",
+			"label": "fields.note",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "contacts_rels_tid_party_id", "fields": ["party_id"] },
+		{ "index_name": "contacts_rels_tid_target_party_id", "fields": ["target_party_id"] }
+	],
+
+	"edges_to": [
+		{
+			"edge": "source_party",
+			"label": { "en-US": "Source Party" },
+			"type": "many:one",
+			"dest_schema": "contacts_party",
+			"key_map": { "party_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "target_party",
+			"label": { "en-US": "Target Party" },
+			"type": "many:one",
+			"dest_schema": "contacts_party",
+			"key_map": { "target_party_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	]
+}

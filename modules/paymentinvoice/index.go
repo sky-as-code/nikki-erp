@@ -25,6 +25,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/infra/gateway"
+	itGateway "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/gateway"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/transport/restful"
 )
 
@@ -75,24 +76,43 @@ func (*PaymentInvoiceModule) Init() error {
 	return restful.InitRestfulHandlers()
 }
 
-// initOrderService builds the gateway registry from configuration and installs the order service
-// the engine actions delegate to.
+// initOrderService builds the gateway registry and the domain services, and puts all three into
+// the dependency container.
+//
+// They are *registered* rather than only handed to the engine setters, because two later steps
+// resolve them from the container: the REST layer needs the order service and the registry to serve
+// the gateway callbacks, and OnAppStarted needs the order service to run the sweeps. Constructing
+// them here and only calling the setters would leave those Invokes with nothing to find — which
+// fails at boot, taking the whole application down rather than one module.
 //
 // The registry is built once and shared: each adapter holds a connection pool and, for VietQR, a
-// cached bearer token, so one instance per request would re-authenticate on every payment.
+// cached bearer token, so one instance per request would re-authenticate on every payment. dig
+// caches a constructor's result, so every consumer receives that same instance.
 func initOrderService() error {
-	return deps.Invoke(func(
-		cfg config.ConfigService,
-		httpClient *httpclientclient.HttpClient,
-		logger logging.LoggerService,
-	) error {
-		registry, err := gateway.BuildRegistry(cfg, httpClient, logger)
-		if err != nil {
-			return err
-		}
+	err := deps.Register(
+		func(
+			cfg config.ConfigService,
+			httpClient *httpclientclient.HttpClient,
+			logger logging.LoggerService,
+		) (*itGateway.Registry, error) {
+			return gateway.BuildRegistry(cfg, httpClient, logger)
+		},
+		services.NewOrderDomainService,
+		services.NewInvoiceDomainService,
+	)
+	if err != nil {
+		return err
+	}
 
-		dynamicengines.SetOrderService(services.NewOrderDomainService(registry))
-		dynamicengines.SetInvoiceService(services.NewInvoiceDomainService())
+	// The engine actions reach their services through package variables rather than the container,
+	// because an action callback is handed only its own engine. Resolving them once here is what
+	// connects the two.
+	return deps.Invoke(func(
+		orders *services.OrderDomainService,
+		invoices *services.InvoiceDomainService,
+	) error {
+		dynamicengines.SetOrderService(orders)
+		dynamicengines.SetInvoiceService(invoices)
 		return nil
 	})
 }

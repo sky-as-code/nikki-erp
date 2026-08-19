@@ -16,12 +16,14 @@ import (
 func NewGroupDomainServiceImpl(
 	groupRepo itGrp.GroupRepository,
 	permRepo itPerm.PermissionRepository,
+	historyRepo itPerm.PermissionHistoryRepository,
 	cqrsBus cqrs.CqrsBus,
 ) itGrp.GroupDomainService {
 	return &GroupDomainServiceImpl{
 		cqrsBus:   cqrsBus,
 		groupRepo: groupRepo,
 		permRepo:  permRepo,
+		auditor:   permissionAuditor{historyRepo: historyRepo},
 	}
 }
 
@@ -29,6 +31,7 @@ type GroupDomainServiceImpl struct {
 	cqrsBus   cqrs.CqrsBus
 	groupRepo itGrp.GroupRepository
 	permRepo  itPerm.PermissionRepository
+	auditor   permissionAuditor
 }
 
 func (this *GroupDomainServiceImpl) CreateGroup(
@@ -108,7 +111,34 @@ func (this *GroupDomainServiceImpl) ManageGroupRoleAssignments(
 	if err := this.permRepo.RebuildUserPermissionsForGroup(ctx, cmd.GroupId); err != nil {
 		return nil, err
 	}
+	// Recorded against the group, not its members: membership is what decides who
+	// this reaches, and that list changes independently of this event.
+	if err := this.auditGroupRoleAssignments(ctx, cmd); err != nil {
+		return nil, err
+	}
 	return result, nil
+}
+
+func (this *GroupDomainServiceImpl) auditGroupRoleAssignments(
+	ctx corectx.Context, cmd itGrp.ManageGroupRoleAssignmentsCommand,
+) error {
+	for _, roleId := range cmd.Add.ToSlice() {
+		if err := this.auditor.recordRoleTransition(
+			ctx, domain.PermissionHistoryEffectGrant, domain.PermissionHistoryReasonRoleAddedGroup,
+			roleId, []model.Id{cmd.GroupId},
+		); err != nil {
+			return err
+		}
+	}
+	for _, roleId := range cmd.Remove.ToSlice() {
+		if err := this.auditor.recordRoleTransition(
+			ctx, domain.PermissionHistoryEffectRevoke, domain.PermissionHistoryReasonRoleRemovedGroup,
+			roleId, []model.Id{cmd.GroupId},
+		); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (this *GroupDomainServiceImpl) ManageGroupUsers(

@@ -9,6 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
+	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 )
 
 func uomEngineSpec() engineSpec {
@@ -178,7 +179,8 @@ func assertSingleReferenceUom(
 func assertImmutableWhileInUse(
 	ctx corectx.Context, params dmodel.DynamicFields, found *models.Uom, vErrs *ft.ClientErrors,
 ) {
-	if !isUomInUse(ctx, found) {
+	inUse, by := isUomInUse(ctx, found)
+	if !inUse {
 		return
 	}
 	for _, field := range []string{models.UomFieldFactor, models.UomFieldUomType, models.UomFieldCategoryId} {
@@ -186,15 +188,36 @@ func assertImmutableWhileInUse(
 			continue
 		}
 		vErrs.Append(*ft.NewBusinessViolation(field, "uom.immutable_while_in_use",
-			"this UoM is already used by transactions; archive it and create a replacement instead"))
+			"this UoM is already used by "+by+" transactions; "+
+				"archive it and create a replacement instead"))
 	}
 }
 
-// isUomInUse reports whether any transaction references this UoM.
+// isUomInUse reports whether any consuming module's transactions reference this UoM, and which.
 //
-// TODO: no module consumes UoM yet. When stock, purchase or sales land, they must register
-// a usage probe here (through interfaces/external, per doc 01) so that BR-UOM-ESS-020 is
-// enforced against real transaction data rather than assumed false.
-func isUomInUse(_ corectx.Context, _ *models.Uom) bool {
-	return false
+// Essential cannot answer this from its own tables: the transactions live in Purchase, Stock and
+// whatever lands next, and importing them here would invert the dependency the ports exist to keep
+// one way. Consumers register a probe (interfaces/uom/usage.go, per doc 01) and this asks each in
+// turn.
+//
+// A probe that FAILS is treated as "in use". It knows only that it does not know, and permitting
+// the edit on that basis could reinterpret quantities already recorded — which is the one outcome
+// BR-UOM-ESS-020 exists to prevent. Refusing an edit that might have been fine is recoverable;
+// silently changing what a historical document means is not.
+//
+// With no probes registered the answer is false, which is correct for a deployment that has no
+// consuming module: nothing can be referencing the unit.
+func isUomInUse(ctx corectx.Context, found *models.Uom) (bool, string) {
+	if found == nil || found.GetId() == nil {
+		return false, ""
+	}
+	uomId := string(*found.GetId())
+
+	for _, probe := range itUom.UomUsageProbes() {
+		inUse, err := probe.IsUomInUse(ctx, uomId)
+		if err != nil || inUse {
+			return true, probe.ModuleName()
+		}
+	}
+	return false, ""
 }

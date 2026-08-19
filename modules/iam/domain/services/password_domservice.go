@@ -14,6 +14,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
+	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/password"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
@@ -225,10 +227,12 @@ func (this *PasswordDomainServiceImpl) CreatePasswordTemp(ctx corectx.Context, c
 		return nil, err
 	}
 
+	// The generated password is a live credential. It is never logged: a secret
+	// written to the log outlives the request, spreads to wherever logs are
+	// shipped, and is readable by people who were never granted the account.
 	this.logger.Debug("create temp password", logging.Attr{
 		"principalType": cmd.PrincipalType,
 		"username":      cmd.Username,
-		"passwordtmp":   tmpPass,
 	})
 
 	tmpPassHash, err := crypto.GenerateFromPassword([]byte(tmpPass))
@@ -250,13 +254,35 @@ func (this *PasswordDomainServiceImpl) CreatePasswordTemp(ctx corectx.Context, c
 	)
 	ft.PanicOnErr(err)
 
+	data := it.CreatePasswordTempResultData{
+		CreatedAt: model.NewModelDateTime(),
+		ExpiresAt: tmpPassExpiresAt,
+	}
+	// An administrator running account recovery has to be able to hand the password
+	// to the person. Anyone else gets the timestamps only - the password reaches
+	// the account holder through whatever delivery channel is configured, exactly
+	// as before.
+	if this.canReadTempPassword(ctx) {
+		data.Password = &tmpPass
+	}
+
 	return &it.CreatePasswordTempResult{
-		Data: it.CreatePasswordTempResultData{
-			CreatedAt: model.NewModelDateTime(),
-			ExpiresAt: tmpPassExpiresAt,
-		},
+		Data:    data,
 		HasData: true,
 	}, nil
+}
+
+// canReadTempPassword reports whether the caller holds `manage_credentials` on
+// iam_user, the action that specifically covers issuing and reading back a
+// recovery credential.
+//
+// This is a real permission check, not a test-mode flag: the same grant that lets
+// an administrator recover an account in production is the one the API test suite
+// signs in with.
+func (this *PasswordDomainServiceImpl) canReadTempPassword(ctx corectx.Context) bool {
+	return reguard.AssertPermission(ctx, reguard.PermFor(
+		c.ActionManageCredentials, models.UserSchemaName, reguard.ResourceScopeDomain,
+	)) == nil
 }
 
 func (this *PasswordDomainServiceImpl) SetPassword(ctx corectx.Context, cmd it.SetPasswordCommand) (_ *it.SetPasswordResult, err error) {

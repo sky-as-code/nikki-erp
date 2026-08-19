@@ -22,6 +22,7 @@ func NewUserDomainServiceImpl(
 	enumSvc enum.EnumService,
 	userRepo it.UserRepository,
 	permRepo itPerm.PermissionRepository,
+	historyRepo itPerm.PermissionHistoryRepository,
 	cqrsBus cqrs.CqrsBus,
 	eventBus event.EventBus,
 ) it.UserDomainService {
@@ -29,6 +30,7 @@ func NewUserDomainServiceImpl(
 		enumSvc:  enumSvc,
 		userRepo: userRepo,
 		permRepo: permRepo,
+		auditor:  permissionAuditor{historyRepo: historyRepo},
 		cqrs:     cqrsBus,
 		eventBus: eventBus,
 	}
@@ -38,6 +40,7 @@ type UserDomainServiceImpl struct {
 	enumSvc  enum.EnumService
 	userRepo it.UserRepository
 	permRepo itPerm.PermissionRepository
+	auditor  permissionAuditor
 	eventBus event.EventBus
 	cqrs     cqrs.CqrsBus
 }
@@ -72,7 +75,34 @@ func (this *UserDomainServiceImpl) ManageUserRoleAssignments(
 	if err := this.permRepo.RebuildUserPermission(ctx, cmd.UserId); err != nil {
 		return nil, err
 	}
+	// Same transaction as the assignment: the trail and the grant stand or fall together.
+	if err := this.auditRoleAssignments(ctx, cmd); err != nil {
+		return nil, err
+	}
 	return result, nil
+}
+
+func (this *UserDomainServiceImpl) auditRoleAssignments(
+	ctx corectx.Context, cmd it.ManageUserRoleAssignmentsCommand,
+) error {
+	receivers := []model.Id{cmd.UserId}
+	for _, roleId := range cmd.Add.ToSlice() {
+		if err := this.auditor.recordRoleTransition(
+			ctx, domain.PermissionHistoryEffectGrant, domain.PermissionHistoryReasonRoleAdded,
+			roleId, receivers,
+		); err != nil {
+			return err
+		}
+	}
+	for _, roleId := range cmd.Remove.ToSlice() {
+		if err := this.auditor.recordRoleTransition(
+			ctx, domain.PermissionHistoryEffectRevoke, domain.PermissionHistoryReasonRoleRemoved,
+			roleId, receivers,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (this *UserDomainServiceImpl) CreateUser(

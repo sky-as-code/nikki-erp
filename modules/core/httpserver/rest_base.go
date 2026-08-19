@@ -33,8 +33,47 @@ func JsonOk(echoCtx *echo.Context, data any) error {
 	return echoCtx.JSON(http.StatusOK, data)
 }
 
+// JsonBadRequest answers a client error, choosing the status from the error itself:
+// an authorization refusal is a 403, everything else is a 400. Routing it through this
+// one helper is deliberate — the hand-written routes and the generic engine routes must
+// answer a refusal identically, or a permission enforced on one and not the other is not
+// enforced at all.
 func JsonBadRequest(echoCtx *echo.Context, err any) error {
-	return echoCtx.JSON(http.StatusBadRequest, err)
+	return echoCtx.JSON(clientErrorStatus(err), err)
+}
+
+func clientErrorStatus(err any) int {
+	if isAuthorizationPayload(err) {
+		return http.StatusForbidden
+	}
+	return http.StatusBadRequest
+}
+
+// isAuthorizationPayload inspects the shapes callers actually pass to JsonBadRequest:
+// a ClientErrors collection, a loose []any of items, or a single item.
+func isAuthorizationPayload(err any) bool {
+	switch payload := err.(type) {
+	case ft.ClientErrors:
+		return payload.HasAuthorizationError()
+	case *ft.ClientErrors:
+		return payload != nil && payload.HasAuthorizationError()
+	case ft.ClientErrorItem:
+		return ft.IsAuthorizationError(payload)
+	case *ft.ClientErrorItem:
+		return payload != nil && ft.IsAuthorizationError(*payload)
+	case []any:
+		return anyItemIsAuthorization(payload)
+	}
+	return false
+}
+
+func anyItemIsAuthorization(items []any) bool {
+	for _, item := range items {
+		if isAuthorizationPayload(item) {
+			return true
+		}
+	}
+	return false
 }
 
 func NewRestCreateResponseDyn(fields dmodel.DynamicFields) *RestCreateResponse {

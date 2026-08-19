@@ -132,6 +132,14 @@ func (this *Resource) SetId(v *model.Id) {
 	this.GetFieldData().SetModelId(basemodel.FieldId, v)
 }
 
+func (this Resource) GetCode() *string {
+	return this.GetFieldData().GetString(ResourceFieldCode)
+}
+
+func (this *Resource) SetCode(v *string) {
+	this.GetFieldData().SetString(ResourceFieldCode, v)
+}
+
 func (this Resource) GetMaxScope() *c.ResourceScope {
 	s := this.GetFieldData().GetString(ResourceFieldMaxScope)
 	if s == nil {

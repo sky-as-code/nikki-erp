@@ -93,14 +93,24 @@ func (CreatePasswordTempCommand) CqrsRequestType() cqrs.RequestType {
 	return createPasswordTempCommandType
 }
 
+// GetSchema validates the fields this command actually carries.
+//
+// It previously required `principal_id` and `otp_code`, neither of which exists on
+// the struct, while leaving the real fields unvalidated - so every call was
+// rejected for missing fields the caller had no way to send, and the endpoint
+// could not be used at all. `send_channel` stays optional: the caller may take the
+// password back in the response instead of having it delivered.
 func (CreatePasswordTempCommand) GetSchema() *dmodel.ModelSchema {
 	return dmodel.GetOrRegisterSchema(
 		"iam.create_password_temp_command",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(models.DefinePrincipalTypeField("principal_type").RequiredAlways()).
-				Field(models.DefinePasswordSendChannelField("principal_id").RequiredAlways()).
-				Field(models.DefinePasswordOtpField("otp_code").RequiredAlways())
+				Field(models.DefinePrincipalTypeField("subject_type").RequiredAlways()).
+				Field(models.DefinePasswordSendChannelField("send_channel")).
+				Field(dmodel.DefineField().Name("username").
+					DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_DESC_LENGTH)).
+					RequiredAlways(),
+				)
 		},
 	)
 }
@@ -108,6 +118,12 @@ func (CreatePasswordTempCommand) GetSchema() *dmodel.ModelSchema {
 type CreatePasswordTempResultData struct {
 	CreatedAt model.ModelDateTime `json:"created_at"`
 	ExpiresAt model.ModelDateTime `json:"expires_at"`
+
+	// Password is present only when the caller holds `manage_credentials` on
+	// iam_user, so that an administrator can hand the credential to the account
+	// holder. Omitted entirely for everyone else - never an empty string, which
+	// would be indistinguishable from a generated password of no characters.
+	Password *string `json:"password,omitempty"`
 }
 type CreatePasswordTempResult = dyn.OpResult[CreatePasswordTempResultData]
 

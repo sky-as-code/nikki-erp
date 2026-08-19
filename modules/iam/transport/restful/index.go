@@ -25,6 +25,7 @@ func InitRestfulHandlers() error {
 		v1.NewRoleRest,
 		v1.NewLoginRest,
 		v1.NewPasswordRest,
+		v1.NewPermissionRest,
 		// v1.NewRoleRequestRest,
 	)
 	err = stdErr.Join(
@@ -44,6 +45,7 @@ func initIamDirectoryV1() error {
 		groupRest *v1.GroupRest,
 		orgRest *v1.OrganizationRest,
 		orgunitRest *v1.OrgUnitRest,
+		permissionRest *v1.PermissionRest,
 	) error {
 		routeV1 := route.Group("/v1/iam")
 
@@ -77,6 +79,11 @@ func initIamDirectoryV1() error {
 		routeV1.PATCH("/orgunits/:id", orgunitRest.UpdateOrgUnit, m.SmokeAuthz())
 
 		routeV1.GET("/me/context", userRest.GetUserContext, m.SmokeAuthz())
+
+		// Authenticated-only, like /me/context above: it answers only about the
+		// caller's own access, and gating it behind an entitlement would keep it
+		// from the plain users who need it to understand a refusal.
+		routeV1.POST("/me/test-permissions", permissionRest.TestMyPermissions, m.SmokeAuthz())
 
 		// User is the pilot resource of the dynamic resource engine. Its engine-served
 		// endpoints live at /v1/iam/iam_user and coexist with the hand-written /v1/iam/users

@@ -122,6 +122,19 @@ func IsAuthorizationError(cErr ClientErrorItem) bool {
 	return (cErr.Type == ClientErrorTypeAuthorization)
 }
 
+// HasAuthorizationError reports whether any item in the collection is an authorization
+// refusal. The transport layer uses it to answer 403 instead of 400: a caller who is
+// refused for lack of permission has not sent a bad request, and telling them so sends
+// them off to fix a payload that was never wrong.
+func (this ClientErrors) HasAuthorizationError() bool {
+	for _, item := range this {
+		if IsAuthorizationError(item) {
+			return true
+		}
+	}
+	return false
+}
+
 func NewBusinessViolation(field string, key string, message string, vars ...map[string]any) *ClientErrorItem {
 	msgVars := safe.GetOptional(vars, nil)
 

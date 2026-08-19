@@ -87,6 +87,7 @@ func (this *IamModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.RoleGroupAssignmentSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.RoleUserAssignmentSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.UserPermissionSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.PermissionHistorySchemaBuilder()),
 
 		dmodel.RegisterSchemaB(models.LoginAttemptSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.MethodSettingSchemaBuilder()),
