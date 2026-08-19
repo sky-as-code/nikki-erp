@@ -18,7 +18,13 @@ import (
 // opposite. The mPOS adapter is reached through this interface rather than by importing the
 // package, so the domain layer still does not depend on any adapter.
 type posOrderClearer interface {
-	RemovePosOrders(ctx corectx.Context, orderCode string, posId string, amount decimal.Decimal) error
+	RemovePosOrders(
+		ctx corectx.Context,
+		orderCode string,
+		posId string,
+		amount decimal.Decimal,
+		profileConfig map[string]any,
+	) error
 }
 
 // RemovePosOrdersCommand names the terminal whose queued prompts are to be cleared.
@@ -94,9 +100,16 @@ func (this *OrderDomainService) clearOneposOrder(
 		return false, nil
 	}
 
+	// The prompt is withdrawn by the account that queued it: the terminal holds it against that
+	// merchant, and another account's credentials cannot cancel it.
+	profileConfig, err := this.profileConfigForOrder(ctx, order)
+	if err != nil {
+		return false, err
+	}
+
 	posId, _ := order.GetMetadata()[models.OrderMetaPosId].(string)
 	err = clearer.RemovePosOrders(ctx,
-		derefString(order.GetOrderCode()), posId, derefDecimal(order.GetAmount()))
+		derefString(order.GetOrderCode()), posId, derefDecimal(order.GetAmount()), profileConfig)
 	if err != nil {
 		// The prompt may still be live on the terminal, so the order is left payable rather
 		// than marked expired against a gateway that still considers it open.

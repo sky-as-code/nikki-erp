@@ -137,3 +137,27 @@ func TestARefundCommandIsBuiltFromTheBusinessOrderId(t *testing.T) {
 	assert.Equal(t, "VDMCMOM0Q8HABCDEFGH", cmd.OrderId)
 	assert.Equal(t, "50000", cmd.Amount.String())
 }
+
+// The merchant account is optional: a caller that names none is collected with the credentials in
+// this deployment's configuration, which is what every caller did before profiles existed. Making
+// it required would have broken every existing vending machine on the day profiles shipped.
+func TestAPaymentProfileIsOptional(t *testing.T) {
+	cmd, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
+		paramPaymentMethodId: "01METHOD0000000000000000000",
+		paramAmount:          "150000",
+	})
+
+	assert.Zero(t, vErrs.Count())
+	assert.Empty(t, cmd.PaymentProfileId)
+}
+
+func TestAPaymentProfileIsCarriedIntoTheCommand(t *testing.T) {
+	cmd, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
+		paramPaymentMethodId:  "01METHOD0000000000000000000",
+		paramPaymentProfileId: "01PROFILE000000000000000000",
+		paramAmount:           "150000",
+	})
+
+	assert.Zero(t, vErrs.Count())
+	assert.Equal(t, "01PROFILE000000000000000000", cmd.PaymentProfileId)
+}

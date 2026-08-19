@@ -85,6 +85,11 @@ func (this *Adapter) CreatePayment(
 		return nil, err
 	}
 
+	config, err := this.resolveConfig(req.ProfileConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	payload := addOrderRequest{
 		ServiceName:   ServiceAddOrder,
 		OrderId:       req.OrderCode,
@@ -95,7 +100,7 @@ func (this *Adapter) CreatePayment(
 		PaymentMethod: PaymentMethodCard,
 	}
 
-	raw, err := this.call(ctx, pathOrder, payload, nil)
+	raw, err := this.call(ctx, config, pathOrder, payload, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +124,11 @@ func (this *Adapter) Refund(
 		return nil, errors.New("mpos refund needs the gateway transaction code of the payment")
 	}
 
+	config, err := this.resolveConfig(req.ProfileConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	payload := refundRequest{
 		ServiceName:  ServiceRefundTransaction,
 		TransCode:    req.RefTransactionId,
@@ -127,7 +137,7 @@ func (this *Adapter) Refund(
 	}
 
 	var decoded refundResponse
-	raw, err := this.call(ctx, pathTransaction, payload, &decoded)
+	raw, err := this.call(ctx, config, pathTransaction, payload, &decoded)
 	if err != nil {
 		return nil, err
 	}
@@ -157,6 +167,11 @@ func (this *Adapter) CheckOrder(
 		return nil, err
 	}
 
+	config, err := this.resolveConfig(req.ProfileConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	payload := checkOrderRequest{
 		ServiceName: ServiceGetTransactionStatus,
 		OrderId:     req.OrderCode,
@@ -166,7 +181,7 @@ func (this *Adapter) CheckOrder(
 	}
 
 	var decoded checkOrderResponse
-	raw, err := this.call(ctx, pathOrder, payload, &decoded)
+	raw, err := this.call(ctx, config, pathOrder, payload, &decoded)
 	if err != nil {
 		return nil, err
 	}
@@ -181,16 +196,27 @@ func (this *Adapter) CheckOrder(
 
 // RemovePosOrders clears one order queued on a terminal.
 //
-// The caller decides which orders those are; this only speaks to the gateway.
+// The caller decides which orders those are; this only speaks to the gateway. profileConfig is the
+// credentials of the payment profile that queued the order, because a prompt can only be withdrawn
+// by the merchant account that put it there.
 func (this *Adapter) RemovePosOrders(
-	ctx corectx.Context, orderCode string, posId string, amount decimal.Decimal,
+	ctx corectx.Context,
+	orderCode string,
+	posId string,
+	amount decimal.Decimal,
+	profileConfig map[string]any,
 ) error {
 	wholeAmount, err := toWholeUnits(amount)
 	if err != nil {
 		return err
 	}
 
-	_, err = this.call(ctx, pathOrder, removeOrderRequest{
+	config, err := this.resolveConfig(profileConfig)
+	if err != nil {
+		return err
+	}
+
+	_, err = this.call(ctx, config, pathOrder, removeOrderRequest{
 		ServiceName: ServiceRemoveOrder,
 		OrderId:     orderCode,
 		PosId:       posId,
@@ -202,14 +228,31 @@ func (this *Adapter) RemovePosOrders(
 // DecryptWebhook turns the reqData of an inbound callback into its payload.
 //
 // Being able to decrypt it *is* the authentication: the body is encrypted under the merchant
-// secret, which only the gateway and this deployment hold. A body that fails to decrypt did not
-// come from mPOS and must be refused rather than acted on.
-func (this *Adapter) DecryptWebhook(reqData string) (*WebhookPayload, error) {
+// secret, which only the gateway and the account holder hold. A body that fails to decrypt did not
+// come from mPOS under those credentials and must be refused rather than acted on.
+//
+// profileConfig is the credentials of the payment profile whose merchant id the callback names, or
+// nil for the deployment's own account. It has to be resolved before this is called, because the
+// callback carries nothing but that merchant id in the clear — the order it concerns is inside the
+// very payload the credentials are needed to read.
+func (this *Adapter) DecryptWebhook(
+	reqData string, profileConfig map[string]any,
+) (*WebhookPayload, error) {
+	config, err := this.resolveConfig(profileConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	var payload WebhookPayload
-	if err := decrypt(reqData, this.config.SecretKey, &payload); err != nil {
+	if err := decrypt(reqData, config.SecretKey, &payload); err != nil {
 		return nil, err
 	}
 	return &payload, nil
+}
+
+// MerchantId is the merchant account this deployment's own configuration names.
+func (this *Adapter) MerchantId() string {
+	return this.config.MerchantId
 }
 
 // WebhookOutcome reports what a callback means for the order it names.
@@ -222,9 +265,9 @@ func WebhookOutcome(payload WebhookPayload) (settled bool, paid bool) {
 // out may be nil for a request whose reply carries nothing worth decoding; the raw map is
 // returned either way, so the caller can keep the gateway's own words as evidence.
 func (this *Adapter) call(
-	ctx corectx.Context, path string, payload any, out any,
+	ctx corectx.Context, config Config, path string, payload any, out any,
 ) (map[string]any, error) {
-	reqData, err := encrypt(payload, this.config.SecretKey)
+	reqData, err := encrypt(payload, config.SecretKey)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +275,7 @@ func (this *Adapter) call(
 	httpResponse, err := this.caller.Do(ctx, &httpclient.Request{
 		Method: http.MethodPost,
 		Path:   path,
-		Body:   envelope{MerchantId: this.config.MerchantId, ReqData: reqData},
+		Body:   envelope{MerchantId: config.MerchantId, ReqData: reqData},
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "mpos request to %s failed", path)
@@ -261,13 +304,13 @@ func (this *Adapter) call(
 	// evidence. A reply we cannot re-decode as a map is still one we understood, so losing the
 	// evidence copy must not fail the payment.
 	if out != nil {
-		if err := decrypt(decoded.ResData, this.config.SecretKey, out); err != nil {
+		if err := decrypt(decoded.ResData, config.SecretKey, out); err != nil {
 			return nil, err
 		}
 	}
 
 	inner := map[string]any{}
-	if err := decrypt(decoded.ResData, this.config.SecretKey, &inner); err == nil {
+	if err := decrypt(decoded.ResData, config.SecretKey, &inner); err == nil {
 		raw["resData"] = inner
 	}
 

@@ -52,11 +52,15 @@ type Config struct {
 type Adapter struct {
 	config Config
 	caller *httpclient.HttpCaller
-	tokens *tokenCache
+
+	// tokens holds one bearer per set of credentials. It is a store rather than a single cache
+	// because a payment profile brings its own login, and a token issued to one account must
+	// never be presented on another account's request.
+	tokens *tokenStore
 }
 
 func NewAdapter(config Config, caller *httpclient.HttpCaller) *Adapter {
-	return &Adapter{config: config, caller: caller, tokens: newTokenCache(nil)}
+	return &Adapter{config: config, caller: caller, tokens: newTokenStore(nil)}
 }
 
 func (this *Adapter) AdapterCode() string {
@@ -82,10 +86,12 @@ func (this *Adapter) CreatePayment(
 		return nil, err
 	}
 
+	config := this.resolveConfig(req.ProfileConfig)
+
 	payload := generateQrRequest{
-		BankCode:     this.config.BankCode,
-		BankAccount:  this.config.BankNumber,
-		UserBankName: this.config.BankName,
+		BankCode:     config.BankCode,
+		BankAccount:  config.BankNumber,
+		UserBankName: config.BankName,
 		Content:      trimContent(contentOf(req.Content, req.OrderCode)),
 		QrType:       QrTypeDynamic,
 		Amount:       amount,
@@ -94,7 +100,7 @@ func (this *Adapter) CreatePayment(
 	}
 
 	var decoded generateQrResponse
-	raw, err := this.post(ctx, pathGenerateQr, payload, &decoded)
+	raw, err := this.post(ctx, config, pathGenerateQr, payload, &decoded)
 	if err != nil {
 		return nil, err
 	}
@@ -126,19 +132,20 @@ func (this *Adapter) Refund(
 	// The amount string is sent and checksummed, so it is rendered once and used for both. The
 	// two disagreeing is a rejected refund with no explanation.
 	amountText := strconv.FormatInt(amount, 10)
+	config := this.resolveConfig(req.ProfileConfig)
 
 	payload := refundRequest{
-		BankAccount:     this.config.BankNumber,
+		BankAccount:     config.BankNumber,
 		ReferenceNumber: req.RefTransactionId,
 		Amount:          amountText,
 		Content:         contentOf(req.Content, "Refund "+req.OrderCode),
 		CheckSum: refundChecksum(
-			this.config.SecretKey, req.RefTransactionId, amountText, this.config.BankNumber),
-		BankCode: this.config.BankCode,
+			config.SecretKey, req.RefTransactionId, amountText, config.BankNumber),
+		BankCode: config.BankCode,
 	}
 
 	var decoded refundResponse
-	raw, err := this.post(ctx, pathRefund, payload, &decoded)
+	raw, err := this.post(ctx, config, pathRefund, payload, &decoded)
 	if err != nil {
 		return nil, err
 	}
@@ -158,16 +165,18 @@ func (this *Adapter) Refund(
 func (this *Adapter) CheckOrder(
 	ctx corectx.Context, req itGateway.CheckOrderRequest,
 ) (*itGateway.CheckOrderResult, error) {
+	config := this.resolveConfig(req.ProfileConfig)
+
 	payload := checkOrderRequest{
-		BankAccount: this.config.BankNumber,
+		BankAccount: config.BankNumber,
 		Type:        checkOrderTypeByOrderId,
 		Value:       req.OrderCode,
-		CheckSum:    checkOrderChecksum(this.config.BankNumber, this.config.Username),
+		CheckSum:    checkOrderChecksum(config.BankNumber, config.Username),
 	}
 
 	// This reply is a JSON array rather than an object, so it is decoded on its own rather than
 	// through post's struct path.
-	body, err := this.send(ctx, pathCheckOrder, payload)
+	body, err := this.send(ctx, config, pathCheckOrder, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -197,9 +206,9 @@ func (this *Adapter) CheckOrder(
 
 // post sends a JSON request under a bearer token and decodes the reply into out.
 func (this *Adapter) post(
-	ctx corectx.Context, path string, payload any, out any,
+	ctx corectx.Context, config Config, path string, payload any, out any,
 ) (map[string]any, error) {
-	body, err := this.send(ctx, path, payload)
+	body, err := this.send(ctx, config, path, payload)
 	if err != nil {
 		return nil, err
 	}
@@ -219,8 +228,10 @@ func (this *Adapter) post(
 //
 // The single retry exists because the gateway's idea of when a session ends is the one that
 // counts: it may drop a token we still believe is live, and a payment should not fail for that.
-func (this *Adapter) send(ctx corectx.Context, path string, payload any) ([]byte, error) {
-	response, err := this.sendOnce(ctx, path, payload)
+func (this *Adapter) send(
+	ctx corectx.Context, config Config, path string, payload any,
+) ([]byte, error) {
+	response, err := this.sendOnce(ctx, config, path, payload)
 	if err == nil {
 		return response, nil
 	}
@@ -229,16 +240,18 @@ func (this *Adapter) send(ctx corectx.Context, path string, payload any) ([]byte
 		return nil, err
 	}
 
-	this.tokens.invalidate()
-	return this.sendOnce(ctx, path, payload)
+	this.tokens.cacheFor(config.Username).invalidate()
+	return this.sendOnce(ctx, config, path, payload)
 }
 
 // errUnauthorized marks the one failure worth retrying: a token the gateway would not accept.
 var errUnauthorized = errors.New("vietqr rejected the bearer token")
 
-func (this *Adapter) sendOnce(ctx corectx.Context, path string, payload any) ([]byte, error) {
-	token, err := this.tokens.get(func() (string, time.Duration, error) {
-		return this.login(ctx)
+func (this *Adapter) sendOnce(
+	ctx corectx.Context, config Config, path string, payload any,
+) ([]byte, error) {
+	token, err := this.tokens.cacheFor(config.Username).get(func() (string, time.Duration, error) {
+		return this.login(ctx, config)
 	})
 	if err != nil {
 		return nil, err
@@ -267,10 +280,10 @@ func (this *Adapter) sendOnce(ctx corectx.Context, path string, payload any) ([]
 // login exchanges the outbound credentials for a bearer token.
 //
 // VietQR takes them as HTTP Basic, which is why they are encoded here rather than sent as a body.
-func (this *Adapter) login(ctx corectx.Context) (string, time.Duration, error) {
+func (this *Adapter) login(ctx corectx.Context, config Config) (string, time.Duration, error) {
 	headers := http.Header{}
 	headers.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString(
-		[]byte(this.config.Username+":"+this.config.Password)))
+		[]byte(config.Username+":"+config.Password)))
 
 	response, err := this.caller.Do(ctx, &httpclient.Request{
 		Method:  http.MethodPost,

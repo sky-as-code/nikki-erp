@@ -67,7 +67,7 @@ func (*PaymentInvoiceModule) Version() semver.SemVer {
 // from it, that service before the engines whose actions delegate to it, and the engines before
 // the REST layer that registers their routes.
 func (*PaymentInvoiceModule) Init() error {
-	if err := initOrderService(); err != nil {
+	if err := initDomainServices(); err != nil {
 		return err
 	}
 	// After initOrderService, because the payment-method service is constructed with the gateway
@@ -81,7 +81,7 @@ func (*PaymentInvoiceModule) Init() error {
 	return restful.InitRestfulHandlers()
 }
 
-// initOrderService builds the gateway registry and the domain services, and puts all three into
+// initDomainServices builds the gateway registry and the domain services, and puts them all into
 // the dependency container.
 //
 // They are *registered* rather than only handed to the engine setters, because two later steps
@@ -93,7 +93,7 @@ func (*PaymentInvoiceModule) Init() error {
 // The registry is built once and shared: each adapter holds a connection pool and, for VietQR, a
 // cached bearer token, so one instance per request would re-authenticate on every payment. dig
 // caches a constructor's result, so every consumer receives that same instance.
-func initOrderService() error {
+func initDomainServices() error {
 	err := deps.Register(
 		func(
 			cfg config.ConfigService,
@@ -104,6 +104,7 @@ func initOrderService() error {
 		},
 		services.NewOrderDomainService,
 		services.NewInvoiceDomainService,
+		services.NewPaymentProfileDomainService,
 	)
 	if err != nil {
 		return err
@@ -115,9 +116,11 @@ func initOrderService() error {
 	return deps.Invoke(func(
 		orders *services.OrderDomainService,
 		invoices *services.InvoiceDomainService,
+		profiles *services.PaymentProfileDomainService,
 	) error {
 		dynamicengines.SetOrderService(orders)
 		dynamicengines.SetInvoiceService(invoices)
+		dynamicengines.SetPaymentProfileService(profiles)
 		return nil
 	})
 }
@@ -128,10 +131,15 @@ func initOrderService() error {
 // schema registry at registration time: the payment method is pointed at by both the order and the
 // transaction, the transaction points at the order, and the invoice line at the invoice.
 //
+// The payment profile is first because nothing points at it and it points at nothing: it names the
+// merchant account a payment settles into, which an order records by id rather than by edge, so a
+// profile can be withdrawn without the orders it collected losing their history.
+//
 // The edges onto essential_currency resolve because Essential is named in Deps() and every
 // module's RegisterModels runs in dependency order, before any module's Init().
 func (*PaymentInvoiceModule) RegisterModels() error {
 	return stdErr.Join(
+		dmodel.RegisterSchemaB(models.PaymentProfileSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.PaymentMethodSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.OrderSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.TransactionSchemaBuilder()),

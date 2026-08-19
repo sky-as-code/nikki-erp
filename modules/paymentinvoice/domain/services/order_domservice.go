@@ -19,9 +19,12 @@ import (
 	itGateway "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/gateway"
 )
 
-// NewOrderDomainService wires the order rules onto the gateway registry they select from.
-func NewOrderDomainService(registry *itGateway.Registry) *OrderDomainService {
-	return &OrderDomainService{registry: registry, now: time.Now}
+// NewOrderDomainService wires the order rules onto the gateway registry they select from and the
+// profiles that say which merchant account each payment lands in.
+func NewOrderDomainService(
+	registry *itGateway.Registry, profiles *PaymentProfileDomainService,
+) *OrderDomainService {
+	return &OrderDomainService{registry: registry, profiles: profiles, now: time.Now}
 }
 
 // OrderDomainService takes payments and gives them back.
@@ -32,6 +35,11 @@ func NewOrderDomainService(registry *itGateway.Registry) *OrderDomainService {
 // for.
 type OrderDomainService struct {
 	registry *itGateway.Registry
+
+	// profiles resolves the merchant credentials an order is collected with. Every step after
+	// the payment is created reads them back through it, because a refund or a callback has to
+	// use the same account the money moved through. See order_profile.go.
+	profiles *PaymentProfileDomainService
 
 	// now is injected so the order-code date prefix can be pinned in a test.
 	now func() time.Time
@@ -46,6 +54,10 @@ type CreatePaymentCommand struct {
 	Content         *string
 	ReturnUrl       *string
 
+	// PaymentProfileId names the merchant account to collect into. Optional: an order without one
+	// is collected with the credentials in this deployment's configuration.
+	PaymentProfileId string
+
 	// Metadata is the method-specific input, uninterpreted. Only the selected adapter reads it.
 	Metadata map[string]any
 }
@@ -53,7 +65,13 @@ type CreatePaymentCommand struct {
 // CreatePaymentResult is what the payer needs in order to pay. Both URLs are empty for a card
 // terminal, where the prompt is pushed to the device the customer is standing at.
 type CreatePaymentResult struct {
-	OrderId   string
+	OrderId string
+
+	// OrderCode is the identifier the gateway knows this order by, and the key its callback will
+	// arrive under. It is returned because the caller needs it to reconcile what the gateway later
+	// reports against the order it opened; the ordering system quotes OrderId instead.
+	OrderCode string
+
 	QrCodeUrl string
 	PayUrl    string
 }
@@ -87,12 +105,21 @@ func (this *OrderDomainService) CreatePayment(
 
 	assertAmountWithinMethodBounds(cmd.Amount, method, vErrs)
 
+	// Errors accumulate rather than returning here: the adapter's own ValidateOrder runs next, and
+	// short-circuiting would report an out-of-bounds amount while hiding a missing terminal id, so
+	// the caller would fix one problem and be told about the other on the next attempt.
+	profile, err := this.loadProfileForCreate(ctx, cmd.PaymentProfileId, *method, vErrs)
+	if err != nil {
+		return nil, vErrs, err
+	}
+
 	orderReq := itGateway.OrderRequest{
-		Amount:       cmd.Amount,
-		CurrencyCode: "",
-		Content:      cmd.Content,
-		Metadata:     cmd.Metadata,
-		MethodConfig: method.GetConfig(),
+		Amount:        cmd.Amount,
+		CurrencyCode:  "",
+		Content:       cmd.Content,
+		Metadata:      cmd.Metadata,
+		MethodConfig:  method.GetConfig(),
+		ProfileConfig: profileConfigOf(profile),
 	}
 	if err := adapter.ValidateOrder(ctx, orderReq, vErrs); err != nil {
 		return nil, vErrs, err
@@ -106,7 +133,7 @@ func (this *OrderDomainService) CreatePayment(
 		return nil, vErrs, err
 	}
 
-	order, transaction, err := this.persistNewOrder(ctx, cmd, *method, adapterMeta)
+	order, transaction, err := this.persistNewOrder(ctx, cmd, *method, profile, adapterMeta)
 	if err != nil {
 		return nil, vErrs, err
 	}
@@ -132,11 +159,12 @@ func (this *OrderDomainService) collect(
 
 	created, gatewayErr := adapter.CreatePayment(ctx, itGateway.CreatePaymentRequest{
 		OrderRequest: itGateway.OrderRequest{
-			Amount:       orderReq.Amount,
-			CurrencyCode: orderReq.CurrencyCode,
-			Content:      orderReq.Content,
-			Metadata:     order.GetMetadata(),
-			MethodConfig: orderReq.MethodConfig,
+			Amount:        orderReq.Amount,
+			CurrencyCode:  orderReq.CurrencyCode,
+			Content:       orderReq.Content,
+			Metadata:      order.GetMetadata(),
+			MethodConfig:  orderReq.MethodConfig,
+			ProfileConfig: orderReq.ProfileConfig,
 		},
 		OrderCode: orderCode,
 	})
@@ -158,6 +186,7 @@ func (this *OrderDomainService) collect(
 
 	return &CreatePaymentResult{
 		OrderId:   derefString(order.GetOrderId()),
+		OrderCode: orderCode,
 		QrCodeUrl: created.QrCodeUrl,
 		PayUrl:    created.PayUrl,
 	}, vErrs, nil
@@ -235,6 +264,7 @@ func (this *OrderDomainService) persistNewOrder(
 	ctx corectx.Context,
 	cmd CreatePaymentCommand,
 	method models.PaymentMethod,
+	profile *models.PaymentProfile,
 	adapterMeta map[string]any,
 ) (*models.Order, *models.Transaction, error) {
 	orderCode, err := this.allocateOrderCode(ctx)
@@ -272,6 +302,12 @@ func (this *OrderDomainService) persistNewOrder(
 		}
 		if cmd.ReturnUrl != nil && *cmd.ReturnUrl != "" {
 			orderFields[models.OrderFieldReturnUrl] = *cmd.ReturnUrl
+		}
+		// Recorded on the order, not only used for this call: every later step — the refund, the
+		// callback verification, the watchdog's question — has to reach for the same credentials
+		// the money was taken with.
+		if profile != nil {
+			orderFields[models.OrderFieldPaymentProfileId] = derefString((*string)(profile.GetId()))
 		}
 		if metadata := mergeMetadata(cmd.Metadata, adapterMeta); metadata != nil {
 			orderFields[models.OrderFieldMetadata] = metadata

@@ -57,10 +57,19 @@ func (this *OrderDomainService) ReconcileStaleOrder(
 		return &WatchdogVerdict{}, nil
 	}
 
+	// The question goes to the account that took the payment. A gateway asked about an order under
+	// another merchant's credentials answers that it has never seen it, which the sweep would read
+	// as "not settled" and eventually expire — closing an order the customer really did pay.
+	profileConfig, err := this.profileConfigById(ctx, stale.PaymentProfileId)
+	if err != nil {
+		return nil, err
+	}
+
 	outcome, err := adapter.CheckOrder(ctx, itGateway.CheckOrderRequest{
-		OrderCode: stale.OrderCode,
-		Amount:    derefDecimal(order.GetAmount()),
-		Metadata:  stale.Metadata,
+		OrderCode:     stale.OrderCode,
+		Amount:        derefDecimal(order.GetAmount()),
+		Metadata:      stale.Metadata,
+		ProfileConfig: profileConfig,
 	})
 	if err != nil {
 		// The gateway could not be reached or refused the question. The order keeps its status and

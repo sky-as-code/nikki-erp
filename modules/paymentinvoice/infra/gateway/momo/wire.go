@@ -32,7 +32,13 @@ type createPaymentRequest struct {
 	RequestType string `json:"requestType"`
 	ExtraData   string `json:"extraData"`
 	Lang        string `json:"lang"`
-	Signature   string `json:"signature"`
+
+	// StoreId names the merchant's store, for accounts whose settlement is broken down by one.
+	// It is omitted when unset rather than sent empty, and it is deliberately absent from the
+	// signing set below: MoMo does not sign it, and adding it would make every signature fail.
+	StoreId string `json:"storeId,omitempty"`
+
+	Signature string `json:"signature"`
 }
 
 type createPaymentResponse struct {
