@@ -26,6 +26,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/infra/gateway"
 	itGateway "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/gateway"
+	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/transport/restful"
 )
 
@@ -105,6 +106,12 @@ func initDomainServices() error {
 		services.NewOrderDomainService,
 		services.NewInvoiceDomainService,
 		services.NewPaymentProfileDomainService,
+
+		// The order service under its public interface, so another module can inject the port
+		// rather than this module's concrete type. Registered as a second provider over the same
+		// instance — dig caches a constructor's result, so both names resolve to one service and
+		// there is no second set of sweeps or gateway connections.
+		func(orders *services.OrderDomainService) itOrder.OrderDomainService { return orders },
 	)
 	if err != nil {
 		return err

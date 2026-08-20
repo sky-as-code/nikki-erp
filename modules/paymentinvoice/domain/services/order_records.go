@@ -43,12 +43,17 @@ func createRecord(
 
 // loadActiveMethod fetches the payment method an order names, and refuses one withdrawn from use.
 //
-// Both failures are the caller's: they named a method that does not exist, or one that is no
-// longer taking payments. Neither is a reason to answer 500.
+// The method may be named by id or by code, and the two are looked up the same way because both
+// columns are unique. The code exists for callers migrating off the standalone service, which was
+// only ever told "momo", "vietqr" or "mpos"; the id is what a picker on the REST surface holds.
+//
+// Every failure here is the caller's: they named no method, one that does not exist, or one that
+// is no longer taking payments. None of them is a reason to answer 500.
 func (this *OrderDomainService) loadActiveMethod(
-	ctx corectx.Context, methodId string, vErrs *ft.ClientErrors,
+	ctx corectx.Context, cmd CreatePaymentCommand, vErrs *ft.ClientErrors,
 ) (*models.PaymentMethod, error) {
-	if methodId == "" {
+	key, named := methodLookupKey(cmd)
+	if !named {
 		appendFieldViolation(vErrs, models.OrderFieldPaymentMethodId,
 			"paymentinvoice.payment_method_required", "no payment method was given")
 		return nil, nil
@@ -59,16 +64,14 @@ func (this *OrderDomainService) loadActiveMethod(
 		return nil, err
 	}
 
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
-		models.PaymentMethodFieldId: methodId,
-	})
+	found, err := engine.ResourceRepository().FindByKeys(ctx, key)
 	if err != nil {
 		return nil, errors.Wrap(err, "loadActiveMethod")
 	}
 	if found == nil || !found.HasData {
 		appendFieldViolation(vErrs, models.OrderFieldPaymentMethodId,
 			"paymentinvoice.payment_method_not_found",
-			"no payment method with id '"+methodId+"'")
+			"no payment method matching "+describeMethodKey(cmd))
 		return nil, nil
 	}
 
@@ -80,4 +83,27 @@ func (this *OrderDomainService) loadActiveMethod(
 		return nil, nil
 	}
 	return method, nil
+}
+
+// methodLookupKey turns whichever identifier the caller gave into the unique key to fetch by.
+//
+// The id wins when both are present. They name the same row when the caller is consistent, and
+// preferring the id keeps the behaviour of the existing REST callers exactly as it was.
+func methodLookupKey(cmd CreatePaymentCommand) (dmodel.DynamicFields, bool) {
+	if cmd.PaymentMethodId != "" {
+		return dmodel.DynamicFields{models.PaymentMethodFieldId: cmd.PaymentMethodId}, true
+	}
+	if cmd.PaymentMethodCode != "" {
+		return dmodel.DynamicFields{models.PaymentMethodFieldCode: cmd.PaymentMethodCode}, true
+	}
+	return nil, false
+}
+
+// describeMethodKey names what the caller asked for, so a "not found" says which of the two
+// identifiers was wrong rather than only that something was.
+func describeMethodKey(cmd CreatePaymentCommand) string {
+	if cmd.PaymentMethodId != "" {
+		return "id '" + cmd.PaymentMethodId + "'"
+	}
+	return "code '" + cmd.PaymentMethodCode + "'"
 }

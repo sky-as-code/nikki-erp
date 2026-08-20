@@ -181,3 +181,21 @@ func TestOrderRecordsItsPaymentProfileWithoutDependingOnIt(t *testing.T) {
 	_, hasEdge := schema.Fields()["payment_profile"]
 	assert.False(t, hasEdge, "held as a plain id: an edge would cascade a withdrawal into the orders")
 }
+
+// Every record this module writes belongs to an organization, and the schema enforces it. This is
+// here because it was not enforced anywhere else for a while: the payment flow composed an order
+// without org_id, and the only thing that noticed was the schema — as a Go error out of the
+// create, which reads as a server fault rather than as the missing field it is.
+func TestOrgIdIsRequiredOnEveryRecordThePaymentFlowWrites(t *testing.T) {
+	requireBaseSchemasRegistered(t)
+
+	for _, build := range []func() *dmodel.ModelSchemaBuilder{
+		OrderSchemaBuilder, TransactionSchemaBuilder,
+	} {
+		schema := build().Build()
+		field := requireField(t, schema, "org_id")
+
+		assert.Truef(t, field.IsRequiredForCreate(),
+			"%s must refuse a record that names no organization", schema.Name())
+	}
+}
