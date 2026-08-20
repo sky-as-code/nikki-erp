@@ -3,6 +3,7 @@ package httpserver
 import (
 	"io"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/labstack/echo/v5"
@@ -152,9 +153,42 @@ func NewGetOneResponseDyn[TItem dmodel.DynamicModelGetter](
 ) RestGetOneResponse[dmodel.DynamicFields] {
 
 	item := data.Item.GetFieldData()
+	meta := data.Meta
+	meta.DesiredFields = emptyIfNil(meta.DesiredFields)
+	meta.MaskedFields = emptyIfNil(meta.MaskedFields)
 	return RestGetOneResponse[dmodel.DynamicFields]{
 		Item: item,
-		Meta: data.Meta,
+		Meta: meta,
+	}
+}
+
+// NewGetOneResponseFields wraps a bare field map in the standard `{item, meta}` envelope.
+//
+// It is for handlers whose service returns a plain domain model rather than a SingleResultData,
+// so they have no Meta to pass on. Returning the fields at the top level instead makes the
+// response a different shape from every other get-one endpoint, and clients that read
+// `response.item` — the shape the shared client library declares — see undefined and render a
+// blank record.
+//
+// DesiredFields lists what the item actually carries, matching what crud.Search reports for a
+// row. Callers that do have real per-user field metadata should use NewGetOneResponseDyn.
+func NewGetOneResponseFields(fields dmodel.DynamicFields) RestGetOneResponse[dmodel.DynamicFields] {
+	if fields == nil {
+		fields = dmodel.DynamicFields{}
+	}
+
+	names := make([]string, 0, len(fields))
+	for name := range fields {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	return RestGetOneResponse[dmodel.DynamicFields]{
+		Item: fields,
+		Meta: dyn.SingleMetaData{
+			DesiredFields: names,
+			MaskedFields:  []string{},
+		},
 	}
 }
 
@@ -179,10 +213,24 @@ func NewSearchResponseDyn[TItem dmodel.DynamicModelGetter](
 		Total:         data.Total,
 		Page:          data.Page,
 		Size:          data.Size,
-		DesiredFields: data.DesiredFields,
-		MaskedFields:  data.MaskedFields,
+		DesiredFields: emptyIfNil(data.DesiredFields),
+		MaskedFields:  emptyIfNil(data.MaskedFields),
 		SchemaEtag:    data.SchemaEtag,
 	}
+}
+
+// emptyIfNil keeps `desired_fields` / `masked_fields` JSON arrays rather than `null`.
+//
+// A nil Go slice marshals to `null`, and callers that go through corecrud.Search rather than
+// corecrud.UiSearch never populate these — UiSearch is what assigns them. Clients declare both
+// as plain arrays and index into them without a nil guard, so `null` crashes them on a response
+// that is otherwise perfectly valid. Normalising here covers every search endpoint at once,
+// since they all build their response through this function.
+func emptyIfNil(fields []string) []string {
+	if fields == nil {
+		return []string{}
+	}
+	return fields
 }
 
 type createdEntity interface {

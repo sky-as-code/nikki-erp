@@ -2,6 +2,7 @@ package crud
 
 import (
 	stdErr "errors"
+	"sort"
 
 	"go.bryk.io/pkg/errors"
 
@@ -649,7 +650,69 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 		IncludeArchived: includeArchived,
 		ComputedContext: sanitizedQuery.Context,
 	})
+	if err == nil && result != nil {
+		setDefaultDesiredFields[TDomain, TDomainPtr](result, sanitizedQuery, param.Query.GetSchema())
+	}
 	return result, errors.Wrap(err, "Search")
+}
+
+// setDefaultDesiredFields tells the client which columns the result carries.
+//
+// UiSearch assigns DesiredFields from the caller's saved column preferences, but services that
+// call Search directly never populate it, and an unset value marshals to a JSON `null` that
+// clients read as "no columns" — a populated result renders as an empty table.
+//
+// The fallback is what the caller asked for, or else the fields the returned rows actually
+// carry. It is deliberately not the schema's full field set: that includes edge collections and
+// internals the rows do not carry, which would render as a row of permanently empty columns.
+// Field order follows the schema so column order stays stable across pages.
+//
+// It never overwrites a value that is already set, so UiSearch keeps precedence: it assigns
+// DesiredFields after its SearchFn (and therefore this function) has returned.
+func setDefaultDesiredFields[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
+	result *dyn.OpResult[dyn.PagedResultData[TDomain]],
+	query dyn.SearchQuery,
+	schema *dmodel.ModelSchema,
+) {
+	if result.ClientErrors.Count() > 0 || result.Data.DesiredFields != nil {
+		return
+	}
+	if len(query.Fields) > 0 {
+		result.Data.DesiredFields = query.Fields
+		return
+	}
+	result.Data.DesiredFields = fieldsPresentInItems[TDomain, TDomainPtr](result.Data.Items, schema)
+}
+
+// fieldsPresentInItems lists the fields the rows actually carry, in schema order.
+func fieldsPresentInItems[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
+	items []TDomain,
+	schema *dmodel.ModelSchema,
+) []string {
+	present := make(map[string]bool)
+	for i := range items {
+		for name := range TDomainPtr(&items[i]).GetFieldData() {
+			present[name] = true
+		}
+	}
+
+	fields := make([]string, 0, len(present))
+	if schema != nil {
+		for _, name := range schema.FieldNames() {
+			if present[name] {
+				fields = append(fields, name)
+				delete(present, name)
+			}
+		}
+	}
+	// Anything the schema does not name (computed fields, for one) keeps a stable order too.
+	rest := make([]string, 0, len(present))
+	for name := range present {
+		rest = append(rest, name)
+	}
+	sort.Strings(rest)
+
+	return append(fields, rest...)
 }
 
 func validateUniques(ctx corectx.Context, data dmodel.DynamicFields, dbRepo dyn.BaseDynamicRepository, vErrs *ft.ClientErrors) error {
