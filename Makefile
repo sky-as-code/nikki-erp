@@ -163,7 +163,7 @@ gen-sql:
 nikki:
 	@[ -f config/local.env ] || cp config/local.env.sample config/local.env
 	@[ -f config/config.yaml ] || cp config/config.default.yaml config/config.yaml
-	APP_ENV=$(env) WORKING_DIR="$(cwd)" GENERAL_LOG_LEVEL="info" go run -tags=staticmods *.go $(ARGS)
+	APP_ENV=$(env) WORKING_DIR="$(cwd)" GENERAL_LOG_LEVEL="debug" go run -tags=staticmods *.go $(ARGS)
 
 # END: Local development
 
