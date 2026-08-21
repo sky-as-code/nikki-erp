@@ -1,4 +1,4 @@
-h1:aaWj2Fg6ZhTuj8bwwl8atbUW2PM/WaOzOg/Z8QoJ7Io=
+h1:nyc8UnSQToHOzkx5gkVJr8IQzw2pdhfjUWkZRbuZbfc=
 0001001_essential_schema.sql h1:F6j5pa10afau8NNHqKj/ytNTHdsidrQmUgqX0ESMNJU=
 0001002_essential_iam.sql h1:0+vimcxXV+nEGl0vHs5btCjicUFl25GzwU1pSQMp1p8=
 0001003_essential_seeds.sql h1:4E1VellkYLNyESXN2zxUj/Kcse3hrY+Z0C/aY5wuNoU=
@@ -16,5 +16,6 @@ h1:aaWj2Fg6ZhTuj8bwwl8atbUW2PM/WaOzOg/Z8QoJ7Io=
 0005006_inventory_product_stock_iam.sql h1:DYuGwwNst2YfcOf2SKWlPslCdybqkGb+7dwastkGh2I=
 0006001_paymentinvoice_schema.sql h1:No6Hx5rWcaRbvYOcA39xj1bkvlXxRhjyofC2+hxQBXE=
 0006002_paymentinvoice_iam.sql h1:ugfQUXOzj3GaxAG8hENWeU3VeJ/gKanJ54DE0QwpFqs=
-0007001_purchase_schema.sql h1:PlPYVjlQxu8K4WlN7djE9fDN07rUsfu5H+eBS8nwmWY=
-0007002_purchase_iam.sql h1:tIJEotLDoVadbZzWLj64afOiP0iu++BmYIGqGY1B8cs=
+0006003_paymentinvoice_seeds.sql h1:xRZZDtUTMizaIJKiQY7ww/4N5KJhMJeCWSTLcMLh7Yo=
+0007001_purchase_schema.sql h1:5oEtQXw4t66upy+A2v3Ff5gMRqovJ+yZ5Yd3RPu7Fcc=
+0007002_purchase_iam.sql h1:DtAtLx9bMdqs987MvXu+9et+F0XFo+kadrjgN5Tq/eY=

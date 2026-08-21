@@ -7,6 +7,7 @@
 package services
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -150,7 +151,7 @@ func (this *OrderDomainService) collect(
 ) (*CreatePaymentResult, error) {
 	orderCode := derefString(order.GetOrderCode())
 
-	created, gatewayErr := adapter.CreatePayment(ctx, itGateway.CreatePaymentRequest{
+	req := itGateway.CreatePaymentRequest{
 		OrderRequest: itGateway.OrderRequest{
 			Amount:        orderReq.Amount,
 			CurrencyCode:  orderReq.CurrencyCode,
@@ -160,7 +161,13 @@ func (this *OrderDomainService) collect(
 			ProfileConfig: orderReq.ProfileConfig,
 		},
 		OrderCode: orderCode,
-	})
+	}
+
+	fmt.Println("")
+	fmt.Println(req)
+	fmt.Println("")
+
+	created, gatewayErr := adapter.CreatePayment(ctx, req)
 
 	if gatewayErr != nil {
 		if err := this.markCreateFailed(ctx, order, transaction, gatewayErr); err != nil {

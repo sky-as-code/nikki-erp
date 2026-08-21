@@ -39,6 +39,7 @@ func TestThePayloadKeepsTheLegacyWireShape(t *testing.T) {
 
 	outcome := newTestClient(server, 1).Sync(context.Background(), ResultSyncRequest{
 		ReturnUrl:     server.URL,
+		OrgId:         "01JBQ0000000000000000ORG",
 		OrderId:       "VDMCMOM0Q8HABCDEFGH",
 		Status:        models.OrderStatusPaymentSuccess,
 		Amount:        150000,
@@ -52,6 +53,10 @@ func TestThePayloadKeepsTheLegacyWireShape(t *testing.T) {
 	assert.Equal(t, float64(150000), received["amount"])
 	assert.Equal(t, "momo", received["paymentMethod"])
 	assert.NotZero(t, received["responseTime"])
+
+	// The ordering system matches this against its own copy of the order and answers "no such
+	// order" without it. The key is snake_case on purpose — see ResultSyncPayload.
+	assert.Equal(t, "01JBQ0000000000000000ORG", received["org_id"])
 }
 
 // The status crosses the wire in the spelling the ordering system knows. Sending this module's
