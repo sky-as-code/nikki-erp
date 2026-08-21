@@ -145,3 +145,4 @@ CREATE INDEX "payinv_trans_order_biz_id_idx" ON "paymentinvoice_transactions" ("
 CREATE INDEX "payinv_trans_order_id_idx" ON "paymentinvoice_transactions" ("order_id");
 -- Create index "payinv_trans_ref_tran_id_idx" to table: "paymentinvoice_transactions"
 CREATE INDEX "payinv_trans_ref_tran_id_idx" ON "paymentinvoice_transactions" ("ref_transaction_id");
+

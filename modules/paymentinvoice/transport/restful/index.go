@@ -8,6 +8,7 @@ import (
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 	corelog "github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/app"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/constants"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/dynamicengines"
@@ -22,10 +23,10 @@ import (
 // as callbacks arriving at a 404 — and a payment callback that 404s is a customer who paid for
 // goods the system never released. They are named rather than inlined so the coupling is visible.
 const (
-	pathWebhookMomo               = "/webhooks/momo"
-	pathWebhookMpos               = "/webhooks/mpos"
-	pathWebhookVietQrToken        = "/webhooks/vietqr/token_generate"
-	pathWebhookVietQrTransaction  = "/webhooks/vietqr/transaction_sync"
+	pathWebhookMomo              = "/webhooks/momo"
+	pathWebhookMpos              = "/webhooks/mpos"
+	pathWebhookVietQrToken       = "/webhooks/vietqr/token_generate"
+	pathWebhookVietQrTransaction = "/webhooks/vietqr/transaction_sync"
 )
 
 func InitRestfulHandlers() error {
@@ -37,13 +38,14 @@ func initPaymentInvoiceV1() error {
 		route *echo.Group,
 		cfg config.ConfigService,
 		orders *services.OrderDomainService,
+		notifier *app.ResultNotifier,
 		registry *itGateway.Registry,
 		logger corelog.LoggerService,
 	) error {
 		routeV1 := route.Group("/v1/paymentinvoice")
 
 		registerEngineRoutes(routeV1)
-		registerWebhookRoutes(routeV1, cfg, orders, registry, logger)
+		registerWebhookRoutes(routeV1, cfg, orders, notifier, registry, logger)
 
 		return nil
 	})
@@ -60,6 +62,7 @@ func registerWebhookRoutes(
 	routeV1 *echo.Group,
 	cfg config.ConfigService,
 	orders *services.OrderDomainService,
+	notifier *app.ResultNotifier,
 	registry *itGateway.Registry,
 	logger corelog.LoggerService,
 ) {
@@ -76,7 +79,7 @@ func registerWebhookRoutes(
 		logger.Warnf("paymentinvoice: VIETQR.INBOUND_* is unset; the VietQR callbacks will refuse every request")
 	}
 
-	webhook := v1.NewWebhookRest(orders, registry, inbound, logger)
+	webhook := v1.NewWebhookRest(orders, notifier, registry, inbound, logger)
 
 	routeV1.POST(pathWebhookMomo, webhook.MomoIpn, m.PublicUnauthorized)
 	routeV1.POST(pathWebhookMpos, webhook.MposWebhook, m.PublicUnauthorized)

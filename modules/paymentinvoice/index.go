@@ -16,11 +16,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	httpclientclient "github.com/sky-as-code/nikki-erp/modules/core/httpclient/client"
+	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/constants"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/app"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/constants"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/dynamicengines"
@@ -107,6 +107,18 @@ func initDomainServices() error {
 		services.NewInvoiceDomainService,
 		services.NewPaymentProfileDomainService,
 
+		// The notifier is registered rather than built where it is used, because both paths that
+		// settle an order need the same one: the gateway callbacks, wired during Init, and the
+		// sweeps, wired at OnAppStarted. Two instances would mean two HTTP clients and two
+		// connection pools pointed at the same tenants for no gain.
+		func(cfg config.ConfigService) *app.ResultSyncClient {
+			return app.NewResultSyncClient(
+				time.Duration(cfg.GetInt(modconstants.SyncTimeoutSecs, defaultSyncTimeoutSecs))*time.Second,
+				cfg.GetInt(modconstants.SyncMaxRetries, defaultSyncMaxRetries),
+			)
+		},
+		app.NewResultNotifier,
+
 		// The order service under its public interface, so another module can inject the port
 		// rather than this module's concrete type. Registered as a second provider over the same
 		// instance — dig caches a constructor's result, so both names resolve to one service and
@@ -168,15 +180,11 @@ func (*PaymentInvoiceModule) OnAppStarted() error {
 	return deps.Invoke(func(
 		cfg config.ConfigService,
 		orders *services.OrderDomainService,
+		notifier *app.ResultNotifier,
 		cronRegistry job.CronjobRegistry,
 		logger logging.LoggerService,
 	) error {
-		syncClient := app.NewResultSyncClient(
-			time.Duration(cfg.GetInt(modconstants.SyncTimeoutSecs, defaultSyncTimeoutSecs))*time.Second,
-			cfg.GetInt(modconstants.SyncMaxRetries, defaultSyncMaxRetries),
-		)
-
-		manager := app.NewJobsManager(orders, syncClient, app.JobsConfig{
+		manager := app.NewJobsManager(orders, notifier, app.JobsConfig{
 			ExpireAfter: time.Duration(
 				cfg.GetInt(modconstants.OrderExpireAfterMins, defaultExpireAfterMins)) * time.Minute,
 			CleanAfter: time.Duration(

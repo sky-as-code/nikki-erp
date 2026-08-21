@@ -8,6 +8,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 )
 
@@ -60,10 +61,25 @@ type PendingSyncOrder struct {
 // FindOrdersNeedingSync returns settled orders whose notification has not got through.
 //
 // Only orders that reached a verdict are in scope — there is nothing to report about one still in
-// flight — and only those whose last attempt failed. An order that has exhausted its attempts is
-// excluded by the same count the client bounds itself by, so a permanently unreachable tenant
-// stops being chased rather than being retried forever.
-func FindOrdersNeedingSync(ctx corectx.Context) ([]PendingSyncOrder, error) {
+// flight. Of those, two kinds need reporting:
+//
+//   - the ones whose last attempt failed, which is the ordinary case of a tenant that was down;
+//   - the ones with no attempt recorded at all, which is the order settled by a callback whose
+//     notification never ran — the process was killed between the two, or the send panicked. That
+//     order is paid for and its machine has been told nothing, and it is invisible to the watchdog
+//     as well, because the watchdog only looks at orders that have not settled. Without this arm
+//     it would be reported by nothing at all.
+//
+// The second arm is held back by settledBefore, because a callback sends its notification off the
+// request: an order settled seconds ago most likely has one in flight, and picking it up would
+// send a second. Notifications are safe to repeat — they state a fact — but a duplicate that is
+// predictable is worth not sending.
+//
+// An order that has exhausted its attempts is excluded by the same count the client bounds itself
+// by, so a permanently unreachable tenant stops being chased rather than being retried forever.
+func FindOrdersNeedingSync(
+	ctx corectx.Context, settledBefore time.Time,
+) ([]PendingSyncOrder, error) {
 	engine, err := engineFor(models.OrderSchemaName)
 	if err != nil {
 		return nil, err
@@ -76,8 +92,16 @@ func FindOrdersNeedingSync(ctx corectx.Context) ([]PendingSyncOrder, error) {
 			models.OrderStatusPaymentFailed,
 			models.OrderStatusExpired,
 		),
-		*dmodel.NewSearchNode().NewCondition(
-			models.OrderFieldLastSyncStatus, dmodel.Equals, SyncStatusFailure),
+		*dmodel.NewSearchNode().Or(
+			*dmodel.NewSearchNode().NewCondition(
+				models.OrderFieldLastSyncStatus, dmodel.Equals, SyncStatusFailure),
+			*dmodel.NewSearchNode().And(
+				*dmodel.NewSearchNode().NewCondition(
+					models.OrderFieldLastSyncStatus, dmodel.IsNotSet),
+				*dmodel.NewSearchNode().NewCondition(
+					basemodel.FieldUpdatedAt, dmodel.LessThan, settledBefore),
+			),
+		),
 	)
 
 	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
@@ -117,46 +141,66 @@ func FindOrdersNeedingSync(ctx corectx.Context) ([]PendingSyncOrder, error) {
 	return pending, nil
 }
 
-// SyncFactsFor reads the two order facts the notification carries beyond its status.
-//
-// The amount is rendered as a whole number because that is what the ordering system has always
-// been sent; this module stores a decimal so that it can denominate in a currency with a different
-// minor unit, and the truncation happens here at the boundary rather than in storage.
+// SyncFacts are the order facts a notification carries beyond its status.
+type SyncFacts struct {
+	// OrgId is the organization the order was collected for.
+	//
+	// It is read back off the order rather than tracked alongside it, because the order is the
+	// only place it is certain to be right: the column is NOT NULL and never updated, so an order
+	// that exists has one and it is the one the order was created with.
+	OrgId string
+
+	// Amount is rendered as a whole number because that is what the ordering system has always
+	// been sent. This module stores a decimal so that it can denominate in a currency with a
+	// different minor unit, and the truncation happens at this boundary rather than in storage.
+	Amount int64
+
+	// PaymentMethod is the method's own code, not the adapter's: the ordering system was given the
+	// code of the method the customer chose, and two methods may be served by one adapter.
+	//
+	// Empty when the order names no method, or names one that has since been withdrawn. That is
+	// not an error — the notification's other facts are still worth sending.
+	PaymentMethod string
+}
+
+// SyncFactsFor reads the order facts the notification carries beyond its status.
 func (this *OrderDomainService) SyncFactsFor(
 	ctx corectx.Context, orderId string,
-) (amount int64, paymentMethod string, err error) {
+) (*SyncFacts, error) {
 	order, err := findOrderByBusinessId(ctx, orderId)
 	if err != nil {
-		return 0, "", err
+		return nil, err
 	}
 	if order == nil {
-		return 0, "", errors.Errorf("SyncFactsFor: no order with id '%s'", orderId)
+		return nil, errors.Errorf("SyncFactsFor: no order with id '%s'", orderId)
 	}
 
-	amount = derefDecimal(order.GetAmount()).IntPart()
+	facts := &SyncFacts{
+		OrgId:  derefString((*string)(order.GetOrgId())),
+		Amount: derefDecimal(order.GetAmount()).IntPart(),
+	}
 
 	methodId := derefString((*string)(order.GetPaymentMethodId()))
 	if methodId == "" {
-		return amount, "", nil
+		return facts, nil
 	}
 
 	engine, err := engineFor(models.PaymentMethodSchemaName)
 	if err != nil {
-		return 0, "", err
+		return nil, err
 	}
 	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
 		models.PaymentMethodFieldId: methodId,
 	})
 	if err != nil {
-		return 0, "", errors.Wrap(err, "SyncFactsFor")
+		return nil, errors.Wrap(err, "SyncFactsFor")
 	}
 	if found == nil || !found.HasData {
-		return amount, "", nil
+		return facts, nil
 	}
 
-	// The method's own code is sent, not the adapter's: the ordering system was given the code of
-	// the method the customer chose, and two methods may be served by one adapter.
-	return amount, derefString(models.NewPaymentMethodFrom(found.Data).GetCode()), nil
+	facts.PaymentMethod = derefString(models.NewPaymentMethodFrom(found.Data).GetCode())
+	return facts, nil
 }
 
 // RecordSyncOutcome writes the result of a notification onto the order.

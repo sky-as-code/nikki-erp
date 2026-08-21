@@ -24,6 +24,7 @@ import (
 
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/app"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/infra/gateway/momo"
@@ -42,6 +43,7 @@ type InboundAuth interface {
 // WebhookRest serves the three gateways' callbacks.
 type WebhookRest struct {
 	orders   *services.OrderDomainService
+	notifier *app.ResultNotifier
 	registry *itGateway.Registry
 	inbound  InboundAuth
 	logger   logging.LoggerService
@@ -49,11 +51,18 @@ type WebhookRest struct {
 
 func NewWebhookRest(
 	orders *services.OrderDomainService,
+	notifier *app.ResultNotifier,
 	registry *itGateway.Registry,
 	inbound InboundAuth,
 	logger logging.LoggerService,
 ) *WebhookRest {
-	return &WebhookRest{orders: orders, registry: registry, inbound: inbound, logger: logger}
+	return &WebhookRest{
+		orders:   orders,
+		notifier: notifier,
+		registry: registry,
+		inbound:  inbound,
+		logger:   logger,
+	}
 }
 
 // MomoIpn receives MoMo's payment result.
@@ -205,7 +214,7 @@ func (this *WebhookRest) VietQrTransactionSync(echoCtx *echo.Context) error {
 
 	// A bank transfer is only ever reported once it has arrived, so this callback existing is
 	// itself the confirmation of payment. There is no failure form of it.
-	outcome, err := this.orders.ApplyGatewayResult(reqCtx, services.GatewayResult{
+	outcome, err := this.settle(reqCtx, services.GatewayResult{
 		OrderCode:        payload.OrderId,
 		Paid:             true,
 		RefTransactionId: payload.ReferenceNumber,
@@ -234,7 +243,7 @@ func (this *WebhookRest) apply(echoCtx *echo.Context, result services.GatewayRes
 		return
 	}
 
-	outcome, err := this.orders.ApplyGatewayResult(reqCtx, result)
+	outcome, err := this.settle(reqCtx, result)
 	if err != nil {
 		this.logger.Errorf("paymentinvoice: applying a gateway result failed: %s", err.Error())
 		return
@@ -248,6 +257,36 @@ func (this *WebhookRest) apply(echoCtx *echo.Context, result services.GatewayRes
 		// to, so the same result arriving twice is expected rather than exceptional.
 		this.logger.Infof("paymentinvoice: order '%s' had already settled; callback ignored", outcome.OrderId)
 	}
+}
+
+// settle applies a gateway's verdict and tells the ordering system about it.
+//
+// The notification is the whole point of a callback as far as the rest of the system is concerned:
+// the order changing status in this database releases nothing, and the vending machine holding the
+// customer's goods learns of the payment only by being called back. Settling without notifying
+// leaves a customer who has paid standing at a machine that will not open.
+//
+// It is sent only when this callback is what settled the order. A replay must not re-notify: the
+// gateways retry, and the ordering system would be told the same payment several times, once per
+// retry, long after it acted on the first.
+//
+// The send is detached, so answering the gateway is not held up by how quickly the ordering system
+// answers us — see ResultNotifier.NotifyDetached.
+func (this *WebhookRest) settle(
+	ctx corectx.Context, result services.GatewayResult,
+) (*services.GatewayResultOutcome, error) {
+	outcome, err := this.orders.ApplyGatewayResult(ctx, result)
+	if err != nil || !outcome.Applied {
+		return outcome, err
+	}
+
+	this.notifier.NotifyDetached(ctx, app.NotifyTarget{
+		Pk:        outcome.OrderPk,
+		OrderId:   outcome.OrderId,
+		ReturnUrl: outcome.ReturnUrl,
+	}, outcome.Status)
+
+	return outcome, nil
 }
 
 // adapterAs fetches a registered adapter and narrows it to its concrete type.
