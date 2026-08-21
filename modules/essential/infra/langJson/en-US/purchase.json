@@ -99,6 +99,7 @@
 	"menu_orders": "Purchase orders",
 	"menu_overview": "Purchase",
 	"menu_requestsForQuotation": "Requests for quotation",
+	"module.label.purchase": "Purchase",
 	"po_modification_policy.allow_edit": "Allow editing",
 	"po_modification_policy.auto_lock": "Lock automatically",
 	"priority.normal": "Normal",

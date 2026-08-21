@@ -19,6 +19,11 @@
 		"should_build_db": { "type": "boolean" },
 		"record_label_field": { "type": "string" },
 		"record_sub_label_field": { "type": "string" },
+		"default_search_fields": {
+			"description": "Field list a search returns when it specifies neither fields nor a resolvable view. Primary keys are always included regardless.",
+			"type": "array",
+			"items": { "type": "string", "minLength": 1 }
+		},
 
 		"extend_before": {
 			"description": "Schemas merged BEFORE this model's own fields, so their columns come first.",

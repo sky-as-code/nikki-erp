@@ -127,6 +127,12 @@ type ModelSchema struct {
 	// recordSubLabelField: an optional secondary field rendered beneath the main label, to tell apart
 	// records that share one — an email under a display name, for instance. Empty when unneeded.
 	recordSubLabelField string
+
+	// defaultSearchFields: the field list a search on this schema returns when it specifies
+	// neither fields nor a resolvable view. Primary keys are always included regardless. Empty
+	// means the schema declares no default, leaving callers to fall back further (e.g. every
+	// column).
+	defaultSearchFields []string
 }
 
 // M2mPeerLink holds junction and FK-prefix metadata for a finalized many-to-many edge from the
@@ -183,6 +189,12 @@ func (this ModelSchema) RecordLabelField() string {
 // the schema declares none.
 func (this ModelSchema) RecordSubLabelField() string {
 	return this.recordSubLabelField
+}
+
+// DefaultSearchFields is the field list a search on this schema returns when it specifies
+// neither an explicit field list nor a resolvable view. Empty when the schema declares none.
+func (this ModelSchema) DefaultSearchFields() []string {
+	return this.defaultSearchFields
 }
 
 func (this ModelSchema) Fields() map[string]*ModelField {
@@ -499,6 +511,7 @@ func (this *ModelSchema) ToSimplized() any {
 		ExclusiveRequiredFieldGroups [][]string     `json:"exclusive_required_field_groups,omitempty"`
 		RecordLabelField             string         `json:"record_label_field,omitempty"`
 		RecordSubLabelField          string         `json:"record_sub_label_field,omitempty"`
+		DefaultSearchFields          []string       `json:"default_search_fields,omitempty"`
 		Fields                       map[string]any `json:"fields"`
 		Label                        model.LangJson `json:"label"`
 		FromRelations                []any          `json:"from_relations,omitempty"`
@@ -509,6 +522,7 @@ func (this *ModelSchema) ToSimplized() any {
 		ExclusiveRequiredFieldGroups: this.exclusiveRequiredFieldGroups,
 		RecordLabelField:             this.recordLabelField,
 		RecordSubLabelField:          this.recordSubLabelField,
+		DefaultSearchFields:          this.defaultSearchFields,
 		Fields:                       simplizedFields,
 		Label:                        this.Label(),
 		ToRelations:                  array.Map(this.ToRelations(), func(relation ModelRelation) any { return relation.ToSimplized() }),

@@ -56,9 +56,12 @@ func UiSearch[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 		isClientSpecifiedFields := len(query.Fields) > 0
 
 		if !isClientSpecifiedFields {
-			if query.SearchName != nil && *query.SearchName == dyn.DefaultSearchName {
+			if query.SearchName == nil || *query.SearchName == dyn.DefaultSearchName {
+				// No named view (the common case: the client asked for neither `fields` nor
+				// `search_name`) falls back the same as an explicit "default" — the client has
+				// not modified the default search view either way.
 				query.Fields = param.DefaultFields
-			} else if query.SearchName != nil {
+			} else {
 				uiFields, err := getListFields(ctx, param.FieldResolver, *query.SearchName)
 				if err != nil {
 					return query, err

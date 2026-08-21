@@ -117,6 +117,9 @@ func (this *ModelSchemaBuilder) Extend(builder *ModelSchemaBuilder) *ModelSchema
 	if this.schema.recordSubLabelField == "" {
 		this.schema.recordSubLabelField = builder.schema.recordSubLabelField
 	}
+	if len(this.schema.defaultSearchFields) == 0 {
+		this.schema.defaultSearchFields = builder.schema.defaultSearchFields
+	}
 	return this
 }
 
@@ -185,6 +188,24 @@ func (this *ModelSchemaBuilder) RecordLabelField(fieldName string) *ModelSchemaB
 // apart records that share one. The named field must exist on the schema when Build runs.
 func (this *ModelSchemaBuilder) RecordSubLabelField(fieldName string) *ModelSchemaBuilder {
 	this.schema.recordSubLabelField = fieldName
+	return this
+}
+
+// DefaultSearchFields declares the field list a search on this schema returns when it specifies
+// neither an explicit field list nor a resolvable view. Primary keys are always included by the
+// query builder regardless of this list. Each name must exist on the schema when Build runs.
+func (this *ModelSchemaBuilder) DefaultSearchFields(fieldNames ...string) *ModelSchemaBuilder {
+	if len(fieldNames) == 0 {
+		panic(errors.New("DefaultSearchFields: at least one field name is required"))
+	}
+	fields := array.Map(fieldNames, func(fieldName string) string {
+		trimName := strings.TrimSpace(fieldName)
+		if trimName == "" {
+			panic(errors.Errorf("DefaultSearchFields: field name must not be empty: %s", fieldName))
+		}
+		return trimName
+	})
+	this.schema.defaultSearchFields = fields
 	return this
 }
 
@@ -391,6 +412,9 @@ func (this *ModelSchemaBuilder) Build() *ModelSchema {
 	if err := validateRecordLabelFields(schema); err != nil {
 		panic(errors.Wrap(err, "Build"))
 	}
+	if err := validateDefaultSearchFields(schema); err != nil {
+		panic(errors.Wrap(err, "Build"))
+	}
 	// Runs here rather than inside populateDbMetadata, which only runs when shouldBuildDb is set:
 	// a validation-only schema must reject the same contradictions.
 	if err := validateNonPersistedFields(schema); err != nil {
@@ -526,6 +550,18 @@ func validateRecordLabelFields(schema *ModelSchema) error {
 		if _, ok := schema.Field(fieldName); !ok {
 			return errors.Errorf(
 				"%s: field %q is not defined on schema %q", property, fieldName, schema.name)
+		}
+	}
+	return nil
+}
+
+// validateDefaultSearchFields checks that every declared default-search field points at a real
+// field. Declaring none is legal; callers fall back further (e.g. every column).
+func validateDefaultSearchFields(schema *ModelSchema) error {
+	for _, fieldName := range schema.defaultSearchFields {
+		if _, ok := schema.Field(fieldName); !ok {
+			return errors.Errorf(
+				"defaultSearchFields: field %q is not defined on schema %q", fieldName, schema.name)
 		}
 	}
 	return nil

@@ -33,6 +33,7 @@
 	"fields.value": "Giá trị",
 	"fields.value_json": "Giá trị có cấu trúc",
 	"fields.website": "Trang web",
+	"module.label.contacts": "Danh bạ",
 	"status.active": "Đang hoạt động",
 	"status.blacklisted": "Danh sách đen",
 	"status.proposed": "Đề xuất",

@@ -33,6 +33,7 @@
 	"fields.value": "Value",
 	"fields.value_json": "Structured value",
 	"fields.website": "Website",
+	"module.label.contacts": "Contacts",
 	"status.active": "Active",
 	"status.blacklisted": "Blacklisted",
 	"status.proposed": "Proposed",
