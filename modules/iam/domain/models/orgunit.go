@@ -38,6 +38,7 @@ func OrganizationalUnitSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(OrganizationalUnitSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", OrganizationalUnitSchemaName)).
 		TableName("iam_org_units").
+		DefaultSearchFields("name", "description").
 		RecordLabelField(OrgUnitFieldName).
 		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{OrgUnitFieldName, OrgUnitFieldOrgId}}).
 		ShouldBuildDb().

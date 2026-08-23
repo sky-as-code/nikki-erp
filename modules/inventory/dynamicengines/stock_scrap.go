@@ -23,17 +23,7 @@ const paramScrapId = "id"
 
 func stockScrapEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.StockScrapSchemaName,
-		DefaultFields: []string{
-			models.StockScrapFieldScrapNumber,
-			models.StockScrapFieldStatus,
-			models.StockScrapFieldProductVariantId,
-			models.StockScrapFieldQuantity,
-			models.StockScrapFieldSourceLocationId,
-			models.StockScrapFieldScrapLocationId,
-			models.StockScrapFieldReasonCode,
-			models.StockScrapFieldCompletedAt,
-		},
+		SchemaName:    models.StockScrapSchemaName,
 		DefineActions: defineStockScrapActions,
 	}
 }

@@ -4,6 +4,7 @@
 	"table_name": "essential_currencies",
 	"should_build_db": true,
 	"record_label_field": "name",
+	"default_search_fields": ["code", "name", "symbol", "decimal_places", "is_active"],
 	"composite_uniques": [
 		{ "index_name": "essent_currencies_code", "fields": ["code"] }
 	],

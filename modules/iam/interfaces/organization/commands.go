@@ -141,6 +141,24 @@ func (SearchOrgsQuery) CqrsRequestType() cqrs.RequestType {
 type SearchOrgsResultData = dyn.PagedResultData[domain.Organization]
 type SearchOrgsResult = dyn.OpResult[SearchOrgsResultData]
 
+var getUserOrgsQueryType = cqrs.RequestType{
+	Module:    "iam",
+	Submodule: "organization",
+	Action:    "getUserOrgs",
+}
+
+// GetUserOrgsQuery asks for the organizations a user belongs to, ordered by display name.
+type GetUserOrgsQuery struct {
+	UserId model.Id
+}
+
+func (GetUserOrgsQuery) CqrsRequestType() cqrs.RequestType {
+	return getUserOrgsQueryType
+}
+
+type GetUserOrgsResultData = dyn.PagedResultData[domain.Organization]
+type GetUserOrgsResult = dyn.OpResult[GetUserOrgsResultData]
+
 var setOrgIsArchivedCommandType = cqrs.RequestType{
 	Module:    "iam",
 	Submodule: "organization",

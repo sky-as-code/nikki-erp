@@ -126,3 +126,24 @@ func (this *UserPreferencesAppServiceImpl) InitUserPreferences(
 	cmd.OwnerType = c.OwnerTypeUser
 	return this.settingsSvc.InitOwnerSettings(ctx, cmd)
 }
+
+// --- Effective (all levels) ---
+
+func NewEffectiveSettingsAppServiceImpl(
+	settingsSvc it.SettingsDomainService,
+) it.EffectiveSettingsAppService {
+	return &EffectiveSettingsAppServiceImpl{settingsSvc: settingsSvc}
+}
+
+type EffectiveSettingsAppServiceImpl struct {
+	settingsSvc it.SettingsDomainService
+}
+
+// GetEffectiveSettings asserts no permission, on the same reasoning as GetUserPreferences: the
+// owner of every row it reads is taken from the request context, so a caller can only ever see the
+// values that already apply to them.
+func (this *EffectiveSettingsAppServiceImpl) GetEffectiveSettings(
+	ctx corectx.Context, query it.GetEffectiveSettingsQuery,
+) (*it.GetEffectiveSettingsResult, error) {
+	return this.settingsSvc.GetEffectiveSettings(ctx, query)
+}

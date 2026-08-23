@@ -12,12 +12,6 @@ import (
 func userEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.UserSchemaName,
-		DefaultFields: []string{
-			models.UserFieldAvatarUrl,
-			models.UserFieldDisplayName,
-			models.UserFieldEmail,
-			models.UserFieldStatus,
-		},
 		DefineActions: defineUserActions,
 	}
 }

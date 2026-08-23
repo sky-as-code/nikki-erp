@@ -7,9 +7,5 @@ import (
 func roleEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.RoleSchemaName,
-		DefaultFields: []string{
-			models.RoleFieldName,
-			models.RoleFieldDescription,
-		},
 	}
 }

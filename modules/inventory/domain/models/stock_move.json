@@ -3,6 +3,7 @@
 	"label": "inventory_stock_move.label",
 	"table_name": "inventory_stock_moves",
 	"should_build_db": true,
+	"default_search_fields": ["sequence", "demand_quantity", "status"],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [

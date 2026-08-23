@@ -3,6 +3,7 @@
 	"label": "inventory_stock_quant.label",
 	"table_name": "inventory_stock_quants",
 	"should_build_db": true,
+	"default_search_fields": ["lot_ref", "on_hand_quantity", "reserved_quantity", "available_quantity"],
 	"composite_uniques": [{
 		"index_name": "invty_stock_quants_tid_pvar_loc_lot_pkg_own",
 		"fields": ["product_variant_id", "location_id", "lot_ref", "package_ref", "owner_ref", "org_id"]

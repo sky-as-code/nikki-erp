@@ -3,6 +3,7 @@
 	"label": "inventory_stock_move_dependency.label",
 	"table_name": "inventory_stock_move_dependencies",
 	"should_build_db": true,
+	"default_search_fields": ["predecessor_move_id", "successor_move_id"],
 	"composite_uniques": [{
 		"index_name": "invty_stock_mvdeps_tid_pred_succ",
 		"fields": ["predecessor_move_id", "successor_move_id"]

@@ -5,9 +5,9 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_organizations'
 	) THEN
 		INSERT INTO "iam_organizations" ("id", "address", "display_name", "legal_name", "phone_number", "slug", "etag", "is_archived", "created_at", "updated_at") VALUES
-		('01JWNY20G23KD4RV5VWYABQYHD', NULL, 'My Company', NULL, NULL, 'my-company', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, FALSE, NOW(), NULL),
-		('01K02G6J1CYAN9K8V4PAGSQ5Z8', NULL, 'Old Company', NULL, NULL, 'old-company', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, FALSE, NOW(), NULL),
-		('01K1H7M2K9VW3P5R7XQJY2C1Z9', NULL, 'Tech Solutions Ltd', NULL, NULL, 'tech-solutions', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, FALSE, NOW(), NULL);
+		('01JWNY20G23KD4RV5VWYABQYHD', NULL, jsonb_build_object('en-US', 'My Company', 'vi-VN', 'Công ty của tôi', 'zh-TW', '我的公司'), NULL, NULL, 'my-company', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, FALSE, NOW(), NULL),
+		('01K02G6J1CYAN9K8V4PAGSQ5Z8', NULL, jsonb_build_object('en-US', 'Old Company', 'vi-VN', 'Công ty cũ', 'zh-TW', '舊公司'), NULL, NULL, 'old-company', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, FALSE, NOW(), NULL),
+		('01K1H7M2K9VW3P5R7XQJY2C1Z9', NULL, jsonb_build_object('en-US', 'Tech Solutions Ltd', 'vi-VN', 'Công ty TNHH Giải pháp Công nghệ', 'zh-TW', '科技解決方案有限公司'), NULL, NULL, 'tech-solutions', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, FALSE, NOW(), NULL);
 	END IF;
 
 	IF EXISTS (

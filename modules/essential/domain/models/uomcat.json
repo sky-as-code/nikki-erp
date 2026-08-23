@@ -4,6 +4,7 @@
 	"table_name": "essential_uomcats",
 	"should_build_db": true,
 	"record_label_field": "name",
+	"default_search_fields": ["name"],
 	"composite_uniques": [{ "fields": ["name", "org_id"] }],
 	"extend_before": ["core.basemodel.base_model"],
 

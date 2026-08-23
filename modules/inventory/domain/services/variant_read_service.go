@@ -155,12 +155,20 @@ func searchRows(
 		return nil, err
 	}
 
+	// This path goes straight to the repository rather than through crud.Search, so it has to
+	// default the locale itself -- otherwise a variant list would sort its LangJson columns by the
+	// raw jsonb while every other list in the product sorted by the reader's language.
+	language := query.Language
+	if language == nil {
+		language = dyn.ResolveLocale(ctx)
+	}
+
 	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
 		Fields:   query.Fields,
 		Page:     query.Page,
 		Size:     query.Size,
 		Graph:    query.Graph,
-		Language: query.Language,
+		Language: language,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, what)

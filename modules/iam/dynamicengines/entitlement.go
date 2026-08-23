@@ -7,10 +7,5 @@ import (
 func entitlementEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.EntitlementSchemaName,
-		DefaultFields: []string{
-			models.EntitlementFieldName,
-			models.EntitlementFieldDescription,
-			models.EntitlementFieldExpression,
-		},
 	}
 }

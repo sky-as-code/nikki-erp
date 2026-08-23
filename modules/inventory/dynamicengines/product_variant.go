@@ -14,14 +14,7 @@ import (
 
 func productVariantEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.ProductVariantSchemaName,
-		DefaultFields: []string{
-			models.ProductVariantFieldProductTemplateId,
-			models.ProductVariantFieldSku,
-			models.ProductVariantFieldPrimaryBarcode,
-			models.ProductVariantFieldCombinationKey,
-			models.ProductVariantFieldStatus,
-		},
+		SchemaName:    models.ProductVariantSchemaName,
 		DefineActions: defineProductVariantActions,
 	}
 }

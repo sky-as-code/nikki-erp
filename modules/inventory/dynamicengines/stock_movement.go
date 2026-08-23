@@ -58,17 +58,7 @@ const (
 
 func stockTransferEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.StockTransferSchemaName,
-		DefaultFields: []string{
-			models.StockTransferFieldTransferNumber,
-			models.StockTransferFieldOperationTypeId,
-			models.StockTransferFieldOperationCode,
-			models.StockTransferFieldStatus,
-			models.StockTransferFieldSourceLocationId,
-			models.StockTransferFieldDestinationLocationId,
-			models.StockTransferFieldScheduledAt,
-			models.StockTransferFieldOriginReference,
-		},
+		SchemaName:    models.StockTransferSchemaName,
 		DefineActions: defineStockTransferActions,
 	}
 }
@@ -76,30 +66,12 @@ func stockTransferEngineSpec() engineSpec {
 func stockMoveEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.StockMoveSchemaName,
-		DefaultFields: []string{
-			models.StockMoveFieldTransferId,
-			models.StockMoveFieldSequence,
-			models.StockMoveFieldProductVariantId,
-			models.StockMoveFieldDemandQuantity,
-			models.StockMoveFieldStatus,
-			models.StockMoveFieldSourceLocationId,
-			models.StockMoveFieldDestinationLocationId,
-		},
 	}
 }
 
 func stockMoveLineEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.StockMoveLineSchemaName,
-		DefaultFields: []string{
-			models.StockMoveLineFieldMoveId,
-			models.StockMoveLineFieldProductVariantId,
-			models.StockMoveLineFieldQuantity,
-			models.StockMoveLineFieldSourceLocationId,
-			models.StockMoveLineFieldDestinationLocationId,
-			models.StockMoveLineFieldLotRef,
-			models.StockMoveLineFieldPicked,
-		},
+		SchemaName:    models.StockMoveLineSchemaName,
 		DefineActions: defineStockMoveLineActions,
 	}
 }
@@ -107,10 +79,6 @@ func stockMoveLineEngineSpec() engineSpec {
 func stockMoveDependencyEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.StockMoveDependencySchemaName,
-		DefaultFields: []string{
-			models.StockMoveDependencyFieldPredecessorMoveId,
-			models.StockMoveDependencyFieldSuccessorMoveId,
-		},
 	}
 }
 

@@ -4,6 +4,7 @@
 	"table_name": "paymentinvoice_invoice_lines",
 	"should_build_db": true,
 	"record_label_field": "description",
+	"default_search_fields": ["description", "quantity", "unit_price", "tax_rate_percent", "amount"],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [

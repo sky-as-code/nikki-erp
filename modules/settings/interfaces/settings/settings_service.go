@@ -6,6 +6,7 @@ import (
 )
 
 type RegisterSchemaResult = dyn.OpResult[RegisterSchemaResultData]
+type GetEffectiveSettingsResult = dyn.OpResult[GetEffectiveSettingsResultData]
 type GetSettingsResult = dyn.OpResult[GetSettingsResultData]
 type SetSettingsResult = dyn.OpResult[SetSettingsResultData]
 type InitOwnerSettingsResult = dyn.OpResult[InitOwnerSettingsResultData]
@@ -32,6 +33,24 @@ type SettingsDomainService interface {
 
 	// InitOwnerSettings copies the tenant's own rows onto a newly created organization or user.
 	InitOwnerSettings(ctx corectx.Context, cmd InitOwnerSettingsCommand) (*InitOwnerSettingsResult, error)
+
+	// GetEffectiveSettings returns every setting that applies to the acting caller, across all
+	// three levels, flattened into one "{module_key}.{setting_name}" map.
+	//
+	// A level the caller has no owner for -- no tenant in the nikkierp binary, no single
+	// organization for a user who belongs to none or to several -- contributes nothing rather
+	// than failing the call. "What applies to me" is answerable for a user who is in no
+	// organization; it just has fewer entries.
+	GetEffectiveSettings(ctx corectx.Context, query GetEffectiveSettingsQuery) (*GetEffectiveSettingsResult, error)
+}
+
+// EffectiveSettingsAppService is the level-agnostic read other modules consume.
+//
+// It is a fourth contract rather than a method on one of the three level services below: those are
+// deliberately split so that a consumer holding one cannot reach another's rows, and hanging a
+// read that spans all three off any one of them would hand exactly that reach to its holders.
+type EffectiveSettingsAppService interface {
+	GetEffectiveSettings(ctx corectx.Context, query GetEffectiveSettingsQuery) (*GetEffectiveSettingsResult, error)
 }
 
 // TenantSettingsAppService is the tenant-level contract other modules consume.

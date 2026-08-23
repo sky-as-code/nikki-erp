@@ -27,9 +27,6 @@ type engineSpec struct {
 	// constant, never a string derived from the resource path.
 	SchemaName string
 
-	// DefaultFields is the field set a listing search returns. Primary key fields are always
-	// included by the query builder, so listing them here is redundant.
-	DefaultFields []string
 
 	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD
 	// ones. It is optional: a resource without custom behavior leaves it nil.
@@ -48,39 +45,18 @@ var engineSpecs = []engineSpec{
 func partyEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.PartySchemaName,
-		DefaultFields: []string{
-			models.PartyFieldDisplayName,
-			models.PartyFieldLegalName,
-			models.PartyFieldType,
-			models.PartyFieldTaxId,
-			models.PartyFieldOrgId,
-			models.PartyFieldIsArchived,
-		},
 	}
 }
 
 func commChannelEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.CommChannelSchemaName,
-		DefaultFields: []string{
-			models.CommChannelFieldPartyId,
-			models.CommChannelFieldType,
-			models.CommChannelFieldValue,
-			models.CommChannelFieldOrgId,
-			models.CommChannelFieldIsArchived,
-		},
 	}
 }
 
 func relationshipEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.RelationshipSchemaName,
-		DefaultFields: []string{
-			models.RelationshipFieldPartyId,
-			models.RelationshipFieldTargetPartyId,
-			models.RelationshipFieldType,
-			models.RelationshipFieldIsArchived,
-		},
 	}
 }
 
@@ -92,15 +68,6 @@ func relationshipEngineSpec() engineSpec {
 func vendorProfileEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.VendorProfileSchemaName,
-		DefaultFields: []string{
-			models.VendorProfileFieldPartyId,
-			models.VendorProfileFieldStatus,
-			models.VendorProfileFieldDefaultCurrencyId,
-			models.VendorProfileFieldPaymentTerms,
-			models.VendorProfileFieldLeadTimeDays,
-			models.VendorProfileFieldOrgId,
-			models.VendorProfileFieldIsArchived,
-		},
 	}
 }
 
@@ -124,9 +91,7 @@ func InitDynamicEngines() error {
 }
 
 func initEngine(spec engineSpec) error {
-	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{
-		DefaultSearchFields: spec.DefaultFields,
-	})
+	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create the '%s' resource engine", spec.SchemaName)
 	}

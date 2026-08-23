@@ -14,17 +14,7 @@ import (
 
 func productTemplateEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.ProductTemplateSchemaName,
-		DefaultFields: []string{
-			models.ProductTemplateFieldName,
-			models.ProductTemplateFieldShortName,
-			models.ProductTemplateFieldProductTypeId,
-			models.ProductTemplateFieldCategoryId,
-			models.ProductTemplateFieldBrandId,
-			models.ProductTemplateFieldStatus,
-			models.ProductTemplateFieldSaleOk,
-			models.ProductTemplateFieldPurchaseOk,
-		},
+		SchemaName:    models.ProductTemplateSchemaName,
 		DefineActions: defineProductTemplateActions,
 	}
 }

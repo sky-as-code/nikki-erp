@@ -83,14 +83,6 @@ func TestRuleBearingResourcesDefineActions(t *testing.T) {
 	}
 }
 
-// A listing with no default fields renders as a table of bare ids.
-func TestEverySpecDeclaresDefaultFields(t *testing.T) {
-	for _, spec := range engineSpecs {
-		assert.NotEmptyf(t, spec.DefaultFields,
-			"schema %q must declare the fields its listing shows", spec.SchemaName)
-	}
-}
-
 func TestDerefId(t *testing.T) {
 	assert.Equal(t, "", derefId(nil))
 

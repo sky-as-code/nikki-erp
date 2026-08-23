@@ -43,6 +43,7 @@ func EntitlementSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(EntitlementSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", EntitlementSchemaName)).
 		TableName("iam_entitlements").
+		DefaultSearchFields("name", "description", "expression").
 		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{EntitlementFieldRoleId, EntitlementFieldName}}).
 		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{EntitlementFieldRoleId, EntitlementFieldExpression}}).
 		ShouldBuildDb().

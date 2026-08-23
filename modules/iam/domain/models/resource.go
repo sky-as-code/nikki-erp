@@ -36,6 +36,7 @@ func ResourceSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ResourceSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", ResourceSchemaName)).
 		TableName("iam_resources").
+		DefaultSearchFields("name", "code", "description").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(

@@ -28,9 +28,6 @@ type engineSpec struct {
 	// constant, never a string derived from the resource path.
 	SchemaName string
 
-	// DefaultFields is the field set a listing search returns. Primary key fields are always
-	// included by the query builder, so listing them here is redundant.
-	DefaultFields []string
 
 	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD
 	// ones. It is optional: a resource without custom behavior leaves it nil.
@@ -45,24 +42,12 @@ var engineSpecs = []engineSpec{
 func settingsSchemaEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.SettingsSchemaSchemaName,
-		DefaultFields: []string{
-			models.SettingsSchemaFieldModuleKey,
-			models.SettingsSchemaFieldLevel,
-		},
 	}
 }
 
 func settingsRecordEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.SettingsRecordSchemaName,
-		DefaultFields: []string{
-			models.SettingsRecordFieldModuleKey,
-			models.SettingsRecordFieldLevel,
-			models.SettingsRecordFieldOwnerType,
-			models.SettingsRecordFieldOwnerId,
-			models.SettingsRecordFieldName,
-			models.SettingsRecordFieldValue,
-		},
 	}
 }
 
@@ -86,9 +71,7 @@ func InitDynamicEngines() error {
 }
 
 func initEngine(spec engineSpec) error {
-	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{
-		DefaultSearchFields: spec.DefaultFields,
-	})
+	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create the '%s' resource engine", spec.SchemaName)
 	}

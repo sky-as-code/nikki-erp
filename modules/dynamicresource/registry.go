@@ -154,7 +154,7 @@ func buildEngine(
 	// Every resource gets computed-field evaluation; a schema without computed fields passes
 	// through untouched. A module's extended service embeds this wrapped one, so its overrides
 	// keep layering on top.
-	service = engine.WithComputedFields(service, searchSourceRowsForComputed)
+	service = engine.WithComputedFields(service, searchSourceRowsForComputed, defaultFields)
 
 	newEngine := engine.NewDynamicResourceEngine(engine.NewEngineParam{
 		Schema:     schema,

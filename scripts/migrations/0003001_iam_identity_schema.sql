@@ -1,14 +1,18 @@
--- Create "iam_method_settings" table
-CREATE TABLE "iam_method_settings" (
+-- Create "iam_resources" table
+CREATE TABLE "iam_resources" (
   "id" character varying NOT NULL,
-  "method" character varying NOT NULL,
-  "order" integer NOT NULL,
-  "max_failures" integer NOT NULL,
-  "lock_duration_secs" bigint NULL,
-  "subject_type" character varying NOT NULL,
-  "subject_ref" character varying NULL,
-  "subject_source_ref" character varying NULL,
-  PRIMARY KEY ("id")
+  "name" character varying NOT NULL,
+  "code" character varying NOT NULL,
+  "description" character varying NULL,
+  "owner_type" character varying NOT NULL,
+  "max_scope" character varying NOT NULL,
+  "min_scope" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "iam_resources_code_ukey" UNIQUE ("code"),
+  CONSTRAINT "iam_resources_name_ukey" UNIQUE ("name")
 );
 -- Create "iam_attempts" table
 CREATE TABLE "iam_attempts" (
@@ -27,21 +31,17 @@ CREATE TABLE "iam_attempts" (
   "username" character varying NOT NULL,
   PRIMARY KEY ("id")
 );
--- Create "iam_resources" table
-CREATE TABLE "iam_resources" (
+-- Create "iam_method_settings" table
+CREATE TABLE "iam_method_settings" (
   "id" character varying NOT NULL,
-  "name" character varying NOT NULL,
-  "code" character varying NOT NULL,
-  "description" character varying NULL,
-  "owner_type" character varying NOT NULL,
-  "max_scope" character varying NOT NULL,
-  "min_scope" character varying NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "etag" character varying NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "iam_resources_code_ukey" UNIQUE ("code"),
-  CONSTRAINT "iam_resources_name_ukey" UNIQUE ("name")
+  "method" character varying NOT NULL,
+  "order" integer NOT NULL,
+  "max_failures" integer NOT NULL,
+  "lock_duration_secs" bigint NULL,
+  "subject_type" character varying NOT NULL,
+  "subject_ref" character varying NULL,
+  "subject_source_ref" character varying NULL,
+  PRIMARY KEY ("id")
 );
 -- Create "iam_password_stores" table
 CREATE TABLE "iam_password_stores" (
@@ -71,9 +71,9 @@ CREATE TABLE "iam_actions" (
 -- Create "iam_organizations" table
 CREATE TABLE "iam_organizations" (
   "id" character varying NOT NULL,
-  "address" character varying NULL,
-  "display_name" character varying NOT NULL,
-  "legal_name" character varying NULL,
+  "address" jsonb NULL,
+  "display_name" jsonb NOT NULL,
+  "legal_name" jsonb NULL,
   "phone_number" character varying NULL,
   "slug" character varying NOT NULL,
   "etag" character varying NOT NULL,
@@ -81,7 +81,6 @@ CREATE TABLE "iam_organizations" (
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "iam_organizations_display_name_ukey" UNIQUE ("display_name"),
   CONSTRAINT "iam_organizations_slug_ukey" UNIQUE ("slug")
 );
 -- Create "iam_org_units" table
@@ -227,6 +226,28 @@ CREATE TABLE "iam_org_user_rel" (
   CONSTRAINT "iam_org_user_rel_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "iam_organizations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "iam_org_user_rel_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
+-- Create "iam_permission_histories" table
+CREATE TABLE "iam_permission_histories" (
+  "id" character varying NOT NULL,
+  "approver_id" character varying NULL,
+  "approver_email" character varying NULL,
+  "effect" character varying NOT NULL,
+  "reason" character varying NOT NULL,
+  "entitlement_id" character varying NULL,
+  "entitlement_expr" character varying NULL,
+  "entitlement_assignment_id" character varying NULL,
+  "resolved_expr" character varying NULL,
+  "receiver_id" character varying NULL,
+  "receiver_email" character varying NULL,
+  "grant_request_id" character varying NULL,
+  "revoke_request_id" character varying NULL,
+  "role_id" character varying NULL,
+  "role_name" character varying NULL,
+  "created_at" timestamptz NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "iam_permission_histories_grant_request_id_fkey" FOREIGN KEY ("grant_request_id") REFERENCES "iam_grant_requests" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
+  CONSTRAINT "iam_permission_histories_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "iam_roles" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+);
 -- Create "iam_role_group_assignments" table
 CREATE TABLE "iam_role_group_assignments" (
   "id" character varying NOT NULL,
@@ -263,6 +284,9 @@ CREATE TABLE "iam_role_user_assignments" (
 CREATE TABLE "iam_user_permissions" (
   "user_id" character varying NOT NULL,
   "ent_id" character varying NOT NULL,
+  "source_kind" character varying NOT NULL,
+  "source_id" character varying NOT NULL,
+  "expires_at" timestamptz NULL,
   "ent_expression" character varying NOT NULL,
   "action_id" character varying NULL,
   "resource_id" character varying NULL,
@@ -271,16 +295,13 @@ CREATE TABLE "iam_user_permissions" (
   "role_user_assignment_id" character varying NULL,
   "scope" character varying NOT NULL,
   "org_id" character varying NULL,
-  "org_membership_id" character varying NULL,
   "group_membership_id" character varying NULL,
   "org_unit_id" character varying NULL,
-  PRIMARY KEY ("user_id", "ent_id"),
-  CONSTRAINT "iam_user_permissions_user_id_ent_expression_ukey" UNIQUE ("user_id", "ent_expression"),
+  PRIMARY KEY ("user_id", "ent_id", "source_kind", "source_id"),
   CONSTRAINT "iam_user_permissions_action_id_fkey" FOREIGN KEY ("action_id") REFERENCES "iam_actions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "iam_user_permissions_ent_id_fkey" FOREIGN KEY ("ent_id") REFERENCES "iam_entitlements" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "iam_user_permissions_group_membership_id_fkey" FOREIGN KEY ("group_membership_id") REFERENCES "iam_group_user_rel" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "iam_user_permissions_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "iam_organizations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "iam_user_permissions_org_membership_id_fkey" FOREIGN KEY ("org_membership_id") REFERENCES "iam_org_user_rel" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "iam_user_permissions_org_unit_id_fkey" FOREIGN KEY ("org_unit_id") REFERENCES "iam_org_units" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "iam_user_permissions_resource_id_fkey" FOREIGN KEY ("resource_id") REFERENCES "iam_resources" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "iam_user_permissions_role_group_assignment_id_fkey" FOREIGN KEY ("role_group_assignment_id") REFERENCES "iam_role_group_assignments" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,

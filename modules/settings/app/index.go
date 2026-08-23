@@ -14,5 +14,6 @@ func InitApplicationServices() error {
 		NewTenantSettingsAppServiceImpl,
 		NewOrgSettingsAppServiceImpl,
 		NewUserPreferencesAppServiceImpl,
+		NewEffectiveSettingsAppServiceImpl,
 	)
 }

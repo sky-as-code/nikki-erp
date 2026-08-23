@@ -1129,9 +1129,9 @@ func (this *PgQueryBuilder) conditionExpression(
 	switch operator {
 	case dmodel.Equals, dmodel.NotEquals, dmodel.GreaterThan,
 		dmodel.GreaterEqual, dmodel.LessThan, dmodel.LessEqual:
-		return this.comparisonPredicate(sb, quotedField, field, operator, value)
+		return this.comparisonPredicate(sb, quotedField, field, operator, value, language)
 	case dmodel.In, dmodel.NotIn:
-		return this.collectionPredicate(sb, quotedField, field, operator, valueArr)
+		return this.collectionPredicate(sb, quotedField, field, operator, valueArr, language)
 	case dmodel.Contains, dmodel.NotContains, dmodel.StartsWith,
 		dmodel.NotStartsWith, dmodel.EndsWith, dmodel.NotEndsWith:
 		return this.stringPredicate(sb, quotedField, field, operator, value, language)
@@ -1163,8 +1163,16 @@ func (this *PgQueryBuilder) prepareColName(
 
 func (this *PgQueryBuilder) comparisonPredicate(
 	sb *sqlbuilder.SelectBuilder, quotedField string,
-	field *dmodel.ModelField, op dmodel.Operator, value any,
+	field *dmodel.ModelField, op dmodel.Operator, value any, language *cmodel.LanguageCode,
 ) (string, ft.ClientErrors, error) {
+	// Comparing a LangJson column as a whole document matches a marshalled scalar against an
+	// object, which can essentially never be true. Once a locale is known, the comparison the
+	// caller meant is against the text in that locale -- the same value "contains" already
+	// searches, so that one field does not answer to two different data models per operator.
+	// "->>" yields text, so the ordering operators compare lexicographically.
+	if localized := langJsonLocalizedExpr(field, quotedField, language); localized != "" {
+		return this.langJsonComparisonPredicate(sb, localized, field, op, value)
+	}
 	converted, cErrs, err := this.convertValue(field, value)
 	if err != nil {
 		return "", nil, err
@@ -1192,8 +1200,13 @@ func (this *PgQueryBuilder) comparisonPredicate(
 
 func (this *PgQueryBuilder) collectionPredicate(
 	sb *sqlbuilder.SelectBuilder, quotedField string,
-	field *dmodel.ModelField, op dmodel.Operator, values []any,
+	field *dmodel.ModelField, op dmodel.Operator, values []any, language *cmodel.LanguageCode,
 ) (string, ft.ClientErrors, error) {
+	// Same reasoning as comparisonPredicate: an IN over a LangJson column is a membership test on
+	// the reader's translation, not on the whole document.
+	if localized := langJsonLocalizedExpr(field, quotedField, language); localized != "" {
+		return this.langJsonCollectionPredicate(sb, localized, field, op, values)
+	}
 	converted, cErrs, err := this.convertValues(field, values)
 	if err != nil {
 		return "", nil, err
@@ -1208,6 +1221,68 @@ func (this *PgQueryBuilder) collectionPredicate(
 		return sb.NotIn(quotedField, converted...), nil, nil
 	}
 	return "", nil, errors.Errorf("collectionPredicate: unsupported collection operator '%s'", op)
+}
+
+// langJsonComparisonPredicate compares the reader's translation of a LangJson column.
+//
+// The value is converted with convertStringPredicateValue rather than convertValue: the operand is
+// the text of one translation, so a non-string operand is a client error rather than something to
+// marshal into a JSON document.
+func (this *PgQueryBuilder) langJsonComparisonPredicate(
+	sb *sqlbuilder.SelectBuilder, localizedExpr string,
+	field *dmodel.ModelField, op dmodel.Operator, value any,
+) (string, ft.ClientErrors, error) {
+	converted, cErrs, err := this.convertStringPredicateValue(field, value)
+	if err != nil {
+		return "", nil, err
+	}
+	if len(cErrs) > 0 {
+		return "", cErrs, nil
+	}
+	switch op {
+	case dmodel.Equals:
+		return sb.Equal(localizedExpr, converted), nil, nil
+	case dmodel.NotEquals:
+		return sb.NotEqual(localizedExpr, converted), nil, nil
+	case dmodel.GreaterThan:
+		return sb.GreaterThan(localizedExpr, converted), nil, nil
+	case dmodel.GreaterEqual:
+		return sb.GreaterEqualThan(localizedExpr, converted), nil, nil
+	case dmodel.LessThan:
+		return sb.LessThan(localizedExpr, converted), nil, nil
+	case dmodel.LessEqual:
+		return sb.LessEqualThan(localizedExpr, converted), nil, nil
+	default:
+		panic("langJsonComparisonPredicate: unsupported operator (internal)")
+	}
+}
+
+// langJsonCollectionPredicate is the IN/NOT IN counterpart, converting each element as one
+// translation's text.
+func (this *PgQueryBuilder) langJsonCollectionPredicate(
+	sb *sqlbuilder.SelectBuilder, localizedExpr string,
+	field *dmodel.ModelField, op dmodel.Operator, values []any,
+) (string, ft.ClientErrors, error) {
+	converted := make([]any, 0, len(values))
+	for _, value := range values {
+		next, cErrs, err := this.convertStringPredicateValue(field, value)
+		if err != nil {
+			return "", nil, err
+		}
+		if len(cErrs) > 0 {
+			return "", cErrs, nil
+		}
+		converted = append(converted, next)
+	}
+	switch op {
+	case dmodel.In:
+		return sb.In(localizedExpr, converted...), nil, nil
+	case dmodel.NotIn:
+		return sb.NotIn(localizedExpr, converted...), nil, nil
+	default:
+		return "", nil, errors.Errorf(
+			"langJsonCollectionPredicate: unsupported collection operator '%s'", op)
+	}
 }
 
 func (this *PgQueryBuilder) stringPredicate(
@@ -1241,9 +1316,29 @@ func (this *PgQueryBuilder) stringPredicate(
 }
 
 func isLangJsonField(field *dmodel.ModelField) bool {
-	return field != nil && field.ColumnType() == "nikkiLangJson"
+	return field != nil && field.ColumnType() == dmodel.FieldDataTypeNameLangJson
 }
 
+// langJsonLocalizedExpr is the SQL for the localized value of a LangJson column, or "" when no
+// locale is in play. Callers treat "" as the signal to keep whole-document semantics, which keeps
+// the "should we localize at all" decision in one place instead of repeated at each operator.
+//
+// The lookup is deliberately strict: exactly the requested language, with no COALESCE onto a
+// default locale or onto the "$ref" translation key. A row that has no text in the reader's
+// language has nothing in the database to match, and falling back would sort it under a string
+// the reader cannot see. The stored jsonb keys are canonical BCP47 (LangJson.SanitizeClone
+// rewrites them on write), so the literal must be canonical too.
+func langJsonLocalizedExpr(
+	field *dmodel.ModelField, sqlRef string, language *cmodel.LanguageCode,
+) string {
+	if !isLangJsonField(field) || language == nil || strings.TrimSpace(string(*language)) == "" {
+		return ""
+	}
+	return fmt.Sprintf("(%s ->> %s)", sqlRef, pgStringLiteral(string(*language)))
+}
+
+// langJsonStringPredicateExpr keeps the whole-document ::text form for the no-locale case, so an
+// unlocalized "contains" still searches every translation at once rather than matching nothing.
 func langJsonStringPredicateExpr(sqlRef string, language *cmodel.LanguageCode) string {
 	if language == nil || strings.TrimSpace(string(*language)) == "" {
 		return fmt.Sprintf("(%s)::text", sqlRef)
@@ -1297,6 +1392,11 @@ func (this *PgQueryBuilder) orderExprs(
 	ctx *graphSelectCtx, schema *dmodel.ModelSchema, order dmodel.SearchOrder,
 ) ([]string, error) {
 	exprs := make([]string, 0, len(order))
+	// resolveOrderField tolerates a nil ctx, so this must too.
+	var language *cmodel.LanguageCode
+	if ctx != nil {
+		language = ctx.language
+	}
 	for _, item := range order {
 		if len(item) == 0 || item[0] == "" {
 			continue
@@ -1314,6 +1414,14 @@ func (this *PgQueryBuilder) orderExprs(
 		dir := "ASC"
 		if item.Direction() == dmodel.Desc {
 			dir = "DESC"
+		}
+		// A LangJson column holds every translation in one jsonb document, so ordering the column
+		// itself sorts by the document's text rather than by anything the reader can see. Sorting
+		// the reader's own translation out of it is the only order that matches the list they are
+		// looking at. Rows with no text in that language sort as NULL, which PostgreSQL places
+		// last on ASC -- the same place a blank cell belongs.
+		if localized := langJsonLocalizedExpr(field, ref, language); localized != "" {
+			ref = localized
 		}
 		exprs = append(exprs, fmt.Sprintf("%s %s", ref, dir))
 	}

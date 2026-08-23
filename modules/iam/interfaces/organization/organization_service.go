@@ -11,6 +11,7 @@ type OrganizationDomainService interface {
 	CreateOrg(ctx corectx.Context, cmd CreateOrgCommand, opts ...corecrud.ServiceCreateOptions[*domain.Organization]) (*CreateOrgResult, error)
 	DeleteOrg(ctx corectx.Context, cmd DeleteOrgCommand, opts ...corecrud.ServiceDeleteOptions) (*DeleteOrgResult, error)
 	GetOrg(ctx corectx.Context, query GetOrgQuery) (*dyn.OpResult[domain.Organization], error)
+	GetUserOrgs(ctx corectx.Context, query GetUserOrgsQuery) (*GetUserOrgsResult, error)
 	OrgExists(ctx corectx.Context, query OrgExistsQuery) (*OrgExistsResult, error)
 	ManageOrgUsers(ctx corectx.Context, cmd ManageOrgUsersCommand) (*ManageOrgUsersResult, error)
 	SearchOrgs(ctx corectx.Context, query SearchOrgsQuery, opts ...corecrud.ServiceSearchOptions) (*SearchOrgsResult, error)

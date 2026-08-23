@@ -4,6 +4,7 @@
 	"table_name": "inventory_stock_product_configs",
 	"should_build_db": true,
 	"record_label_field": "product_template_id",
+	"default_search_fields": ["product_template_id"],
 	"composite_uniques": [{
 		"index_name": "invty_stk_prod_cfgs_tid_ptpl_id",
 		"fields": ["product_template_id", "org_id"]

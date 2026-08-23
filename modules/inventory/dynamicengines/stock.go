@@ -24,28 +24,12 @@ import (
 func stockOperationTypeEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.StockOperationTypeSchemaName,
-		DefaultFields: []string{
-			models.StockOperationTypeFieldCode,
-			models.StockOperationTypeFieldName,
-			models.StockOperationTypeFieldOperationCode,
-			models.StockOperationTypeFieldReservationMethod,
-			models.StockOperationTypeFieldBackorderPolicy,
-		},
 	}
 }
 
 func stockQuantEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.StockQuantSchemaName,
-		DefaultFields: []string{
-			models.StockQuantFieldProductVariantId,
-			models.StockQuantFieldLocationId,
-			models.StockQuantFieldLotRef,
-			models.StockQuantFieldOnHandQuantity,
-			models.StockQuantFieldReservedQuantity,
-			models.StockQuantFieldAvailableQuantity,
-			models.StockQuantFieldBaseUomId,
-		},
+		SchemaName:    models.StockQuantSchemaName,
 		DefineActions: defineStockQuantActions,
 	}
 }

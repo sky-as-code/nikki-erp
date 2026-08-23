@@ -75,6 +75,24 @@ type GetSettingsResultData struct {
 	Items []SettingItem
 }
 
+// GetEffectiveSettingsQuery asks for every setting that applies to the acting caller.
+//
+// ModuleKeys narrows the read to the modules the caller cares about; Essential's key is folded in
+// whether or not it is listed, so a caller that only wants its own module still gets the locale.
+type GetEffectiveSettingsQuery struct {
+	ModuleKeys []string `json:"module_keys"`
+}
+
+// GetEffectiveSettingsResultData is every applicable setting flattened into one lookup.
+//
+// The key is "{module_key}.{setting_name}", and the value is the setting's value with the stored
+// {"value": ...} envelope already unwrapped. It is flat rather than grouped by level because a
+// consumer asking "what applies to me" has no use for which level answered -- a setting name is
+// unique within a module across all of its levels, so the three levels cannot disagree.
+type GetEffectiveSettingsResultData struct {
+	Values map[string]any `json:"values"`
+}
+
 // SetSettingsCommand writes a partial set of changed items for one owner at one level.
 //
 // Only the items the caller actually changed belong here. An absent item is left untouched rather

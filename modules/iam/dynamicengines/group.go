@@ -7,9 +7,5 @@ import (
 func groupEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.GroupSchemaName,
-		DefaultFields: []string{
-			models.GroupFieldName,
-			models.GroupFieldDescription,
-		},
 	}
 }

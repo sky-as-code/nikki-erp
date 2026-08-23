@@ -175,11 +175,13 @@ func (this *RoleDomainServiceImpl) fillScopeNames(
 	ctx corectx.Context, byRole map[model.Id][]itRole.DescribedEntitlement,
 ) error {
 	orgIds, orgUnitIds := collectScopeIds(byRole)
-	orgNames, err := this.searchNames(ctx, this.orgRepoSearch, orgIds, domain.OrgFieldDisplayName)
+	orgNames, err := this.searchNames(
+		ctx, this.orgRepoSearch, orgIds, domain.OrgFieldDisplayName, langJsonNameOf)
 	if err != nil {
 		return err
 	}
-	orgUnitNames, err := this.searchNames(ctx, this.orgUnitRepoSearch, orgUnitIds, domain.OrgUnitFieldName)
+	orgUnitNames, err := this.searchNames(
+		ctx, this.orgUnitRepoSearch, orgUnitIds, domain.OrgUnitFieldName, plainNameOf)
 	if err != nil {
 		return err
 	}
@@ -263,8 +265,39 @@ func (this *RoleDomainServiceImpl) orgUnitRepoSearch(
 	return fieldRowsOf(res.Data.Items), nil, nil
 }
 
+// nameExtractorFn reads one row's display name. Org names are LangJson while org-unit names are
+// still plain strings, so the caller supplies the reader rather than searchNames guessing from
+// the column type.
+type nameExtractorFn func(row dmodel.DynamicFields, nameField string) *string
+
+func plainNameOf(row dmodel.DynamicFields, nameField string) *string {
+	return row.GetString(nameField)
+}
+
+// langJsonNameOf flattens a LangJson name to the one string ScopeName can hold. There is no
+// language on the request context here, so it cannot honour the reader's locale; it takes any
+// entry rather than returning nil, because a name in the wrong language still identifies the
+// scope better than a blank label does.
+func langJsonNameOf(row dmodel.DynamicFields, nameField string) *string {
+	lang := row.GetLangJson(nameField)
+	if lang == nil {
+		return nil
+	}
+	if text, ok := (*lang)[model.DefaultLanguageCode]; ok && text != "" {
+		return &text
+	}
+	for code, text := range *lang {
+		if code == model.LanguageCodeRef || text == "" {
+			continue
+		}
+		return &text
+	}
+	return nil
+}
+
 func (this *RoleDomainServiceImpl) searchNames(
 	ctx corectx.Context, search namesSearchFn, ids []model.Id, nameField string,
+	extractName nameExtractorFn,
 ) (map[model.Id]*string, error) {
 	names := map[model.Id]*string{}
 	if len(ids) == 0 {
@@ -287,7 +320,7 @@ func (this *RoleDomainServiceImpl) searchNames(
 	for _, row := range rows {
 		id := row.GetModelId(basemodel.FieldId)
 		if id != nil {
-			names[*id] = row.GetString(nameField)
+			names[*id] = extractName(row, nameField)
 		}
 	}
 	return names, nil

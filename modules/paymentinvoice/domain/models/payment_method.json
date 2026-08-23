@@ -4,6 +4,7 @@
 	"table_name": "paymentinvoice_payment_methods",
 	"should_build_db": true,
 	"record_label_field": "name",
+	"default_search_fields": ["code", "name", "adapter_code", "is_active"],
 	"composite_uniques": [
 		{ "index_name": "payinv_pay_methods_code", "fields": ["code"] }
 	],

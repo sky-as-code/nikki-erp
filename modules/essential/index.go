@@ -11,6 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	models "github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
@@ -102,11 +103,19 @@ func (*EssentialModule) OnAppStarted() error {
 		modules []modules.InCodeModule,
 		moduleSvc it.ModuleAppService,
 		settingsSvc itExt.SettingsRegistrationExtService,
+		effectiveSvc itExt.EffectiveSettingsExtService,
 	) error {
 		ctx := corectx.NewRequestContext(context.Background())
 		if _, err := moduleSvc.SyncModuleMetadata(ctx, modules); err != nil {
 			return err
 		}
+
+		// Installed rather than injected: core/dynamicmodel cannot depend on the settings module,
+		// because settings imports it. Essential depends on both, so it is where the two ends meet.
+		// Here rather than in Init() for the same reason the schema registration below is: peer
+		// module init order is nondeterministic, and this needs settings fully built.
+		dyn.SetLocaleResolver(app.NewUserLocaleResolver(effectiveSvc))
+
 		return registerSettings(ctx, settingsSvc)
 	})
 }

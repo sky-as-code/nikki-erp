@@ -4,6 +4,7 @@
 	"table_name": "purchase_orders",
 	"should_build_db": true,
 	"record_label_field": "code",
+	"default_search_fields": ["code", "status", "vendor_reference", "order_deadline", "expected_arrival", "priority", "is_locked", "total_amount"],
 	"composite_uniques": [
 		{ "index_name": "purch_orders_tid_code_org_id", "fields": ["code", "org_id"] }
 	],

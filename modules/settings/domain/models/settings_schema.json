@@ -4,6 +4,7 @@
 	"table_name": "settings_schemas",
 	"should_build_db": true,
 	"record_label_field": "module_key",
+	"default_search_fields": ["module_key", "level"],
 	"composite_uniques": [
 		{ "index_name": "settings_schemas_mod_lvl", "fields": ["module_key", "level"] }
 	],

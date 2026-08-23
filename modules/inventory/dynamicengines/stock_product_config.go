@@ -19,11 +19,7 @@ import (
 
 func stockProductConfigEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.StockProductConfigSchemaName,
-		DefaultFields: []string{
-			models.StockProductConfigFieldProductTemplateId,
-			models.StockProductConfigFieldInventoryUomId,
-		},
+		SchemaName:    models.StockProductConfigSchemaName,
 		DefineActions: defineStockProductConfigActions,
 	}
 }
@@ -133,4 +129,3 @@ func checkUomUsable(ctx corectx.Context, uomId string, vErrs *ft.ClientErrors) e
 	}
 	return nil
 }
-

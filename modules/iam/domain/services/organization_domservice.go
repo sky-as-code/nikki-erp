@@ -161,6 +161,34 @@ func (this *OrganizationDomainServiceImpl) getOrgWithArchived(ctx corectx.Contex
 	return result, nil
 }
 
+// maxUserOrgs bounds the org list behind one user. A user belonging to more organizations than
+// this has an administrative problem the switcher cannot help with anyway.
+const maxUserOrgs = 500
+
+// GetUserOrgs lists the organizations a user belongs to, ordered by display name.
+//
+// The ordering is done in SQL rather than in Go because display_name is LangJson: the query
+// builder orders by the reader's own translation out of the jsonb document, which is the only
+// order that matches the list they are looking at. Sorting the marshalled document in Go would
+// sort by whichever language happens to sort first inside it.
+func (this *OrganizationDomainServiceImpl) GetUserOrgs(
+	ctx corectx.Context, query it.GetUserOrgsQuery,
+) (*it.GetUserOrgsResult, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(domain.OrgEdgeUsers, dmodel.Linked, query.UserId),
+		*dmodel.NewSearchNode().NewCondition(basemodel.FieldIsArchived, dmodel.Equals, false),
+	)
+	graph.OrderBy(domain.OrgFieldDisplayName, dmodel.Asc)
+
+	return this.SearchOrgs(ctx, it.SearchOrgsQuery{
+		Fields: []string{basemodel.FieldId, domain.OrgFieldDisplayName, domain.OrgFieldSlug},
+		Graph:  graph,
+		Page:   0,
+		Size:   maxUserOrgs,
+	})
+}
+
 func (this *OrganizationDomainServiceImpl) OrgExists(
 	ctx corectx.Context, query it.OrgExistsQuery,
 ) (*it.OrgExistsResult, error) {

@@ -632,6 +632,13 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 		sanitizedQuery = newQuery
 	}
 
+	// A client that names a language wins; the user's stored preference is only the default. The
+	// resolve is memoized on ctx, so the count query and the list query that follow share one
+	// settings read rather than paying for two.
+	if sanitizedQuery.Language == nil {
+		sanitizedQuery.Language = dyn.ResolveLocale(ctx)
+	}
+
 	includeArchived := sanitizedQuery.IncludeArchived
 	if includeArchived == nil {
 		// The public search API hides archived records unless the caller asks for them.

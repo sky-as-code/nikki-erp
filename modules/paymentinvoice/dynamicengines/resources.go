@@ -18,27 +18,12 @@ import (
 func paymentMethodEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.PaymentMethodSchemaName,
-		DefaultFields: []string{
-			models.PaymentMethodFieldCode,
-			models.PaymentMethodFieldName,
-			models.PaymentMethodFieldAdapterCode,
-			models.PaymentMethodFieldCurrencyId,
-			models.PaymentMethodFieldIsActive,
-		},
 	}
 }
 
 func orderEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.OrderSchemaName,
-		DefaultFields: []string{
-			models.OrderFieldOrderId,
-			models.OrderFieldStatus,
-			models.OrderFieldAmount,
-			models.OrderFieldCurrencyId,
-			models.OrderFieldPaymentMethodId,
-			models.OrderFieldSource,
-		},
 		DefineActions: defineOrderActions,
 	}
 }
@@ -46,29 +31,12 @@ func orderEngineSpec() engineSpec {
 func transactionEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.TransactionSchemaName,
-		DefaultFields: []string{
-			models.TransactionFieldOrderBusinessId,
-			models.TransactionFieldTransactionType,
-			models.TransactionFieldStatus,
-			models.TransactionFieldAmount,
-			models.TransactionFieldCurrencyId,
-			models.TransactionFieldPaymentMethodId,
-			models.TransactionFieldRefTransactionId,
-		},
 	}
 }
 
 func invoiceEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.InvoiceSchemaName,
-		DefaultFields: []string{
-			models.InvoiceFieldNumber,
-			models.InvoiceFieldStatus,
-			models.InvoiceFieldPartnerName,
-			models.InvoiceFieldTotalAmount,
-			models.InvoiceFieldCurrencyId,
-			models.InvoiceFieldIssuedAt,
-		},
 		DefineActions: defineInvoiceActions,
 	}
 }
@@ -76,13 +44,5 @@ func invoiceEngineSpec() engineSpec {
 func invoiceLineEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.InvoiceLineSchemaName,
-		DefaultFields: []string{
-			models.InvoiceLineFieldInvoiceId,
-			models.InvoiceLineFieldDescription,
-			models.InvoiceLineFieldQuantity,
-			models.InvoiceLineFieldUnitPrice,
-			models.InvoiceLineFieldTaxRatePercent,
-			models.InvoiceLineFieldAmount,
-		},
 	}
 }

@@ -87,6 +87,10 @@ func (this *sourceSearchRecorder) fn() SourceSearchFn {
 }
 
 func buildDecoratorFixture(t *testing.T) (*fakeBaseService, *sourceSearchRecorder, it.DynamicResourceService) {
+	return buildDecoratorFixtureWithDefaults(t, nil)
+}
+
+func buildDecoratorFixtureWithDefaults(t *testing.T, defaultSearchFields []string) (*fakeBaseService, *sourceSearchRecorder, it.DynamicResourceService) {
 	t.Helper()
 	source := dmodel.DefineModel("cfsvc_template").
 		ShouldBuildDb().
@@ -110,7 +114,7 @@ func buildDecoratorFixture(t *testing.T) (*fakeBaseService, *sourceSearchRecorde
 
 	base := &fakeBaseService{schema: owner}
 	recorder := &sourceSearchRecorder{}
-	return base, recorder, WithComputedFields(base, recorder.fn())
+	return base, recorder, WithComputedFields(base, recorder.fn(), defaultSearchFields)
 }
 
 func TestComputedService_SearchBatchesOneSourceQuery(t *testing.T) {
@@ -211,4 +215,47 @@ func TestComputedService_WritesToComputedFieldRejected(t *testing.T) {
 	ok, err := service.Update(nil, dmodel.DynamicFields{"id": "v1"})
 	require.NoError(t, err)
 	assert.Equal(t, 0, ok.ClientErrors.Count(), "ordinary writes pass through")
+}
+
+// A search that names no fields still gets a narrow projection — the schema's
+// default_search_fields — so the FK operand must be appended for it just as it is for an
+// explicit projection. Skipping it left the related read with no keys to join on, and the
+// computed field came back absent from every row of a default listing.
+func TestComputedService_SearchDefaultProjectionCarriesOperands(t *testing.T) {
+	base, recorder, service := buildDecoratorFixtureWithDefaults(t, []string{"template_name", "id"})
+	base.searchPage = []dmodel.DynamicFields{{"id": "v1", "template_id": "t1"}}
+	recorder.sourceRows = []dmodel.DynamicFields{{"id": "t1", "name": "Widget"}}
+
+	result, err := service.Search(nil, dmodel.DynamicFields{})
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{"template_name", "id", "template_id"}, base.gotParams["fields"],
+		"the FK operand must be appended to the default projection")
+	assert.Equal(t, 1, recorder.calls, "the related read must run for a default projection")
+	assert.Equal(t, "Widget", result.Data.Items[0]["template_name"])
+}
+
+// A named view other than "default" resolves to an id-only row, so it wants no computed field
+// and must not pay for a source read.
+func TestComputedService_SearchNamedViewSkipsComputed(t *testing.T) {
+	base, recorder, service := buildDecoratorFixtureWithDefaults(t, []string{"template_name", "id"})
+	base.searchPage = []dmodel.DynamicFields{{"id": "v1", "template_id": "t1"}}
+
+	_, err := service.Search(nil, dmodel.DynamicFields{"search_name": "my_view"})
+
+	require.NoError(t, err)
+	assert.Zero(t, recorder.calls, "an id-only view must not trigger a related read")
+}
+
+// The default projection selects only the computed fields it actually lists: a schema with many
+// computed fields must not evaluate all of them just because the client named none.
+func TestComputedService_DefaultProjectionEvaluatesOnlyListedComputedFields(t *testing.T) {
+	base, recorder, service := buildDecoratorFixtureWithDefaults(t, []string{"id", "template_id"})
+	base.searchPage = []dmodel.DynamicFields{{"id": "v1", "template_id": "t1"}}
+
+	result, err := service.Search(nil, dmodel.DynamicFields{})
+
+	require.NoError(t, err)
+	assert.Zero(t, recorder.calls, "a default projection without the computed field must not read the source")
+	assert.NotContains(t, result.Data.Items[0], "template_name")
 }

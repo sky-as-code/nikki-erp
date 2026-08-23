@@ -26,13 +26,7 @@ func derefId(id *string) string {
 
 func productCategoryEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.ProductCategorySchemaName,
-		DefaultFields: []string{
-			models.ProductCategoryFieldCode,
-			models.ProductCategoryFieldName,
-			models.ProductCategoryFieldParentCategoryId,
-			models.ProductCategoryFieldSequence,
-		},
+		SchemaName:    models.ProductCategorySchemaName,
 		DefineActions: defineProductCategoryActions,
 	}
 }

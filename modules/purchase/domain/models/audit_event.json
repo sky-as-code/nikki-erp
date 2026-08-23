@@ -4,6 +4,7 @@
 	"table_name": "purchase_audit_events",
 	"should_build_db": true,
 	"record_label_field": "action",
+	"default_search_fields": ["entity_type", "action", "from_status", "to_status", "reason"],
 	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
 
 	"fields": [
