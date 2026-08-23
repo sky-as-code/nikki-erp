@@ -19,6 +19,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice"
 	"github.com/sky-as-code/nikki-erp/modules/purchase"
+	"github.com/sky-as-code/nikki-erp/modules/sales"
 )
 
 type StaticModuleLoader struct {
@@ -51,6 +52,7 @@ func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 		inventory.ModuleSingleton,
 		paymentinvoice.ModuleSingleton,
 		purchase.ModuleSingleton,
+		sales.ModuleSingleton,
 		settings.ModuleSingleton,
 	}
 
