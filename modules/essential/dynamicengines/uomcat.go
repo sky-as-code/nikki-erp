@@ -15,10 +15,6 @@ import (
 func uomCatEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.UomCatSchemaName,
-		DefaultFields: []string{
-			models.UomCatFieldName,
-			models.UomCatFieldReferenceUomId,
-		},
 		DefineActions: defineUomCatActions,
 	}
 }

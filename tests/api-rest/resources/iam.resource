@@ -20,6 +20,8 @@ ${TEMP_PASSWORD_API}    /v1/iam/passwords/passwordtmp
 ${IAM_SCHEMA_DIR}       ${CURDIR}/schemas/iam
 # Records created by the permission suites, keyed by kind, removed by their teardown.
 ${PERM_FIXTURES}        ${None}
+# Ids of the locale-ordering groups, removed by Delete Locale Group Fixtures.
+${LOCALE_GROUP_IDS}     ${None}
 
 
 *** Keywords ***
@@ -365,3 +367,61 @@ Delete Seed Data
         Set Global Variable    ${SEED_USER_ID}    ${EMPTY}
         Set Global Variable    ${SEED_USER_CREATED}    ${False}
     END
+
+Ensure Locale Ordering Groups
+    [Documentation]    Creates three groups whose English and Vietnamese names sort in
+    ...    deliberately OPPOSITE orders, plus one that has an English name only.
+    ...
+    ...    The inversion is the whole point: a search that merely happened to return rows
+    ...    in some stable order would pass a single-locale assertion by luck. Ordering that
+    ...    flips when the reader's language flips can only come from the server sorting on
+    ...    the right jsonb key. All four share one suffix so the set sorts as a block
+    ...    regardless of what else the database already holds.
+    ${existing}=    Get Variable Value    ${LOCALE_GROUP_IDS}    ${None}
+    IF    $existing is not None    RETURN
+    Ensure Seed User
+    ${suffix}=    Unique Suffix
+
+    # en-US ascending: Alpha, Bravo, Charlie
+    # vi-VN ascending: Xuan(Charlie), Yen(Bravo), Zulu(Alpha)  -> exactly reversed
+    @{specs}=    Create List
+    ...    ${{ {'key': 'alpha',   'en': 'Alpha ' + $suffix,   'vi': 'Zulu ' + $suffix} }}
+    ...    ${{ {'key': 'bravo',   'en': 'Bravo ' + $suffix,   'vi': 'Yen ' + $suffix} }}
+    ...    ${{ {'key': 'charlie', 'en': 'Charlie ' + $suffix, 'vi': 'Xuan ' + $suffix} }}
+
+    &{ids}=    Create Dictionary
+    FOR    ${spec}    IN    @{specs}
+        ${resp}=    POST On Session    api    ${GROUP_API}
+        ...    json=${{ {'name': {'en-US': $spec['en'], 'vi-VN': $spec['vi']}, 'owner_id': $SEED_USER_ID} }}
+        ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+        Set To Dictionary    ${ids}    ${spec}[key]    ${id}
+    END
+
+    # English only: it has nothing to match or sort on for a Vietnamese reader, which is
+    # what pins the strict no-fallback rule.
+    ${en_only}=    Set Variable    Delta ${suffix}
+    ${resp}=    POST On Session    api    ${GROUP_API}
+    ...    json=${{ {'name': {'en-US': $en_only}, 'owner_id': $SEED_USER_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Set To Dictionary    ${ids}    en_only    ${id}
+
+    Set Global Variable    ${LOCALE_GROUP_IDS}    ${ids}
+    Set Global Variable    ${LOCALE_GROUP_SUFFIX}    ${suffix}
+
+Delete Locale Group Fixtures
+    [Documentation]    Best-effort removal of the groups Ensure Locale Ordering Groups made.
+    ${ids}=    Get Variable Value    ${LOCALE_GROUP_IDS}    ${None}
+    IF    $ids is None    RETURN
+    FOR    ${key}    ${id}    IN    &{ids}
+        DELETE On Session    api    ${GROUP_API}/${id}    expected_status=any
+    END
+    Set Global Variable    ${LOCALE_GROUP_IDS}    ${None}
+
+Locale Group Names In Result
+    [Documentation]    The returned group names in one language, keeping result order and
+    ...    dropping anything this suite did not create -- the database may hold groups from
+    ...    other suites, and they must not decide whether an ordering assertion passes.
+    [Arguments]    ${resp}    ${language}
+    ${names}=    Evaluate
+    ...    [i['name'].get($language) for i in $resp.json()['items'] if isinstance(i.get('name'), dict) and $LOCALE_GROUP_SUFFIX in str(i['name'])]
+    RETURN    ${names}

@@ -7,11 +7,5 @@ import (
 func orgEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.OrganizationSchemaName,
-		DefaultFields: []string{
-			models.OrgFieldDisplayName,
-			models.OrgFieldLegalName,
-			models.OrgFieldSlug,
-			models.OrgFieldPhoneNumber,
-		},
 	}
 }

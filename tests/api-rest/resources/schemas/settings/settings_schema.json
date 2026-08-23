@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "id":         { "type": "string" },
+    "module_key": { "type": "string" },
+    "level":      { "type": "string", "enum": ["tenant", "org", "user"] },
+    "schema":     { "type": "object" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": ["string", "null"] }
+  },
+  "required": ["id", "module_key", "level"],
+  "additionalProperties": false
+}

@@ -4,6 +4,7 @@
 	"table_name": "paymentinvoice_invoices",
 	"should_build_db": true,
 	"record_label_field": "number",
+	"default_search_fields": ["number", "status", "partner_name", "total_amount", "issued_at"],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [

@@ -107,6 +107,7 @@ func (this *Application) GenSql(moduleName string, dialect string) string {
 // drops tables from the migration rather than failing loudly. Two exceptions today:
 //
 //   - vending_machine names its schemas "vending_..."
+//   - vending_machine_new names its schemas "vdmc_..."
 //   - iam owns "authenticate_password_store" as well as its "iam_" schemas, left over from
 //     the Identity/Authenticate merge
 //
@@ -115,6 +116,11 @@ func schemaPrefixesOf(moduleName string) []string {
 	switch moduleName {
 	case "vending_machine":
 		return []string{"vending_"}
+	case "vending_machine_new":
+		// Named "vdmc_", not "vending_machine_new_": the engine uses a schema name as both the
+		// REST route path and the IAM resource code, so the names are kept short. This does not
+		// overlap with vending_machine above, whose schemas are all "vending_".
+		return []string{"vdmc_"}
 	case "iam":
 		return []string{"iam_", "authenticate_"}
 	default:

@@ -3,6 +3,7 @@
 	"label": "inventory_putaway_rule.label",
 	"table_name": "inventory_putaway_rules",
 	"should_build_db": true,
+	"default_search_fields": ["code", "priority", "sublocation_strategy"],
 	"composite_uniques": [{ "index_name": "invty_putaway_tid_code_org_id", "fields": ["code", "org_id"] }],
 	"extend_before": ["core.basemodel.base_model"],
 

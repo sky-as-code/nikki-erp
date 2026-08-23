@@ -9,26 +9,22 @@ import (
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 )
 
 func NewRoleApplicationServiceImpl(
 	roleSvc it.RoleDomainService,
 	roleRepo it.RoleRepository,
-	userPrefSvc itExt.UserPreferenceUiDomainService,
 ) it.RoleAppService {
 	return &RoleApplicationServiceImpl{
 		roleSvc:     roleSvc,
 		roleRepo:    roleRepo,
-		userPrefSvc: userPrefSvc,
 	}
 }
 
 type RoleApplicationServiceImpl struct {
 	roleSvc     it.RoleDomainService
 	roleRepo    it.RoleRepository
-	userPrefSvc itExt.UserPreferenceUiDomainService
 }
 
 func (this *RoleApplicationServiceImpl) CreateRole(ctx corectx.Context, cmd it.CreateRoleCommand) (*it.CreateRoleResult, error) {
@@ -78,7 +74,6 @@ func (this *RoleApplicationServiceImpl) SearchRoles(ctx corectx.Context, query i
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Role, *domain.Role]{
 		Action:        "search roles",
-		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
 		Schema:        this.roleRepo.GetBaseRepo().Schema(),
 		DefaultFields: []string{
 			models.RoleFieldName,

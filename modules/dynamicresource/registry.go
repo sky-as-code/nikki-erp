@@ -142,15 +142,19 @@ func buildEngine(
 		NewBaseRepoFn: deps.NewBaseRepoFn,
 		Schema:        schema,
 	})
+	defaultFields := options.DefaultSearchFields
+	if len(defaultFields) == 0 {
+		defaultFields = schema.DefaultSearchFields()
+	}
 	service := engine.NewDynamicResourceService(engine.NewServiceParam{
 		Schema:        schema,
 		Repository:    repository,
-		DefaultFields: options.DefaultSearchFields,
+		DefaultFields: defaultFields,
 	})
 	// Every resource gets computed-field evaluation; a schema without computed fields passes
 	// through untouched. A module's extended service embeds this wrapped one, so its overrides
 	// keep layering on top.
-	service = engine.WithComputedFields(service, searchSourceRowsForComputed)
+	service = engine.WithComputedFields(service, searchSourceRowsForComputed, defaultFields)
 
 	newEngine := engine.NewDynamicResourceEngine(engine.NewEngineParam{
 		Schema:     schema,

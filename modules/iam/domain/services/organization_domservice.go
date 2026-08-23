@@ -11,31 +11,91 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
+	"go.bryk.io/pkg/errors"
 )
 
 func NewOrganizationDomainServiceImpl(
 	orgRepo it.OrganizationRepository,
 	cqrsBus cqrs.CqrsBus,
+	settingsSvc itExt.OrgSettingsInitExtService,
 ) it.OrganizationDomainService {
-	return &OrganizationDomainServiceImpl{cqrsBus: cqrsBus, orgRepo: orgRepo}
+	return &OrganizationDomainServiceImpl{cqrsBus: cqrsBus, orgRepo: orgRepo, settingsSvc: settingsSvc}
 }
 
 type OrganizationDomainServiceImpl struct {
-	cqrsBus cqrs.CqrsBus
-	orgRepo it.OrganizationRepository
+	cqrsBus     cqrs.CqrsBus
+	orgRepo     it.OrganizationRepository
+	settingsSvc itExt.OrgSettingsInitExtService
 }
 
+// CreateOrg creates the organization and seeds its settings in one transaction.
+//
+// The seeding shares the transaction deliberately: an organization that exists without its settings
+// rows would render an empty settings page until someone noticed, and there is no later point that
+// would repair it. Either both land or neither does.
+//
+// The call goes out through a port rather than into the settings module directly — settings may not
+// import iam, so the dependency runs this way round only.
 func (this *OrganizationDomainServiceImpl) CreateOrg(
 	ctx corectx.Context, cmd it.CreateOrgCommand, options ...corecrud.ServiceCreateOptions[*domain.Organization],
 ) (*it.CreateOrgResult, error) {
 	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.Organization]{})
-	return corecrud.Create(ctx, corecrud.CreateParam[domain.Organization, *domain.Organization]{
+
+	tranx, err := this.orgRepo.GetBaseRepo().BeginTransaction(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "create organization")
+	}
+	defer tranx.Rollback()
+
+	// The transaction goes on a clone: setting it on the caller's context would leave a committed
+	// transaction visible to whatever runs next.
+	tranxCtx := corectx.CloneRequestContext(ctx)
+	tranxCtx.SetDbTranx(tranx)
+
+	result, err := corecrud.Create(tranxCtx, corecrud.CreateParam[domain.Organization, *domain.Organization]{
 		Action:                 "create organization",
 		BaseRepoGetter:         this.orgRepo,
 		Data:                   cmd,
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
+	if err != nil {
+		return nil, err
+	}
+	// A rejected create has written nothing, so there is nothing to seed and nothing to commit.
+	if result.ClientErrors.Count() > 0 || !result.HasData {
+		return result, nil
+	}
+
+	if err := this.initOrgSettings(tranxCtx, &result.Data); err != nil {
+		return nil, err
+	}
+	return result, errors.Wrap(tranx.Commit(), "create organization")
+}
+
+// initOrgSettings copies the tenant's settings onto the newly created organization.
+func (this *OrganizationDomainServiceImpl) initOrgSettings(
+	ctx corectx.Context, org *domain.Organization,
+) error {
+	orgId := org.GetId()
+	if orgId == nil {
+		return errors.New("create organization: the created organization has no id")
+	}
+
+	initResult, err := this.settingsSvc.InitOrgSettings(ctx, itExt.InitOwnerSettingsCommand{
+		OwnerId: *orgId,
+	})
+	if err != nil {
+		return errors.Wrap(err, "create organization")
+	}
+	// A rejected seeding is a defect in this call, not something the caller creating an
+	// organization can correct, so it fails the whole create rather than being reported as a
+	// validation error against a field they submitted.
+	if initResult.ClientErrors.Count() > 0 {
+		return errors.Wrap(initResult.ClientErrors.ToError(), "create organization")
+	}
+	return nil
 }
 
 func (this *OrganizationDomainServiceImpl) DeleteOrg(
@@ -99,6 +159,34 @@ func (this *OrganizationDomainServiceImpl) getOrgWithArchived(ctx corectx.Contex
 	}
 
 	return result, nil
+}
+
+// maxUserOrgs bounds the org list behind one user. A user belonging to more organizations than
+// this has an administrative problem the switcher cannot help with anyway.
+const maxUserOrgs = 500
+
+// GetUserOrgs lists the organizations a user belongs to, ordered by display name.
+//
+// The ordering is done in SQL rather than in Go because display_name is LangJson: the query
+// builder orders by the reader's own translation out of the jsonb document, which is the only
+// order that matches the list they are looking at. Sorting the marshalled document in Go would
+// sort by whichever language happens to sort first inside it.
+func (this *OrganizationDomainServiceImpl) GetUserOrgs(
+	ctx corectx.Context, query it.GetUserOrgsQuery,
+) (*it.GetUserOrgsResult, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(domain.OrgEdgeUsers, dmodel.Linked, query.UserId),
+		*dmodel.NewSearchNode().NewCondition(basemodel.FieldIsArchived, dmodel.Equals, false),
+	)
+	graph.OrderBy(domain.OrgFieldDisplayName, dmodel.Asc)
+
+	return this.SearchOrgs(ctx, it.SearchOrgsQuery{
+		Fields: []string{basemodel.FieldId, domain.OrgFieldDisplayName, domain.OrgFieldSlug},
+		Graph:  graph,
+		Page:   0,
+		Size:   maxUserOrgs,
+	})
 }
 
 func (this *OrganizationDomainServiceImpl) OrgExists(

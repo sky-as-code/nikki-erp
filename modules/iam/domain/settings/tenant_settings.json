@@ -1,0 +1,21 @@
+{
+	"name": "iam_tenant_settings",
+	"label": "iam.settings.tenantSettings",
+
+	"fields": [
+		{
+			"name": "session_timeout_minutes",
+			"label": "iam.settings.sessionTimeoutMinutes",
+			"description": "settings_desc.session_timeout_minutes",
+			"data_type": { "type": "int32", "min": 1, "max": 10080 },
+			"metadata": { "allow_override": false }
+		},
+		{
+			"name": "require_mfa",
+			"label": "iam.settings.requireMfa",
+			"description": "settings_desc.require_mfa",
+			"data_type": "boolean",
+			"metadata": { "allow_override": false }
+		}
+	]
+}

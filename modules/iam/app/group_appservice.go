@@ -9,26 +9,22 @@ import (
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/group"
 )
 
 func NewGroupApplicationServiceImpl(
 	groupSvc it.GroupDomainService,
 	groupRepo it.GroupRepository,
-	userPrefSvc itExt.UserPreferenceUiDomainService,
 ) it.GroupAppService {
 	return &GroupApplicationServiceImpl{
 		groupSvc:    groupSvc,
 		groupRepo:   groupRepo,
-		userPrefSvc: userPrefSvc,
 	}
 }
 
 type GroupApplicationServiceImpl struct {
 	groupSvc    it.GroupDomainService
 	groupRepo   it.GroupRepository
-	userPrefSvc itExt.UserPreferenceUiDomainService
 }
 
 func (this *GroupApplicationServiceImpl) CreateGroup(ctx corectx.Context, cmd it.CreateGroupCommand) (*it.CreateGroupResult, error) {
@@ -91,7 +87,6 @@ func (this *GroupApplicationServiceImpl) SearchGroups(ctx corectx.Context, query
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Group, *domain.Group]{
 		Action:        "search groups",
-		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
 		Schema:        this.groupRepo.GetBaseRepo().Schema(),
 		DefaultFields: []string{
 			models.GroupFieldName,

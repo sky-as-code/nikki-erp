@@ -47,6 +47,7 @@ func RoleRequestSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(RoleRequestSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", RoleRequestSchemaName)).
 		TableName("iam_grant_requests").
+		DefaultSearchFields("status", "type", "request_comment").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(

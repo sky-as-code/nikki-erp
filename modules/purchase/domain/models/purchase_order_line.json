@@ -4,6 +4,7 @@
 	"table_name": "purchase_order_lines",
 	"should_build_db": true,
 	"record_label_field": "description",
+	"default_search_fields": ["sequence", "line_type", "description", "quantity", "unit_price", "subtotal", "tax_amount", "total"],
 	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
 
 	"fields": [

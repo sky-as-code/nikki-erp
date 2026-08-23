@@ -10,7 +10,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itAct "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/action"
-	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	itRes "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/resource"
 )
 
@@ -21,7 +20,6 @@ type NewResourceApplicationServiceImplParam struct {
 	ActionRepo   itAct.ActionRepository
 	ResourceSvc  itRes.ResourceDomainService
 	ResourceRepo itRes.ResourceRepository
-	UserPrefSvc  itExt.UserPreferenceUiDomainService
 }
 
 func NewResourceApplicationServiceImpl(param NewResourceApplicationServiceImplParam) itRes.ResourceAppService {
@@ -30,7 +28,6 @@ func NewResourceApplicationServiceImpl(param NewResourceApplicationServiceImplPa
 		actionRepo:   param.ActionRepo,
 		resourceSvc:  param.ResourceSvc,
 		resourceRepo: param.ResourceRepo,
-		userPrefSvc:  param.UserPrefSvc,
 	}
 }
 
@@ -39,7 +36,6 @@ type ResourceApplicationServiceImpl struct {
 	actionRepo   itAct.ActionRepository
 	resourceSvc  itRes.ResourceDomainService
 	resourceRepo itRes.ResourceRepository
-	userPrefSvc  itExt.UserPreferenceUiDomainService
 }
 
 func (this *ResourceApplicationServiceImpl) CreateResource(ctx corectx.Context, cmd itRes.CreateResourceCommand) (*itRes.CreateResourceResult, error) {
@@ -82,7 +78,6 @@ func (this *ResourceApplicationServiceImpl) SearchResources(ctx corectx.Context,
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Resource, *domain.Resource]{
 		Action:        "search resources",
-		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
 		Schema:        this.resourceRepo.GetBaseRepo().Schema(),
 		DefaultFields: []string{models.ResourceFieldName, models.ResourceFieldDescription},
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.Resource]], error) {

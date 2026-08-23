@@ -1,33 +1,26 @@
 package crud
 
 import (
-	"go.bryk.io/pkg/errors"
 
 	// dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-type FieldsResolver interface {
-	GetListFields(ctx corectx.Context, uiName string, userId model.Id) (*dyn.OpResult[[]string], error)
-}
-
 type UiSearchParam[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]] struct {
 	Action string
-	// Default fields to use when `FieldResolver` cannot find `SearchName`.
-	// This happens when the user has not modified the default search view.
+	// Default fields to use when the client specifies neither `fields` nor a
+	// resolvable named view.
 	// No need to specify ID field because it is always included.
 	DefaultFields []string
 
 	// Always masked fields that are not allowed to be returned to the client.
 	MaskedFields []string
 
-	FieldResolver FieldsResolver
 	Schema        *dmodel.ModelSchema
 	SearchFn      SearchFn[TDomain]
 }
@@ -56,18 +49,15 @@ func UiSearch[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 		isClientSpecifiedFields := len(query.Fields) > 0
 
 		if !isClientSpecifiedFields {
-			if query.SearchName != nil && *query.SearchName == dyn.DefaultSearchName {
+			if query.SearchName == nil || *query.SearchName == dyn.DefaultSearchName {
+				// No named view (the common case: the client asked for neither `fields` nor
+				// `search_name`) falls back the same as an explicit "default" — the client has
+				// not modified the default search view either way.
 				query.Fields = param.DefaultFields
-			} else if query.SearchName != nil {
-				uiFields, err := getListFields(ctx, param.FieldResolver, *query.SearchName)
-				if err != nil {
-					return query, err
-				}
-				if len(uiFields) > 0 {
-					query.Fields = uiFields
-				} else {
-					query.Fields = []string{basemodel.FieldId}
-				}
+			} else {
+				// A named view resolves no field list until the saved-search feature
+				// lands, so an explicitly named view returns an id-only row.
+				query.Fields = []string{basemodel.FieldId}
 			}
 		}
 		desiredFields = query.Fields
@@ -97,20 +87,6 @@ func UiSearch[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 	result.Data.SchemaEtag = param.Schema.Etag()
 
 	return result, nil
-}
-
-func getListFields(ctx corectx.Context, fieldResolver FieldsResolver, uiName string) ([]string, error) {
-	uiFields, err := fieldResolver.GetListFields(ctx, uiName, ctx.GetPermissions().UserId)
-	if err != nil {
-		return nil, err
-	}
-	if uiFields.ClientErrors.Count() > 0 {
-		return nil, errors.Wrap(uiFields.ClientErrors.ToError(), "getListFields")
-	}
-	if !uiFields.HasData {
-		return nil, nil
-	}
-	return uiFields.Data, nil
 }
 
 type UiGetOneParam[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]] struct {

@@ -4,6 +4,7 @@
 	"table_name": "paymentinvoice_orders",
 	"should_build_db": true,
 	"record_label_field": "order_id",
+	"default_search_fields": ["order_id", "status", "amount", "source"],
 	"composite_uniques": [
 		{ "index_name": "payinv_orders_order_id", "fields": ["order_id"] },
 		{ "index_name": "payinv_orders_order_code", "fields": ["order_code"] }

@@ -9,10 +9,5 @@ import (
 func grantRequestEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.RoleRequestSchemaName,
-		DefaultFields: []string{
-			models.RoleReqFieldStatus,
-			models.RoleReqFieldType,
-			models.RoleReqFieldRequestComment,
-		},
 	}
 }

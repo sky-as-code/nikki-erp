@@ -7,10 +7,5 @@ import (
 func orgUnitEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.OrganizationalUnitSchemaName,
-		DefaultFields: []string{
-			models.OrgUnitFieldName,
-			models.OrgUnitFieldDescription,
-			models.OrgUnitFieldPath,
-		},
 	}
 }

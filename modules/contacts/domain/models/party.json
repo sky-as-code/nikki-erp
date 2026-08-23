@@ -4,6 +4,7 @@
 	"table_name": "contacts_parties",
 	"should_build_db": true,
 	"record_label_field": "display_name",
+	"default_search_fields": ["display_name", "legal_name", "type", "tax_id", "is_archived"],
 	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
 
 	"fields": [

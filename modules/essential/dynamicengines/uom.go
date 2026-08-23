@@ -15,14 +15,6 @@ import (
 func uomEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.UomSchemaName,
-		DefaultFields: []string{
-			models.UomFieldName,
-			models.UomFieldSymbol,
-			models.UomFieldUomType,
-			models.UomFieldFactor,
-			models.UomFieldRounding,
-			models.UomFieldCategoryId,
-		},
 		DefineActions: defineUomActions,
 	}
 }

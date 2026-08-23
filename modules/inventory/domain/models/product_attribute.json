@@ -4,6 +4,7 @@
 	"table_name": "inventory_product_attributes",
 	"should_build_db": true,
 	"record_label_field": "name",
+	"default_search_fields": ["code", "name", "data_type", "variant_creation_mode", "sequence"],
 	"composite_uniques": [{ "index_name": "invty_prod_attrs_tid_code_org_id", "fields": ["code", "org_id"] }],
 	"extend_before": ["core.basemodel.base_model"],
 

@@ -57,7 +57,8 @@ func SearchQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(DefineFieldSearchSize()).
 		Field(DefineFieldSearchName()).
 		Field(DefineFieldIncludeArchived()).
-		Field(DefineFieldSearchContext())
+		Field(DefineFieldSearchContext()).
+		Field(DefineFieldSearchLanguage())
 }
 
 func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -129,5 +130,24 @@ func DefineFieldSearchName() *dmodel.FieldBuilder {
 		Name(basemodel.FieldSearchName).
 		DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH, dmodel.FieldDataTypeStringOpts{
 			Regex: regexp.MustCompile(`^[a-zA-Z0-9_\.]+$`),
+		}))
+}
+
+// DefineFieldSearchLanguage defines the "language" search query field: which translation of a
+// LangJson column to filter and sort on.
+//
+// Declared here rather than left undeclared because an undeclared field survives validation only by
+// accident -- ValidateStruct mutates the caller's own struct, and the mapper happens not to zero
+// what the schema did not mention. A refactor to build a fresh target would silently drop it and
+// un-localize every search, with no compile error and no failing test.
+//
+// The rule is BCP47 shape rather than an enum of the supported locales: that set lives in the
+// essential module, which this package must not import. A well-formed locale the application ships
+// no translations for simply matches nothing, which is the same answer it would give anyway.
+func DefineFieldSearchLanguage() *dmodel.FieldBuilder {
+	return dmodel.DefineField().
+		Name(basemodel.FieldLanguage).
+		DataType(dmodel.FieldDataTypeString(2, 35, dmodel.FieldDataTypeStringOpts{
+			Regex: regexp.MustCompile(`^[a-zA-Z]{2,3}-[a-zA-Z0-9]{2,8}$`),
 		}))
 }

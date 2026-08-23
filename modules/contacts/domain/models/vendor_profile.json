@@ -4,6 +4,7 @@
 	"table_name": "contacts_vendor_profiles",
 	"should_build_db": true,
 	"record_label_field": "party_id",
+	"default_search_fields": ["status", "payment_terms", "lead_time_days", "is_archived"],
 	"composite_uniques": [
 		{ "index_name": "contacts_vnd_profiles_tid_party_id", "fields": ["party_id", "org_id"] }
 	],

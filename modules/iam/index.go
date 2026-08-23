@@ -1,11 +1,14 @@
 package iam
 
 import (
+	"context"
 	"errors"
 
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/iam/app"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
@@ -13,6 +16,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/iam/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/iam/infra/external"
 	repo "github.com/sky-as-code/nikki-erp/modules/iam/infra/repository"
+	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	"github.com/sky-as-code/nikki-erp/modules/iam/transport"
 )
 
@@ -67,6 +71,17 @@ func (*IamModule) Init() error {
 	)
 
 	return err
+}
+
+// OnAppStarted implements InCodeModuleAppStarted.
+//
+// The settings schema is registered here rather than in Init() because peer module init order is
+// nondeterministic: Init() cannot assume the settings module has built its engines yet, while
+// OnAppStarted runs after every module has initialized.
+func (*IamModule) OnAppStarted() error {
+	return deps.Invoke(func(settingsSvc itExt.SettingsRegistrationExtService) error {
+		return registerTenantSettings(corectx.NewRequestContext(context.Background()), settingsSvc)
+	})
 }
 
 // Init implements InCodeModule.

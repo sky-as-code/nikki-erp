@@ -7,10 +7,5 @@ import (
 func resourceEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.ResourceSchemaName,
-		DefaultFields: []string{
-			models.ResourceFieldName,
-			models.ResourceFieldCode,
-			models.ResourceFieldDescription,
-		},
 	}
 }

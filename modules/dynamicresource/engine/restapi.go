@@ -231,6 +231,8 @@ func getOneResponse(data any) any {
 	if !ok {
 		return data
 	}
+	single.Meta.DesiredFields = emptyIfNil(single.Meta.DesiredFields)
+	single.Meta.MaskedFields = emptyIfNil(single.Meta.MaskedFields)
 	return httpserver.RestGetOneResponse[dmodel.DynamicFields]{
 		Item: single.Item,
 		Meta: single.Meta,
@@ -247,8 +249,21 @@ func searchResponse(data any) any {
 		Total:         paged.Total,
 		Page:          paged.Page,
 		Size:          paged.Size,
-		DesiredFields: paged.DesiredFields,
-		MaskedFields:  paged.MaskedFields,
+		DesiredFields: emptyIfNil(paged.DesiredFields),
+		MaskedFields:  emptyIfNil(paged.MaskedFields),
 		SchemaEtag:    paged.SchemaEtag,
 	}
+}
+
+// emptyIfNil keeps `desired_fields` / `masked_fields` JSON arrays rather than `null`.
+//
+// A nil Go slice marshals to `null`; clients declare both as plain arrays and index into them
+// without a nil guard, so `null` crashes them on a response that is otherwise perfectly valid.
+// Mirrors httpserver's unexported emptyIfNil — this engine builds its own response structs
+// rather than going through httpserver.NewSearchResponseDyn/NewGetOneResponseDyn.
+func emptyIfNil(fields []string) []string {
+	if fields == nil {
+		return []string{}
+	}
+	return fields
 }

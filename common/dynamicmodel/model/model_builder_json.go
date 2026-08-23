@@ -13,13 +13,14 @@ import (
 
 // modelJsonDto mirrors the top-level shape declared in common/dynamicmodel/json/model_schema.json.
 type modelJsonDto struct {
-	Name                string `json:"name"`
-	Label               any    `json:"label"`
-	Description         any    `json:"description"`
-	TableName           string `json:"table_name"`
-	ShouldBuildDb       bool   `json:"should_build_db"`
-	RecordLabelField    string `json:"record_label_field"`
-	RecordSubLabelField string `json:"record_sub_label_field"`
+	Name                string   `json:"name"`
+	Label               any      `json:"label"`
+	Description         any      `json:"description"`
+	TableName           string   `json:"table_name"`
+	ShouldBuildDb       bool     `json:"should_build_db"`
+	RecordLabelField    string   `json:"record_label_field"`
+	RecordSubLabelField string   `json:"record_sub_label_field"`
+	DefaultSearchFields []string `json:"default_search_fields"`
 
 	ExtendBefore []string `json:"extend_before"`
 	ExtendAfter  []string `json:"extend_after"`
@@ -62,6 +63,9 @@ type fieldJsonDto struct {
 	Computed json.RawMessage `json:"computed"`
 
 	Rules []ruleJsonDto `json:"rules"`
+
+	// Arbitrary module-defined data. Uninterpreted by the engine; see FieldBuilder.Metadata.
+	Metadata map[string]any `json:"metadata"`
 }
 
 type ruleJsonDto struct {
@@ -177,6 +181,9 @@ func buildFromDto(dto *modelJsonDto) *ModelSchemaBuilder {
 	if dto.RecordSubLabelField != "" {
 		builder.RecordSubLabelField(dto.RecordSubLabelField)
 	}
+	if len(dto.DefaultSearchFields) > 0 {
+		builder.DefaultSearchFields(dto.DefaultSearchFields...)
+	}
 
 	for _, name := range dto.ExtendBefore {
 		builder.ExtendByName(name)
@@ -257,6 +264,9 @@ func buildFieldFromDto(dto *fieldJsonDto) *FieldBuilder {
 	}
 	for _, rule := range dto.Rules {
 		field.Rule(decodeRule(rule, dto.Name))
+	}
+	if len(dto.Metadata) > 0 {
+		field.Metadata(dto.Metadata)
 	}
 
 	return field

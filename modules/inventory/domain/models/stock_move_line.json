@@ -3,6 +3,7 @@
 	"label": "inventory_stock_move_line.label",
 	"table_name": "inventory_stock_move_lines",
 	"should_build_db": true,
+	"default_search_fields": ["quantity", "lot_ref", "picked"],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [

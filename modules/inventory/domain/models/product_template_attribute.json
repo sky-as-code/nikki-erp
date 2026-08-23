@@ -3,6 +3,7 @@
 	"label": "inventory_product_template_attribute.label",
 	"table_name": "inventory_product_template_attributes",
 	"should_build_db": true,
+	"default_search_fields": ["sequence"],
 	"composite_uniques": [{ "index_name": "invty_prod_tpl_attrs_tid_ptpl_id_attr_id", "fields": ["product_template_id", "attribute_id"] }],
 	"extend_before": ["core.basemodel.base_model"],
 

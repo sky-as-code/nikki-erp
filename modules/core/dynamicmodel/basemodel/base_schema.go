@@ -46,6 +46,10 @@ const (
 	// FieldContext is the search query parameter carrying whitelisted context values for
 	// SQL-computed fields (aggregate/exists/lookup), not a model column.
 	FieldContext = "context"
+
+	// FieldLanguage is the search query parameter naming which translation of a LangJson column
+	// to filter and sort on, not a model column. Omitted, the acting user's stored locale is used.
+	FieldLanguage = "language"
 )
 
 func DefineFieldId(fieldName string) *dmodel.FieldBuilder {

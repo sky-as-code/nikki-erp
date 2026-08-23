@@ -14,16 +14,7 @@ import (
 
 func warehouseEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.WarehouseSchemaName,
-		DefaultFields: []string{
-			models.WarehouseFieldCode,
-			models.WarehouseFieldName,
-			models.WarehouseFieldWarehouseRole,
-			models.WarehouseFieldParentWarehouseId,
-			models.WarehouseFieldIncomingFlow,
-			models.WarehouseFieldOutgoingFlow,
-			models.WarehouseFieldStatus,
-		},
+		SchemaName:    models.WarehouseSchemaName,
 		DefineActions: defineWarehouseActions,
 	}
 }
@@ -31,38 +22,18 @@ func warehouseEngineSpec() engineSpec {
 func storageCategoryEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.StorageCategorySchemaName,
-		DefaultFields: []string{
-			models.StorageCategoryFieldCode,
-			models.StorageCategoryFieldName,
-			models.StorageCategoryFieldMaxWeight,
-			models.StorageCategoryFieldAllowNewItemPolicy,
-		},
 	}
 }
 
 func warehouseSupplyRelationEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.WarehouseSupplyRelationSchemaName,
-		DefaultFields: []string{
-			models.WarehouseSupplyRelationFieldSourceWarehouseId,
-			models.WarehouseSupplyRelationFieldDestinationWarehouseId,
-			models.WarehouseSupplyRelationFieldPriority,
-			models.WarehouseSupplyRelationFieldIsDefault,
-		},
 	}
 }
 
 func putawayRuleEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.PutawayRuleSchemaName,
-		DefaultFields: []string{
-			models.PutawayRuleFieldCode,
-			models.PutawayRuleFieldWarehouseId,
-			models.PutawayRuleFieldSourceLocationId,
-			models.PutawayRuleFieldDestinationLocationId,
-			models.PutawayRuleFieldPriority,
-			models.PutawayRuleFieldSublocationStrategy,
-		},
+		SchemaName:    models.PutawayRuleSchemaName,
 		DefineActions: definePutawayRuleActions,
 	}
 }

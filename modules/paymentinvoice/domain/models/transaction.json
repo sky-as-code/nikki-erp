@@ -4,6 +4,7 @@
 	"table_name": "paymentinvoice_transactions",
 	"should_build_db": true,
 	"record_label_field": "order_business_id",
+	"default_search_fields": ["order_business_id", "transaction_type", "status", "amount", "ref_transaction_id"],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [

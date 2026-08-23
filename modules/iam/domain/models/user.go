@@ -53,6 +53,7 @@ const (
 func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserSchemaName).
 		TableName("iam_users").
+		DefaultSearchFields("avatar_url", "display_name", "email", "status").
 		RecordLabelField(UserFieldDisplayName).
 		RecordSubLabelField(UserFieldEmail).
 		ShouldBuildDb().

@@ -4,6 +4,7 @@
 	"table_name": "inventory_product_types",
 	"should_build_db": true,
 	"record_label_field": "name",
+	"default_search_fields": ["code", "name", "supports_stock", "supports_sale", "supports_purchase", "supports_manufacturing"],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [

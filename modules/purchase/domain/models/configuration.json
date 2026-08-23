@@ -4,6 +4,7 @@
 	"table_name": "purchase_configurations",
 	"should_build_db": true,
 	"record_label_field": "approval_mode",
+	"default_search_fields": ["approval_mode", "approval_threshold", "po_modification_policy"],
 	"composite_uniques": [
 		{ "index_name": "purch_configs_tid_org_id", "fields": ["org_id"] }
 	],

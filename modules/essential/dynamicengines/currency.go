@@ -13,12 +13,5 @@ import (
 func currencyEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.CurrencySchemaName,
-		DefaultFields: []string{
-			models.CurrencyFieldCode,
-			models.CurrencyFieldName,
-			models.CurrencyFieldSymbol,
-			models.CurrencyFieldDecimalPlaces,
-			models.CurrencyFieldIsActive,
-		},
 	}
 }

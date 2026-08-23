@@ -1,6 +1,8 @@
 package services
 
 import (
+	"go.bryk.io/pkg/errors"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -14,6 +16,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	enum "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/enum"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
@@ -25,24 +28,27 @@ func NewUserDomainServiceImpl(
 	historyRepo itPerm.PermissionHistoryRepository,
 	cqrsBus cqrs.CqrsBus,
 	eventBus event.EventBus,
+	settingsSvc itExt.UserSettingsExtService,
 ) it.UserDomainService {
 	return &UserDomainServiceImpl{
-		enumSvc:  enumSvc,
-		userRepo: userRepo,
-		permRepo: permRepo,
-		auditor:  permissionAuditor{historyRepo: historyRepo},
-		cqrs:     cqrsBus,
-		eventBus: eventBus,
+		enumSvc:     enumSvc,
+		userRepo:    userRepo,
+		permRepo:    permRepo,
+		auditor:     permissionAuditor{historyRepo: historyRepo},
+		cqrs:        cqrsBus,
+		eventBus:    eventBus,
+		settingsSvc: settingsSvc,
 	}
 }
 
 type UserDomainServiceImpl struct {
-	enumSvc  enum.EnumService
-	userRepo it.UserRepository
-	permRepo itPerm.PermissionRepository
-	auditor  permissionAuditor
-	eventBus event.EventBus
-	cqrs     cqrs.CqrsBus
+	enumSvc     enum.EnumService
+	userRepo    it.UserRepository
+	permRepo    itPerm.PermissionRepository
+	auditor     permissionAuditor
+	eventBus    event.EventBus
+	cqrs        cqrs.CqrsBus
+	settingsSvc itExt.UserSettingsExtService
 }
 
 // ManageUserRoleAssignments assigns/removes roles to/from a user, then refreshes that user's
@@ -105,11 +111,32 @@ func (this *UserDomainServiceImpl) auditRoleAssignments(
 	return nil
 }
 
+// CreateUser creates the user and seeds their preferences in one transaction.
+//
+// The seeding shares the transaction so that a user never exists without the preference rows the
+// application expects them to have: their first sign-in reads a theme and a language, and there is
+// no later point that would repair a user created without them.
+//
+// It is done around the create rather than in a hook: corecrud has no after-insert hook, both
+// BeforeValidation and AfterValidationSuccess run before the row is written, and BeforeValidation
+// is already taken here.
 func (this *UserDomainServiceImpl) CreateUser(
 	ctx corectx.Context, cmd it.CreateUserCommand, options ...corecrud.ServiceCreateOptions[*domain.User],
 ) (*it.CreateUserResult, error) {
 	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.User]{})
-	result, err := corecrud.Create(ctx, corecrud.CreateParam[domain.User, *domain.User]{
+
+	tranx, err := this.userRepo.GetBaseRepo().BeginTransaction(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "create user")
+	}
+	defer tranx.Rollback()
+
+	// The transaction goes on a clone: setting it on the caller's context would leave a committed
+	// transaction visible to whatever runs next.
+	tranxCtx := corectx.CloneRequestContext(ctx)
+	tranxCtx.SetDbTranx(tranx)
+
+	result, err := corecrud.Create(tranxCtx, corecrud.CreateParam[domain.User, *domain.User]{
 		Action:         "create user",
 		BaseRepoGetter: this.userRepo,
 		Data:           cmd,
@@ -120,7 +147,41 @@ func (this *UserDomainServiceImpl) CreateUser(
 		},
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+	// A rejected create has written nothing, so there is nothing to seed and nothing to commit.
+	if result.ClientErrors.Count() > 0 || !result.HasData {
+		return result, nil
+	}
+
+	if err := this.initUserPreferences(tranxCtx, &result.Data); err != nil {
+		return nil, err
+	}
+	return result, errors.Wrap(tranx.Commit(), "create user")
+}
+
+// initUserPreferences copies the tenant's settings onto the newly created user.
+func (this *UserDomainServiceImpl) initUserPreferences(
+	ctx corectx.Context, user *domain.User,
+) error {
+	userId := user.GetId()
+	if userId == nil {
+		return errors.New("create user: the created user has no id")
+	}
+
+	initResult, err := this.settingsSvc.InitUserPreferences(ctx, itExt.InitOwnerSettingsCommand{
+		OwnerId: *userId,
+	})
+	if err != nil {
+		return errors.Wrap(err, "create user")
+	}
+	// A rejected seeding is a defect in this call rather than something the caller creating a user
+	// can correct, so it fails the whole create.
+	if initResult.ClientErrors.Count() > 0 {
+		return errors.Wrap(initResult.ClientErrors.ToError(), "create user")
+	}
+	return nil
 }
 
 func (this *UserDomainServiceImpl) DeleteUser(

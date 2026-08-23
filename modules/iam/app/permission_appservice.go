@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/array"
@@ -14,6 +12,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
+	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
 	itOrgUnit "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/orgunit"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
@@ -23,12 +22,14 @@ func NewPermissionApplicationServiceImpl(
 	permissionDomSvc itPerm.PermissionDomainService,
 	permissionRepo itPerm.PermissionRepository,
 	orgUnitRepo itOrgUnit.OrgUnitRepository,
+	orgDomSvc itOrg.OrganizationDomainService,
 	userDomSvc itUser.UserDomainService,
 ) itPerm.PermissionAppService {
 	return &PermissionApplicationServiceImpl{
 		permissionDomSvc: permissionDomSvc,
 		permissionRepo:   permissionRepo,
 		orgUnitRepo:      orgUnitRepo,
+		orgDomSvc:        orgDomSvc,
 		userDomSvc:       userDomSvc,
 	}
 }
@@ -38,8 +39,10 @@ type PermissionApplicationServiceImpl struct {
 	permissionRepo   itPerm.PermissionRepository
 	// orgUnitRepo resolves a unit to its org, so a unit-scoped question can fall
 	// back to an org-level grant the same way enforcement does.
-	orgUnitRepo      itOrgUnit.OrgUnitRepository
-	userDomSvc       itUser.UserDomainService
+	orgUnitRepo itOrgUnit.OrgUnitRepository
+	// orgDomSvc lists the acting user's organizations, ordered by display name.
+	orgDomSvc  itOrg.OrganizationDomainService
+	userDomSvc itUser.UserDomainService
 }
 
 func (this *PermissionApplicationServiceImpl) IsAuthorized(ctx corectx.Context, query itPerm.IsAuthorizedQuery) (*itPerm.IsAuthorizedResult, error) {
@@ -288,6 +291,12 @@ func displayNameOf(ctx corectx.Context) string {
 	return safe.GetVal(user.GetString(models.UserFieldDisplayName), "")
 }
 
+// getEnabledUser loads the acting user and, separately, the organizations they belong to.
+//
+// The orgs are fetched through the organization domain service rather than preloaded off the
+// user's `orgs` edge, because only a real search can order them: display_name is LangJson, and
+// the ordering has to happen in SQL against the reader's own translation. An edge preload returns
+// whatever order the join produced.
 func (this *PermissionApplicationServiceImpl) getEnabledUser(ctx corectx.Context, userEmail *string, userId *model.Id) (*itPerm.GetUserEntitlementsResultData, error) {
 	result, err := this.userDomSvc.GetEnabledUser(ctx, itUser.GetUserQuery{
 		Email: userEmail,
@@ -299,10 +308,6 @@ func (this *PermissionApplicationServiceImpl) getEnabledUser(ctx corectx.Context
 			models.UserFieldEmail,
 			models.UserFieldIsOwner,
 			models.UserFieldOrgUnitId,
-			fmt.Sprintf("%s.%s", models.UserEdgeOrgUnit, models.OrgUnitFieldOrgId),
-			fmt.Sprintf("%s.%s", models.UserEdgeOrgs, models.OrgFieldId),
-			fmt.Sprintf("%s.%s", models.UserEdgeOrgs, models.OrgFieldDisplayName),
-			fmt.Sprintf("%s.%s", models.UserEdgeOrgs, models.OrgFieldSlug),
 		},
 	})
 	if err != nil {
@@ -312,14 +317,44 @@ func (this *PermissionApplicationServiceImpl) getEnabledUser(ctx corectx.Context
 		return nil, errors.Wrap(result.ClientErrors.ToError(), "getEnabledUser")
 	}
 
+	orgsRes, err := this.orgDomSvc.GetUserOrgs(ctx, itOrg.GetUserOrgsQuery{
+		UserId: result.Data.MustGetId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if orgsRes.ClientErrors.Count() > 0 {
+		return nil, errors.Wrap(orgsRes.ClientErrors.ToError(), "getEnabledUser: orgs")
+	}
+	orgs := []models.Organization{}
+	if orgsRes.HasData {
+		orgs = orgsRes.Data.Items
+	}
+
+	userFields := result.Data.GetFieldData()
+	// The orgs edge is no longer preloaded, but GetUserContext still reads the user out of the
+	// request context and serializes this edge as the org switcher's list. Writing the fetched
+	// orgs back under the same key keeps that contract, and keeps the switcher sorted.
+	userFields.SetAny(models.UserEdgeOrgs, array.Map(orgs, func(org models.Organization) any {
+		return org.GetFieldData()
+	}))
+
+	// Resolved with its own lookup now that `org_unit.org_id` is not preloaded. Carried into the
+	// request context so a unit-scoped check can fall back to an org-level grant for the unit's
+	// own org -- dropping it would silently narrow authorization.
+	orgUnitOrgId, err := this.orgIdOfUnit(ctx, result.Data.GetOrgUnitId())
+	if err != nil {
+		return nil, err
+	}
+
 	return &itPerm.GetUserEntitlementsResultData{
-		IsOwner:    result.Data.IsOwner(),
-		UserId:     result.Data.MustGetId(),
-		UserOrgIds: result.Data.GetOrgIds(),
-		OrgUnitId:  result.Data.GetOrgUnitId(),
-		User:       result.Data.GetFieldData(),
-		// Carried into the request context so a unit-scoped check can fall back to
-		// an org-level grant for the unit's own org.
-		OrgUnitOrgId: result.Data.GetOrgUnitOrgId(),
+		IsOwner: result.Data.IsOwner(),
+		UserId:  result.Data.MustGetId(),
+		UserOrgIds: array.Map(orgs, func(org models.Organization) model.Id {
+			return org.MustGetId()
+		}),
+		OrgUnitId:    result.Data.GetOrgUnitId(),
+		User:         userFields,
+		OrgUnitOrgId: orgUnitOrgId,
 	}, nil
 }

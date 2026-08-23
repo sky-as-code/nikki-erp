@@ -63,6 +63,7 @@ func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(OrganizationSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", OrganizationSchemaName)).
 		TableName("iam_organizations").
+		DefaultSearchFields("display_name", "legal_name", "slug", "phone_number").
 		RecordLabelField(OrgFieldDisplayName).
 		RecordSubLabelField(OrgFieldSlug).
 		ShouldBuildDb().
@@ -71,21 +72,20 @@ func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			dmodel.DefineField().
 				Name(OrgFieldAddress).
 				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldAddress)).
-				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
+				DataType(dmodel.FieldDataTypeLangJson(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(OrgFieldDisplayName).
 				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldDisplayName)).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
-				RequiredForCreate().
-				Unique(),
+				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
+				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(OrgFieldLegalName).
 				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldLegalName)).
-				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
+				DataType(dmodel.FieldDataTypeLangJson(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
@@ -187,6 +187,26 @@ func (this *Organization) SetEtag(v *model.Etag) {
 	this.GetFieldData().SetEtag(basemodel.FieldEtag, v)
 }
 
-func (this Organization) GetDisplayName() *string {
-	return this.GetFieldData().GetString(OrgFieldDisplayName)
+func (this Organization) GetDisplayName() *model.LangJson {
+	return this.GetFieldData().GetLangJson(OrgFieldDisplayName)
+}
+
+func (this *Organization) SetDisplayName(v *model.LangJson) {
+	this.GetFieldData().SetLangJson(OrgFieldDisplayName, v)
+}
+
+func (this Organization) GetLegalName() *model.LangJson {
+	return this.GetFieldData().GetLangJson(OrgFieldLegalName)
+}
+
+func (this *Organization) SetLegalName(v *model.LangJson) {
+	this.GetFieldData().SetLangJson(OrgFieldLegalName, v)
+}
+
+func (this Organization) GetAddress() *model.LangJson {
+	return this.GetFieldData().GetLangJson(OrgFieldAddress)
+}
+
+func (this *Organization) SetAddress(v *model.LangJson) {
+	this.GetFieldData().SetLangJson(OrgFieldAddress, v)
 }

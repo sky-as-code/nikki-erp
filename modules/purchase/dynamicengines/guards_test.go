@@ -56,7 +56,10 @@ func TestDefaultSearchFieldsExistOnTheirSchemas(t *testing.T) {
 		require.True(t, ok, "no builder for %s", spec.SchemaName)
 		schema := builder().Build()
 
-		for _, fieldName := range spec.DefaultFields {
+		assert.NotEmptyf(t, schema.DefaultSearchFields(),
+			"%s declares no default_search_fields, so its listing returns only primary keys",
+			spec.SchemaName)
+		for _, fieldName := range schema.DefaultSearchFields() {
 			_, exists := schema.Field(fieldName)
 			assert.True(t, exists, "%s lists default search field %q, which it does not have",
 				spec.SchemaName, fieldName)

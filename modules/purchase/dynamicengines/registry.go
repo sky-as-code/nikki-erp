@@ -26,9 +26,6 @@ type engineSpec struct {
 	// constant, never a string derived from the resource path.
 	SchemaName string
 
-	// DefaultFields is the field set a listing search returns. Primary key fields are always
-	// included by the query builder, so listing them here is redundant.
-	DefaultFields []string
 
 	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD
 	// ones. It is optional: a resource without custom behavior leaves it nil.
@@ -53,21 +50,12 @@ var engineSpecs = []engineSpec{
 func configurationEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.ConfigurationSchemaName,
-		DefaultFields: []string{
-			models.ConfigurationFieldOrgId,
-			models.ConfigurationFieldApprovalMode,
-			models.ConfigurationFieldApprovalThreshold,
-			models.ConfigurationFieldPoModificationPolicy,
-		},
 	}
 }
 
 func sourcingGroupEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.SourcingGroupSchemaName,
-		DefaultFields: []string{
-			models.SourcingGroupFieldOrgId,
-		},
 		DefineActions: defineSourcingGroupGuards,
 	}
 }
@@ -75,19 +63,6 @@ func sourcingGroupEngineSpec() engineSpec {
 func agreementEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.AgreementSchemaName,
-		DefaultFields: []string{
-			models.AgreementFieldCode,
-			models.AgreementFieldReference,
-			models.AgreementFieldAgreementType,
-			models.AgreementFieldStatus,
-			models.AgreementFieldVendorId,
-			models.AgreementFieldBuyerId,
-			models.AgreementFieldCurrencyId,
-			models.AgreementFieldStartDate,
-			models.AgreementFieldEndDate,
-			models.AgreementFieldOrgId,
-			models.AgreementFieldIsArchived,
-		},
 		DefineActions: defineAgreementActions,
 	}
 }
@@ -95,35 +70,12 @@ func agreementEngineSpec() engineSpec {
 func agreementLineEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.AgreementLineSchemaName,
-		DefaultFields: []string{
-			models.AgreementLineFieldPurchaseAgreementId,
-			models.AgreementLineFieldSequence,
-			models.AgreementLineFieldProductVariantId,
-			models.AgreementLineFieldUomId,
-			models.AgreementLineFieldQuantity,
-			models.AgreementLineFieldUnitPrice,
-			models.AgreementLineFieldDescription,
-		},
 	}
 }
 
 func purchaseOrderEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.PurchaseOrderSchemaName,
-		DefaultFields: []string{
-			models.PurchaseOrderFieldCode,
-			models.PurchaseOrderFieldStatus,
-			models.PurchaseOrderFieldVendorId,
-			models.PurchaseOrderFieldVendorReference,
-			models.PurchaseOrderFieldBuyerId,
-			models.PurchaseOrderFieldCurrencyId,
-			models.PurchaseOrderFieldOrderDeadline,
-			models.PurchaseOrderFieldExpectedArrival,
-			models.PurchaseOrderFieldPriority,
-			models.PurchaseOrderFieldIsLocked,
-			models.PurchaseOrderFieldTotalAmount,
-			models.PurchaseOrderFieldOrgId,
-		},
 		DefineActions: defineOrderActions,
 	}
 }
@@ -131,35 +83,12 @@ func purchaseOrderEngineSpec() engineSpec {
 func purchaseOrderLineEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.PurchaseOrderLineSchemaName,
-		DefaultFields: []string{
-			models.PurchaseOrderLineFieldPurchaseOrderId,
-			models.PurchaseOrderLineFieldSequence,
-			models.PurchaseOrderLineFieldLineType,
-			models.PurchaseOrderLineFieldProductVariantId,
-			models.PurchaseOrderLineFieldDescription,
-			models.PurchaseOrderLineFieldQuantity,
-			models.PurchaseOrderLineFieldUomId,
-			models.PurchaseOrderLineFieldUnitPrice,
-			models.PurchaseOrderLineFieldSubtotal,
-			models.PurchaseOrderLineFieldTaxAmount,
-			models.PurchaseOrderLineFieldTotal,
-		},
 	}
 }
 
 func auditEventEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.AuditEventSchemaName,
-		DefaultFields: []string{
-			models.AuditEventFieldEntityType,
-			models.AuditEventFieldEntityId,
-			models.AuditEventFieldAction,
-			models.AuditEventFieldActorId,
-			models.AuditEventFieldFromStatus,
-			models.AuditEventFieldToStatus,
-			models.AuditEventFieldReason,
-			models.AuditEventFieldOrgId,
-		},
 		DefineActions: defineAuditEventGuards,
 	}
 }
@@ -184,9 +113,7 @@ func InitDynamicEngines() error {
 }
 
 func initEngine(spec engineSpec) error {
-	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{
-		DefaultSearchFields: spec.DefaultFields,
-	})
+	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create the '%s' resource engine", spec.SchemaName)
 	}

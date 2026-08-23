@@ -99,6 +99,7 @@
 	"menu_orders": "Đơn mua hàng",
 	"menu_overview": "Mua hàng",
 	"menu_requestsForQuotation": "Yêu cầu báo giá",
+	"module.label.purchase": "Mua hàng",
 	"po_modification_policy.allow_edit": "Cho phép chỉnh sửa",
 	"po_modification_policy.auto_lock": "Tự động khóa",
 	"priority.normal": "Bình thường",

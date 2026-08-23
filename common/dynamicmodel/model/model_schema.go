@@ -127,6 +127,12 @@ type ModelSchema struct {
 	// recordSubLabelField: an optional secondary field rendered beneath the main label, to tell apart
 	// records that share one — an email under a display name, for instance. Empty when unneeded.
 	recordSubLabelField string
+
+	// defaultSearchFields: the field list a search on this schema returns when it specifies
+	// neither fields nor a resolvable view. Primary keys are always included regardless. Empty
+	// means the schema declares no default, leaving callers to fall back further (e.g. every
+	// column).
+	defaultSearchFields []string
 }
 
 // M2mPeerLink holds junction and FK-prefix metadata for a finalized many-to-many edge from the
@@ -183,6 +189,12 @@ func (this ModelSchema) RecordLabelField() string {
 // the schema declares none.
 func (this ModelSchema) RecordSubLabelField() string {
 	return this.recordSubLabelField
+}
+
+// DefaultSearchFields is the field list a search on this schema returns when it specifies
+// neither an explicit field list nor a resolvable view. Empty when the schema declares none.
+func (this ModelSchema) DefaultSearchFields() []string {
+	return this.defaultSearchFields
 }
 
 func (this ModelSchema) Fields() map[string]*ModelField {
@@ -499,6 +511,7 @@ func (this *ModelSchema) ToSimplized() any {
 		ExclusiveRequiredFieldGroups [][]string     `json:"exclusive_required_field_groups,omitempty"`
 		RecordLabelField             string         `json:"record_label_field,omitempty"`
 		RecordSubLabelField          string         `json:"record_sub_label_field,omitempty"`
+		DefaultSearchFields          []string       `json:"default_search_fields,omitempty"`
 		Fields                       map[string]any `json:"fields"`
 		Label                        model.LangJson `json:"label"`
 		FromRelations                []any          `json:"from_relations,omitempty"`
@@ -509,6 +522,7 @@ func (this *ModelSchema) ToSimplized() any {
 		ExclusiveRequiredFieldGroups: this.exclusiveRequiredFieldGroups,
 		RecordLabelField:             this.recordLabelField,
 		RecordSubLabelField:          this.recordSubLabelField,
+		DefaultSearchFields:          this.defaultSearchFields,
 		Fields:                       simplizedFields,
 		Label:                        this.Label(),
 		ToRelations:                  array.Map(this.ToRelations(), func(relation ModelRelation) any { return relation.ToSimplized() }),
@@ -640,11 +654,34 @@ type ModelField struct {
 	defaultValue   *value
 	defaultFn      func() any
 	useTypeDefault bool
+	// Arbitrary, module-defined data attached to the field. The engine never interprets it;
+	// it is carried through Build(), Clone() and ToSimplized() so a consuming module (and the
+	// frontend, via meta/schema) can read its own keys. Values must be plain JSON-serializable
+	// data — the whole schema is round-tripped through JSON by contract.
+	metadata map[string]any
 }
 
 // Getter methods
 func (this *ModelField) Name() string {
 	return this.name
+}
+
+// Metadata returns the field's module-defined metadata, or nil when none was declared.
+// The returned map is the field's own, so callers must not mutate it.
+func (this *ModelField) Metadata() map[string]any {
+	if this == nil {
+		return nil
+	}
+	return this.metadata
+}
+
+// MetadataValue returns a single metadata entry and whether it was present.
+func (this *ModelField) MetadataValue(key string) (any, bool) {
+	if this == nil || this.metadata == nil {
+		return nil, false
+	}
+	val, ok := this.metadata[key]
+	return val, ok
 }
 
 func (this *ModelField) Label() model.LangJson {
@@ -894,6 +931,7 @@ func (this ModelField) ToSimplized() any {
 		NoUpdate            bool           `json:"no_update"`
 		Rules               []*FieldRule   `json:"rules,omitempty"`
 		DefaultValue        *value         `json:"default_value,omitempty"`
+		Metadata            map[string]any `json:"metadata,omitempty"`
 	}{
 		Name:                this.Name(),
 		Label:               this.Label(),
@@ -912,6 +950,7 @@ func (this ModelField) ToSimplized() any {
 		NoUpdate:            this.IsNoUpdate(),
 		Rules:               this.Rules(),
 		DefaultValue:        this.Default(),
+		Metadata:            this.Metadata(),
 	}
 }
 
@@ -1018,6 +1057,14 @@ func (this *ModelField) Clone() *ModelField {
 		useTypeDefault:      this.useTypeDefault,
 	}
 	copy(cloned.rules, this.rules)
+	// Copied by value: a schema that Extends a mixin and then adds metadata must not write
+	// through into the mixin's shared field definition.
+	if this.metadata != nil {
+		cloned.metadata = make(map[string]any, len(this.metadata))
+		for k, v := range this.metadata {
+			cloned.metadata[k] = v
+		}
+	}
 	return cloned
 }
 

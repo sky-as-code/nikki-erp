@@ -14,17 +14,7 @@ import (
 
 func inventoryLocationEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.InventoryLocationSchemaName,
-		DefaultFields: []string{
-			models.InventoryLocationFieldCode,
-			models.InventoryLocationFieldName,
-			models.InventoryLocationFieldLocationUsage,
-			models.InventoryLocationFieldPurpose,
-			models.InventoryLocationFieldWarehouseId,
-			models.InventoryLocationFieldParentLocationId,
-			models.InventoryLocationFieldCompletePath,
-			models.InventoryLocationFieldStatus,
-		},
+		SchemaName:    models.InventoryLocationSchemaName,
 		DefineActions: defineInventoryLocationActions,
 	}
 }

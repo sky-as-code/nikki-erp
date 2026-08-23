@@ -7,10 +7,5 @@ import (
 func actionEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.ActionSchemaName,
-		DefaultFields: []string{
-			models.ActionFieldName,
-			models.ActionFieldCode,
-			models.ActionFieldDescription,
-		},
 	}
 }
