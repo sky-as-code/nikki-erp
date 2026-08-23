@@ -15,9 +15,13 @@
 package sales
 
 import (
+	stdErr "errors"
+
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/sales/constants"
+	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/sales/infra/external"
 	"github.com/sky-as-code/nikki-erp/modules/sales/transport/restful"
@@ -91,9 +95,12 @@ func (*SalesModule) Init() error {
 // registration time, so a referenced schema must be registered before the one pointing at it —
 // the sales channel before its sales points, the order before its lines.
 //
-// Empty until SALES-003. The schemas are added here in one list rather than scattered across the
-// packages that own them, so that the order is visible in a single place and a missing
-// registration is a gap in a list rather than an absence nobody can see.
+// The schemas are listed here rather than scattered across the packages that own them, so that
+// the order is visible in a single place and a missing registration is a gap in a list rather than
+// an absence nobody can see.
 func (*SalesModule) RegisterModels() error {
-	return nil
+	return stdErr.Join(
+		dmodel.RegisterSchemaB(models.SalesChannelSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPointSchemaBuilder()),
+	)
 }

@@ -1,0 +1,85 @@
+{
+	"name": "sales_channel",
+	"label": "sales_channel.label",
+	"table_name": "sales_channels",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["name", "code"],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"no_update": true,
+			"unique": true,
+			"description": {
+				"en-US": "The stable integration identifier an external module names this channel by, so nothing outside Sales has to know a database id (CR 7.1, 42). Lowercase alphanumeric only, and immutable: 'vdmc' is a published contract, so renaming it or changing its case breaks every kiosk already configured against it. Required and unique across the table (DEC-001) — the earlier nullable form could not be expressed as a constraint, and a channel without a code could never gain one because this field cannot be updated."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The display name shown to a human. Free to change; the code is what integration depends on."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 2000 }
+		},
+		{
+			"name": "managed_by_module",
+			"label": "fields.managed_by_module",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"no_update": true,
+			"description": {
+				"en-US": "The module that registered this channel, for example 'vending_machine_new'. Plain metadata with no foreign key into any module registry (CR 8): it exists so that one module cannot take over another module's channel, and so the UI can warn that a channel's real lifecycle is owned elsewhere. NULL for a channel a human created."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["active", "suspended"]
+			},
+			"required_for_create": true,
+			"default_value": "active",
+			"no_update": true,
+			"description": {
+				"en-US": "The business lifecycle. Suspended stops new sales points and new orders while leaving history, returns, refunds and fiscal adjustments working (CR 9). Distinct from is_archived, which is the system lifecycle: the two must not substitute for each other. Written only by the suspend and activate actions, never by a plain update, so no transition escapes its audit event."
+			}
+		},
+		{
+			"name": "is_system",
+			"label": "fields.is_system",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"no_update": true,
+			"description": {
+				"en-US": "Whether this channel is seeded and owned by the system rather than by a user. A system channel may be suspended and have its payment methods configured, but may not be archived, deleted or renamed through the API (D-23): archiving 'vdmc' would silently stop every kiosk selling. Set by seed migrations alone."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_from": [
+		{
+			"edge": "sales_points",
+			"label": { "en-US": "Sales points" },
+			"existing": { "src_schema": "sales_point", "src_edge": "sales_channel" }
+		}
+	]
+}

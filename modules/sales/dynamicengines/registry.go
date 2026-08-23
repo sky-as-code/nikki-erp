@@ -17,6 +17,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
 // engineSpec declares one resource engine the Sales module owns.
@@ -36,14 +37,25 @@ type engineSpec struct {
 // are created after every schema is registered — but keeping the two lists in the same order makes
 // a missing entry obvious when reading them side by side.
 //
-// Empty until SALES-003 adds the first two resources. The module boots with no engines and no
-// routes, which is the acceptance condition of SALES-001: the wiring is proven before any schema
-// depends on it.
-//
 // Junction tables never get an entry here. A _rel row is configured through its owner's
 // capabilities, so it has no engine, no route and no IAM resource row — see the 25-engines-for-27-
 // schemas split in vending_machine_new.
-var engineSpecs = []engineSpec{}
+var engineSpecs = []engineSpec{
+	salesChannelEngineSpec(),
+	salesPointEngineSpec(),
+}
+
+func salesChannelEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName: models.SalesChannelSchemaName,
+	}
+}
+
+func salesPointEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName: models.SalesPointSchemaName,
+	}
+}
 
 // EngineSchemaNames lists the schemas this module creates an engine for, so that route
 // registration and engine creation cannot drift apart.
