@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "name":           { "type": "string" },
+    "level":          { "type": "string", "enum": ["tenant", "org", "user"] },
+    "value":          {},
+    "has_value":      { "type": "boolean" },
+    "allow_override": { "type": "boolean" },
+    "editable":       { "type": "boolean" },
+    "field":          { "type": "object" }
+  },
+  "required": ["name", "level", "has_value", "allow_override", "editable"],
+  "additionalProperties": false
+}

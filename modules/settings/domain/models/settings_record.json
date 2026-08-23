@@ -1,0 +1,99 @@
+{
+	"name": "settings_record",
+	"label": "settings_record.label",
+	"table_name": "settings_records",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"composite_uniques": [
+		{ "index_name": "settings_records_mod_name_owner", "fields": ["module_key", "name", "owner_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "schema_id",
+			"label": "fields.schema_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The settings_schema this record was built from. It is what the read path follows to find the field definition for this setting name, including the declared allow_override that applies until a tenant admin overrides it on the row."
+			}
+		},
+		{
+			"name": "module_key",
+			"label": "fields.module_key",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Copied from the schema at creation. Denormalized deliberately: the unique key and every read filter are keyed on it, and joining settings_schemas for each would cost a join per setting item."
+			}
+		},
+		{
+			"name": "level",
+			"label": "fields.level",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["tenant", "org", "user"]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Copied from the schema at creation. It says which kind of owner the setting is *for*, which is not always the owner it is stored against: a tenant admin's own row for a user-level setting has level=user, owner_type=tenant."
+			}
+		},
+		{
+			"name": "owner_type",
+			"label": "fields.owner_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["tenant", "org", "user"]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What kind of thing owns this row. The fan-out selects children by owner_type, so it is the column that separates a tenant's own record from the org and user records it enforces onto."
+			}
+		},
+		{
+			"name": "owner_id",
+			"label": "fields.owner_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The id of the owning tenant, organization or user. Not a foreign key: settings must never reference iam tables, because iam already depends on settings and the reverse edge would be a startup-aborting cycle."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The setting name, matching a field in the registered schema. Unique within a module across all of its levels, so a module cannot declare the same name at two levels and leave a read ambiguous. Immutable: renaming would strand the value under a name no schema declares."
+			}
+		},
+		{
+			"name": "value",
+			"label": "fields.value",
+			"data_type": "jsonmap",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The stored value, always wrapped as {\"value\": <value>}. The envelope exists because json_map has no array form, so a scalar and a list both need an object around them to share one column."
+			}
+		},
+		{
+			"name": "allow_override",
+			"label": "settings.allowOverride",
+			"data_type": "boolean",
+			"description": {
+				"en-US": "Whether an owner below the tenant may keep their own value for this setting. Per-record rather than schema metadata, so a tenant admin decides it per tenant instead of a module fixing it for everyone at build time. Only a tenant owner may write it: it is the mechanism that locks the levels below, so an org or user setting it would be escalating their own privilege. Null on a row no tenant admin has ruled on, which reads as overridable -- the restrictive default would silently lock every setting nobody has considered."
+			}
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model"]
+}

@@ -1,0 +1,35 @@
+{
+	"name": "essential_user_settings",
+	"label": "essential.settings.userSettings",
+
+	"fields": [
+		{
+			"name": "theme_mode",
+			"label": "essential.settings.themeMode",
+			"description": "settings_desc.theme_mode",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["light", "dark", "auto"]
+			},
+			"default_value": "auto",
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "language",
+			"label": "essential.settings.language",
+			"description": "settings_desc.language",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["en-US", "vi-VN"]
+			},
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "timezone",
+			"label": "essential.settings.timezone",
+			"description": "settings_desc.timezone",
+			"data_type": { "type": "string", "min": 1, "max": 64 },
+			"metadata": { "allow_override": true }
+		}
+	]
+}

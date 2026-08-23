@@ -128,6 +128,9 @@ ent-revert:
 		--config file://${cwd}scripts/atlas.hcl \
 		--env local
 
+ent-infra-apply:
+	make infra-down && make infra-up && make ent-hash && make ent-apply
+
 # END: ORM & Database
 
 # START: Local development

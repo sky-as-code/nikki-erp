@@ -131,6 +131,11 @@
 				"rules": {
 					"type": "array",
 					"items": { "$ref": "#/$defs/rule" }
+				},
+
+				"metadata": {
+					"description": "Arbitrary module-defined data attached to the field. The engine never interprets it; a module reads its own keys back through ModelField.Metadata(), and the frontend receives it in the meta/schema payload. Values must be plain JSON data.",
+					"type": "object"
 				}
 			}
 		},

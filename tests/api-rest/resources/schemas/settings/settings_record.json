@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "id":         { "type": "string" },
+    "schema_id":  { "type": "string" },
+    "module_key": { "type": "string" },
+    "level":      { "type": "string", "enum": ["tenant", "org", "user"] },
+    "owner_type": { "type": "string" },
+    "owner_id":   { "type": "string" },
+    "name":       { "type": "string" },
+    "value":      { "type": "object" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": ["string", "null"] }
+  },
+  "required": ["id", "module_key", "level", "owner_type", "owner_id", "name"],
+  "additionalProperties": false
+}

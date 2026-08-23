@@ -1,0 +1,57 @@
+{
+	"name": "settings_schema",
+	"label": "settings_schema.label",
+	"table_name": "settings_schemas",
+	"should_build_db": true,
+	"record_label_field": "module_key",
+	"composite_uniques": [
+		{ "index_name": "settings_schemas_mod_lvl", "fields": ["module_key", "level"] }
+	],
+
+	"fields": [
+		{
+			"name": "id",
+			"label": "fields.id",
+			"data_type": "ulid",
+			"primary_key": true,
+			"use_type_default": true,
+			"description": {
+				"en-US": "Declared here rather than inherited from core.basemodel.base_model, because that mixin carries the tenant key and this table must not be tenant-scoped. A module's setting declarations are the same for every tenant: registration runs once at start-up with no tenant in scope, and a tenant column would force one duplicate row per tenant of identical data. Only the VALUES in settings_records are per-tenant."
+			}
+		},
+		{
+			"name": "module_key",
+			"label": "fields.module_key",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The module that owns this schema, matching its Name(). Immutable: re-pointing a schema at another module would orphan every record copied from it, since a record carries the module_key it was created under."
+			}
+		},
+		{
+			"name": "level",
+			"label": "fields.level",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["tenant", "org", "user"]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Which kind of owner this schema's settings belong to. A module registers at most one schema per level, which is what the unique index enforces. Immutable: the records built from it already carry this level, and changing it here would leave them describing a level their schema no longer declares."
+			}
+		},
+		{
+			"name": "schema",
+			"label": "fields.schema",
+			"data_type": "jsonmap",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The module's setting definitions as a model-schema document, parsed and validated by the same engine that handles every other schema. It is metadata-only and must not declare should_build_db: the only tables settings builds are its own two. Each field's metadata may declare a starting allow_override, which applies until a tenant admin rules otherwise; the decision itself is stored on settings_records."
+			}
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model"]
+}

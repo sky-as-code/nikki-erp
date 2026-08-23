@@ -6,26 +6,22 @@ import (
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/orgunit"
 )
 
 func NewOrgUnitApplicationServiceImpl(
 	orgUnitSvc it.OrgUnitDomainService,
 	orgUnitRepo it.OrgUnitRepository,
-	userPrefSvc itExt.UserPreferenceUiDomainService,
 ) it.OrgUnitAppService {
 	return &OrgUnitApplicationServiceImpl{
 		orgUnitSvc:  orgUnitSvc,
 		orgUnitRepo: orgUnitRepo,
-		userPrefSvc: userPrefSvc,
 	}
 }
 
 type OrgUnitApplicationServiceImpl struct {
 	orgUnitSvc  it.OrgUnitDomainService
 	orgUnitRepo it.OrgUnitRepository
-	userPrefSvc itExt.UserPreferenceUiDomainService
 }
 
 func (this *OrgUnitApplicationServiceImpl) CreateOrgUnit(ctx corectx.Context, cmd it.CreateOrgUnitCommand) (*it.CreateOrgUnitResult, error) {
@@ -75,7 +71,6 @@ func (this *OrgUnitApplicationServiceImpl) SearchOrgUnits(ctx corectx.Context, q
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[models.OrganizationalUnit, *models.OrganizationalUnit]{
 		Action:        "search org units",
-		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
 		Schema:        this.orgUnitRepo.GetBaseRepo().Schema(),
 		DefaultFields: []string{models.OrgUnitFieldName, models.OrgUnitFieldDescription},
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[models.OrganizationalUnit]], error) {

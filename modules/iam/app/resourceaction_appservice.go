@@ -55,7 +55,6 @@ func (this *ResourceApplicationServiceImpl) SearchActions(ctx corectx.Context, q
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Action, *domain.Action]{
 		Action:        "search actions",
-		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
 		Schema:        this.actionRepo.GetBaseRepo().Schema(),
 		DefaultFields: []string{models.ActionFieldName, models.ActionFieldDescription},
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.Action]], error) {

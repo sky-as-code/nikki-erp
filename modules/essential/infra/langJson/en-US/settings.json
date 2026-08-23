@@ -1,3 +1,27 @@
 {
-	"module.label.settings": "Settings"
+	"fields.level": "Level",
+	"fields.module_key": "Module",
+	"fields.owner_id": "Owner",
+	"fields.owner_type": "Owner type",
+	"fields.schema": "Definition",
+	"fields.schema_id": "Definition",
+	"fields.value": "Value",
+	"level.org": "Organization settings",
+	"level.tenant": "Tenant-wide settings",
+	"level.user": "User settings",
+	"module.label.settings": "Settings",
+	"page.empty": "No module offers configurable settings.",
+	"page.save": "Save changes",
+	"page.title": "Settings",
+	"pane.general": "General",
+	"pane.security": "Security",
+	"settings.enforcedByTenant": "Enforced by the tenant and cannot be changed here",
+	"settings.level.org": "Organization",
+	"settings.level.tenant": "Tenant",
+	"settings.level.user": "User",
+	"settings.moduleLabel": "Settings",
+	"settings.notEditable": "You do not have permission to change this setting",
+	"settings.unknownName": "This setting is not declared by the module",
+	"settings_record.label": "Setting Value",
+	"settings_schema.label": "Settings Definition"
 }

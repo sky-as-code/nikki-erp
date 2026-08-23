@@ -7,26 +7,22 @@ import (
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
 func NewUserApplicationServiceImpl(
 	userDomSvc itUser.UserDomainService,
 	userRepo itUser.UserRepository,
-	userPrefSvc itExt.UserPreferenceUiDomainService,
 ) itUser.UserAppService {
 	return &UserApplicationServiceImpl{
 		userDomSvc:  userDomSvc,
 		userRepo:    userRepo,
-		userPrefSvc: userPrefSvc,
 	}
 }
 
 type UserApplicationServiceImpl struct {
 	userDomSvc  itUser.UserDomainService
 	userRepo    itUser.UserRepository
-	userPrefSvc itExt.UserPreferenceUiDomainService
 }
 
 func (this *UserApplicationServiceImpl) CreateUser(ctx corectx.Context, cmd itUser.CreateUserCommand) (*itUser.CreateUserResult, error) {
@@ -87,7 +83,6 @@ func (this *UserApplicationServiceImpl) SearchUsers(
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.User, *domain.User]{
 		Action:        "search users",
-		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
 		Schema:        this.userRepo.GetBaseRepo().Schema(),
 		DefaultFields: []string{models.UserFieldAvatarUrl, models.UserFieldDisplayName, models.UserFieldEmail, models.UserFieldStatus},
 		// MaskedFields:  []string{models.UserFieldPassword},

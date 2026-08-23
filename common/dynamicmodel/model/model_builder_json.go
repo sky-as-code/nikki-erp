@@ -63,6 +63,9 @@ type fieldJsonDto struct {
 	Computed json.RawMessage `json:"computed"`
 
 	Rules []ruleJsonDto `json:"rules"`
+
+	// Arbitrary module-defined data. Uninterpreted by the engine; see FieldBuilder.Metadata.
+	Metadata map[string]any `json:"metadata"`
 }
 
 type ruleJsonDto struct {
@@ -261,6 +264,9 @@ func buildFieldFromDto(dto *fieldJsonDto) *FieldBuilder {
 	}
 	for _, rule := range dto.Rules {
 		field.Rule(decodeRule(rule, dto.Name))
+	}
+	if len(dto.Metadata) > 0 {
+		field.Metadata(dto.Metadata)
 	}
 
 	return field

@@ -16,7 +16,9 @@ import (
 	models "github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/essential/dynamicengines"
+	external "github.com/sky-as-code/nikki-erp/modules/essential/infra/external"
 	repo "github.com/sky-as-code/nikki-erp/modules/essential/infra/repository"
+	itExt "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 	"github.com/sky-as-code/nikki-erp/modules/essential/transport"
 )
@@ -41,6 +43,9 @@ func (*EssentialModule) Name() string {
 func (*EssentialModule) Deps() []string {
 	return []string{
 		"dynamicresource",
+		// Essential registers the settings every user may set for their own account. The edge is
+		// safe: settings depends only on dynamicresource, so nothing routes back here.
+		"settings",
 	}
 }
 
@@ -62,6 +67,7 @@ func (*EssentialModule) Init() error {
 	}
 
 	err := errors.Join(
+		external.InitExternalServices(),
 		repo.InitRepositories(),
 		services.InitDomainServices(),
 		app.InitApplicationServices(),
@@ -87,11 +93,21 @@ func (*EssentialModule) RegisterModels() error {
 }
 
 // OnAppStarted implements NikkiModuleAppStarted.
+//
+// The settings schema is registered here rather than in Init() because peer module init order is
+// nondeterministic: Init() cannot assume the settings module has built its engines yet, while
+// OnAppStarted runs after every module has initialized.
 func (*EssentialModule) OnAppStarted() error {
-	return deps.Invoke(func(modules []modules.InCodeModule, moduleSvc it.ModuleAppService) error {
+	return deps.Invoke(func(
+		modules []modules.InCodeModule,
+		moduleSvc it.ModuleAppService,
+		settingsSvc itExt.SettingsRegistrationExtService,
+	) error {
 		ctx := corectx.NewRequestContext(context.Background())
-		_, err := moduleSvc.SyncModuleMetadata(ctx, modules)
-		return err
+		if _, err := moduleSvc.SyncModuleMetadata(ctx, modules); err != nil {
+			return err
+		}
+		return registerSettings(ctx, settingsSvc)
 	})
 }
 

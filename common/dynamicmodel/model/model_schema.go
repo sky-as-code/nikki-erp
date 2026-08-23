@@ -654,11 +654,34 @@ type ModelField struct {
 	defaultValue   *value
 	defaultFn      func() any
 	useTypeDefault bool
+	// Arbitrary, module-defined data attached to the field. The engine never interprets it;
+	// it is carried through Build(), Clone() and ToSimplized() so a consuming module (and the
+	// frontend, via meta/schema) can read its own keys. Values must be plain JSON-serializable
+	// data — the whole schema is round-tripped through JSON by contract.
+	metadata map[string]any
 }
 
 // Getter methods
 func (this *ModelField) Name() string {
 	return this.name
+}
+
+// Metadata returns the field's module-defined metadata, or nil when none was declared.
+// The returned map is the field's own, so callers must not mutate it.
+func (this *ModelField) Metadata() map[string]any {
+	if this == nil {
+		return nil
+	}
+	return this.metadata
+}
+
+// MetadataValue returns a single metadata entry and whether it was present.
+func (this *ModelField) MetadataValue(key string) (any, bool) {
+	if this == nil || this.metadata == nil {
+		return nil, false
+	}
+	val, ok := this.metadata[key]
+	return val, ok
 }
 
 func (this *ModelField) Label() model.LangJson {
@@ -908,6 +931,7 @@ func (this ModelField) ToSimplized() any {
 		NoUpdate            bool           `json:"no_update"`
 		Rules               []*FieldRule   `json:"rules,omitempty"`
 		DefaultValue        *value         `json:"default_value,omitempty"`
+		Metadata            map[string]any `json:"metadata,omitempty"`
 	}{
 		Name:                this.Name(),
 		Label:               this.Label(),
@@ -926,6 +950,7 @@ func (this ModelField) ToSimplized() any {
 		NoUpdate:            this.IsNoUpdate(),
 		Rules:               this.Rules(),
 		DefaultValue:        this.Default(),
+		Metadata:            this.Metadata(),
 	}
 }
 
@@ -1032,6 +1057,14 @@ func (this *ModelField) Clone() *ModelField {
 		useTypeDefault:      this.useTypeDefault,
 	}
 	copy(cloned.rules, this.rules)
+	// Copied by value: a schema that Extends a mixin and then adds metadata must not write
+	// through into the mixin's shared field definition.
+	if this.metadata != nil {
+		cloned.metadata = make(map[string]any, len(this.metadata))
+		for k, v := range this.metadata {
+			cloned.metadata[k] = v
+		}
+	}
 	return cloned
 }
 

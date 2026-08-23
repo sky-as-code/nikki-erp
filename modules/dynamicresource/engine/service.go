@@ -15,10 +15,6 @@ type NewServiceParam struct {
 	Schema     *dmodel.ModelSchema
 	Repository it.DynamicResourceRepository
 
-	// FieldResolver resolves the field list of a named search view. It is optional:
-	// when absent, a search that names a view falls back to DefaultFields.
-	FieldResolver corecrud.FieldsResolver
-
 	// DefaultFields is returned by a search that specifies neither fields nor a resolvable
 	// view. When empty, every column of the schema is returned.
 	DefaultFields []string
@@ -32,7 +28,6 @@ func NewDynamicResourceService(param NewServiceParam) it.DynamicResourceService 
 	return &DynamicResourceServiceImpl{
 		schema:        param.Schema,
 		repository:    param.Repository,
-		fieldResolver: param.FieldResolver,
 		defaultFields: defaultFields,
 	}
 }
@@ -46,7 +41,6 @@ func NewDynamicResourceService(param NewServiceParam) it.DynamicResourceService 
 type DynamicResourceServiceImpl struct {
 	schema        *dmodel.ModelSchema
 	repository    it.DynamicResourceRepository
-	fieldResolver corecrud.FieldsResolver
 	defaultFields []string
 }
 
@@ -177,7 +171,6 @@ func (this *DynamicResourceServiceImpl) Search(
 	result, err := corecrud.UiSearch(ctx, corecrud.UiSearchParam[it.DynamicEntity, *it.DynamicEntity]{
 		Action:        this.actionName("search"),
 		DefaultFields: this.defaultFields,
-		FieldResolver: this.fieldResolver,
 		Schema:        this.schema,
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[it.DynamicEntity]], error) {
 			return corecrud.Search[it.DynamicEntity](ctx, corecrud.SearchParam{

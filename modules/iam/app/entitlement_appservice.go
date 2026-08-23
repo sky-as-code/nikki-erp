@@ -7,25 +7,21 @@ import (
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/entitlement"
-	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 )
 
 func NewEntitlementApplicationServiceImpl(
 	entitlementSvc it.EntitlementDomainService,
 	entitlementRepo it.EntitlementRepository,
-	userPrefSvc itExt.UserPreferenceUiDomainService,
 ) it.EntitlementAppService {
 	return &EntitlementApplicationServiceImpl{
 		entitlementSvc:  entitlementSvc,
 		entitlementRepo: entitlementRepo,
-		userPrefSvc:     userPrefSvc,
 	}
 }
 
 type EntitlementApplicationServiceImpl struct {
 	entitlementSvc  it.EntitlementDomainService
 	entitlementRepo it.EntitlementRepository
-	userPrefSvc     itExt.UserPreferenceUiDomainService
 }
 
 func (this *EntitlementApplicationServiceImpl) CreateEntitlement(ctx corectx.Context, cmd it.CreateEntitlementCommand) (*it.CreateEntitlementResult, error) {
@@ -75,7 +71,6 @@ func (this *EntitlementApplicationServiceImpl) SearchEntitlements(ctx corectx.Co
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Entitlement, *domain.Entitlement]{
 		Action:        "search entitlements",
-		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
 		Schema:        this.entitlementRepo.GetBaseRepo().Schema(),
 		DefaultFields: []string{domain.EntitlementFieldName, domain.EntitlementFieldDescription},
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.Entitlement]], error) {
