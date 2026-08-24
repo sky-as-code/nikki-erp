@@ -94,7 +94,7 @@ func (this *PgQueryBuilder) partialUniqueIndexSqls(schema *dmodel.ModelSchema) (
 	tenantKey := schema.TenantKey()
 	for _, group := range groups {
 		group.NotNullFields = prependTenantKey(tenantKey, group.NotNullFields)
-		lines, err := formatPartialUniqueIndexPair(schema, group)
+		lines, err := formatPartialUniqueIndexes(schema, group)
 		if err != nil {
 			return nil, err
 		}
@@ -127,26 +127,39 @@ func schemaHasSingleColumnUniqueOn(schema *dmodel.ModelSchema, col string) bool 
 	return false
 }
 
-func formatPartialUniqueIndexPair(schema *dmodel.ModelSchema, group dmodel.PartialUniqueParam) ([]string, error) {
+// formatPartialUniqueIndexes renders one partial unique group.
+//
+// A loose group produces two indexes: the IS NOT NULL one that constrains rows carrying a value,
+// and an IS NULL one that constrains the rest by their not-null columns alone. A strict group
+// produces only the first, leaving NULL-valued rows entirely unconstrained.
+//
+// The suffixes differ with the kind, and deliberately so. A strict group owns the whole name space
+// under "_ukey", the same suffix a plain unique uses, because it is the only index of its group;
+// naming it "_ukey_notnull" would imply a missing "_ukey_null" sibling.
+func formatPartialUniqueIndexes(schema *dmodel.ModelSchema, group dmodel.PartialUniqueParam) ([]string, error) {
 	if len(group.NotNullFields) == 0 {
 		return nil, errors.Errorf(
-			"formatPartialUniqueIndexPair: table '%s': at least one not-null field is required", schema.TableName())
+			"formatPartialUniqueIndexes: table '%s': at least one not-null field is required", schema.TableName())
 	}
 	nullable := strings.TrimSpace(group.NullableField)
 	if nullable == "" {
 		return nil, errors.Errorf(
-			"formatPartialUniqueIndexPair: table '%s': nullable field is required", schema.TableName())
+			"formatPartialUniqueIndexes: table '%s': nullable field is required", schema.TableName())
 	}
 	for _, col := range group.NotNullFields {
 		if schemaHasSingleColumnUniqueOn(schema, col) {
 			return nil, errors.Errorf(
-				"partialUniqueIndexSqls: table '%s': column '%s' already has a single-column UNIQUE constraint",
+				"formatPartialUniqueIndexes: table '%s': column '%s' already has a single-column UNIQUE constraint",
 				schema.TableName(), col)
 		}
 	}
 	indexName := resolvePartialUniqueIndexName(schema.TableName(), group)
-	for _, suffix := range []string{"_ukey_notnull", "_ukey_null"} {
-		if err := mustFitIdentifier("formatPartialUniqueIndexPair", schema.TableName(), indexName+suffix); err != nil {
+	suffixes := []string{"_ukey_notnull", "_ukey_null"}
+	if group.Strict {
+		suffixes = []string{"_ukey"}
+	}
+	for _, suffix := range suffixes {
+		if err := mustFitIdentifier("formatPartialUniqueIndexes", schema.TableName(), indexName+suffix); err != nil {
 			return nil, err
 		}
 	}
@@ -155,20 +168,22 @@ func formatPartialUniqueIndexPair(schema *dmodel.ModelSchema, group dmodel.Parti
 		colsWithNullable = append(colsWithNullable, pgQuote(col))
 	}
 	colsWithNullable = append(colsWithNullable, pgQuote(nullable))
-	quotedNotNull := pgQuoteArr(group.NotNullFields)
 	tableRef := pgQuoteTable(strings.Split(schema.TableName(), ".")...)
 	lineNN := fmt.Sprintf(
 		"CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s IS NOT NULL",
-		pgQuote(indexName+"_ukey_notnull"),
+		pgQuote(indexName+suffixes[0]),
 		tableRef,
 		strings.Join(colsWithNullable, ", "),
 		pgQuote(nullable),
 	)
+	if group.Strict {
+		return []string{lineNN}, nil
+	}
 	lineNull := fmt.Sprintf(
 		"CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s IS NULL",
 		pgQuote(indexName+"_ukey_null"),
 		tableRef,
-		strings.Join(quotedNotNull, ", "),
+		strings.Join(pgQuoteArr(group.NotNullFields), ", "),
 		pgQuote(nullable),
 	)
 	return []string{lineNN, lineNull}, nil

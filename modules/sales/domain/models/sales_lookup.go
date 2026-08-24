@@ -12,10 +12,9 @@ import (
 // The reads the resource engine's built-in CRUD cannot express, kept beside the models they query
 // so that the field names and the queries using them stay together.
 //
-// Two of these back constraints the database does not enforce. The sales point uniqueness rules are
-// partial indexes written by hand in the migration rather than declared in the schema (see
-// sales_point.json), so the lookups below are how the domain service checks them before writing —
-// the index is the backstop, not the first line of defence.
+// Two of them front constraints the database also enforces, as strict partial unique indexes. The
+// lookups let the domain service reject a duplicate with a useful message before writing; the index
+// is the backstop for the race between check and insert, not the first line of defence.
 
 // MaxSalesPointsPerChannel bounds how many sales points one channel is read with.
 //
@@ -67,22 +66,26 @@ func FindSalesChannelByCode(
 	return searchAll(ctx, repo, graph, 2, "FindSalesChannelByCode")
 }
 
-// FindSalesPointByExternalReference resolves the sales point a module registered for one of its own
-// records, within one channel.
+// FindSalesPointByExternalReferenceId resolves the sales point a module registered for one of its
+// own records, within one channel.
 //
 // This is the idempotency mechanism of CreateSalesPoint (CR §48): a vending module retrying after a
 // timeout finds the point it already created instead of making a second one. The pair is unique by
-// a partial index in the migration, so 2 is again the limit that distinguishes one from many.
-func FindSalesPointByExternalReference(
-	ctx corectx.Context, repo SalesSearcher, channelId string, externalReference string,
+// a strict partial index, so 2 is again the limit that distinguishes one from many.
+//
+// It filters on the id alone, not the type. Within one channel an id already identifies a point,
+// and adding the type to the predicate would let a caller that passed the wrong type create a
+// duplicate rather than fail — the opposite of what an idempotency lookup is for.
+func FindSalesPointByExternalReferenceId(
+	ctx corectx.Context, repo SalesSearcher, channelId string, externalReferenceId string,
 ) ([]dmodel.DynamicFields, error) {
 	graph := &dmodel.SearchGraph{}
 	graph.And(
 		*dmodel.NewSearchNode().NewCondition(SalesPointFieldSalesChannelId, dmodel.Equals, channelId),
 		*dmodel.NewSearchNode().NewCondition(
-			SalesPointFieldExternalReference, dmodel.Equals, externalReference),
+			SalesPointFieldExternalReferenceId, dmodel.Equals, externalReferenceId),
 	)
-	return searchAll(ctx, repo, graph, 2, "FindSalesPointByExternalReference")
+	return searchAll(ctx, repo, graph, 2, "FindSalesPointByExternalReferenceId")
 }
 
 // FindSalesPointByCode resolves a sales point by its display code within one channel, so the domain

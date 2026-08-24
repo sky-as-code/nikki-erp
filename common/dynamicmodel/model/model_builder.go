@@ -272,7 +272,8 @@ type CompositeUniqueParam struct {
 	// carry the table prefix itself. The "_ukey" suffix is always appended by the query builder;
 	// never write it here. See docs/wiki "04. Dynamic schema" for the 63-byte naming rules.
 	IndexName string
-	// Fields must all be requiredForCreate. Use PartialUnique when one of them is nullable.
+	// Fields must all be requiredForCreate. Use PartialUniqueLoose or PartialUniqueStrict when
+	// one of them is nullable.
 	Fields []string
 }
 
@@ -341,26 +342,57 @@ func (this *ModelSchemaBuilder) SearchIndexGroup(group SearchIndexGroupParam) *M
 type PartialUniqueParam struct {
 	// IndexName is optional. When empty, the index name is derived as
 	// "{tableName}_{tenantKey}_{NotNullFields...}_{NullableField}". When set, it replaces that whole
-	// stem, so it must carry the table prefix itself. The "_ukey_notnull" and "_ukey_null" suffixes
-	// are always appended by the query builder; never write them here.
+	// stem, so it must carry the table prefix itself. The suffixes are always appended by the query
+	// builder; never write them here. A loose group appends "_ukey_notnull" and "_ukey_null"; a
+	// strict group appends "_ukey".
 	IndexName string
 	// NotNullFields must all be requiredForCreate.
 	NotNullFields []string
 	// NullableField must NOT be requiredForCreate.
 	NullableField string
+	// Strict selects which pair of indexes this group emits. See PartialUniqueLoose and
+	// PartialUniqueStrict; it is set by those builders rather than by a caller.
+	Strict bool
 }
 
-// PartialUnique registers a pair of partial unique indexes: one over NotNullFields plus
+// PartialUniqueLoose registers a PAIR of partial unique indexes: one over NotNullFields plus
 // NullableField where the latter IS NOT NULL, and one over NotNullFields alone where it IS NULL.
-// This is how tenant/org-scoped uniqueness is expressed.
+//
+// The second index is the point of it: it expresses tenant/org-scoped uniqueness, where "unique
+// per organization" must also mean "unique among the rows belonging to no organization". A role
+// name scoped by a nullable org_id is the canonical case.
+//
+// It is the wrong tool when the nullable column is the VALUE being constrained rather than the
+// scope. There the second index constrains only NotNullFields, so it permits exactly one row per
+// scope with a NULL value — use PartialUniqueStrict instead.
+//
 // Enforced in Build() when ShouldBuildDb is set.
-func (this *ModelSchemaBuilder) PartialUnique(param PartialUniqueParam) *ModelSchemaBuilder {
+func (this *ModelSchemaBuilder) PartialUniqueLoose(param PartialUniqueParam) *ModelSchemaBuilder {
+	return this.addPartialUnique(param, false, "PartialUniqueLoose")
+}
+
+// PartialUniqueStrict registers a SINGLE partial unique index over NotNullFields plus
+// NullableField, where the latter IS NOT NULL. Rows with a NULL value are unconstrained, and any
+// number of them may share the same NotNullFields.
+//
+// This is the tool for "unique when present": an optional external reference, an optional display
+// code. Its loose counterpart would additionally forbid a second NULL-valued row per scope, which
+// for such a column is a bug rather than a constraint.
+//
+// Enforced in Build() when ShouldBuildDb is set.
+func (this *ModelSchemaBuilder) PartialUniqueStrict(param PartialUniqueParam) *ModelSchemaBuilder {
+	return this.addPartialUnique(param, true, "PartialUniqueStrict")
+}
+
+func (this *ModelSchemaBuilder) addPartialUnique(
+	param PartialUniqueParam, strict bool, caller string,
+) *ModelSchemaBuilder {
 	indexName := mustValidateIndexName(param.IndexName)
 	nullableField := strings.TrimSpace(param.NullableField)
 	notNullFields := array.Map(param.NotNullFields, func(fieldName string) string {
 		trimName := strings.TrimSpace(fieldName)
 		if trimName == "" {
-			panic(errors.Errorf("PartialUnique: field name must not be empty: %s", fieldName))
+			panic(errors.Errorf("%s: field name must not be empty: %s", caller, fieldName))
 		}
 		return trimName
 	})
@@ -368,6 +400,7 @@ func (this *ModelSchemaBuilder) PartialUnique(param PartialUniqueParam) *ModelSc
 		IndexName:     indexName,
 		NotNullFields: notNullFields,
 		NullableField: nullableField,
+		Strict:        strict,
 	})
 	return this
 }

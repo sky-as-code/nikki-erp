@@ -19,7 +19,7 @@ func TestValidateSchemaJson_Valid(t *testing.T) {
 			{"name": "is_private", "data_type": "boolean", "required_for_create": true, "default_value": false}
 		],
 		"extend_after": ["core.basemodel.archivable_model"],
-		"partial_uniques": [{"not_null_fields": ["name"], "nullable_field": "org_id"}],
+		"partial_uniques_loose": [{"not_null_fields": ["name"], "nullable_field": "org_id"}],
 		"edges_to": [
 			{
 				"edge": "owner_group",

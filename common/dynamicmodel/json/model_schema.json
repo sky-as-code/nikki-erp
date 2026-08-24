@@ -43,7 +43,13 @@
 			"type": "array",
 			"items": { "$ref": "#/$defs/compositeUnique" }
 		},
-		"partial_uniques": {
+		"partial_uniques_loose": {
+			"description": "Emits a PAIR of indexes: unique over (not_null_fields, nullable_field) where the nullable IS NOT NULL, plus unique over not_null_fields alone where it IS NULL. Use when the nullable column is the SCOPE, e.g. a name unique per organization that must also be unique among global rows.",
+			"type": "array",
+			"items": { "$ref": "#/$defs/partialUnique" }
+		},
+		"partial_uniques_strict": {
+			"description": "Emits a SINGLE index: unique over (not_null_fields, nullable_field) where the nullable IS NOT NULL. Rows with a NULL value are unconstrained. Use when the nullable column is the VALUE, e.g. an optional external reference that must be unique when present.",
 			"type": "array",
 			"items": { "$ref": "#/$defs/partialUnique" }
 		},
@@ -462,7 +468,7 @@
 					"pattern": "^[A-Za-z0-9_]+$"
 				},
 				"fields": {
-					"description": "All columns must be required_for_create. Use partial_uniques when one is nullable.",
+					"description": "All columns must be required_for_create. Use partial_uniques_loose or partial_uniques_strict when one is nullable.",
 					"type": "array",
 					"items": { "type": "string", "minLength": 1 },
 					"minItems": 1
@@ -476,7 +482,7 @@
 			"additionalProperties": false,
 			"properties": {
 				"index_name": {
-					"description": "Optional. Replaces the derived '{table}_{tenant_key}_{not_null_fields}_{nullable_field}' stem. The '_ukey_notnull' and '_ukey_null' suffixes are appended automatically. The final name must not exceed 63 bytes.",
+					"description": "Optional. Replaces the derived '{table}_{tenant_key}_{not_null_fields}_{nullable_field}' stem. Suffixes are appended automatically: '_ukey_notnull' and '_ukey_null' for a loose group, '_ukey' for a strict one. The final name must not exceed 63 bytes.",
 					"type": "string",
 					"minLength": 1,
 					"pattern": "^[A-Za-z0-9_]+$"

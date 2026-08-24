@@ -12,16 +12,24 @@ import (
 const (
 	SalesPointSchemaName = "sales_point"
 
-	SalesPointFieldId                = "id"
-	SalesPointFieldOrgId             = "org_id"
-	SalesPointFieldSalesChannelId    = "sales_channel_id"
-	SalesPointFieldName              = "name"
-	SalesPointFieldCode              = "code"
-	SalesPointFieldExternalReference = "external_reference"
-	SalesPointFieldStatus            = "status"
+	SalesPointFieldId                    = "id"
+	SalesPointFieldOrgId                 = "org_id"
+	SalesPointFieldSalesChannelId        = "sales_channel_id"
+	SalesPointFieldName                  = "name"
+	SalesPointFieldCode                  = "code"
+	SalesPointFieldExternalReferenceId   = "external_reference_id"
+	SalesPointFieldExternalReferenceType = "external_reference_type"
+	SalesPointFieldStatus                = "status"
 
 	SalesPointEdgeSalesChannel = "sales_channel"
 )
+
+// KioskReferenceType is the external_reference_type a vending kiosk's sales point carries.
+//
+// It names the owning module and resource so that external_reference_id is unambiguous: a bare
+// ulid says nothing about which module to resolve it against, and more than one module may
+// register points on the same channel.
+const KioskReferenceType = "vending_machine.kiosk"
 
 //go:embed sales_point.json
 var salesPointSchemaJson string
@@ -74,12 +82,20 @@ func (this *SalesPoint) SetCode(code *string) {
 	this.GetFieldData().SetString(SalesPointFieldCode, code)
 }
 
-func (this SalesPoint) GetExternalReference() *string {
-	return this.GetFieldData().GetString(SalesPointFieldExternalReference)
+func (this SalesPoint) GetExternalReferenceId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesPointFieldExternalReferenceId)
 }
 
-func (this *SalesPoint) SetExternalReference(reference *string) {
-	this.GetFieldData().SetString(SalesPointFieldExternalReference, reference)
+func (this *SalesPoint) SetExternalReferenceId(id *model.Id) {
+	this.GetFieldData().SetModelId(SalesPointFieldExternalReferenceId, id)
+}
+
+func (this SalesPoint) GetExternalReferenceType() *string {
+	return this.GetFieldData().GetString(SalesPointFieldExternalReferenceType)
+}
+
+func (this *SalesPoint) SetExternalReferenceType(refType *string) {
+	this.GetFieldData().SetString(SalesPointFieldExternalReferenceType, refType)
 }
 
 func (this SalesPoint) GetStatus() *string {

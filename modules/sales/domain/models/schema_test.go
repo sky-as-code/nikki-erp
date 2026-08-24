@@ -61,29 +61,81 @@ func TestSalesChannelCodeIsMandatoryAndUnique(t *testing.T) {
 		t.Error("code must be no_update: it is a published integration contract (CR 7.2, 41)")
 	}
 	if len(schema.PartialUniques()) != 0 {
-		t.Error("sales_channel must not use partial_uniques; see DEC-001 for why it cannot " +
-			"express this constraint")
+		t.Error("sales_channel must not use a partial unique of either kind; DEC-001 records why " +
+			"a plain unique on a required column is what this constraint needs")
 	}
 }
 
-// TestSalesPointHasNoPartialUniques guards against reintroducing a bug this module already made
-// once.
+// TestSalesPointUniquesAreStrict guards against a bug this module already made once.
 //
-// partial_uniques emits a PAIR of indexes: one over not_null_fields + nullable_field where the
+// A LOOSE group emits a PAIR of indexes: one over not_null_fields + nullable_field where the
 // nullable IS NOT NULL, and one over not_null_fields ALONE where it IS NULL. Declaring
-// {not_null: [sales_channel_id], nullable: external_reference} therefore also creates a unique
-// index on sales_channel_id alone for rows with no external reference — allowing exactly one
-// manually-created sales point per channel. The same trap applies to code.
+// {not_null: [sales_channel_id], nullable: external_reference_id} as loose therefore also creates
+// a unique index on sales_channel_id alone for rows with no external reference — allowing exactly
+// one manually-created sales point per channel. The same trap applies to code.
 //
-// Both uniqueness rules are hand-written partial indexes in the migration instead.
-func TestSalesPointHasNoPartialUniques(t *testing.T) {
+// Both rules must be STRICT, which emits only the IS NOT NULL half.
+func TestSalesPointUniquesAreStrict(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
 	schema := buildSchema(t, SalesPointSchemaBuilder())
-	if got := len(schema.PartialUniques()); got != 0 {
-		t.Fatalf("sales_point declares %d partial_uniques; it must declare none — the builder "+
-			"would also emit a unique index over sales_channel_id alone for NULL rows, capping "+
-			"a channel at one point without an external_reference or without a code", got)
+
+	if got := len(schema.PartialUniquesLoose()); got != 0 {
+		t.Errorf("sales_point declares %d LOOSE partial uniques; both must be strict — a loose "+
+			"group also emits a unique index over sales_channel_id alone for NULL rows, capping "+
+			"a channel at one point without an external_reference_id or without a code", got)
+	}
+
+	strict := schema.PartialUniquesStrict()
+	if len(strict) != 2 {
+		t.Fatalf("sales_point declares %d strict partial uniques, want 2 "+
+			"(external_reference_id and code)", len(strict))
+	}
+
+	nullables := map[string]bool{}
+	for _, group := range strict {
+		nullables[group.NullableField] = true
+		if len(group.NotNullFields) != 1 || group.NotNullFields[0] != SalesPointFieldSalesChannelId {
+			t.Errorf("strict group on %q must be scoped by %q alone, got %v",
+				group.NullableField, SalesPointFieldSalesChannelId, group.NotNullFields)
+		}
+	}
+	for _, want := range []string{SalesPointFieldExternalReferenceId, SalesPointFieldCode} {
+		if !nullables[want] {
+			t.Errorf("no strict partial unique on %q", want)
+		}
+	}
+}
+
+// TestSalesPointExternalReferenceIsQualified pins the id/type pair.
+//
+// An external_reference_id alone is ambiguous: it is another module's ulid, and more than one
+// module may register points on the same channel, so nothing in the row says which resource to
+// resolve it against. The type carries that, as a readable "{module}.{resource}" pair.
+func TestSalesPointExternalReferenceIsQualified(t *testing.T) {
+	requireBaseSchemasRegistered(t)
+
+	schema := buildSchema(t, SalesPointSchemaBuilder())
+
+	refId := fieldOf(t, schema, SalesPointFieldExternalReferenceId)
+	if refId.IsRequiredForCreate() {
+		t.Error("external_reference_id must stay optional: a point created by a human has none")
+	}
+	if !refId.IsNoUpdate() {
+		t.Error("external_reference_id must be no_update: it is the idempotency key a retrying " +
+			"caller resolves against (CR 48)")
+	}
+
+	refType := fieldOf(t, schema, SalesPointFieldExternalReferenceType)
+	if refType.IsRequiredForCreate() {
+		t.Error("external_reference_type must stay optional: it qualifies an optional id")
+	}
+	if !refType.IsNoUpdate() {
+		t.Error("external_reference_type must be no_update: changing it would repoint the reference")
+	}
+
+	if KioskReferenceType != "vending_machine.kiosk" {
+		t.Errorf("KioskReferenceType = %q, want %q", KioskReferenceType, "vending_machine.kiosk")
 	}
 }
 
@@ -102,14 +154,6 @@ func TestSalesPointImmutableFields(t *testing.T) {
 		t.Error("sales_channel_id must be required_for_create: every point belongs to a channel")
 	}
 
-	externalRef := fieldOf(t, schema, SalesPointFieldExternalReference)
-	if !externalRef.IsNoUpdate() {
-		t.Error("external_reference must be no_update: it is the idempotency key a retrying " +
-			"caller resolves against (CR 48)")
-	}
-	if externalRef.IsRequiredForCreate() {
-		t.Error("external_reference must stay optional: a point created by a human has none")
-	}
 }
 
 // TestSalesPointCodeIsOptionalAndMutable states the deliberate contrast with a channel code.
@@ -130,7 +174,7 @@ func TestSalesPointCodeIsOptionalAndMutable(t *testing.T) {
 	}
 	if code.IsUnique() {
 		t.Error("sales point code must not carry a table-wide unique: it is unique per channel, " +
-			"enforced by a partial index in the migration")
+			"enforced by a strict partial unique")
 	}
 }
 
