@@ -20,6 +20,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/sales/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
@@ -84,6 +85,12 @@ func (*SalesModule) Init() error {
 		return err
 	}
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
+		return err
+	}
+	if err := dynamicengines.InitDomainServices(); err != nil {
+		return err
+	}
+	if err := app.InitApplicationServices(); err != nil {
 		return err
 	}
 	return restful.InitRestfulHandlers()

@@ -47,13 +47,15 @@ var engineSpecs = []engineSpec{
 
 func salesChannelEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.SalesChannelSchemaName,
+		SchemaName:    models.SalesChannelSchemaName,
+		DefineActions: defineSalesChannelActions,
 	}
 }
 
 func salesPointEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName: models.SalesPointSchemaName,
+		SchemaName:    models.SalesPointSchemaName,
+		DefineActions: defineSalesPointActions,
 	}
 }
 
