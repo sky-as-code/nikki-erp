@@ -60,11 +60,11 @@ func invoiceLineEngineSpec() engineSpec {
 func paymentProfileEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.PaymentProfileSchemaName,
-		DefaultFields: []string{
-			models.PaymentProfileFieldName,
-			models.PaymentProfileFieldMethod,
-			models.PaymentProfileFieldOrgId,
-		},
+		// DefaultFields: []string{
+		// 	models.PaymentProfileFieldName,
+		// 	models.PaymentProfileFieldMethod,
+		// 	models.PaymentProfileFieldOrgId,
+		// },
 		DefineActions: definePaymentProfileActions,
 	}
 }
