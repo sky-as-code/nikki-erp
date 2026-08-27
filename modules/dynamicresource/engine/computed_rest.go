@@ -6,6 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/computed"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	it "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
@@ -39,6 +40,9 @@ func defineComputeFieldAction(resourceEngine it.DynamicResourceEngine) error {
 		RestPath:   "meta/compute/:field",
 		// Computing a derived value discloses no more than reading the record would.
 		Permission: it.PermissionRead,
+		// The model being computed over travels in the request body and is typically unsaved,
+		// so there is no stored row to confine to an org.
+		IsOrgScoped: util.ToPtr(false),
 		MainProcess: func(ctx corectx.Context, input it.ProcessInput) (*it.ActionResult, error) {
 			return processComputeField(ctx, resourceEngine, input)
 		},

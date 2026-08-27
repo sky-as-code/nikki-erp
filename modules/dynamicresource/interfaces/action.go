@@ -181,12 +181,52 @@ type DynamicActionDefinition struct {
 	// PermissionScope overrides the engine's default scope for this action only.
 	PermissionScope *requestguard.ResourceScope
 
+	// IsOrgScoped confines the action to one organization: the REST caller must supply
+	// "?org_id=", the value must name an org the caller belongs to, and the action only ever
+	// sees records of that org.
+	//
+	// A nil value means true. Org scoping is the default because the unsafe direction is the
+	// silent one: an action that forgot to declare it would otherwise expose every org's rows
+	// to anyone holding a grant. Opt out with util.ToPtr(false), and only for a resource that
+	// genuinely has no owning org — schema metadata, or a resource with no org column at all.
+	//
+	// It has no effect on a resource whose schema declares no org_id field; such a resource
+	// cannot be org-filtered and is left alone.
+	IsOrgScoped *bool
+
+	// PrimarySchema names the parent resource this action hangs off, and nests its REST route
+	// under it:
+	//
+	//	/{PrimarySchema}/:{PrimaryRestIdParam}/{engine.RoutePath()}/{RestPath}
+	//
+	// so that the full path of a nested get-by-id reads
+	// "/{primary-schema}/{primary-id}/{current-schema}/{current-id}".
+	// Leave it nil for a top-level resource, which is the common case.
+	PrimarySchema *string
+
+	// PrimaryRestIdParam names the path parameter carrying the parent id, and is mandatory
+	// whenever PrimarySchema is set. The value lands in the action params under this name.
+	// Segments follow RestPathRegex: [a-zA-Z0-9_], the word separator is "_".
+	PrimaryRestIdParam *string
+
 	BeforeValidation       ActionBeforeValidationFn
 	AfterValidationSuccess ActionAfterValidationFn
 	ValidateExtra          ActionValidateExtraFn
 
 	// MainProcess is mandatory.
 	MainProcess DynamicActionProcessFn
+}
+
+// OrgScoped resolves IsOrgScoped, defaulting an unset field to true.
+// Every call site asks through this method rather than reading the pointer, so the
+// "nil means org-scoped" default cannot be forgotten in one place and honoured in another.
+func (this DynamicActionDefinition) OrgScoped() bool {
+	return this.IsOrgScoped == nil || *this.IsOrgScoped
+}
+
+// IsNested reports whether this action's REST route hangs off a parent resource.
+func (this DynamicActionDefinition) IsNested() bool {
+	return this.PrimarySchema != nil && *this.PrimarySchema != ""
 }
 
 // DynamicActionDelta overrides fields of an already defined action.
@@ -212,7 +252,15 @@ type DynamicActionDelta struct {
 	// Permission is a pointer so that overriding it to "" (skip the check) is expressible.
 	Permission *string
 
-	PermissionScope        *requestguard.ResourceScope
+	PermissionScope *requestguard.ResourceScope
+
+	// IsOrgScoped is a pointer for the same reason it is one on the definition: nil means
+	// "keep what the action already declared", and util.ToPtr(false) withdraws org scoping.
+	IsOrgScoped *bool
+
+	PrimarySchema      *string
+	PrimaryRestIdParam *string
+
 	BeforeValidation       ActionBeforeValidationFn
 	AfterValidationSuccess ActionAfterValidationFn
 	ValidateExtra          ActionValidateExtraFn

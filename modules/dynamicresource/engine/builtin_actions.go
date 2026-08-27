@@ -3,6 +3,7 @@ package engine
 import (
 	stdErr "errors"
 
+	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	it "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
@@ -75,17 +76,41 @@ func DefineBuiltinActions(engine it.DynamicResourceEngine) error {
 			Permission:  it.PermissionRead,
 			MainProcess: processExists,
 		}),
+		// get_schema describes the resource's shape, which is the same in every org, and
+		// touches no row - so it is one of the few actions that legitimately opts out.
 		engine.DefineAction(it.DynamicActionDefinition{
 			ActionName:  it.ActionGetSchema,
 			ActionType:  it.ActionTypeRead,
 			RestPath:    "meta/schema",
 			Permission:  it.PermissionRead,
+			IsOrgScoped: util.ToPtr(false),
 			MainProcess: processGetSchema,
 		}),
 		// Registered separately because it needs the engine itself, to reach the computed-field
 		// function registry. See computed_rest.go.
 		defineComputeFieldAction(engine),
 	)
+}
+
+// WithdrawOrgScoping opts every action currently defined on the engine out of org scoping.
+//
+// It exists for a resource whose org_id is *optional*, where NULL means "global" or
+// "domain-scoped" rather than "belongs to no org" - iam_role and iam_entitlement are the two in
+// the tree. Requiring ?org_id= on those would make every domain-scoped row unreachable, which
+// is a silent under-grant rather than a visible error.
+//
+// Call it after the module has defined its own actions, so that those are covered too.
+// It is deliberately all-or-nothing: a resource that needs scoping on some actions and not
+// others should say so per action, where the reason can be written down next to the exception.
+func WithdrawOrgScoping(engine it.DynamicResourceEngine) error {
+	errs := make([]error, 0)
+	for _, name := range engine.ActionNames() {
+		errs = append(errs, engine.ModifyAction(it.DynamicActionDelta{
+			ActionName:  name,
+			IsOrgScoped: util.ToPtr(false),
+		}))
+	}
+	return stdErr.Join(errs...)
 }
 
 func processCreate(ctx corectx.Context, input it.ProcessInput) (*it.ActionResult, error) {

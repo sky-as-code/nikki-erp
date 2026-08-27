@@ -33,8 +33,6 @@ type DynamicRestApiImpl struct {
 // "exists" paths must be registered before the ":id" patterns that would swallow them.
 // routableActions sorts by specificity so that holds without hand-written ordering.
 func (this *DynamicRestApiImpl) RegisterRoutes(route *echo.Group, middlewares ...echo.MiddlewareFunc) {
-	base := "/" + this.engine.RoutePath()
-
 	for _, definition := range this.routableActions() {
 		handler := definition.RestHandler
 		if handler == nil {
@@ -42,11 +40,24 @@ func (this *DynamicRestApiImpl) RegisterRoutes(route *echo.Group, middlewares ..
 		}
 		route.Add(
 			definition.ActionType.HttpMethod(),
-			joinRestPath(base, definition.RestPath),
+			this.fullRestPath(definition),
 			handler,
 			middlewares...,
 		)
 	}
+}
+
+// fullRestPath is the route an action registers under: the resource base, prefixed by the
+// parent resource when the action nests under one, then the action's own RestPath.
+//
+//	flat:   /{schema}/{RestPath}
+//	nested: /{PrimarySchema}/:{PrimaryRestIdParam}/{schema}/{RestPath}
+func (this *DynamicRestApiImpl) fullRestPath(definition it.DynamicActionDefinition) string {
+	base := "/" + this.engine.RoutePath()
+	if definition.IsNested() {
+		base = "/" + *definition.PrimarySchema + "/:" + *definition.PrimaryRestIdParam + base
+	}
+	return joinRestPath(base, definition.RestPath)
 }
 
 // routableActions returns the actions that declare a REST surface, ordered by decreasing
@@ -61,8 +72,11 @@ func (this *DynamicRestApiImpl) routableActions() []it.DynamicActionDefinition {
 		}
 	}
 
+	// Sorted on the full path rather than RestPath alone: a nested action carries a path param
+	// and extra segments in its prefix, which RestPath does not show, so ordering by RestPath
+	// would let a nested base path register ahead of a flat literal one and swallow it.
 	sort.SliceStable(definitions, func(i, j int) bool {
-		left, right := definitions[i].RestPath, definitions[j].RestPath
+		left, right := this.fullRestPath(definitions[i]), this.fullRestPath(definitions[j])
 		if leftParams, rightParams := countPathParams(left), countPathParams(right); leftParams != rightParams {
 			return leftParams < rightParams
 		}
@@ -116,11 +130,11 @@ func (this *DynamicRestApiImpl) bindingFor(actionName string) restBinding {
 	case it.ActionSearch:
 		return restBinding{this.searchParams, searchResponse, httpserver.JsonOk}
 	case it.ActionExists:
-		return restBinding{rawBodyParams, identityResponse, httpserver.JsonOk}
+		return restBinding{this.bindRawBodyParams, identityResponse, httpserver.JsonOk}
 	case it.ActionGetSchema:
 		return restBinding{noParams, identityResponse, httpserver.JsonOk}
 	}
-	return restBinding{echoBindParams, identityResponse, httpserver.JsonOk}
+	return restBinding{this.bindGenericParams, identityResponse, httpserver.JsonOk}
 }
 
 // joinRestPath places a RestPath under the resource base. An empty RestPath is the base itself.
