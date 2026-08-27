@@ -7,6 +7,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/accounting"
 	"github.com/sky-as-code/nikki-erp/modules/apptrait"
 	"github.com/sky-as-code/nikki-erp/modules/contacts"
 	"github.com/sky-as-code/nikki-erp/modules/core"
@@ -17,6 +18,7 @@ import (
 
 	// "github.com/sky-as-code/nikki-erp/modules/helpdesk"
 	"github.com/sky-as-code/nikki-erp/modules/inventory"
+	"github.com/sky-as-code/nikki-erp/modules/jobscheduler"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice"
 	"github.com/sky-as-code/nikki-erp/modules/purchase"
 	"github.com/sky-as-code/nikki-erp/modules/sales"
@@ -42,6 +44,7 @@ func (this StaticModuleLoader) LoadModule(name string) (modules.InCodeModule, er
 func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 	modules := []modules.InCodeModule{
 		// Sort alphabetically. The order of initialization will be handled properly.
+		accounting.ModuleSingleton,
 		apptrait.ModuleSingleton,
 		essential.ModuleSingleton,
 		core.ModuleSingleton,
@@ -50,6 +53,7 @@ func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 		// helpdesk.ModuleSingleton,
 		iam.ModuleSingleton,
 		inventory.ModuleSingleton,
+		jobscheduler.ModuleSingleton,
 		paymentinvoice.ModuleSingleton,
 		purchase.ModuleSingleton,
 		sales.ModuleSingleton,

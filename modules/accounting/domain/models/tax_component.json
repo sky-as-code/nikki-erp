@@ -1,0 +1,77 @@
+{
+	"name": "accounting_tax_component",
+	"label": "accounting_tax_component.label",
+	"table_name": "accounting_tax_components",
+	"should_build_db": true,
+	"record_label_field": "sequence",
+	"default_search_fields": ["sequence"],
+	"composite_uniques": [
+		{
+			"index_name": "acc_tx_comp_tid_par_child",
+			"fields": ["parent_tax_definition_version_id", "component_tax_id", "org_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "parent_tax_definition_version_id",
+			"label": "fields.parent_tax_definition_version_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The composition hangs off a definition VERSION rather than the tax itself (BR-TAX-ESS-SUP-005). That is what makes publishing freeze the composition: changing which taxes make up a group becomes a new version instead of an edit that would reinterpret every past calculation."
+			}
+		},
+		{
+			"name": "component_tax_id",
+			"label": "fields.component_tax_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The child tax. The graph must be acyclic, directly and transitively: a group containing itself through any chain would not terminate."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 99999 },
+			"required_for_create": true,
+			"default_value": "0"
+		},
+		{
+			"name": "affect_subsequent_base_override",
+			"label": "fields.affect_subsequent_base_override",
+			"data_type": "boolean",
+			"description": {
+				"en-US": "Overrides the component tax's own affect_subsequent_base within this composition only. Null means inherit, which is why it is nullable rather than defaulted."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "parent_version",
+			"label": { "en-US": "Parent tax definition version" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_definition_version",
+			"key_map": { "parent_tax_definition_version_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "component_tax",
+			"label": { "en-US": "Component tax" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax",
+			"key_map": { "component_tax_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

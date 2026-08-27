@@ -1,0 +1,267 @@
+{
+	"name": "sales_order",
+	"label": "sales_order.label",
+	"table_name": "sales_orders",
+	"should_build_db": true,
+	"record_label_field": "order_number",
+	"default_search_fields": ["order_number", "customer_reference", "external_reference"],
+	"search_indexes": [
+		{ "index_name": "sales_orders_tid_channel_status", "fields": ["sales_channel_id", "status"] },
+		{ "index_name": "sales_orders_tid_point_status", "fields": ["sales_point_id", "status"] },
+		{ "index_name": "sales_orders_tid_customer", "fields": ["customer_reference"] }
+	],
+	"partial_uniques_strict": [
+		{
+			"index_name": "sales_orders_tid_channel_idem",
+			"not_null_fields": ["sales_channel_id"],
+			"nullable_field": "idempotency_key"
+		},
+		{
+			"index_name": "sales_orders_tid_channel_extref",
+			"not_null_fields": ["sales_channel_id"],
+			"nullable_field": "external_reference"
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "order_number",
+			"label": "fields.order_number",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"unique": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The human-facing identifier of the sale, quoted on receipts and in support conversations. Unique across the whole tenant rather than per channel: a customer reading a number off a receipt has no idea which channel sold it, so a number that only identified an order once the channel was known would be useless for the one job it exists to do. Immutable, because it has already been printed."
+			}
+		},
+		{
+			"name": "sales_channel_id",
+			"label": "fields.sales_channel_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Where this sale happened, denormalised from the sales point (D-20). Derivable, and kept anyway: CR 21 lets a caller name a channel in the payload, so storing the resolved value makes the validated answer auditable. It is written once at create time from the sales point's own sales_channel_id and NEVER from the request payload, which makes CR 20's consistency invariant true by construction rather than by a check that could be skipped."
+			}
+		},
+		{
+			"name": "sales_point_id",
+			"label": "fields.sales_point_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The concrete selling place: a kiosk, a till, a storefront. NOT NULL by D-19, including for back-office sales, which use the seeded 'Core Mart Back-office' point under channel 'bo'. A nullable column would leak 'unknown selling point' into every downstream query and every report that groups by it."
+			}
+		},
+		{
+			"name": "customer_reference",
+			"label": "fields.customer_reference",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The contacts party this sale is for, when there is one. Nullable because anonymous sale is the DEFAULT, not the exception (BR 87.6) — a vending kiosk never knows who is buying. A plain ulid with no edge: the party belongs to Contacts, and a foreign key across that boundary would couple the two modules' migrations (D-37)."
+			}
+		},
+		{
+			"name": "crm_opportunity_reference",
+			"label": "fields.crm_opportunity_reference",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The opportunity in an external CRM this sale closed, if any (BR 90). A free string rather than an id, and deliberately so: there is no CRM in this system, so there is nothing to validate against and nothing to join to. It exists so that a sale originating from a CRM can be traced back to it without waiting for a CRM integration to be built."
+			}
+		},
+		{
+			"name": "currency_code",
+			"label": "fields.currency_code",
+			"data_type": { "type": "string", "min": 3, "max": 3 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The ISO 4217 code the amounts on this order are denominated in. Stored as the code rather than as a currency id because it is a snapshot: the order's totals mean nothing without it, and resolving it through a join years later would report today's answer for a historical document. Immutable, since changing it would reinterpret every amount on the order without changing a single number."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "confirmed", "processing", "completed", "cancelled"]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"no_update": true,
+			"description": {
+				"en-US": "The document's own lifecycle: whether the sale has been committed to, finished, or called off. One of FOUR independent status fields (BR 9), and they are never collapsed into one: a confirmed order can be fully paid and not yet delivered, or delivered and unpaid, and a single status would have to invent an ordering between those that the business does not have. Written only by the lifecycle operations, never by a plain update."
+			}
+		},
+		{
+			"name": "payment_status",
+			"label": "fields.payment_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["unpaid", "partially_paid", "paid", "overpaid", "refunded", "partially_refunded"]
+			},
+			"required_for_create": true,
+			"default_value": "unpaid",
+			"no_update": true,
+			"description": {
+				"en-US": "How much of the money has arrived. Derived from the sum of the order's payments rather than set directly, so it can always be recomputed from the payment rows and can never disagree with them. overpaid is a real state rather than an error: a cash till takes what the customer hands over, and whether change may be given back is a policy setting, not a schema question."
+			}
+		},
+		{
+			"name": "fulfillment_status",
+			"label": "fields.fulfillment_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["pending", "not_required", "partially_fulfilled", "fulfilled", "returned", "partially_returned"]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"no_update": true,
+			"description": {
+				"en-US": "How much of the goods have moved. Derived from the lines' fulfilled_quantity and returned_quantity totals, for the same reason payment_status is derived from its payments: a status that could be set independently of the quantities it summarises would eventually contradict them."
+			}
+		},
+		{
+			"name": "invoice_status",
+			"label": "fields.invoice_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["not_requested", "requested", "issued", "failed", "cancelled"]
+			},
+			"required_for_create": true,
+			"default_value": "not_requested",
+			"no_update": true,
+			"description": {
+				"en-US": "Where the VAT invoice has got to. Separate from the other three because issuing a fiscal document is an external act with its own failure mode: a tax authority can reject an invoice for a sale that is paid, delivered and complete, and that failure must be visible without making the sale itself look broken."
+			}
+		},
+		{
+			"name": "subtotal",
+			"label": "fields.subtotal",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The sum of the lines' gross amounts, before any discount. Four decimal places internally per D-01, rounded to the currency's own scale only at the final step and when emitting a fiscal payload — so that a chain of proportional allocations does not accumulate rounding error at every step."
+			}
+		},
+		{
+			"name": "discount_total",
+			"label": "fields.discount_total",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Everything taken off, as a POSITIVE number. Stored positive rather than as a negative addend so that a report showing 'total discount given' needs no sign flip and cannot get it wrong; the subtraction happens in grand_total's calculation, where it is visible."
+			}
+		},
+		{
+			"name": "tax_total",
+			"label": "fields.tax_total",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The tax on this sale, as the accounting module computed and rounded it. Taken from Accounting's document total rather than summed from the lines: under a document-scoped rounding policy the two differ, and the document figure is the one actually charged. Zero only when the organization has configured no default sales tax code - a tax Accounting could not DETERMINE never reaches storage, because the order is refused instead (BR-TAX-ESS forbids recording an undetermined tax as zero)."
+			}
+		},
+		{
+			"name": "grand_total",
+			"label": "fields.grand_total",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "What the customer owes: subtotal minus discount_total plus tax_total, after the final rounding step. This is the number every payment is measured against, so it is stored rather than computed on read — a total that changed because a pricelist changed would silently alter what a historical order says was owed."
+			}
+		},
+		{
+			"name": "exchange_of_return_id",
+			"label": "fields.exchange_of_return_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The return this order was raised to replace, when it is the outgoing half of an exchange (BR 87.5). AN EXCHANGE IS A RETURN PLUS A NEW SALE, joined by this column, and NEVER a historical order edited to name a different product: the original sale really did sell what it sold, and rewriting it would restate a transaction the customer already paid for, invalidate any fiscal document issued against it, and leave the returned goods unaccounted for. Null on every ordinary order, which is nearly all of them. No foreign key and no edge, matching the other cross-document references here: a return removed by a retention sweep must not take the replacement sale with it, and the two documents are independently valid. Immutable, because an order raised as somebody's replacement cannot later be said to have been raised for a different one."
+			}
+		},
+		{
+			"name": "external_reference",
+			"label": "fields.external_reference",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"no_update": true,
+			"description": {
+				"en-US": "The creating system's own identifier for this sale — a kiosk's transaction code, a marketplace's order id. Unique within a channel when present, so that the same reference from two different channels does not collide. Immutable: it is how the originating system finds this order again."
+			}
+		},
+		{
+			"name": "idempotency_key",
+			"label": "fields.idempotency_key",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"no_update": true,
+			"description": {
+				"en-US": "The caller's own key for de-duplicating a retried create (BR 7.2, D-29). The (sales_channel_id, idempotency_key) partial unique index IS the mechanism, not a comment about one: a caller that times out and retries loses the race at the database rather than creating a second order. Strict rather than loose, because the many orders carrying no key at all must stay unconstrained."
+			}
+		},
+		{
+			"name": "confirmed_at",
+			"label": "fields.confirmed_at",
+			"data_type": "datetime",
+			"no_update": true,
+			"description": {
+				"en-US": "When the sale was committed to. This is the moment the snapshot fields on the lines become immutable (BR 11), so it is the timestamp that matters most on the order: before it the document is a draft that may be repriced, after it the numbers are what the business promised."
+			}
+		},
+		{
+			"name": "completed_at",
+			"label": "fields.completed_at",
+			"data_type": "datetime",
+			"no_update": true,
+			"description": {
+				"en-US": "When the sale finished — paid and fulfilled. Set from the status transition rather than by a caller, so it cannot disagree with the status it records."
+			}
+		},
+		{
+			"name": "tax_snapshot",
+			"label": "fields.tax_snapshot",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "Accounting's immutable record of how this order's tax was determined: the rates and configuration versions in force, the rounding policy applied, and the per-component figures. Stored here because Accounting keeps no copy and holds no foreign key into Sales (BR-TAX-ESS-030), so this is the only surviving record. It is what a VAT invoice is issued from and what a partial return hands back to reverse the right component - and it is read INSTEAD of the current tax master, which is the whole mechanism by which a later rate change cannot reinterpret a historical sale. Null on an order priced before tax was integrated, or on one from a deployment with no accounting module."
+			}
+		},
+		{
+			"name": "cancelled_at",
+			"label": "fields.cancelled_at",
+			"data_type": "datetime",
+			"no_update": true,
+			"description": {
+				"en-US": "When the sale was called off. Mutually exclusive with completed_at in practice, though not enforced by the schema: the status state machine is what prevents an order being both, and duplicating that rule as a constraint would give two places to keep in agreement."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_channel",
+			"label": { "en-US": "Sales channel" },
+			"type": "many:one",
+			"dest_schema": "sales_channel",
+			"key_map": { "sales_channel_id": "id" }
+		},
+		{
+			"edge": "sales_point",
+			"label": { "en-US": "Sales point" },
+			"type": "many:one",
+			"dest_schema": "sales_point",
+			"key_map": { "sales_point_id": "id" }
+		}
+	]
+}

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	stdErr "errors"
 	"time"
 
@@ -69,19 +68,17 @@ func NewJobsManager(
 
 // RegisterJobs puts the three sweeps on the scheduler.
 func (this *JobsManager) RegisterJobs(registry job.CronjobRegistry) error {
+	// Through ScopeSweep rather than the local wrap(): in a multi-tenant build each sweep must run
+	// once per tenant, and a sweep handed a tenantless context panics on its first read. See the
+	// package comment on core/job/sweep_scope.go.
 	return stdErr.Join(
-		registry.Register(cronWatchdog, jobNameWatchdog, wrap(this.Watchdog)),
-		registry.Register(cronCleaner, jobNameCleaner, wrap(this.Cleaner)),
-		registry.Register(cronSyncRetry, jobNameSyncRetry, wrap(this.SyncRetry)),
+		registry.Register(cronWatchdog, jobNameWatchdog,
+			job.ScopeSweep(this.Watchdog, jobNameWatchdog)),
+		registry.Register(cronCleaner, jobNameCleaner,
+			job.ScopeSweep(this.Cleaner, jobNameCleaner)),
+		registry.Register(cronSyncRetry, jobNameSyncRetry,
+			job.ScopeSweep(this.SyncRetry, jobNameSyncRetry)),
 	)
-}
-
-// wrap adapts a sweep to the scheduler's handler signature, which carries job arguments none of
-// these take.
-func wrap(sweep func(corectx.Context) error) job.JobHandleFn {
-	return func(ctx context.Context, _ *string) error {
-		return sweep(corectx.NewRequestContext(ctx))
-	}
 }
 
 // Watchdog asks the gateway about orders no callback ever arrived for.

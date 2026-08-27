@@ -1,0 +1,68 @@
+{
+	"name": "sales_org_settings",
+	"label": "sales.settings.orgSettings",
+
+	"fields": [
+		{
+			"name": "max_payment_methods_per_bill",
+			"label": "sales.settings.maxPaymentMethodsPerBill",
+			"description": "settings_desc.max_payment_methods_per_bill",
+			"data_type": { "type": "int32", "min": 1, "max": 10 },
+			"default_value": 3,
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "return_window_days",
+			"label": "sales.settings.returnWindowDays",
+			"description": "settings_desc.return_window_days",
+			"data_type": { "type": "int32", "min": 1, "max": 3650 },
+			"default_value": 30,
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "allow_overpayment",
+			"label": "sales.settings.allowOverpayment",
+			"description": "settings_desc.allow_overpayment",
+			"data_type": "boolean",
+			"default_value": false,
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "allow_cash_change",
+			"label": "sales.settings.allowCashChange",
+			"description": "settings_desc.allow_cash_change",
+			"data_type": "boolean",
+			"default_value": true,
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "draft_order_expiry_hours",
+			"label": "sales.settings.draftOrderExpiryHours",
+			"description": "settings_desc.draft_order_expiry_hours",
+			"data_type": { "type": "int32", "min": 1, "max": 8760 },
+			"default_value": 24,
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "rounding_scale",
+			"label": "sales.settings.roundingScale",
+			"description": "settings_desc.rounding_scale",
+			"data_type": { "type": "int32", "min": 1, "max": 4 },
+			"metadata": { "allow_override": false }
+		},
+		{
+			"name": "default_tax_rate",
+			"label": "sales.settings.defaultTaxRate",
+			"description": "settings_desc.default_tax_rate_deprecated",
+			"data_type": { "type": "decimal", "min": "0", "max": "1", "scale": 4 },
+			"metadata": { "allow_override": false }
+		},
+		{
+			"name": "default_sales_tax_code",
+			"label": "sales.settings.defaultSalesTaxCode",
+			"description": "settings_desc.default_sales_tax_code",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"metadata": { "allow_override": false }
+		}
+	]
+}

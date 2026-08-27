@@ -32,6 +32,63 @@ const MetaReplyTopic = "reply_topic"
 const MetaNoReply = "no_reply"
 const DefaultQueryTimeoutSecs = "50"
 
+// Metadata keys a scheduled job attaches to the command it triggers, so a handler can make its
+// side effect idempotent by the same means whether it was invoked over HTTP or over the bus.
+//
+// They are declared here rather than in the scheduler because they name a convention on the
+// envelope: a handler reading them must not have to import the module that happens to set them.
+const MetaIdempotencyKey = "idempotency_key"
+const MetaSchedulerJobId = "scheduler_job_id"
+const MetaSchedulerExecutionId = "scheduler_execution_id"
+const MetaSchedulerAttempt = "scheduler_attempt"
+
+// reservedMetaKeys are the envelope keys the bus owns. Caller-supplied metadata may not use
+// them, so that a caller cannot forge a correlation id or redirect a reply.
+var reservedMetaKeys = map[string]bool{
+	MetaCorrelationId:     true,
+	MetaDomainConstraints: true,
+	MetaRequestTopic:      true,
+	MetaReplyTopic:        true,
+	MetaNoReply:           true,
+}
+
+type cqrsMetadataKey struct{}
+
+// WithMetadata returns a context carrying md, to be copied onto the envelope of any request
+// sent with that context.
+//
+// It exists so a caller can pass information alongside a request that is not part of the
+// request's own type - an idempotency key identifying the work that triggered it, for
+// instance - without every such field having to become a member of the command struct.
+//
+// Reserved keys in md are ignored rather than rejected, because the caller has no way to
+// know which names the bus reserves and silently dropping one is safer than either honoring
+// it or failing the send.
+func WithMetadata(ctx context.Context, md map[string]string) context.Context {
+	if len(md) == 0 {
+		return ctx
+	}
+	merged := map[string]string{}
+	if existing, ok := ctx.Value(cqrsMetadataKey{}).(map[string]string); ok {
+		for key, val := range existing {
+			merged[key] = val
+		}
+	}
+	for key, val := range md {
+		if !reservedMetaKeys[key] {
+			merged[key] = val
+		}
+	}
+	return context.WithValue(ctx, cqrsMetadataKey{}, merged)
+}
+
+// MetadataFrom returns the caller-supplied metadata carried by ctx, or nil. Handlers use it
+// to read what the sender attached with WithMetadata.
+func MetadataFrom(ctx context.Context) map[string]string {
+	md, _ := ctx.Value(cqrsMetadataKey{}).(map[string]string)
+	return md
+}
+
 type CqrsBusParams struct {
 	dig.In
 
@@ -158,7 +215,28 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 	return nil
 }
 
+// IsRequestTypeRegistered implements CqrsBus by consulting the same subscriptions map that
+// subscribeReq writes to and cancelSubscription deletes from, so it cannot drift from the
+// set of handlers actually listening.
+func (this *WatermillCqrsBus) IsRequestTypeRegistered(requestType string) bool {
+	_, exists := this.subscriptions.Load(requestType)
+	return exists
+}
+
 func (this *WatermillCqrsBus) createIncomingContext(ctx context.Context, msg *message.Message) context.Context {
+	// Re-attach the sender's metadata before building the request context, so a handler can
+	// read it with MetadataFrom exactly as the sender wrote it with WithMetadata. Reserved
+	// keys are left out: they describe this envelope's delivery, not the caller's intent.
+	callerMeta := map[string]string{}
+	for key, vals := range msg.Metadata {
+		if !reservedMetaKeys[key] {
+			callerMeta[key] = vals
+		}
+	}
+	if len(callerMeta) > 0 {
+		ctx = context.WithValue(ctx, cqrsMetadataKey{}, callerMeta)
+	}
+
 	reqCtx := corectx.NewRequestContext(ctx)
 	domConstrStr := msg.Metadata.Get(MetaDomainConstraints)
 	if domConstrStr != "" {
@@ -330,6 +408,13 @@ func newOutgoingRequestPacket(cancellableCtx context.Context, request Request, m
 	requestType := request.CqrsRequestType().String()
 	packet.requestTopic = genRequestTopic(requestType)
 	packet.replyTopic = genReplyTopic(packet.requestTopic, packet.correlationId)
+
+	// Caller metadata is written first and reserved keys last, so a caller-supplied value can
+	// never overwrite one the bus owns. WithMetadata already filters reserved names; this
+	// ordering means the guarantee holds even if it stops doing so.
+	for key, val := range MetadataFrom(cancellableCtx) {
+		msg.Metadata.Set(key, val)
+	}
 
 	// reqCtx, isReqCtx := cancellableCtx.(corectx.Context)
 	domConstAny := cancellableCtx.Value(corectx.CtxKeyDomainConstraints)

@@ -1,0 +1,149 @@
+{
+	"name": "accounting_tax_rounding_policy",
+	"label": "accounting_tax_rounding_policy.label",
+	"table_name": "accounting_tax_rounding_policies",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"record_sub_label_field": "code",
+	"default_search_fields": ["code", "name", "currency_code", "rounding_scope"],
+	"composite_uniques": [
+		{ "index_name": "acc_tx_pol_tid_code_ver", "fields": ["code", "version_no", "org_id"] }
+	],
+	"search_indexes": [
+		{
+			"index_name": "acc_tx_pol_tid_lookup",
+			"fields": ["currency_code", "effective_from", "effective_to"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "jurisdiction_id",
+			"label": "fields.jurisdiction_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The jurisdiction whose law this rounding rule comes from. Null means the policy applies wherever no jurisdiction-specific policy exists."
+			}
+		},
+		{
+			"name": "currency_code",
+			"label": "fields.currency_code",
+			"data_type": { "type": "string", "min": 3, "max": 3 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "ISO 4217. Rounding is currency-specific because the smallest transactable unit is: VND rounds to 1, USD to 0.01."
+			}
+		},
+		{
+			"name": "rounding_scope",
+			"label": "fields.rounding_scope",
+			"data_type": { "type": "enum_string", "values": ["line", "document"] },
+			"required_for_create": true,
+			"description": {
+				"en-US": "BR-TAX-ESS-SUP-017 canonical spelling. Under 'document' the engine must receive every line in one call: rounding each line and summing is a different number, and not the legally correct one."
+			}
+		},
+		{
+			"name": "rounding_method",
+			"label": "fields.rounding_method",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["half_up", "half_even", "up", "down"]
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "rounding_increment",
+			"label": "fields.rounding_increment",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000", "scale": 6 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The authoritative rounding quantum (0.01, 0.05, 1). BR-TAX-ESS-SUP-017 promoted this over 'precision', because a currency that rounds to the nearest 5 cannot be expressed as a number of decimal places."
+			}
+		},
+		{
+			"name": "precision",
+			"label": "fields.precision",
+			"data_type": { "type": "int32", "min": 0, "max": 12 },
+			"description": {
+				"en-US": "Display metadata only. Demoted from authoritative by BR-TAX-ESS-SUP-017; rounding_increment decides the arithmetic."
+			}
+		},
+		{
+			"name": "version_no",
+			"label": "fields.version_no",
+			"data_type": { "type": "int32", "min": 1, "max": 99999 },
+			"required_for_create": true
+		},
+		{
+			"name": "effective_from",
+			"label": "fields.effective_from",
+			"data_type": "date",
+			"required_for_create": true
+		},
+		{
+			"name": "effective_to",
+			"label": "fields.effective_to",
+			"data_type": "date",
+			"description": {
+				"en-US": "Null means open-ended. A closed period ends on this date inclusive."
+			}
+		},
+		{
+			"name": "supersedes_policy_id",
+			"label": "fields.supersedes_policy_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "lifecycle_status",
+			"label": "fields.lifecycle_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "published", "withdrawn"]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"description": {
+				"en-US": "Business state of the configuration, deliberately separate from is_archived: a draft policy is invisible to the engine but editable, whereas archiving is the system-level hide. BR-TAX-ESS-SUP-002 forbids using one in place of the other."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "jurisdiction",
+			"label": { "en-US": "Jurisdiction" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_jurisdiction",
+			"key_map": { "jurisdiction_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "supersedes",
+			"label": { "en-US": "Supersedes policy" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_rounding_policy",
+			"key_map": { "supersedes_policy_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

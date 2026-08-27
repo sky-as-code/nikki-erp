@@ -1,0 +1,92 @@
+{
+	"name": "sales_order_event",
+	"label": "sales_order_event.label",
+	"table_name": "sales_order_events",
+	"should_build_db": true,
+	"record_label_field": "action",
+	"default_search_fields": ["entity_type", "action", "from_status", "to_status", "reason"],
+	"search_indexes": [
+		{ "index_name": "sales_order_evts_tid_order", "fields": ["sales_order_id"] },
+		{ "index_name": "sales_order_evts_tid_entity", "fields": ["entity_type", "entity_id"] },
+		{ "index_name": "sales_order_evts_tid_actor", "fields": ["actor_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_order_id",
+			"label": "fields.sales_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The order this event belongs to. Present even when the event is about a child record such as a bill or a return, so that the whole history of a sale is one query rather than a union across every table that references it. No foreign key, for the same reason entity_id has none."
+			}
+		},
+		{
+			"name": "entity_type",
+			"label": "fields.entity_type",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The schema name of the record this event is actually about: sales_order, sales_bill, sales_return, sales_payment. A plain string rather than an enum, because a new auditable resource must not require a schema migration to be recordable."
+			}
+		},
+		{
+			"name": "entity_id",
+			"label": "fields.entity_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The record the event is about. No foreign key: an audit event must outlive the record it describes, and a cascade would delete exactly the history somebody is auditing."
+			}
+		},
+		{
+			"name": "action",
+			"label": "fields.action",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "What happened: confirm, cancel, split_bill, merge_bill, record_payment, refund, process_return, request_invoice, manual_discount (BR 86 enumerates these). A string rather than an enum so the list can grow with the module."
+			}
+		},
+		{
+			"name": "actor_id",
+			"label": "fields.actor_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Who did it. Optional because a transition may be made by a kiosk, a gateway callback or a scheduled expiry job rather than a person, and recording a fake user id would be worse than recording none."
+			}
+		},
+		{
+			"name": "from_status",
+			"label": "fields.from_status",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"description": {
+				"en-US": "The status before the change, empty when the action changed no status. Which of the four status dimensions it refers to is implied by the action, since an action moves exactly one of them."
+			}
+		},
+		{
+			"name": "to_status",
+			"label": "fields.to_status",
+			"data_type": { "type": "string", "min": 0, "max": 50 }
+		},
+		{
+			"name": "reason",
+			"label": "fields.reason",
+			"data_type": { "type": "string", "min": 0, "max": 3000 },
+			"description": {
+				"en-US": "Why, when a human gave a reason. Required by the operations that demand one - cancelling a confirmed order, overriding a price - and enforced there rather than by the schema, since most actions need none."
+			}
+		},
+		{
+			"name": "metadata",
+			"label": "fields.metadata",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "Whatever else the action needs recorded - the bills a split produced, the amount refunded, the payment method used. Free-form on purpose: pinning a column per action would make every new action a migration."
+			}
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_readonly_model"]
+}

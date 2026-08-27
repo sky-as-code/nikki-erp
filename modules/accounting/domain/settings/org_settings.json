@@ -1,0 +1,27 @@
+{
+	"name": "accounting_org_settings",
+	"label": "accounting.settings.orgSettings",
+	"fields": [
+		{
+			"name": "default_rounding_policy_code",
+			"label": "accounting.settings.defaultRoundingPolicyCode",
+			"description": "settings_desc.default_rounding_policy_code",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "default_price_mode",
+			"label": "accounting.settings.defaultPriceMode",
+			"description": "settings_desc.default_price_mode",
+			"data_type": { "type": "enum_string", "values": ["included", "excluded"] },
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "require_override_reason",
+			"label": "accounting.settings.requireOverrideReason",
+			"description": "settings_desc.require_override_reason",
+			"data_type": "boolean",
+			"metadata": { "allow_override": true }
+		}
+	]
+}

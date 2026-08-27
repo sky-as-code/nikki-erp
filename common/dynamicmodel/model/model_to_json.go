@@ -147,6 +147,22 @@ func dataTypeToModelJson(dataType FieldDataType) (any, error) {
 		}
 		object["min"], object["max"] = bounds[0], bounds[1]
 
+	case "decimal":
+		// min and max are emitted as STRINGS and the scale as an integer, because that is exactly
+		// what the parser requires (model_builder_json_datatype.go:62, model_schema.json:390).
+		// Emitting the bounds as JSON numbers would round-trip through float64 and lose the
+		// precision the string form exists to preserve.
+		bounds, err := stringPair(options[FieldDataTypeOptRange], jsonName, "range")
+		if err != nil {
+			return nil, err
+		}
+		scale := getScale(options)
+		if scale < 0 {
+			return nil, errors.Errorf("data type '%s' declares no usable scale", jsonName)
+		}
+		object["min"], object["max"] = bounds[0], bounds[1]
+		object["scale"] = scale
+
 	default:
 		// Every other type here takes no arguments. The bare-string form is what a hand-written
 		// model JSON would use, so it is emitted unless the array flag needs the object form.
@@ -184,13 +200,25 @@ func intPair(raw any, typeName string, what string) ([2]int64, error) {
 	return pair, errors.Errorf("data type '%s' declares no usable %s", typeName, what)
 }
 
+// stringPair reads a two-element bound stored as strings, which is how a decimal's range is kept:
+// the constructor takes min and max as strings so that a value too large or too precise for a
+// float64 survives being declared.
+func stringPair(raw any, typeName string, what string) ([2]string, error) {
+	var pair [2]string
+	if values, ok := raw.([]string); ok && len(values) == 2 {
+		return [2]string{values[0], values[1]}, nil
+	}
+	return pair, errors.Errorf("data type '%s' declares no usable %s", typeName, what)
+}
+
 // jsonDataTypeNames maps the canonical Go type id onto the id the model JSON schema declares.
 //
-// decimal is deliberately absent: the parser requires min, max AND scale as strings, and rendering
-// it correctly needs care no settings declaration has yet called for. A decimal setting fails loudly
-// here rather than storing a document that cannot be read back.
+// Every type the parser accepts must appear here, or a schema declaring it registers but cannot be
+// read back. decimal was absent until Sales declared a decimal setting; it is emitted with its
+// bounds as strings and its scale as an integer, matching what the parser reads.
 var jsonDataTypeNames = map[string]string{
 	FieldDataTypeNameBoolean:       "boolean",
+	FieldDataTypeNameDecimal:       "decimal",
 	FieldDataTypeNameString:        "string",
 	FieldDataTypeNameInt32:         "int32",
 	FieldDataTypeNameInt64:         "int64",

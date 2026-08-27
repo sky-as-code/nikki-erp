@@ -205,6 +205,41 @@ func TestStatusValuesMatchConstants(t *testing.T) {
 				string(SalesPointStatusSuspended),
 			},
 		},
+		{
+			SalesVoucherCodeSchemaName, SalesVoucherCodeSchemaBuilder(),
+			SalesVoucherCodeFieldStatus,
+			[]string{
+				string(VoucherCodeStatusActive),
+				string(VoucherCodeStatusDisabled),
+				string(VoucherCodeStatusExhausted),
+			},
+		},
+		{
+			SalesBillSchemaName, SalesBillSchemaBuilder(), SalesBillFieldStatus,
+			[]string{
+				string(SalesBillStatusOpen),
+				string(SalesBillStatusSettled),
+				string(SalesBillStatusCancelled),
+			},
+		},
+		{
+			SalesBillRelationSchemaName, SalesBillRelationSchemaBuilder(),
+			SalesBillRelationFieldType,
+			[]string{
+				string(SalesBillRelationSplitInto),
+				string(SalesBillRelationMergedInto),
+			},
+		},
+		{
+			SalesVoucherRedemptionSchemaName, SalesVoucherRedemptionSchemaBuilder(),
+			SalesVoucherRedemptionFieldStatus,
+			[]string{
+				string(VoucherRedemptionStatusReserved),
+				string(VoucherRedemptionStatusRedeemed),
+				string(VoucherRedemptionStatusReleased),
+				string(VoucherRedemptionStatusReversed),
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -259,6 +294,90 @@ func TestSchemaNamesMatchTablePrefix(t *testing.T) {
 		if !strings.HasPrefix(name, "sales_") {
 			t.Errorf("schema %q must start with \"sales_\"; otherwise add a case to "+
 				"schemaPrefixesOf in cmd/application.go", name)
+		}
+	}
+}
+
+// TestChannelPaymentRelIsUniquePerPair pins the constraint that makes enabling idempotent.
+//
+// Without it a lost response followed by a retry writes a second mapping row, and disabling then
+// removes only one of them — leaving a channel that still accepts a method an administrator
+// believes they turned off. The application service checks first, but the check and the insert are
+// not atomic; this constraint is what actually decides the race.
+func TestChannelPaymentRelIsUniquePerPair(t *testing.T) {
+	requireBaseSchemasRegistered(t)
+
+	schema := buildSchema(t, SalesChannelPaymentRelSchemaBuilder())
+
+	found := false
+	for _, unique := range schema.CompositeUniques() {
+		if len(unique.Fields) != 2 {
+			continue
+		}
+		if slices.Contains(unique.Fields, SalesChannelPaymentRelFieldSalesChannelId) &&
+			slices.Contains(unique.Fields, SalesChannelPaymentRelFieldPaymentMethodId) {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("sales_channel_payment_rel must be unique on " +
+			"(sales_channel_id, payment_method_id): without it a retried enable writes a second row")
+	}
+}
+
+// TestChannelPaymentRelHasNoEnabledFlag pins CR 27: the row IS the state.
+//
+// A boolean would create a second way to say "not enabled" — a row set to false versus no row —
+// and every reader would then have to handle both with nothing making them agree. It would also
+// break the default-deny rule, since a reader finding no row would have to decide what the absence
+// meant.
+func TestChannelPaymentRelHasNoEnabledFlag(t *testing.T) {
+	requireBaseSchemasRegistered(t)
+
+	schema := buildSchema(t, SalesChannelPaymentRelSchemaBuilder())
+	for name := range schema.Fields() {
+		if strings.Contains(name, "enabled") || strings.Contains(name, "is_active") {
+			t.Errorf("sales_channel_payment_rel must carry no %q flag (CR 27): "+
+				"the presence of the row is the state", name)
+		}
+	}
+}
+
+// TestChannelPaymentRelKeysAreImmutable guards against a mapping being repointed by an update.
+//
+// Moving a mapping between channels or between methods is the same thing as disabling one and
+// enabling the other, and doing it as an update would skip the validation the enable path runs
+// against paymentinvoice.
+func TestChannelPaymentRelKeysAreImmutable(t *testing.T) {
+	requireBaseSchemasRegistered(t)
+
+	schema := buildSchema(t, SalesChannelPaymentRelSchemaBuilder())
+	for _, name := range []string{
+		SalesChannelPaymentRelFieldSalesChannelId,
+		SalesChannelPaymentRelFieldPaymentMethodId,
+	} {
+		if !fieldOf(t, schema, name).IsNoUpdate() {
+			t.Errorf("%s must be no_update: repointing a mapping would skip the enable validation",
+				name)
+		}
+	}
+}
+
+// TestChannelPaymentRelHasNoEdgeToPaymentMethod pins CR 25.
+//
+// payment_method_id names a row in another module. A foreign key across that boundary would make
+// Sales unable to write a mapping while paymentinvoice was mid-migration, and would make retiring a
+// payment method fail on Sales data. The cost is that a mapping can outlive its method, which is
+// handled explicitly as the stale case rather than prevented.
+func TestChannelPaymentRelHasNoEdgeToPaymentMethod(t *testing.T) {
+	requireBaseSchemasRegistered(t)
+
+	schema := buildSchema(t, SalesChannelPaymentRelSchemaBuilder())
+	for _, edge := range schema.ToRelations() {
+		if strings.Contains(edge.DestSchemaName, "payment") {
+			t.Errorf("sales_channel_payment_rel must not declare edge %q onto %q (CR 25): "+
+				"a constraint across a module boundary couples the two schemas' migrations",
+				edge.Edge, edge.DestSchemaName)
 		}
 	}
 }

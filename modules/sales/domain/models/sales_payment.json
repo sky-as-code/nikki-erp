@@ -1,0 +1,124 @@
+{
+	"name": "sales_payment",
+	"label": "sales_payment.label",
+	"table_name": "sales_payments",
+	"should_build_db": true,
+	"default_search_fields": ["status", "external_transaction_id"],
+	"search_indexes": [
+		{ "index_name": "sales_payments_tid_bill", "fields": ["sales_bill_id"] },
+		{ "index_name": "sales_payments_tid_status", "fields": ["status"] },
+		{ "index_name": "sales_payments_tid_method", "fields": ["payment_method_id"] }
+	],
+	"partial_uniques_strict": [
+		{
+			"index_name": "sales_payments_tid_bill_extxn",
+			"not_null_fields": ["sales_bill_id"],
+			"nullable_field": "external_transaction_id"
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_bill_id",
+			"label": "fields.sales_bill_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The bill this money settles. Immutable: a payment is measured against a bill's total, and moving one between bills would change what both are owed."
+			}
+		},
+		{
+			"name": "payment_method_id",
+			"label": "fields.payment_method_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The paymentinvoice payment method used. A plain ulid with no edge: payment methods belong to another module, and a foreign key across that boundary would make the two modules undeployable apart."
+			}
+		},
+		{
+			"name": "payment_method_code_snapshot",
+			"label": "fields.payment_method_code_snapshot",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"description": {
+				"en-US": "The method's code AS IT WAS when the payment was taken. Snapshotted because a receipt printed last year must still say how the customer paid, even after the method has been renamed or withdrawn - the same reasoning as the product snapshots on an order line."
+			}
+		},
+		{
+			"name": "amount",
+			"label": "fields.amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "How much was taken. Positive: a refund is a separate record with its own resource (SALES-035), not a negative payment, because the two have different lifecycles and different approval rules."
+			}
+		},
+		{
+			"name": "currency_code",
+			"label": "fields.currency_code",
+			"data_type": { "type": "string", "min": 3, "max": 3 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The currency taken, copied from the bill. Sales has no FX, so a payment in a currency the bill does not use cannot be reconciled against it and is refused rather than converted."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["pending", "authorized", "captured", "failed", "cancelled"]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"description": {
+				"en-US": "Where this payment stands with the provider. Only 'captured' counts toward settling the bill: an authorization is a hold the provider may still release, and treating it as money in would settle a bill against funds that never arrived."
+			}
+		},
+		{
+			"name": "external_transaction_id",
+			"label": "fields.external_transaction_id",
+			"data_type": { "type": "string", "min": 0, "max": 200 },
+			"no_update": true,
+			"description": {
+				"en-US": "The provider's own identifier for this transaction. Unique per bill when present, and that index IS the dedupe mechanism (D-29): a gateway callback that arrives twice must not record the money twice, and a check-then-insert can be raced by the retry it is meant to catch. Null for a cash payment, which no provider issued an id for."
+			}
+		},
+		{
+			"name": "provider_reference",
+			"label": "fields.provider_reference",
+			"data_type": { "type": "string", "min": 0, "max": 200 },
+			"description": {
+				"en-US": "Whatever else the provider returned that identifies this payment on their side - an authorization code, a terminal reference. Kept for reconciliation and dispute handling; unlike external_transaction_id it is not required to be unique and carries no rule."
+			}
+		},
+		{
+			"name": "paid_at",
+			"label": "fields.paid_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the money was captured. Null while the payment is still pending or authorized; set once and never cleared, because a captured payment that later fails is a refund or a chargeback rather than an un-capture."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_bill",
+			"label": { "en-US": "Sales bill" },
+			"type": "many:one",
+			"dest_schema": "sales_bill",
+			"key_map": { "sales_bill_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

@@ -1,0 +1,126 @@
+{
+	"name": "jobscheduler_execution",
+	"label": "jobscheduler_execution.label",
+	"table_name": "jobscheduler_executions",
+	"should_build_db": true,
+	"record_label_field": "execution_key",
+	"default_search_fields": ["execution_key"],
+
+	"search_indexes": [
+		{ "index_name": "jobsched_execs_status_available", "fields": ["status", "available_at"] },
+		{ "index_name": "jobsched_execs_job_scheduled", "fields": ["job_id", "scheduled_for"] }
+	],
+
+	"fields": [
+		{
+			"name": "id",
+			"label": "fields.id",
+			"data_type": "ulid",
+			"primary_key": true,
+			"use_type_default": true,
+			"description": {
+				"en-US": "Declared here rather than inherited from core.basemodel.base_model, because that mixin carries the tenant key. Executions are created by a background worker with no tenant in scope, so a tenant column would make every materialization panic on a missing tenant id."
+			}
+		},
+		{
+			"name": "created_at",
+			"label": "fields.created_at",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"use_type_default": true,
+			"auto_generated": true,
+			"description": {
+				"en-US": "When this execution was materialized. Declared here because the auditable mixin also records who acted, and a scheduler worker acts as nobody."
+			}
+		},
+		{
+			"name": "job_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Source job. Nullable, and set to null when the job is deleted: history outlives the job it came from, so identity after deletion is read from job_snapshot instead."
+			}
+		},
+		{
+			"name": "execution_key",
+			"data_type": { "type": "string", "min": 1, "max": 512 },
+			"required_for_create": true,
+			"unique": true,
+			"description": {
+				"en-US": "Deterministic key '{module_name}:{job_key}:{scheduled_for}'. Two instances computing the same occurrence produce the same key, so the unique constraint makes duplicate materialization a no-op. Also sent as the idempotency key to the action."
+			}
+		},
+		{
+			"name": "scheduled_for",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The occurrence this execution represents, in UTC, truncated to the minute."
+			}
+		},
+		{
+			"name": "next_occurrence_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "The following occurrence, frozen at creation from this execution's own schedule snapshot. It is the ceiling on this execution's retries. Null means the schedule produces nothing further, and therefore that there is no ceiling."
+			}
+		},
+		{
+			"name": "status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["queued", "running", "waiting_retry", "succeeded", "failed", "cancelled"]
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "available_at",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"description": {
+				"en-US": "When this execution may be claimed. Equal to scheduled_for initially, then to the retry time while waiting to retry."
+			}
+		},
+		{
+			"name": "started_at",
+			"data_type": "datetime"
+		},
+		{
+			"name": "finished_at",
+			"data_type": "datetime"
+		},
+		{
+			"name": "attempt_count",
+			"data_type": { "type": "int32", "min": 0, "max": 1000 },
+			"default_value": 0,
+			"description": {
+				"en-US": "Attempts actually run. A retry cancelled before it started is not an attempt and does not increment this."
+			}
+		},
+		{
+			"name": "job_snapshot",
+			"data_type": "jsonmap",
+			"required_for_create": true,
+			"description": {
+				"en-US": "Immutable copy of the job configuration this execution runs under, with configured defaults already resolved. Editing or deleting the job does not change work already in flight."
+			}
+		},
+		{
+			"name": "failure_code",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Machine-readable terminal failure reason, such as RETRY_WINDOW_EXPIRED, MAX_ATTEMPTS_REACHED or NON_RETRYABLE."
+			}
+		}
+	],
+
+	"edges_to": [
+		{
+			"edge": "job",
+			"label": { "en-US": "Job" },
+			"type": "many:one",
+			"dest_schema": "jobscheduler_job",
+			"key_map": { "job_id": "id" },
+			"on_delete": "SET NULL"
+		}
+	]
+}

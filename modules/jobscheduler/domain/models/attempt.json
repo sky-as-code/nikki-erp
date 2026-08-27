@@ -1,0 +1,132 @@
+{
+	"name": "jobscheduler_attempt",
+	"label": "jobscheduler_attempt.label",
+	"table_name": "jobscheduler_attempts",
+	"should_build_db": true,
+	"record_label_field": "error_code",
+	"default_search_fields": ["error_code"],
+
+	"composite_uniques": [
+		{ "index_name": "jobsched_attempts_exec_number", "fields": ["execution_id", "attempt_number"] }
+	],
+
+	"search_indexes": [
+		{ "index_name": "jobsched_attempts_status_lease", "fields": ["status", "lease_expires_at"] }
+	],
+
+	"fields": [
+		{
+			"name": "id",
+			"label": "fields.id",
+			"data_type": "ulid",
+			"primary_key": true,
+			"use_type_default": true,
+			"description": {
+				"en-US": "Declared here rather than inherited from core.basemodel.base_model, because that mixin carries the tenant key. Attempts are written by a background worker with no tenant in scope, so a tenant column would make every claim panic on a missing tenant id."
+			}
+		},
+		{
+			"name": "created_at",
+			"label": "fields.created_at",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"use_type_default": true,
+			"auto_generated": true,
+			"description": {
+				"en-US": "When this attempt row was created. Declared here because the auditable mixin also records who acted, and a scheduler worker acts as nobody."
+			}
+		},
+		{
+			"name": "execution_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "attempt_number",
+			"data_type": { "type": "int32", "min": 1, "max": 1000 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "1 for the first run. Unique per execution, which is the last line of defence against the same attempt being started twice."
+			}
+		},
+		{
+			"name": "status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["running", "succeeded", "failed", "abandoned"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "'abandoned' means the lease expired without the attempt reporting an outcome, usually because the instance running it died."
+			}
+		},
+		{
+			"name": "instance_id",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"description": {
+				"en-US": "Application instance that claimed this attempt."
+			}
+		},
+		{
+			"name": "started_at",
+			"data_type": "datetime"
+		},
+		{
+			"name": "finished_at",
+			"data_type": "datetime"
+		},
+		{
+			"name": "duration_ms",
+			"data_type": { "type": "int64", "min": 0, "max": 2592000000 },
+			"description": {
+				"en-US": "How long the attempt ran. Bounded at 30 days, far above any attempt timeout, so the column cannot record a nonsensical duration."
+			}
+		},
+		{
+			"name": "next_retry_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the following attempt may run, if one was permitted."
+			}
+		},
+		{
+			"name": "lease_expires_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this attempt's claim lapses. Past this point another instance may mark it abandoned and apply the retry policy."
+			}
+		},
+		{
+			"name": "error_code",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Machine-readable failure reason, such as HTTP_503, TIMEOUT or COMMAND_ERROR."
+			}
+		},
+		{
+			"name": "error_message",
+			"data_type": { "type": "string", "min": 0, "max": 4000 },
+			"description": {
+				"en-US": "Sanitized error detail. Must not carry credentials or full URLs with query strings."
+			}
+		},
+		{
+			"name": "http_status_code",
+			"data_type": { "type": "int32", "min": 0, "max": 599 },
+			"description": {
+				"en-US": "Response status for a REST action."
+			}
+		}
+	],
+
+	"edges_to": [
+		{
+			"edge": "execution",
+			"label": { "en-US": "Execution" },
+			"type": "many:one",
+			"dest_schema": "jobscheduler_execution",
+			"key_map": { "execution_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

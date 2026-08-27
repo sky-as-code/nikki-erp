@@ -1,0 +1,254 @@
+{
+	"name": "sales_order_line",
+	"label": "sales_order_line.label",
+	"table_name": "sales_order_lines",
+	"should_build_db": true,
+	"record_label_field": "product_name_snapshot",
+	"default_search_fields": ["product_code_snapshot", "product_name_snapshot"],
+	"composite_uniques": [
+		{
+			"index_name": "sales_order_lines_tid_order_lineno",
+			"fields": ["sales_order_id", "line_number"]
+		}
+	],
+	"search_indexes": [
+		{ "index_name": "sales_order_lines_tid_variant", "fields": ["product_variant_id"] },
+		{ "index_name": "sales_order_lines_tid_uom", "fields": ["uom_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_order_id",
+			"label": "fields.sales_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order this line belongs to. Immutable: moving a line between orders would change two orders' totals at once, and the one it left would keep a total it can no longer justify."
+			}
+		},
+		{
+			"name": "line_number",
+			"label": "fields.line_number",
+			"data_type": { "type": "int32", "min": 1, "max": 100000 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Position within the order, unique per order. It is a stable identifier and not merely display order: a return names the line it returns, and a fiscal document lists lines by number, so renumbering an existing line would repoint documents already issued. Starts at 1 rather than 0 because it appears on customer-facing paperwork."
+			}
+		},
+		{
+			"name": "line_type",
+			"label": "fields.line_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["product", "combo", "promotion_reward"]
+			},
+			"required_for_create": true,
+			"default_value": "product",
+			"description": {
+				"en-US": "What kind of thing this line is. A product line sells one variant. A combo line is the virtual parent of a bundle whose real variants live in sales_order_line_components, because Inventory fulfils real variants and never a virtual combo (BR 17). A promotion_reward line is a free item given by a promotion, which is a real line rather than an adjustment because Inventory must physically fulfil it and its VAT treatment is a line-level question (D-11). The fields each type requires are enforced by the domain service, not by required_for_create, because the schema cannot express a requirement conditional on another field."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "What is being sold. The variant, not the template: the variant is the transactable unit. Nullable because a combo parent line sells no single variant — its components do. Required for product and promotion_reward lines, enforced by the domain service. A plain ulid, since the product belongs to Inventory."
+			}
+		},
+		{
+			"name": "product_code_snapshot",
+			"label": "fields.product_code_snapshot",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The product's code AS IT WAS when the sale happened. A snapshot rather than a join, and that is the whole point of the field: a product renamed or recoded next year must not silently change what a receipt issued today says was sold. Immutable after confirm (BR 11), enforced by the domain service."
+			}
+		},
+		{
+			"name": "product_name_snapshot",
+			"label": "fields.product_name_snapshot",
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": {
+				"en-US": "The product's name as it appeared on the receipt. Snapshot for the same reason as the code, and it is the field a customer will quote back in a support conversation. Immutable after confirm."
+			}
+		},
+		{
+			"name": "uom_id",
+			"label": "fields.uom_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The unit the quantities on this line are expressed in. Required on every line: a quantity without its unit is not a quantity. Sales registers a UomUsageProbe so that Essential refuses to change a unit's factor while sales history references it (BR-UOM-ESS-020) — without the probe, editing a unit would reinterpret quantities already sold."
+			}
+		},
+		{
+			"name": "ordered_quantity",
+			"label": "fields.ordered_quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "How much the customer bought, in uom_id. Must be strictly greater than zero — a line ordering nothing is not a line — which the domain service enforces, because the framework declares no CHECK constraints and a min of 0 cannot express 'greater than'. Scale 6 rather than the monetary 4: a quantity can legitimately be a fraction of a unit in a way money cannot."
+			}
+		},
+		{
+			"name": "requires_fulfillment",
+			"label": "fields.requires_fulfillment",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"description": {
+				"en-US": "Whether this line owes physical goods. False for a service, a fee or a non-stocked item, which is what makes an order of only such lines reach fulfillment_status 'not_required' rather than sitting pending forever (D-14). Defaults to TRUE, deliberately: a line wrongly marked as needing goods holds an order open until somebody notices, while one wrongly marked as needing none reports a sale as complete that never shipped. Whether a variant is actually stock-managed is Inventory's judgement and arrives with SALES-048's product port; until then every line takes the default."
+			}
+		},
+		{
+			"name": "fulfilled_quantity",
+			"label": "fields.fulfilled_quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "How much has actually been handed over. Separate from ordered_quantity because partial fulfilment is normal (BR 87.8): a kiosk dispenses two of three items and the third jams. Must never exceed ordered_quantity — the invariant of BR 55, enforced in the domain service."
+			}
+		},
+		{
+			"name": "returned_quantity",
+			"label": "fields.returned_quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "How much has come back. Must never exceed fulfilled_quantity rather than ordered_quantity, and the difference matters: a customer cannot return what was never handed over, so an unfulfilled line has nothing to return however much was ordered."
+			}
+		},
+		{
+			"name": "base_unit_price",
+			"label": "fields.base_unit_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The catalogue or pricelist price before anything was applied. Kept alongside the effective price so that a receipt can show what the customer would have paid, and so the price explanation API can start from the number the discount chain began with."
+			}
+		},
+		{
+			"name": "effective_unit_price",
+			"label": "fields.effective_unit_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The per-unit price actually charged, after price-level rules. Zero on a promotion_reward line, which is exactly what makes a free item expressible as a real line rather than as a discount that would have to be allocated back somewhere."
+			}
+		},
+		{
+			"name": "gross_amount",
+			"label": "fields.gross_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "effective_unit_price times ordered_quantity, before line discounts. Stored rather than recomputed on read: the multiplication is rounded once, here, and every downstream total must agree with that one rounding rather than repeat it and possibly differ."
+			}
+		},
+		{
+			"name": "discount_amount",
+			"label": "fields.discount_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Everything taken off this line, as a POSITIVE number — including this line's share of an order-level discount, allocated by the pricing engine. Positive for the same reason discount_total is on the order: a report of discount given should not have to flip a sign."
+			}
+		},
+		{
+			"name": "net_amount",
+			"label": "fields.net_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "gross_amount minus discount_amount: the taxable base for this line. The sum of every line's net_amount is what an order-level allocation must add back up to exactly, which is why the residual of a proportional split is assigned deterministically rather than left to rounding (D-04)."
+			}
+		},
+		{
+			"name": "tax_rate_snapshot",
+			"label": "fields.tax_rate_snapshot",
+			"data_type": { "type": "decimal", "min": "0", "max": "1", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The tax rate applied, as a FRACTION, AS IT WAS at the time of sale: 0.1 for 10%. Note the unit — accounting stores a rate as a percentage, and the conversion happens once, at the boundary in services.ResolveBasketTax. Snapshotted rather than looked up, so that a later rate change cannot reinterpret a historical sale. For a line carrying several taxes this is their sum, enough to read the line at a glance; the exact per-tax figures live in the order's tax_snapshot."
+			}
+		},
+		{
+			"name": "tax_amount",
+			"label": "fields.tax_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The tax on this line's net amount, as the accounting module computed it. The base is the line's NET — gross less every discount and promotion — because Sales owns discount logic and passes the post-discount base (BR-TAX-ESS-026); taxing the gross would charge the customer on money they never paid."
+			}
+		},
+		{
+			"name": "final_amount",
+			"label": "fields.final_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "What this line contributes to the grand total: net_amount plus tax_amount. Stored so that the order total is the sum of stored line numbers rather than a re-derivation that could round differently."
+			}
+		},
+		{
+			"name": "pricing_source",
+			"label": "fields.pricing_source",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["catalogue", "pricelist", "combo", "promotion_reward", "manual_override"]
+			},
+			"required_for_create": true,
+			"default_value": "catalogue",
+			"description": {
+				"en-US": "Where this line's price came from. It is what lets the price-explanation API answer 'why does this cost this' without replaying the whole engine, and what makes a manual override visible as a deliberate act rather than as an unexplained number."
+			}
+		},
+		{
+			"name": "source_promotion_program_id",
+			"label": "fields.source_promotion_program_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The promotion that created this line, set on promotion_reward lines (D-11). Nullable everywhere else. It is what makes a free item traceable to the campaign that gave it away, which is the question asked when a campaign's cost is reviewed."
+			}
+		},
+		{
+			"name": "sales_combo_id",
+			"label": "fields.sales_combo_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The combo definition this line instantiates, set on combo parent lines. Nullable elsewhere. A plain ulid rather than an edge: the combo may be archived or redefined after the sale, and the line must keep meaning what it meant without depending on the definition still existing in its original form."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_order",
+			"label": { "en-US": "Sales order" },
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": { "sales_order_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

@@ -70,6 +70,11 @@ func (*PaymentInvoiceModule) Init() error {
 	if err := initOrderService(); err != nil {
 		return err
 	}
+	// After initOrderService, because the payment-method service is constructed with the gateway
+	// registry that step registers.
+	if err := app.InitApplicationServices(); err != nil {
+		return err
+	}
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}

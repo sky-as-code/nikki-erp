@@ -1,0 +1,143 @@
+{
+	"name": "sales_bill",
+	"label": "sales_bill.label",
+	"table_name": "sales_bills",
+	"should_build_db": true,
+	"record_label_field": "bill_number",
+	"default_search_fields": ["bill_number", "status"],
+	"search_indexes": [
+		{ "index_name": "sales_bills_tid_order", "fields": ["sales_order_id"] },
+		{ "index_name": "sales_bills_tid_status", "fields": ["status", "payment_status"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "bill_number",
+			"label": "fields.bill_number",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"unique": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The human-facing identifier of this settlement unit. Immutable: it is printed, quoted on the phone and referenced by payment records, so changing one would orphan every mention of it."
+			}
+		},
+		{
+			"name": "sales_order_id",
+			"label": "fields.sales_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The sale this bill settles. BR 35's field list omits it, which cannot be right: a bill that names no order cannot have its allocations checked against one, and BR 36's invariant is stated over the bills OF an order. Immutable, because moving a bill between orders would break that invariant on both."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": { "type": "enum_string", "values": ["open", "settled", "cancelled"] },
+			"required_for_create": true,
+			"default_value": "open",
+			"description": {
+				"en-US": "Whether this bill is still being settled. 'settled' means the money is in and the allocations are frozen; 'cancelled' means it was superseded by a split or a merge, and it is kept rather than deleted (BR 83) because the lineage rows point at it."
+			}
+		},
+		{
+			"name": "payment_status",
+			"label": "fields.payment_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["unpaid", "partially_paid", "paid", "overpaid", "partially_refunded", "refunded"]
+			},
+			"required_for_create": true,
+			"default_value": "unpaid",
+			"description": {
+				"en-US": "How much of this bill has been paid, on the same scale the order uses (D-18). Note 'overpaid' is present although D-18's list omits it: BR 42 permits taking more than the bill is for when the cash-change policy allows, so a bill genuinely can reach that state, and a bill unable to express it would have to be recorded as merely 'paid' - losing the fact that change is owed."
+			}
+		},
+		{
+			"name": "currency_code",
+			"label": "fields.currency_code",
+			"data_type": { "type": "string", "min": 3, "max": 3 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The currency this bill settles in, copied from its order. Immutable, and a merge refuses to combine bills that disagree on it (BR 74) rather than converting - Sales has no FX and inventing a rate would be a pricing decision nobody authorised."
+			}
+		},
+		{
+			"name": "subtotal",
+			"label": "fields.subtotal",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The sum of this bill's line allocations before discount and tax."
+			}
+		},
+		{
+			"name": "discount_total",
+			"label": "fields.discount_total",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "This bill's share of the order's discounts. Positive by convention, like the order's own total: it answers how much was given away, not what a step did to a number."
+			}
+		},
+		{
+			"name": "tax_total",
+			"label": "fields.tax_total",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "This bill's share of the order's tax, allocated rather than recomputed. Recomputing tax per bill would let the bills of one order sum to a different tax than the order was charged, which is the reconciliation failure BR 36's invariant exists to prevent."
+			}
+		},
+		{
+			"name": "total_amount",
+			"label": "fields.total_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "What this bill is for, and what a payment is measured against. The sum of these across every bill of an order equals the order's own total EXACTLY (BR 36) - not approximately, which is why the allocator assigns the rounding residual rather than letting it vanish."
+			}
+		},
+		{
+			"name": "settled_at",
+			"label": "fields.settled_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the money was fully in. Null while the bill is still open; set once and never cleared, because a settled bill that reopens is a new commercial event rather than an undo."
+			}
+		},
+		{
+			"name": "cancelled_at",
+			"label": "fields.cancelled_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this bill was superseded by a split or a merge. The bill itself stays (BR 83); this records when it stopped being the live settlement unit."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_order",
+			"label": { "en-US": "Sales order" },
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": { "sales_order_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

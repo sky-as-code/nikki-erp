@@ -48,3 +48,14 @@ func (*DynamicResourceModule) Version() semver.SemVer {
 func (*DynamicResourceModule) Init() error {
 	return initRegistryDeps()
 }
+
+// OnAppStarted implements InCodeModuleAppStarted.
+//
+// It matches every "function"-kind computed field against the functions its engine registered.
+// The check has to run here rather than at engine construction: a feature module builds its
+// engines and registers their functions inside its own Init(), which is long after this module's.
+// By the time any OnAppStarted runs, every module's Init() has completed — so a missing function
+// fails the boot with a precise message instead of surfacing as a broken read later.
+func (*DynamicResourceModule) OnAppStarted() error {
+	return assertComputedFunctionsDefined()
+}

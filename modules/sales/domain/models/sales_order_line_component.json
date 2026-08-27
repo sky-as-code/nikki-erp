@@ -1,0 +1,123 @@
+{
+	"name": "sales_order_line_component",
+	"label": "sales_order_line_component.label",
+	"table_name": "sales_order_line_components",
+	"should_build_db": true,
+	"record_label_field": "product_name_snapshot",
+	"default_search_fields": ["product_code_snapshot", "product_name_snapshot"],
+	"composite_uniques": [
+		{
+			"index_name": "sales_ol_components_tid_line_seq",
+			"fields": ["sales_order_line_id", "sequence"]
+		}
+	],
+	"search_indexes": [
+		{ "index_name": "sales_ol_components_tid_variant", "fields": ["product_variant_id"] },
+		{ "index_name": "sales_ol_components_tid_uom", "fields": ["uom_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_order_line_id",
+			"label": "fields.sales_order_line_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The combo parent line this component belongs to. Immutable: moving a component between lines would change what two combos contained at once, and the line it left would keep an allocated amount it can no longer account for."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 1, "max": 100000 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Position within the combo, unique per parent line. It is a stable identifier rather than display order: the allocation residual is assigned by a rule that breaks ties on it (D-04), so renumbering components would move sub-unit amounts between them and change what each one is recorded as having cost."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The real variant this component is. Required, unlike on the parent line: the whole reason components exist is that Inventory fulfils real variants and never a virtual combo (BR 17), so a component without one would be unfulfillable. A plain ulid, since the product belongs to Inventory."
+			}
+		},
+		{
+			"name": "product_code_snapshot",
+			"label": "fields.product_code_snapshot",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The component product's code as it was when the sale happened. Snapshotted for the same reason as on the parent line: a product recoded next year must not change what a receipt issued today says was inside the bundle."
+			}
+		},
+		{
+			"name": "product_name_snapshot",
+			"label": "fields.product_name_snapshot",
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": {
+				"en-US": "The component product's name as it appeared at the time of sale. This is what a customer sees itemised under the combo on their receipt."
+			}
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "How much of this variant the combo contains, in uom_id, for the parent line's whole ordered quantity. Must be strictly greater than zero, enforced by the domain service since the framework declares no CHECK constraints. Scale 6 matches the parent line: a component can legitimately be a fraction of a unit."
+			}
+		},
+		{
+			"name": "uom_id",
+			"label": "fields.uom_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The unit this component's quantity is expressed in. It need not match the parent line's unit: a combo priced per box can contain a component measured in litres. Sales registers a UomUsageProbe covering this field, so Essential refuses to change a unit that sales history depends on."
+			}
+		},
+		{
+			"name": "allocated_net_amount",
+			"label": "fields.allocated_net_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "This component's share of the parent line's net amount, allocated by the pricing engine (BR 18). The sum across a line's components must equal that line's net_amount EXACTLY: a bundle priced at one number has to be attributable back to its parts without gaining or losing a unit, or the fiscal document and the stock valuation disagree. D-04 fixes the residual rule that makes the sum exact."
+			}
+		},
+		{
+			"name": "allocated_tax_amount",
+			"label": "fields.allocated_tax_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "This component's share of the parent line's tax. Taken from Accounting when it taxed the components individually, and otherwise allocated across them in proportion to their allocated net - the allocator guarantees the shares sum to the line's tax exactly, so a VAT invoice itemising a combo still adds up to what was charged."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_order_line",
+			"label": { "en-US": "Sales order line" },
+			"type": "many:one",
+			"dest_schema": "sales_order_line",
+			"key_map": { "sales_order_line_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

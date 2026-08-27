@@ -12,5 +12,6 @@ func InitApplicationServices() error {
 	return errors.Join(
 		deps.Register(NewSalesChannelApplicationServiceImpl),
 		deps.Register(NewSalesPointApplicationServiceImpl),
+		deps.Register(NewChannelPaymentApplicationServiceImpl),
 	)
 }

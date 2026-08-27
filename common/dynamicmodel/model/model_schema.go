@@ -954,6 +954,9 @@ func (this ModelField) ToSimplized() any {
 		Rules               []*FieldRule   `json:"rules,omitempty"`
 		DefaultValue        *value         `json:"default_value,omitempty"`
 		Metadata            map[string]any `json:"metadata,omitempty"`
+		// Computed tells a client how a computed value arrives and what to watch. The expression
+		// itself stays server-side: a form needs the trigger, not the formula.
+		Computed *ComputedDescriptor `json:"computed,omitempty"`
 	}{
 		Name:                this.Name(),
 		Label:               this.Label(),
@@ -973,6 +976,7 @@ func (this ModelField) ToSimplized() any {
 		Rules:               this.Rules(),
 		DefaultValue:        this.Default(),
 		Metadata:            this.Metadata(),
+		Computed:            this.computedDescriptor(),
 	}
 }
 

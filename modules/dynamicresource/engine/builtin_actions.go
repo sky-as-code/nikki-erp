@@ -82,6 +82,9 @@ func DefineBuiltinActions(engine it.DynamicResourceEngine) error {
 			Permission:  it.PermissionRead,
 			MainProcess: processGetSchema,
 		}),
+		// Registered separately because it needs the engine itself, to reach the computed-field
+		// function registry. See computed_rest.go.
+		defineComputeFieldAction(engine),
 	)
 }
 

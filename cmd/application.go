@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	apptraitconstants "github.com/sky-as-code/nikki-erp/modules/apptrait/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	coreconstants "github.com/sky-as-code/nikki-erp/modules/core/constants"
+	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -32,6 +34,7 @@ func NewApplication(logger logging.LoggerService, moduleLoader ModuleLoader) *Ap
 
 type Application struct {
 	modules      []modules.InCodeModule
+	orderedMods  []modules.InCodeModule
 	config       config.ConfigService
 	logger       logging.LoggerService
 	moduleLoader ModuleLoader
@@ -59,6 +62,51 @@ func (this *Application) Start() {
 		os.Exit(1)
 	}
 	this.config = config.ConfigSvcSingleton()
+}
+
+// Stop invokes OnAppStopping on every module that implements it, in reverse initialization
+// order, so a module drains before the modules it depends on go away.
+//
+// Every module shares the one deadline carried by ctx, and each is given the whole remaining
+// budget rather than an equal slice of it: modules that stop instantly - which is most of
+// them - cost nothing, and splitting the budget in advance would starve the one module that
+// actually has work to drain.
+//
+// A module that returns an error or overruns the deadline is logged and stepped over. Refusing
+// to continue would leave the remaining modules unstopped, which is strictly worse than a
+// partial drain.
+func (this *Application) Stop(ctx context.Context) {
+	if len(this.orderedMods) == 0 {
+		return
+	}
+	this.logger.Info("Start stopping modules", nil)
+
+	// The scheduler stops FIRST, before any module drains. A sweep that fired while its module was
+	// shutting down would write through half-torn-down dependencies, and stopping it here also
+	// means no new job starts during the drain. Shutdown blocks until jobs already running return,
+	// which is what keeps a half-finished sweep from being abandoned mid-write.
+	if err := job.GetCronjob().Stop(); err != nil {
+		this.logger.Error("the cron scheduler did not stop cleanly", err)
+	}
+
+	for i := len(this.orderedMods) - 1; i >= 0; i-- {
+		mod := this.orderedMods[i]
+		modWithStopping, ok := mod.(modules.InCodeModuleAppStopping)
+		if !ok {
+			continue
+		}
+
+		if err := ctx.Err(); err != nil {
+			this.logger.Errorf("shutdown budget spent; skipping OnAppStopping() for module %s", mod.Name())
+			continue
+		}
+
+		if err := modWithStopping.OnAppStopping(ctx); err != nil {
+			this.logger.Error(fmt.Sprintf("module %s failed to stop cleanly", mod.Name()), err)
+			continue
+		}
+		this.logger.Debugf("Invoked OnAppStopping() on module %s", mod.Name())
+	}
 }
 
 func (this *Application) GenSql(moduleName string, dialect string) string {
@@ -309,6 +357,7 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 		this.logger.Infof("Initialized module %s", mod.Name())
 	}
 
+	this.orderedMods = orderedMods
 	deps.Register(func() []modules.InCodeModule {
 		return orderedMods
 	})
@@ -321,6 +370,20 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 			}
 			this.logger.Debugf("Invoked OnAppStarted() on module %s", mod.Name())
 		}
+	}
+
+	// The cron scheduler starts LAST, once every module has registered its jobs.
+	//
+	// Modules register cron jobs from OnAppStarted, and gocron fires on the schedule from the
+	// moment it is started - so starting it any earlier would silently skip whatever a later
+	// module registered until the following tick. For an hourly sweep that is an hour of nothing
+	// happening, with no error anywhere to connect it to.
+	//
+	// A failure here is logged rather than fatal. The scheduler runs background maintenance -
+	// draining an outbox, expiring stale drafts - and an application that serves requests without
+	// them is degraded, while one that refuses to boot serves nothing at all.
+	if err := job.GetCronjob().Start(); err != nil {
+		this.logger.Error("failed to start the cron scheduler; background sweeps will not run", err)
 	}
 
 	return nil

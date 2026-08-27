@@ -10,6 +10,19 @@ type CqrsBus interface {
 	SubscribeRequests(ctx context.Context, handlers ...RequestHandler) error
 	RequestNoReply(ctx context.Context, request Request) error
 	Request(ctx context.Context, request Request, result any) error
+
+	// IsRequestTypeRegistered reports whether a handler is currently subscribed for
+	// requestType, formatted as RequestType.String() ("{module}_{submodule}.{action}").
+	//
+	// It answers "currently subscribed", not "ever registered": a subscription is removed
+	// when its context is cancelled. That is the useful reading for a caller deciding
+	// whether emitting a request would reach anybody.
+	//
+	// Callers must be aware of boot ordering. Handlers subscribe during their module's
+	// Init(), so this reports false for a module that has not been initialized yet. It is
+	// safe from anything that runs after startup completes - a REST handler, or a module's
+	// OnAppStarted - and unreliable from another module's Init().
+	IsRequestTypeRegistered(requestType string) bool
 }
 
 // Deprecated: Not used

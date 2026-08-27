@@ -1,0 +1,113 @@
+{
+	"name": "sales_integration_outbox",
+	"label": "sales_integration_outbox.label",
+	"table_name": "sales_integration_outbox",
+	"should_build_db": true,
+	"default_search_fields": ["event_type", "aggregate_id"],
+	"search_indexes": [
+		{ "index_name": "sales_outbox_tid_aggregate", "fields": ["aggregate_id"] },
+		{ "index_name": "sales_outbox_tid_type", "fields": ["event_type"] },
+		{ "index_name": "sales_outbox_tid_published", "fields": ["published_at"] },
+		{ "index_name": "sales_outbox_tid_occurred", "fields": ["occurred_at"] }
+	],
+	"composite_uniques": [
+		{
+			"index_name": "sales_outbox_tid_eventid",
+			"fields": ["event_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "event_id",
+			"label": "fields.event_id",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The identity of the EVENT, distinct from the id of this row (BR 80). It is what a consumer deduplicates on, which is the whole mechanism by which redelivery is safe: at-least-once delivery means a consumer will see the same event twice, and acceptance 94.34 requires that this be harmless. Unique and immutable, because an event that could change its identity could be processed twice under two names."
+			}
+		},
+		{
+			"name": "aggregate_id",
+			"label": "fields.aggregate_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What the event is about - the order, bill or return. Indexed because the common question of an operator investigating one sale is what was published about it, and because a consumer replaying a single aggregate needs its events without scanning the table."
+			}
+		},
+		{
+			"name": "event_type",
+			"label": "fields.event_type",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What happened, as a name a consumer routes on - SalesOrderConfirmed, SalesPaymentCaptured (BR 80). A plain string rather than an enum, deliberately: the set grows as Sales gains capabilities, and an enum would make every new event type a schema migration coordinated with every consumer. Immutable, because a published event cannot be retrospectively said to have been about something else."
+			}
+		},
+		{
+			"name": "schema_version",
+			"label": "fields.schema_version",
+			"data_type": { "type": "string", "min": 1, "max": 20 },
+			"required_for_create": true,
+			"default_value": "1.0",
+			"description": {
+				"en-US": "Which shape the payload is in (BR 80, acceptance 94.34). A STRING like '1.0', matching accounting's SnapshotSchemaVersion rather than an integer, so a compatible addition and a breaking change can be told apart - a consumer can accept 1.x and refuse 2.0, which a single counter cannot express. Present from the first version rather than added when the first breaking change arrives, and that is the point: a consumer can refuse a payload it does not understand only if the envelope told it the version, so adding this later makes the first change the one nobody can detect."
+			}
+		},
+		{
+			"name": "payload",
+			"label": "fields.payload",
+			"data_type": "jsonmap",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The facts of the event, frozen at the moment it occurred. Immutable and self-contained: a consumer must not have to read back into Sales to interpret it, both because that would couple the two modules at read time and because the answer would be today's state rather than the state the event described."
+			}
+		},
+		{
+			"name": "occurred_at",
+			"label": "fields.occurred_at",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "When the business event happened, which is NOT when it was published. The two differ by however long the row waited, and consumers ordering by publication time would reorder events the business produced in sequence - which is exactly what an outbox exists to prevent."
+			}
+		},
+		{
+			"name": "published_at",
+			"label": "fields.published_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the event reached the broker, and NULL is the meaningful value: an unpublished row is the queue. Indexed for that reason - the publisher's query is 'where published_at IS NULL order by occurred_at', and without the index it degrades as the table grows, which is precisely when it must not."
+			}
+		},
+		{
+			"name": "attempt_count",
+			"label": "fields.attempt_count",
+			"data_type": { "type": "int32", "min": 0, "max": 1000 },
+			"default_value": 0,
+			"description": {
+				"en-US": "How many times publication has been tried. Exists because a broker being briefly unreachable is normal operation rather than a fault, and because a row failing forever must become visible instead of being retried silently until somebody notices the consumer is behind."
+			}
+		},
+		{
+			"name": "last_error",
+			"label": "fields.last_error",
+			"data_type": { "type": "string", "min": 0, "max": 1000 },
+			"description": {
+				"en-US": "Why the last publication attempt failed. Kept for the same reason the fiscal request keeps one: a stuck event is the case an operator must act on, and a bare attempt count tells them nothing about whether to wait or intervene."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

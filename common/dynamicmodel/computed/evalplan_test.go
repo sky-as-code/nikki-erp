@@ -126,7 +126,7 @@ func TestEvalPlanApply_RelatedBatchedFill(t *testing.T) {
 		}, nil
 	}
 
-	require.NoError(t, plan.Apply(rows, search))
+	require.NoError(t, plan.Apply(rows, computed.EvalDeps{Search: search}))
 
 	assert.Equal(t, 1, calls, "one batched read per edge per page, never one per row")
 	assert.Equal(t, "cf_fin_template", gotSchema)
@@ -152,7 +152,7 @@ func TestEvalPlanApply_ExpressionChain(t *testing.T) {
 		{"id": "r1", "qty": int64(3), "price": decimal.NewFromInt(10)},
 		{"id": "r2", "qty": nil, "price": decimal.NewFromInt(10)},
 	}
-	require.NoError(t, plan.Apply(rows, nil))
+	require.NoError(t, plan.Apply(rows, computed.EvalDeps{}))
 
 	assert.True(t, decimal.NewFromInt(30).Equal(rows[0]["subtotal"].(decimal.Decimal)))
 	assert.True(t, decimal.NewFromInt(60).Equal(rows[0]["total"].(decimal.Decimal)))
@@ -231,7 +231,7 @@ func TestEvalPlanApply_SqlFieldArrivesPrefilledAndFeedsGoExpression(t *testing.T
 		{"id": "o1", "line_count": int64(12)},
 		{"id": "o2", "line_count": int64(3)},
 	}
-	require.NoError(t, plan.Apply(rows, nil))
+	require.NoError(t, plan.Apply(rows, computed.EvalDeps{}))
 
 	assert.Equal(t, true, rows[0]["is_busy"])
 	assert.Equal(t, false, rows[1]["is_busy"])

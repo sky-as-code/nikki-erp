@@ -27,6 +27,8 @@ func NewDynamicResourceEngine(param NewEngineParam) it.DynamicResourceEngine {
 		repository:   param.Repository,
 		service:      param.Service,
 		actions:      map[string]it.DynamicActionDefinition{},
+
+		computedFunctions: map[string]it.ComputedFieldFn{},
 	}
 	engine.restApi = NewDynamicRestApi(engine)
 	return engine
@@ -45,6 +47,9 @@ type DynamicResourceEngineImpl struct {
 
 	mutex   sync.RWMutex
 	actions map[string]it.DynamicActionDefinition
+	// computedFunctions holds the Go implementations of this schema's "function"-kind computed
+	// fields, keyed by the name the schema declares. See computed_functions.go.
+	computedFunctions map[string]it.ComputedFieldFn
 }
 
 func (this *DynamicResourceEngineImpl) ResourceName() string {

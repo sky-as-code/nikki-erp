@@ -6,9 +6,9 @@ import (
 	"go.bryk.io/pkg/errors"
 )
 
-// ComputeKind discriminates how a computed field's value is produced. Expression and related are
-// Go-executed after the read; aggregate, exists and lookup compile to one correlated scalar
-// subquery each, projected inside the SELECT.
+// ComputeKind discriminates how a computed field's value is produced. Expression, related and
+// function are Go-executed after the read; aggregate, exists and lookup compile to one correlated
+// scalar subquery each, projected inside the SELECT.
 type ComputeKind string
 
 const (
@@ -22,6 +22,8 @@ const (
 	ComputeExists ComputeKind = "exists"
 	// ComputeLookup copies one scalar from the first source record after filter + ordering.
 	ComputeLookup ComputeKind = "lookup"
+	// ComputeFunction delegates the whole field to a Go function registered on the engine.
+	ComputeFunction ComputeKind = "function"
 )
 
 // Definition describes how a computed field gets its value. It is attached to a ModelField
@@ -45,6 +47,9 @@ type Definition struct {
 	Aggregate *AggregateExpr
 	Exists    *ExistsExpr
 	Lookup    *LookupExpr
+
+	// Function names the engine-registered Go function when Kind is ComputeFunction.
+	Function *GoFunctionExpr
 }
 
 // NewDefinition builds a Definition from a root expression, deriving the kind from the root's
@@ -55,7 +60,7 @@ func NewDefinition(isStored bool, root Expr) (*Definition, error) {
 	if root == nil {
 		return nil, errors.New("computed definition requires an expression")
 	}
-	if def, matched, err := newSqlKindDefinition(isStored, root); matched {
+	if def, matched, err := newWholeFieldDefinition(isStored, root); matched {
 		return def, err
 	}
 	if related, ok := root.(RelatedExpr); ok {
@@ -68,9 +73,10 @@ func NewDefinition(isStored bool, root Expr) (*Definition, error) {
 	return &Definition{Kind: ComputeExpression, IsStored: isStored, Expression: root}, nil
 }
 
-// newSqlKindDefinition matches the SQL-compiled roots. The node's structural validation runs
-// here so the chained API and the JSON parser share one chokepoint.
-func newSqlKindDefinition(isStored bool, root Expr) (*Definition, bool, error) {
+// newWholeFieldDefinition matches the roots that own the entire field: the three SQL-compiled
+// kinds and the engine-function kind. The node's structural validation runs here so the chained
+// API and the JSON parser share one chokepoint.
+func newWholeFieldDefinition(isStored bool, root Expr) (*Definition, bool, error) {
 	var def *Definition
 	var err error
 	switch node := root.(type) {
@@ -82,6 +88,9 @@ func newSqlKindDefinition(isStored bool, root Expr) (*Definition, bool, error) {
 		err = node.validate()
 	case LookupExpr:
 		def = &Definition{Kind: ComputeLookup, IsStored: isStored, Lookup: &node}
+		err = node.validate()
+	case GoFunctionExpr:
+		def = &Definition{Kind: ComputeFunction, IsStored: isStored, Function: &node}
 		err = node.validate()
 	default:
 		return nil, false, nil
@@ -105,6 +114,8 @@ func findRootOnlyNode(expr Expr) string {
 		return fmt.Sprintf("exists check over edge %q", node.Source)
 	case LookupExpr:
 		return fmt.Sprintf("lookup over edge %q", node.Source)
+	case GoFunctionExpr:
+		return fmt.Sprintf("call of computed function %q", node.Name)
 	case BinaryExpr:
 		if found := findRootOnlyNode(node.Left); found != "" {
 			return found

@@ -116,6 +116,7 @@ func TestDefineBuiltinActions(t *testing.T) {
 
 	assert.NoError(t, DefineBuiltinActions(engine))
 	assert.Equal(t, []string{
+		it.ActionComputeField,
 		it.ActionCreate,
 		it.ActionDelete,
 		it.ActionExists,

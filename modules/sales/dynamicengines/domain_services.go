@@ -25,10 +25,59 @@ func InitDomainServices() error {
 		}); err != nil {
 		return err
 	}
-	return installDerivedService(models.SalesPointSchemaName,
+	if err := installDerivedService(models.SalesPointSchemaName,
 		func(base drif.DynamicResourceService) drif.DynamicResourceService {
 			return services.NewSalesPointDomainService(base)
-		})
+		}); err != nil {
+		return err
+	}
+	if err := installDerivedService(models.SalesOrderSchemaName,
+		func(base drif.DynamicResourceService) drif.DynamicResourceService {
+			return services.NewSalesOrderDomainService(base)
+		}); err != nil {
+		return err
+	}
+	// The line service carries the two invariants the database cannot: BR 55's quantity rules and
+	// BR 11's snapshot immutability. Installing it is what makes them enforced at all - the
+	// framework declares no CHECK constraints, so there is no second line of defence.
+	if err := installDerivedService(models.SalesOrderLineSchemaName,
+		func(base drif.DynamicResourceService) drif.DynamicResourceService {
+			return services.NewSalesOrderLineDomainService(base)
+		}); err != nil {
+		return err
+	}
+	return initChannelPaymentService()
+}
+
+// channelPaymentService is the junction's service, reached through a package variable rather than
+// through an engine's ResourceService.
+//
+// The junction has an engine only so that it has a repository (see junctionSchemas), and nothing
+// routes to it, so there is no request for a derived service to be installed on. Resolving it once
+// here is what connects the application layer to it — the same shape paymentinvoice uses for its
+// order service.
+var channelPaymentService *services.ChannelPaymentDomainServiceImpl
+
+// ChannelPaymentService answers the application layer's mapping operations. It is nil until
+// InitDomainServices has run, which is a wiring bug rather than a request problem, so callers
+// report it as one.
+func ChannelPaymentService() (*services.ChannelPaymentDomainServiceImpl, error) {
+	if channelPaymentService == nil {
+		return nil, errors.New(
+			"the sales channel payment service is not initialized; " +
+				"SalesModule.Init must run dynamicengines.InitDomainServices")
+	}
+	return channelPaymentService, nil
+}
+
+func initChannelPaymentService() error {
+	engine, ok := dynamicresource.Registry().GetEngine(models.SalesChannelPaymentRelSchemaName)
+	if !ok {
+		return errors.New(
+			"the '" + models.SalesChannelPaymentRelSchemaName + "' engine is not registered")
+	}
+	channelPaymentService = services.NewChannelPaymentDomainService(engine.ResourceRepository())
+	return nil
 }
 
 func installDerivedService(

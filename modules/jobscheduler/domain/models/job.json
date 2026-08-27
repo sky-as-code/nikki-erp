@@ -1,0 +1,138 @@
+{
+	"name": "jobscheduler_job",
+	"label": "jobscheduler_job.label",
+	"table_name": "jobscheduler_jobs",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["name", "module_name", "job_key"],
+
+	"composite_uniques": [
+		{ "index_name": "jobsched_jobs_module_job_key", "fields": ["module_name", "job_key"] }
+	],
+
+	"search_indexes": [
+		{ "index_name": "jobsched_jobs_enabled_next_run", "fields": ["is_enabled", "next_run_at"] },
+		{ "index_name": "jobsched_jobs_module_name", "fields": ["module_name"] }
+	],
+
+	"fields": [
+		{
+			"name": "id",
+			"label": "fields.id",
+			"data_type": "ulid",
+			"primary_key": true,
+			"use_type_default": true,
+			"description": {
+				"en-US": "Declared here rather than inherited from core.basemodel.base_model, because that mixin carries the tenant key and the scheduler must not be tenant-scoped. A technical job is infrastructure owned by a module, not by a tenant, and its occurrences are materialized by a background worker that has no tenant in scope: a tenant column would make every such write panic on a missing tenant id."
+			}
+		},
+		{
+			"name": "name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "job_type",
+			"data_type": { "type": "enum_string", "values": ["technical", "user"] },
+			"required_for_create": true,
+			"description": {
+				"en-US": "'technical' is a job registered by a module. 'user' is reserved for user-managed jobs and is not accepted yet."
+			}
+		},
+		{
+			"name": "module_name",
+			"data_type": { "type": "string", "min": 1, "max": 100, "regex": "^[A-Za-z0-9]+$" },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Module that owns this technical job. Not validated against the loaded module list."
+			}
+		},
+		{
+			"name": "job_key",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Stable key within the owning module. Unique together with module_name, which is what makes registration idempotent."
+			}
+		},
+		{
+			"name": "action_type",
+			"data_type": { "type": "enum_string", "values": ["command_bus", "rest_api"] },
+			"required_for_create": true
+		},
+		{
+			"name": "action_config",
+			"data_type": "jsonmap",
+			"required_for_create": true,
+			"description": {
+				"en-US": "Action configuration, validated at create time by the executor matching action_type."
+			}
+		},
+		{
+			"name": "cron_expression",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "5-field cron expression, always evaluated in UTC. Minimum resolution is one minute."
+			}
+		},
+		{
+			"name": "effective_from",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "Start of the effective period, inclusive. UTC."
+			}
+		},
+		{
+			"name": "effective_until",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "End of the effective period, exclusive: an occurrence falling exactly on it does not run. UTC."
+			}
+		},
+		{
+			"name": "is_enabled",
+			"data_type": "boolean",
+			"description": {
+				"en-US": "When false, no new occurrence is created and next_run_at is null. Left null on create so the application-configured default applies; it is deliberately not defaulted here."
+			}
+		},
+		{
+			"name": "max_attempts",
+			"data_type": { "type": "int32", "min": 1, "max": 100 },
+			"description": {
+				"en-US": "Overrides the configured default. Counts the first attempt, so 3 means attempts 1, 2 and 3."
+			}
+		},
+		{
+			"name": "retry_interval_seconds",
+			"data_type": { "type": "int32", "min": 5, "max": 86400 },
+			"description": {
+				"en-US": "Base retry delay, doubled by exponential backoff. The minimum of 5 is a business constraint: a smaller value is rejected, never rounded up."
+			}
+		},
+		{
+			"name": "concurrency_policy",
+			"data_type": { "type": "enum_string", "values": ["forbid_overlap", "allow_overlap"] },
+			"description": {
+				"en-US": "Left null to take the configured default."
+			}
+		},
+		{
+			"name": "misfire_policy",
+			"data_type": { "type": "enum_string", "values": ["run_once", "skip"] },
+			"description": {
+				"en-US": "What to do with an occurrence discovered late. Left null to take the configured default."
+			}
+		},
+		{
+			"name": "next_run_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "Next occurrence, maintained by the scheduler. Null when the job is disabled or its schedule has no further occurrence. This column drives the scheduler's timer, which is why it is persisted rather than recomputed."
+			}
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model", "core.basemodel.versioned_model"]
+}

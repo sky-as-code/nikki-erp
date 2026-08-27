@@ -35,6 +35,11 @@ type FieldPlan struct {
 	// correlates through. Set only for those kinds; the subquery emitter consumes it.
 	SqlSource *SqlSourcePlan
 
+	// FunctionName is the engine-registered function supplying the value, set only when Def.Kind
+	// is ComputeFunction. DependsOn is its optional same-schema trigger field.
+	FunctionName string
+	DependsOn    string
+
 	// Dependencies is the full metadata for impact analysis: every schema element this field's
 	// definition points at (operand fields, the related edge, FK and leaf columns).
 	Dependencies []FieldRef
@@ -193,11 +198,18 @@ func (this *resolver) buildFieldPlan(schema *dmodel.ModelSchema, field *dmodel.M
 		err = this.buildRelatedPlan(schema, field, plan)
 	case ComputeAggregate, ComputeExists, ComputeLookup:
 		err = this.buildSqlKindPlan(schema, field, plan)
+	case ComputeFunction:
+		err = this.buildFunctionPlan(schema, field, plan)
 	default:
 		err = errors.Errorf("computed field %s.%s has unsupported kind %q", schema.Name(), field.Name(), def.Kind)
 	}
 	if err != nil {
 		return nil, err
+	}
+	if def.Kind == ComputeFunction {
+		// Nothing to reconcile: the value comes from Go, whose return type the resolver never
+		// sees, and which may be an array — a shape the scalar inference types cannot represent.
+		return plan, nil
 	}
 	return plan, this.checkDeclaredType(schema, field, plan)
 }

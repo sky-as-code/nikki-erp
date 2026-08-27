@@ -25,6 +25,8 @@ const (
 	ActionSearch      = "search"
 	ActionExists      = "exists"
 	ActionGetSchema   = "get_schema"
+	// ActionComputeField evaluates one function-kind computed field against an unsaved model.
+	ActionComputeField = "compute_field"
 )
 
 // ActionType classifies an action for the REST engine, which maps it to an HTTP method.

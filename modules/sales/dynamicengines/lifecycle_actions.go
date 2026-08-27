@@ -13,7 +13,7 @@ import (
 )
 
 // Permission codes for the lifecycle operations. They match the action codes seeded in
-// 1005002_sales_iam.sql — a code that drifts from its seed denies every request, and nothing in
+// 1007002_sales_iam.sql — a code that drifts from its seed denies every request, and nothing in
 // the resulting 403 points at the seed as the cause.
 const (
 	PermissionSuspend  = "suspend"

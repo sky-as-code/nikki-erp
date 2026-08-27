@@ -147,12 +147,12 @@
 		},
 
 		"computed": {
-			"description": "Declares the field's value as a calculation result, never user input. The field becomes virtual (no column). expression/related compute in Go when the resource is read; aggregate/exists/lookup compile to one correlated subquery in the SELECT.",
+			"description": "Declares the field's value as a calculation result, never user input. The field becomes virtual (no column). expression/related/function compute in Go when the resource is read; aggregate/exists/lookup compile to one correlated subquery in the SELECT.",
 			"type": "object",
 			"required": ["kind", "is_stored"],
 			"additionalProperties": false,
 			"properties": {
-				"kind": { "type": "string", "enum": ["expression", "related", "aggregate", "exists", "lookup"] },
+				"kind": { "type": "string", "enum": ["expression", "related", "aggregate", "exists", "lookup", "function"] },
 				"is_stored": {
 					"description": "false: computed at read time (current scope). true: computed at write time with source-change propagation — reserved, rejected until a future phase.",
 					"type": "boolean"
@@ -169,9 +169,9 @@
 					"minLength": 1
 				},
 				"function": {
-					"description": "aggregate only.",
+					"description": "Overloaded by kind. aggregate: the SQL aggregate, constrained to the six names by the aggregate branch below. function: the name registered on the engine via DefineComputedFieldFunction.",
 					"type": "string",
-					"enum": ["count", "count_distinct", "sum", "avg", "min", "max"]
+					"minLength": 1
 				},
 				"filter": { "$ref": "#/$defs/computedFilter" },
 				"order_by": {
@@ -197,6 +197,11 @@
 				"default": {
 					"description": "Scalar replacing a NULL subquery result. Rendered into SQL only through the escaped-literal path.",
 					"type": ["string", "number", "boolean", "null"]
+				},
+				"depends_on": {
+					"description": "function only: a field on this schema the computation reads. Declaring it lets a form recompute the value through POST {schema}/meta/compute/{field} as soon as that field changes, before anything is saved.",
+					"type": "string",
+					"minLength": 1
 				}
 			},
 			"allOf": [
@@ -206,7 +211,8 @@
 						"required": ["field"],
 						"properties": {
 							"expression": false, "source": false, "function": false,
-							"filter": false, "order_by": false, "context": false, "default": false
+							"filter": false, "order_by": false, "context": false, "default": false,
+							"depends_on": false
 						}
 					}
 				},
@@ -216,13 +222,20 @@
 						"required": ["expression"],
 						"properties": {
 							"field": false, "source": false, "function": false,
-							"filter": false, "order_by": false, "context": false, "default": false
+							"filter": false, "order_by": false, "context": false, "default": false,
+							"depends_on": false
 						}
 					}
 				},
 				{
 					"if": { "properties": { "kind": { "const": "aggregate" } }, "required": ["kind"] },
-					"then": { "required": ["source", "function"], "properties": { "order_by": false } }
+					"then": {
+						"required": ["source", "function"],
+						"properties": {
+							"order_by": false, "depends_on": false,
+							"function": { "enum": ["count", "count_distinct", "sum", "avg", "min", "max"] }
+						}
+					}
 				},
 				{
 					"if": { "properties": { "kind": { "const": "exists" } }, "required": ["kind"] },
@@ -230,7 +243,7 @@
 						"required": ["source", "filter"],
 						"properties": {
 							"field": false, "expression": false, "function": false,
-							"order_by": false, "default": false
+							"order_by": false, "default": false, "depends_on": false
 						}
 					}
 				},
@@ -238,7 +251,17 @@
 					"if": { "properties": { "kind": { "const": "lookup" } }, "required": ["kind"] },
 					"then": {
 						"required": ["source", "field", "order_by"],
-						"properties": { "expression": false, "function": false }
+						"properties": { "expression": false, "function": false, "depends_on": false }
+					}
+				},
+				{
+					"if": { "properties": { "kind": { "const": "function" } }, "required": ["kind"] },
+					"then": {
+						"required": ["function"],
+						"properties": {
+							"field": false, "expression": false, "source": false,
+							"filter": false, "order_by": false, "context": false, "default": false
+						}
 					}
 				}
 			]

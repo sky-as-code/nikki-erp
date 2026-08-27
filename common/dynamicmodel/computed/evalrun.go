@@ -13,19 +13,71 @@ import (
 // free of repository/engine dependencies (and a test can stub it).
 type SourceSearchFn func(schemaName string, keyColumn string, keys []any, fields []string) ([]dmodel.DynamicFields, error)
 
+// FunctionInvokerFn runs a registered computed-field function over a whole page, returning one
+// value per row in the order given. Like SourceSearchFn it is supplied by the caller: the function
+// registry lives on the engine, and the request context it needs is captured in the closure there,
+// so this package never learns about either.
+type FunctionInvokerFn func(functionName string, fieldName string, rows []dmodel.DynamicFields) ([]any, error)
+
+// EvalDeps carries what evaluation cannot do for itself. Grouped into a struct so a later stage
+// needing a third capability does not churn every Apply call site.
+type EvalDeps struct {
+	Search SourceSearchFn
+	Invoke FunctionInvokerFn
+}
+
 // Apply evaluates the plan over one page of rows, in place: batched related fills first, then
-// expression fields in dependency order. A row whose source record is missing keeps its related
-// fields absent — never zero values — matching the virtual-field convention this generalizes.
-func (this *EvalPlan) Apply(rows []dmodel.DynamicFields, search SourceSearchFn) error {
+// function calls, then expression fields in dependency order. Functions run before expressions
+// because an expression may read a function field, never the other way round — a function is a
+// whole-field root and can never sit inside an expression tree.
+//
+// A row whose source record is missing keeps its related fields absent — never zero values —
+// matching the virtual-field convention this generalizes.
+func (this *EvalPlan) Apply(rows []dmodel.DynamicFields, deps EvalDeps) error {
 	if len(rows) == 0 {
 		return nil
 	}
 	for _, read := range this.RelatedReads {
-		if err := this.applyRelatedRead(read, rows, search); err != nil {
+		if err := this.applyRelatedRead(read, rows, deps.Search); err != nil {
+			return err
+		}
+	}
+	for _, call := range this.FunctionCalls {
+		if err := this.applyFunctionCall(call, rows, deps.Invoke); err != nil {
 			return err
 		}
 	}
 	return this.applyExpressions(rows)
+}
+
+// applyFunctionCall runs one registered function over the page and assigns its results.
+//
+// A short result slice would silently shift values onto the wrong rows, so a length mismatch is an
+// error rather than a best-effort assignment.
+func (this *EvalPlan) applyFunctionCall(
+	call FunctionCall, rows []dmodel.DynamicFields, invoke FunctionInvokerFn,
+) error {
+	if invoke == nil {
+		return errors.Errorf(
+			"computed field %s.%s needs function %q but no function invoker was supplied",
+			this.SchemaName, call.Fields[0], call.FunctionName)
+	}
+	for _, fieldName := range call.Fields {
+		values, err := invoke(call.FunctionName, fieldName, rows)
+		if err != nil {
+			return errors.Wrapf(err, "computed field %s.%s via function %q",
+				this.SchemaName, fieldName, call.FunctionName)
+		}
+		if len(values) != len(rows) {
+			return errors.Errorf(
+				"computed function %q returned %d values for %d rows of %s.%s",
+				call.FunctionName, len(values), len(rows), this.SchemaName, fieldName)
+		}
+		for i, row := range rows {
+			row[fieldName] = values[i]
+		}
+	}
+	return nil
 }
 
 func (this *EvalPlan) applyRelatedRead(

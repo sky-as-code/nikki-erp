@@ -1,0 +1,66 @@
+{
+	"name": "sales_promotion_condition_target",
+	"label": "sales_promotion_condition_target.label",
+	"table_name": "sales_promotion_condition_targets",
+	"should_build_db": true,
+	"composite_uniques": [
+		{
+			"index_name": "sales_promo_ctargets_tid_cond_target",
+			"fields": ["condition_id", "target_type", "target_id"]
+		}
+	],
+	"search_indexes": [
+		{ "index_name": "sales_promo_ctargets_tid_target", "fields": ["target_type", "target_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "condition_id",
+			"label": "fields.condition_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The condition whose set this row is a member of. Set-valued conditions — in and not_in over variant ids, category ids, channel ids — live here rather than in a column, because a set has no sensible single-column form and JSON would make eligibility a full table scan (D-07)."
+			}
+		},
+		{
+			"name": "target_type",
+			"label": "fields.target_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["product_variant", "product_category", "sales_channel", "sales_point"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "What kind of thing target_id names. Part of the uniqueness key alongside it, since ids from two different modules could theoretically collide and the pair is what actually identifies the target."
+			}
+		},
+		{
+			"name": "target_id",
+			"label": "fields.target_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The record this row names. No foreign key and no edge: product variants and categories belong to Inventory, and a constraint across that boundary would make retiring a product fail on promotion data. A target whose record is gone simply stops matching."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "condition",
+			"label": { "en-US": "Condition" },
+			"type": "many:one",
+			"dest_schema": "sales_promotion_condition",
+			"key_map": { "condition_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

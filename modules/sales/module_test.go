@@ -1,6 +1,9 @@
 package sales
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/sky-as-code/nikki-erp/modules"
@@ -52,5 +55,64 @@ func TestDepsAreDeclaredOnce(t *testing.T) {
 	}
 	if len(seen) == 0 {
 		t.Error("Deps() is empty; Sales reads at least dynamicresource")
+	}
+}
+
+// TestEveryConsumedModuleIsDeclaredAsADependency guards the init-ordering bug that only shows up at
+// boot.
+//
+// infra/external binds a port for each module Sales consumes, and binds them EAGERLY: deps.Invoke
+// resolves them at Init rather than at first request. A module whose service is not registered yet
+// therefore panics the whole application at start-up rather than failing one later request.
+//
+// This caught a real failure: the accounting tax port was bound without "accounting" in Deps(), and
+// the loader started Sales first. Every unit test passed; the app did not boot.
+func TestEveryConsumedModuleIsDeclaredAsADependency(t *testing.T) {
+	declared := map[string]bool{}
+	for _, dep := range (&SalesModule{}).Deps() {
+		declared[dep] = true
+	}
+
+	// The module behind each port Sales binds in infra/external.
+	for port, module := range map[string]string{
+		"PaymentMethodExtService":        "paymentinvoice",
+		"TaxCalculationExtService":       "accounting",
+		"SettingsRegistrationExtService": "settings",
+		"EffectiveSettingsExtService":    "settings",
+		"UomUsageProbe":                  "essential",
+	} {
+		if !declared[module] {
+			t.Errorf("Sales binds %s but does not declare %q in Deps(); the loader may start "+
+				"Sales before that module registers its service, and Init will panic",
+				port, module)
+		}
+	}
+}
+
+// TestOwnAppServicesAreNotBoundAsExternalPorts guards the init-ordering cycle that only shows up at
+// boot.
+//
+// infra/external binds ports EAGERLY and runs FIRST in Init, because a derived service resolves its
+// ports when constructed. Sales' own application services are registered several steps later, so
+// resolving one of them in InitExternal is a same-module cycle — the boot fails with
+// "missing type: channel.ChannelPaymentAppService" and every unit test still passes.
+//
+// This caught exactly that: the payment mapping gate was first wired alongside the external ports.
+// It now resolves after InitApplicationServices, via SetChannelPaymentService.
+func TestOwnAppServicesAreNotBoundAsExternalPorts(t *testing.T) {
+	source, err := os.ReadFile(filepath.Join("infra", "external", "index.go"))
+	if err != nil {
+		t.Fatalf("infra/external/index.go must be readable: %v", err)
+	}
+
+	// Sales' own interfaces packages. A port bound in infra/external must belong to ANOTHER module.
+	for _, own := range []string{
+		"modules/sales/interfaces/channel",
+	} {
+		if strings.Contains(string(source), own) {
+			t.Errorf("infra/external binds %q, which is one of Sales' own application services; "+
+				"it is registered after InitExternal runs, so the container cannot resolve it "+
+				"there and Init will fail at boot", own)
+		}
 	}
 }

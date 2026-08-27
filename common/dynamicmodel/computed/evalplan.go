@@ -18,6 +18,9 @@ type EvalPlan struct {
 	// RelatedReads describe one batched source read per edge, covering every wanted related
 	// field on that edge.
 	RelatedReads []RelatedRead
+	// FunctionCalls describe one invocation per registered function, covering every wanted
+	// function field that names it.
+	FunctionCalls []FunctionCall
 
 	schemaPlan *SchemaPlan
 }
@@ -31,6 +34,15 @@ type RelatedRead struct {
 	RefColumn string
 	// Leaves maps computed field name -> source leaf column.
 	Leaves map[string]string
+}
+
+// FunctionCall is one batched invocation: run a registered function once for the whole page, then
+// assign its results to the fields that named it. Grouping by function name means N fields sharing
+// one function cost one call, matching how RelatedRead groups by edge.
+type FunctionCall struct {
+	FunctionName string
+	// Fields lists the computed fields this invocation fills, in plan order.
+	Fields []string
 }
 
 // BuildEvalPlan decides what a read request needs. requested is the client's explicit field
@@ -54,6 +66,7 @@ func BuildEvalPlan(schemaName string, requested []string) (*EvalPlan, ft.ClientE
 	plan := &EvalPlan{SchemaName: schemaName, Wanted: wanted, schemaPlan: schemaPlan}
 	plan.ExtraFields = missingOperands(schemaPlan, wanted, requested)
 	plan.RelatedReads = groupRelatedReads(schemaPlan, wanted)
+	plan.FunctionCalls = groupFunctionCalls(schemaPlan, wanted)
 	return plan, nil
 }
 
@@ -171,4 +184,30 @@ func groupRelatedReads(schemaPlan *SchemaPlan, wanted []string) []RelatedRead {
 		reads = append(reads, *byEdge[edge])
 	}
 	return reads
+}
+
+// groupFunctionCalls merges the wanted function fields per registered function name, so several
+// fields served by one function cost one invocation.
+func groupFunctionCalls(schemaPlan *SchemaPlan, wanted []string) []FunctionCall {
+	byName := map[string]*FunctionCall{}
+	var order []string
+	for _, name := range wanted {
+		fieldPlan := schemaPlan.Fields[name]
+		if fieldPlan.Def.Kind != ComputeFunction {
+			continue
+		}
+		call, ok := byName[fieldPlan.FunctionName]
+		if !ok {
+			call = &FunctionCall{FunctionName: fieldPlan.FunctionName}
+			byName[fieldPlan.FunctionName] = call
+			order = append(order, fieldPlan.FunctionName)
+		}
+		call.Fields = append(call.Fields, name)
+	}
+
+	calls := make([]FunctionCall, 0, len(order))
+	for _, functionName := range order {
+		calls = append(calls, *byName[functionName])
+	}
+	return calls
 }

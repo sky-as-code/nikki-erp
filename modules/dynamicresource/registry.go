@@ -1,6 +1,7 @@
 package dynamicresource
 
 import (
+	stdErr "errors"
 	"sort"
 	"sync"
 
@@ -154,7 +155,8 @@ func buildEngine(
 	// Every resource gets computed-field evaluation; a schema without computed fields passes
 	// through untouched. A module's extended service embeds this wrapped one, so its overrides
 	// keep layering on top.
-	service = engine.WithComputedFields(service, searchSourceRowsForComputed, defaultFields)
+	service = engine.WithComputedFields(
+		service, searchSourceRowsForComputed, invokeComputedFunction, defaultFields)
 
 	newEngine := engine.NewDynamicResourceEngine(engine.NewEngineParam{
 		Schema:     schema,
@@ -165,6 +167,33 @@ func buildEngine(
 		return nil, errors.Wrapf(err, "failed to define built-in actions of '%s'", schema.Name())
 	}
 	return newEngine, nil
+}
+
+// invokeComputedFunction runs a "function"-kind computed field's registered implementation. It
+// resolves the engine by schema name for the same reason searchSourceRowsForComputed does: the
+// service is built before the engine that will own it exists, so the lookup has to be deferred to
+// call time.
+func invokeComputedFunction(
+	ctx corectx.Context, schemaName string, functionName string, fieldName string,
+	rows []dmodel.DynamicFields,
+) ([]any, error) {
+	ownerEngine, ok := registrySingleton.GetEngine(schemaName)
+	if !ok {
+		return nil, errors.Errorf("no resource engine for computed-field function '%s'", schemaName)
+	}
+	fn, ok := ownerEngine.ComputedFieldFunction(functionName)
+	if !ok {
+		// AssertComputedFunctionsDefined makes this unreachable after a successful boot; it stays
+		// as a clear failure for a function registered later than the first read.
+		return nil, errors.Errorf(
+			"computed-field function '%s' of '%s.%s' is not registered",
+			functionName, schemaName, fieldName)
+	}
+	return fn(ctx, it.ComputeFnRequest{
+		SchemaName: schemaName,
+		FieldName:  fieldName,
+		Models:     rows,
+	})
 }
 
 // searchSourceRowsForComputed is the batched read behind related computed fields: the rows of
@@ -230,4 +259,19 @@ func (this *engineRegistry) AllEngines() []it.DynamicResourceEngine {
 		result = append(result, this.engines[name])
 	}
 	return result
+}
+
+// assertComputedFunctionsDefined checks every engine's "function"-kind computed fields against
+// the functions actually registered on it. Invoked from OnAppStarted, once every module's Init()
+// has run and had its chance to register.
+//
+// Every engine is reported rather than only the first, so one boot surfaces the whole gap.
+func assertComputedFunctionsDefined() error {
+	var failures []error
+	for _, resourceEngine := range registrySingleton.AllEngines() {
+		if err := resourceEngine.AssertComputedFunctionsDefined(); err != nil {
+			failures = append(failures, err)
+		}
+	}
+	return stdErr.Join(failures...)
 }

@@ -15,7 +15,7 @@ import (
 
 // assertPermission answers nil when the caller holds the entitlement, and a client error when it
 // does not. The resource code is the schema name, byte-identical to what the engine asserts and to
-// what 1005002_sales_iam.sql seeds.
+// what 1007002_sales_iam.sql seeds.
 func assertPermission(
 	ctx corectx.Context, actionCode string, resourceCode string, scope c.ResourceScope,
 ) *ft.ClientErrors {

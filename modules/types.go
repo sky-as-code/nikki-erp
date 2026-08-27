@@ -1,6 +1,10 @@
 package modules
 
-import "github.com/sky-as-code/nikki-erp/common/semver"
+import (
+	"context"
+
+	"github.com/sky-as-code/nikki-erp/common/semver"
+)
 
 type JSON map[string]any
 
@@ -55,6 +59,19 @@ type DynamicModule interface {
 
 type InCodeModuleAppStarted interface {
 	OnAppStarted() error
+}
+
+// InCodeModuleAppStopping is an optional hook, the counterpart to InCodeModuleAppStarted,
+// invoked after the OS termination signal and before the HTTP server shuts down. A module
+// that owns background goroutines implements it to stop accepting new work and drain what
+// is already in flight.
+//
+// It is best-effort. Every module shares one deadline carried by ctx, and a module that
+// blocks past it is abandoned rather than allowed to hold up the shutdown of the rest. A
+// module whose work must survive an abrupt stop has to be recoverable from persisted state;
+// this hook shortens the window in which that recovery is needed, it does not remove it.
+type InCodeModuleAppStopping interface {
+	OnAppStopping(ctx context.Context) error
 }
 
 type DefaultConfig []byte

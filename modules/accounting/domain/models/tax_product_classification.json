@@ -1,0 +1,69 @@
+{
+	"name": "accounting_tax_product_classification",
+	"label": "accounting_tax_product_classification.label",
+	"table_name": "accounting_tax_product_classifications",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"record_sub_label_field": "code",
+	"default_search_fields": ["code", "name", "external_code"],
+	"composite_uniques": [
+		{ "index_name": "acc_tx_class_tid_code", "fields": ["code", "org_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "What a product is, for tax purposes. Determination goes Product -> Classification -> Rule -> Tax, never Product -> rate, so that a legal change is a new rule rather than an edit to every product."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "jurisdiction_id",
+			"label": "fields.jurisdiction_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The jurisdiction whose statute defines this classification. Null for an organization's own internal grouping."
+			}
+		},
+		{
+			"name": "external_code",
+			"label": "fields.external_code",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The statutory code this classification corresponds to, when the law publishes one."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 1000 }
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "jurisdiction",
+			"label": { "en-US": "Jurisdiction" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_jurisdiction",
+			"key_map": { "jurisdiction_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

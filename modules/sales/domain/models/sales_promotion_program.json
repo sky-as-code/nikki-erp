@@ -1,0 +1,153 @@
+{
+	"name": "sales_promotion_program",
+	"label": "sales_promotion_program.label",
+	"table_name": "sales_promotion_programs",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["code", "name"],
+	"search_indexes": [
+		{ "index_name": "sales_promo_progs_tid_activation", "fields": ["activation_type"] },
+		{ "index_name": "sales_promo_progs_tid_validity", "fields": ["valid_from", "valid_until"] },
+		{ "index_name": "sales_promo_progs_tid_priority", "fields": ["priority"] },
+		{ "index_name": "sales_promo_progs_tid_excl_group", "fields": ["exclusive_group"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"unique": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The stable identifier this campaign is named by in reports and imports. Immutable, because a promotion's cost is reviewed long after it ends and the reference must still resolve."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "What appears on a receipt line explaining the discount, snapshotted onto the adjustment at the time of sale so renaming the campaign later does not rewrite what a customer was told."
+			}
+		},
+		{
+			"name": "activation_type",
+			"label": "fields.activation_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["automatic", "voucher_code"]
+			},
+			"required_for_create": true,
+			"default_value": "automatic",
+			"description": {
+				"en-US": "Whether this program applies on its own when its conditions hold, or only when a customer presents a code. One engine serves both (BR 21-22 forbid separate engines for promotions and vouchers): the difference is entirely this flag plus whether a code was supplied, not two evaluation paths that could disagree."
+			}
+		},
+		{
+			"name": "priority",
+			"label": "fields.priority",
+			"data_type": { "type": "int32", "min": 0, "max": 100000 },
+			"required_for_create": true,
+			"default_value": 0,
+			"description": {
+				"en-US": "Application order, LOWER FIRST (D-10). Ascending rather than descending because the first-applied program operates on the largest base, which is where an operator naturally wants their headline offer. Ties break by created_at then id, so the ordering is total and never depends on database record order (BR 29)."
+			}
+		},
+		{
+			"name": "valid_from",
+			"label": "fields.valid_from",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the campaign starts, or NULL for always. Effective dating rather than archiving on a schedule, so a campaign can be set up in advance and so an order priced under a past campaign can still be explained."
+			}
+		},
+		{
+			"name": "valid_until",
+			"label": "fields.valid_until",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When it stops, or NULL for open-ended. Exclusive of the instant itself."
+			}
+		},
+		{
+			"name": "stack_policy",
+			"label": "fields.stack_policy",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["stackable", "exclusive", "exclusive_within_group"]
+			},
+			"required_for_create": true,
+			"default_value": "stackable",
+			"description": {
+				"en-US": "How this program combines with others when no explicit compatibility row decides (D-08). exclusive means it applies alone on the order; exclusive_within_group excludes only programs sharing its exclusive_group. It is the FALLBACK, not the rule: an explicit denied row always wins, then an explicit allowed row, then this (D-09)."
+			}
+		},
+		{
+			"name": "exclusive_group",
+			"label": "fields.exclusive_group",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Names a set of programs at most one of which may apply — 'seasonal', 'staff_discount'. A free string rather than a foreign key, because a group has no properties of its own: it is nothing more than the name tying its members together."
+			}
+		},
+		{
+			"name": "usage_limit",
+			"label": "fields.usage_limit",
+			"data_type": { "type": "int32", "min": 0, "max": 2000000000 },
+			"description": {
+				"en-US": "How many times this program may be used in total, or NULL for unlimited. Enforced by a conditional UPDATE checking the affected row count rather than by a read-then-write (D-31), because two simultaneous redemptions of a last-remaining voucher must not both succeed."
+			}
+		},
+		{
+			"name": "usage_limit_per_customer",
+			"label": "fields.usage_limit_per_customer",
+			"data_type": { "type": "int32", "min": 0, "max": 2000000000 },
+			"description": {
+				"en-US": "How many times one customer may use it, or NULL for unlimited. Only meaningful on an order carrying a customer_reference: an anonymous sale cannot be counted against a customer, so this limit does not apply to one."
+			}
+		},
+		{
+			"name": "return_behavior",
+			"label": "fields.return_behavior",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["preserve_original_discount", "revalidate_and_clawback"]
+			},
+			"required_for_create": true,
+			"default_value": "preserve_original_discount",
+			"description": {
+				"en-US": "What happens to this program's discount when part of the order comes back (BR 31). preserve keeps the customer's original benefit; revalidate re-runs the engine over the remaining basket and reclaims the difference as a clawback adjustment (D-12). Defaults to preserve, the customer-favourable reading: reclaiming a discount someone already walked out with needs a deliberate business decision. Required by BR 31 and absent from the BR 22 field list."
+			}
+		},
+		{
+			"name": "restore_on_full_return",
+			"label": "fields.restore_on_full_return",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"description": {
+				"en-US": "Whether a fully returned order gives its voucher use back (BR 32). Defaults true: a customer who returned everything did not receive the benefit, and consuming their one-time voucher anyway would be taking something for nothing."
+			}
+		},
+		{
+			"name": "restore_on_partial_return",
+			"label": "fields.restore_on_partial_return",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"description": {
+				"en-US": "Whether a partial return gives the voucher use back (BR 32). Defaults false, unlike its full-return counterpart: the customer did keep part of the benefit, so returning the use as well would let one voucher fund two purchases."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

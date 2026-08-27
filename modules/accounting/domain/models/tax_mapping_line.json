@@ -1,0 +1,83 @@
+{
+	"name": "accounting_tax_mapping_line",
+	"label": "accounting_tax_mapping_line.label",
+	"table_name": "accounting_tax_mapping_lines",
+	"should_build_db": true,
+	"record_label_field": "sequence",
+	"default_search_fields": ["sequence"],
+	"composite_uniques": [
+		{
+			"index_name": "acc_tx_mapln_tid_map_src",
+			"fields": ["tax_mapping_id", "source_tax_id", "org_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "tax_mapping_id",
+			"label": "fields.tax_mapping_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "source_tax_id",
+			"label": "fields.source_tax_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The tax being replaced. Unique per mapping: two lines substituting the same source would make the outcome depend on row order."
+			}
+		},
+		{
+			"name": "target_tax_id",
+			"label": "fields.target_tax_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The tax substituted in. Deliberately a tax and never an accounting account: BR-TAX-ESS-013 keeps account mapping in Accounting, where Odoo puts it on the fiscal position."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 99999 },
+			"required_for_create": true,
+			"default_value": "0"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "mapping",
+			"label": { "en-US": "Tax mapping" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_mapping",
+			"key_map": { "tax_mapping_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "source_tax",
+			"label": { "en-US": "Source tax" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax",
+			"key_map": { "source_tax_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "target_tax",
+			"label": { "en-US": "Target tax" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax",
+			"key_map": { "target_tax_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

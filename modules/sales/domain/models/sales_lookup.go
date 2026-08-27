@@ -116,3 +116,45 @@ func FindActiveSalesPointsOfChannel(
 	)
 	return searchAll(ctx, repo, graph, limit, "FindActiveSalesPointsOfChannel")
 }
+
+// MaxPaymentMethodsPerChannel bounds how many payment mappings one channel is read with.
+//
+// Payment methods are configuration a human maintains, so a channel accepting more than a handful
+// is already unusual. The bound exists for the same reason as MaxSalesPointsPerChannel: a listing
+// must not become an unbounded read because a row was written in a loop.
+const MaxPaymentMethodsPerChannel = 500
+
+// FindPaymentMethodsOfChannel returns the mappings that say which payment methods a channel
+// accepts (CR 29).
+//
+// The result is the local half of the merged view: it is joined against the paymentinvoice listing
+// by the app service, never by the frontend. A mapping present here whose method is absent there is
+// stale, not deleted (CR 34).
+func FindPaymentMethodsOfChannel(
+	ctx corectx.Context, repo SalesSearcher, channelId string,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(
+			SalesChannelPaymentRelFieldSalesChannelId, dmodel.Equals, channelId),
+	)
+	return searchAll(ctx, repo, graph, MaxPaymentMethodsPerChannel, "FindPaymentMethodsOfChannel")
+}
+
+// FindChannelPaymentMapping resolves the single mapping of one channel to one method, which is
+// what makes enabling idempotent and disabling safe to repeat.
+//
+// The limit is 2 for the same reason as the other lookups: a composite unique makes a second row
+// impossible, and a read that silently took the first would hide the day that stopped being true.
+func FindChannelPaymentMapping(
+	ctx corectx.Context, repo SalesSearcher, channelId string, paymentMethodId string,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(
+			SalesChannelPaymentRelFieldSalesChannelId, dmodel.Equals, channelId),
+		*dmodel.NewSearchNode().NewCondition(
+			SalesChannelPaymentRelFieldPaymentMethodId, dmodel.Equals, paymentMethodId),
+	)
+	return searchAll(ctx, repo, graph, 2, "FindChannelPaymentMapping")
+}

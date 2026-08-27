@@ -1,0 +1,61 @@
+{
+    "type": "object",
+    "required": ["id", "execution_key", "scheduled_for", "status", "available_at"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "job_id": {
+            "type": ["string", "null"],
+            "minLength": 1
+        },
+        "execution_key": {
+            "type": "string",
+            "minLength": 1
+        },
+        "scheduled_for": {
+            "type": "string",
+            "minLength": 20
+        },
+        "next_occurrence_at": {
+            "type": ["string", "null"],
+            "minLength": 20
+        },
+        "status": {
+            "type": "string",
+            "enum": ["queued", "running", "waiting_retry", "succeeded", "failed", "cancelled"]
+        },
+        "available_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "started_at": {
+            "type": ["string", "null"],
+            "minLength": 20
+        },
+        "finished_at": {
+            "type": ["string", "null"],
+            "minLength": 20
+        },
+        "attempt_count": {
+            "type": ["integer", "null"],
+            "minimum": 0
+        },
+        "job_snapshot": {
+            "type": ["object", "null"]
+        },
+        "failure_code": {
+            "type": ["string", "null"]
+        }
+    },
+    "additionalProperties": false
+}

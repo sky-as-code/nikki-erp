@@ -1,0 +1,85 @@
+{
+	"name": "accounting_tax_jurisdiction",
+	"label": "accounting_tax_jurisdiction.label",
+	"table_name": "accounting_tax_jurisdictions",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"record_sub_label_field": "code",
+	"default_search_fields": ["code", "name", "country_code", "level"],
+	"composite_uniques": [
+		{ "index_name": "acc_tx_juris_tid_code", "fields": ["code", "org_id"] }
+	],
+	"search_indexes": [
+		{ "index_name": "acc_tx_juris_tid_parent", "fields": ["parent_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Business identifier of the taxing authority's territory, unique within the organization. SAP-style jurisdiction codes belong here."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "country_code",
+			"label": "fields.country_code",
+			"data_type": { "type": "string", "min": 2, "max": 2 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "ISO 3166-1 alpha-2. Present even on a city-level jurisdiction, so that determination can filter by country without walking the parent chain."
+			}
+		},
+		{
+			"name": "level",
+			"label": "fields.level",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["country", "state", "province", "county", "city", "special"]
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "parent_id",
+			"label": "fields.parent_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The containing jurisdiction. Null for a country. The graph must stay acyclic, which the engine enforces on create and update because a self-referencing FK cannot express it."
+			}
+		},
+		{
+			"name": "authority_name",
+			"label": "fields.authority_name",
+			"data_type": { "type": "string", "min": 0, "max": 200 },
+			"description": {
+				"en-US": "Name of the tax authority, for display on configuration screens and legal references."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "parent",
+			"label": { "en-US": "Parent jurisdiction" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_jurisdiction",
+			"key_map": { "parent_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

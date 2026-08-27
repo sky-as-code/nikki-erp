@@ -2,6 +2,9 @@ GENERAL:
   APP_NAME: "Nikki ERP"
 
 CORE:
+  # Seconds given to modules to drain background work after a termination signal, before
+  # the HTTP server closes and the process exits. A module that overruns is abandoned.
+  SHUTDOWN_GRACE_SECS: 30
   CQRS:
     # Number of seconds before a CQRS request is timed out
     REQUEST_TIMEOUT_SECS: 50
@@ -201,3 +204,39 @@ PAYMENTINVOICE:
     # Bounds one attempt to notify the ordering system of a payment result.
     TIMEOUT_SECS: 5
     MAX_RETRIES: 3
+
+JOBSCHEDULER:
+  # Attempt budget for a job that does not override max_attempts. Counts the first attempt,
+  # so 3 means attempts 1, 2 and 3.
+  DEFAULT_MAX_ATTEMPTS: 3
+  # Base retry delay, doubled by exponential backoff. A job may override it but never below
+  # 5 seconds: a smaller value is rejected rather than rounded up.
+  DEFAULT_RETRY_INTERVAL_SECS: 10
+  # Ceiling on a single backoff delay. Not a job field and not overridable through the API:
+  # lowering it to shed load must take effect on work already queued.
+  EXPBACKOFF_MAX_INTERVAL_SECS: 300
+  # Bounds one attempt end to end: the REST call, the command, the worker context, and the
+  # upper bound of the lease.
+  DEFAULT_ATTEMPT_TIMEOUT_SECS: 60
+  # Added to the attempt timeout to form the lease, so a worker that is merely slow is not
+  # reaped while it is still running.
+  LEASE_SAFETY_MARGIN_SECS: 30
+  # Fallback sweep that recovers from lost wake-ups and dead instances. This is a safety net,
+  # NOT the resolution of the cron schedule: raising it does not make jobs less punctual.
+  RECONCILIATION_INTERVAL_SECS: 60
+  # Bounded worker pool on each application instance.
+  WORKER_CONCURRENCY: 8
+  # Executions taken in one claim. Keep it in proportion to WORKER_CONCURRENCY: claiming more
+  # than the pool can start holds leases on work that is not running.
+  CLAIM_BATCH_SIZE: 20
+  # Applied when a job declares no concurrency policy.
+  DEFAULT_CONCURRENCY_POLICY: "forbid_overlap"
+  # Applied when a job declares no misfire policy.
+  DEFAULT_MISFIRE_POLICY: "run_once"
+  # Applied when a job is created without an explicit is_enabled.
+  DEFAULT_JOB_ENABLED: true
+  # How long finished executions and their attempts are kept.
+  HISTORY_RETENTION_DAYS: 30
+  # How late an occurrence may be noticed and still run normally. Beyond this it counts as
+  # missed and the misfire policy decides.
+  MISFIRE_THRESHOLD_SECS: 120

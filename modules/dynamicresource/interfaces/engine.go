@@ -40,6 +40,22 @@ type DynamicResourceEngine interface {
 	// or when a mandatory field of the definition is missing.
 	DefineAction(definition DynamicActionDefinition) error
 
+	// DefineComputedFieldFunction registers the Go implementation of a "function"-kind computed
+	// field. The name must match the schema's computed declaration; a schema naming a function no
+	// engine defines fails AssertComputedFunctionsDefined at boot rather than at first read.
+	//
+	// It fails when the name is empty or already registered on this engine.
+	DefineComputedFieldFunction(name string, fn ComputedFieldFn) error
+
+	// ComputedFieldFunction returns the registered implementation, if any.
+	ComputedFieldFunction(name string) (ComputedFieldFn, bool)
+
+	// AssertComputedFunctionsDefined reports every "function"-kind computed field of this
+	// engine's schema whose function was never registered. Called once at startup, after modules
+	// have had their chance to register — an engine is built before its module's Init body runs,
+	// so this cannot be a construction-time check.
+	AssertComputedFunctionsDefined() error
+
 	// ModifyAction overrides fields of an already defined action.
 	// It fails when the named action does not exist.
 	ModifyAction(delta DynamicActionDelta) error
@@ -53,6 +69,33 @@ type DynamicResourceEngine interface {
 	// ExecuteAction runs the full pipeline of the named action:
 	// permission check, validation and hooks, key fetching, extra validation, main process.
 	ExecuteAction(ctx corectx.Context, actionName string, params dmodel.DynamicFields) (*ActionResult, error)
+}
+
+// ComputedFieldFn produces the value of a "function"-kind computed field.
+//
+// It receives the whole page at once rather than one row at a time: a search returns up to a
+// page of rows, and a per-row signature would turn any lookup the function performs into an N+1.
+// It must return exactly one value per row in Models, in the same order; a length mismatch is an
+// error, never a partial fill.
+//
+// The function may resolve services from the dependency container. Resolve them once, when the
+// module registers the function, and close over them — resolving per call walks the DI graph on
+// every read.
+type ComputedFieldFn func(ctx corectx.Context, req ComputeFnRequest) ([]any, error)
+
+// ComputeFnRequest is what a computed-field function is given.
+type ComputeFnRequest struct {
+	// SchemaName and FieldName identify what is being computed, so one function can serve several
+	// fields or several schemas.
+	SchemaName string
+	FieldName  string
+
+	// Models are the rows to compute over: a page of rows on a read, exactly one on a
+	// meta/compute call, where it is the unsaved model the client posted.
+	Models []dmodel.DynamicFields
+
+	// Args carries the caller-supplied extras of a meta/compute call. Nil on a read.
+	Args map[string]any
 }
 
 // DynamicRestApi exposes a resource over HTTP.

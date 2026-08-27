@@ -16,6 +16,14 @@ type SourceSearchFn func(
 	ctx corectx.Context, schemaName string, keyColumn string, keys []any, fields []string,
 ) ([]dmodel.DynamicFields, error)
 
+// FunctionInvokeFn runs a registered computed-field function over a page of rows. Supplied by the
+// registry, which knows how to reach the engine holding the function registry — the same
+// indirection SourceSearchFn uses to reach another engine's repository.
+type FunctionInvokeFn func(
+	ctx corectx.Context, schemaName string, functionName string, fieldName string,
+	rows []dmodel.DynamicFields,
+) ([]any, error)
+
 // WithComputedFields decorates a resource service so declared computed fields evaluate on every
 // read and reject every write — the generic replacement for the per-module Search/GetById/GetOne
 // overrides modules used to hand-roll for virtual fields. Wrapping is unconditional and costs
@@ -26,18 +34,21 @@ type SourceSearchFn func(
 // names no fields — otherwise a defaulted listing evaluates the wrong set of computed fields
 // and reads operands the projection never selected.
 func WithComputedFields(
-	base it.DynamicResourceService, sourceSearch SourceSearchFn, defaultSearchFields []string,
+	base it.DynamicResourceService, sourceSearch SourceSearchFn, invokeFunction FunctionInvokeFn,
+	defaultSearchFields []string,
 ) it.DynamicResourceService {
 	return &computedFieldService{
 		DynamicResourceService: base,
 		sourceSearch:           sourceSearch,
+		invokeFunction:         invokeFunction,
 		defaultSearchFields:    defaultSearchFields,
 	}
 }
 
 type computedFieldService struct {
 	it.DynamicResourceService
-	sourceSearch SourceSearchFn
+	sourceSearch   SourceSearchFn
+	invokeFunction FunctionInvokeFn
 
 	// defaultSearchFields mirrors the wrapped service's fallback projection for Search.
 	defaultSearchFields []string
@@ -72,7 +83,7 @@ func (this *computedFieldService) Search(
 	if err != nil || plan == nil || result == nil || !result.HasData {
 		return result, err
 	}
-	if err := plan.Apply(result.Data.Items, this.rowSearch(ctx)); err != nil {
+	if err := plan.Apply(result.Data.Items, this.evalDeps(ctx)); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -107,7 +118,7 @@ func (this *computedFieldService) getOneComputed(
 	if err != nil || plan == nil || result == nil || !result.HasData || result.Data.Item == nil {
 		return result, err
 	}
-	if err := plan.Apply([]dmodel.DynamicFields{result.Data.Item}, this.rowSearch(ctx)); err != nil {
+	if err := plan.Apply([]dmodel.DynamicFields{result.Data.Item}, this.evalDeps(ctx)); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -162,9 +173,29 @@ func searchName(params dmodel.DynamicFields) (string, bool) {
 	}
 }
 
+// evalDeps binds the request context into the callbacks evaluation needs. The context travels in
+// the closure rather than through the computed package, which must stay free of engine and
+// transport concepts.
+func (this *computedFieldService) evalDeps(ctx corectx.Context) computed.EvalDeps {
+	return computed.EvalDeps{
+		Search: this.rowSearch(ctx),
+		Invoke: this.functionInvoker(ctx),
+	}
+}
+
 func (this *computedFieldService) rowSearch(ctx corectx.Context) computed.SourceSearchFn {
 	return func(schemaName string, keyColumn string, keys []any, fields []string) ([]dmodel.DynamicFields, error) {
 		return this.sourceSearch(ctx, schemaName, keyColumn, keys, fields)
+	}
+}
+
+func (this *computedFieldService) functionInvoker(ctx corectx.Context) computed.FunctionInvokerFn {
+	if this.invokeFunction == nil {
+		return nil
+	}
+	schemaName := this.Schema().Name()
+	return func(functionName string, fieldName string, rows []dmodel.DynamicFields) ([]any, error) {
+		return this.invokeFunction(ctx, schemaName, functionName, fieldName, rows)
 	}
 }
 

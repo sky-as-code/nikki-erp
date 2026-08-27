@@ -1,0 +1,85 @@
+{
+	"name": "sales_manual_discount",
+	"label": "sales_manual_discount.label",
+	"table_name": "sales_manual_discounts",
+	"should_build_db": true,
+	"default_search_fields": ["reason"],
+	"search_indexes": [
+		{ "index_name": "sales_manual_discs_tid_order", "fields": ["sales_order_id"] },
+		{ "index_name": "sales_manual_discs_tid_line", "fields": ["sales_order_line_id"] },
+		{ "index_name": "sales_manual_discs_tid_actor", "fields": ["granted_by"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_order_id",
+			"label": "fields.sales_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order this override applies to. Immutable: moving one between orders would change two totals at once, and the one it left would keep a price nobody authorised."
+			}
+		},
+		{
+			"name": "sales_order_line_id",
+			"label": "fields.sales_order_line_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The line discounted, or NULL for an order-level override. Both are real cases: a damaged item is discounted on its line, while a goodwill gesture applies to the basket and is spread across the lines proportionally by the pricing engine. Immutable, because the amount below was authorised against this line and re-pointing it would move an approval somebody gave for something else."
+			}
+		},
+		{
+			"name": "discount_amount",
+			"label": "fields.discount_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "What comes off, as a POSITIVE number. The minimum is zero rather than negative on purpose: BR 87.4 authorises a discount, and a negative value here would be a surcharge - silently adding money to a customer's bill, which is the worst failure available in this table. The engine caps it at what is actually owed, since discounting past the end is a refund with its own workflow rather than a discount that overshot."
+			}
+		},
+		{
+			"name": "reason",
+			"label": "fields.reason",
+			"data_type": { "type": "string", "min": 1, "max": 500 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Why the price was changed. MANDATORY (BR 87.4), and the minimum length is what enforces it: an override with no stated cause is indistinguishable from an error, and it is the field an auditor asking why this customer paid less than that one actually reads. It travels into the adjustment description, so BR 87.9's price explanation says why rather than merely that somebody was allowed to."
+			}
+		},
+		{
+			"name": "granted_by",
+			"label": "fields.granted_by",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Who authorised it. A plain reference to an identity in iam rather than a foreign key, since identities belong to another module and a discount must still explain itself after the person who granted it has left. Recorded because BR 87.4 gates this on permission, and a permission check that leaves no trace cannot be audited afterwards."
+			}
+		},
+		{
+			"name": "original_amount",
+			"label": "fields.original_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"description": {
+				"en-US": "What the price was BEFORE this override, captured when it was granted. Required by BR 87.4 to audit both the old and the new price, and stored rather than derived because repricing may move the surrounding numbers afterwards - so the only record of what the operator was actually looking at when they decided is the one taken at that moment."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_order",
+			"label": { "en-US": "Sales order" },
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": { "sales_order_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}
