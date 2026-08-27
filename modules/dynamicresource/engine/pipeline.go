@@ -63,19 +63,12 @@ func (this *DynamicResourceEngineImpl) ExecuteAction(
 		}
 	}
 
+	// The validator hooks do not run here. They are executed by the crud helper the resource
+	// service delegates to, so that they see schema-validated, service-field-injected data and
+	// fire whether the caller came through this pipeline or called the service directly.
 	var foundModel *dmodel.DynamicFields
 	flow := dyn.StartValidationFlow()
 	clientErrs, err := flow.
-		Step(func(vErrs *ft.ClientErrors) error {
-			if definition.ParamSchema == nil || definition.BeforeValidation == nil {
-				return nil
-			}
-			sanitized, err := definition.BeforeValidation(ctx, params, vErrs)
-			if err == nil && vErrs.Count() == 0 && sanitized != nil {
-				params = sanitized
-			}
-			return errors.Wrap(err, "ExecuteAction.BeforeValidation")
-		}).
 		Step(func(vErrs *ft.ClientErrors) error {
 			if definition.ParamSchema == nil {
 				return nil
@@ -89,13 +82,6 @@ func (this *DynamicResourceEngineImpl) ExecuteAction(
 			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
-			if definition.ParamSchema == nil || definition.AfterValidationSuccess == nil {
-				return nil
-			}
-			err := definition.AfterValidationSuccess(ctx, params)
-			return errors.Wrap(err, "ExecuteAction.AfterValidationSuccess")
-		}).
-		Step(func(vErrs *ft.ClientErrors) error {
 			if definition.KeysToFetch == nil {
 				return nil
 			}
@@ -105,13 +91,6 @@ func (this *DynamicResourceEngineImpl) ExecuteAction(
 			}
 			foundModel = fetched
 			return nil
-		}).
-		Step(func(vErrs *ft.ClientErrors) error {
-			if definition.ValidateExtra == nil {
-				return nil
-			}
-			err := definition.ValidateExtra(ctx, params, foundModel, vErrs)
-			return errors.Wrap(err, "ExecuteAction.ValidateExtra")
 		}).
 		End()
 

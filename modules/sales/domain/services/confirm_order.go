@@ -70,8 +70,16 @@ type ConfirmOrderResult struct {
 	// RedeemedVoucherIds are the reservations turned into real uses by this confirm.
 	RedeemedVoucherIds []string
 
-	// Pending names the BR 72 steps this build cannot perform yet, so a caller is told plainly
-	// rather than being left to assume a complete confirm. Empty once SALES-024 and SALES-029 land.
+	// Fulfillment is what Inventory answered when asked to hold the goods (SALES-049).
+	//
+	// Nil when the order needed no fulfilment at all — every line a service or a digital item — which
+	// is a legitimate outcome rather than a failure. A caller that must know whether goods are
+	// coming reads this rather than assuming a confirmed order implies a reservation.
+	Fulfillment *RaiseFulfillmentResult
+
+	// Pending names the BR 72 steps this confirm did not complete, so a caller is told plainly
+	// rather than being left to assume a complete confirm. Empty once SALES-024 lands and every
+	// order gets a reservation.
 	Pending []string
 }
 
@@ -94,6 +102,7 @@ func ConfirmOrder(
 	orderId string,
 	dLock lock.DistributedLock,
 	taxSvc itExt.TaxCalculationExtService,
+	fulfillment itExt.FulfillmentExtService,
 	policy SalesPolicy,
 ) (*ConfirmOrderResult, *ft.ClientErrors, error) {
 	if dLock == nil {
@@ -124,7 +133,7 @@ func ConfirmOrder(
 
 	// Everything below runs under the lock. The record is read AFTER acquiring it, never before:
 	// a record read while queuing describes the world as it was before the other holder finished.
-	return confirmUnderLock(ctx, orderId, taxSvc, policy)
+	return confirmUnderLock(ctx, orderId, taxSvc, fulfillment, policy)
 }
 
 // confirmLockKeyOf names the lock for one order.
@@ -139,6 +148,7 @@ func confirmUnderLock(
 	ctx corectx.Context,
 	orderId string,
 	taxSvc itExt.TaxCalculationExtService,
+	fulfillment itExt.FulfillmentExtService,
 	policy SalesPolicy,
 ) (*ConfirmOrderResult, *ft.ClientErrors, error) {
 	record, err := loadRecord(ctx, models.SalesOrderSchemaName, models.SalesOrderFieldId, orderId)
@@ -176,25 +186,71 @@ func confirmUnderLock(
 		return nil, nil, err
 	}
 
+	// Step 5: ask Inventory to hold the goods (BR 72, SALES-049).
+	//
+	// AFTER the order is committed, and outside its transaction, deliberately. Inventory writes its
+	// own transfer in its own transaction, so the two cannot be made atomic; the choice is which
+	// one survives a failure between them. A confirmed order with no reservation is recoverable —
+	// the request row records what is owed and can be retried — whereas a reservation against an
+	// order that failed to confirm holds stock nothing will ever claim.
+	//
+	// A refusal does NOT fail the confirm. Stock running out is not a reason to un-sell goods the
+	// customer has already bought; it is a reason for somebody to act on a rejected request.
+	fulfilment, vErrs, err := RaiseFulfillmentRequest(
+		ctx, orderId, string(models.SalesFulfillmentTypeReservation), fulfillment)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return &ConfirmOrderResult{
 		SalesOrderId:       orderId,
 		Status:             string(models.SalesOrderStatusConfirmed),
 		ConfirmedAt:        confirmedAt.Format(time.RFC3339),
 		Pricing:            priced,
 		RedeemedVoucherIds: redeemed,
-		Pending:            pendingConfirmSteps(),
+		Fulfillment:        fulfilment,
+		Pending:            pendingConfirmSteps(fulfilment, vErrs),
 	}, nil, nil
 }
 
-// pendingConfirmSteps names the BR 72 steps this build cannot perform.
+// pendingConfirmSteps names the BR 72 steps this confirm did not complete.
 //
 // Returned to the caller rather than logged, because a kiosk that believes a confirm was complete
-// will happily dispense goods against an order that has no bill and no fulfilment request.
-func pendingConfirmSteps() []string {
-	return []string{
-		"fulfilment_request (SALES-029: no inventory port bound)",
-		"initial_bill (SALES-024: sales_bills does not exist)",
+// will happily dispense goods against an order that has no bill and no reservation.
+//
+// Now computed from what actually happened rather than hardcoded: the inventory port is bound
+// (SALES-049), so fulfilment is only pending when this particular order did not get a reservation —
+// because nothing needed fulfilling, or because Inventory refused.
+func pendingConfirmSteps(result *RaiseFulfillmentResult, vErrs *ft.ClientErrors) []string {
+	pending := make([]string, 0, 2)
+
+	switch {
+	case vErrs != nil:
+		// Nothing to fulfil is the ordinary case — an order of services or digital goods — and is
+		// reported rather than hidden, so a kiosk does not wait for a delivery that is not coming.
+		pending = append(pending, "fulfilment_request ("+describeFirstViolation(vErrs)+")")
+	case result == nil:
+		pending = append(pending, "fulfilment_request (no request was raised)")
+	case !result.Dispatched:
+		pending = append(pending, "fulfilment_request (no inventory port bound)")
+	case result.Status == string(models.SalesFulfillmentStatusRejected):
+		pending = append(pending, "fulfilment_request (inventory rejected the request)")
 	}
+
+	pending = append(pending, "initial_bill (SALES-024: sales_bills does not exist)")
+	return pending
+}
+
+// describeFirstViolation names why fulfilment was skipped, in the caller's terms.
+func describeFirstViolation(vErrs *ft.ClientErrors) string {
+	if vErrs == nil || len(*vErrs) == 0 {
+		return "no reason given"
+	}
+	first := (*vErrs)[0]
+	if first.Message != "" {
+		return first.Message
+	}
+	return first.Key
 }
 
 // assertConfirmable applies the gates BR 72 puts before a confirm.

@@ -48,8 +48,9 @@ func mappingKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 }
 
 func validateMappingCreate(
-	_ corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	params := inputModel.GetFieldData()
 	mapping := models.NewTaxMappingFrom(params)
 	assertWellFormedPeriod(
 		mapping.GetEffectiveFrom(), mapping.GetEffectiveTo(),
@@ -58,8 +59,10 @@ func validateMappingCreate(
 }
 
 func validateMappingUpdate(
-	_ corectx.Context, params dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	params := inputModel.GetFieldData()
+	found := entityFields(foundModel)
 	assertLifecycleTransition(models.TaxMappingFieldLifecycleStatus, params, found, vErrs)
 	assertMaterialFieldsImmutable(
 		models.TaxMappingSchemaName, models.TaxMappingFieldLifecycleStatus, params, found, vErrs)
@@ -75,8 +78,9 @@ func validateMappingUpdate(
 }
 
 func validateMappingDelete(
-	_ corectx.Context, _ dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	found := entityFields(foundModel)
 	assertDeletableLifecycle(models.TaxMappingFieldLifecycleStatus, found, vErrs)
 	return nil
 }
@@ -109,16 +113,19 @@ func mappingLineKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 // Substituting a tax for itself is a no-op that reads as a configured rule, so an author debugging
 // why an export order still carries domestic VAT would find a mapping that appears to handle it.
 func validateMappingLineCreate(
-	_ corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	params := inputModel.GetFieldData()
 	assertMappingLineSubstitutes(models.NewTaxMappingLineFrom(params), vErrs)
 	return nil
 }
 
 func validateMappingLineUpdate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
+		found := entityFields(foundModel)
 		if err := assertParentMappingEditable(ctx, engine, found, vErrs); err != nil {
 			return err
 		}
@@ -219,8 +226,9 @@ func roundingPolicyKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields
 }
 
 func validateRoundingPolicyCreate(
-	_ corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	params := inputModel.GetFieldData()
 	policy := models.NewTaxRoundingPolicyFrom(params)
 	assertWellFormedPeriod(
 		policy.GetEffectiveFrom(), policy.GetEffectiveTo(),
@@ -230,8 +238,10 @@ func validateRoundingPolicyCreate(
 }
 
 func validateRoundingPolicyUpdate(
-	_ corectx.Context, params dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	params := inputModel.GetFieldData()
+	found := entityFields(foundModel)
 	assertLifecycleTransition(models.TaxRoundingPolicyFieldLifecycleStatus, params, found, vErrs)
 	assertMaterialFieldsImmutable(
 		models.TaxRoundingPolicySchemaName,
@@ -249,8 +259,9 @@ func validateRoundingPolicyUpdate(
 }
 
 func validateRoundingPolicyDelete(
-	_ corectx.Context, _ dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	found := entityFields(foundModel)
 	assertDeletableLifecycle(models.TaxRoundingPolicyFieldLifecycleStatus, found, vErrs)
 	return nil
 }

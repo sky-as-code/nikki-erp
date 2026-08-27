@@ -251,7 +251,7 @@ func readDecimalField(params dmodel.DynamicFields, field string) (decimal.Decima
 }
 
 func rejectQuantWrite(
-	_ corectx.Context, _ dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	services.AssertQuantNotClientWritable(vErrs)
 	return nil

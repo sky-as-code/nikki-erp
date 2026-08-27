@@ -53,6 +53,23 @@ const (
 	// Empty means no tax: the pricing engine writes real zeros. That is different from an
 	// undetermined tax, which refuses the sale rather than recording a zero.
 	OrgSettingDefaultSalesTaxCode = "default_sales_tax_code"
+
+	// OrgSettingOutgoingOperationTypeId is the Inventory operation type a sale ships against
+	// (SALES-049), and OrgSettingIncomingOperationTypeId the one a return is received against.
+	//
+	// Sales holds the ID and nothing else. It never names a warehouse or a location: the operation
+	// type carries its own default source and destination, so choosing the type is the whole of the
+	// decision Sales gets to make, and where the goods actually sit stays Inventory's (BR 3.2).
+	//
+	// **Overridable, unlike the tax settings.** Two organizations shipping from different warehouses
+	// is ordinary — it is the normal reason to run more than one org — whereas two taxing the same
+	// product differently would produce fiscal documents that disagree about what was owed.
+	//
+	// Empty means fulfilment is not configured. A fulfilment request is then REFUSED with a reason
+	// naming the gap, rather than guessing a type: picking the wrong one moves real goods out of the
+	// wrong place, and that is not a mistake worth a default.
+	OrgSettingOutgoingOperationTypeId = "outgoing_operation_type_id"
+	OrgSettingIncomingOperationTypeId = "incoming_operation_type_id"
 )
 
 // The defaults, restated in Go so that a caller reading a setting has something to fall back on

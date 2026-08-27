@@ -29,6 +29,16 @@ type SalesPolicy struct {
 
 	// DefaultSalesTaxCode names the accounting tax applied to every sale line. Empty means untaxed.
 	DefaultSalesTaxCode string
+
+	// OutgoingOperationTypeId and IncomingOperationTypeId name the Inventory operation types a sale
+	// ships against and a return is received against (SALES-049).
+	//
+	// Empty means fulfilment is not configured, and a fulfilment request is refused rather than
+	// guessed. Unlike every other field here there is no safe default to fall back to: an operation
+	// type decides which warehouse the goods leave, and picking one on the organization's behalf
+	// would move real stock out of a place nobody chose.
+	OutgoingOperationTypeId string
+	IncomingOperationTypeId string
 }
 
 // DefaultSalesPolicy is what applies when nothing has been configured.
@@ -95,6 +105,10 @@ func ResolveSalesPolicy(
 		salessettings.OrgSettingDefaultTaxRate, policy.DefaultTaxRate)
 	policy.DefaultSalesTaxCode = stringSetting(values,
 		salessettings.OrgSettingDefaultSalesTaxCode, policy.DefaultSalesTaxCode)
+	policy.OutgoingOperationTypeId = stringSetting(values,
+		salessettings.OrgSettingOutgoingOperationTypeId, policy.OutgoingOperationTypeId)
+	policy.IncomingOperationTypeId = stringSetting(values,
+		salessettings.OrgSettingIncomingOperationTypeId, policy.IncomingOperationTypeId)
 
 	return policy
 }

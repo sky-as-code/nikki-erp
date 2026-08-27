@@ -115,6 +115,9 @@ func (this *DynamicResourceEngineImpl) DefineAction(definition it.DynamicActionD
 	if err := validateNestingFields(definition); err != nil {
 		return err
 	}
+	if err := validateHookFields(definition); err != nil {
+		return err
+	}
 
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -172,6 +175,37 @@ func validateRestFields(definition it.DynamicActionDefinition) error {
 // validateNestingFields checks the primary-resource fields. The two are a pair: a parent schema
 // with no id param would nest under a path segment nothing fills in, and an id param with no
 // parent schema names a parent that never appears in the route.
+// validateHookFields rejects a validator hook attached to an action that has nowhere to run it.
+//
+// The hooks are executed by the crud helper the resource service delegates to, and only the
+// create, update and delete helpers accept them. Attaching one to set_archived or to a read
+// action would be silently ignored - a guard that looks installed and never fires - so it is
+// reported at registration instead, where the stack trace still names the offending module.
+//
+// A custom action is exempt: its MainProcess is the module's own code and may call the hooks
+// itself. Only the built-in CRUD names are constrained.
+func validateHookFields(definition it.DynamicActionDefinition) error {
+	hasHook := definition.BeforeValidation != nil ||
+		definition.AfterValidationSuccess != nil ||
+		definition.ValidateExtra != nil
+	if !hasHook {
+		return nil
+	}
+
+	switch definition.ActionName {
+	case it.ActionCreate, it.ActionUpdate, it.ActionDelete:
+		return nil
+	case it.ActionSetArchived, it.ActionGetById, it.ActionGetByUnique,
+		it.ActionSearch, it.ActionExists, it.ActionGetSchema:
+		return errors.Errorf(
+			"action '%s' cannot carry validator hooks: the crud helper behind it accepts none, "+
+				"so the hook would never run",
+			definition.ActionName,
+		)
+	}
+	return nil
+}
+
 func validateNestingFields(definition it.DynamicActionDefinition) error {
 	hasSchema := definition.PrimarySchema != nil && *definition.PrimarySchema != ""
 	hasIdParam := definition.PrimaryRestIdParam != nil && *definition.PrimaryRestIdParam != ""
@@ -273,6 +307,9 @@ func (this *DynamicResourceEngineImpl) ModifyAction(delta it.DynamicActionDelta)
 		return err
 	}
 	if err := validateNestingFields(merged); err != nil {
+		return err
+	}
+	if err := validateHookFields(merged); err != nil {
 		return err
 	}
 	if err := this.assertRouteFree(merged); err != nil {

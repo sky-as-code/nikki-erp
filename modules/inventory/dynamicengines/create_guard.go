@@ -3,7 +3,6 @@ package dynamicengines
 import (
 	"go.bryk.io/pkg/errors"
 
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -33,9 +32,9 @@ func rejectArchivedOnCreate(engine drif.DynamicResourceEngine) error {
 	return engine.ModifyAction(drif.DynamicActionDelta{
 		ActionName: drif.ActionCreate,
 		ValidateExtra: func(
-			ctx corectx.Context, params dmodel.DynamicFields, foundModel *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+			ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 		) error {
-			if _, sent := params[basemodel.FieldIsArchived]; sent {
+			if _, sent := inputModel.GetFieldData()[basemodel.FieldIsArchived]; sent {
 				vErrs.Append(*ft.NewBusinessViolation(basemodel.FieldIsArchived,
 					"common.immutable_at_create",
 					"is_archived cannot be set at create time; use the archived action instead"))
@@ -44,7 +43,7 @@ func rejectArchivedOnCreate(engine drif.DynamicResourceEngine) error {
 			if existing == nil {
 				return nil
 			}
-			return errors.Wrap(existing(ctx, params, foundModel, vErrs), "rejectArchivedOnCreate")
+			return errors.Wrap(existing(ctx, inputModel, foundModel, vErrs), "rejectArchivedOnCreate")
 		},
 	})
 }

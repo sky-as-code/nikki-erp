@@ -14,6 +14,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	it "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
 // Query parameter names accepted by the read endpoints.
@@ -64,28 +65,33 @@ func echoBindParams(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
 	return params, nil
 }
 
-// bindGenericParams is echoBindParams plus the org query parameter, and serves every action a
-// feature module defined without a binding of its own. echoBindParams merges the whole query
-// string on GET and DELETE, but not on the body methods, so a POST-shaped custom action would
-// otherwise never see the org the caller sent.
-func (this *DynamicRestApiImpl) bindGenericParams(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
+// bindGenericParams is echoBindParams plus the org, and serves every action a feature module
+// defined without a binding of its own. A generic action is POST-shaped, so its org normally
+// arrives in the body; echoBindParams has already merged that. mergeOrgId still runs because
+// echoBindParams merges the query string on GET and DELETE only, so a bodyless custom action
+// would otherwise never see the org the caller sent in the URL.
+func (this *DynamicRestApiImpl) bindGenericParams(
+	echoCtx *echo.Context, actionName string,
+) (dmodel.DynamicFields, error) {
 	params, err := echoBindParams(echoCtx)
 	if err != nil {
 		return nil, err
 	}
-	this.mergeOrgId(echoCtx, params)
+	this.mergeOrgId(echoCtx, params, actionName)
 	return params, nil
 }
 
-// bindRawBodyParams is rawBodyParams plus the org query parameter, for actions such as exists
-// whose body is a query rather than a record.
-func (this *DynamicRestApiImpl) bindRawBodyParams(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
+// bindRawBodyParams is rawBodyParams plus the org, for actions such as exists whose body is a
+// query rather than a record.
+func (this *DynamicRestApiImpl) bindRawBodyParams(
+	echoCtx *echo.Context, actionName string,
+) (dmodel.DynamicFields, error) {
 	params, err := rawBodyParams(echoCtx)
 	if err != nil {
 		return nil, err
 	}
 	mergePathParams(echoCtx, params)
-	this.mergeOrgId(echoCtx, params)
+	this.mergeOrgId(echoCtx, params, actionName)
 	return params, nil
 }
 
@@ -113,21 +119,53 @@ func mergeQueryParams(echoCtx *echo.Context, params dmodel.DynamicFields) {
 	}
 }
 
-// mergeOrgId copies the org query parameter into params when the caller sent one and the
-// resource actually has an org column. Absence is not an error here: the pipeline's org-scope
-// step is what rejects a missing value, so that the same rule applies to every action rather
-// than to whichever bindings remembered to check.
+// mergeOrgId resolves the org a request acts in, from the request body on a write action and
+// from the query string otherwise. Absence is not an error here: the pipeline's org-scope step
+// is what rejects a missing value, so that the same rule applies to every action rather than to
+// whichever bindings remembered to check.
+//
+// A write action carries the record, and the record carries its own org_id field, so that is
+// where the org is read from. A read has no body, leaving the query string as its only source.
+// The query parameter stays a fallback for writes too: an ActionTypeGeneric action may be a
+// bodyless POST such as ":id/confirm", which has no body to read an org from.
 //
 // The schema guard matters for create: createBodyParams rejects body keys the schema does not
 // declare, so writing org_id into the params of an org-less resource would invent a field the
-// resource has no column for.
-func (this *DynamicRestApiImpl) mergeOrgId(echoCtx *echo.Context, params dmodel.DynamicFields) {
+// resource has no column for. That guard is also why an org-less resource is never refused for
+// lacking an org - it is left alone entirely.
+func (this *DynamicRestApiImpl) mergeOrgId(
+	echoCtx *echo.Context, params dmodel.DynamicFields, actionName string,
+) {
 	if !this.schemaHasOrgId() {
+		return
+	}
+	// Every write binder parses the body into params before calling this, so a body-supplied
+	// org is already present and only has to be left alone.
+	if this.isBodyOrgAction(actionName) && readString(params, queryParamOrgId) != "" {
 		return
 	}
 	if orgId := echoCtx.QueryParam(queryParamOrgId); orgId != "" {
 		params[queryParamOrgId] = orgId
 	}
+}
+
+// isBodyOrgAction reports whether an action takes its org_id from the request body rather than
+// the query string. True for the action types that carry a body: create, both update flavours,
+// and the generic type feature modules use for custom actions.
+//
+// An action the engine does not know falls back to query-only, which is the safe direction: a
+// custom action registered outside the normal path keeps the behaviour it had before.
+func (this *DynamicRestApiImpl) isBodyOrgAction(actionName string) bool {
+	definition, exists := this.engine.Action(actionName)
+	if !exists {
+		return false
+	}
+	switch definition.ActionType {
+	case it.ActionTypeCreate, it.ActionTypeUpdatePatch,
+		it.ActionTypeUpdateReplace, it.ActionTypeGeneric:
+		return true
+	}
+	return false
 }
 
 // schemaHasOrgId reports whether this engine's resource declares an org column. A resource that
@@ -185,9 +223,9 @@ func (this *DynamicRestApiImpl) createBodyParams(echoCtx *echo.Context) (dmodel.
 	params := httpserver.FilterToDynamicEntity(raw, this.engine.Schema())
 	mergePathParams(echoCtx, params)
 	// After the unknown-field check, so that an org-less resource never sees an invented
-	// org_id key. The query parameter deliberately overrides whatever the body carried: the
-	// route decides which org a record is created in, not the payload.
-	this.mergeOrgId(echoCtx, params)
+	// org_id key. Create is a write action, so an org_id the body carried is authoritative and
+	// the query parameter only fills in when the body named none.
+	this.mergeOrgId(echoCtx, params, it.ActionCreate)
 	return params, nil
 }
 
@@ -234,7 +272,7 @@ func (this *DynamicRestApiImpl) deleteParams(echoCtx *echo.Context) (dmodel.Dyna
 	params := dmodel.DynamicFields{}
 	mergePathParams(echoCtx, params)
 	params[basemodel.FieldId] = echoCtx.Param("id")
-	this.mergeOrgId(echoCtx, params)
+	this.mergeOrgId(echoCtx, params, it.ActionDelete)
 	return params, nil
 }
 
@@ -243,7 +281,7 @@ func (this *DynamicRestApiImpl) getByIdParams(echoCtx *echo.Context) (dmodel.Dyn
 	params := dmodel.DynamicFields{}
 	mergePathParams(echoCtx, params)
 	params[basemodel.FieldId] = echoCtx.Param("id")
-	this.mergeOrgId(echoCtx, params)
+	this.mergeOrgId(echoCtx, params, it.ActionGetById)
 	if fields := readCsvQuery(echoCtx, queryParamFields); len(fields) > 0 {
 		params[queryParamFields] = fields
 	}
@@ -254,7 +292,7 @@ func (this *DynamicRestApiImpl) getByIdParams(echoCtx *echo.Context) (dmodel.Dyn
 func (this *DynamicRestApiImpl) searchParams(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
 	params := dmodel.DynamicFields{}
 	mergePathParams(echoCtx, params)
-	this.mergeOrgId(echoCtx, params)
+	this.mergeOrgId(echoCtx, params, it.ActionSearch)
 
 	if fields := readCsvQuery(echoCtx, queryParamFields); len(fields) > 0 {
 		params[queryParamFields] = fields
@@ -310,7 +348,7 @@ func (this *DynamicRestApiImpl) archivedParams(echoCtx *echo.Context) (dmodel.Dy
 	}
 	mergePathParams(echoCtx, params)
 	params[basemodel.FieldId] = echoCtx.Param("id")
-	this.mergeOrgId(echoCtx, params)
+	this.mergeOrgId(echoCtx, params, it.ActionSetArchived)
 	return params, nil
 }
 
@@ -323,7 +361,7 @@ func (this *DynamicRestApiImpl) updateParams(echoCtx *echo.Context) (dmodel.Dyna
 	}
 	mergePathParams(echoCtx, params)
 	params[basemodel.FieldId] = echoCtx.Param("id")
-	this.mergeOrgId(echoCtx, params)
+	this.mergeOrgId(echoCtx, params, it.ActionUpdate)
 	return params, nil
 }
 

@@ -54,8 +54,9 @@ func jurisdictionKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 // walk through this row non-terminating.
 func validateJurisdictionCreate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
 		juris := models.NewTaxJurisdictionFrom(params)
 		return assertJurisdictionAcyclic(ctx, engine, juris.GetParentId(), nil, vErrs)
 	}
@@ -64,8 +65,10 @@ func validateJurisdictionCreate(engine drif.DynamicResourceEngine) drif.ActionVa
 // validateJurisdictionUpdate rejects a reparent that would put the record inside its own ancestry.
 func validateJurisdictionUpdate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
+		found := entityFields(foundModel)
 		if _, submitted := params[models.TaxJurisdictionFieldParentId]; !submitted {
 			return nil
 		}

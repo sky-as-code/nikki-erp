@@ -15,6 +15,7 @@ import (
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 // NewStockTransferDomainService derives the transfer service from the engine's default one.
@@ -37,6 +38,12 @@ type StockTransferDomainServiceImpl struct {
 }
 
 var _ drif.DynamicResourceService = (*StockTransferDomainServiceImpl)(nil)
+
+// The published goods-movement port (SALES-049). Asserted here so that changing one of the six
+// operations' signatures breaks the build in this file, naming the contract it broke — rather than
+// at the deps.Register in index.go, or, worse, at a consumer in another module that can no longer
+// bind. The port is the promise; this line is what keeps the promise checked.
+var _ itStock.StockTransferMovementService = (*StockTransferDomainServiceImpl)(nil)
 
 // transferOperationContext carries what every movement operation needs: the engines it writes
 // through, and the transfer it is acting on. Assembling it in one place keeps each operation's

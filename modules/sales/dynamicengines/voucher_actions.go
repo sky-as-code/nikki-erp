@@ -449,6 +449,7 @@ var (
 	taxCalculation    itExt.TaxCalculationExtService
 	productVariants   itExt.ProductVariantExtService
 	effectiveSettings itExt.EffectiveSettingsExtService
+	orderFulfillment  itExt.FulfillmentExtService
 
 	// orderLock guards the operations that are not single-row updates (D-30). Confirm and cancel
 	// both refuse to run without it rather than proceeding unguarded.
@@ -465,6 +466,7 @@ func SetPricingPorts(
 	settings itExt.EffectiveSettingsExtService,
 	dLock lock.DistributedLock,
 	products itExt.ProductVariantExtService,
+	fulfillment itExt.FulfillmentExtService,
 ) {
 	taxCalculation = tax
 	effectiveSettings = settings
@@ -474,6 +476,12 @@ func SetPricingPorts(
 	// value - a deployment without inventory has no master to be withdrawn from - and the gate
 	// permits in that case rather than refusing, which would make Sales unusable there.
 	productVariants = products
+
+	// The fulfilment port asks Inventory to hold the goods a confirm has sold (SALES-049). Nil is
+	// supported for the same reason as the product port: a deployment without inventory has no
+	// stock to reserve. The request is then written and left pending rather than refused, because
+	// the sale is real and the goods are genuinely owed.
+	orderFulfillment = fulfillment
 }
 
 // SetChannelPaymentService installs the mapping gate, and is called AFTER the application services
@@ -622,7 +630,7 @@ func processConfirmOrder(ctx corectx.Context, input drif.ProcessInput) (*drif.Ac
 	policy := services.ResolveSalesPolicy(ctx, effectiveSettings)
 
 	result, vErrs, err := services.ConfirmOrder(ctx,
-		readStringParam(input.Params, paramId), orderLock, taxCalculation, policy)
+		readStringParam(input.Params, paramId), orderLock, taxCalculation, orderFulfillment, policy)
 	if err != nil {
 		return nil, err
 	}

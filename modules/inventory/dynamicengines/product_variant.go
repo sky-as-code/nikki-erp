@@ -100,8 +100,9 @@ func variantKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 // validateVariantCreate enforces the invariants that apply to a brand-new variant.
 func validateVariantCreate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
 		variant := models.NewProductVariantFrom(params)
 		return assertUniqueCombination(ctx, engine, variant, "", vErrs)
 	}
@@ -113,12 +114,13 @@ func validateVariantCreate(engine drif.DynamicResourceEngine) drif.ActionValidat
 // result is validated, rather than only what was sent.
 func validateVariantUpdate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, foundModel *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
 		if foundModel == nil {
 			return nil
 		}
-		submitted, stored := models.NewProductVariantFrom(params), models.NewProductVariantFrom(*foundModel)
+		submitted, stored := models.NewProductVariantFrom(params), models.NewProductVariantFrom(foundModel.GetFieldData())
 		assertNotReparented(submitted, stored, vErrs)
 		if vErrs.Count() > 0 {
 			return nil

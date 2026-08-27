@@ -49,8 +49,9 @@ func componentKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 
 func validateComponentCreate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
 		component := models.NewTaxComponentFrom(params)
 		return assertComponentAcyclic(ctx, engine, component, vErrs)
 	}
@@ -58,8 +59,10 @@ func validateComponentCreate(engine drif.DynamicResourceEngine) drif.ActionValid
 
 func validateComponentUpdate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
+		found := entityFields(foundModel)
 		if err := assertParentVersionEditable(ctx, engine, found, vErrs); err != nil {
 			return err
 		}

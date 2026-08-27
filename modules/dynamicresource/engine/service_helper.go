@@ -6,6 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	it "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
@@ -60,6 +61,48 @@ func unwrapPagedResult(
 		SchemaEtag:    paged.SchemaEtag,
 	}
 	return out
+}
+
+// findByKeys fetches the record identified by keys, as the entity the validator hooks speak.
+//
+// It returns (nil, nil) with vErrs populated when the record does not exist, so a caller can
+// tell "no such record" from a failed read: the first is the caller's mistake, the second the
+// server's.
+func (this *DynamicResourceServiceImpl) findByKeys(
+	ctx corectx.Context, keys dmodel.DynamicFields, vErrs *ft.ClientErrors,
+) (*it.DynamicEntity, error) {
+	found, err := this.repository.FindByKeys(ctx, keys)
+	if err != nil {
+		return nil, errors.Wrap(err, "findByKeys")
+	}
+	if found.ClientErrors.Count() > 0 {
+		vErrs.Concat(found.ClientErrors)
+		return nil, nil
+	}
+	if !found.HasData {
+		vErrs.Append(*ft.NewAnonymousNotFoundError())
+		return nil, nil
+	}
+	return it.NewDynamicEntityFrom(found.Data), nil
+}
+
+// assertActionSupported reports the action as unsupported when the engine was created
+// without it. A client error rather than a hard error: asking for an action this resource
+// does not have is the caller's mistake, not a server fault.
+//
+// It guards the direct-call path. The REST surface needs no guard, because an undefined
+// action has no route.
+func (this *DynamicResourceServiceImpl) assertActionSupported(action it.CrudAction) *ft.ClientErrors {
+	if len(this.crudActions) == 0 || this.crudActions[action] {
+		return nil
+	}
+	cErrs := ft.NewClientErrors()
+	cErrs.Append(*ft.NewAnonymousBusinessViolation(
+		ft.ErrorKey("err_action_not_supported"),
+		"This resource does not support the requested action",
+		map[string]any{"action": string(action), "resource": this.schema.Name()},
+	))
+	return cErrs
 }
 
 // toActionResult lifts a typed service result into the shape every action returns,

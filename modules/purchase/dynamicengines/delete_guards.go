@@ -42,8 +42,12 @@ func defineOrderDeleteGuard(engine drif.DynamicResourceEngine) error {
 }
 
 func guardOrderDelete(
-	_ corectx.Context, foundModel dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *drif.DynamicEntity, found *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	if found == nil {
+		return nil
+	}
+	foundModel := found.GetFieldData()
 	assertDeletableStatus(
 		foundModel, models.PurchaseOrderFieldStatus, deletableOrderStatuses,
 		"purchase_order.not_deletable",
@@ -61,8 +65,12 @@ func defineAgreementDeleteGuard(engine drif.DynamicResourceEngine) error {
 }
 
 func guardAgreementDelete(
-	_ corectx.Context, foundModel dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *drif.DynamicEntity, found *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	if found == nil {
+		return nil
+	}
+	foundModel := found.GetFieldData()
 	assertDeletableStatus(
 		foundModel, models.AgreementFieldStatus, deletableAgreementStatuses,
 		"purchase_agreement.not_deletable",

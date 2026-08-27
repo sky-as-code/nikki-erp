@@ -151,6 +151,17 @@ func buildEngine(
 		Schema:        schema,
 		Repository:    repository,
 		DefaultFields: defaultFields,
+		CrudActions:   options.CrudActions,
+		// Deferred for the same reason invokeComputedFunction defers its own lookup: the
+		// service is built before the engine that will own it exists. A closure captured here
+		// also survives SetResourceService, which a field set on the engine afterwards would not.
+		ActionLookup: func(actionName string) (it.DynamicActionDefinition, bool) {
+			ownerEngine, ok := registrySingleton.GetEngine(schema.Name())
+			if !ok {
+				return it.DynamicActionDefinition{}, false
+			}
+			return ownerEngine.Action(actionName)
+		},
 	})
 	// Every resource gets computed-field evaluation; a schema without computed fields passes
 	// through untouched. A module's extended service embeds this wrapped one, so its overrides
@@ -163,7 +174,7 @@ func buildEngine(
 		Repository: repository,
 		Service:    service,
 	})
-	if err := engine.DefineBuiltinActions(newEngine); err != nil {
+	if err := engine.DefineBuiltinActions(newEngine, options.CrudActions...); err != nil {
 		return nil, errors.Wrapf(err, "failed to define built-in actions of '%s'", schema.Name())
 	}
 	return newEngine, nil

@@ -5,6 +5,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
+	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
 // mergeFields overlays a submitted patch onto the stored row.
@@ -41,4 +42,16 @@ func assertWellFormedPeriod(
 		vErrs.Append(*ft.NewBusinessViolation(field, "tax.period_ends_before_it_starts",
 			"the effective end date must be on or after the effective start date"))
 	}
+}
+
+// entityFields exposes a fetched entity's fields as a pointer, preserving nil.
+//
+// The validation hooks receive nil when there is no stored record; the assertions below distinguish
+// that from a record whose fields happen to be empty, so the nil must survive the unwrapping.
+func entityFields(entity *drif.DynamicEntity) *dmodel.DynamicFields {
+	if entity == nil {
+		return nil
+	}
+	fields := entity.GetFieldData()
+	return &fields
 }

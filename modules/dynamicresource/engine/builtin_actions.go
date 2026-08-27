@@ -11,85 +11,109 @@ import (
 // DefineBuiltinActions registers the CRUD actions every resource gets for free.
 // The registry calls it right after constructing an engine.
 //
+// An empty `only` defines all of them; a non-empty list defines just those, so that an
+// engine can be created without the actions its resource has no business exposing. An
+// action left out has no REST route and is refused by the resource service.
+//
 // They declare no ParamSchema: the crud helpers the service delegates to already validate
 // the params against the resource schema, inject the service fields, check the unique
 // constraints and enforce the etag on update. Declaring a schema here would validate twice.
 // A module that needs a pipeline-level schema on a built-in can still add one with
 // ModifyAction; the second validation is idempotent on already-sanitized params.
-func DefineBuiltinActions(engine it.DynamicResourceEngine) error {
-	return stdErr.Join(
-		engine.DefineAction(it.DynamicActionDefinition{
+func DefineBuiltinActions(engine it.DynamicResourceEngine, only ...it.CrudAction) error {
+	allowed := make(map[it.CrudAction]bool, len(only))
+	for _, name := range only {
+		allowed[name] = true
+	}
+	isWanted := func(name it.CrudAction) bool {
+		return len(allowed) == 0 || allowed[name]
+	}
+
+	builtins := []struct {
+		crudAction it.CrudAction
+		definition it.DynamicActionDefinition
+	}{
+		{it.CrudActionCreate, it.DynamicActionDefinition{
 			ActionName:  it.ActionCreate,
 			ActionType:  it.ActionTypeCreate,
 			RestPath:    "",
 			Permission:  it.PermissionCreate,
 			MainProcess: processCreate,
-		}),
-		engine.DefineAction(it.DynamicActionDefinition{
+		}},
+		{it.CrudActionUpdate, it.DynamicActionDefinition{
 			ActionName:  it.ActionUpdate,
 			ActionType:  it.ActionTypeUpdatePatch,
 			RestPath:    ":id",
 			Permission:  it.PermissionUpdate,
 			MainProcess: processUpdate,
-		}),
-		engine.DefineAction(it.DynamicActionDefinition{
+		}},
+		{it.CrudActionDelete, it.DynamicActionDefinition{
 			ActionName:  it.ActionDelete,
 			ActionType:  it.ActionTypeDelete,
 			RestPath:    ":id",
 			Permission:  it.PermissionDelete,
 			MainProcess: processDelete,
-		}),
+		}},
 		// Archiving is a POST operation that is neither a create nor an update, hence Generic.
-		engine.DefineAction(it.DynamicActionDefinition{
+		{it.CrudActionSetArchived, it.DynamicActionDefinition{
 			ActionName:  it.ActionSetArchived,
 			ActionType:  it.ActionTypeGeneric,
 			RestPath:    ":id/archived",
 			Permission:  it.PermissionSetArchived,
 			MainProcess: processSetArchived,
-		}),
-		engine.DefineAction(it.DynamicActionDefinition{
+		}},
+		{it.CrudActionGetById, it.DynamicActionDefinition{
 			ActionName:  it.ActionGetById,
 			ActionType:  it.ActionTypeRead,
 			RestPath:    ":id",
 			Permission:  it.PermissionRead,
 			MainProcess: processGetById,
-		}),
+		}},
 		// get_by_unique has no REST route: its unique keys vary per resource, so it is
 		// reachable through ExecuteAction only.
-		engine.DefineAction(it.DynamicActionDefinition{
+		{it.CrudActionGetByUnique, it.DynamicActionDefinition{
 			ActionName:  it.ActionGetByUnique,
 			Permission:  it.PermissionRead,
 			MainProcess: processGetByUnique,
-		}),
-		engine.DefineAction(it.DynamicActionDefinition{
+		}},
+		{it.CrudActionSearch, it.DynamicActionDefinition{
 			ActionName:  it.ActionSearch,
 			ActionType:  it.ActionTypeRead,
 			RestPath:    "",
 			Permission:  it.PermissionRead,
 			MainProcess: processSearch,
-		}),
+		}},
 		// exists carries a query in its body, so it is a POST that creates nothing: Generic.
-		engine.DefineAction(it.DynamicActionDefinition{
+		{it.CrudActionExists, it.DynamicActionDefinition{
 			ActionName:  it.ActionExists,
 			ActionType:  it.ActionTypeGeneric,
 			RestPath:    "exists",
 			Permission:  it.PermissionRead,
 			MainProcess: processExists,
-		}),
+		}},
 		// get_schema describes the resource's shape, which is the same in every org, and
 		// touches no row - so it is one of the few actions that legitimately opts out.
-		engine.DefineAction(it.DynamicActionDefinition{
+		{it.CrudActionGetSchema, it.DynamicActionDefinition{
 			ActionName:  it.ActionGetSchema,
 			ActionType:  it.ActionTypeRead,
 			RestPath:    "meta/schema",
 			Permission:  it.PermissionRead,
 			IsOrgScoped: util.ToPtr(false),
 			MainProcess: processGetSchema,
-		}),
-		// Registered separately because it needs the engine itself, to reach the computed-field
-		// function registry. See computed_rest.go.
-		defineComputeFieldAction(engine),
-	)
+		}},
+	}
+
+	errs := make([]error, 0, len(builtins)+1)
+	for _, builtin := range builtins {
+		if !isWanted(builtin.crudAction) {
+			continue
+		}
+		errs = append(errs, engine.DefineAction(builtin.definition))
+	}
+	// Not a CRUD built-in: it needs the engine itself, to reach the computed-field function
+	// registry, and is always defined. See computed_rest.go.
+	errs = append(errs, defineComputeFieldAction(engine))
+	return stdErr.Join(errs...)
 }
 
 // WithdrawOrgScoping opts every action currently defined on the engine out of org scoping.

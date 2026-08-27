@@ -65,8 +65,9 @@ func stockProductConfigKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFi
 // to answer, and this asks rather than reimplementing any of it (CR §11.7, §11.9,
 // AC-PROD-INT-023, AC-PROD-INT-026).
 func validateInventoryUomSelectable(
-	ctx corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	params := inputModel.GetFieldData()
 	uomId := readStringField(params, models.StockProductConfigFieldInventoryUomId)
 	if uomId == "" {
 		return nil
@@ -85,10 +86,11 @@ func validateInventoryUomSelectable(
 // possible however much stock the product has moved.
 func validateInventoryUomChange(
 	ctx corectx.Context,
-	params dmodel.DynamicFields,
-	foundModel *dmodel.DynamicFields,
+	inputModel *drif.DynamicEntity,
+	foundModel *drif.DynamicEntity,
 	vErrs *ft.ClientErrors,
 ) error {
+	params := inputModel.GetFieldData()
 	newUomId := readStringField(params, models.StockProductConfigFieldInventoryUomId)
 	if newUomId == "" {
 		return nil
@@ -99,7 +101,7 @@ func validateInventoryUomChange(
 		return nil
 	}
 
-	stored := models.NewStockProductConfigFrom(*foundModel)
+	stored := models.NewStockProductConfigFrom(foundModel.GetFieldData())
 	if derefId(stored.GetInventoryUomId()) == newUomId {
 		return nil
 	}

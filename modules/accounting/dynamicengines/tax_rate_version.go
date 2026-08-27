@@ -51,8 +51,9 @@ func rateVersionKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 
 func validateRateVersionCreate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
 		version := models.NewTaxRateVersionFrom(params)
 		assertWellFormedPeriod(
 			version.GetEffectiveFrom(), version.GetEffectiveTo(),
@@ -64,8 +65,10 @@ func validateRateVersionCreate(engine drif.DynamicResourceEngine) drif.ActionVal
 
 func validateRateVersionUpdate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
+		found := entityFields(foundModel)
 		assertLifecycleTransition(models.TaxRateVersionFieldLifecycleStatus, params, found, vErrs)
 		assertMaterialFieldsImmutable(
 			models.TaxRateVersionSchemaName,
@@ -89,8 +92,9 @@ func validateRateVersionUpdate(engine drif.DynamicResourceEngine) drif.ActionVal
 }
 
 func validateRateVersionDelete(
-	_ corectx.Context, _ dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	found := entityFields(foundModel)
 	assertDeletableLifecycle(models.TaxRateVersionFieldLifecycleStatus, found, vErrs)
 	return nil
 }

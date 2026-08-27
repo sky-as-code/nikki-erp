@@ -53,10 +53,11 @@ type uomCatUpdateCheckFn func(
 // once a stored record exists.
 func validateUomCatReference(onUpdate uomCatUpdateCheckFn) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, foundModel *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
 		if onUpdate != nil && foundModel != nil {
-			onUpdate(ctx, params, models.NewUomCatFrom(*foundModel), vErrs)
+			onUpdate(ctx, params, models.NewUomCatFrom(foundModel.GetFieldData()), vErrs)
 		}
 
 		cat := models.NewUomCatFrom(params)
@@ -68,7 +69,7 @@ func validateUomCatReference(onUpdate uomCatUpdateCheckFn) drif.ActionValidateEx
 
 		categoryId := cat.GetId()
 		if categoryId == nil && foundModel != nil {
-			categoryId = models.NewUomCatFrom(*foundModel).GetId()
+			categoryId = models.NewUomCatFrom(foundModel.GetFieldData()).GetId()
 		}
 		if categoryId == nil {
 			// Create: the category has no id yet, so no existing UoM can already belong to

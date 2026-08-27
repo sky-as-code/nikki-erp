@@ -130,11 +130,24 @@ func (this *DynamicRestApiImpl) bindingFor(actionName string) restBinding {
 	case it.ActionSearch:
 		return restBinding{this.searchParams, searchResponse, httpserver.JsonOk}
 	case it.ActionExists:
-		return restBinding{this.bindRawBodyParams, identityResponse, httpserver.JsonOk}
+		return restBinding{
+			func(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
+				return this.bindRawBodyParams(echoCtx, actionName)
+			},
+			identityResponse, httpserver.JsonOk,
+		}
 	case it.ActionGetSchema:
 		return restBinding{noParams, identityResponse, httpserver.JsonOk}
 	}
-	return restBinding{this.bindGenericParams, identityResponse, httpserver.JsonOk}
+	// Closed over actionName rather than widening buildParamsFn: the generic binding serves
+	// every action a feature module defined, and mergeOrgId needs the action's type to know
+	// whether the org travels in the body.
+	return restBinding{
+		func(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
+			return this.bindGenericParams(echoCtx, actionName)
+		},
+		identityResponse, httpserver.JsonOk,
+	}
 }
 
 // joinRestPath places a RestPath under the resource base. An empty RestPath is the base itself.

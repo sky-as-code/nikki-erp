@@ -63,6 +63,20 @@
 			"description": "settings_desc.default_sales_tax_code",
 			"data_type": { "type": "string", "min": 0, "max": 50 },
 			"metadata": { "allow_override": false }
+		},
+		{
+			"name": "outgoing_operation_type_id",
+			"label": "sales.settings.outgoingOperationTypeId",
+			"description": "settings_desc.outgoing_operation_type_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "incoming_operation_type_id",
+			"label": "sales.settings.incomingOperationTypeId",
+			"description": "settings_desc.incoming_operation_type_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
 		}
 	]
 }

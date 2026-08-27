@@ -59,8 +59,9 @@ func categoryKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 // has no id yet, so only the parent chain itself can be malformed.
 func validateCategoryCreate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
 		category := models.NewProductCategoryFrom(params)
 		return assertNoCategoryCycle(ctx, engine, derefId(category.GetParentCategoryId()), "", vErrs)
 	}
@@ -70,8 +71,9 @@ func validateCategoryCreate(engine drif.DynamicResourceEngine) drif.ActionValida
 // descendants, which is the way a cycle is normally introduced. See BR §6.4.3.
 func validateCategoryUpdate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, foundModel *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
 		if foundModel == nil {
 			return nil
 		}
@@ -82,7 +84,7 @@ func validateCategoryUpdate(engine drif.DynamicResourceEngine) drif.ActionValida
 			return nil
 		}
 
-		stored := models.NewProductCategoryFrom(*foundModel)
+		stored := models.NewProductCategoryFrom(foundModel.GetFieldData())
 		selfId := derefId(stored.GetId())
 
 		if derefId(parentId) == selfId {

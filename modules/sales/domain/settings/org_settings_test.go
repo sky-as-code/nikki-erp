@@ -43,11 +43,13 @@ func TestOrgSettingsSchema_DeclaresEverySetting(t *testing.T) {
 		OrgSettingRoundingScale,
 		OrgSettingDefaultTaxRate,
 		OrgSettingDefaultSalesTaxCode,
+		OrgSettingOutgoingOperationTypeId,
+		OrgSettingIncomingOperationTypeId,
 	} {
 		_, ok := schema.Field(name)
 		assert.Truef(t, ok, "the schema declares no %q field, so nothing can ever configure it", name)
 	}
-	assert.Len(t, schema.Fields(), 8, "a field added without a constant is unreachable by name")
+	assert.Len(t, schema.Fields(), 10, "a field added without a constant is unreachable by name")
 }
 
 // The settings that change what money MEANS must not be overridable.

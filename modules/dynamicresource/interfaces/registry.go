@@ -1,8 +1,30 @@
 package interfaces
 
+type CrudAction string
+
+// Values match the ActionXxx action-name constants verbatim.
+const (
+	CrudActionCreate      = CrudAction(ActionCreate)
+	CrudActionUpdate      = CrudAction(ActionUpdate)
+	CrudActionDelete      = CrudAction(ActionDelete)
+	CrudActionSetArchived = CrudAction(ActionSetArchived)
+	CrudActionGetById     = CrudAction(ActionGetById)
+	CrudActionGetByUnique = CrudAction(ActionGetByUnique)
+	CrudActionSearch      = CrudAction(ActionSearch)
+	CrudActionExists      = CrudAction(ActionExists)
+	CrudActionGetSchema   = CrudAction(ActionGetSchema)
+)
+
 // NewEngineOptions customizes an engine at creation time.
 // The zero value is valid and reproduces the default engine behavior.
 type NewEngineOptions struct {
+	// CrudActions selects which built-in CRUD actions this engine defines.
+	// Nil or empty means all of them, so the zero value keeps the default behavior.
+	//
+	// An action left out is not registered as a REST route, and the resource service
+	// refuses it when invoked directly.
+	CrudActions []CrudAction
+
 	// DefaultSearchFields is the field list a search returns when it specifies neither
 	// fields nor a resolvable view. When empty, every column of the schema is returned.
 	//

@@ -11,6 +11,7 @@ import (
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
+	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 	itMethod "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/paymentmethod"
 	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
 	salesMessage "github.com/sky-as-code/nikki-erp/modules/sales/infra/external/message"
@@ -21,8 +22,8 @@ import (
 
 // InitExternal binds every port Sales consumes, and registers what Sales offers back.
 //
-// The remaining ports — fulfilment onto inventory, UoM and currency onto essential, the party read
-// onto contacts — arrive with the tasks that first need them, rather than being guessed now.
+// The remaining ports — UoM and currency onto essential, the party read onto contacts — arrive with
+// the tasks that first need them, rather than being guessed now.
 //
 // This runs before the engines are created, because a derived service resolves its ports at
 // construction time.
@@ -65,6 +66,19 @@ func InitExternal() error {
 			// what Sales' own pricelists exist to prevent (BR 16).
 			return &productVariantAdapter{variants: variants}
 		},
+		func(
+			transfers itStock.StockTransferMovementService,
+			settings itSettings.EffectiveSettingsAppService,
+		) itExt.FulfillmentExtService {
+			// An ADAPTER, and necessarily so: Sales sends one commercial intent, while Inventory
+			// needs a document sequenced through create, confirm, reserve and validate. Binding
+			// directly would put Inventory's lifecycle into Sales, where it would go stale the
+			// first time Inventory changed it (SALES-049).
+			return &fulfillmentAdapter{
+				transfers:      transfers,
+				operationTypes: &settingsOperationTypes{settings: settings},
+			}
+		},
 		func(methods itMethod.PaymentMethodAppService) itExt.PaymentMethodExtService {
 			// The upstream service has exactly the two methods the port declares, so this is a
 			// direct hand-over rather than an adapter. It becomes a client when this application is
@@ -84,12 +98,13 @@ func InitExternal() error {
 		settings itExt.EffectiveSettingsExtService,
 		dLock lock.DistributedLock,
 		products itExt.ProductVariantExtService,
+		fulfillment itExt.FulfillmentExtService,
 	) error {
 		dynamicengines.SetPaymentMethodPort(methods)
 		// Reprice needs tax and settings; confirm and cancel additionally need the lock, because
 		// neither is a single-row update and the etag cannot guard them (D-30). The lock comes from
 		// core's own DI, so no port of Sales' own is involved.
-		dynamicengines.SetPricingPorts(tax, settings, dLock, products)
+		dynamicengines.SetPricingPorts(tax, settings, dLock, products, fulfillment)
 		return nil
 	})
 }

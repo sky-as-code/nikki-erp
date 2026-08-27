@@ -51,8 +51,9 @@ func definitionVersionKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFie
 
 func validateDefinitionVersionCreate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
 		version := models.NewTaxDefinitionVersionFrom(params)
 		assertWellFormedPeriod(
 			version.GetEffectiveFrom(), version.GetEffectiveTo(),
@@ -64,8 +65,10 @@ func validateDefinitionVersionCreate(engine drif.DynamicResourceEngine) drif.Act
 
 func validateDefinitionVersionUpdate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
+		found := entityFields(foundModel)
 		assertLifecycleTransition(
 			models.TaxDefinitionVersionFieldLifecycleStatus, params, found, vErrs)
 		assertMaterialFieldsImmutable(
@@ -91,8 +94,9 @@ func validateDefinitionVersionUpdate(engine drif.DynamicResourceEngine) drif.Act
 }
 
 func validateDefinitionVersionDelete(
-	_ corectx.Context, _ dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	found := entityFields(foundModel)
 	assertDeletableLifecycle(models.TaxDefinitionVersionFieldLifecycleStatus, found, vErrs)
 	return nil
 }

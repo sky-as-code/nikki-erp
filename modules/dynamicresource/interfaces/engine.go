@@ -66,8 +66,11 @@ type DynamicResourceEngine interface {
 	// ActionNames lists every defined action name.
 	ActionNames() []string
 
-	// ExecuteAction runs the full pipeline of the named action:
-	// permission check, validation and hooks, key fetching, extra validation, main process.
+	// ExecuteAction runs the full pipeline of the named action: org scoping, permission
+	// check, ParamSchema validation, key fetching, main process.
+	//
+	// The validator hooks are not part of it. They run inside the crud helper the resource
+	// service delegates to, so they fire on a direct service call too.
 	ExecuteAction(ctx corectx.Context, actionName string, params dmodel.DynamicFields) (*ActionResult, error)
 }
 

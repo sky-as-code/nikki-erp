@@ -48,8 +48,9 @@ func ruleKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 }
 
 func validateRuleCreate(
-	_ corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	params := inputModel.GetFieldData()
 	rule := models.NewTaxRuleFrom(params)
 	assertWellFormedPeriod(
 		rule.GetEffectiveFrom(), rule.GetEffectiveTo(), models.TaxRuleFieldEffectiveTo, vErrs)
@@ -57,8 +58,10 @@ func validateRuleCreate(
 }
 
 func validateRuleUpdate(
-	_ corectx.Context, params dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	params := inputModel.GetFieldData()
+	found := entityFields(foundModel)
 	assertLifecycleTransition(models.TaxRuleFieldLifecycleStatus, params, found, vErrs)
 	assertMaterialFieldsImmutable(
 		models.TaxRuleSchemaName, models.TaxRuleFieldLifecycleStatus, params, found, vErrs)
@@ -73,8 +76,9 @@ func validateRuleUpdate(
 }
 
 func validateRuleDelete(
-	_ corectx.Context, _ dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	found := entityFields(foundModel)
 	assertDeletableLifecycle(models.TaxRuleFieldLifecycleStatus, found, vErrs)
 	return nil
 }
@@ -110,9 +114,11 @@ func ruleConditionKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields 
 }
 
 func validateRuleConditionUpdate(
-	ctx corectx.Context, params dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
-	return validateRuleConditionWrite(ctx, mergeFields(found, params), found, vErrs)
+	params := inputModel.GetFieldData()
+	found := entityFields(foundModel)
+	return validateRuleConditionWrite(ctx, drif.NewDynamicEntityFrom(mergeFields(found, params)), foundModel, vErrs)
 }
 
 // validateRuleConditionWrite enforces the typed-condition contract of BR-TAX-ESS-SUP-007.
@@ -122,8 +128,9 @@ func validateRuleConditionUpdate(
 // arity. The whitelist matters most — it is what keeps a condition a declarative comparison rather
 // than an expression language, which the requirement forbids outright.
 func validateRuleConditionWrite(
-	_ corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	params := inputModel.GetFieldData()
 	condition := models.NewTaxRuleConditionFrom(params)
 
 	fieldKey := condition.GetFieldKey()
@@ -197,9 +204,11 @@ func ruleResultKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 }
 
 func validateRuleResultUpdate(
-	ctx corectx.Context, params dmodel.DynamicFields, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
-	return validateRuleResultWrite(ctx, mergeFields(found, params), found, vErrs)
+	params := inputModel.GetFieldData()
+	found := entityFields(foundModel)
+	return validateRuleResultWrite(ctx, drif.NewDynamicEntityFrom(mergeFields(found, params)), foundModel, vErrs)
 }
 
 // validateRuleResultWrite enforces the per-action required fields of BR-TAX-ESS-SUP-008.
@@ -209,8 +218,9 @@ func validateRuleResultUpdate(
 // field is not a harmless no-op: an add_tax with no tax silently contributes nothing, and the rule
 // appears to have matched while changing nothing at all.
 func validateRuleResultWrite(
-	_ corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
+	params := inputModel.GetFieldData()
 	result := models.NewTaxRuleResultFrom(params)
 	rawAction := result.GetAction()
 	if rawAction == nil {
