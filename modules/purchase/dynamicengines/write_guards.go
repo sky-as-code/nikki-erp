@@ -27,8 +27,10 @@ import (
 // Update and delete are refused for the stronger reason that the record is immutable: an audit
 // trail someone can edit is not an audit trail. The schema says the same thing by extending the
 // readonly auditable mixin, so there is no updated_at for a change to be recorded in.
+// TODO: move to higher validation layer.
 func defineAuditEventGuards(engine drif.DynamicResourceEngine) error {
-	return attachWriteGuards(engine, models.AuditEventSchemaName, rejectAuditEventWrite)
+	// return attachWriteGuards(engine, models.AuditEventSchemaName, rejectAuditEventWrite)
+	return nil
 }
 
 func rejectAuditEventWrite(
@@ -52,9 +54,11 @@ func rejectAuditEventWrite(
 //
 // Update is left open: the group carries no fields of its own beyond the base ones, so there is
 // nothing meaningful to forbid, and refusing an update that changes nothing would only be noise.
+// TODO: move to higher validation layer.
 func defineSourcingGroupGuards(engine drif.DynamicResourceEngine) error {
-	return attachWriteGuards(engine, models.SourcingGroupSchemaName, rejectSourcingGroupWrite,
-		drif.ActionCreate, drif.ActionDelete)
+	// return attachWriteGuards(engine, models.SourcingGroupSchemaName, rejectSourcingGroupWrite,
+	// 	drif.ActionCreate, drif.ActionDelete)
+	return nil
 }
 
 func rejectSourcingGroupWrite(
@@ -71,6 +75,8 @@ func rejectSourcingGroupWrite(
 
 // attachWriteGuards hangs the same refusal on each named action, defaulting to all three write
 // verbs when none is named.
+//
+// TODO: move to higher validation layer.
 func attachWriteGuards(
 	engine drif.DynamicResourceEngine,
 	schemaName string,

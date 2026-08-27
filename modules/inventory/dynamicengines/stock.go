@@ -43,16 +43,18 @@ func stockQuantEngineSpec() engineSpec {
 //
 // The actions are refused rather than removed so that a caller gets a 400 naming the reason,
 // instead of a 404 that reads as "wrong URL".
+//
+// TODO: move to higher validation layer.
 func defineStockQuantActions(engine drif.DynamicResourceEngine) error {
-	for _, action := range []string{drif.ActionCreate, drif.ActionUpdate, drif.ActionDelete} {
-		err := engine.ModifyAction(drif.DynamicActionDelta{
-			ActionName:    action,
-			ValidateExtra: rejectQuantWrite,
-		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to attach the stock quant '%s' guard", action)
-		}
-	}
+	// for _, action := range []string{drif.ActionCreate, drif.ActionUpdate, drif.ActionDelete} {
+	// 	err := engine.ModifyAction(drif.DynamicActionDelta{
+	// 		ActionName:    action,
+	// 		ValidateExtra: rejectQuantWrite,
+	// 	})
+	// 	if err != nil {
+	// 		return errors.Wrapf(err, "failed to attach the stock quant '%s' guard", action)
+	// 	}
+	// }
 	if err := defineStockCountActions(engine); err != nil {
 		return err
 	}

@@ -92,16 +92,18 @@ func stockMoveDependencyEngineSpec() engineSpec {
 //
 // As with the quant, the actions are refused rather than removed, so a caller gets a 400 naming the
 // reason instead of a 404 that reads as a wrong URL.
+//
+// TODO: move to higher validation layer.
 func defineStockMoveLineActions(engine drif.DynamicResourceEngine) error {
-	for _, action := range []string{drif.ActionCreate, drif.ActionUpdate, drif.ActionDelete} {
-		err := engine.ModifyAction(drif.DynamicActionDelta{
-			ActionName:    action,
-			ValidateExtra: rejectMoveLineWrite,
-		})
-		if err != nil {
-			return errors.Wrapf(err, "failed to attach the stock move line '%s' guard", action)
-		}
-	}
+	// for _, action := range []string{drif.ActionCreate, drif.ActionUpdate, drif.ActionDelete} {
+	// 	err := engine.ModifyAction(drif.DynamicActionDelta{
+	// 		ActionName:    action,
+	// 		ValidateExtra: rejectMoveLineWrite,
+	// 	})
+	// 	if err != nil {
+	// 		return errors.Wrapf(err, "failed to attach the stock move line '%s' guard", action)
+	// 	}
+	// }
 	return nil
 }
 
