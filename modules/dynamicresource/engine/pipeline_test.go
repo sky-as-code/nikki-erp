@@ -170,13 +170,15 @@ func TestExecuteActionSkipsPermissionCheckWhenEmpty(t *testing.T) {
 	assert.Zero(t, result.ClientErrors.Count())
 }
 
-// Both validation hooks are gated on ParamSchema being declared.
-func TestExecuteActionSkipsHooksWithoutParamSchema(t *testing.T) {
+// The three hooks belong to the service now, so the pipeline runs none of them — not even for
+// an action that declares a ParamSchema, which used to be what gated two of the three.
+func TestExecuteActionDoesNotRunServiceHooks(t *testing.T) {
 	engine := newPipelineEngine(&stubRepository{})
-	beforeCalled, afterCalled := false, false
+	beforeCalled, afterCalled, extraCalled := false, false, false
 
 	assert.NoError(t, engine.DefineAction(it.DynamicActionDefinition{
-		ActionName: "unvalidated",
+		ActionName:  "hooked",
+		ParamSchema: func() *dmodel.ModelSchema { return dmodel.DefineModel("hooked_params").Build() },
 		BeforeValidation: func(_ corectx.Context, params dmodel.DynamicFields, _ *ft.ClientErrors) (dmodel.DynamicFields, error) {
 			beforeCalled = true
 			return params, nil
@@ -185,38 +187,23 @@ func TestExecuteActionSkipsHooksWithoutParamSchema(t *testing.T) {
 			afterCalled = true
 			return nil
 		},
-		MainProcess: noopProcess,
-	}))
-
-	_, err := engine.ExecuteAction(ownerContext(), "unvalidated", nil)
-
-	assert.NoError(t, err)
-	assert.False(t, beforeCalled, "BeforeValidation runs only with a ParamSchema")
-	assert.False(t, afterCalled, "AfterValidationSuccess runs only with a ParamSchema")
-}
-
-// ValidateExtra is the one hook that runs whether or not a ParamSchema is declared.
-func TestExecuteActionRunsValidateExtraWithoutParamSchema(t *testing.T) {
-	engine := newPipelineEngine(&stubRepository{})
-	called := false
-
-	assert.NoError(t, engine.DefineAction(it.DynamicActionDefinition{
-		ActionName: "extra_only",
-		ValidateExtra: func(_ corectx.Context, _ dmodel.DynamicFields, foundModel *dmodel.DynamicFields, _ *ft.ClientErrors) error {
-			called = true
-			assert.Nil(t, foundModel, "foundModel is nil when KeysToFetch is absent")
+		ValidateExtra: func(_ corectx.Context, _ dmodel.DynamicFields, _ *dmodel.DynamicFields, _ *ft.ClientErrors) error {
+			extraCalled = true
 			return nil
 		},
 		MainProcess: noopProcess,
 	}))
 
-	_, err := engine.ExecuteAction(ownerContext(), "extra_only", nil)
+	_, err := engine.ExecuteAction(ownerContext(), "hooked", nil)
 
 	assert.NoError(t, err)
-	assert.True(t, called)
+	assert.False(t, beforeCalled, "BeforeValidation is the service's to run")
+	assert.False(t, afterCalled, "AfterValidationSuccess is the service's to run")
+	assert.False(t, extraCalled, "ValidateExtra is the service's to run")
 }
 
-func TestExecuteActionFetchesKeysBeforeValidateExtra(t *testing.T) {
+// KeysToFetch stays in the pipeline: its record is what a custom action reads as FoundModel.
+func TestExecuteActionFetchesKeysForMainProcess(t *testing.T) {
 	repo := &stubRepository{
 		record: dmodel.DynamicFields{"id": "rec-1", "name": "stored"},
 		found:  true,
@@ -228,12 +215,11 @@ func TestExecuteActionFetchesKeysBeforeValidateExtra(t *testing.T) {
 		KeysToFetch: func(params dmodel.DynamicFields) dmodel.DynamicFields {
 			return dmodel.DynamicFields{"id": params["id"]}
 		},
-		ValidateExtra: func(_ corectx.Context, _ dmodel.DynamicFields, foundModel *dmodel.DynamicFields, _ *ft.ClientErrors) error {
-			assert.NotNil(t, foundModel, "foundModel is fetched when KeysToFetch is provided")
-			assert.Equal(t, "stored", (*foundModel)["name"])
-			return nil
+		MainProcess: func(_ corectx.Context, input it.ProcessInput) (*it.ActionResult, error) {
+			assert.NotNil(t, input.FoundModel, "FoundModel is fetched when KeysToFetch is provided")
+			assert.Equal(t, "stored", (*input.FoundModel)["name"])
+			return &it.ActionResult{HasData: true}, nil
 		},
-		MainProcess: noopProcess,
 	}))
 
 	_, err := engine.ExecuteAction(ownerContext(), "needs_record", dmodel.DynamicFields{"id": "rec-1"})
@@ -252,16 +238,15 @@ func TestExecuteActionReportsMissingRecordAsClientError(t *testing.T) {
 		KeysToFetch: func(params dmodel.DynamicFields) dmodel.DynamicFields {
 			return dmodel.DynamicFields{"id": "nope"}
 		},
-		ValidateExtra: func(_ corectx.Context, _ dmodel.DynamicFields, _ *dmodel.DynamicFields, _ *ft.ClientErrors) error {
+		MainProcess: func(_ corectx.Context, _ it.ProcessInput) (*it.ActionResult, error) {
 			called = true
-			return nil
+			return &it.ActionResult{}, nil
 		},
-		MainProcess: noopProcess,
 	}))
 
 	result, err := engine.ExecuteAction(ownerContext(), "needs_missing", nil)
 
 	assert.NoError(t, err)
 	assert.Positive(t, result.ClientErrors.Count())
-	assert.False(t, called, "the flow stops before ValidateExtra when the record is missing")
+	assert.False(t, called, "the flow stops before MainProcess when the record is missing")
 }
