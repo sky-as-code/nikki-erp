@@ -16,6 +16,13 @@ import (
 // A violation the caller can fix (missing permission, invalid params, missing record)
 // comes back as ClientErrors inside the result, never as a Go error, so that the REST
 // layer answers 400 rather than 500. A Go error means the request could not be processed.
+//
+// The pipeline does not run the action's BeforeValidation, AfterValidationSuccess or
+// ValidateExtra: those belong to the resource service, which hands them to the crud helper so
+// that they see the params the helper has already sanitized, and so that a caller reaching the
+// service without going through an action gets them too. What stays here is the work an action
+// needs before its MainProcess runs at all — the permission check, the ParamSchema validation,
+// and the KeysToFetch read whose record MainProcess receives as FoundModel.
 func (this *DynamicResourceEngineImpl) ExecuteAction(
 	ctx corectx.Context, actionName string, params dmodel.DynamicFields,
 ) (result *it.ActionResult, err error) {
@@ -45,16 +52,6 @@ func (this *DynamicResourceEngineImpl) ExecuteAction(
 	flow := dyn.StartValidationFlow()
 	clientErrs, err := flow.
 		Step(func(vErrs *ft.ClientErrors) error {
-			if definition.ParamSchema == nil || definition.BeforeValidation == nil {
-				return nil
-			}
-			sanitized, err := definition.BeforeValidation(ctx, params, vErrs)
-			if err == nil && vErrs.Count() == 0 && sanitized != nil {
-				params = sanitized
-			}
-			return errors.Wrap(err, "ExecuteAction.BeforeValidation")
-		}).
-		Step(func(vErrs *ft.ClientErrors) error {
 			if definition.ParamSchema == nil {
 				return nil
 			}
@@ -67,13 +64,6 @@ func (this *DynamicResourceEngineImpl) ExecuteAction(
 			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
-			if definition.ParamSchema == nil || definition.AfterValidationSuccess == nil {
-				return nil
-			}
-			err := definition.AfterValidationSuccess(ctx, params)
-			return errors.Wrap(err, "ExecuteAction.AfterValidationSuccess")
-		}).
-		Step(func(vErrs *ft.ClientErrors) error {
 			if definition.KeysToFetch == nil {
 				return nil
 			}
@@ -83,13 +73,6 @@ func (this *DynamicResourceEngineImpl) ExecuteAction(
 			}
 			foundModel = fetched
 			return nil
-		}).
-		Step(func(vErrs *ft.ClientErrors) error {
-			if definition.ValidateExtra == nil {
-				return nil
-			}
-			err := definition.ValidateExtra(ctx, params, foundModel, vErrs)
-			return errors.Wrap(err, "ExecuteAction.ValidateExtra")
 		}).
 		End()
 
@@ -135,6 +118,18 @@ func (this *DynamicResourceEngineImpl) assertPermission(
 func (this *DynamicResourceEngineImpl) fetchByKeys(
 	ctx corectx.Context, keys dmodel.DynamicFields, vErrs *ft.ClientErrors,
 ) (*dmodel.DynamicFields, error) {
+	return fetchByKeys(ctx, this.ResourceRepository(), this.Schema(), keys, vErrs)
+}
+
+// fetchByKeys is shared by the pipeline, which resolves the FoundModel a MainProcess receives,
+// and the service, which resolves the record a delete guard validates against.
+func fetchByKeys(
+	ctx corectx.Context,
+	repository it.DynamicResourceRepository,
+	schema *dmodel.ModelSchema,
+	keys dmodel.DynamicFields,
+	vErrs *ft.ClientErrors,
+) (*dmodel.DynamicFields, error) {
 	if len(keys) == 0 {
 		return nil, errors.New("KeysToFetch returned no key")
 	}
@@ -142,11 +137,11 @@ func (this *DynamicResourceEngineImpl) fetchByKeys(
 	// A key of the wrong shape can never match a row, and reporting it as "not found" hides
 	// the caller's actual mistake. Built-in actions declare no ParamSchema, so this is the
 	// first and only place a path-supplied key is checked against its declared data type.
-	if !this.assertKeysAreWellFormed(keys, vErrs) {
+	if !assertKeysAreWellFormed(schema, keys, vErrs) {
 		return nil, nil
 	}
 
-	found, err := this.ResourceRepository().FindByKeys(ctx, keys)
+	found, err := repository.FindByKeys(ctx, keys)
 	if err != nil {
 		return nil, err
 	}
@@ -165,10 +160,9 @@ func (this *DynamicResourceEngineImpl) fetchByKeys(
 // assertKeysAreWellFormed validates each fetch key against the data type its schema field
 // declares, and reports false as soon as one of them is malformed. A key naming no schema
 // field is left alone: KeysToFetch may legitimately return a virtual or computed key.
-func (this *DynamicResourceEngineImpl) assertKeysAreWellFormed(
-	keys dmodel.DynamicFields, vErrs *ft.ClientErrors,
+func assertKeysAreWellFormed(
+	schema *dmodel.ModelSchema, keys dmodel.DynamicFields, vErrs *ft.ClientErrors,
 ) bool {
-	schema := this.Schema()
 	if schema == nil {
 		return true
 	}

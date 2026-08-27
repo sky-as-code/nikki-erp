@@ -18,6 +18,10 @@ type NewServiceParam struct {
 	// DefaultFields is returned by a search that specifies neither fields nor a resolvable
 	// view. When empty, every column of the schema is returned.
 	DefaultFields []string
+
+	// ActionLookup resolves the action whose hooks an operation runs. Pass the engine's Action
+	// method. Leaving it nil runs no hook, which suits a test exercising the plain CRUD.
+	ActionLookup ActionLookupFn
 }
 
 func NewDynamicResourceService(param NewServiceParam) it.DynamicResourceService {
@@ -29,6 +33,7 @@ func NewDynamicResourceService(param NewServiceParam) it.DynamicResourceService 
 		schema:        param.Schema,
 		repository:    param.Repository,
 		defaultFields: defaultFields,
+		actionLookup:  param.ActionLookup,
 	}
 }
 
@@ -36,12 +41,17 @@ func NewDynamicResourceService(param NewServiceParam) it.DynamicResourceService 
 // splits between its application service and its domain service, minus the permission
 // checks, which the engine pipeline performs before calling in here.
 //
+// Each operation runs the hooks its action declares, resolved through actionLookup by the
+// action's name. The name is fixed by the method, never supplied by the caller, so a module
+// reaching the service without going through an action gets the same hooks a request does.
+//
 // A module extends it by embedding it in its own service struct and installing that
 // struct with Engine.SetResourceService.
 type DynamicResourceServiceImpl struct {
 	schema        *dmodel.ModelSchema
 	repository    it.DynamicResourceRepository
 	defaultFields []string
+	actionLookup  ActionLookupFn
 }
 
 func (this *DynamicResourceServiceImpl) Schema() *dmodel.ModelSchema {
@@ -56,10 +66,15 @@ func (this *DynamicResourceServiceImpl) Repository() it.DynamicResourceRepositor
 func (this *DynamicResourceServiceImpl) Create(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	definition := this.action(it.ActionCreate)
+
 	result, err := corecrud.Create[it.DynamicEntity](ctx, corecrud.CreateParam[it.DynamicEntity, *it.DynamicEntity]{
-		Action:         this.actionName("create"),
-		BaseRepoGetter: this.repository,
-		Data:           it.NewDynamicEntityFrom(params),
+		Action:                 this.actionName("create"),
+		BaseRepoGetter:         this.repository,
+		Data:                   it.NewDynamicEntityFrom(params),
+		BeforeValidation:       beforeValidationFn(definition.BeforeValidation),
+		ValidateExtra:          createValidateExtraFn(definition.ValidateExtra),
+		AfterValidationSuccess: afterValidationFn(definition.AfterValidationSuccess),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "DynamicResourceService.Create")
@@ -67,31 +82,65 @@ func (this *DynamicResourceServiceImpl) Create(
 	return unwrapEntityResult(result), nil
 }
 
+// Update hands its hooks to the crud helper rather than running them here, which is also what
+// gives an update guard a real foundModel: the helper reads the stored row to check the etag,
+// and passes that same row on. Any KeysToFetch the action declares is therefore redundant on
+// update, and is ignored.
 func (this *DynamicResourceServiceImpl) Update(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
+	definition := this.action(it.ActionUpdate)
+
 	result, err := corecrud.Update[it.DynamicEntity](ctx, corecrud.UpdateParam[it.DynamicEntity, *it.DynamicEntity]{
-		Action:       this.actionName("update"),
-		DbRepoGetter: this.repository,
-		Data:         it.NewDynamicEntityFrom(params),
+		Action:                 this.actionName("update"),
+		DbRepoGetter:           this.repository,
+		Data:                   it.NewDynamicEntityFrom(params),
+		BeforeValidation:       beforeValidationFn(definition.BeforeValidation),
+		ValidateExtra:          updateValidateExtraFn(definition.ValidateExtra),
+		AfterValidationSuccess: afterValidationFn(definition.AfterValidationSuccess),
 	})
 	return result, errors.Wrap(err, "DynamicResourceService.Update")
 }
 
+// Delete resolves the record its guard validates against before calling the crud helper: the
+// helper's own hook is handed nothing but the key fields, and a delete guard almost always needs
+// the row's state to decide whether the delete is allowed at all.
 func (this *DynamicResourceServiceImpl) Delete(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
+	definition := this.action(it.ActionDelete)
+
+	params, foundModel, cErrs, err := this.prepare(ctx, definition, params)
+	if err != nil {
+		return nil, errors.Wrap(err, "DynamicResourceService.Delete")
+	}
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, nil
+	}
+
 	result, err := corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:       this.actionName("delete"),
-		DbRepoGetter: this.repository,
-		Cmd:          paramsToDeleteCommand(params),
+		Action:                 this.actionName("delete"),
+		DbRepoGetter:           this.repository,
+		Cmd:                    paramsToDeleteCommand(params),
+		ValidateExtra:          deleteValidateExtraFn(definition.ValidateExtra, params, foundModel),
+		AfterValidationSuccess: deleteAfterValidationFn(definition.AfterValidationSuccess, params),
 	})
 	return result, errors.Wrap(err, "DynamicResourceService.Delete")
 }
 
+// SetArchived runs its hooks here rather than passing them down: crud.SetIsArchived validates a
+// typed command instead of the resource schema, so it has no hook slot to hand them to.
 func (this *DynamicResourceServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
+	params, cErrs, err := this.runHooks(ctx, it.ActionSetArchived, params)
+	if err != nil {
+		return nil, errors.Wrap(err, "DynamicResourceService.SetArchived")
+	}
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, nil
+	}
+
 	result, err := corecrud.SetIsArchived(ctx, this.repository, paramsToSetArchivedCommand(params))
 	return result, errors.Wrap(err, "DynamicResourceService.SetArchived")
 }
@@ -99,6 +148,14 @@ func (this *DynamicResourceServiceImpl) SetArchived(
 func (this *DynamicResourceServiceImpl) GetById(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.SingleResultData[dmodel.DynamicFields]], error) {
+	params, cErrs, err := this.runHooks(ctx, it.ActionGetById, params)
+	if err != nil {
+		return nil, errors.Wrap(err, "DynamicResourceService.GetById")
+	}
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.SingleResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
+	}
+
 	query, err := paramsToGetOneQuery(params)
 	if err != nil {
 		return nil, errors.Wrap(err, "DynamicResourceService.GetById")
@@ -132,6 +189,14 @@ func (this *DynamicResourceServiceImpl) GetById(
 func (this *DynamicResourceServiceImpl) GetOne(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.SingleResultData[dmodel.DynamicFields]], error) {
+	params, cErrs, err := this.runHooks(ctx, it.ActionGetByUnique, params)
+	if err != nil {
+		return nil, errors.Wrap(err, "DynamicResourceService.GetOne")
+	}
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.SingleResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
+	}
+
 	fields, err := this.readDesiredFields(params)
 	if err != nil {
 		return nil, errors.Wrap(err, "DynamicResourceService.GetOne")
@@ -158,6 +223,14 @@ func (this *DynamicResourceServiceImpl) GetOne(
 func (this *DynamicResourceServiceImpl) Search(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error) {
+	params, cErrs, err := this.runHooks(ctx, it.ActionSearch, params)
+	if err != nil {
+		return nil, errors.Wrap(err, "DynamicResourceService.Search")
+	}
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
+	}
+
 	query, err := paramsToSearchQuery(params)
 	if err != nil {
 		// A query parameter of the wrong type is the caller's mistake; reporting it as a 500
@@ -190,6 +263,14 @@ func (this *DynamicResourceServiceImpl) Search(
 func (this *DynamicResourceServiceImpl) Exists(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.ExistsResultData], error) {
+	params, cErrs, err := this.runHooks(ctx, it.ActionExists, params)
+	if err != nil {
+		return nil, errors.Wrap(err, "DynamicResourceService.Exists")
+	}
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.ExistsResultData]{ClientErrors: cErrs}, nil
+	}
+
 	query, err := paramsToExistsQuery(params)
 	if err != nil {
 		return nil, errors.Wrap(err, "DynamicResourceService.Exists")

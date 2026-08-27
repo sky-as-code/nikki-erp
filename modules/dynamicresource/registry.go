@@ -146,21 +146,27 @@ func buildEngine(
 	if len(defaultFields) == 0 {
 		defaultFields = schema.DefaultSearchFields()
 	}
+	// The engine is built first, without a service, so that the service can be handed the
+	// engine's own Action method: the hooks an action declares run inside the service, and
+	// reading them straight off the engine means a ModifyAction issued later — during a
+	// module's Init, long after this function returned — is the one the service runs.
+	newEngine := engine.NewDynamicResourceEngine(engine.NewEngineParam{
+		Schema:     schema,
+		Repository: repository,
+	})
+
 	service := engine.NewDynamicResourceService(engine.NewServiceParam{
 		Schema:        schema,
 		Repository:    repository,
 		DefaultFields: defaultFields,
+		ActionLookup:  newEngine.Action,
 	})
 	// Every resource gets computed-field evaluation; a schema without computed fields passes
 	// through untouched. A module's extended service embeds this wrapped one, so its overrides
 	// keep layering on top.
 	service = engine.WithComputedFields(service, searchSourceRowsForComputed, defaultFields)
+	newEngine.SetResourceService(service)
 
-	newEngine := engine.NewDynamicResourceEngine(engine.NewEngineParam{
-		Schema:     schema,
-		Repository: repository,
-		Service:    service,
-	})
 	if err := engine.DefineBuiltinActions(newEngine); err != nil {
 		return nil, errors.Wrapf(err, "failed to define built-in actions of '%s'", schema.Name())
 	}
