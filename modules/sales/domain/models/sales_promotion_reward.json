@@ -1,0 +1,91 @@
+{
+	"name": "sales_promotion_reward",
+	"label": "sales_promotion_reward.label",
+	"table_name": "sales_promotion_rewards",
+	"should_build_db": true,
+	"default_search_fields": ["reward_type", "target_scope"],
+	"composite_uniques": [
+		{
+			"index_name": "sales_promo_rewards_tid_prog_seq",
+			"fields": ["sales_promotion_program_id", "sequence"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_promotion_program_id",
+			"label": "fields.sales_promotion_program_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The program that grants this reward. Immutable: moving a reward between programs would change what two campaigns give away at once."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 1, "max": 100000 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Application order within the program, unique per program. Unlike condition groups, order MATTERS here: rewards do not commute, so a percentage applied before a fixed amount gives a different total than the reverse."
+			}
+		},
+		{
+			"name": "reward_type",
+			"label": "fields.reward_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"percentage_discount",
+					"fixed_amount_discount",
+					"fixed_product_price",
+					"free_quantity"
+				]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "What the customer gets (BR 24). free_quantity becomes a separate order line at zero price rather than an adjustment on the paid line (D-11), because Inventory must physically fulfil the free item and its VAT treatment is a line-level question — both need a real line."
+			}
+		},
+		{
+			"name": "value",
+			"label": "fields.value",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 6 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "How much: a percentage for percentage_discount, an amount for fixed_amount_discount, a per-unit price for fixed_product_price, a count for free_quantity. Stored positive in every case — the direction is implied by the type, and a signed column would let a negative percentage express something nobody means. Scale 6 so a percentage can carry fractions."
+			}
+		},
+		{
+			"name": "target_scope",
+			"label": "fields.target_scope",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["order", "line"]
+			},
+			"required_for_create": true,
+			"default_value": "order",
+			"description": {
+				"en-US": "Whether the reward applies to the whole order or to particular lines. An order-scoped discount is allocated down to the lines by the engine (D-05), so it appears once as an adjustment and again as each line's share — counting both would double it."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_promotion_program",
+			"label": { "en-US": "Promotion program" },
+			"type": "many:one",
+			"dest_schema": "sales_promotion_program",
+			"key_map": { "sales_promotion_program_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

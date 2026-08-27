@@ -213,7 +213,7 @@ func TestParseModelJson_Constraints(t *testing.T) {
 			{"name": "user_id", "data_type": "ulid"}
 		],
 		"composite_uniques": [{"index_name": "tc_name_org", "fields": ["name", "org_id"]}],
-		"partial_uniques": [{"not_null_fields": ["name"], "nullable_field": "org_id"}],
+		"partial_uniques_loose": [{"not_null_fields": ["name"], "nullable_field": "org_id"}],
 		"search_indexes": [{"fields": ["name"]}],
 		"exclusive_required_fields": [["org_id", "user_id"]]
 	}`).Build()

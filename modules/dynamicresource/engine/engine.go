@@ -27,6 +27,8 @@ func NewDynamicResourceEngine(param NewEngineParam) it.DynamicResourceEngine {
 		repository:   param.Repository,
 		service:      param.Service,
 		actions:      map[string]it.DynamicActionDefinition{},
+
+		computedFunctions: map[string]it.ComputedFieldFn{},
 	}
 	engine.restApi = NewDynamicRestApi(engine)
 	return engine
@@ -45,6 +47,9 @@ type DynamicResourceEngineImpl struct {
 
 	mutex   sync.RWMutex
 	actions map[string]it.DynamicActionDefinition
+	// computedFunctions holds the Go implementations of this schema's "function"-kind computed
+	// fields, keyed by the name the schema declares. See computed_functions.go.
+	computedFunctions map[string]it.ComputedFieldFn
 }
 
 func (this *DynamicResourceEngineImpl) ResourceName() string {
@@ -107,6 +112,12 @@ func (this *DynamicResourceEngineImpl) DefineAction(definition it.DynamicActionD
 	if err := validateRestFields(definition); err != nil {
 		return err
 	}
+	if err := validateNestingFields(definition); err != nil {
+		return err
+	}
+	if err := validateHookFields(definition); err != nil {
+		return err
+	}
 
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -161,6 +172,82 @@ func validateRestFields(definition it.DynamicActionDefinition) error {
 	return nil
 }
 
+// validateNestingFields checks the primary-resource fields. The two are a pair: a parent schema
+// with no id param would nest under a path segment nothing fills in, and an id param with no
+// parent schema names a parent that never appears in the route.
+// validateHookFields rejects a validator hook attached to an action that has nowhere to run it.
+//
+// The hooks are executed by the crud helper the resource service delegates to, and only the
+// create, update and delete helpers accept them. Attaching one to set_archived or to a read
+// action would be silently ignored - a guard that looks installed and never fires - so it is
+// reported at registration instead, where the stack trace still names the offending module.
+//
+// A custom action is exempt: its MainProcess is the module's own code and may call the hooks
+// itself. Only the built-in CRUD names are constrained.
+func validateHookFields(definition it.DynamicActionDefinition) error {
+	hasHook := definition.BeforeValidation != nil ||
+		definition.AfterValidationSuccess != nil ||
+		definition.ValidateExtra != nil
+	if !hasHook {
+		return nil
+	}
+
+	switch definition.ActionName {
+	case it.ActionCreate, it.ActionUpdate, it.ActionDelete:
+		return nil
+	case it.ActionSetArchived, it.ActionGetById, it.ActionGetByUnique,
+		it.ActionSearch, it.ActionExists, it.ActionGetSchema:
+		return errors.Errorf(
+			"action '%s' cannot carry validator hooks: the crud helper behind it accepts none, "+
+				"so the hook would never run",
+			definition.ActionName,
+		)
+	}
+	return nil
+}
+
+func validateNestingFields(definition it.DynamicActionDefinition) error {
+	hasSchema := definition.PrimarySchema != nil && *definition.PrimarySchema != ""
+	hasIdParam := definition.PrimaryRestIdParam != nil && *definition.PrimaryRestIdParam != ""
+
+	if !hasSchema && !hasIdParam {
+		return nil
+	}
+	if hasSchema && !hasIdParam {
+		return errors.Errorf(
+			"action '%s' declares PrimarySchema '%s' and therefore requires a PrimaryRestIdParam",
+			definition.ActionName, *definition.PrimarySchema,
+		)
+	}
+	if !hasSchema && hasIdParam {
+		return errors.Errorf(
+			"action '%s' declares PrimaryRestIdParam '%s' without a PrimarySchema",
+			definition.ActionName, *definition.PrimaryRestIdParam,
+		)
+	}
+	if !it.RestPathRegex.MatchString(*definition.PrimarySchema) {
+		return errors.Errorf(
+			"action '%s' has malformed PrimarySchema '%s': the word separator is '_'",
+			definition.ActionName, *definition.PrimarySchema,
+		)
+	}
+	if !it.RestPathRegex.MatchString(*definition.PrimaryRestIdParam) {
+		return errors.Errorf(
+			"action '%s' has malformed PrimaryRestIdParam '%s': the word separator is '_'",
+			definition.ActionName, *definition.PrimaryRestIdParam,
+		)
+	}
+	// The engine writes the ":" itself when it builds the route, so a param declared with one
+	// would produce "/::kiosk_id".
+	if strings.HasPrefix(*definition.PrimaryRestIdParam, ":") {
+		return errors.Errorf(
+			"action '%s' has PrimaryRestIdParam '%s': declare the bare name, without the ':'",
+			definition.ActionName, *definition.PrimaryRestIdParam,
+		)
+	}
+	return nil
+}
+
 // assertRouteFree rejects a second action claiming an already-taken (method, path) pair.
 // Echo's Group.Add panics on a duplicate route, so catching the clash here turns a startup
 // panic into a wiring error naming both actions. Callers must hold the lock.
@@ -170,18 +257,32 @@ func (this *DynamicResourceEngineImpl) assertRouteFree(definition it.DynamicActi
 	}
 
 	method := definition.ActionType.HttpMethod()
+	// Compared as full paths rather than RestPath alone: once an action can nest under a parent
+	// resource, two actions may share a RestPath and still register distinct routes.
+	fullPath := this.fullRestPath(definition)
 	for name, existing := range this.actions {
 		if name == definition.ActionName || existing.ActionType == "" {
 			continue
 		}
-		if existing.ActionType.HttpMethod() == method && existing.RestPath == definition.RestPath {
+		if existing.ActionType.HttpMethod() == method && this.fullRestPath(existing) == fullPath {
 			return errors.Errorf(
-				"action '%s' claims route '%s /%s' already taken by action '%s' on resource '%s'",
-				definition.ActionName, method, definition.RestPath, name, this.ResourceName(),
+				"action '%s' claims route '%s %s' already taken by action '%s' on resource '%s'",
+				definition.ActionName, method, fullPath, name, this.ResourceName(),
 			)
 		}
 	}
 	return nil
+}
+
+// fullRestPath is the route an action registers under, parent prefix included.
+// It mirrors what DynamicRestApiImpl.fullRestPath registers, so that the duplicate-route check
+// compares exactly the paths echo will see. The two are kept in step by routeShapeTest.
+func (this *DynamicResourceEngineImpl) fullRestPath(definition it.DynamicActionDefinition) string {
+	base := "/" + this.RoutePath()
+	if definition.IsNested() {
+		base = "/" + *definition.PrimarySchema + "/:" + *definition.PrimaryRestIdParam + base
+	}
+	return joinRestPath(base, definition.RestPath)
 }
 
 // ModifyAction overrides the provided fields of an existing action, leaving the rest intact.
@@ -203,6 +304,12 @@ func (this *DynamicResourceEngineImpl) ModifyAction(delta it.DynamicActionDelta)
 
 	merged := mergeActionDelta(definition, delta)
 	if err := validateRestFields(merged); err != nil {
+		return err
+	}
+	if err := validateNestingFields(merged); err != nil {
+		return err
+	}
+	if err := validateHookFields(merged); err != nil {
 		return err
 	}
 	if err := this.assertRouteFree(merged); err != nil {
@@ -260,6 +367,15 @@ func mergeActionDelta(
 	}
 	if delta.PermissionScope != nil {
 		definition.PermissionScope = delta.PermissionScope
+	}
+	if delta.IsOrgScoped != nil {
+		definition.IsOrgScoped = delta.IsOrgScoped
+	}
+	if delta.PrimarySchema != nil {
+		definition.PrimarySchema = delta.PrimarySchema
+	}
+	if delta.PrimaryRestIdParam != nil {
+		definition.PrimaryRestIdParam = delta.PrimaryRestIdParam
 	}
 	if delta.BeforeValidation != nil {
 		definition.BeforeValidation = delta.BeforeValidation

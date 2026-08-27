@@ -11,7 +11,7 @@
 				"type": "enum_string",
 				"values": ["light", "dark", "auto"]
 			},
-			"default_value": "auto",
+			"default_value": "light",
 			"metadata": { "allow_override": true }
 		},
 		{

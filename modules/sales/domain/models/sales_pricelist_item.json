@@ -1,0 +1,87 @@
+{
+	"name": "sales_pricelist_item",
+	"label": "sales_pricelist_item.label",
+	"table_name": "sales_pricelist_items",
+	"should_build_db": true,
+	"default_search_fields": ["product_variant_id"],
+	"composite_uniques": [
+		{
+			"index_name": "sales_pl_items_tid_list_variant_qty",
+			"fields": ["sales_pricelist_id", "product_variant_id", "min_quantity"]
+		}
+	],
+	"search_indexes": [
+		{ "index_name": "sales_pl_items_tid_variant", "fields": ["product_variant_id"] },
+		{ "index_name": "sales_pl_items_tid_uom", "fields": ["uom_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_pricelist_id",
+			"label": "fields.sales_pricelist_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The pricelist this item belongs to. Immutable: moving an item between lists would change what two lists charge at once, and any order priced under the one it left would keep a price that list can no longer justify."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What is being priced. The variant, not the template: the variant is the transactable unit, and two variants of one template can legitimately cost different amounts. A plain ulid, since the product belongs to Inventory."
+			}
+		},
+		{
+			"name": "uom_id",
+			"label": "fields.uom_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The unit the price is PER. Required, because a price without its unit is not a price: 50,000 per case and 50,000 per bottle are different offers. A line priced in another unit is converted through Essential rather than assumed compatible."
+			}
+		},
+		{
+			"name": "price",
+			"label": "fields.price",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The price per unit of uom_id. Zero is permitted and meaningful: a giveaway line still needs a price to be recorded at, and forbidding zero would push those through a discount path where they do not belong."
+			}
+		},
+		{
+			"name": "min_quantity",
+			"label": "fields.min_quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The smallest quantity this price applies from, expressed in uom_id. Quantity breaks are rows rather than a nested structure, so a list can hold 1-at-full-price and 10-at-a-discount as two ordinary items. Required with a default of zero rather than nullable: the uniqueness key includes it, and a NULL in a unique key would let the same break be written twice (a NULL never equals a NULL)."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_pricelist",
+			"label": { "en-US": "Pricelist" },
+			"type": "many:one",
+			"dest_schema": "sales_pricelist",
+			"key_map": { "sales_pricelist_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

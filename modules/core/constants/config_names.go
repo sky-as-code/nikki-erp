@@ -6,6 +6,10 @@ const (
 	LogLevel     ConfigName = "GENERAL.LOG_LEVEL"
 	MigrationDir ConfigName = "GENERAL.MIGRATION_DIR"
 
+	// ShutdownGraceSecs bounds how long modules are given to drain background work after
+	// the termination signal, before the HTTP server is closed and the process exits.
+	ShutdownGraceSecs ConfigName = "CORE.SHUTDOWN_GRACE_SECS"
+
 	// Database
 	DbDialect             ConfigName = "CORE.DB.DIALECT"
 	DbHostPort            ConfigName = "CORE.DB.HOST_PORT"

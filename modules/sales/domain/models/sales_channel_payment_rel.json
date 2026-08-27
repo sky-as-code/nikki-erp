@@ -1,0 +1,38 @@
+{
+	"name": "sales_channel_payment_rel",
+	"label": "sales_channel_payment_rel.label",
+	"table_name": "sales_channel_payment_rel",
+	"should_build_db": true,
+	"composite_uniques": [
+		{
+			"index_name": "sales_channel_payment_rel_tid_chan_method",
+			"fields": ["sales_channel_id", "payment_method_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_channel_id",
+			"label": "fields.sales_channel_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The channel this mapping enables a payment method for. Immutable: moving a mapping between channels is the same thing as disabling it on one and enabling it on the other, and doing it as an update would skip the validation the enable path runs."
+			}
+		},
+		{
+			"name": "payment_method_id",
+			"label": "fields.payment_method_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The paymentinvoice payment method this channel accepts. A plain identifier with no edge and no foreign key (CR 25): the row it names belongs to another module, and a constraint across that boundary would make Sales unable to write a mapping while paymentinvoice was mid-migration, and would make deleting a retired method fail on Sales data. The consequence is deliberate and handled: a mapping whose method has disappeared from paymentinvoice is reported as stale rather than silently dropped (CR 34)."
+			}
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model"]
+}

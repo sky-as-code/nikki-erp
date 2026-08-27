@@ -1,0 +1,172 @@
+{
+	"name": "sales_quotation",
+	"label": "sales_quotation.label",
+	"table_name": "sales_quotations",
+	"should_build_db": true,
+	"record_label_field": "quotation_number",
+	"default_search_fields": ["quotation_number", "customer_reference"],
+	"composite_uniques": [
+		{
+			"index_name": "sales_quotations_tid_number",
+			"fields": ["quotation_number"]
+		}
+	],
+	"search_indexes": [
+		{ "index_name": "sales_quotations_tid_channel", "fields": ["sales_channel_id"] },
+		{ "index_name": "sales_quotations_tid_status", "fields": ["status"] },
+		{ "index_name": "sales_quotations_tid_order", "fields": ["converted_sales_order_id"] },
+		{ "index_name": "sales_quotations_tid_valid", "fields": ["valid_until"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "quotation_number",
+			"label": "fields.quotation_number",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The number the customer sees, unique and immutable. Separate from the order number and not derived from it: a quotation may never become an order, and several may be issued to one customer before one is accepted, so numbering them from orders would either leave gaps in the order sequence or reuse numbers."
+			}
+		},
+		{
+			"name": "sales_channel_id",
+			"label": "fields.sales_channel_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The channel that issued this quotation. Back-office in practice (BR 87.1): vending and POS quote nothing, because a customer at a kiosk is buying rather than asking. Immutable, since the channel determines the pricing the quotation was built from."
+			}
+		},
+		{
+			"name": "sales_point_id",
+			"label": "fields.sales_point_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Where the quotation was raised. Nullable, unlike the order's, because a quotation may be prepared centrally without a selling point being decided - which point will fulfil it is a question the conversion answers, not the quote."
+			}
+		},
+		{
+			"name": "customer_reference",
+			"label": "fields.customer_reference",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Who was quoted. A plain reference rather than a foreign key into contacts, matching the order's: the customer master is another module's, and a quotation to a party who is later removed must still explain what was offered."
+			}
+		},
+		{
+			"name": "currency_code",
+			"label": "fields.currency_code",
+			"data_type": { "type": "string", "min": 3, "max": 3 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The currency the quoted amounts are in. Immutable: re-denominating a quotation would restate what was offered without the customer having agreed to it."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "sent", "accepted", "expired", "cancelled"]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"no_update": true,
+			"description": {
+				"en-US": "Where the offer stands (BR 87.1). 'sent' is distinct from 'draft' because a quotation the customer has seen may no longer be edited freely - the offer is out. 'expired' is distinct from 'cancelled' because one lapsed on its own terms and the other was withdrawn, and a customer arriving with a lapsed quote is served differently from one whose quote was pulled. Moved by the lifecycle operations, never by a plain update."
+			}
+		},
+		{
+			"name": "valid_until",
+			"label": "fields.valid_until",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the offer lapses. Stored rather than derived from a settings window, because the window may change and a quotation already sent must keep the deadline the customer was actually given. Null means no stated expiry, which is a decision the issuer makes rather than an absence to fill in with a default."
+			}
+		},
+		{
+			"name": "subtotal",
+			"label": "fields.subtotal",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"description": {
+				"en-US": "The quoted net of the lines, before tax. Priced by the same engine an order uses, so a quotation and the order it becomes cannot disagree about what the goods cost."
+			}
+		},
+		{
+			"name": "discount_total",
+			"label": "fields.discount_total",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"description": {
+				"en-US": "What the quoted discounts came to."
+			}
+		},
+		{
+			"name": "tax_total",
+			"label": "fields.tax_total",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"description": {
+				"en-US": "The tax on the quoted amounts, as determined when the quotation was priced. INDICATIVE, not a fiscal figure: a quotation is not a VAT document, and the tax actually charged is whatever the order determines at confirmation, which may differ if rates changed in between."
+			}
+		},
+		{
+			"name": "grand_total",
+			"label": "fields.grand_total",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"description": {
+				"en-US": "What the customer was told the whole thing would cost."
+			}
+		},
+		{
+			"name": "converted_sales_order_id",
+			"label": "fields.converted_sales_order_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The order this quotation became. Set once, at acceptance, and it is what makes the conversion idempotent: a second accept finds it already set and returns that order rather than creating another. Null on every quotation that has not been accepted, which is most of them. No foreign key, so that an order purged in a retention sweep does not take its quotation's history with it."
+			}
+		},
+		{
+			"name": "sent_at",
+			"label": "fields.sent_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the offer went to the customer."
+			}
+		},
+		{
+			"name": "accepted_at",
+			"label": "fields.accepted_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the customer accepted. The moment the conversion is anchored to, and kept separately from the resulting order's created_at because the two can differ if the conversion is retried."
+			}
+		},
+		{
+			"name": "cancelled_at",
+			"label": "fields.cancelled_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the offer was withdrawn."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_channel",
+			"label": { "en-US": "Sales channel" },
+			"type": "many:one",
+			"dest_schema": "sales_channel",
+			"key_map": { "sales_channel_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

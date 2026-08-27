@@ -47,6 +47,7 @@
 	"datatable.viewMode": "Chế độ hiển thị",
 	"datatable.viewSettings": "Cài đặt hiển thị",
 	"debug.form_errors": "Debug - Lỗi form",
+	"err_action_not_supported": "Tài nguyên này không hỗ trợ hành động được yêu cầu",
 	"err_etag_mismatched": "Dữ liệu này đã bị người khác sửa đổi",
 	"err_exclusive_fields": "Chỉ một trong các trường sau được phép có giá trị: {{fields}}",
 	"err_exclusive_fields_missing": "Một (và chỉ một) trong các trường sau đây là bắt buộc: {{fields}}",

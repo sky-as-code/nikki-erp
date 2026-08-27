@@ -46,8 +46,9 @@ func uomKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 // validateUomCreate enforces the invariants that apply to a brand-new UoM.
 func validateUomCreate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
 		uom := models.NewUomFrom(params)
 		assertFactorMatchesUomType(uom, vErrs)
 		assertRoundingInRange(uom, vErrs)
@@ -59,12 +60,13 @@ func validateUomCreate(engine drif.DynamicResourceEngine) drif.ActionValidateExt
 // rules that only apply once a record exists.
 func validateUomUpdate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, foundModel *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
 		if foundModel == nil {
 			return nil
 		}
-		uom, found := models.NewUomFrom(params), models.NewUomFrom(*foundModel)
+		params := inputModel.GetFieldData()
+		uom, found := models.NewUomFrom(params), models.NewUomFrom(foundModel.GetFieldData())
 
 		assertImmutableWhileInUse(ctx, params, found, vErrs)
 		// An update is partial: validate the resulting record, not just the submitted fields.

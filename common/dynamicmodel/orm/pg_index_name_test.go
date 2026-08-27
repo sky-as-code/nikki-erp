@@ -70,7 +70,7 @@ func TestCompositeUnique_HonoursExplicitIndexName(t *testing.T) {
 
 func TestPartialUnique_HonoursExplicitIndexName(t *testing.T) {
 	sqls, err := createTableSqls(t, schemaWithTenantKey("widgets", true).
-		PartialUnique(dmodel.PartialUniqueParam{
+		PartialUniqueLoose(dmodel.PartialUniqueParam{
 			IndexName:     "widgets_tid_name_org",
 			NotNullFields: []string{"name"},
 			NullableField: "org_id",
@@ -89,7 +89,7 @@ func TestUniqueIndexNames_DoNotGainIdxSuffix(t *testing.T) {
 			IndexName: "widgets_code",
 			Fields:    []string{"code"},
 		}).
-		PartialUnique(dmodel.PartialUniqueParam{
+		PartialUniqueLoose(dmodel.PartialUniqueParam{
 			IndexName:     "widgets_name_org",
 			NotNullFields: []string{"name"},
 			NullableField: "org_id",
@@ -124,7 +124,7 @@ func TestIndexName_OverLimitIsRejected(t *testing.T) {
 
 	t.Run("partial unique", func(t *testing.T) {
 		_, err := createTableSqls(t, schemaWithTenantKey("widgets", false).
-			PartialUnique(dmodel.PartialUniqueParam{
+			PartialUniqueLoose(dmodel.PartialUniqueParam{
 				IndexName:     longName,
 				NotNullFields: []string{"name"},
 				NullableField: "org_id",

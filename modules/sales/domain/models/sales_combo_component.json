@@ -1,0 +1,96 @@
+{
+	"name": "sales_combo_component",
+	"label": "sales_combo_component.label",
+	"table_name": "sales_combo_components",
+	"should_build_db": true,
+	"default_search_fields": ["product_variant_id", "selection_group"],
+	"composite_uniques": [
+		{
+			"index_name": "sales_combo_comps_tid_combo_variant",
+			"fields": ["sales_combo_id", "product_variant_id"]
+		}
+	],
+	"search_indexes": [
+		{ "index_name": "sales_combo_comps_tid_variant", "fields": ["product_variant_id"] },
+		{ "index_name": "sales_combo_comps_tid_uom", "fields": ["uom_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_combo_id",
+			"label": "fields.sales_combo_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The bundle this component belongs to. Immutable: moving a component between bundles would change what two of them contain at once, for a price neither was set against."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The real variant this component is. Unique within the bundle: a combo containing the same variant twice is expressed as a quantity of two, not as two rows, so that the allocation has one share per product rather than two to reconcile."
+			}
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "1",
+			"description": {
+				"en-US": "How many of this variant one bundle contains, in uom_id. Must be strictly greater than zero, enforced by the domain service since the framework declares no CHECK constraints."
+			}
+		},
+		{
+			"name": "uom_id",
+			"label": "fields.uom_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The unit this component is counted in. It need not match the others in the bundle: a hamper can hold two bottles and half a kilo of coffee."
+			}
+		},
+		{
+			"name": "is_required",
+			"label": "fields.is_required",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"description": {
+				"en-US": "Whether every sale of this bundle must include this component. A required component is always expanded onto the order; an optional one is expanded only when the customer chose it, which is what makes a meal deal with a choice of drink expressible as one combo rather than as one combo per drink."
+			}
+		},
+		{
+			"name": "selection_group",
+			"label": "fields.selection_group",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Names a set of components the customer picks ONE of — the drink in a meal deal. Components sharing a group are alternatives to each other; a component with no group stands alone. A free string rather than a foreign key to a group table, because a group has no properties of its own: it is nothing more than the name that ties its members together."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_combo",
+			"label": { "en-US": "Combo" },
+			"type": "many:one",
+			"dest_schema": "sales_combo",
+			"key_map": { "sales_combo_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

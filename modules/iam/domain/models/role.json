@@ -5,7 +5,7 @@
 	"should_build_db": true,
 	"record_label_field": "name",
 	"default_search_fields": ["name", "description"],
-	"partial_uniques": [
+	"partial_uniques_loose": [
 		{ "not_null_fields": ["name"], "nullable_field": "org_id" }
 	],
 	"extend_before": ["core.basemodel.base_model"],

@@ -1,0 +1,93 @@
+{
+	"name": "accounting_tax_mapping",
+	"label": "accounting_tax_mapping.label",
+	"table_name": "accounting_tax_mappings",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"record_sub_label_field": "code",
+	"default_search_fields": ["code", "name", "priority"],
+	"composite_uniques": [
+		{
+			"index_name": "acc_tx_map_tid_code_ver",
+			"fields": ["code", "version_no", "org_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Odoo's Fiscal Position by another name: a context-specific substitution of one tax for another, such as export customers replacing domestic VAT with a zero-rated export tax."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "version_no",
+			"label": "fields.version_no",
+			"data_type": { "type": "int32", "min": 1, "max": 99999 },
+			"required_for_create": true
+		},
+		{
+			"name": "priority",
+			"label": "fields.priority",
+			"data_type": { "type": "int32", "min": 0, "max": 99999 },
+			"required_for_create": true,
+			"default_value": "100"
+		},
+		{
+			"name": "effective_from",
+			"label": "fields.effective_from",
+			"data_type": "date",
+			"required_for_create": true
+		},
+		{
+			"name": "effective_to",
+			"label": "fields.effective_to",
+			"data_type": "date"
+		},
+		{
+			"name": "supersedes_mapping_id",
+			"label": "fields.supersedes_mapping_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "lifecycle_status",
+			"label": "fields.lifecycle_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "published", "withdrawn"]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"description": {
+				"en-US": "A published mapping and its lines are immutable; changing a source tax, a target tax or the period means a new version, because a snapshot cites this mapping by id and version_no."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "supersedes",
+			"label": { "en-US": "Supersedes mapping" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_mapping",
+			"key_map": { "supersedes_mapping_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

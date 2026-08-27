@@ -1,0 +1,71 @@
+{
+	"name": "accounting_tax",
+	"label": "accounting_tax.label",
+	"table_name": "accounting_taxes",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"record_sub_label_field": "code",
+	"default_search_fields": ["code", "name", "tax_kind"],
+	"composite_uniques": [
+		{ "index_name": "acc_taxes_tid_code", "fields": ["code", "org_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The stable business identity of a tax, quoted on invoices and in law. Immutable: a historical Tax Snapshot stores this code, and letting it change would silently rewrite what a past document says was charged."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "tax_kind",
+			"label": "fields.tax_kind",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"vat",
+					"gst",
+					"sales_tax",
+					"excise",
+					"environmental",
+					"withholding",
+					"other"
+				]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "Classification for reporting only. BR-TAX-ESS-SUP-030 is explicit that listing 'withholding' here is not a claim that the engine calculates withholding: it has no defined base, sign or gross/net effect yet, and the calculator rejects it."
+			}
+		},
+		{
+			"name": "invoice_label",
+			"label": "fields.invoice_label",
+			"data_type": { "type": "langjson", "min": 0, "max": 200 },
+			"description": {
+				"en-US": "How this tax is named on a customer-facing document, when that differs from its internal name."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 1000 }
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

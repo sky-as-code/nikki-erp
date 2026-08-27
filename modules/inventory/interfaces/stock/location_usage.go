@@ -6,7 +6,12 @@
 // through this contract — so the dependency runs one way and Stock stays free to change how it
 // stores any of it.
 //
-// The port is read-only by design. Nothing Warehouse does may change a quantity.
+// The LOCATION USAGE port is read-only by design. Nothing Warehouse does may change a quantity.
+//
+// The package as a whole is no longer read-only: StockTransferMovementService in
+// transfer_movement.go publishes the goods movements themselves, for modules that must sequence a
+// transfer's life. That port is deliberately narrow and separate — a consumer that only needs to
+// read usage binds this contract and gains no power to move anything.
 package stock
 
 import (

@@ -10,6 +10,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 // Create Reverse Transfer: the correction for goods that physically come back (BR §4.2.10).
@@ -28,15 +29,16 @@ import (
 //
 // An empty Lines means "everything still returnable", which is the common case and the only one
 // the UI drives (F9). A caller that wants a partial return names the moves it cares about.
-type ReturnRequest struct {
-	Lines []ReturnLineRequest
-}
+//
+// An ALIAS of the published port's type rather than a separate struct, so that CreateReturn
+// satisfies StockTransferMovementService. Go matches method signatures by identity, so two
+// structurally identical types would not do: the service would silently fail to implement the
+// interface, and the failure would surface as a confusing assertion error at wiring time rather
+// than here. Aliasing also means there is one definition to change, not two that must agree.
+type ReturnRequest = itStock.TransferReturnRequest
 
 // ReturnLineRequest is one move's requested return quantity.
-type ReturnLineRequest struct {
-	MoveId   string
-	Quantity decimal.Decimal
-}
+type ReturnLineRequest = itStock.TransferReturnLine
 
 // CreateReturn raises a draft reverse transfer for a done transfer (BR §4.2.10.4).
 func (this *StockTransferDomainServiceImpl) CreateReturn(

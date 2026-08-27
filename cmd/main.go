@@ -1,13 +1,17 @@
 package cmd
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
@@ -15,9 +19,14 @@ import (
 
 type StartableApp interface {
 	Start()
+	Stop(ctx context.Context)
 	Logger() logging.LoggerService
 	GenSql(module string, dialect string) string
 }
+
+// defaultShutdownGraceSecs matches config.default.yaml. It is used only if the configuration
+// key is missing, which would otherwise panic inside GetInt.
+const defaultShutdownGraceSecs = "30"
 
 type MainParam struct {
 	CreateAppFn       CreateAppFn
@@ -73,7 +82,21 @@ func Main(param MainParam) {
 	}()
 
 	<-awaitOsTerminateSignal()
-	server.Shutdown()
+
+	// Modules drain first, then the HTTP server closes. The order matters: a module draining
+	// background work may still need the services the server's shutdown would tear down, and
+	// nothing new arrives in the meantime because the signal has already stopped the traffic
+	// that would create it.
+	graceSecs := config.ConfigSvcSingleton().GetInt(c.ShutdownGraceSecs, defaultShutdownGraceSecs)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Duration(graceSecs)*time.Second)
+	defer cancel()
+	app.Stop(shutdownCtx)
+
+	// server is assigned by the goroutine above and is nil if startup failed before it got
+	// that far, in which case there is nothing to shut down.
+	if server != nil {
+		server.Shutdown()
+	}
 }
 
 func runCreateSql(createAppFn CreateAppFn, module string, dialect string) {

@@ -1,0 +1,56 @@
+{
+	"name": "accounting_tax_group",
+	"label": "accounting_tax_group.label",
+	"table_name": "accounting_tax_groups",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"record_sub_label_field": "code",
+	"default_search_fields": ["code", "name"],
+	"composite_uniques": [
+		{ "index_name": "acc_tx_grp_tid_code", "fields": ["code", "org_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "display_name",
+			"label": "fields.display_name",
+			"data_type": { "type": "langjson", "min": 0, "max": 200 },
+			"description": {
+				"en-US": "The name shown on customer-facing documents when it differs from the internal name."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 1000 }
+		},
+		{
+			"name": "display_sequence",
+			"label": "fields.display_sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 99999 },
+			"default_value": "0",
+			"description": {
+				"en-US": "Ordering of groups when a document aggregates tax by group. Presentation only."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

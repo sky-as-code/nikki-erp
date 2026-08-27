@@ -248,11 +248,33 @@ func (this ModelSchema) CompositeUniques() []CompositeUniqueParam {
 	return this.compositeUniques
 }
 
-// PartialUniques returns partial unique index definitions: UNIQUE (not-null columns, nullable column)
-// WHERE nullable IS NOT NULL, plus UNIQUE (not-null columns) WHERE nullable IS NULL.
+// PartialUniques returns every partial unique index definition, loose and strict alike.
+//
+// A loose group emits UNIQUE (not-null columns, nullable column) WHERE nullable IS NOT NULL, plus
+// UNIQUE (not-null columns) WHERE nullable IS NULL. A strict group emits only the first of those.
 // Only populated after ShouldBuildDb / populateDbMetadata validation.
 func (this ModelSchema) PartialUniques() []PartialUniqueParam {
 	return this.partialUniques
+}
+
+// PartialUniquesLoose returns only the groups that also constrain their NULL rows.
+func (this ModelSchema) PartialUniquesLoose() []PartialUniqueParam {
+	return this.partialUniquesWhere(false)
+}
+
+// PartialUniquesStrict returns only the groups that leave their NULL rows unconstrained.
+func (this ModelSchema) PartialUniquesStrict() []PartialUniqueParam {
+	return this.partialUniquesWhere(true)
+}
+
+func (this ModelSchema) partialUniquesWhere(strict bool) []PartialUniqueParam {
+	out := make([]PartialUniqueParam, 0, len(this.partialUniques))
+	for _, param := range this.partialUniques {
+		if param.Strict == strict {
+			out = append(out, param)
+		}
+	}
+	return out
 }
 
 // SearchIndexGroups returns grouped CREATE INDEX definitions.
@@ -932,6 +954,9 @@ func (this ModelField) ToSimplized() any {
 		Rules               []*FieldRule   `json:"rules,omitempty"`
 		DefaultValue        *value         `json:"default_value,omitempty"`
 		Metadata            map[string]any `json:"metadata,omitempty"`
+		// Computed tells a client how a computed value arrives and what to watch. The expression
+		// itself stays server-side: a form needs the trigger, not the formula.
+		Computed *ComputedDescriptor `json:"computed,omitempty"`
 	}{
 		Name:                this.Name(),
 		Label:               this.Label(),
@@ -951,6 +976,7 @@ func (this ModelField) ToSimplized() any {
 		Rules:               this.Rules(),
 		DefaultValue:        this.Default(),
 		Metadata:            this.Metadata(),
+		Computed:            this.computedDescriptor(),
 	}
 }
 

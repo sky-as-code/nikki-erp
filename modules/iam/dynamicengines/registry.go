@@ -12,6 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	dynengine "github.com/sky-as-code/nikki-erp/modules/dynamicresource/engine"
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
@@ -21,10 +22,17 @@ type engineSpec struct {
 	// XSchemaName constant, never a string derived from the resource path.
 	SchemaName string
 
-
 	// DefineActions adds resource-specific actions on top of the built-in CRUD ones.
 	// It is optional: a resource without custom actions leaves it nil.
 	DefineActions func(drif.DynamicResourceEngine) error
+
+	// WithdrawOrgScoping opts the resource out of the engine's default org scoping.
+	//
+	// Set it only where org_id is *optional* and its absence carries meaning - a NULL org_id
+	// marking a global or domain-scoped row. Requiring org_id on such a resource would hide
+	// every one of those rows instead of reporting an error. The reason belongs in a comment
+	// on the spec that sets it.
+	WithdrawOrgScoping bool
 }
 
 // engineSpecs lists the resources IAM serves through the dynamic resource engine,
@@ -73,6 +81,13 @@ func initEngine(spec engineSpec) error {
 	if spec.DefineActions != nil {
 		if err := spec.DefineActions(engine); err != nil {
 			return errors.Wrapf(err, "failed to define actions of the '%s' resource engine", spec.SchemaName)
+		}
+	}
+
+	// After DefineActions, so that the module's own actions are withdrawn too.
+	if spec.WithdrawOrgScoping {
+		if err := dynengine.WithdrawOrgScoping(engine); err != nil {
+			return errors.Wrapf(err, "failed to withdraw org scoping of the '%s' resource engine", spec.SchemaName)
 		}
 	}
 

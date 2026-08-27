@@ -1,0 +1,99 @@
+{
+	"name": "sales_voucher_code",
+	"label": "sales_voucher_code.label",
+	"table_name": "sales_voucher_codes",
+	"should_build_db": true,
+	"record_label_field": "code",
+	"default_search_fields": ["code", "status"],
+	"search_indexes": [
+		{ "index_name": "sales_vouchers_tid_program", "fields": ["sales_promotion_program_id"] },
+		{ "index_name": "sales_vouchers_tid_status", "fields": ["status"] },
+		{ "index_name": "sales_vouchers_tid_validity", "fields": ["valid_from", "valid_until"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"unique": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The string a customer types. Unique and immutable: it is printed on vouchers, sent in campaigns and typed at tills, so changing one would silently invalidate every copy already in a customer's hands. Uniqueness is what makes the code resolvable on its own, without also naming the program."
+			}
+		},
+		{
+			"name": "sales_promotion_program_id",
+			"label": "fields.sales_promotion_program_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The program this code activates. A voucher carries NO rules of its own (BR 25.1) - it is a credential pointing at a program, and every condition, reward, compatibility rule and priority lives on that program. That is why BR 27's long list of required voucher capabilities needs no voucher-side fields: they are all program fields already. Immutable, because re-pointing a code at a different program would retroactively change what every customer holding it was promised."
+			}
+		},
+		{
+			"name": "valid_from",
+			"label": "fields.valid_from",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this code starts working. Null means it works as soon as it exists. Separate from the program's own validity window rather than derived from it: a campaign can run all quarter while an individual code issued as compensation is good for two weeks, and both windows must hold."
+			}
+		},
+		{
+			"name": "valid_until",
+			"label": "fields.valid_until",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this code stops working, EXCLUSIVE - a code valid until noon does not work at noon, matching every other window in this module. Null means it never expires on its own. Expiry is evaluated at redemption time rather than written into status, so a code does not need a scheduled job to become unusable."
+			}
+		},
+		{
+			"name": "usage_limit",
+			"label": "fields.usage_limit",
+			"data_type": { "type": "int32", "min": 1, "max": 1000000 },
+			"description": {
+				"en-US": "How many times this code may be redeemed in total. Null means unlimited. Note the minimum is 1, not 0: a limit of zero would be a code that can never be used, which is what archiving or disabling expresses, and allowing both would make two different fields mean the same thing."
+			}
+		},
+		{
+			"name": "usage_count",
+			"label": "fields.usage_count",
+			"data_type": { "type": "int32", "min": 0, "max": 1000000 },
+			"required_for_create": true,
+			"default_value": 0,
+			"description": {
+				"en-US": "How many times this code HAS been redeemed. Maintained by a conditional single-statement increment that checks the limit in the same UPDATE (D-31), because a read-then-write cannot survive two tills redeeming the last use of a voucher at the same instant. It is a cache of the redemption rows, not the record of them: BR 82 says outright that this counter alone is insufficient, which is why sales_voucher_redemptions exists."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": { "type": "enum_string", "values": ["active", "disabled", "exhausted"] },
+			"required_for_create": true,
+			"default_value": "active",
+			"description": {
+				"en-US": "Whether the code may currently be applied. 'disabled' is an operator's decision and reversible; 'exhausted' is derived from usage_count reaching usage_limit and is set by the redemption path, not by hand. Expiry is deliberately NOT a status - it is a function of valid_until and the current time, so no job has to run to keep it true."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_promotion_program",
+			"label": { "en-US": "Promotion program" },
+			"type": "many:one",
+			"dest_schema": "sales_promotion_program",
+			"key_map": { "sales_promotion_program_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

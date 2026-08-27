@@ -28,7 +28,8 @@ type modelJsonDto struct {
 	Fields []fieldJsonDto `json:"fields"`
 
 	CompositeUniques        []compositeUniqueDto `json:"composite_uniques"`
-	PartialUniques          []partialUniqueDto   `json:"partial_uniques"`
+	PartialUniquesLoose     []partialUniqueDto   `json:"partial_uniques_loose"`
+	PartialUniquesStrict    []partialUniqueDto   `json:"partial_uniques_strict"`
 	SearchIndexes           []searchIndexDto     `json:"search_indexes"`
 	ExclusiveRequiredFields [][]string           `json:"exclusive_required_fields"`
 
@@ -208,8 +209,15 @@ func applyConstraints(builder *ModelSchemaBuilder, dto *modelJsonDto) {
 			Fields:    composite.Fields,
 		})
 	}
-	for _, partial := range dto.PartialUniques {
-		builder.PartialUnique(PartialUniqueParam{
+	for _, partial := range dto.PartialUniquesLoose {
+		builder.PartialUniqueLoose(PartialUniqueParam{
+			IndexName:     partial.IndexName,
+			NotNullFields: partial.NotNullFields,
+			NullableField: partial.NullableField,
+		})
+	}
+	for _, partial := range dto.PartialUniquesStrict {
+		builder.PartialUniqueStrict(PartialUniqueParam{
 			IndexName:     partial.IndexName,
 			NotNullFields: partial.NotNullFields,
 			NullableField: partial.NullableField,

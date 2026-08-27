@@ -155,8 +155,18 @@ func initStockTransferService() error {
 		return errors.New("the '" + models.StockTransferSchemaName + "' engine is not registered")
 	}
 
-	transferEngine.SetResourceService(services.NewStockTransferDomainService(transferEngine.ResourceService()))
-	return nil
+	derived := services.NewStockTransferDomainService(transferEngine.ResourceService())
+	transferEngine.SetResourceService(derived)
+
+	// Published for consumers that must sequence a movement outside an engine action (SALES-049).
+	//
+	// Selling modules raise a document, confirm it, reserve against it and validate it — all from
+	// their own transaction boundaries, not from a Stock request. Before this was registered they
+	// could only record that they owed a customer goods; nothing could ask for the goods to move.
+	//
+	// The narrowed interface is what is published, never the struct: see its doc for why handing
+	// over the embedded CRUD would make the lifecycle rules optional.
+	return deps.Register(func() itStock.StockTransferMovementService { return derived })
 }
 
 // initStockQuantService installs the derived quant service on the Stock Quant engine.

@@ -1,0 +1,147 @@
+{
+	"name": "sales_fiscal_request",
+	"label": "sales_fiscal_request.label",
+	"table_name": "sales_fiscal_requests",
+	"should_build_db": true,
+	"default_search_fields": ["intent", "status", "provider_reference"],
+	"search_indexes": [
+		{ "index_name": "sales_fiscal_reqs_tid_bill", "fields": ["sales_bill_id"] },
+		{ "index_name": "sales_fiscal_reqs_tid_status", "fields": ["status"] },
+		{ "index_name": "sales_fiscal_reqs_tid_provref", "fields": ["provider_reference"] },
+		{ "index_name": "sales_fiscal_reqs_tid_original", "fields": ["original_fiscal_request_id"] }
+	],
+	"composite_uniques": [
+		{
+			"index_name": "sales_fiscal_reqs_tid_idemkey",
+			"fields": ["idempotency_key"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_bill_id",
+			"label": "fields.sales_bill_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The settlement unit this document covers. A BILL, not an order (BR 33, BR 34): one sale may need several settlement units and one legal document, or the reverse, so the fiscal document hangs off the thing that was actually settled. Immutable, because re-pointing it would leave an issued legal document describing a sale it was never issued for."
+			}
+		},
+		{
+			"name": "intent",
+			"label": "fields.intent",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"ISSUE_ORIGINAL",
+					"ADJUST_FOR_FULL_RETURN",
+					"ADJUST_FOR_PARTIAL_RETURN",
+					"ADJUST_PRICE"
+				]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What commercially happened, in Sales' own words (BR 49). BUSINESS INTENT, never a vendor command (BR 48): Sales says a sale was made or partly returned, and the provider decides which legal document that requires - an invoice, a credit note, an adjustment declaration (BR 50). Naming the document type here would encode invoice law in Sales, which BR 46 and BR 94.26 forbid. Immutable, because an issued document cannot be retrospectively said to have meant something else."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["pending", "issued", "failed", "cancelled"]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"description": {
+				"en-US": "How far the provider has got. A request that has not come back is 'pending', NEVER optimistically 'issued' (BR 77): the far side is a third-party network call, and reporting a document as issued before the provider confirms it would tell a customer they hold a VAT invoice that does not exist. 'failed' is normal operation rather than a fault - a provider is unreachable, rate-limited or slow - which is why attempt_count and last_error sit beside it."
+			}
+		},
+		{
+			"name": "idempotency_key",
+			"label": "fields.idempotency_key",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The key that makes a retry safe, and it TRAVELS TO THE PROVIDER rather than merely constraining this table (D-42). The unique index here is necessary and not sufficient: after a timeout Sales does not know whether the provider issued the document, and only a key the provider recognises can stop the retry issuing a second one. A duplicate VAT invoice is a tax filing to correct, not a row to delete."
+			}
+		},
+		{
+			"name": "provider_reference",
+			"label": "fields.provider_reference",
+			"data_type": { "type": "string", "min": 0, "max": 200 },
+			"description": {
+				"en-US": "The provider's own identifier for the issued document, and THE ONLY DURABLE LINK to it: the provider owns the document, Sales holds no copy, and this string is what fetches or adjusts it later. Stored at the moment of confirmation and never regenerated, for the same reason the tax snapshot is stored rather than recomputed. Null until the provider has confirmed."
+			}
+		},
+		{
+			"name": "attempt_count",
+			"label": "fields.attempt_count",
+			"data_type": { "type": "int32", "min": 0, "max": 1000 },
+			"default_value": 0,
+			"description": {
+				"en-US": "How many times Sales has asked. Exists because provider failure is normal operation rather than an exception: this is what an operator reads to tell a provider that is briefly unreachable from one that is refusing the request, and what a retry policy bounds itself by."
+			}
+		},
+		{
+			"name": "last_error",
+			"label": "fields.last_error",
+			"data_type": { "type": "string", "min": 0, "max": 1000 },
+			"description": {
+				"en-US": "Why the last attempt failed, in the provider's words. Kept because a failed VAT invoice is the case an operator must act on, and 'failed' alone tells them nothing about whether to retry, correct the buyer information or escalate."
+			}
+		},
+		{
+			"name": "buyer_snapshot",
+			"label": "fields.buyer_snapshot",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "The buyer's fiscal information exactly as supplied at issuance - tax code, legal name, address, email (BR 87.7). A SNAPSHOT rather than a reference to the customer master, so that a later change of address or company name can never rewrite what a historical invoice said. The same reasoning as the tax snapshot: a legal document records what was true when it was issued."
+			}
+		},
+		{
+			"name": "original_fiscal_request_id",
+			"label": "fields.original_fiscal_request_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The request this one adjusts (BR 58). Null on an ISSUE_ORIGINAL and set on every adjustment, because an adjustment document is meaningless without the document it adjusts - a credit note names the invoice it credits. Self-referential rather than a status on the original, so one invoice can be adjusted more than once."
+			}
+		},
+		{
+			"name": "requested_at",
+			"label": "fields.requested_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When Sales asked."
+			}
+		},
+		{
+			"name": "issued_at",
+			"label": "fields.issued_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the provider confirmed the document exists. Null until then, including while the request is in flight - see the note on status."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_bill",
+			"label": { "en-US": "Sales bill" },
+			"type": "many:one",
+			"dest_schema": "sales_bill",
+			"key_map": { "sales_bill_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

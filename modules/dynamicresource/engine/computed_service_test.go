@@ -114,7 +114,8 @@ func buildDecoratorFixtureWithDefaults(t *testing.T, defaultSearchFields []strin
 
 	base := &fakeBaseService{schema: owner}
 	recorder := &sourceSearchRecorder{}
-	return base, recorder, WithComputedFields(base, recorder.fn(), defaultSearchFields)
+	// nil invoker: this fixture declares no function-kind fields, so one is never called.
+	return base, recorder, WithComputedFields(base, recorder.fn(), nil, defaultSearchFields)
 }
 
 func TestComputedService_SearchBatchesOneSourceQuery(t *testing.T) {

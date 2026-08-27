@@ -3,7 +3,6 @@ package dynamicengines
 import (
 	"go.bryk.io/pkg/errors"
 
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
@@ -32,7 +31,7 @@ func defineAuditEventGuards(engine drif.DynamicResourceEngine) error {
 }
 
 func rejectAuditEventWrite(
-	_ corectx.Context, _ dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.AuditEventSchemaName,
@@ -58,7 +57,7 @@ func defineSourcingGroupGuards(engine drif.DynamicResourceEngine) error {
 }
 
 func rejectSourcingGroupWrite(
-	_ corectx.Context, _ dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.SourcingGroupSchemaName,

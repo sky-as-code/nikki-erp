@@ -1,0 +1,27 @@
+-- Adds the tax snapshot to sales orders.
+--
+-- The snapshot is Accounting's immutable record of how an order's tax was determined: the rates and
+-- configuration versions in force on the tax date, the rounding policy applied, and the figures for
+-- each tax component of each line.
+--
+-- It is stored HERE, on the order, because Accounting deliberately keeps no copy of it and holds no
+-- foreign key into Sales (BR-TAX-ESS-030). That arrangement is what allows Accounting to be split
+-- into its own process later without any caller changing, and its consequence is that the consuming
+-- module owns the record. If Sales does not store it, nothing does.
+--
+-- Two things read it, and neither can work without it:
+--
+--   * A VAT invoice, which needs the base each tax was computed on, the version of the configuration
+--     that produced it, and the legal reference for it - "tax was 10%" is not enough to issue one.
+--   * A partial return, which hands the snapshot back to Accounting to reverse the correct component
+--     by the correct amount.
+--
+-- Crucially, both read the SNAPSHOT rather than the current tax master. That is the whole mechanism
+-- by which a later rate change cannot reinterpret a historical sale: the old numbers are not
+-- recomputed, they are read.
+--
+-- Nullable, and no backfill. An order priced before this column existed has no snapshot to record,
+-- and inventing one would fabricate a determination that never happened. A deployment running
+-- without the accounting module leaves it null for the same reason.
+
+ALTER TABLE "sales_orders" ADD COLUMN IF NOT EXISTS "tax_snapshot" jsonb NULL;

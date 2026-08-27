@@ -1,0 +1,103 @@
+{
+	"name": "sales_bill_line",
+	"label": "sales_bill_line.label",
+	"table_name": "sales_bill_lines",
+	"should_build_db": true,
+	"search_indexes": [
+		{ "index_name": "sales_bill_lines_tid_bill", "fields": ["sales_bill_id"] },
+		{ "index_name": "sales_bill_lines_tid_ordline", "fields": ["sales_order_line_id"] }
+	],
+	"composite_uniques": [
+		{
+			"index_name": "sales_bill_lines_tid_bill_ordline",
+			"fields": ["sales_bill_id", "sales_order_line_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_bill_id",
+			"label": "fields.sales_bill_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The bill this allocation belongs to. Immutable: moving an allocation between bills would change both bills' totals, and BR 36's invariant is checked per bill."
+			}
+		},
+		{
+			"name": "sales_order_line_id",
+			"label": "fields.sales_order_line_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order line whose value this allocation carries. Unique with the bill: one order line contributes at most one allocation row to any one bill, so a split that gave the same line to a bill twice would be refused by the database rather than by a check somebody could forget."
+			}
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "How much of the order line's quantity this bill settles. A split apportions the line's quantity across bills, and the sum across every bill of the order equals the line's ordered quantity."
+			}
+		},
+		{
+			"name": "allocated_net_amount",
+			"label": "fields.allocated_net_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "This bill's share of the order line's net. Allocated with the same D-04 algorithm the combo components and the fixed vouchers use - one implementation, because the hard part is identical and getting it subtly different in each is how a total stops adding up."
+			}
+		},
+		{
+			"name": "allocated_tax_amount",
+			"label": "fields.allocated_tax_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "This bill's share of the order line's tax. Allocated rather than recomputed, for the same reason the bill's tax_total is: a per-bill recomputation would not sum back to what the order was actually charged."
+			}
+		},
+		{
+			"name": "allocated_total_amount",
+			"label": "fields.allocated_total_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "What this allocation contributes to the bill's total. Stored rather than derived from net plus tax, because it is the figure the BR 36 invariant is checked on and a derived value would have to be recomputed identically at every check site."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_bill",
+			"label": { "en-US": "Sales bill" },
+			"type": "many:one",
+			"dest_schema": "sales_bill",
+			"key_map": { "sales_bill_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "sales_order_line",
+			"label": { "en-US": "Sales order line" },
+			"type": "many:one",
+			"dest_schema": "sales_order_line",
+			"key_map": { "sales_order_line_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

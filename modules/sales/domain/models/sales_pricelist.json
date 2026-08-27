@@ -1,0 +1,99 @@
+{
+	"name": "sales_pricelist",
+	"label": "sales_pricelist.label",
+	"table_name": "sales_pricelists",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["code", "name"],
+	"search_indexes": [
+		{ "index_name": "sales_pricelists_tid_channel", "fields": ["sales_channel_id"] },
+		{ "index_name": "sales_pricelists_tid_point", "fields": ["sales_point_id"] },
+		{ "index_name": "sales_pricelists_tid_validity", "fields": ["valid_from", "valid_until"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"unique": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The stable identifier a human or an import file names this pricelist by. Immutable and unique across the tenant, because a pricelist is referenced from spreadsheets and integration payloads that nobody will update if it is renamed."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "sales_channel_id",
+			"label": "fields.sales_channel_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The channel this pricelist applies to, or NULL for one that applies everywhere. Nullability IS the specificity mechanism: resolution prefers a sales-point list over a channel list over a global one, so leaving both scope columns NULL is how a default price list is expressed rather than a missing value."
+			}
+		},
+		{
+			"name": "sales_point_id",
+			"label": "fields.sales_point_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The single selling place this pricelist applies to, or NULL. The most specific scope: an airport kiosk charging more than the same chain's high street store is a point-scoped list, and it wins over its channel's."
+			}
+		},
+		{
+			"name": "valid_from",
+			"label": "fields.valid_from",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this pricelist starts applying, or NULL for always. Effective dating rather than editing in place: a price change scheduled for next month must not alter what today's sales are charged, and a pricelist whose window has closed is still needed to explain the orders priced under it."
+			}
+		},
+		{
+			"name": "valid_until",
+			"label": "fields.valid_until",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When it stops applying, or NULL for open-ended. Exclusive of the instant itself, matching every other window in this module, so that one list ending and the next beginning at the same moment leaves no gap and no overlap."
+			}
+		},
+		{
+			"name": "priority",
+			"label": "fields.priority",
+			"data_type": { "type": "int32", "min": 0, "max": 100000 },
+			"required_for_create": true,
+			"default_value": 0,
+			"description": {
+				"en-US": "Breaks ties between two pricelists of the SAME specificity, higher winning. It does not override specificity: a point-scoped list beats a channel-scoped one whatever their priorities, because otherwise a high-priority global list would silently undo every local price."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_channel",
+			"label": { "en-US": "Sales channel" },
+			"type": "many:one",
+			"dest_schema": "sales_channel",
+			"key_map": { "sales_channel_id": "id" }
+		},
+		{
+			"edge": "sales_point",
+			"label": { "en-US": "Sales point" },
+			"type": "many:one",
+			"dest_schema": "sales_point",
+			"key_map": { "sales_point_id": "id" }
+		}
+	]
+}

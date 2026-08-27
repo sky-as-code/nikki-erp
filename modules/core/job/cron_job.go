@@ -41,11 +41,29 @@ func (this *CronJob) Register(crontab string,
 	return err
 }
 
+// Start begins firing the registered jobs.
+//
+// Called ONCE, by the application, after every module's OnAppStarted has run. That ordering is
+// load-bearing: gocron fires on the schedule from the moment it starts, so starting earlier would
+// mean a job registered by a later module simply never ran until the next tick - and for an hourly
+// job that is an hour of silence nobody would connect to the cause.
 func (this *CronJob) Start() error {
 	this.scheduler.Start()
 	this.logger.Infof("CronJob server started")
 
 	return nil
+}
+
+// Stop halts the scheduler and waits for jobs already running to finish.
+//
+// Shutdown rather than StopJobs: the process is going away, so there is nothing to resume, and
+// Shutdown is what releases the scheduler's own goroutines. It blocks until running jobs return,
+// which is the point - a sweep killed half-way through would leave whatever it was writing
+// uncommitted, and the caller's shutdown budget is what bounds the wait.
+func (this *CronJob) Stop() error {
+	err := this.scheduler.Shutdown()
+	this.logger.Infof("CronJob server stopped")
+	return err
 }
 
 type initCronJobResult struct {

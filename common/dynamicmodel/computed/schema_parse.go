@@ -31,12 +31,21 @@ type definitionJsonDto struct {
 	Expression *exprJsonDto `json:"expression"`
 
 	// SQL-compiled kinds (aggregate / exists / lookup); see schema_parse_sql.go.
+	//
+	// Function is overloaded by kind: for "aggregate" it names the SQL aggregate (count, sum, ...),
+	// for "function" it names the Go function registered on the engine. The two never coexist on
+	// one definition, so parseDefinitionRoot disambiguates on Kind rather than introducing a
+	// second key for the same concept.
 	Source   string           `json:"source"`
 	Function string           `json:"function"`
 	Filter   json.RawMessage  `json:"filter"`
 	OrderBy  []orderByJsonDto `json:"order_by"`
 	Context  []string         `json:"context"`
 	Default  json.RawMessage  `json:"default"`
+
+	// DependsOn is the function kind's optional same-schema field name. Snake_case matches every
+	// other key in these files, so the wire form is depends_on.
+	DependsOn string `json:"depends_on"`
 }
 
 type exprJsonDto struct {
@@ -94,6 +103,8 @@ func parseDefinitionRoot(dto *definitionJsonDto, fieldName string) (Expr, error)
 		return parseExistsJson(dto, fieldName)
 	case ComputeLookup:
 		return parseLookupJson(dto, fieldName)
+	case ComputeFunction:
+		return parseFunctionJson(dto, fieldName)
 	}
 	return nil, errors.Errorf("computed field %q has unsupported kind %q", fieldName, dto.Kind)
 }

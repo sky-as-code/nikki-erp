@@ -1,0 +1,84 @@
+{
+	"name": "sales_combo",
+	"label": "sales_combo.label",
+	"table_name": "sales_combos",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["code", "name", "description"],
+	"search_indexes": [
+		{ "index_name": "sales_combos_tid_validity", "fields": ["valid_from", "valid_until"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"unique": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The stable identifier this bundle is named by in imports, till buttons and marketing material. Immutable and unique, because those references are outside this system and nobody will update them if it is renamed."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "What the customer sees on the receipt for the combo parent line, snapshotted onto that line at the time of sale so that renaming the bundle later does not rewrite history."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "combo_price",
+			"label": "fields.combo_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "What the bundle costs, as an INDEPENDENT number never derived from the sum of its components (BR 15). That independence is the whole point of a combo: the business decides three items together are worth 48,000 whatever they cost apart, and a derived price would make the bundle drift every time a component was repriced. The per-component allocation exists for VAT, partial return and reporting only — it is an output, never an input."
+			}
+		},
+		{
+			"name": "valid_from",
+			"label": "fields.valid_from",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the bundle becomes sellable, or NULL for always. Effective dating rather than editing in place, so that a seasonal offer can be scheduled and so that an order priced under a past window can still be explained."
+			}
+		},
+		{
+			"name": "valid_until",
+			"label": "fields.valid_until",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When it stops being sellable, or NULL for open-ended. Exclusive of the instant itself, matching every other window in this module."
+			}
+		},
+		{
+			"name": "return_policy",
+			"label": "fields.return_policy",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["entire_combo_only", "component_return_allowed"]
+			},
+			"required_for_create": true,
+			"default_value": "entire_combo_only",
+			"description": {
+				"en-US": "Whether a customer may return part of a bundle or must return all of it (BR 19). It defaults to the restrictive reading because a partial return of a bundle priced below its parts is a discount the customer keeps on the items they did not bring back — the business has to opt into that deliberately. Required by BR 19 and absent from the BR 16 field list."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

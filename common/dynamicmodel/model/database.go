@@ -480,7 +480,7 @@ func validateCompositeUniqueKey(
 		if field != nil && !field.IsRequiredForCreate() {
 			return nil, errors.Errorf(
 				"validateCompositeUniquesForDb: model '%s': composite unique includes field '%s' which is not "+
-					"requiredForCreate; use PartialUnique() instead",
+					"requiredForCreate; use PartialUniqueLoose() or PartialUniqueStrict() instead",
 				schema.Name(), trimmed)
 		}
 		validated = append(validated, trimmed)
@@ -552,6 +552,7 @@ func validatePartialUniqueParam(
 		IndexName:     strings.TrimSpace(param.IndexName),
 		NotNullFields: notNullFields,
 		NullableField: nullableField,
+		Strict:        param.Strict,
 	}, nil
 }
 

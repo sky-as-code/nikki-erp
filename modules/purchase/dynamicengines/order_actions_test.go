@@ -32,7 +32,7 @@ func TestOrderActionPermissionsAreSeeded(t *testing.T) {
 		PermissionMerge,
 	} {
 		assert.Contains(t, seeded, permission,
-			"the engine demands the %q permission, which 0007002_purchase_iam.sql does not seed", permission)
+			"the engine demands the %q permission, which 1004002_purchase_iam.sql does not seed", permission)
 	}
 
 	// Duplicate reuses `create` rather than carrying a permission of its own, so the seed must NOT
@@ -64,7 +64,7 @@ func TestSeededOrderActionsAreDemanded(t *testing.T) {
 
 	for _, code := range seededActionCodes(t, "purchase_order") {
 		assert.True(t, demanded[code],
-			"0007002_purchase_iam.sql seeds the %q action, which no engine action demands", code)
+			"1004002_purchase_iam.sql seeds the %q action, which no engine action demands", code)
 	}
 }
 
@@ -76,7 +76,7 @@ func TestSeededOrderActionsAreDemanded(t *testing.T) {
 func seededActionCodes(t *testing.T, resourceCode string) []string {
 	t.Helper()
 
-	path := filepath.Join("..", "..", "..", "scripts", "migrations", "0007002_purchase_iam.sql")
+	path := filepath.Join("..", "..", "..", "scripts", "migrations", "1004002_purchase_iam.sql")
 	content, err := os.ReadFile(path)
 	require.NoError(t, err, "the purchase IAM migration must be readable from the test")
 
@@ -112,7 +112,7 @@ func TestAgreementActionPermissionsAreSeeded(t *testing.T) {
 		drif.PermissionSetArchived,
 	} {
 		assert.Contains(t, seeded, permission,
-			"the engine demands the %q permission, which 0007002_purchase_iam.sql does not seed",
+			"the engine demands the %q permission, which 1004002_purchase_iam.sql does not seed",
 			permission)
 	}
 
@@ -138,6 +138,6 @@ func TestSeededAgreementActionsAreDemanded(t *testing.T) {
 
 	for _, code := range seededActionCodes(t, "purchase_agreement") {
 		assert.True(t, demanded[code],
-			"0007002_purchase_iam.sql seeds the %q action, which no engine action demands", code)
+			"1004002_purchase_iam.sql seeds the %q action, which no engine action demands", code)
 	}
 }

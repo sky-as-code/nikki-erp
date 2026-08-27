@@ -146,8 +146,9 @@ func templateKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 // variant schema, and searching the template's own repository for it fails as undefined.
 func validateTemplateDelete(_ drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
-		ctx corectx.Context, params dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
+		params := inputModel.GetFieldData()
 		templateId := derefId(models.NewProductTemplateFrom(params).GetId())
 		variantEngine, err := services.EngineFor(models.ProductVariantSchemaName)
 		if err != nil {

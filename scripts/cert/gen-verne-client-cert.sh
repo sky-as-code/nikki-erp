@@ -37,4 +37,5 @@ mv $PKI_DIR/$CN-chain.crt $PKI_DIR/$CN.crt
 openssl pkcs12 -export \
   -inkey $PKI_DIR/$CN.key \
   -in $PKI_DIR/$CN.crt \
-  -out $PKI_DIR/$CN.p12
+  -out $PKI_DIR/$CN.p12 \
+  -password pass:

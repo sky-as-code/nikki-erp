@@ -1,0 +1,73 @@
+{
+	"name": "sales_fulfillment_request_line",
+	"label": "sales_fulfillment_request_line.label",
+	"table_name": "sales_fulfillment_request_lines",
+	"should_build_db": true,
+	"search_indexes": [
+		{ "index_name": "sales_fulfil_lines_tid_req", "fields": ["sales_fulfillment_request_id"] },
+		{ "index_name": "sales_fulfil_lines_tid_ordline", "fields": ["sales_order_line_id"] }
+	],
+	"composite_uniques": [
+		{
+			"index_name": "sales_fulfil_lines_tid_req_ordline",
+			"fields": ["sales_fulfillment_request_id", "sales_order_line_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_fulfillment_request_id",
+			"label": "fields.sales_fulfillment_request_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The request this line belongs to. Unique with the order line, so one request asks for a given line at most once - a request naming the same goods twice would ask Inventory to move them twice."
+			}
+		},
+		{
+			"name": "sales_order_line_id",
+			"label": "fields.sales_order_line_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The sold line these goods answer. Immutable: the quantity below is measured against this line's ordered quantity, and re-pointing it would make both lines' fulfilment arithmetic wrong."
+			}
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "How much of the order line this request covers. Partial by design (BR 87.8): the sum across an order line's completed requests is what its fulfilled_quantity becomes, so a line delivered in two shipments has two request lines rather than one that changes."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_fulfillment_request",
+			"label": { "en-US": "Fulfilment request" },
+			"type": "many:one",
+			"dest_schema": "sales_fulfillment_request",
+			"key_map": { "sales_fulfillment_request_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "sales_order_line",
+			"label": { "en-US": "Sales order line" },
+			"type": "many:one",
+			"dest_schema": "sales_order_line",
+			"key_map": { "sales_order_line_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

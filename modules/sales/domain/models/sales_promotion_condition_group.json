@@ -1,0 +1,51 @@
+{
+	"name": "sales_promotion_condition_group",
+	"label": "sales_promotion_condition_group.label",
+	"table_name": "sales_promotion_condition_groups",
+	"should_build_db": true,
+	"composite_uniques": [
+		{
+			"index_name": "sales_promo_cgroups_tid_prog_seq",
+			"fields": ["sales_promotion_program_id", "sequence"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_promotion_program_id",
+			"label": "fields.sales_promotion_program_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The program whose eligibility this group helps decide. Immutable: moving a group between programs would change what two campaigns qualify for at once."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 1, "max": 100000 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Position among the program's groups, unique per program. Groups are ORed with each other and conditions within a group are ANDed (D-06), so the sequence is presentation order rather than evaluation order - OR does not care. It exists so an operator editing a program sees a stable list."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_promotion_program",
+			"label": { "en-US": "Promotion program" },
+			"type": "many:one",
+			"dest_schema": "sales_promotion_program",
+			"key_map": { "sales_promotion_program_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

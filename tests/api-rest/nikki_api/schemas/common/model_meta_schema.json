@@ -24,6 +24,9 @@
         "record_sub_label_field": {
             "type": "string"
         },
+        "default_search_fields": {
+            "type": "array"
+        },
         "to_relations": {
             "type": "array"
         },

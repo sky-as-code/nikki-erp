@@ -41,6 +41,9 @@ func TestRegisterRoutesCoversBuiltins(t *testing.T) {
 		"POST /test_resource/exists",
 		"POST /test_resource",
 		"GET /test_resource",
+		// A literal "meta/compute" segment must sort ahead of ":id", or the id pattern would
+		// swallow it.
+		"POST /test_resource/meta/compute/:field",
 		"POST /test_resource/:id/archived",
 		"DELETE /test_resource/:id",
 		"GET /test_resource/:id",
@@ -56,7 +59,7 @@ func TestRegisterRoutesSkipsUnexposedActions(t *testing.T) {
 	for _, route := range registeredRoutes(t, engine) {
 		assert.NotContains(t, route, "get_by_unique")
 	}
-	assert.Len(t, registeredRoutes(t, engine), 8, "9 built-ins, 1 unexposed")
+	assert.Len(t, registeredRoutes(t, engine), 9, "10 built-ins, 1 unexposed")
 }
 
 // A module-defined action gets a route from its RestPath, which is the whole point of the

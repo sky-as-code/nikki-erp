@@ -1,0 +1,219 @@
+{
+	"name": "accounting_tax_definition_version",
+	"label": "accounting_tax_definition_version.label",
+	"table_name": "accounting_tax_definition_versions",
+	"should_build_db": true,
+	"record_label_field": "version_no",
+	"default_search_fields": ["version_no", "calculation_type", "tax_treatment", "usage"],
+	"composite_uniques": [
+		{
+			"index_name": "acc_tx_def_tid_tax_ver",
+			"fields": ["tax_id", "version_no", "org_id"]
+		}
+	],
+	"search_indexes": [
+		{
+			"index_name": "acc_tx_def_tid_eff",
+			"fields": ["tax_id", "effective_from", "effective_to"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "tax_id",
+			"label": "fields.tax_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The tax this version defines. Immutable: moving a version between taxes would change what two taxes mean at once, and the one it left would keep snapshots citing a definition it no longer has."
+			}
+		},
+		{
+			"name": "version_no",
+			"label": "fields.version_no",
+			"data_type": { "type": "int32", "min": 1, "max": 99999 },
+			"required_for_create": true
+		},
+		{
+			"name": "usage",
+			"label": "fields.usage",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["sale", "purchase", "both", "none"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "Which side of trade this tax applies to. Only 'sale' is exercised in V1; the purchase values exist so the contract does not change when Purchase integration arrives."
+			}
+		},
+		{
+			"name": "jurisdiction_id",
+			"label": "fields.jurisdiction_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "tax_group_id",
+			"label": "fields.tax_group_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "calculation_type",
+			"label": "fields.calculation_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["percentage", "division", "fixed", "group", "none"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "'division' is Odoo's percentage-of-total, renamed by BR-TAX-ESS-SUP-013 because the old name described the input rather than the arithmetic. 'none' carries legal semantics without producing an amount, and is valid only with exempt, non_taxable or out_of_scope."
+			}
+		},
+		{
+			"name": "tax_treatment",
+			"label": "fields.tax_treatment",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"taxable",
+					"zero_rated",
+					"exempt",
+					"non_taxable",
+					"out_of_scope"
+				]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "The legal character of the tax, which survives into the snapshot. Zero-rated, exempt, non-taxable and out-of-scope all produce a zero amount and are four different statements in law, so the amount can never be used to infer which one applied."
+			}
+		},
+		{
+			"name": "price_inclusion_mode",
+			"label": "fields.price_inclusion_mode",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["inherit", "included", "excluded"]
+			},
+			"required_for_create": true,
+			"default_value": "inherit",
+			"description": {
+				"en-US": "'inherit' defers to the request's price_mode, which is what lets one tax definition serve B2C tax-included and B2B tax-excluded pricing instead of duplicating the tax."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 99999 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Calculation order. Load-bearing for compound tax: a tax that feeds the base of a later one must be computed first."
+			}
+		},
+		{
+			"name": "affect_subsequent_base",
+			"label": "fields.affect_subsequent_base",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": "false",
+			"description": {
+				"en-US": "Whether this tax's amount is added into the taxable base of taxes computed after it."
+			}
+		},
+		{
+			"name": "base_affected_by_previous",
+			"label": "fields.base_affected_by_previous",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": "false",
+			"description": {
+				"en-US": "Whether this tax's own base picks up the amounts of taxes computed before it. The mirror of affect_subsequent_base, and separate because a tax may feed others without being fed."
+			}
+		},
+		{
+			"name": "effective_from",
+			"label": "fields.effective_from",
+			"data_type": "date",
+			"required_for_create": true,
+			"description": {
+				"en-US": "A calendar date, never a timestamp: tax law changes at midnight in a jurisdiction, and a timestamp would make the applicable rate depend on the server's clock and zone."
+			}
+		},
+		{
+			"name": "effective_to",
+			"label": "fields.effective_to",
+			"data_type": "date",
+			"description": { "en-US": "Null means open-ended. Inclusive when set." }
+		},
+		{
+			"name": "legal_reference",
+			"label": "fields.legal_reference",
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": {
+				"en-US": "The law or decree this version implements. Configuration data rather than code, so a new legal basis is a new version and not a deployment (BR-TAX-ESS-SUP-029)."
+			}
+		},
+		{
+			"name": "supersedes_version_id",
+			"label": "fields.supersedes_version_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "lifecycle_status",
+			"label": "fields.lifecycle_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "published", "withdrawn"]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"description": {
+				"en-US": "Only a published version is visible to the engine. Once published the material fields freeze, because a transaction calculated against them must stay explainable forever."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "tax",
+			"label": { "en-US": "Tax" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax",
+			"key_map": { "tax_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "jurisdiction",
+			"label": { "en-US": "Jurisdiction" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_jurisdiction",
+			"key_map": { "jurisdiction_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "tax_group",
+			"label": { "en-US": "Tax group" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_group",
+			"key_map": { "tax_group_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "supersedes",
+			"label": { "en-US": "Supersedes version" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_definition_version",
+			"key_map": { "supersedes_version_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

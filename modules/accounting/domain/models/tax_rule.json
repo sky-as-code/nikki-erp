@@ -1,0 +1,127 @@
+{
+	"name": "accounting_tax_rule",
+	"label": "accounting_tax_rule.label",
+	"table_name": "accounting_tax_rules",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"record_sub_label_field": "code",
+	"default_search_fields": ["code", "name", "priority"],
+	"composite_uniques": [
+		{
+			"index_name": "acc_tx_rule_tid_code_ver",
+			"fields": ["code", "version_no", "org_id"]
+		}
+	],
+	"search_indexes": [
+		{
+			"index_name": "acc_tx_rule_tid_eval",
+			"fields": ["priority", "effective_from", "effective_to"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "jurisdiction_id",
+			"label": "fields.jurisdiction_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "priority",
+			"label": "fields.priority",
+			"data_type": { "type": "int32", "min": 0, "max": 99999 },
+			"required_for_create": true,
+			"default_value": "100",
+			"description": {
+				"en-US": "Lower evaluates first. Precedence is explicit business configuration and nothing else: BR-TAX-ESS-SUP-009 removed the old specificity heuristic, because 'the more conditions the more specific' silently reorders rules whenever someone adds a condition."
+			}
+		},
+		{
+			"name": "stop_processing",
+			"label": "fields.stop_processing",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": "false",
+			"description": {
+				"en-US": "When a matching rule sets this, evaluation stops and lower-priority rules never run."
+			}
+		},
+		{
+			"name": "effective_from",
+			"label": "fields.effective_from",
+			"data_type": "date",
+			"required_for_create": true
+		},
+		{
+			"name": "effective_to",
+			"label": "fields.effective_to",
+			"data_type": "date",
+			"description": {
+				"en-US": "Null means open-ended. This is what lets a temporary measure expire on its own: Vietnam's 2% VAT reduction ends on 2026-12-31 with no deployment."
+			}
+		},
+		{
+			"name": "legal_reference",
+			"label": "fields.legal_reference",
+			"data_type": { "type": "string", "min": 0, "max": 500 }
+		},
+		{
+			"name": "version_no",
+			"label": "fields.version_no",
+			"data_type": { "type": "int32", "min": 1, "max": 99999 },
+			"required_for_create": true
+		},
+		{
+			"name": "supersedes_rule_id",
+			"label": "fields.supersedes_rule_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "lifecycle_status",
+			"label": "fields.lifecycle_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "published", "withdrawn"]
+			},
+			"required_for_create": true,
+			"default_value": "draft"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "jurisdiction",
+			"label": { "en-US": "Jurisdiction" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_jurisdiction",
+			"key_map": { "jurisdiction_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "supersedes",
+			"label": { "en-US": "Supersedes rule" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_rule",
+			"key_map": { "supersedes_rule_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

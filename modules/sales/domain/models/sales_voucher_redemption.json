@@ -1,0 +1,111 @@
+{
+	"name": "sales_voucher_redemption",
+	"label": "sales_voucher_redemption.label",
+	"table_name": "sales_voucher_redemptions",
+	"should_build_db": true,
+	"default_search_fields": ["status"],
+	"search_indexes": [
+		{ "index_name": "sales_vouch_redms_tid_voucher", "fields": ["voucher_code_id"] },
+		{ "index_name": "sales_vouch_redms_tid_order", "fields": ["sales_order_id"] },
+		{ "index_name": "sales_vouch_redms_tid_status", "fields": ["status"] }
+	],
+	"composite_uniques": [
+		{
+			"index_name": "sales_vouch_redms_tid_voucher_order",
+			"fields": ["voucher_code_id", "sales_order_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "voucher_code_id",
+			"label": "fields.voucher_code_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The code that was redeemed. Immutable: a redemption record answers 'which code was used on which order', and re-pointing it would rewrite history that a refund or an audit reads."
+			}
+		},
+		{
+			"name": "sales_order_id",
+			"label": "fields.sales_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order the code was applied to. Together with voucher_code_id this pair is unique, which is what enforces BR 26's one-use-per-order rule at the database rather than in a check that a concurrent request could race past."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["reserved", "redeemed", "released", "reversed"]
+			},
+			"required_for_create": true,
+			"default_value": "reserved",
+			"description": {
+				"en-US": "Where this redemption stands. The four values are two pairs: 'reserved' becomes 'redeemed' when the order confirms or 'released' when the draft is cancelled or expires; 'redeemed' becomes 'reversed' when a return restores the use. The reserve/redeem split is the point of the table (BR 82) - a code applied to a draft must be held so a second customer cannot take the last use, and must be given back if that draft never becomes a sale."
+			}
+		},
+		{
+			"name": "reserved_at",
+			"label": "fields.reserved_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the code was applied to the draft order and its use was held."
+			}
+		},
+		{
+			"name": "redeemed_at",
+			"label": "fields.redeemed_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the order confirmed and the hold became a real use. Null while the redemption is still only reserved."
+			}
+		},
+		{
+			"name": "released_at",
+			"label": "fields.released_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the hold was given back without a sale - the draft was cancelled or expired. Distinct from reversed_at's meaning: a release says the code was never really used, a reversal says it was used and then returned. The two are told apart by status, and both are kept because a campaign report counts them differently."
+			}
+		},
+		{
+			"name": "reversed_at",
+			"label": "fields.reversed_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When a return restored this use to the code (BR 32). Whether a return restores at all is the program's decision - restore_on_full_return and restore_on_partial_return - not this record's."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "voucher_code",
+			"label": { "en-US": "Voucher code" },
+			"type": "many:one",
+			"dest_schema": "sales_voucher_code",
+			"key_map": { "voucher_code_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "sales_order",
+			"label": { "en-US": "Sales order" },
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": { "sales_order_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

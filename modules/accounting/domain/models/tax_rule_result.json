@@ -1,0 +1,102 @@
+{
+	"name": "accounting_tax_rule_result",
+	"label": "accounting_tax_rule_result.label",
+	"table_name": "accounting_tax_rule_results",
+	"should_build_db": true,
+	"record_label_field": "action",
+	"default_search_fields": ["action"],
+	"search_indexes": [
+		{ "index_name": "acc_tx_res_tid_rule", "fields": ["tax_rule_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "tax_rule_id",
+			"label": "fields.tax_rule_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "action",
+			"label": "fields.action",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["add_tax", "remove_tax", "apply_mapping", "no_tax_applicable"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "What a matching rule does to the tax set. Each action requires a different field to be present, which the engine validates because JSON cannot express a conditional requirement."
+			}
+		},
+		{
+			"name": "tax_id",
+			"label": "fields.tax_id",
+			"data_type": "ulid",
+			"description": { "en-US": "Required for add_tax and remove_tax." }
+		},
+		{
+			"name": "tax_mapping_id",
+			"label": "fields.tax_mapping_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Required for apply_mapping. This is the only way a mapping is ever reached: a mapping is not a determination engine of its own (TAX-SUP-INV-08)."
+			}
+		},
+		{
+			"name": "tax_treatment",
+			"label": "fields.tax_treatment",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["non_taxable", "out_of_scope"]
+			},
+			"description": {
+				"en-US": "Required for no_tax_applicable, and deliberately narrower than the full treatment enum. Zero-rated is forbidden here: it is a real tax charged at 0% with a tax code on the invoice, not an absence of tax, and modelling it as one would lose its legal identity."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 99999 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Order the results of one rule are applied in. Load-bearing: removing VAT 10% then adding VAT 8% is a substitution, whereas the reverse order removes what was just added."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "rule",
+			"label": { "en-US": "Tax rule" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_rule",
+			"key_map": { "tax_rule_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "tax",
+			"label": { "en-US": "Tax" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax",
+			"key_map": { "tax_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "mapping",
+			"label": { "en-US": "Tax mapping" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax_mapping",
+			"key_map": { "tax_mapping_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

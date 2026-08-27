@@ -1,0 +1,113 @@
+{
+  "name": "accounting_tax_rule_condition",
+  "label": "accounting_tax_rule_condition.label",
+  "table_name": "accounting_tax_rule_conditions",
+  "should_build_db": true,
+  "record_label_field": "field_key",
+  "default_search_fields": [
+    "field_key",
+    "operator"
+  ],
+  "search_indexes": [
+    {
+      "index_name": "acc_tx_cond_tid_rule",
+      "fields": [
+        "tax_rule_id"
+      ]
+    }
+  ],
+  "extend_before": [
+    "core.basemodel.base_model",
+    "core.basemodel.org_base_model"
+  ],
+  "fields": [
+    {
+      "name": "tax_rule_id",
+      "label": "fields.tax_rule_id",
+      "data_type": "ulid",
+      "required_for_create": true,
+      "no_update": true
+    },
+    {
+      "name": "field_key",
+      "label": "fields.field_key",
+      "data_type": {
+        "type": "string",
+        "min": 1,
+        "max": 100
+      },
+      "required_for_create": true,
+      "description": {
+        "en-US": "A key from the Tax Context whitelist, whose datatype the backend already knows. A whitelist rather than free text because the alternative is user-supplied SQL or expressions, which BR-TAX-ESS-SUP-007 forbids outright."
+      }
+    },
+    {
+      "name": "operator",
+      "label": "fields.operator",
+      "data_type": {
+        "type": "enum_string",
+        "values": [
+          "eq",
+          "not_eq",
+          "in",
+          "not_in",
+          "is_null",
+          "is_not_null",
+          "gte",
+          "lte"
+        ]
+      },
+      "required_for_create": true
+    },
+    {
+      "name": "value",
+      "label": "fields.value",
+      "data_type": "jsonmap"
+    },
+    {
+      "name": "value_currency_code",
+      "label": "fields.value_currency_code",
+      "data_type": {
+        "type": "string",
+        "min": 3,
+        "max": 3
+      },
+      "description": {
+        "en-US": "Required when the field is money. V1 does not convert: a threshold in VND simply does not match a request priced in USD, rather than being silently converted at a rate nobody agreed on."
+      }
+    },
+    {
+      "name": "sequence",
+      "label": "fields.sequence",
+      "data_type": {
+        "type": "int32",
+        "min": 0,
+        "max": 99999
+      },
+      "required_for_create": true,
+      "default_value": "0",
+      "description": {
+        "en-US": "Display order only. Conditions within a rule are ANDed, so evaluation order cannot change the outcome; OR is expressed by writing a second rule."
+      }
+    }
+  ],
+  "extend_after": [
+    "core.basemodel.archivable_model",
+    "core.basemodel.auditable_model",
+    "core.basemodel.versioned_model"
+  ],
+  "edges_to": [
+    {
+      "edge": "rule",
+      "label": {
+        "en-US": "Tax rule"
+      },
+      "type": "many:one",
+      "dest_schema": "accounting_tax_rule",
+      "key_map": {
+        "tax_rule_id": "id"
+      },
+      "on_delete": "CASCADE"
+    }
+  ]
+}

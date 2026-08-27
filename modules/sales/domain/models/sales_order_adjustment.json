@@ -1,0 +1,141 @@
+{
+	"name": "sales_order_adjustment",
+	"label": "sales_order_adjustment.label",
+	"table_name": "sales_order_adjustments",
+	"should_build_db": true,
+	"record_label_field": "description",
+	"default_search_fields": ["adjustment_type", "source_type", "description"],
+	"composite_uniques": [
+		{
+			"index_name": "sales_order_adjs_tid_order_seq",
+			"fields": ["sales_order_id", "sequence"]
+		}
+	],
+	"search_indexes": [
+		{ "index_name": "sales_order_adjs_tid_line", "fields": ["sales_order_line_id"] },
+		{ "index_name": "sales_order_adjs_tid_source", "fields": ["source_type", "source_id"] },
+		{ "index_name": "sales_order_adjs_tid_return", "fields": ["sales_return_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_order_id",
+			"label": "fields.sales_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order whose price this adjustment explains. Always set, even for a line-level adjustment, so that replaying an order's whole calculation is one query rather than a join through its lines."
+			}
+		},
+		{
+			"name": "sales_order_line_id",
+			"label": "fields.sales_order_line_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The line this adjustment applies to, or NULL for an order-level one. The distinction is real and not cosmetic: an order-level discount is allocated across lines by the pricing engine, so it exists once here and appears again as each line's share of discount_amount. Recording it per-line only would lose the fact that it was one discount."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 1, "max": 100000 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The order in which this adjustment was applied, unique per sales order. This is the field that makes the calculation REPLAYABLE (BR 13): discounts do not commute, so a percentage applied before a fixed amount gives a different total than the reverse, and without the sequence the stored adjustments could not reproduce the stored total."
+			}
+		},
+		{
+			"name": "adjustment_type",
+			"label": "fields.adjustment_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"combo_price",
+					"conditional_price",
+					"percentage_discount",
+					"fixed_discount",
+					"voucher",
+					"manual_discount",
+					"rounding"
+				]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What kind of adjustment this is. rounding is one of them deliberately: the final rounding step of BR 13 changes the total, so it is recorded as an adjustment like any other rather than left as an unexplained difference between the sum of the lines and the grand total."
+			}
+		},
+		{
+			"name": "source_type",
+			"label": "fields.source_type",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The schema name of the thing that caused this adjustment - a promotion program, a voucher code, a combo. A plain string rather than an enum so that a new source of price change does not require a schema migration to be explainable."
+			}
+		},
+		{
+			"name": "source_id",
+			"label": "fields.source_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The record that caused it. No foreign key and no edge: a promotion may be archived or a voucher deleted long after the sale, and the adjustment must keep explaining the price it produced even when its cause is gone."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": {
+				"en-US": "What to show a human asking why the price is what it is. Written at the time of the sale rather than resolved on read, because the promotion it names may since have been renamed or removed."
+			}
+		},
+		{
+			"name": "base_amount",
+			"label": "fields.base_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The amount this adjustment was calculated FROM. Stored rather than recomputed because it depends on where in the sequence the adjustment fell: a ten percent discount applied third operates on a different base than the same discount applied first, and only the stored base makes that visible."
+			}
+		},
+		{
+			"name": "adjustment_amount",
+			"label": "fields.adjustment_amount",
+			"data_type": { "type": "decimal", "min": "-999999999999", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "How much this adjustment changed the price. SIGNED, unlike the discount totals on the order and its lines: those answer 'how much was given away' and are positive by convention, while this answers 'what did this step do to the number', so a discount is negative and a return clawback is positive. Getting the sign wrong here would make the replay disagree with the stored total."
+			}
+		},
+		{
+			"name": "sales_return_id",
+			"label": "fields.sales_return_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "Set when this adjustment is a return clawback (D-12): returning part of an order can invalidate a discount the whole basket had qualified for, and the amount reclaimed is recorded as its own adjustment referencing the return that caused it. NULL on every adjustment made during the original sale."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_order",
+			"label": { "en-US": "Sales order" },
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": { "sales_order_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

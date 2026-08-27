@@ -1,0 +1,137 @@
+{
+	"name": "sales_quotation_line",
+	"label": "sales_quotation_line.label",
+	"table_name": "sales_quotation_lines",
+	"should_build_db": true,
+	"record_label_field": "product_name_snapshot",
+	"default_search_fields": ["product_code_snapshot", "product_name_snapshot"],
+	"composite_uniques": [
+		{
+			"index_name": "sales_quotation_lines_tid_quot_lineno",
+			"fields": ["sales_quotation_id", "line_number"]
+		}
+	],
+	"search_indexes": [
+		{ "index_name": "sales_quotation_lines_tid_variant", "fields": ["product_variant_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_quotation_id",
+			"label": "fields.sales_quotation_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The quotation this line belongs to. Immutable, for the reason the order line's is: moving a line between quotations would change two totals at once, and the one it left would keep a total it can no longer justify."
+			}
+		},
+		{
+			"name": "line_number",
+			"label": "fields.line_number",
+			"data_type": { "type": "int32", "min": 1, "max": 100000 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Position within the quotation, unique per quotation and starting at 1 because it appears on customer-facing paperwork. Carried onto the order line of the same number at conversion, so a customer comparing the quote to the order sees the same line in the same place."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "What is being quoted. The variant, not the template, matching the order line: the variant is the transactable unit. Nullable for the same reason - a combo parent quotes no single variant."
+			}
+		},
+		{
+			"name": "product_code_snapshot",
+			"label": "fields.product_code_snapshot",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The product code as it stood when the quotation was priced. A SNAPSHOT, like the order line's: a quotation is a statement about what was offered, and a product renamed afterwards must not silently restate it."
+			}
+		},
+		{
+			"name": "product_name_snapshot",
+			"label": "fields.product_name_snapshot",
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": {
+				"en-US": "The product name as quoted. Snapshot for the same reason as the code."
+			}
+		},
+		{
+			"name": "uom_id",
+			"label": "fields.uom_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The unit the quantity is in. A plain ulid, since units of measure belong to essential."
+			}
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "How much was quoted. Named plainly rather than ordered_quantity, because nothing has been ordered - and the three companion quantities an order line carries (fulfilled, returned, requires_fulfillment) are deliberately absent here for the same reason: a quotation moves no goods."
+			}
+		},
+		{
+			"name": "unit_price",
+			"label": "fields.unit_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"description": {
+				"en-US": "The price per unit as quoted. One column where the order line has two - base and effective - because a quotation states the offer rather than explaining how it was reached; the adjustment chain that justifies an order's number is rebuilt at conversion, when the engine runs again."
+			}
+		},
+		{
+			"name": "discount_amount",
+			"label": "fields.discount_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"description": {
+				"en-US": "What was taken off this line."
+			}
+		},
+		{
+			"name": "net_amount",
+			"label": "fields.net_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"description": {
+				"en-US": "The line total after discount and before tax."
+			}
+		},
+		{
+			"name": "tax_amount",
+			"label": "fields.tax_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"description": {
+				"en-US": "The indicative tax on this line. Indicative because a quotation is not a fiscal document: the tax actually charged is determined when the resulting order confirms, and may differ if rates moved in between."
+			}
+		},
+		{
+			"name": "final_amount",
+			"label": "fields.final_amount",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"description": {
+				"en-US": "What this line was quoted at, all in."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_quotation",
+			"label": { "en-US": "Sales quotation" },
+			"type": "many:one",
+			"dest_schema": "sales_quotation",
+			"key_map": { "sales_quotation_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

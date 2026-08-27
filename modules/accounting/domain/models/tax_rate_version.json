@@ -1,0 +1,128 @@
+{
+	"name": "accounting_tax_rate_version",
+	"label": "accounting_tax_rate_version.label",
+	"table_name": "accounting_tax_rate_versions",
+	"should_build_db": true,
+	"record_label_field": "version_no",
+	"default_search_fields": ["version_no", "rate", "fixed_amount", "currency_code"],
+	"composite_uniques": [
+		{
+			"index_name": "acc_tx_rate_tid_tax_ver",
+			"fields": ["tax_id", "version_no", "org_id"]
+		}
+	],
+	"search_indexes": [
+		{
+			"index_name": "acc_tx_rate_tid_eff",
+			"fields": ["tax_id", "effective_from", "effective_to"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "tax_id",
+			"label": "fields.tax_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "version_no",
+			"label": "fields.version_no",
+			"data_type": { "type": "int32", "min": 1, "max": 99999 },
+			"required_for_create": true
+		},
+		{
+			"name": "rate",
+			"label": "fields.rate",
+			"data_type": { "type": "decimal", "min": "0", "max": "100", "scale": 6 },
+			"description": {
+				"en-US": "A percentage, not a fraction: 8 means 8%, and the engine divides by 100 (BR-TAX-ESS-SUP-006). Set for percentage and division taxes, null for fixed ones. Decimal because 8.5% is ordinary and an integer column would silently truncate it."
+			}
+		},
+		{
+			"name": "fixed_amount",
+			"label": "fields.fixed_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 6
+			},
+			"description": {
+				"en-US": "Money charged per unit of quantity, for a fixed tax such as an environmental levy per litre. Mutually exclusive with rate."
+			}
+		},
+		{
+			"name": "currency_code",
+			"label": "fields.currency_code",
+			"data_type": { "type": "string", "min": 3, "max": 3 },
+			"description": {
+				"en-US": "The currency fixed_amount is denominated in. Required with fixed_amount. If it differs from the transaction currency the engine fails explicitly rather than inventing a rate: there is no FX contract in V1."
+			}
+		},
+		{
+			"name": "rate_uom_id",
+			"label": "fields.rate_uom_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The unit fixed_amount is charged per. Deliberately carries no edge to essential_uoms: an FK would couple the two schemas across a module boundary, so the id is validated through the UoM port instead."
+			}
+		},
+		{
+			"name": "effective_from",
+			"label": "fields.effective_from",
+			"data_type": "date",
+			"required_for_create": true
+		},
+		{
+			"name": "effective_to",
+			"label": "fields.effective_to",
+			"data_type": "date",
+			"description": {
+				"en-US": "Null means open-ended. Expiry is not archival: a rate that has lapsed is still the correct rate for a transaction dated inside its period."
+			}
+		},
+		{
+			"name": "legal_reference",
+			"label": "fields.legal_reference",
+			"data_type": { "type": "string", "min": 0, "max": 500 }
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 1000 }
+		},
+		{
+			"name": "lifecycle_status",
+			"label": "fields.lifecycle_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "published", "withdrawn"]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"description": {
+				"en-US": "Two published versions of one tax may never overlap in time, so that a tax_date resolves to exactly one rate. Zero matches and two matches are both errors, and neither may be silently resolved by taking the newest row."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "tax",
+			"label": { "en-US": "Tax" },
+			"type": "many:one",
+			"dest_schema": "accounting_tax",
+			"key_map": { "tax_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

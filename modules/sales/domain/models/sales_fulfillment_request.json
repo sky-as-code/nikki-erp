@@ -1,0 +1,100 @@
+{
+	"name": "sales_fulfillment_request",
+	"label": "sales_fulfillment_request.label",
+	"table_name": "sales_fulfillment_requests",
+	"should_build_db": true,
+	"default_search_fields": ["request_type", "status", "inventory_reference"],
+	"search_indexes": [
+		{ "index_name": "sales_fulfil_reqs_tid_order", "fields": ["sales_order_id"] },
+		{ "index_name": "sales_fulfil_reqs_tid_status", "fields": ["status"] },
+		{ "index_name": "sales_fulfil_reqs_tid_invref", "fields": ["inventory_reference"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_order_id",
+			"label": "fields.sales_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The sale this request serves. ONE ORDER HAS MANY REQUESTS (BR 45): partial delivery, several warehouses and split shipment each produce another, which is why this is a child table rather than a fulfillment_reference column on the order. A single column would have to be rewritten on the second shipment, losing the first."
+			}
+		},
+		{
+			"name": "request_type",
+			"label": "fields.request_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["reservation", "goods_issue", "return_receipt", "cancellation"]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What Sales is asking Inventory to do. INTENT, never instruction (BR 44): Sales says goods were sold and must leave, and Inventory decides availability, warehouse, location and the movements that follow. Immutable, because a request that changed its own kind would leave the movements it already caused unexplained."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["pending", "accepted", "completed", "rejected", "cancelled"]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"description": {
+				"en-US": "How far Inventory has got. 'accepted' means the request was taken and stock reserved; 'completed' means the goods actually moved. The two are distinct because BR 7.3's failure - money captured but goods not dispensed - lives exactly between them, and a single 'done' flag could not express it."
+			}
+		},
+		{
+			"name": "inventory_reference",
+			"label": "fields.inventory_reference",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Inventory's own identifier for whatever it created - a stock transfer id. A plain string with no foreign key: it points into another module, and a constraint across that boundary would make the two undeployable apart. Null until Inventory has accepted and told us what it made."
+			}
+		},
+		{
+			"name": "failure_reason",
+			"label": "fields.failure_reason",
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": {
+				"en-US": "Why Inventory refused, in its own words. Kept because a rejected fulfilment is the case an operator has to act on, and 'rejected' alone tells them nothing about whether to wait, re-route or refund."
+			}
+		},
+		{
+			"name": "requested_at",
+			"label": "fields.requested_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When Sales asked."
+			}
+		},
+		{
+			"name": "completed_at",
+			"label": "fields.completed_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the goods actually moved. Null until then, including while the request is merely accepted - see the note on status."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_order",
+			"label": { "en-US": "Sales order" },
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": { "sales_order_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

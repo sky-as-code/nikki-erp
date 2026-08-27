@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	it "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
@@ -116,6 +117,7 @@ func TestDefineBuiltinActions(t *testing.T) {
 
 	assert.NoError(t, DefineBuiltinActions(engine))
 	assert.Equal(t, []string{
+		it.ActionComputeField,
 		it.ActionCreate,
 		it.ActionDelete,
 		it.ActionExists,
@@ -247,4 +249,55 @@ func TestDefineActionAllowsUnexposedAction(t *testing.T) {
 	definition, exists := engine.Action("engine_only")
 	assert.True(t, exists)
 	assert.Equal(t, it.ActionType(""), definition.ActionType)
+}
+
+// A validator hook on an action whose crud helper accepts none would never run. Rejecting it
+// at registration keeps a guard from looking installed while silently doing nothing.
+func TestDefineActionRejectsHookOnActionThatCannotRunIt(t *testing.T) {
+	engine := newPipelineEngine(&stubRepository{})
+
+	err := engine.DefineAction(it.DynamicActionDefinition{
+		ActionName: it.ActionSetArchived,
+		ValidateExtra: func(
+			_ corectx.Context, _ *it.DynamicEntity, _ *it.DynamicEntity, _ *ft.ClientErrors,
+		) error {
+			return nil
+		},
+		MainProcess: noopProcess,
+	})
+
+	assert.Error(t, err)
+}
+
+func TestDefineActionAcceptsHookOnCreateUpdateDelete(t *testing.T) {
+	for _, actionName := range []string{it.ActionCreate, it.ActionUpdate, it.ActionDelete} {
+		engine := newPipelineEngine(&stubRepository{})
+		err := engine.DefineAction(it.DynamicActionDefinition{
+			ActionName: actionName,
+			ValidateExtra: func(
+				_ corectx.Context, _ *it.DynamicEntity, _ *it.DynamicEntity, _ *ft.ClientErrors,
+			) error {
+				return nil
+			},
+			MainProcess: noopProcess,
+		})
+		assert.NoError(t, err, actionName)
+	}
+}
+
+// A module's own action is exempt: its MainProcess may call the hooks itself.
+func TestDefineActionAllowsHookOnCustomAction(t *testing.T) {
+	engine := newPipelineEngine(&stubRepository{})
+
+	err := engine.DefineAction(it.DynamicActionDefinition{
+		ActionName: "send_invitation",
+		ValidateExtra: func(
+			_ corectx.Context, _ *it.DynamicEntity, _ *it.DynamicEntity, _ *ft.ClientErrors,
+		) error {
+			return nil
+		},
+		MainProcess: noopProcess,
+	})
+
+	assert.NoError(t, err)
 }

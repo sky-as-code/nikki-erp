@@ -106,7 +106,7 @@ func defineStockMoveLineActions(engine drif.DynamicResourceEngine) error {
 }
 
 func rejectMoveLineWrite(
-	_ corectx.Context, _ dmodel.DynamicFields, _ *dmodel.DynamicFields, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.StockMoveLineSchemaName,

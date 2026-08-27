@@ -1,0 +1,91 @@
+{
+    "type": "object",
+    "required": ["id", "name", "job_type", "module_name", "job_key", "action_type", "cron_expression"],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "created_by": {
+            "type": ["string", "null"],
+            "minLength": 1
+        },
+        "updated_by": {
+            "type": ["string", "null"],
+            "minLength": 1
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        },
+        "name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "job_type": {
+            "type": "string",
+            "enum": ["technical", "user"]
+        },
+        "module_name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]+$"
+        },
+        "job_key": {
+            "type": "string",
+            "minLength": 1
+        },
+        "action_type": {
+            "type": "string",
+            "enum": ["command_bus", "rest_api"]
+        },
+        "action_config": {
+            "type": "object"
+        },
+        "cron_expression": {
+            "type": "string",
+            "minLength": 1
+        },
+        "effective_from": {
+            "type": ["string", "null"],
+            "minLength": 20
+        },
+        "effective_until": {
+            "type": ["string", "null"],
+            "minLength": 20
+        },
+        "is_enabled": {
+            "type": ["boolean", "null"]
+        },
+        "max_attempts": {
+            "type": ["integer", "null"],
+            "minimum": 1,
+            "maximum": 100
+        },
+        "retry_interval_seconds": {
+            "type": ["integer", "null"],
+            "minimum": 5,
+            "maximum": 86400
+        },
+        "concurrency_policy": {
+            "type": ["string", "null"],
+            "enum": ["forbid_overlap", "allow_overlap", null]
+        },
+        "misfire_policy": {
+            "type": ["string", "null"],
+            "enum": ["run_once", "skip", null]
+        },
+        "next_run_at": {
+            "type": ["string", "null"],
+            "minLength": 20
+        }
+    },
+    "additionalProperties": false
+}

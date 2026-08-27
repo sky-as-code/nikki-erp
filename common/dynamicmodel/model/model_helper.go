@@ -26,13 +26,52 @@ func (this DynamicFields) SetBool(key string, v *bool) {
 	this[key] = *v
 }
 
+// GetDecimal reads a decimal field in whatever shape it arrived in.
+//
+// It used to bare type-assert to decimal.Decimal, which PANICKED on every other shape - and a
+// decimal crosses JSON as a STRING precisely so it does not lose precision, so any value read back
+// through a jsonb column crashed the caller rather than answering. Four modules had independently
+// written their own switch to route around this (accounting/domain/services/values.go,
+// inventory/domain/services/stock_scrap_domservice.go, paymentinvoice/dynamicengines/order_actions.go,
+// purchase/domain/services/purchase_service.go); accepting the shapes here means they did not have to.
+//
+// A value that cannot be read as a decimal returns nil, the same answer an absent field gives. That
+// is deliberate: the alternative is a panic, and a caller that already handles "not set" handles
+// this correctly, while none of them is prepared to recover from a crash mid-transaction.
 func (this DynamicFields) GetDecimal(key string) *decimal.Decimal {
 	val, ok := this[key]
 	if !ok || val == nil {
 		return nil
 	}
-	d := val.(decimal.Decimal)
-	return &d
+
+	switch typed := val.(type) {
+	case decimal.Decimal:
+		return &typed
+	case *decimal.Decimal:
+		return typed
+	case string:
+		parsed, err := decimal.NewFromString(typed)
+		if err != nil {
+			return nil
+		}
+		return &parsed
+	case float64:
+		parsed := decimal.NewFromFloat(typed)
+		return &parsed
+	case float32:
+		parsed := decimal.NewFromFloat32(typed)
+		return &parsed
+	case int:
+		parsed := decimal.NewFromInt(int64(typed))
+		return &parsed
+	case int32:
+		parsed := decimal.NewFromInt(int64(typed))
+		return &parsed
+	case int64:
+		parsed := decimal.NewFromInt(typed)
+		return &parsed
+	}
+	return nil
 }
 
 func (this DynamicFields) SetDecimalStr(key string, v *string) {

@@ -1,0 +1,56 @@
+{
+	"name": "sales_promotion_compatibility",
+	"label": "sales_promotion_compatibility.label",
+	"table_name": "sales_promotion_compatibilities",
+	"should_build_db": true,
+	"composite_uniques": [
+		{
+			"index_name": "sales_promo_compat_tid_pair",
+			"fields": ["program_a_id", "program_b_id"]
+		}
+	],
+	"search_indexes": [
+		{ "index_name": "sales_promo_compat_tid_b", "fields": ["program_b_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "program_a_id",
+			"label": "fields.program_a_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "One side of the pair. The relation is SYMMETRIC in meaning — if A cannot combine with B then B cannot combine with A — but stored one-directionally, so the resolver looks the pair up both ways round rather than requiring two rows that could disagree with each other."
+			}
+		},
+		{
+			"name": "program_b_id",
+			"label": "fields.program_b_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The other side. A row naming the same program twice is meaningless and is refused by the domain service: a program is always compatible with itself, and asking otherwise has no reading."
+			}
+		},
+		{
+			"name": "compatibility",
+			"label": "fields.compatibility",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["allowed", "denied"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "Whether this pair may apply together. Resolution order is fixed (D-09): an explicit denied row wins ALWAYS, then an explicit allowed row permits, then stack_policy decides. That order is what makes BR 27's 'combine only with specified vouchers' expressible as exclusive plus allowed rows, and it resolves the ambiguity BR 28 leaves about pairs with no row at all."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

@@ -1,0 +1,109 @@
+{
+	"name": "sales_promotion_condition",
+	"label": "sales_promotion_condition.label",
+	"table_name": "sales_promotion_conditions",
+	"should_build_db": true,
+	"default_search_fields": ["condition_type", "operator", "value_text"],
+	"search_indexes": [
+		{ "index_name": "sales_promo_conds_tid_group", "fields": ["group_id"] },
+		{ "index_name": "sales_promo_conds_tid_type", "fields": ["condition_type"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "group_id",
+			"label": "fields.group_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The group this condition belongs to. Conditions within one group are ANDed; the groups are ORed with each other (D-06). That sum-of-products shape expresses every example in BR 23 and needs no expression parser."
+			}
+		},
+		{
+			"name": "condition_type",
+			"label": "fields.condition_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"product_variant",
+					"product_category",
+					"quantity",
+					"order_subtotal",
+					"total_quantity",
+					"valid_from",
+					"valid_until",
+					"day_of_week",
+					"time_of_day",
+					"sales_channel",
+					"sales_point"
+				]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "What this condition tests (BR 23). Customer and customer group are explicitly future in BR 23 and are deliberately absent: adding them now would mean an enum value nothing evaluates, which reads as a supported feature that silently never matches."
+			}
+		},
+		{
+			"name": "operator",
+			"label": "fields.operator",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["eq", "ne", "gt", "gte", "lt", "lte", "in", "not_in", "between"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "How the condition compares. in and not_in read their set from sales_promotion_condition_targets rather than from a column, because a set of variant ids has no sensible single-column representation (D-07)."
+			}
+		},
+		{
+			"name": "value_text",
+			"label": "fields.value_text",
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": {
+				"en-US": "The comparison value when it is textual - a day name, a channel code. Typed columns rather than free-form JSON (D-07): eligibility is queried as 'which programs might apply to this cart', and JSON would make that a full table scan."
+			}
+		},
+		{
+			"name": "value_decimal",
+			"label": "fields.value_decimal",
+			"data_type": { "type": "decimal", "min": "-999999999999", "max": "999999999999", "scale": 6 },
+			"description": {
+				"en-US": "The comparison value when it is numeric - a subtotal threshold, a quantity. Scale 6 covers both money at D-01 scale and fractional quantities."
+			}
+		},
+		{
+			"name": "value_from",
+			"label": "fields.value_from",
+			"data_type": { "type": "decimal", "min": "-999999999999", "max": "999999999999", "scale": 6 },
+			"description": {
+				"en-US": "The lower bound of a between comparison, inclusive. Unused by every other operator."
+			}
+		},
+		{
+			"name": "value_to",
+			"label": "fields.value_to",
+			"data_type": { "type": "decimal", "min": "-999999999999", "max": "999999999999", "scale": 6 },
+			"description": {
+				"en-US": "The upper bound of a between comparison, inclusive - unlike the validity windows elsewhere in this module, which are exclusive. A quantity range of 'between 5 and 10' means a customer buying exactly 10 qualifies, which is what an operator writing that expects."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "group",
+			"label": { "en-US": "Condition group" },
+			"type": "many:one",
+			"dest_schema": "sales_promotion_condition_group",
+			"key_map": { "group_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

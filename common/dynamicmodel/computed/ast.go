@@ -63,6 +63,25 @@ type RelatedExpr struct {
 	Path string
 }
 
+// GoFunctionExpr delegates the whole field to a Go function registered on the owning
+// DynamicResourceEngine via DefineComputedFieldFunction. Unlike FunctionExpr — which calls a
+// builtin scalar from the fixed compile-time registry as an operand — this node produces the
+// field's entire value, may resolve services from the dependency container, and may return any
+// declared data type including an array. It exists because the declarative kinds are closed
+// sets: they cannot return a list, and a subquery cannot sit under a case branch, so a
+// conditional collection has no declarative form.
+//
+// It is only legal as the ROOT of a definition (kind "function"): the call is a whole-field
+// operation whose cost must never hide inside arithmetic.
+type GoFunctionExpr struct {
+	// Name identifies the function registered on the engine. Boot fails when no engine defines it.
+	Name string
+	// DependsOn optionally names a same-schema field this computation reads. Declaring it lets a
+	// form recompute the value through POST {schema}/meta/compute/{field} the moment that field
+	// changes, before anything is saved.
+	DependsOn string
+}
+
 func (FieldExpr) exprNode()    {}
 func (LiteralExpr) exprNode()  {}
 func (BinaryExpr) exprNode()   {}
@@ -70,3 +89,4 @@ func (UnaryExpr) exprNode()    {}
 func (FunctionExpr) exprNode() {}
 func (CaseExpr) exprNode()     {}
 func (RelatedExpr) exprNode()  {}
+func (GoFunctionExpr) exprNode() {}

@@ -1,0 +1,69 @@
+{
+	"name": "sales_bill_relation",
+	"label": "sales_bill_relation.label",
+	"table_name": "sales_bill_relations",
+	"should_build_db": true,
+	"search_indexes": [
+		{ "index_name": "sales_bill_rels_tid_source", "fields": ["source_bill_id"] },
+		{ "index_name": "sales_bill_rels_tid_target", "fields": ["target_bill_id"] }
+	],
+	"composite_uniques": [
+		{
+			"index_name": "sales_bill_rels_tid_pair_type",
+			"fields": ["source_bill_id", "target_bill_id", "relation_type"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "source_bill_id",
+			"label": "fields.source_bill_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The bill that was split or merged away. It still exists - BR 83 forbids deleting it - and this row is what explains why it is no longer the live settlement unit."
+			}
+		},
+		{
+			"name": "target_bill_id",
+			"label": "fields.target_bill_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The bill that resulted. A split writes one row per bill it produced; a merge writes one row per bill it consumed, all pointing at the single survivor."
+			}
+		},
+		{
+			"name": "relation_type",
+			"label": "fields.relation_type",
+			"data_type": { "type": "enum_string", "values": ["split_into", "merged_into"] },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Which operation produced this link. Both read source -> target, so the type is what distinguishes 'this bill became those three' from 'those three became this one' - the row shape alone cannot, and an auditor tracing a payment needs to know which happened."
+			}
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_readonly_model"],
+
+	"edges_to": [
+		{
+			"edge": "source_bill",
+			"label": { "en-US": "Source bill" },
+			"type": "many:one",
+			"dest_schema": "sales_bill",
+			"key_map": { "source_bill_id": "id" }
+		},
+		{
+			"edge": "target_bill",
+			"label": { "en-US": "Target bill" },
+			"type": "many:one",
+			"dest_schema": "sales_bill",
+			"key_map": { "target_bill_id": "id" }
+		}
+	]
+}

@@ -1,0 +1,99 @@
+{
+	"name": "sales_point",
+	"label": "sales_point.label",
+	"table_name": "sales_points",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["name", "code", "external_reference_id"],
+	"search_indexes": [
+		{ "index_name": "sales_points_tid_channel_status", "fields": ["sales_channel_id", "status"] }
+	],
+	"partial_uniques_strict": [
+		{
+			"index_name": "sales_points_tid_channel_ext_ref",
+			"not_null_fields": ["sales_channel_id"],
+			"nullable_field": "external_reference_id"
+		},
+		{
+			"index_name": "sales_points_tid_channel_code",
+			"not_null_fields": ["sales_channel_id"],
+			"nullable_field": "code"
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_channel_id",
+			"label": "fields.sales_channel_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The channel this point belongs to. Immutable (CR 72): a point created under the wrong channel is archived and recreated, never moved, because orders already reference the pair and moving it would rewrite what channel those sales happened in."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"description": {
+				"en-US": "A human-facing local code such as 'VM000123'. Optional, mutable, and unique within its channel when present (D-21). Deliberately not an integration identity: nothing resolves a sales point by this, so unlike a channel code it can be corrected after the fact (CR 13). Declared as partial_uniques_strict, which emits only the IS NOT NULL index; the loose variant would also cap a channel at one un-coded point."
+			}
+		},
+		{
+			"name": "external_reference_id",
+			"label": "fields.external_reference_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The creating module's own id for the thing this point represents — for a kiosk, its Kiosk id (CR 12). Unique within a channel when present, and that pair IS the idempotency mechanism: a vending module retrying CreateSalesPoint after a timeout resolves to the existing point instead of creating a second one (CR 48). Immutable, because changing it would break that resolution. Declared as partial_uniques_strict so that the many points carrying no external reference stay unconstrained. A plain ulid with no edge: the record it names belongs to another module, and a foreign key across that boundary would make Sales depend on its table."
+			}
+		},
+		{
+			"name": "external_reference_type",
+			"label": "fields.external_reference_type",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"no_update": true,
+			"description": {
+				"en-US": "Which kind of record external_reference_id names, as a human-readable '{module}.{resource}' pair — 'vending_machine.kiosk' for a kiosk. Without it the id is ambiguous: two modules may both register points against the same channel, and a bare ulid says nothing about which resource to look it up in. Immutable alongside the id it qualifies, since changing either would repoint the reference."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["active", "suspended"]
+			},
+			"required_for_create": true,
+			"default_value": "active",
+			"no_update": true,
+			"description": {
+				"en-US": "The business lifecycle. Suspended stops new orders while leaving returns, refunds and history working (CR 14), which is what a temporarily offline kiosk needs. Distinct from is_archived. Written only by the suspend and activate actions."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_channel",
+			"label": { "en-US": "Sales channel" },
+			"type": "many:one",
+			"dest_schema": "sales_channel",
+			"key_map": { "sales_channel_id": "id" }
+		}
+	]
+}

@@ -47,6 +47,7 @@
 	"datatable.viewMode": "View mode",
 	"datatable.viewSettings": "View settings",
 	"debug.form_errors": "Debug - Form errors",
+	"err_action_not_supported": "This resource does not support the requested action",
 	"err_etag_mismatched": "This data has been modified by someone else",
 	"err_exclusive_fields": "Only one of these fields can have a value: {{fields}}",
 	"err_exclusive_fields_missing": "One of these fields (not all of them) is required: {{fields}}",

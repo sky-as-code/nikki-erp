@@ -7,9 +7,9 @@ import (
 	"github.com/labstack/echo/v5"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 )
 
@@ -25,6 +25,8 @@ const (
 	ActionSearch      = "search"
 	ActionExists      = "exists"
 	ActionGetSchema   = "get_schema"
+	// ActionComputeField evaluates one function-kind computed field against an unsaved model.
+	ActionComputeField = "compute_field"
 )
 
 // ActionType classifies an action for the REST engine, which maps it to an HTTP method.
@@ -122,23 +124,40 @@ type ProcessInput struct {
 // DynamicActionProcessFn is the main business processing function of an action.
 type DynamicActionProcessFn func(ctx corectx.Context, input ProcessInput) (*ActionResult, error)
 
-// ActionBeforeValidationFn may sanitize or enrich params before schema validation.
-// The returned map replaces the params for the rest of the pipeline.
-// Only invoked when the action declares a ParamSchema.
-type ActionBeforeValidationFn func(ctx corectx.Context, params dmodel.DynamicFields, vErrs *ft.ClientErrors) (dmodel.DynamicFields, error)
+// The three validator hooks are aliases of the corecrud hook types, instantiated at
+// *DynamicEntity — the same type argument the service passes to corecrud.Create and
+// corecrud.Update. Being aliases rather than distinct named types, they assign straight
+// into corecrud.CreateParam / corecrud.UpdateParam with no adapter and no conversion:
+// the service reads the hook off the action definition and hands the value over as is.
+//
+// The hooks are executed by the crud helper the service delegates to, not by the action
+// pipeline, so they see data that InjectServiceFields and schema.Validate have already
+// been through.
+//
+// A hook that mutates the entity in place and returns the same pointer works, because the
+// field map is shared. A hook wanting to *replace* the map must return a fresh
+// NewDynamicEntityFrom(...): corecrud honours a returned model only when it differs from
+// the one passed in.
+
+// ActionBeforeValidationFn may sanitize or enrich the model before schema validation.
+type ActionBeforeValidationFn = corecrud.BeforeValidationFn[*DynamicEntity]
 
 // ActionAfterValidationFn runs after successful schema validation.
-// Only invoked when the action declares a ParamSchema.
-type ActionAfterValidationFn func(ctx corectx.Context, params dmodel.DynamicFields) error
+type ActionAfterValidationFn = corecrud.AfterValidationSuccessFn[*DynamicEntity]
 
 // ActionValidateExtraFn performs validation that the schema cannot express.
-// It runs whether or not a ParamSchema is declared.
-// foundModel is the record auto-fetched from KeysToFetch, and is nil when the action
-// declares no KeysToFetch.
-type ActionValidateExtraFn func(ctx corectx.Context, params dmodel.DynamicFields, foundModel *dmodel.DynamicFields, vErrs *ft.ClientErrors) error
+//
+// It is aliased to corecrud's *update* hook shape, the wider of the two, so that one type
+// serves every action. On update and delete, foundModel is the stored record, fetched by
+// the crud helper itself. On create there is no stored record and foundModel is nil, so a
+// hook that reads it must nil-check first.
+type ActionValidateExtraFn = corecrud.UpdateValidateExtraFn[*DynamicEntity]
 
 // KeysToFetchFn returns the primary or unique keys identifying the record the engine
-// should auto-fetch before ValidateExtra runs. Serves update-like actions.
+// should auto-fetch, to be handed to MainProcess as ProcessInput.FoundModel.
+//
+// It does not feed ValidateExtra: on update and delete the crud helper fetches the stored
+// record itself. Declare it only for an action whose MainProcess reads the record.
 type KeysToFetchFn func(params dmodel.DynamicFields) dmodel.DynamicFields
 
 // DynamicActionDefinition declares one action on a resource engine.
@@ -160,8 +179,9 @@ type DynamicActionDefinition struct {
 	// binding and response shaping, and the engine only registers the route for it.
 	RestHandler echo.HandlerFunc
 
-	// ParamSchema is optional. When provided, params are validated against it and only
-	// then are BeforeValidation and AfterValidationSuccess invoked.
+	// ParamSchema is optional. When provided, the pipeline validates params against it
+	// before MainProcess runs. It does not gate the validator hooks below, which the crud
+	// helper runs against the resource's own schema.
 	ParamSchema func() *dmodel.ModelSchema
 
 	// ValidateAsEdit runs the schema validation in "for edit" mode, which skips absent
@@ -179,12 +199,59 @@ type DynamicActionDefinition struct {
 	// PermissionScope overrides the engine's default scope for this action only.
 	PermissionScope *requestguard.ResourceScope
 
+	// IsOrgScoped confines the action to one organization: the REST caller must supply
+	// "?org_id=", the value must name an org the caller belongs to, and the action only ever
+	// sees records of that org.
+	//
+	// A nil value means true. Org scoping is the default because the unsafe direction is the
+	// silent one: an action that forgot to declare it would otherwise expose every org's rows
+	// to anyone holding a grant. Opt out with util.ToPtr(false), and only for a resource that
+	// genuinely has no owning org — schema metadata, or a resource with no org column at all.
+	//
+	// It has no effect on a resource whose schema declares no org_id field; such a resource
+	// cannot be org-filtered and is left alone.
+	IsOrgScoped *bool
+
+	// PrimarySchema names the parent resource this action hangs off, and nests its REST route
+	// under it:
+	//
+	//	/{PrimarySchema}/:{PrimaryRestIdParam}/{engine.RoutePath()}/{RestPath}
+	//
+	// so that the full path of a nested get-by-id reads
+	// "/{primary-schema}/{primary-id}/{current-schema}/{current-id}".
+	// Leave it nil for a top-level resource, which is the common case.
+	PrimarySchema *string
+
+	// PrimaryRestIdParam names the path parameter carrying the parent id, and is mandatory
+	// whenever PrimarySchema is set. The value lands in the action params under this name.
+	// Segments follow RestPathRegex: [a-zA-Z0-9_], the word separator is "_".
+	PrimaryRestIdParam *string
+
+	// The validator hooks. The definition is the single place they live: the service reads
+	// them from here and passes them to the crud helper unchanged. There is no per-call way
+	// to supply one, so what runs on a create is answerable by reading this definition alone.
+	//
+	// ModifyAction replaces these fields rather than chaining them, so a module attaching a
+	// guard to an action that may already have one reads the existing hook first and calls it
+	// from its own — see rejectArchivedOnCreate in inventory/dynamicengines.
 	BeforeValidation       ActionBeforeValidationFn
 	AfterValidationSuccess ActionAfterValidationFn
 	ValidateExtra          ActionValidateExtraFn
 
 	// MainProcess is mandatory.
 	MainProcess DynamicActionProcessFn
+}
+
+// OrgScoped resolves IsOrgScoped, defaulting an unset field to true.
+// Every call site asks through this method rather than reading the pointer, so the
+// "nil means org-scoped" default cannot be forgotten in one place and honoured in another.
+func (this DynamicActionDefinition) OrgScoped() bool {
+	return this.IsOrgScoped == nil || *this.IsOrgScoped
+}
+
+// IsNested reports whether this action's REST route hangs off a parent resource.
+func (this DynamicActionDefinition) IsNested() bool {
+	return this.PrimarySchema != nil && *this.PrimarySchema != ""
 }
 
 // DynamicActionDelta overrides fields of an already defined action.
@@ -210,7 +277,15 @@ type DynamicActionDelta struct {
 	// Permission is a pointer so that overriding it to "" (skip the check) is expressible.
 	Permission *string
 
-	PermissionScope        *requestguard.ResourceScope
+	PermissionScope *requestguard.ResourceScope
+
+	// IsOrgScoped is a pointer for the same reason it is one on the definition: nil means
+	// "keep what the action already declared", and util.ToPtr(false) withdraws org scoping.
+	IsOrgScoped *bool
+
+	PrimarySchema      *string
+	PrimaryRestIdParam *string
+
 	BeforeValidation       ActionBeforeValidationFn
 	AfterValidationSuccess ActionAfterValidationFn
 	ValidateExtra          ActionValidateExtraFn
