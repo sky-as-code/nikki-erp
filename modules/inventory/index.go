@@ -243,11 +243,16 @@ func initProductVariantService() error {
 	variantEngine.SetResourceService(derived)
 
 	// Published for consumers that reach these reads outside an engine action. The same instance
-	// serves all three ports, so a consumer gets the batched template_* fill whichever it injects.
+	// serves all four ports, so a consumer gets the batched template_* fill whichever it injects.
+	//
+	// The pricing-basis port is listed separately rather than folded into the variant reader
+	// because it grants strictly less: a consumer that must compute prices can be given the four
+	// pricing inputs without being handed a general product reader as well.
 	return errors.Join(
 		deps.Register(func() itProduct.ProductVariantDomainService { return derived }),
 		deps.Register(func() itProduct.ProductTemplateReadService { return derived }),
 		deps.Register(func() itProduct.ProductCategoryReadService { return derived }),
+		deps.Register(func() itProduct.ProductPricingBasisService { return derived }),
 	)
 }
 
@@ -261,7 +266,6 @@ func (*InventoryModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.ProductTypeSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.ProductCategorySchemaBuilder()),
 		dmodel.RegisterSchemaB(models.BrandSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.ProductPriceSchemaBuilder()),
 
 		// Attributes: the value points at the attribute, so the attribute comes first.
 		dmodel.RegisterSchemaB(models.ProductAttributeSchemaBuilder()),

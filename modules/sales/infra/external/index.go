@@ -7,6 +7,7 @@ package external
 
 import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	itAccCurrency "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/currency"
 	itTax "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
@@ -46,6 +47,18 @@ func InitExternal() error {
 		},
 		func(settings itSettings.EffectiveSettingsAppService) itExt.EffectiveSettingsExtService {
 			return settings
+		},
+		func(basis itProduct.ProductPricingBasisService) itExt.ProductPricingBasisExtService {
+			// A direct hand-over: Inventory's port is already narrowed to the pricing inputs, so
+			// there is nothing here to narrow further. Bound separately from the sellability port
+			// above so that neither grants what the other does.
+			return basis
+		},
+		func(orgCurrency itAccCurrency.OrgCurrencyService) itExt.OrgCurrencyExtService {
+			// Accounting rather than Essential: Essential owns the currency catalogue, Accounting
+			// owns which one this organization's books are kept in. A direct hand-over — the port
+			// declares the single method the upstream service has.
+			return orgCurrency
 		},
 		func(tax itTax.TaxCalculationAppService) itExt.TaxCalculationExtService {
 			// Accounting owns every tax decision: which taxes apply, at what rate, whether the price
@@ -99,12 +112,13 @@ func InitExternal() error {
 		dLock lock.DistributedLock,
 		products itExt.ProductVariantExtService,
 		fulfillment itExt.FulfillmentExtService,
+		basis itExt.ProductPricingBasisExtService,
 	) error {
 		dynamicengines.SetPaymentMethodPort(methods)
 		// Reprice needs tax and settings; confirm and cancel additionally need the lock, because
 		// neither is a single-row update and the etag cannot guard them (D-30). The lock comes from
 		// core's own DI, so no port of Sales' own is involved.
-		dynamicengines.SetPricingPorts(tax, settings, dLock, products, fulfillment)
+		dynamicengines.SetPricingPorts(tax, settings, dLock, products, fulfillment, basis)
 		return nil
 	})
 }

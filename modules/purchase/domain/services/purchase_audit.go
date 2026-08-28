@@ -37,6 +37,16 @@ const (
 	AuditActionMerge       = "merge"
 	AuditActionClose       = "close"
 	AuditActionCreateRfq   = "create_rfq"
+
+	// AuditActionOverridePrice records a line priced differently from what the vendor quotes
+	// (section 29.1). It is a LINE action where every other action above is an order action, which
+	// is why AuditEntry carries EntityType rather than assuming one.
+	AuditActionOverridePrice = "override_price"
+
+	// AuditActionReprice records one line whose price was re-resolved from the vendor's current
+	// price list (section 30). Also a LINE action: repricing an order is an event per line, because
+	// what a reader needs to know afterwards is which line moved and by how much.
+	AuditActionReprice = "reprice"
 )
 
 // AuditEntry is one thing that happened to one record.

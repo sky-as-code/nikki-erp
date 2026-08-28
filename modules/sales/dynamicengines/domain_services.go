@@ -46,6 +46,26 @@ func InitDomainServices() error {
 		}); err != nil {
 		return err
 	}
+	// The pricelist service carries the default-uniqueness rule and the currency guard. Neither is
+	// expressible as a constraint: "at most one default per org among non-archived rows" is a
+	// partial uniqueness the framework does not declare, and the currency guard depends on whether
+	// any rule exists.
+	if err := installDerivedService(models.SalesPricelistSchemaName,
+		func(base drif.DynamicResourceService) drif.DynamicResourceService {
+			return services.NewSalesPricelistDomainService(base)
+		}); err != nil {
+		return err
+	}
+	// The item service holds the three rules that are conditional on another field, which is
+	// exactly what the schema cannot express: which target column is required depends on
+	// applies_to, which price fields are required depends on calculation_method, and whether a
+	// base pricelist is acceptable depends on the whole derivation graph.
+	if err := installDerivedService(models.SalesPricelistItemSchemaName,
+		func(base drif.DynamicResourceService) drif.DynamicResourceService {
+			return services.NewSalesPricelistItemDomainService(base)
+		}); err != nil {
+		return err
+	}
 	return initChannelPaymentService()
 }
 

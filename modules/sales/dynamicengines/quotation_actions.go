@@ -73,7 +73,7 @@ func processConvertQuotation(
 		SalesQuotationId: readStringParam(input.Params, paramId),
 		SalesPointId:     readStringParam(input.Params, "sales_point_id"),
 		IdempotencyKey:   readStringParam(input.Params, "idempotency_key"),
-	}, taxCalculation, productVariants, policy)
+	}, taxCalculation, productVariants, pricingBasis, policy)
 	if err != nil {
 		return nil, err
 	}

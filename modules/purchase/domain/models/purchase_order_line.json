@@ -97,6 +97,22 @@
 			}
 		},
 		{
+			"name": "vendor_product_price_id",
+			"label": "fields.vendor_product_price_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Which vendor price quote this line's price was resolved from, when one applied. A plain ulid and NOT a foreign key: the reference records where the number came from, and a quote that is later archived or deleted must not take the order line with it. Empty means no vendor price applied and the price was typed by hand (section 29). Never written back to: overriding the line changes this order and nothing else (TS-PRICE-07)."
+			}
+		},
+		{
+			"name": "resolved_unit_price",
+			"label": "fields.resolved_unit_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": {
+				"en-US": "What the vendor price resolution returned, before any human changed it. Kept beside unit_price rather than replacing it so that an override is visible as the difference between the two — a line quoted at 9,500 and negotiated to 9,200 shows both numbers, where storing only the agreed one would lose the fact that a negotiation happened. Empty when no vendor price applied; equal to unit_price when the resolved price was accepted unchanged."
+			}
+		},
+		{
 			"name": "discount_percent",
 			"label": "fields.discount_percent",
 			"data_type": { "type": "decimal", "min": "0", "max": "100", "scale": 6 },
@@ -150,7 +166,8 @@
 
 	"search_indexes": [
 		{ "index_name": "purch_ord_lines_tid_ord_id_seq", "fields": ["purchase_order_id", "sequence"] },
-		{ "index_name": "purch_ord_lines_tid_pvar_id", "fields": ["product_variant_id"] }
+		{ "index_name": "purch_ord_lines_tid_pvar_id", "fields": ["product_variant_id"] },
+		{ "index_name": "purch_ord_lines_tid_vpp_id", "fields": ["vendor_product_price_id"] }
 	],
 
 	"edges_to": [

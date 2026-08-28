@@ -32,18 +32,38 @@ func InitDomainServices() error {
 		return err
 	}
 
+	pricer, err := resolveLinePricer()
+	if err != nil {
+		return err
+	}
+
+	vendorPrices, err := resolveVendorPriceValidator()
+	if err != nil {
+		return err
+	}
+	SetVendorPriceValidator(vendorPrices)
+
 	// Totals round to the order's own currency from here on, instead of a fixed two places.
 	services.SetOrderScaleResolver(references.ScaleFor)
 
 	if err := installDerivedService(models.PurchaseOrderSchemaName,
 		func(base drif.DynamicResourceService) drif.DynamicResourceService {
-			return services.NewPurchaseOrderDomainService(base, references)
+			return services.NewPurchaseOrderDomainService(base, references, validator, pricer)
 		}); err != nil {
 		return err
 	}
 	if err := installDerivedService(models.PurchaseOrderLineSchemaName,
 		func(base drif.DynamicResourceService) drif.DynamicResourceService {
-			return services.NewPurchaseOrderLineDomainService(base, validator)
+			return services.NewPurchaseOrderLineDomainService(base, validator, pricer)
+		}); err != nil {
+		return err
+	}
+	// The vendor price service exists only to revalidate an UNARCHIVE (section 25). Create and
+	// update are guarded through ValidateExtra, which the engine supports for them; set_archived it
+	// explicitly does not, so that one check has to be a derived service.
+	if err := installDerivedService(models.VendorProductPriceSchemaName,
+		func(base drif.DynamicResourceService) drif.DynamicResourceService {
+			return services.NewVendorProductPriceDomainService(base, vendorPrices)
 		}); err != nil {
 		return err
 	}
@@ -71,6 +91,25 @@ func resolveProductLineValidator() (*services.ProductLineValidator, error) {
 			errors.New("the UoM port is not registered; purchase/infra/external must bind it"), err)
 	}
 	return services.NewProductLineValidator(products, uoms), nil
+}
+
+// resolveLinePricer pulls the unit port out of the container for vendor price resolution.
+//
+// It resolves the SAME port the line validator holds rather than sharing that validator's copy,
+// because the two ask different questions of it — the validator converts into the product's
+// inventory unit, the pricer into whatever unit each quote is written in — and a shared field
+// would tempt a later change to make one of those depend on the other.
+//
+// Missing is a hard failure, matching every other Init here: a pricer with no way to convert would
+// silently skip every quote written in a unit other than the line's, and a buyer would see prices
+// appear for some products and not others with nothing to explain the difference.
+func resolveLinePricer() (*services.LinePricer, error) {
+	var uoms itExt.UomExtService
+	if err := deps.Invoke(func(svc itExt.UomExtService) { uoms = svc }); err != nil {
+		return nil, stdErr.Join(
+			errors.New("the UoM port is not registered; purchase/infra/external must bind it"), err)
+	}
+	return services.NewLinePricer(uoms), nil
 }
 
 // resolveOrderReferenceValidator pulls the vendor and currency ports out of the container.

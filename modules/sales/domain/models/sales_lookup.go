@@ -50,6 +50,82 @@ func searchAll(
 	return found.Data.Items, nil
 }
 
+// MaxDefaultPricelistsPerOrg bounds the read that finds an organization's current default.
+//
+// There must be at most one (BR-PRICE-SAL-003), so this is deliberately small: it exists to tell
+// "one" from "more than one" and to cap the damage if the invariant has already been broken by a
+// race, not to page through a real result set.
+const MaxDefaultPricelistsPerOrg = 10
+
+// FindDefaultPricelists returns the organization's non-archived default pricelists.
+//
+// Plural in the name and in the return type although the answer should always be zero or one. A
+// singular helper would have to decide what to do when it found two, and the only honest answers
+// are to hide one or to fail — both worse than handing the caller the truth and letting the
+// operation that cares decide. SetDefault uses it to demote whatever it finds, which is exactly
+// the shape that repairs a broken invariant rather than tripping over it.
+//
+// Archived lists are excluded because an archived default is not a default: it cannot be used for
+// new business, so it does not conflict with a live one (PRICE-INV-023).
+func FindDefaultPricelists(
+	ctx corectx.Context, repo SalesSearcher, orgId string,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(SalesPricelistFieldOrgId, dmodel.Equals, orgId),
+		*dmodel.NewSearchNode().NewCondition(SalesPricelistFieldIsDefault, dmodel.Equals, true),
+		*dmodel.NewSearchNode().NewCondition(basemodel.FieldIsArchived, dmodel.Equals, false),
+	)
+	return searchAll(ctx, repo, graph, MaxDefaultPricelistsPerOrg, "FindDefaultPricelists")
+}
+
+// CountPricelistItems reports how many rules a pricelist holds, capped.
+//
+// Used by the currency guard: a list that already prices something may not have its currency
+// changed, because every price on it would be reinterpreted in the new one — the failure
+// BR-PRICE-CUR-004 names. The caller needs only "any" or "none", so the limit is 1.
+func CountPricelistItems(
+	ctx corectx.Context, repo SalesSearcher, pricelistId string,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(
+			SalesPricelistItemFieldSalesPricelistId, dmodel.Equals, pricelistId),
+	)
+	return searchAll(ctx, repo, graph, 1, "CountPricelistItems")
+}
+
+// FindPricelistBaseOf returns a FORMULA rule of this list that derives from another list, if any.
+//
+// One row is enough: the caller is walking the derivation graph looking for reachability, and a
+// cycle through any one base is a cycle. Which rule answers does not matter, only that some rule
+// points somewhere.
+func FindPricelistBaseOf(
+	ctx corectx.Context, repo SalesSearcher, pricelistId string,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(
+			SalesPricelistItemFieldSalesPricelistId, dmodel.Equals, pricelistId),
+		*dmodel.NewSearchNode().NewCondition(
+			SalesPricelistItemFieldBasePriceSource, dmodel.Equals, PricelistBaseSourceOtherPricelist),
+	)
+	return searchAll(ctx, repo, graph, 1, "FindPricelistBaseOf")
+}
+
+// FindPricelistsDerivingFrom returns the lists whose FORMULA rules read the given list as their
+// base, which is what a cycle check walks.
+func FindPricelistsDerivingFrom(
+	ctx corectx.Context, repo SalesSearcher, basePricelistId string,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(
+			SalesPricelistItemFieldBasePricelistId, dmodel.Equals, basePricelistId),
+	)
+	return searchAll(ctx, repo, graph, MaxSalesPointsPerChannel, "FindPricelistsDerivingFrom")
+}
+
 // FindSalesChannelByCode resolves a channel from the stable integration code an external module
 // names it by (CR §22).
 //

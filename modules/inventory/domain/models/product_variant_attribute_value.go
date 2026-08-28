@@ -3,6 +3,8 @@ package models
 import (
 	_ "embed"
 
+	"github.com/shopspring/decimal"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 
@@ -15,6 +17,7 @@ const (
 	ProductVariantAttributeValueFieldId                       = basemodel.FieldId
 	ProductVariantAttributeValueFieldProductVariantId         = "product_variant_id"
 	ProductVariantAttributeValueFieldTemplateAttributeValueId = "template_attribute_value_id"
+	ProductVariantAttributeValueFieldSalesPriceExtra           = "sales_price_extra"
 
 	ProductVariantAttributeValueEdgeVariant                = "variant"
 	ProductVariantAttributeValueEdgeTemplateAttributeValue = "template_attribute_value"
@@ -53,4 +56,12 @@ func (this ProductVariantAttributeValue) GetTemplateAttributeValueId() *model.Id
 
 func (this *ProductVariantAttributeValue) SetTemplateAttributeValueId(v *model.Id) {
 	this.GetFieldData().SetModelId(ProductVariantAttributeValueFieldTemplateAttributeValueId, v)
+}
+
+func (this ProductVariantAttributeValue) GetSalesPriceExtra() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(ProductVariantAttributeValueFieldSalesPriceExtra)
+}
+
+func (this *ProductVariantAttributeValue) SetSalesPriceExtra(v *decimal.Decimal) {
+	this.GetFieldData().SetDecimal(ProductVariantAttributeValueFieldSalesPriceExtra, v)
 }

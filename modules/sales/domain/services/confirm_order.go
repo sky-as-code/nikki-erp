@@ -103,6 +103,7 @@ func ConfirmOrder(
 	dLock lock.DistributedLock,
 	taxSvc itExt.TaxCalculationExtService,
 	fulfillment itExt.FulfillmentExtService,
+	basisSvc itExt.ProductPricingBasisExtService,
 	policy SalesPolicy,
 ) (*ConfirmOrderResult, *ft.ClientErrors, error) {
 	if dLock == nil {
@@ -133,7 +134,7 @@ func ConfirmOrder(
 
 	// Everything below runs under the lock. The record is read AFTER acquiring it, never before:
 	// a record read while queuing describes the world as it was before the other holder finished.
-	return confirmUnderLock(ctx, orderId, taxSvc, fulfillment, policy)
+	return confirmUnderLock(ctx, orderId, taxSvc, fulfillment, basisSvc, policy)
 }
 
 // confirmLockKeyOf names the lock for one order.
@@ -149,6 +150,7 @@ func confirmUnderLock(
 	orderId string,
 	taxSvc itExt.TaxCalculationExtService,
 	fulfillment itExt.FulfillmentExtService,
+	basisSvc itExt.ProductPricingBasisExtService,
 	policy SalesPolicy,
 ) (*ConfirmOrderResult, *ft.ClientErrors, error) {
 	record, err := loadRecord(ctx, models.SalesOrderSchemaName, models.SalesOrderFieldId, orderId)
@@ -166,7 +168,7 @@ func confirmUnderLock(
 	// Step 2: reprice. BR 72 requires it because a catalogue price may have moved since the draft
 	// was last touched, and a customer must be charged what the goods cost now rather than what they
 	// cost when the basket was opened.
-	priced, vErrs, err := RepriceOrder(ctx, orderId, taxSvc, policy)
+	priced, vErrs, err := RepriceOrder(ctx, orderId, taxSvc, policy, basisSvc)
 	if err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}

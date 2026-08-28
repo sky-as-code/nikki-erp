@@ -30,6 +30,7 @@ ${AGREEMENT_LINE_API}       /v1/purchase/purchase_agreement_line
 ${PURCHASE_CONFIG_API}      /v1/purchase/purchase_configuration
 ${SOURCING_GROUP_API}       /v1/purchase/purchase_sourcing_group
 ${AUDIT_EVENT_API}          /v1/purchase/purchase_audit_event
+${VENDOR_PRICE_API}         /v1/purchase/purchase_vendor_product_price
 ${PURCHASE_SCHEMA_DIR}      ${CURDIR}/schemas/purchase
 
 
@@ -107,11 +108,12 @@ Ensure Purchase Product
     ${resolved}=    Get Variable Value    ${PURCHASE_VARIANT_ID}    ${EMPTY}
     IF    $resolved    RETURN
     ${resp}=    GET On Session    api    /v1/inventory/inventory_product_variant
-    ...    params=${{ {'size': 1, 'fields': 'id,template_purchase_ok'} }}
+    ...    params=${{ {'size': 1, 'fields': 'id,product_template_id,template_purchase_ok'} }}
     Response Status Should Be    ${resp}    200
     ${items}=    Set Variable    ${resp.json()}[items]
     Should Not Be Empty    ${items}    msg=No product variant exists to put on a purchase line
     Set Global Variable    ${PURCHASE_VARIANT_ID}    ${items}[0][id]
+    Set Global Variable    ${PURCHASE_TEMPLATE_ID}    ${items}[0][product_template_id]
 
 Ensure Purchase Uom
     [Documentation]    Resolves a unit of measure for the line. Purchase is the first consumer

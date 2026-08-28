@@ -448,6 +448,7 @@ func readInt64Param(params map[string]any, field string) int64 {
 var (
 	taxCalculation    itExt.TaxCalculationExtService
 	productVariants   itExt.ProductVariantExtService
+	pricingBasis      itExt.ProductPricingBasisExtService
 	effectiveSettings itExt.EffectiveSettingsExtService
 	orderFulfillment  itExt.FulfillmentExtService
 
@@ -467,6 +468,7 @@ func SetPricingPorts(
 	dLock lock.DistributedLock,
 	products itExt.ProductVariantExtService,
 	fulfillment itExt.FulfillmentExtService,
+	basis itExt.ProductPricingBasisExtService,
 ) {
 	taxCalculation = tax
 	effectiveSettings = settings
@@ -482,6 +484,11 @@ func SetPricingPorts(
 	// stock to reserve. The request is then written and left pending rather than refused, because
 	// the sale is real and the goods are genuinely owed.
 	orderFulfillment = fulfillment
+
+	// The pricing-basis port re-reads a product's base price and cost on every reprice. Nil is
+	// supported, like the two above: without inventory there is no product to re-read, and pricing
+	// falls back to the price already stored on the line rather than refusing to reprice at all.
+	pricingBasis = basis
 }
 
 // SetChannelPaymentService installs the mapping gate, and is called AFTER the application services
@@ -511,7 +518,7 @@ func processReprice(ctx corectx.Context, input drif.ProcessInput) (*drif.ActionR
 
 	policy := services.ResolveSalesPolicy(ctx, effectiveSettings)
 
-	result, vErrs, err := services.RepriceOrder(ctx, orderId, taxCalculation, policy)
+	result, vErrs, err := services.RepriceOrder(ctx, orderId, taxCalculation, policy, pricingBasis)
 	if err != nil {
 		return nil, err
 	}
@@ -545,7 +552,7 @@ func processCreateOrder(ctx corectx.Context, input drif.ProcessInput) (*drif.Act
 		Lines:             readOrderLines(input.Params),
 	}
 
-	result, vErrs, err := services.CreateOrder(ctx, params, taxCalculation, productVariants, policy)
+	result, vErrs, err := services.CreateOrder(ctx, params, taxCalculation, productVariants, pricingBasis, policy)
 	if err != nil {
 		return nil, err
 	}
@@ -630,7 +637,7 @@ func processConfirmOrder(ctx corectx.Context, input drif.ProcessInput) (*drif.Ac
 	policy := services.ResolveSalesPolicy(ctx, effectiveSettings)
 
 	result, vErrs, err := services.ConfirmOrder(ctx,
-		readStringParam(input.Params, paramId), orderLock, taxCalculation, orderFulfillment, policy)
+		readStringParam(input.Params, paramId), orderLock, taxCalculation, orderFulfillment, pricingBasis, policy)
 	if err != nil {
 		return nil, err
 	}
@@ -767,7 +774,7 @@ func processGrantManualDiscount(
 		SalesOrderLineId: readStringParam(input.Params, "sales_order_line_id"),
 		Amount:           readDecimalParam(input.Params, "discount_amount"),
 		Reason:           readStringParam(input.Params, "reason"),
-	}, taxCalculation, policy)
+	}, taxCalculation, policy, pricingBasis)
 	if err != nil {
 		return nil, err
 	}
@@ -798,7 +805,7 @@ func processRevokeManualDiscount(
 	vErrs, err := services.RevokeManualDiscount(ctx,
 		readStringParam(input.Params, paramId),
 		readStringParam(input.Params, "sales_manual_discount_id"),
-		taxCalculation, policy)
+		taxCalculation, policy, pricingBasis)
 	if err != nil {
 		return nil, err
 	}

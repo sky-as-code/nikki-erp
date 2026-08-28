@@ -148,3 +148,44 @@ func FindOrdersInSourcingGroup(
 	)
 	return searchAll(ctx, repo, graph, limit, "FindOrdersInSourcingGroup")
 }
+
+// MaxVendorPriceCandidates bounds how many vendor price rows one line is priced from.
+//
+// The read is already narrowed to one vendor and one product template, so a realistic figure is a
+// handful — a few quantity breaks, perhaps one row per variant. The bound is a guard against a
+// vendor whose price list has been imported badly, not a business limit: resolution is a pure
+// function over whatever it is handed, and handing it ten thousand rows inside a write transaction
+// would be the problem long before choosing between them was.
+const MaxVendorPriceCandidates = 200
+
+// FindVendorPriceCandidates returns every non-archived price this vendor offers for this product
+// template, in this organization.
+//
+// It deliberately does NOT filter by variant, by quantity or by date. Those three are resolution's
+// job (section 27) and the reasons differ:
+//
+//   - VARIANT, because a template-wide row prices a variant that has no row of its own, so
+//     filtering to the variant would discard the row that ought to win.
+//   - QUANTITY, because the winner is the highest break the request REACHES, which cannot be
+//     expressed as a filter without also ordering — and the ordering is what the resolver exists to
+//     decide.
+//   - DATE, because the validity verdict belongs to the caller's pricing date, and the resolver
+//     takes it as a boolean precisely so it can stay free of a clock.
+//
+// Archived rows ARE excluded, and that is the one filter that belongs here: an archived quote is
+// withdrawn and must never price something new. It stays readable — a confirmed order that resolved
+// through it still names it (PRICE-INV-024) — but reading it back is a different operation from
+// pricing with it.
+func FindVendorPriceCandidates(
+	ctx corectx.Context, repo PurchaseSearcher, orgId, vendorId, templateId string, limit int,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(VendorProductPriceFieldOrgId, dmodel.Equals, orgId),
+		*dmodel.NewSearchNode().NewCondition(VendorProductPriceFieldVendorId, dmodel.Equals, vendorId),
+		*dmodel.NewSearchNode().NewCondition(
+			VendorProductPriceFieldProductTemplateId, dmodel.Equals, templateId),
+		*dmodel.NewSearchNode().NewCondition(VendorProductPriceFieldIsArchived, dmodel.Equals, false),
+	)
+	return searchAll(ctx, repo, graph, limit, "FindVendorPriceCandidates")
+}

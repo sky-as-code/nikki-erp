@@ -15,6 +15,25 @@ import (
 const (
 	OrgSettingsSchemaName = "accounting_org_settings"
 
+	// OrgSettingOrgDefaultCurrency is the currency an organization keeps its books in: the one
+	// every unqualified monetary amount it stores is denominated in.
+	//
+	// The value is an `essential_currency` **id**, matching how Sales stores
+	// outgoing_operation_type_id, and not the three-letter code. The code would read better in
+	// the raw settings row, but Essential resolves a currency by id only — storing the code
+	// would mean either a new lookup path there or no validation at all, and an unvalidated
+	// currency is the failure BR-PRICE-CUR-004 names.
+	//
+	// It lives here rather than on each module that needs it because the alternative is worse:
+	// a currency on Product, another on Inventory and a third on Sales would be three answers to
+	// one question, free to disagree. Product's base_sales_price and cost carry no currency of
+	// their own precisely so that this is the only place the answer exists.
+	//
+	// Empty means unconfigured. A caller that needs the currency must then refuse rather than
+	// guess — reinterpreting an amount as the wrong currency is the failure BR-PRICE-CUR-004
+	// names, and it is silent.
+	OrgSettingOrgDefaultCurrency = "org_default_currency"
+
 	// OrgSettingDefaultRoundingPolicyCode names the rounding policy used when a calculation
 	// request does not name one. Empty means there is no default, and a request that needs a
 	// policy and names none fails as unresolved rather than falling back to a hardcoded scale.

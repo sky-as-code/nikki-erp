@@ -39,6 +39,7 @@ type engineSpec struct {
 // a missing entry obvious when reading them side by side.
 var engineSpecs = []engineSpec{
 	configurationEngineSpec(),
+	vendorProductPriceEngineSpec(),
 	sourcingGroupEngineSpec(),
 	agreementEngineSpec(),
 	agreementLineEngineSpec(),
@@ -50,6 +51,13 @@ var engineSpecs = []engineSpec{
 func configurationEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.ConfigurationSchemaName,
+	}
+}
+
+func vendorProductPriceEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName:    models.VendorProductPriceSchemaName,
+		DefineActions: defineVendorProductPriceGuards,
 	}
 }
 

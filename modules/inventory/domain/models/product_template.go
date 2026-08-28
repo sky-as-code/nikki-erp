@@ -46,12 +46,19 @@ const (
 	ProductTemplateFieldSalesDescription    = "sales_description"
 	ProductTemplateFieldPurchaseDescription = "purchase_description"
 	ProductTemplateFieldDefaultImageId      = "default_image_id"
+	ProductTemplateFieldBaseSalesPrice      = "base_sales_price"
 	ProductTemplateFieldDefaultWeight       = "default_weight"
 	ProductTemplateFieldDefaultLength       = "default_length"
 	ProductTemplateFieldDefaultWidth        = "default_width"
 	ProductTemplateFieldDefaultHeight       = "default_height"
 	ProductTemplateFieldStatus              = "status"
 	ProductTemplateFieldOrgId               = "org_id"
+
+	// The cost read model. A template has no cost of its own — cost belongs to the concrete
+	// variant — so these expose the RANGE across its variants and nothing more. Never treat
+	// either as the product's cost (BR-PRICE-VARIANT-014).
+	ProductTemplateFieldMinVariantCost = "min_variant_cost"
+	ProductTemplateFieldMaxVariantCost = "max_variant_cost"
 
 	ProductTemplateEdgeProductType = "product_type"
 	ProductTemplateEdgeCategory    = "category"
@@ -164,6 +171,14 @@ func (this ProductTemplate) GetDefaultImageId() *model.Id {
 
 func (this *ProductTemplate) SetDefaultImageId(v *model.Id) {
 	this.GetFieldData().SetModelId(ProductTemplateFieldDefaultImageId, v)
+}
+
+func (this ProductTemplate) GetBaseSalesPrice() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(ProductTemplateFieldBaseSalesPrice)
+}
+
+func (this *ProductTemplate) SetBaseSalesPrice(v *decimal.Decimal) {
+	this.GetFieldData().SetDecimal(ProductTemplateFieldBaseSalesPrice, v)
 }
 
 func (this ProductTemplate) GetDefaultWeight() *decimal.Decimal {

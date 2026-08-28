@@ -40,7 +40,7 @@
 			"label": "fields.price_extra",
 			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
 			"description": {
-				"en-US": "Surcharge applied when a variant carries this value, for pricing models that price variants by value. Signed, because a value may also discount."
+				"en-US": "DEPRECATED as a pricing input, and no longer authoritative. Kept because existing rows hold values a deployment may still want to read, and dropping a column loses them irrecoverably.\n\nA surcharge belongs to Template × Attribute × Value, not to the attribute value alone: the same value surcharges differently on different products, and one global number cannot say so (BR-PRICE-VARIANT-002). The field that counts is inventory_product_template_attribute_value.sales_price_extra, and it is the only one effective_base_sales_price reads. Do not write new pricing here and do not read this for pricing."
 			}
 		},
 		{

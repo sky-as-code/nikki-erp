@@ -19,4 +19,5 @@ const (
 	PurchaseOrderResource         = models.PurchaseOrderSchemaName
 	PurchaseOrderLineResource     = models.PurchaseOrderLineSchemaName
 	PurchaseAuditEventResource    = models.AuditEventSchemaName
+	PurchaseVendorPriceResource   = models.VendorProductPriceSchemaName
 )

@@ -83,6 +83,7 @@ func GrantManualDiscount(
 	params GrantManualDiscountParams,
 	taxSvc itExt.TaxCalculationExtService,
 	policy SalesPolicy,
+	basisSvc itExt.ProductPricingBasisExtService,
 ) (*GrantManualDiscountResult, *ft.ClientErrors, error) {
 	order, err := loadRecord(ctx,
 		models.SalesOrderSchemaName, models.SalesOrderFieldId, params.SalesOrderId)
@@ -111,7 +112,7 @@ func GrantManualDiscount(
 	// Reprice immediately rather than leaving the order stale. The override only takes effect
 	// through the engine, so an order that was not repriced would show the old total while carrying
 	// a discount somebody had already authorised — and a till reading that total would charge it.
-	if _, vErrs, err := RepriceOrder(ctx, params.SalesOrderId, taxSvc, policy); err != nil || vErrs != nil {
+	if _, vErrs, err := RepriceOrder(ctx, params.SalesOrderId, taxSvc, policy, basisSvc); err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}
 
@@ -265,6 +266,7 @@ func RevokeManualDiscount(
 	orderId, discountId string,
 	taxSvc itExt.TaxCalculationExtService,
 	policy SalesPolicy,
+	basisSvc itExt.ProductPricingBasisExtService,
 ) (*ft.ClientErrors, error) {
 	order, err := loadRecord(ctx, models.SalesOrderSchemaName, models.SalesOrderFieldId, orderId)
 	if err != nil {
@@ -307,6 +309,6 @@ func RevokeManualDiscount(
 		return nil, err
 	}
 
-	_, vErrs, err := RepriceOrder(ctx, orderId, taxSvc, policy)
+	_, vErrs, err := RepriceOrder(ctx, orderId, taxSvc, policy, basisSvc)
 	return vErrs, err
 }

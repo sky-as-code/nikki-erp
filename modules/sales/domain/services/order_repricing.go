@@ -49,8 +49,11 @@ type RepriceResult struct {
 //
 // Refuses a non-draft order. Confirmation is the line: after it the numbers are what the business
 // promised the customer (BR 11).
+// basisSvc re-reads the product's base price and cost. It may be nil: see buildPricingInput for
+// why an unavailable Inventory falls back to the stored price rather than refusing to reprice.
 func RepriceOrder(
 	ctx corectx.Context, orderId string, taxSvc itExt.TaxCalculationExtService, policy SalesPolicy,
+	basisSvc itExt.ProductPricingBasisExtService,
 ) (*RepriceResult, *ft.ClientErrors, error) {
 	orderRecord, err := loadRecord(ctx,
 		models.SalesOrderSchemaName, models.SalesOrderFieldId, orderId)
@@ -70,7 +73,7 @@ func RepriceOrder(
 		return nil, vErrs, nil
 	}
 
-	input, err := buildPricingInput(ctx, orderRecord, policy)
+	input, err := buildPricingInput(ctx, orderRecord, policy, basisSvc)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -101,11 +104,22 @@ func RepriceOrder(
 
 // buildPricingInput reads the order's stored lines into the engine's input.
 //
-// The stored line is the source of truth for what is in the basket. Prices are NOT taken from it:
-// base_unit_price is re-read from the pricelist and the catalogue on every reprice, because a draft
-// left open across a price change must reflect the new price, not the one it was created under.
+// The stored line is the source of truth for what is IN the basket — which variant, how many, in
+// what unit. Prices are deliberately not taken from it: the base price is re-read from the product
+// on every reprice, because a draft left open across a price change must reflect the new price
+// rather than the one it was created under.
+//
+// That re-read is what basisSvc is for. Until it existed this function took base_unit_price from
+// the stored line, which made a reprice reproduce the price it already had whenever no pricelist
+// rule matched — the fallback path silently never moved.
+//
+// A nil port FAILS SOFT, falling back to the stored line's price. Sales must keep pricing when
+// Inventory is slow or mid-restart, and the stored price is the last known good answer rather than
+// a guess. The alternative — refusing to reprice — would block a till over another module's
+// availability, and the CR asks for repricing to be explicit, not fragile.
 func buildPricingInput(
 	ctx corectx.Context, orderRecord dmodel.DynamicFields, policy SalesPolicy,
+	basisSvc itExt.ProductPricingBasisExtService,
 ) (pricing.Input, error) {
 	orderId := stringOf(orderRecord, models.SalesOrderFieldId)
 
@@ -136,6 +150,10 @@ func buildPricingInput(
 			ComboId:            stringOf(record, models.SalesOrderLineFieldSalesComboId),
 		})
 	}
+
+	// One batch read for the whole basket, then each line takes its own row. Done after the loop
+	// rather than inside it so that a twenty-line order costs one round trip instead of twenty.
+	applyPricingBasis(ctx, lines, basisSvc)
 
 	// Line-number order, so a reprice of an unchanged basket produces an identical chain. The
 	// allocator breaks residual ties on line number (D-04), so shuffled input would move sub-unit
@@ -393,4 +411,75 @@ func taxDateOf(orderRecord dmodel.DynamicFields) string {
 		return confirmed.GoTime().Format("2006-01-02")
 	}
 	return time.Now().UTC().Format("2006-01-02")
+}
+
+// applyPricingBasis fills each line's product-derived pricing inputs, in place.
+//
+// It reports nothing. Every failure here is recoverable by leaving the line as it was: the stored
+// base price stands, the line still prices, and the order still totals. Returning an error would
+// turn a slow read in another module into a refused sale, which is a worse answer than pricing at
+// the price the line already carried.
+//
+// A variant missing from the answer is left alone for the same reason. It means the product was
+// deleted or is not visible, and neither is something a reprice can fix — but the line is still in
+// the basket and still has to total.
+func applyPricingBasis(
+	ctx corectx.Context, lines []pricing.LineInput, basisSvc itExt.ProductPricingBasisExtService,
+) {
+	if basisSvc == nil || len(lines) == 0 {
+		return
+	}
+
+	variantIds := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if line.ProductVariantId != "" {
+			variantIds = append(variantIds, line.ProductVariantId)
+		}
+	}
+	if len(variantIds) == 0 {
+		return
+	}
+
+	result, err := basisSvc.GetPricingBasis(ctx, itExt.GetPricingBasisQuery{
+		ProductVariantIds: variantIds,
+	})
+	if err != nil || result == nil || !result.HasData || result.ClientErrors.Count() > 0 {
+		return
+	}
+
+	for index := range lines {
+		basis, found := result.Data.Bases[lines[index].ProductVariantId]
+		if !found {
+			continue
+		}
+		lines[index].ProductTemplateId = basis.ProductTemplateId
+		lines[index].CategoryPath = basis.CategoryPath
+
+		// An unparseable or absent base price leaves the stored one standing. Zero is a real price
+		// — a giveaway — so it must not be conjured out of a failed parse.
+		if price, ok := parseDecimal(basis.EffectiveBaseSalesPrice); ok {
+			lines[index].CatalogueUnitPrice = price
+		}
+		if basis.HasCost {
+			if cost, ok := parseDecimal(basis.Cost); ok {
+				lines[index].UnitCost, lines[index].HasCost = cost, true
+			}
+		}
+	}
+}
+
+// parseDecimal reads a decimal that crossed a module boundary as a string.
+//
+// Decimals travel as strings between modules on purpose: a price carried as float64 loses exactly
+// the precision that must not be lost. The bool distinguishes "absent or malformed" from a
+// legitimate zero.
+func parseDecimal(text string) (decimal.Decimal, bool) {
+	if text == "" {
+		return decimal.Zero, false
+	}
+	value, err := decimal.NewFromString(text)
+	if err != nil {
+		return decimal.Zero, false
+	}
+	return value, true
 }

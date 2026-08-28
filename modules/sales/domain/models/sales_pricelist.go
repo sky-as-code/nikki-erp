@@ -18,6 +18,9 @@ const (
 	SalesPricelistFieldOrgId          = "org_id"
 	SalesPricelistFieldCode           = "code"
 	SalesPricelistFieldName           = "name"
+	SalesPricelistFieldDescription    = "description"
+	SalesPricelistFieldCurrencyId     = "currency_id"
+	SalesPricelistFieldIsDefault      = "is_default"
 	SalesPricelistFieldSalesChannelId = "sales_channel_id"
 	SalesPricelistFieldSalesPointId   = "sales_point_id"
 	SalesPricelistFieldValidFrom      = "valid_from"
@@ -38,6 +41,29 @@ const (
 	SalesPricelistItemFieldUomId            = "uom_id"
 	SalesPricelistItemFieldPrice            = "price"
 	SalesPricelistItemFieldMinQuantity      = "min_quantity"
+
+	// Targeting. Exactly one of the three id columns is set, chosen by applies_to; ALL_PRODUCTS
+	// sets none. The schema cannot express "exactly one of these", so the domain service does.
+	SalesPricelistItemFieldAppliesTo         = "applies_to"
+	SalesPricelistItemFieldProductTemplateId = "product_template_id"
+	SalesPricelistItemFieldProductCategoryId = "product_category_id"
+
+	// Rule-level validity, distinct from the pricelist's own window.
+	SalesPricelistItemFieldValidFrom = "valid_from"
+	SalesPricelistItemFieldValidTo   = "valid_to"
+
+	// Tie-break of last resort, with id after it.
+	SalesPricelistItemFieldSequence = "sequence"
+
+	// How the price is computed, and the operands each method needs.
+	SalesPricelistItemFieldCalculationMethod = "calculation_method"
+	SalesPricelistItemFieldDiscountPercent   = "discount_percent"
+	SalesPricelistItemFieldBasePriceSource   = "base_price_source"
+	SalesPricelistItemFieldBasePricelistId   = "base_pricelist_id"
+	SalesPricelistItemFieldSurchargeAmount   = "surcharge_amount"
+	SalesPricelistItemFieldRoundingIncrement = "rounding_increment"
+	SalesPricelistItemFieldMinimumMargin     = "minimum_margin"
+	SalesPricelistItemFieldMaximumMargin     = "maximum_margin"
 
 	SalesPricelistItemEdgeSalesPricelist = "sales_pricelist"
 )
@@ -102,6 +128,18 @@ func (this SalesPricelist) GetName() *string {
 	return this.GetFieldData().GetString(SalesPricelistFieldName)
 }
 
+func (this SalesPricelist) GetDescription() *string {
+	return this.GetFieldData().GetString(SalesPricelistFieldDescription)
+}
+
+func (this SalesPricelist) GetCurrencyId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesPricelistFieldCurrencyId)
+}
+
+func (this SalesPricelist) GetIsDefault() *bool {
+	return this.GetFieldData().GetBool(SalesPricelistFieldIsDefault)
+}
+
 func (this SalesPricelist) GetSalesChannelId() *model.Id {
 	return this.GetFieldData().GetModelId(SalesPricelistFieldSalesChannelId)
 }
@@ -139,6 +177,30 @@ func (this SalesPricelist) Scope() PricelistScope {
 	}
 	return PricelistScopeGlobal
 }
+
+// The targets a pricelist rule may name, most specific first. Resolution walks them in this order
+// (PRICE-INV-016, PRICE-INV-017), so the sequence here is the precedence, not a preference.
+const (
+	PricelistAppliesToVariant     = "PRODUCT_VARIANT"
+	PricelistAppliesToTemplate    = "PRODUCT_TEMPLATE"
+	PricelistAppliesToCategory    = "PRODUCT_CATEGORY"
+	PricelistAppliesToAllProducts = "ALL_PRODUCTS"
+)
+
+// How a rule arrives at its price (section 13).
+const (
+	PricelistMethodFixedPrice = "FIXED_PRICE"
+	PricelistMethodDiscount   = "DISCOUNT"
+	PricelistMethodFormula    = "FORMULA"
+)
+
+// What a FORMULA rule starts from (section 14). COST is a read of Inventory's number; Sales never
+// writes it back (PRICE-INV-010).
+const (
+	PricelistBaseSourceBaseSalesPrice = "BASE_SALES_PRICE"
+	PricelistBaseSourceOtherPricelist = "OTHER_PRICELIST"
+	PricelistBaseSourceCost           = "COST"
+)
 
 // SalesPricelistItem is one price, for one variant, in one unit, from one quantity upward.
 type SalesPricelistItem struct {

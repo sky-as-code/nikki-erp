@@ -227,11 +227,17 @@ func resolveLines(input Input, scale int32) []LineResult {
 			EffectiveUnitPrice:  line.CatalogueUnitPrice,
 		}
 
-		// Step 2: a matching pricelist item overrides the catalogue price.
-		if item, found := bestPricelistItem(input.PricelistItems, line); found {
-			result.BaseUnitPrice = item.UnitPrice
-			result.EffectiveUnitPrice = item.UnitPrice
-			result.PricingSource = "pricelist"
+		// Step 2: a matching pricelist rule overrides the catalogue price.
+		//
+		// A rule that matches but cannot compute — a FORMULA whose cost or base list is missing —
+		// leaves the catalogue price standing rather than refusing the line. See rulePrice.
+		if item, found := bestRule(input.PricelistItems, line); found {
+			if price, computed := rulePrice(item, line, scale); computed {
+				result.BaseUnitPrice = price
+				result.EffectiveUnitPrice = price
+				result.PricingSource = "pricelist"
+				result.PricelistItemId = item.Id
+			}
 		}
 
 		// Step 3: a combo line is priced at the bundle price, not at its parts.
@@ -251,39 +257,6 @@ func resolveLines(input Input, scale int32) []LineResult {
 		lines = append(lines, result)
 	}
 	return lines
-}
-
-// bestPricelistItem picks the item that applies to a line: matching variant and unit, a quantity
-// break the line reaches, then most specific, then highest priority, then highest break.
-//
-// Highest break last, and it matters: a list holding 1-at-full-price and 10-at-a-discount must give
-// a line of 12 the ten-break, not the one-break, and both are eligible.
-func bestPricelistItem(items []PricelistItem, line LineInput) (PricelistItem, bool) {
-	var best PricelistItem
-	found := false
-
-	for _, item := range items {
-		if item.ProductVariantId != line.ProductVariantId || item.UomId != line.UomId {
-			continue
-		}
-		if line.Quantity.LessThan(item.MinQuantity) {
-			continue
-		}
-		if !found || betterPricelistItem(item, best) {
-			best, found = item, true
-		}
-	}
-	return best, found
-}
-
-func betterPricelistItem(candidate, incumbent PricelistItem) bool {
-	if candidate.Specificity != incumbent.Specificity {
-		return candidate.Specificity > incumbent.Specificity
-	}
-	if candidate.Priority != incumbent.Priority {
-		return candidate.Priority > incumbent.Priority
-	}
-	return candidate.MinQuantity.GreaterThan(incumbent.MinQuantity)
 }
 
 // expandComponents allocates the combo price across its components (BR §18, D-04).

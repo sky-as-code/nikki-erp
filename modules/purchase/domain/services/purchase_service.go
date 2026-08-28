@@ -6,6 +6,8 @@
 package services
 
 import (
+	"time"
+
 	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
 
@@ -71,16 +73,29 @@ func withOrderTransaction(ctx corectx.Context, body func(tranxCtx corectx.Contex
 // orderNotFoundResult is the answer when an operation names an order that does not exist. It is a
 // client error rather than a server one: the id came from the caller.
 func orderNotFoundResult(orderId string) *dyn.OpResult[dyn.MutateResultData] {
-	return orderViolationResult(
+	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *orderNotFoundErrors(orderId)}
+}
+
+func orderViolationResult(key, message string) *dyn.OpResult[dyn.MutateResultData] {
+	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *orderViolationErrors(key, message)}
+}
+
+// The two builders above wrap these, which return the errors alone.
+//
+// Split because not every order operation returns a MutateResultData: reprice reports which lines
+// moved, so it needs the same refusals in a differently-typed envelope. Generics would express that
+// too, but two small functions read better than one signature nobody can scan.
+func orderNotFoundErrors(orderId string) *ft.ClientErrors {
+	return orderViolationErrors(
 		"purchase_order.not_found",
 		"no purchase order with id '"+orderId+"'",
 	)
 }
 
-func orderViolationResult(key, message string) *dyn.OpResult[dyn.MutateResultData] {
+func orderViolationErrors(key, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(models.PurchaseOrderSchemaName, key, message))
-	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
+	return vErrs
 }
 
 // mutateOk is the success envelope of a lifecycle operation.
@@ -173,3 +188,11 @@ func boolOf(fields dmodel.DynamicFields, key string) bool {
 func newOrderErrors() *ft.ClientErrors {
 	return ft.NewClientErrors()
 }
+
+// timeNow is the clock the pricing path reads, as a variable so a test can pin it.
+//
+// A resolution that depends on the wall clock cannot be asserted against a fixed set of validity
+// windows otherwise — the same input would pass in January and fail in February. Only this one
+// seam exists: vendorpricing itself has no clock at all, precisely so that most of the logic needs
+// no seam.
+var timeNow = time.Now

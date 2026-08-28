@@ -1,0 +1,142 @@
+{
+	"name": "purchase_vendor_product_price",
+	"label": "purchase_vendor_product_price.label",
+	"table_name": "purchase_vendor_product_prices",
+	"should_build_db": true,
+	"record_label_field": "vendor_product_name",
+	"default_search_fields": ["vendor_product_code", "vendor_product_name", "unit_price", "min_quantity"],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "vendor_id",
+			"label": "fields.vendor_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The vendor offering this price. Required, because a price with no vendor answers no question worth asking: what makes this a vendor price rather than a cost is precisely that somebody is offering it.\n\nImmutable. Moving a price to another vendor would rewrite what a supplier was recorded as having offered, and any purchase order that resolved through it would keep a price its vendor never quoted.\n\nA plain ulid with no edge — the party belongs to Contacts, and a foreign key across a module boundary would make Purchase's schema depend on Contacts' table. Validated through a port, which also checks the party actually has a vendor profile."
+			}
+		},
+		{
+			"name": "product_template_id",
+			"label": "fields.product_template_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The product being quoted. The template rather than the variant, because a vendor usually quotes one price for a product line and it would be tedious to repeat it per colour.\n\nAlways set, even when product_variant_id narrows the quote to one variant. That is what lets resolution find every candidate for a product in one read and then prefer the variant-specific one, rather than issuing two queries and merging them."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The single variant this price is for, or NULL for a price covering the whole template.\n\nNullability IS the specificity mechanism: a variant-specific price beats a template-wide one from the same vendor (PRICE-INV-018), so leaving it NULL is how a vendor's general quote is expressed rather than a missing value. It must belong to the template above, which the domain service checks — a variant from a different product would make the two columns describe different things."
+			}
+		},
+		{
+			"name": "purchase_uom_id",
+			"label": "fields.purchase_uom_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The unit the vendor quotes in, which need not be the unit stock is counted in: a supplier sells by the carton while the warehouse counts bottles.\n\nRequired, because a price without its unit is not a price — 220,000 per carton and 220,000 per bottle are entirely different offers. It must share a UoM category with the product's inventory unit (BR-PRICE-UOM-003), checked through Essential's conversion port; otherwise the converted quantity would be a number in the wrong dimension."
+			}
+		},
+		{
+			"name": "currency_id",
+			"label": "fields.currency_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The currency the vendor quotes in (BR-PRICE-CUR-002). Required and singular: an imported product may be quoted in USD while the books are kept in VND, and an amount whose currency is only assumed is the failure BR-PRICE-CUR-004 names.\n\nThere is no FX service, so this is carried and compared, never converted. A purchase order in another currency is the caller's problem to reconcile — and knowing that it must is exactly why the currency is recorded here."
+			}
+		},
+		{
+			"name": "min_quantity",
+			"label": "fields.min_quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The smallest quantity this price applies from, in purchase_uom_id. Quantity breaks are separate rows rather than a nested structure, so a vendor offering 1+ at 250 and 100+ at 220 is two ordinary records.\n\nRequired with a default of zero rather than nullable: resolution compares against it on every candidate, and a NULL would have to be treated as zero anyway — at which point the column may as well say so."
+			}
+		},
+		{
+			"name": "unit_price",
+			"label": "fields.unit_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "What the vendor charges per unit of purchase_uom_id, in currency_id.\n\nThis is NOT the product's cost and must never be copied onto it (PRICE-INV-009, BR-PRICE-VARIANT-009). A vendor's offer and what the business has actually paid and valued are different numbers, routinely different in practice: a product costing 10,200 may be offered at 10,000 by one vendor and 9,500 by another. Cost is Inventory's to calculate from goods actually received.\n\nZero is permitted. A free sample still has a price to be recorded at, and forbidding zero would push those through some other mechanism where they do not belong."
+			}
+		},
+		{
+			"name": "valid_from",
+			"label": "fields.valid_from",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this price starts applying, or NULL for always. Effective dating rather than editing in place: a price rise announced for next quarter must not change what is being ordered today, and the superseded price is still needed to explain the orders placed under it."
+			}
+		},
+		{
+			"name": "valid_to",
+			"label": "fields.valid_to",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When it stops applying, or NULL for open-ended. Exclusive of the instant itself, matching every other window in this module, so one price ending and the next beginning at the same moment leaves no gap and no overlap.\n\nClosing a window is the preferred way to record a new commercial term (section 24): set valid_to on the old row and create a new one, rather than overwriting a price the business genuinely offered at the time."
+			}
+		},
+		{
+			"name": "lead_time_days",
+			"label": "fields.lead_time_days",
+			"data_type": { "type": "int32", "min": 0, "max": 3650 },
+			"required_for_create": true,
+			"default_value": 0,
+			"description": {
+				"en-US": "How long this vendor takes to deliver at this price. It belongs on the price rather than on the vendor because the two travel together: a cheaper bulk price frequently carries a longer lead time, and that trade-off is the whole content of the quote.\n\nZero means same-day rather than unknown. Bounded at ten years because a longer figure is a data-entry error, not a supply chain."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": { "type": "int32", "min": 0, "max": 100000 },
+			"required_for_create": true,
+			"default_value": 0,
+			"description": {
+				"en-US": "Breaks ties between rows that are equally specific and equally applicable, lowest winning (section 27 step 6). It does NOT override specificity or quantity: a variant price beats a template price whatever their sequences, or a low sequence on a general quote would silently undo every specific one.\n\nWith id as the final tie-break, this is what makes purchase price resolution deterministic (PRICE-INV-020) — two otherwise indistinguishable rows still resolve the same way on every run, which is what makes the outcome testable."
+			}
+		},
+		{
+			"name": "vendor_product_code",
+			"label": "fields.vendor_product_code",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "What the vendor calls this product in their own catalogue. Carried so an order, an enquiry or a dispute can quote the reference the vendor will recognise, rather than an id that means nothing at their end."
+			}
+		},
+		{
+			"name": "vendor_product_name",
+			"label": "fields.vendor_product_name",
+			"data_type": { "type": "string", "min": 0, "max": 300 },
+			"description": {
+				"en-US": "The vendor's own name for the product, which is often not the buyer's. Kept for the same reason as the code: the words on the vendor's invoice should be findable from here."
+			}
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "purch_vpp_tid_vendor_tmpl", "fields": ["vendor_id", "product_template_id"] },
+		{ "index_name": "purch_vpp_tid_variant", "fields": ["product_variant_id"] },
+		{ "index_name": "purch_vpp_tid_validity", "fields": ["valid_from", "valid_to"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

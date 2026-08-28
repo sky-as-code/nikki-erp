@@ -62,6 +62,15 @@
 			}
 		},
 		{
+			"name": "cost",
+			"label": "fields.cost",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"default_value": "0",
+			"description": {
+				"en-US": "What this variant currently costs the business per inventory unit: the value used for margin, profitability and valuation. Not what a vendor charges — that is a Vendor Product Price, and the two are routinely different, since cost reflects what has actually been received and valued rather than what is on offer today.\n\nOn the VARIANT, not the template, because cost genuinely differs between variants of the same product and does not derive from anything shared: a larger size costs more to make, and no rule relates the two (BR-PRICE-VARIANT-006). It has nothing to do with sales_price_extra, which is a pricing decision and must never be added to a cost (BR-PRICE-VARIANT-008). The template exposes cost only as a read-only proxy, and only when it has exactly one variant.\n\nUser input for now. Once an Inventory costing engine exists it becomes system-calculated, and only that engine may write it: neither a purchase order price nor a vendor price may be copied here (PRICE-INV-009, BR-PRICE-VARIANT-009/010). A received purchase price is an INPUT to costing, never the answer.\n\nDenominated in the organization's default currency, like base_sales_price, and for the same reason."
+			}
+		},
+		{
 			"name": "weight",
 			"label": "fields.weight",
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
@@ -191,6 +200,50 @@
 			}
 		},
 		{
+			"name": "template_base_sales_price",
+			"label": "fields.template_base_sales_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"computed": { "kind": "related", "is_stored": false, "field": "template.base_sales_price" },
+			"description": {
+				"en-US": "The owning template's base sales price, read through the edge rather than copied — the same treatment as template_name and for the same reason. Exposed as its own field because effective_base_sales_price below is built from it, and because a caller comparing the two wants to see what the variant added."
+			}
+		},
+		{
+			"name": "sales_price_extra_total",
+			"label": "fields.sales_price_extra_total",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"computed": {
+				"kind": "aggregate",
+				"is_stored": false,
+				"source": "attribute_values",
+				"function": "sum",
+				"field": "sales_price_extra",
+				"default": 0.0
+			},
+			"description": {
+				"en-US": "What this variant's chosen attribute values add to the template's base price, summed. SUM over zero rows is NULL, so a variant with no attribute values reads 0 rather than nothing — a product with no variants axis is priced at the template price, not at no price."
+			}
+		},
+		{
+			"name": "effective_base_sales_price",
+			"label": "fields.effective_base_sales_price",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"op": "add",
+					"args": [
+						{ "function": "coalesce", "args": [{ "field": "template_base_sales_price" }, { "value": 0.0 }] },
+						{ "function": "coalesce", "args": [{ "field": "sales_price_extra_total" }, { "value": 0.0 }] }
+					]
+				}
+			},
+			"description": {
+				"en-US": "This variant's base selling price: the template's base price plus the price extras of the values it is built from (BR-PRICE-VARIANT-001). This — not the template's raw base_sales_price — is what a Sales pricing rule means by BASE_SALES_PRICE (BR-PRICE-VARIANT-003), and what pricing falls back to when no rule matches.\n\nComputed on read and never stored, which is what makes BR-PRICE-VARIANT-004 true by construction: raising the template's price moves every variant at once, with no batch to run and no window in which the two disagree. A stored copy would be a number that is right until someone edits the template.\n\nThe coalesces keep an unpriced operand reading as zero rather than making the whole sum NULL: a template with no base price set and a variant with no extras should read 0, not unknown."
+			}
+		},
+		{
 			"name": "on_hand_quantity",
 			"label": "fields.on_hand_quantity",
 			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
@@ -265,6 +318,11 @@
 			"edge": "quants",
 			"label": { "en-US": "Stock balances" },
 			"existing": { "src_schema": "inventory_stock_quant", "src_edge": "product_variant" }
+		},
+		{
+			"edge": "attribute_values",
+			"label": { "en-US": "Attribute values" },
+			"existing": { "src_schema": "inventory_product_variant_attribute_value", "src_edge": "variant" }
 		}
 	]
 }

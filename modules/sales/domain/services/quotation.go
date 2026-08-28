@@ -86,6 +86,7 @@ func ConvertQuotation(
 	params ConvertQuotationParams,
 	taxSvc itExt.TaxCalculationExtService,
 	products itExt.ProductVariantExtService,
+	basisSvc itExt.ProductPricingBasisExtService,
 	policy SalesPolicy,
 ) (*ConvertQuotationResult, *ft.ClientErrors, error) {
 	quotation, err := loadRecord(ctx,
@@ -135,7 +136,7 @@ func ConvertQuotation(
 		Lines:             orderLinesFromQuotation(lines),
 		IdempotencyKey:    params.IdempotencyKey,
 		OrgId:             stringOf(quotation, basemodel.FieldOrgId),
-	}, taxSvc, products, policy)
+	}, taxSvc, products, basisSvc, policy)
 	if err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}

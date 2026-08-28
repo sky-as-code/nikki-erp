@@ -17,5 +17,13 @@ func InitApplicationServices() error {
 	return stdErr.Join(
 		deps.Register(services.NewTaxCalculationDomainServiceImpl),
 		deps.Register(NewTaxCalculationApplicationServiceImpl),
+
+		// The org currency reader is published as its domain service, with no application
+		// service wrapping it. Every other capability here has one because it needs an
+		// authorization check; this one does not. It reads a setting the caller is already
+		// entitled to read — the settings module decides that — and adding a permission of its
+		// own would mean a caller could hold the right to read the settings and still be refused
+		// the currency they name.
+		deps.Register(services.NewOrgCurrencyDomainServiceImpl),
 	)
 }

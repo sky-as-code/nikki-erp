@@ -176,7 +176,10 @@ func salesOrderEventEngineSpec() engineSpec {
 }
 
 func salesPricelistEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesPricelistSchemaName}
+	return engineSpec{
+		SchemaName:    models.SalesPricelistSchemaName,
+		DefineActions: defineSalesPricelistActions,
+	}
 }
 
 func salesPricelistItemEngineSpec() engineSpec {

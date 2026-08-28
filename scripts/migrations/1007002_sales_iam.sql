@@ -166,3 +166,62 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
+
+
+-- Pricing authorization, added by the product-pricing change request.
+--
+-- The resources and their CRUD actions were already seeded above; what was missing was roles, and
+-- the entitlements binding them. Two roles rather than one, because reading what something sells
+-- for and deciding it are different powers: a shop floor or a report needs the first and must not
+-- have the second.
+--
+-- The reader holds `read` on BOTH the list and its rules. A rule is meaningless without the list it
+-- belongs to -- the currency and the scope live there -- so granting one without the other would
+-- produce a reader that could see prices it could not interpret.
+--
+-- There is deliberately NO separate permission for choosing the organization default. That
+-- operation asserts `update` (see PermissionSetDefaultPricelist): choosing which list prices an
+-- order that named none is the same class of power as editing what a list charges, and a role that
+-- may do one may sensibly do the other.
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_roles'
+	) THEN
+		INSERT INTO "iam_roles" (
+			"id", "name", "description", "is_private", "owner_user_id", "is_requestable",
+			"is_required_attachment", "is_required_comment", "is_archived", "created_at", "etag"
+		) VALUES
+		('01M3ROLE0000000000PRICING1', 'Sales Pricing Readonly', 'Read sales price lists and their rules, without being able to change what anything sells for', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ROLE0000000000PRICING2', 'Sales Pricing Manager', 'Create and edit sales price lists and rules, including choosing the organization default', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_entitlements'
+	) THEN
+		INSERT INTO "iam_entitlements" (
+			"id", "name", "description", "expression", "action_id", "resource_id",
+			"role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
+		) VALUES
+		('01M3ENT00000000000PRICE001', 'Read price lists', 'Read price lists', 'read:sales_pricelist:org', '01M3SALES0000000000000001C', '01M3SALES00000000000000015', '01M3ROLE0000000000PRICING1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000PRICE002', 'Read the rules inside a price list', 'Read the rules inside a price list', 'read:sales_pricelist_item:org', '01M3SALES0000000000000001H', '01M3SALES00000000000000016', '01M3ROLE0000000000PRICING1', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000PRICE003', 'Create price lists', 'Create price lists', 'create:sales_pricelist:org', '01M3SALES00000000000000019', '01M3SALES00000000000000015', '01M3ROLE0000000000PRICING2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000PRICE004', 'Create pricing rules', 'Create pricing rules', 'create:sales_pricelist_item:org', '01M3SALES0000000000000001E', '01M3SALES00000000000000016', '01M3ROLE0000000000PRICING2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000PRICE005', 'Update price lists', 'Update price lists', 'update:sales_pricelist:org', '01M3SALES0000000000000001A', '01M3SALES00000000000000015', '01M3ROLE0000000000PRICING2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000PRICE006', 'Update pricing rules', 'Update pricing rules', 'update:sales_pricelist_item:org', '01M3SALES0000000000000001F', '01M3SALES00000000000000016', '01M3ROLE0000000000PRICING2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000PRICE007', 'Delete price lists', 'Delete price lists', 'delete:sales_pricelist:org', '01M3SALES0000000000000001B', '01M3SALES00000000000000015', '01M3ROLE0000000000PRICING2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000PRICE008', 'Delete pricing rules', 'Delete pricing rules', 'delete:sales_pricelist_item:org', '01M3SALES0000000000000001G', '01M3SALES00000000000000016', '01M3ROLE0000000000PRICING2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000PRICE009', 'Read price lists', 'Read price lists', 'read:sales_pricelist:org', '01M3SALES0000000000000001C', '01M3SALES00000000000000015', '01M3ROLE0000000000PRICING2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000PRICE010', 'Read pricing rules', 'Read pricing rules', 'read:sales_pricelist_item:org', '01M3SALES0000000000000001H', '01M3SALES00000000000000016', '01M3ROLE0000000000PRICING2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000PRICE011', 'Set archived price lists', 'Set archived price lists', 'set_archived:sales_pricelist:org', '01M3SALES0000000000000001D', '01M3SALES00000000000000015', '01M3ROLE0000000000PRICING2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000PRICE012', 'Set archived pricing rules', 'Set archived pricing rules', 'set_archived:sales_pricelist_item:org', '01M3SALES0000000000000001J', '01M3SALES00000000000000016', '01M3ROLE0000000000PRICING2', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;

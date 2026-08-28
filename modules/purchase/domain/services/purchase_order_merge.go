@@ -4,6 +4,7 @@ import (
 	"time"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -382,13 +383,26 @@ func moveLineToOrder(
 // timeOf reads a time field, reporting whether one was there at all.
 //
 // The bool matters: "no arrival date" and "the zero time" mean different things to the merge rule,
-// and collapsing them would make every dateless line look like it wanted delivery in year one.
+// and collapsing them would make every dateless line look like it wanted delivery in year one. It
+// matters again to vendor price validity (windowCovers), where an unread bound would read as
+// open-ended and quietly resurrect an expired quote.
+//
+// model.ModelDateTime is handled because that is what the model layer's own SetModelDateTime
+// stores, and DynamicFields.GetModelDateTime — the obvious reader — returns nil for the pointer
+// form rather than reporting that it could not read it.
 func timeOf(fields dmodel.DynamicFields, key string) (time.Time, bool) {
 	value, ok := fields[key]
 	if !ok || value == nil {
 		return time.Time{}, false
 	}
 	switch typed := value.(type) {
+	case model.ModelDateTime:
+		return typed.GoTime(), !typed.GoTime().IsZero()
+	case *model.ModelDateTime:
+		if typed == nil {
+			return time.Time{}, false
+		}
+		return typed.GoTime(), !typed.GoTime().IsZero()
 	case time.Time:
 		return typed, !typed.IsZero()
 	case *time.Time:

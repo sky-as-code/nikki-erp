@@ -66,6 +66,7 @@ const (
 	ProductVariantFieldPrimaryBarcode    = "primary_barcode"
 	ProductVariantFieldIsMaterialized    = "is_materialized"
 	ProductVariantFieldVariantImageId    = "variant_image_id"
+	ProductVariantFieldCost              = "cost"
 	ProductVariantFieldWeight            = "weight"
 	ProductVariantFieldLength            = "length"
 	ProductVariantFieldWidth             = "width"
@@ -88,6 +89,13 @@ const (
 	ProductVariantFieldTemplateStatus              = "template_status"
 	ProductVariantFieldTemplateSaleOk              = "template_sale_ok"
 	ProductVariantFieldTemplatePurchaseOk          = "template_purchase_ok"
+
+	// The pricing read model. Constants rather than literals because Sales reads these across a
+	// module boundary through its product port, and a literal there would survive a rename here
+	// as a field that silently resolves to nothing.
+	ProductVariantFieldTemplateBaseSalesPrice  = "template_base_sales_price"
+	ProductVariantFieldSalesPriceExtraTotal    = "sales_price_extra_total"
+	ProductVariantFieldEffectiveBaseSalesPrice = "effective_base_sales_price"
 
 	ProductVariantEdgeTemplate = "template"
 
@@ -166,6 +174,14 @@ func (this ProductVariant) GetVariantImageId() *model.Id {
 
 func (this *ProductVariant) SetVariantImageId(v *model.Id) {
 	this.GetFieldData().SetModelId(ProductVariantFieldVariantImageId, v)
+}
+
+func (this ProductVariant) GetCost() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(ProductVariantFieldCost)
+}
+
+func (this *ProductVariant) SetCost(v *decimal.Decimal) {
+	this.GetFieldData().SetDecimal(ProductVariantFieldCost, v)
 }
 
 func (this ProductVariant) GetWeight() *decimal.Decimal {

@@ -14,24 +14,26 @@ import (
 const (
 	PurchaseOrderLineSchemaName = "purchase_order_line"
 
-	PurchaseOrderLineFieldId                = basemodel.FieldId
-	PurchaseOrderLineFieldEtag              = basemodel.FieldEtag
-	PurchaseOrderLineFieldOrgId             = basemodel.FieldOrgId
-	PurchaseOrderLineFieldPurchaseOrderId   = "purchase_order_id"
-	PurchaseOrderLineFieldSequence          = "sequence"
-	PurchaseOrderLineFieldLineType          = "line_type"
-	PurchaseOrderLineFieldProductVariantId  = "product_variant_id"
-	PurchaseOrderLineFieldDescription       = "description"
-	PurchaseOrderLineFieldQuantity          = "quantity"
-	PurchaseOrderLineFieldUomId             = "uom_id"
-	PurchaseOrderLineFieldInventoryQuantity = "inventory_quantity"
-	PurchaseOrderLineFieldUnitPrice         = "unit_price"
-	PurchaseOrderLineFieldDiscountPercent   = "discount_percent"
-	PurchaseOrderLineFieldExpectedArrival   = "expected_arrival"
-	PurchaseOrderLineFieldSubtotal          = "subtotal"
-	PurchaseOrderLineFieldTaxAmount         = "tax_amount"
-	PurchaseOrderLineFieldTotal             = "total"
-	PurchaseOrderLineEdgeOrder              = "order"
+	PurchaseOrderLineFieldId                   = basemodel.FieldId
+	PurchaseOrderLineFieldEtag                 = basemodel.FieldEtag
+	PurchaseOrderLineFieldOrgId                = basemodel.FieldOrgId
+	PurchaseOrderLineFieldPurchaseOrderId      = "purchase_order_id"
+	PurchaseOrderLineFieldSequence             = "sequence"
+	PurchaseOrderLineFieldLineType             = "line_type"
+	PurchaseOrderLineFieldProductVariantId     = "product_variant_id"
+	PurchaseOrderLineFieldDescription          = "description"
+	PurchaseOrderLineFieldQuantity             = "quantity"
+	PurchaseOrderLineFieldUomId                = "uom_id"
+	PurchaseOrderLineFieldInventoryQuantity    = "inventory_quantity"
+	PurchaseOrderLineFieldUnitPrice            = "unit_price"
+	PurchaseOrderLineFieldVendorProductPriceId = "vendor_product_price_id"
+	PurchaseOrderLineFieldResolvedUnitPrice    = "resolved_unit_price"
+	PurchaseOrderLineFieldDiscountPercent      = "discount_percent"
+	PurchaseOrderLineFieldExpectedArrival      = "expected_arrival"
+	PurchaseOrderLineFieldSubtotal             = "subtotal"
+	PurchaseOrderLineFieldTaxAmount            = "tax_amount"
+	PurchaseOrderLineFieldTotal                = "total"
+	PurchaseOrderLineEdgeOrder                 = "order"
 )
 
 //go:embed purchase_order_line.json
@@ -155,6 +157,22 @@ func (this PurchaseOrderLine) GetUnitPrice() *decimal.Decimal {
 
 func (this *PurchaseOrderLine) SetUnitPrice(v *decimal.Decimal) {
 	this.fields.SetDecimal(PurchaseOrderLineFieldUnitPrice, v)
+}
+
+func (this PurchaseOrderLine) GetVendorProductPriceId() *model.Id {
+	return this.fields.GetModelId(PurchaseOrderLineFieldVendorProductPriceId)
+}
+
+func (this *PurchaseOrderLine) SetVendorProductPriceId(v *model.Id) {
+	this.fields.SetModelId(PurchaseOrderLineFieldVendorProductPriceId, v)
+}
+
+func (this PurchaseOrderLine) GetResolvedUnitPrice() *decimal.Decimal {
+	return this.fields.GetDecimal(PurchaseOrderLineFieldResolvedUnitPrice)
+}
+
+func (this *PurchaseOrderLine) SetResolvedUnitPrice(v *decimal.Decimal) {
+	this.fields.SetDecimal(PurchaseOrderLineFieldResolvedUnitPrice, v)
 }
 
 func (this PurchaseOrderLine) GetDiscountPercent() *decimal.Decimal {

@@ -30,6 +30,7 @@ func TestMain(m *testing.M) {
 func TestEveryResourceHasAnEngine(t *testing.T) {
 	assert.ElementsMatch(t, []string{
 		models.ConfigurationSchemaName,
+		models.VendorProductPriceSchemaName,
 		models.SourcingGroupSchemaName,
 		models.AgreementSchemaName,
 		models.AgreementLineSchemaName,
@@ -43,13 +44,14 @@ func TestEveryResourceHasAnEngine(t *testing.T) {
 // every listing request. Cheap to check here, expensive to discover through the API.
 func TestDefaultSearchFieldsExistOnTheirSchemas(t *testing.T) {
 	builders := map[string]func() *dmodel.ModelSchemaBuilder{
-		models.ConfigurationSchemaName:     models.ConfigurationSchemaBuilder,
-		models.SourcingGroupSchemaName:     models.SourcingGroupSchemaBuilder,
-		models.AgreementSchemaName:         models.AgreementSchemaBuilder,
-		models.AgreementLineSchemaName:     models.AgreementLineSchemaBuilder,
-		models.PurchaseOrderSchemaName:     models.PurchaseOrderSchemaBuilder,
-		models.PurchaseOrderLineSchemaName: models.PurchaseOrderLineSchemaBuilder,
-		models.AuditEventSchemaName:        models.AuditEventSchemaBuilder,
+		models.ConfigurationSchemaName:      models.ConfigurationSchemaBuilder,
+		models.VendorProductPriceSchemaName: models.VendorProductPriceSchemaBuilder,
+		models.SourcingGroupSchemaName:      models.SourcingGroupSchemaBuilder,
+		models.AgreementSchemaName:          models.AgreementSchemaBuilder,
+		models.AgreementLineSchemaName:      models.AgreementLineSchemaBuilder,
+		models.PurchaseOrderSchemaName:      models.PurchaseOrderSchemaBuilder,
+		models.PurchaseOrderLineSchemaName:  models.PurchaseOrderLineSchemaBuilder,
+		models.AuditEventSchemaName:         models.AuditEventSchemaBuilder,
 	}
 
 	for _, spec := range engineSpecs {

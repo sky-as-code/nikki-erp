@@ -39,6 +39,25 @@ type LineInput struct {
 	// resolves it from Inventory; the engine never looks one up.
 	CatalogueUnitPrice decimal.Decimal
 
+	// ProductTemplateId and CategoryPath place the variant in the product hierarchy, so a rule
+	// targeting a template or a category can be matched without the engine reading anything.
+	//
+	// CategoryPath runs from the variant's OWN category outward to the root, and the order is the
+	// precedence: the nearest ancestor wins (PRICE-INV-017), so a rule on Soft Drinks beats one on
+	// Beverages for a product in both. The caller walks parent_category_id to build it — that walk
+	// is I/O, and keeping it outside is what lets this package stay a pure function.
+	ProductTemplateId string
+	CategoryPath      []string
+
+	// UnitCost is the variant's cost, for a FORMULA rule based on COST. Sales READS this and never
+	// writes it back (PRICE-INV-010): the number belongs to Inventory, and a pricing engine that
+	// could change it would be a costing engine.
+	//
+	// Zero is indistinguishable from unset here, which is why HasCost says which it is. A cost of
+	// zero is a real answer for a giveaway; an absent cost must refuse rather than price at zero.
+	UnitCost decimal.Decimal
+	HasCost  bool
+
 	// ProductCode and ProductName are snapshotted onto the result so the caller can write them to
 	// the order line without a second lookup.
 	ProductCode string
@@ -58,19 +77,61 @@ type LineInput struct {
 // The engine does not decide which pricelists apply — that is scope resolution, which needs the
 // channel and point and belongs to the caller. It only picks the best matching item per line.
 type PricelistItem struct {
-	ProductVariantId string
-	UomId            string
-	UnitPrice        decimal.Decimal
+	// Id is the rule, echoed onto the result so a caller can say which rule set a price and so
+	// that two otherwise identical rules still resolve deterministically (PRICE-INV-020).
+	Id string
+
+	// AppliesTo names which of the three target fields below is meaningful, or ALL_PRODUCTS for a
+	// rule that matches anything. It is the enum from the schema, passed through as a string so
+	// this package depends on no model.
+	AppliesTo string
+
+	ProductVariantId  string
+	ProductTemplateId string
+	ProductCategoryId string
+
+	UomId     string
+	UnitPrice decimal.Decimal
 
 	// MinQuantity is the quantity break this price applies from, inclusive.
 	MinQuantity decimal.Decimal
 
-	// Specificity ranks the pricelist this item came from: higher wins. The caller computes it
+	// Specificity ranks the PRICELIST this item came from: higher wins. The caller computes it
 	// from the pricelist's scope, so the engine needs no knowledge of channels or points.
+	//
+	// Distinct from and above target specificity below. A point-scoped list beats a channel-scoped
+	// one whatever either rule targets, because the two answer different questions: which policy
+	// applies here, then which rule within it applies to this product.
 	Specificity int32
 
 	// Priority breaks ties between items of equal specificity, higher winning.
 	Priority int32
+
+	// Sequence breaks ties between rules that are equally specific and equally applicable, LOWEST
+	// winning (section 18 step 7). Note the direction is opposite to Priority above; the two come
+	// from different requirements and neither was worth renaming to match the other.
+	Sequence int32
+
+	// CalculationMethod is FIXED_PRICE, DISCOUNT or FORMULA. Empty means FIXED_PRICE, so a caller
+	// that has not been updated still gets the behaviour it had before this field existed.
+	CalculationMethod string
+
+	// DiscountPercent is taken off the base for DISCOUNT and FORMULA. Signed: negative marks up,
+	// which is how "cost plus 50%" is expressed without a second field.
+	DiscountPercent decimal.Decimal
+
+	// BasePriceSource is what a FORMULA rule starts from: BASE_SALES_PRICE, COST or
+	// OTHER_PRICELIST. For OTHER_PRICELIST the caller resolves the other list first and supplies
+	// the answer in ResolvedBasePrice — chasing it here would need I/O.
+	BasePriceSource   string
+	ResolvedBasePrice decimal.Decimal
+	HasResolvedBase   bool
+
+	// SurchargeAmount is added after rounding, so an amount meant to be exact stays exact.
+	SurchargeAmount decimal.Decimal
+
+	// RoundingIncrement is the step a FORMULA result is rounded to. Zero means no rounding.
+	RoundingIncrement decimal.Decimal
 }
 
 // ComboDefinition is a bundle the caller resolved for a combo line.
@@ -228,6 +289,14 @@ type LineResult struct {
 	LineType      string
 	PricingSource string
 
+	// PricelistItemId names the rule that set this price, when one did.
+	//
+	// Recorded for the same reason SourcePromotionProgramId is: when somebody asks why a line cost
+	// what it did, the answer has to be a row they can go and read. Without it a resolved price is
+	// a number with no provenance, and the pricing rules are exactly the configuration people
+	// change most often and understand least.
+	PricelistItemId string
+
 	// SourcePromotionProgramId is set on a giveaway line (D-11), tying the free item back to the
 	// campaign that gave it away — which is the question asked when a campaign's cost is reviewed.
 	SourcePromotionProgramId string
@@ -315,3 +384,24 @@ type ManualDiscountInput struct {
 	// explanation says WHY rather than merely that somebody was allowed to.
 	Reason string
 }
+
+// The rule vocabulary, mirrored from the schema as plain strings.
+//
+// Duplicated here rather than imported from models, deliberately: this package is a pure function
+// and depends on nothing, which is what lets it be tested without a registry or a database. The
+// values are byte-identical to the enum in sales_pricelist_item.json, and the engine's own tests
+// would fail the moment they drifted.
+const (
+	AppliesToVariant     = "PRODUCT_VARIANT"
+	AppliesToTemplate    = "PRODUCT_TEMPLATE"
+	AppliesToCategory    = "PRODUCT_CATEGORY"
+	AppliesToAllProducts = "ALL_PRODUCTS"
+
+	MethodFixedPrice = "FIXED_PRICE"
+	MethodDiscount   = "DISCOUNT"
+	MethodFormula    = "FORMULA"
+
+	BaseSourceBaseSalesPrice = "BASE_SALES_PRICE"
+	BaseSourceOtherPricelist = "OTHER_PRICELIST"
+	BaseSourceCost           = "COST"
+)

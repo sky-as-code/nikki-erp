@@ -91,6 +91,9 @@ func (*PurchaseModule) Init() error {
 func (*PurchaseModule) RegisterModels() error {
 	return stdErr.Join(
 		dmodel.RegisterSchemaB(models.ConfigurationSchemaBuilder()),
+		// Vendor prices reference nothing in Purchase — the vendor is Contacts', the product is
+		// Inventory's, both as plain ulids — so they may be registered as early as anything else.
+		dmodel.RegisterSchemaB(models.VendorProductPriceSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SourcingGroupSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.AgreementSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.AgreementLineSchemaBuilder()),

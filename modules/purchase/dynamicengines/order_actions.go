@@ -35,6 +35,12 @@ const (
 	PermissionUnlock      = "unlock"
 	PermissionAcknowledge = "acknowledge"
 	PermissionMerge       = "merge"
+
+	// PermissionReprice is its own power (section 30). Repricing rewrites what the company will pay
+	// across a whole order, which is not what a role granted `update` to correct a description was
+	// given. It is also not `confirm`: repricing a draft commits nothing, so tying the two together
+	// would force a buyer preparing an order to hold the power to commit it.
+	PermissionReprice = "reprice"
 )
 
 // Action names, namespaced by resource in the same style as the built-ins.
@@ -47,6 +53,7 @@ const (
 	ActionUnlock      = "unlock"
 	ActionAcknowledge = "acknowledge"
 	ActionDuplicate   = "duplicate"
+	ActionReprice     = "reprice"
 
 	ActionMerge               = "merge"
 	ActionCreateAlternative   = "create_alternative"
@@ -148,6 +155,17 @@ func defineOrderActions(engine drif.DynamicResourceEngine) error {
 		// Duplicating is a create, and carries the create permission rather than one of its own:
 		// it produces a new draft order from data the caller can already read, which is exactly
 		// what a role allowed to create orders may do by hand.
+		// Repricing re-reads the vendor's price list and moves the lines that changed. It is a POST
+		// because it is an event, not an edit to a field, and it takes only the order id: WHICH
+		// prices apply is the resolver's answer, and letting a caller pass one in would make this
+		// an override with extra steps.
+		engine.DefineAction(drif.DynamicActionDefinition{
+			ActionName:  ActionReprice,
+			ActionType:  drif.ActionTypeGeneric,
+			RestPath:    ":id/reprice",
+			Permission:  PermissionReprice,
+			MainProcess: processOrderReprice,
+		}),
 		engine.DefineAction(drif.DynamicActionDefinition{
 			ActionName:  ActionDuplicate,
 			ActionType:  drif.ActionTypeGeneric,
@@ -233,6 +251,28 @@ func processOrderDuplicate(ctx corectx.Context, input drif.ProcessInput) (*drif.
 		return nil, err
 	}
 	result, err := service.Duplicate(ctx, readOrderId(input))
+	if err != nil {
+		return nil, err
+	}
+	out := &drif.ActionResult{
+		ClientErrors: result.ClientErrors,
+		HasData:      result.HasData,
+	}
+	if result.HasData {
+		out.Data = result.Data
+	}
+	return out, nil
+}
+
+// Reprice returns which lines moved rather than an affected count, because the caller's next
+// question is always "what changed" — and a bare number would send them diffing the order against
+// their memory of it.
+func processOrderReprice(ctx corectx.Context, input drif.ProcessInput) (*drif.ActionResult, error) {
+	service, err := orderServiceOf(input)
+	if err != nil {
+		return nil, err
+	}
+	result, err := service.Reprice(ctx, readOrderId(input))
 	if err != nil {
 		return nil, err
 	}

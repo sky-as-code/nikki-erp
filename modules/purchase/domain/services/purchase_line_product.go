@@ -44,14 +44,18 @@ func NewProductLineValidator(
 // line — a note or a section has neither, and a product line for a one-off service may name a
 // product with no stock configuration — so absence is not itself an error. What is an error is a
 // combination that cannot be made sense of.
+// It also returns the product's TEMPLATE id when it resolved one. Pricing needs it, and pricing
+// runs immediately after this call — re-reading Inventory for an id already in hand would be a
+// second cross-module round trip inside the same write transaction. Empty means there is nothing
+// to price against: a section line, a free-text charge, or a product that was refused.
 func (this *ProductLineValidator) PrepareLine(
 	ctx corectx.Context, line dmodel.DynamicFields, vErrs *ft.ClientErrors,
-) error {
+) (string, error) {
 	if !isMoneyBearingLine(line) {
 		// A section or a note buys nothing, so it has no product to check and no quantity to
 		// convert. Validating one would refuse a heading for not naming a product.
 		line[models.PurchaseOrderLineFieldInventoryQuantity] = decimal.Zero
-		return nil
+		return "", nil
 	}
 
 	variantId := stringOf(line, models.PurchaseOrderLineFieldProductVariantId)
@@ -63,33 +67,34 @@ func (this *ProductLineValidator) PrepareLine(
 		// legitimate, and there is nothing to convert against, so the inventory quantity is the
 		// ordered quantity unchanged.
 		line[models.PurchaseOrderLineFieldInventoryQuantity] = quantity
-		return nil
+		return "", nil
 	}
 
 	product, err := this.loadPurchasableProduct(ctx, variantId, vErrs)
 	if err != nil || product == nil {
-		return err
+		return "", err
 	}
+	templateId := string(product.TemplateId)
 
 	if err := this.assertUomUsable(ctx, lineUomId, vErrs); err != nil {
-		return err
+		return templateId, err
 	}
 	if vErrs.Count() > 0 {
-		return nil
+		return templateId, nil
 	}
 
 	inventoryQuantity, err := this.toInventoryQuantity(
 		ctx, quantity, lineUomId, string(product.InventoryUomId), vErrs)
 	if err != nil {
-		return err
+		return templateId, err
 	}
 	if vErrs.Count() > 0 {
-		return nil
+		return templateId, nil
 	}
 
 	// The ordered quantity and unit are left exactly as the buyer typed them (004).
 	line[models.PurchaseOrderLineFieldInventoryQuantity] = inventoryQuantity
-	return nil
+	return templateId, nil
 }
 
 // loadPurchasableProduct resolves the variant and refuses one that cannot be bought.

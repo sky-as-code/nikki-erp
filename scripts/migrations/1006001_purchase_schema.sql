@@ -68,6 +68,35 @@ CREATE TABLE "purchase_sourcing_groups" (
 );
 -- Create index "purch_srcgroups_tid_org_id_idx" to table: "purchase_sourcing_groups"
 CREATE INDEX "purch_srcgroups_tid_org_id_idx" ON "purchase_sourcing_groups" ("org_id");
+-- Create "purchase_vendor_product_prices" table
+CREATE TABLE "purchase_vendor_product_prices" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "vendor_id" character varying NOT NULL,
+  "product_template_id" character varying NOT NULL,
+  "product_variant_id" character varying NULL,
+  "purchase_uom_id" character varying NOT NULL,
+  "currency_id" character varying NOT NULL,
+  "min_quantity" numeric NOT NULL,
+  "unit_price" numeric NOT NULL,
+  "valid_from" timestamptz NULL,
+  "valid_to" timestamptz NULL,
+  "lead_time_days" integer NOT NULL,
+  "sequence" integer NOT NULL,
+  "vendor_product_code" character varying NULL,
+  "vendor_product_name" character varying NULL,
+  "is_archived" boolean NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "purch_vpp_tid_validity_idx" to table: "purchase_vendor_product_prices"
+CREATE INDEX "purch_vpp_tid_validity_idx" ON "purchase_vendor_product_prices" ("valid_from", "valid_to");
+-- Create index "purch_vpp_tid_variant_idx" to table: "purchase_vendor_product_prices"
+CREATE INDEX "purch_vpp_tid_variant_idx" ON "purchase_vendor_product_prices" ("product_variant_id");
+-- Create index "purch_vpp_tid_vendor_tmpl_idx" to table: "purchase_vendor_product_prices"
+CREATE INDEX "purch_vpp_tid_vendor_tmpl_idx" ON "purchase_vendor_product_prices" ("vendor_id", "product_template_id");
 -- Create "purchase_agreement_lines" table
 CREATE TABLE "purchase_agreement_lines" (
   "id" character varying NOT NULL,
@@ -144,6 +173,8 @@ CREATE TABLE "purchase_order_lines" (
   "uom_id" character varying NULL,
   "inventory_quantity" numeric NOT NULL,
   "unit_price" numeric NOT NULL,
+  "vendor_product_price_id" character varying NULL,
+  "resolved_unit_price" numeric NULL,
   "discount_percent" numeric NOT NULL,
   "expected_arrival" timestamptz NULL,
   "subtotal" numeric NOT NULL,
@@ -159,3 +190,5 @@ CREATE TABLE "purchase_order_lines" (
 CREATE INDEX "purch_ord_lines_tid_ord_id_seq_idx" ON "purchase_order_lines" ("purchase_order_id", "sequence");
 -- Create index "purch_ord_lines_tid_pvar_id_idx" to table: "purchase_order_lines"
 CREATE INDEX "purch_ord_lines_tid_pvar_id_idx" ON "purchase_order_lines" ("product_variant_id");
+-- Create index "purch_ord_lines_tid_vpp_id_idx" to table: "purchase_order_lines"
+CREATE INDEX "purch_ord_lines_tid_vpp_id_idx" ON "purchase_order_lines" ("vendor_product_price_id");

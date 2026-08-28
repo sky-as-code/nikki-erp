@@ -100,6 +100,7 @@ func CreateOrder(
 	params CreateOrderParams,
 	taxSvc itExt.TaxCalculationExtService,
 	products itExt.ProductVariantExtService,
+	basisSvc itExt.ProductPricingBasisExtService,
 	policy SalesPolicy,
 ) (*CreateOrderResult, *ft.ClientErrors, error) {
 	point, channel, vErrs, err := resolveSellingPlace(ctx, params)
@@ -166,7 +167,7 @@ func CreateOrder(
 	// Priced after the lines are stored, because the engine reads them back. BR 69 requires a total
 	// to have been computed before one is returned, so a create that could not price is a create
 	// that failed.
-	priced, vErrs, err := RepriceOrder(ctx, orderId, taxSvc, policy)
+	priced, vErrs, err := RepriceOrder(ctx, orderId, taxSvc, policy, basisSvc)
 	if err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}

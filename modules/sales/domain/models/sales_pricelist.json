@@ -31,6 +31,33 @@
 			"required_for_create": true
 		},
 		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 1000 },
+			"description": {
+				"en-US": "What commercial policy this list represents, in the words of whoever set it up. Free text: the code identifies the list and the name labels it, but neither has room to say why a wholesale list exists or who negotiated it."
+			}
+		},
+		{
+			"name": "currency_id",
+			"label": "fields.currency_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The currency every price on this list is quoted in (BR-PRICE-CUR-001). Required, and one per list: a list holding some prices in VND and others in USD could not be compared against an order's currency without knowing which row meant which, and there is no FX service to reconcile them (BR-PRICE-CUR-004).\n\nA list carries its own currency rather than inheriting the organization's, because a USD export list is exactly the case this exists for. That is also why changing it after the fact is refused once the list has rules or has priced a transaction: reinterpreting 100 USD as 100 VND is the failure the requirement names. Create a new list instead.\n\nA plain ulid with no edge — currency belongs to Essential, and a foreign key across a module boundary would make Sales' schema depend on Essential's table."
+			}
+		},
+		{
+			"name": "is_default",
+			"label": "fields.is_default",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"description": {
+				"en-US": "Whether an order that names no pricelist falls back to this one. At most one non-archived default per organization (BR-PRICE-SAL-003), which the domain service enforces — the schema cannot express uniqueness conditional on is_archived.\n\nDistinct from the scope columns above and not a substitute for them: a default answers \"which list when none was chosen\", while channel and point answer \"which list applies here\". A global list is not automatically the default, and the default need not be global.\n\nSetting it is its own operation rather than an ordinary update, because promoting one list must demote the other in the same breath; two updates would leave a window with two defaults or none."
+			}
+		},
+		{
 			"name": "sales_channel_id",
 			"label": "fields.sales_channel_id",
 			"data_type": "ulid",

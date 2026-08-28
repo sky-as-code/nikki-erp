@@ -22,14 +22,10 @@ CREATE TABLE "contacts_parties" (
 );
 -- Create index "contacts_parties_tid_org_id_idx" to table: "contacts_parties"
 CREATE INDEX "contacts_parties_tid_org_id_idx" ON "contacts_parties" ("org_id");
--- Create index "contacts_parties_tid_tax_id_ukey_notnull" to table: "contacts_parties"
-CREATE UNIQUE INDEX "contacts_parties_tid_tax_id_ukey_notnull" ON "contacts_parties" ("org_id", "tax_id") WHERE (tax_id IS NOT NULL);
--- Create index "contacts_parties_tid_tax_id_ukey_null" to table: "contacts_parties"
-CREATE UNIQUE INDEX "contacts_parties_tid_tax_id_ukey_null" ON "contacts_parties" ("org_id") WHERE (tax_id IS NULL);
--- Create index "contacts_parties_tid_website_ukey_notnull" to table: "contacts_parties"
-CREATE UNIQUE INDEX "contacts_parties_tid_website_ukey_notnull" ON "contacts_parties" ("org_id", "website") WHERE (website IS NOT NULL);
--- Create index "contacts_parties_tid_website_ukey_null" to table: "contacts_parties"
-CREATE UNIQUE INDEX "contacts_parties_tid_website_ukey_null" ON "contacts_parties" ("org_id") WHERE (website IS NULL);
+-- Create index "contacts_parties_tid_tax_id_idx" to table: "contacts_parties"
+CREATE INDEX "contacts_parties_tid_tax_id_idx" ON "contacts_parties" ("org_id", "tax_id");
+-- Create index "contacts_parties_tid_website_idx" to table: "contacts_parties"
+CREATE INDEX "contacts_parties_tid_website_idx" ON "contacts_parties" ("org_id", "website");
 -- Create "contacts_comm_channels" table
 CREATE TABLE "contacts_comm_channels" (
   "id" character varying NOT NULL,
@@ -69,3 +65,26 @@ CREATE TABLE "contacts_relationships" (
 CREATE INDEX "contacts_rels_tid_party_id_idx" ON "contacts_relationships" ("party_id");
 -- Create index "contacts_rels_tid_target_party_id_idx" to table: "contacts_relationships"
 CREATE INDEX "contacts_rels_tid_target_party_id_idx" ON "contacts_relationships" ("target_party_id");
+-- Create "contacts_vendor_profiles" table
+CREATE TABLE "contacts_vendor_profiles" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "party_id" character varying NOT NULL,
+  "status" character varying NOT NULL,
+  "status_reason" character varying NULL,
+  "default_currency_id" character varying NULL,
+  "payment_terms" character varying NULL,
+  "lead_time_days" integer NULL,
+  "note" character varying NULL,
+  "is_archived" boolean NOT NULL,
+  "etag" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "contacts_vnd_profiles_tid_party_id_ukey" UNIQUE ("party_id", "org_id"),
+  CONSTRAINT "contacts_vendor_profiles_party_id_fkey" FOREIGN KEY ("party_id") REFERENCES "contacts_parties" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- Create index "contacts_vnd_profiles_tid_org_id_idx" to table: "contacts_vendor_profiles"
+CREATE INDEX "contacts_vnd_profiles_tid_org_id_idx" ON "contacts_vendor_profiles" ("org_id");
+-- Create index "contacts_vnd_profiles_tid_status_idx" to table: "contacts_vendor_profiles"
+CREATE INDEX "contacts_vnd_profiles_tid_status_idx" ON "contacts_vendor_profiles" ("status");

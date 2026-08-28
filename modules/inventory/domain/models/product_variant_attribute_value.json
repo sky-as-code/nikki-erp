@@ -22,6 +22,15 @@
 			"description": {
 				"en-US": "Points at the template-scoped allowed value rather than the global attribute value, so a variant cannot be built from a value its template does not allow."
 			}
+		},
+		{
+			"name": "sales_price_extra",
+			"label": "fields.sales_price_extra",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"default_value": "0",
+			"description": {
+				"en-US": "A copy of the template attribute value's sales_price_extra, held here so the variant can sum it.\n\nA copy is not the preference — it is the only shape that works. The variant's effective_base_sales_price sums this across the variant's chosen values, and that sum has to be a SQL aggregate to avoid a per-row query on every list. An aggregate may only read a real column on a DIRECTLY related schema: the resolver refuses a two-edge source outright, and refuses a computed field with 'it has no column to query'. Reading the template value two hops away is therefore not expressible, and the alternative — a Go-evaluated function field — would run once per row and turn any product listing into N+1.\n\nIt is written by the domain service on create and re-propagated when the template value changes; a client may not set it. That is what keeps a copy from becoming a second source of truth. The template attribute value remains authoritative: if the two ever disagree, this one is wrong."
+			}
 		}
 	],
 

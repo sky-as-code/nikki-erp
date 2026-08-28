@@ -20,8 +20,14 @@ import (
 // the engine's service, and without this every one of them fails at the assertion.
 func NewPurchaseOrderDomainService(
 	base drif.DynamicResourceService, references *OrderReferenceValidator,
+	products *ProductLineValidator, pricer *LinePricer,
 ) *PurchaseOrderDomainServiceImpl {
-	return &PurchaseOrderDomainServiceImpl{DynamicResourceService: base, references: references}
+	return &PurchaseOrderDomainServiceImpl{
+		DynamicResourceService: base,
+		references:             references,
+		products:               products,
+		pricer:                 pricer,
+	}
 }
 
 type PurchaseOrderDomainServiceImpl struct {
@@ -30,6 +36,13 @@ type PurchaseOrderDomainServiceImpl struct {
 	// references validates the vendor and currency and defaults the currency from the vendor. It
 	// is nil in tests that exercise only the lifecycle rules, which need no ports.
 	references *OrderReferenceValidator
+
+	// products and pricer are what Reprice needs (section 30): the first re-resolves each line's
+	// product to obtain its template, the second asks the vendor's price list for the current
+	// number. Both nil in the same lifecycle tests, where repricing reports that it examined
+	// nothing rather than failing.
+	products *ProductLineValidator
+	pricer   *LinePricer
 }
 
 var _ drif.DynamicResourceService = (*PurchaseOrderDomainServiceImpl)(nil)
