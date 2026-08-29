@@ -44,7 +44,7 @@ func assertIds(t *testing.T, got []CandidateProgram, want ...string) {
 	}
 }
 
-// D-10: lower priority applies first, and the ordering is total.
+// Lower priority applies first, and the ordering is total.
 func TestResolveOrdersByPriorityThenCreatedAtThenId(t *testing.T) {
 	candidates := []CandidateProgram{
 		{Id: "z", Priority: 5, CreatedAt: "2026-01-01", StackPolicy: "stackable"},
@@ -53,13 +53,11 @@ func TestResolveOrdersByPriorityThenCreatedAtThenId(t *testing.T) {
 		{Id: "b", Priority: 5, CreatedAt: "2025-01-01", StackPolicy: "stackable"},
 	}
 
-	// m first (lowest priority); then among the priority-5 programs, b has the earliest
-	// created_at; a and z tie on both, so the id separates them.
+	// m first (lowest priority); then b has the earliest created_at; a and z tie, so the id separates.
 	assertIds(t, ResolvePromotions(candidates, nil), "m", "b", "a", "z")
 }
 
-// BR §29 forbids any dependence on database record order. This is the test the requirement asks for
-// by name: shuffle the input, assert the same output.
+// The result must not depend on record order: shuffle the input, assert the same output.
 func TestResolveIsIndependentOfInputOrder(t *testing.T) {
 	candidates := []CandidateProgram{
 		grouped("seasonal", 10, models.PromotionStackExclusiveWithinGroup, "seasonal"),
@@ -99,7 +97,7 @@ func TestResolveIsIndependentOfInputOrder(t *testing.T) {
 	}
 }
 
-// D-09: an explicit denied row wins over everything, including two stackable programs.
+// An explicit denied row wins over everything, including two stackable programs.
 func TestExplicitDenyBeatsStackablePolicy(t *testing.T) {
 	candidates := []CandidateProgram{
 		program("a", 1, models.PromotionStackStackable),
@@ -110,7 +108,7 @@ func TestExplicitDenyBeatsStackablePolicy(t *testing.T) {
 	assertIds(t, ResolvePromotions(candidates, rules), "a")
 }
 
-// The direction a rule was stored in must not matter: the relation is symmetric in meaning.
+// The direction a rule was stored in must not matter: the relation is symmetric.
 func TestCompatibilityRuleIsSymmetric(t *testing.T) {
 	candidates := []CandidateProgram{
 		program("a", 1, models.PromotionStackStackable),
@@ -128,8 +126,7 @@ func TestCompatibilityRuleIsSymmetric(t *testing.T) {
 	}
 }
 
-// BR §27's "combine only with these vouchers": exclusive plus explicit allowed rows. This is the
-// combination D-09's ordering exists to make expressible.
+// "Combine only with these vouchers" is expressed as exclusive plus explicit allowed rows.
 func TestExclusivePlusAllowedRowsExpressesAWhitelist(t *testing.T) {
 	candidates := []CandidateProgram{
 		program("headline", 1, models.PromotionStackExclusive),
@@ -140,22 +137,21 @@ func TestExclusivePlusAllowedRowsExpressesAWhitelist(t *testing.T) {
 		{ProgramAId: "headline", ProgramBId: "friend", Allowed: true},
 	}
 
-	// headline is exclusive, so stranger is refused; friend is explicitly allowed, so it survives.
+	// headline is exclusive, so stranger is refused; friend is explicitly allowed and survives.
 	assertIds(t, ResolvePromotions(candidates, rules), "headline", "friend")
 }
 
-// An exclusive program refuses others whichever side of the comparison it lands on. Checking one
-// direction only would let it be dragged in by a stackable program evaluated first.
+// An exclusive program refuses others whichever side of the comparison it lands on, or a stackable
+// program evaluated first could drag it in.
 func TestExclusiveRefusesInBothDirections(t *testing.T) {
-	// The stackable one sorts first, so the exclusive one is the candidate being tested against an
-	// already-accepted incumbent.
+	// The stackable one sorts first, so the exclusive one is tested against an accepted incumbent.
 	candidates := []CandidateProgram{
 		program("stackable_first", 1, models.PromotionStackStackable),
 		program("exclusive_second", 2, models.PromotionStackExclusive),
 	}
 	assertIds(t, ResolvePromotions(candidates, nil), "stackable_first")
 
-	// And the other way round: the exclusive one sorts first and refuses what follows.
+	// And the other way round.
 	candidates = []CandidateProgram{
 		program("exclusive_first", 1, models.PromotionStackExclusive),
 		program("stackable_second", 2, models.PromotionStackStackable),
@@ -175,9 +171,8 @@ func TestExclusiveWithinGroup(t *testing.T) {
 	assertIds(t, ResolvePromotions(candidates, nil), "seasonal_a", "staff")
 }
 
-// An empty group is not a group. Two programs that both left it blank are not thereby in the same
-// one — otherwise every unconfigured exclusive_within_group program would silently exclude every
-// other, which is the opposite of what leaving a field blank should do.
+// An empty group is not a group, or every unconfigured exclusive_within_group program would silently
+// exclude every other.
 func TestEmptyExclusiveGroupDoesNotExclude(t *testing.T) {
 	candidates := []CandidateProgram{
 		grouped("a", 1, models.PromotionStackExclusiveWithinGroup, ""),
@@ -186,8 +181,7 @@ func TestEmptyExclusiveGroupDoesNotExclude(t *testing.T) {
 	assertIds(t, ResolvePromotions(candidates, nil), "a", "b")
 }
 
-// A policy this build does not recognise refuses to stack. The value came from a database row, and
-// the safe reading of "I do not know how this combines" is that it does not.
+// A policy this build does not recognise refuses to stack rather than being assumed permissive.
 func TestUnknownStackPolicyRefusesToCombine(t *testing.T) {
 	candidates := []CandidateProgram{
 		program("known", 1, models.PromotionStackStackable),
@@ -196,8 +190,8 @@ func TestUnknownStackPolicyRefusesToCombine(t *testing.T) {
 	assertIds(t, ResolvePromotions(candidates, nil), "known")
 }
 
-// A contradictory pair of rows resolves to denied, whichever order they were read in. Otherwise the
-// answer would depend on database record order, which BR §29 forbids.
+// A contradictory pair of rows resolves to denied whichever order they were read in, or the answer
+// would depend on record order.
 func TestContradictoryRulesResolveToDenied(t *testing.T) {
 	candidates := []CandidateProgram{
 		program("a", 1, models.PromotionStackStackable),
@@ -219,8 +213,7 @@ func TestContradictoryRulesResolveToDenied(t *testing.T) {
 	}
 }
 
-// The greedy consequence, asserted so it is a decision rather than a surprise: a low-priority
-// program can exclude a later one that would have been worth more.
+// The greedy consequence: a low-priority program can exclude a later one worth more.
 func TestGreedyInPriorityOrderCanExcludeABetterOffer(t *testing.T) {
 	candidates := []CandidateProgram{
 		program("small_but_first", 1, models.PromotionStackExclusive),
@@ -236,7 +229,6 @@ func TestResolveEmptyInput(t *testing.T) {
 	}
 }
 
-// All stackable and no rules: everything applies, in priority order.
 func TestAllStackableApplyTogether(t *testing.T) {
 	candidates := []CandidateProgram{
 		program("c", 3, models.PromotionStackStackable),
@@ -246,8 +238,7 @@ func TestAllStackableApplyTogether(t *testing.T) {
 	assertIds(t, ResolvePromotions(candidates, nil), "a", "b", "c")
 }
 
-// Resolution must not mutate the caller's slice. A caller that passed its own candidate list and
-// found it reordered afterwards would have a bug nothing here reported.
+// Resolution must not mutate the caller's slice.
 func TestResolveDoesNotMutateInput(t *testing.T) {
 	candidates := []CandidateProgram{
 		program("z", 9, models.PromotionStackStackable),

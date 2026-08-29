@@ -40,13 +40,12 @@ const (
 	SalesComboComponentEdgeSalesCombo = "sales_combo"
 )
 
-// ComboReturnPolicy is whether a customer may return part of a bundle (BR §19).
+// ComboReturnPolicy is whether a customer may return part of a bundle.
 type ComboReturnPolicy string
 
 const (
-	// ComboReturnPolicyEntireOnly requires the whole bundle back. The default, and the restrictive
-	// reading: a partial return of a bundle priced below its parts is a discount the customer keeps
-	// on the items they did not bring back, so the business opts into that deliberately.
+	// ComboReturnPolicyEntireOnly requires the whole bundle back, and is the default: a partial
+	// return of a bundle priced below its parts leaves the customer a discount on what they kept.
 	ComboReturnPolicyEntireOnly = ComboReturnPolicy("entire_combo_only")
 
 	// ComboReturnPolicyComponentAllowed permits returning individual components, refunded at their
@@ -68,12 +67,9 @@ func SalesComboComponentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(salesComboComponentSchemaJson)
 }
 
-// SalesCombo is a bundle sold at a price of its own.
-//
-// combo_price is INDEPENDENT and never derived from the components (BR §15). That is the defining
-// property: the business decides three items together are worth 48,000 whatever they cost apart, and
-// a derived price would make the bundle drift every time a component was repriced. The per-component
-// allocation is an output — for VAT, partial return and reporting — never an input.
+// SalesCombo is a bundle sold at a price of its own. combo_price is independent and never derived
+// from the components, or the bundle would drift every time a component was repriced. The
+// per-component allocation is an output — for VAT, partial return and reporting — never an input.
 type SalesCombo struct {
 	basemodel.DynamicModelBase
 }
@@ -118,21 +114,16 @@ func (this SalesCombo) GetIsArchived() *bool {
 	return this.GetFieldData().GetBool(basemodel.FieldIsArchived)
 }
 
-// AllowsComponentReturn reports whether part of this bundle may be returned on its own.
-//
-// An absent or unrecognised policy reads as the restrictive answer. A bundle whose policy could not
-// be determined must not be the one where a customer keeps the bundle discount on the half they
-// kept.
+// AllowsComponentReturn reports whether part of this bundle may be returned on its own. An absent or
+// unrecognised policy reads as the restrictive answer.
 func (this SalesCombo) AllowsComponentReturn() bool {
 	policy := this.GetReturnPolicy()
 	return policy != nil && ComboReturnPolicy(*policy) == ComboReturnPolicyComponentAllowed
 }
 
-// SalesComboComponent is one product inside a bundle definition.
-//
-// Not to be confused with SalesOrderLineComponent: this is the DEFINITION of what a bundle contains,
-// while that is what one particular sale of it actually included. The two are separate because a
-// bundle can be redefined after a sale, and the sale must keep meaning what it meant.
+// SalesComboComponent is one product inside a bundle definition. Not SalesOrderLineComponent, which
+// is what one particular sale actually included: a bundle can be redefined after a sale, and the
+// sale must keep meaning what it meant.
 type SalesComboComponent struct {
 	basemodel.DynamicModelBase
 }
@@ -173,11 +164,8 @@ func (this SalesComboComponent) GetSelectionGroup() *string {
 	return this.GetFieldData().GetString(SalesComboComponentFieldSelectionGroup)
 }
 
-// IsOptional reports whether the customer chooses whether to include this component.
-//
-// A nil is_required reads as required, matching the schema default: a component whose requiredness
-// could not be determined should be included rather than silently dropped from what the customer
-// paid for.
+// IsOptional reports whether the customer chooses whether to include this component. A nil
+// is_required reads as required, matching the schema default.
 func (this SalesComboComponent) IsOptional() bool {
 	required := this.GetIsRequired()
 	return required != nil && !*required

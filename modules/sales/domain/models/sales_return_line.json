@@ -1,0 +1,141 @@
+{
+	"name": "sales_return_line",
+	"label": "sales_return_line.label",
+	"table_name": "sales_return_lines",
+	"should_build_db": true,
+	"record_label_field": "sales_return_id",
+	"default_search_fields": [
+		"sales_return_id",
+		"sales_order_line_id"
+	],
+	"search_indexes": [
+		{
+			"index_name": "sales_return_lines_tid_return",
+			"fields": [
+				"sales_return_id"
+			]
+		},
+		{
+			"index_name": "sales_return_lines_tid_ordline",
+			"fields": [
+				"sales_order_line_id"
+			]
+		}
+	],
+	"composite_uniques": [
+		{
+			"index_name": "sales_return_lines_tid_uniq",
+			"fields": [
+				"sales_return_id",
+				"sales_order_line_id"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "sales_return_id",
+			"label": "fields.sales_return_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The return this line belongs to. A line has no life outside its return, which is why it is reached through the return rather than listed on its own."
+			}
+		},
+		{
+			"name": "sales_order_line_id",
+			"label": "fields.sales_order_line_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The original order line whose goods are coming back. Unique within the return: one order line appears at most once per return, so returning the same line twice means two returns, each with its own quantity checked against what is still returnable."
+			}
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "1000000000000",
+				"scale": 6
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "How much of the original line is coming back. Checked against the returnable maximum at creation (BR 55, D-32) and immutable afterwards: changing it would move money without re-running that check."
+			}
+		},
+		{
+			"name": "refund_amount",
+			"label": "fields.refund_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "What this line's returned quantity is worth, taken from the amounts it HISTORICALLY carried rather than any current price (BR 60). A line that was discounted comes back at its discounted share: BR 61's worked example is that a 60,000 line carrying 12,000 of a voucher refunds 48,000, not 60,000."
+			}
+		},
+		{
+			"name": "refund_tax_amount",
+			"label": "fields.refund_tax_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "The tax inside this line's refund, carried separately because the fiscal adjustment needs the tax broken out per line (BR 62) and re-deriving it from a rate would disagree with what was originally charged."
+			}
+		},
+		{
+			"name": "requires_inventory_return",
+			"label": "fields.requires_inventory_return",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"description": {
+				"en-US": "Whether these goods physically come back. False for a service or non-stocked line, which is what lets such a return complete on the refund alone (D-32). Resolved when the return is created and frozen here, so a later change to the product master cannot alter what an in-flight return expects."
+			}
+		}
+	],
+	"edges_to": [
+		{
+			"edge": "sales_return",
+			"label": {
+				"en-US": "Sales return"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_return",
+			"key_map": {
+				"sales_return_id": "id"
+			},
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "sales_order_line",
+			"label": {
+				"en-US": "Sales order line"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_order_line",
+			"key_map": {
+				"sales_order_line_id": "id"
+			},
+			"on_delete": "NO ACTION"
+		}
+	]
+}

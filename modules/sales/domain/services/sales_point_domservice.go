@@ -18,10 +18,8 @@ func NewSalesPointDomainService(base drif.DynamicResourceService) *SalesPointDom
 	return &SalesPointDomainServiceImpl{DynamicResourceService: base}
 }
 
-// Suspend stops a sales point taking new orders.
-//
-// Returns, refunds and history keep working, which is what a temporarily offline kiosk needs: the
-// machine stops selling, but the money already taken through it stays refundable.
+// Suspend stops a sales point taking new orders. Returns, refunds and history keep working, which
+// is what a temporarily offline kiosk needs: money already taken through it stays refundable.
 func (this *SalesPointDomainServiceImpl) Suspend(
 	ctx corectx.Context, salesPointId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -30,9 +28,8 @@ func (this *SalesPointDomainServiceImpl) Suspend(
 
 // Activate returns a suspended sales point to service.
 //
-// It refuses an archived point. Activating one would resurrect a decommissioned kiosk through an
-// operation whose name suggests nothing of the sort; bringing one back is Unarchive, deliberately
-// a separate power so a role may resume selling without being able to revive retired machines.
+// It refuses an archived point: reviving a decommissioned kiosk is Unarchive, deliberately a
+// separate power so a role may resume selling without being able to revive retired machines.
 func (this *SalesPointDomainServiceImpl) Activate(
 	ctx corectx.Context, salesPointId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -84,10 +81,9 @@ func (this *SalesPointDomainServiceImpl) Archive(
 	return this.setArchived(ctx, salesPointId, true)
 }
 
-// Unarchive brings a retired sales point back.
-//
-// It refuses while the parent channel is archived, because the result would be a live point under a
-// dead channel — reachable by id, absent from every listing that starts at the channel.
+// Unarchive brings a retired sales point back. It refuses while the parent channel is archived,
+// because the result would be a live point under a dead channel: reachable by id, absent from every
+// listing that starts at the channel.
 func (this *SalesPointDomainServiceImpl) Unarchive(
 	ctx corectx.Context, salesPointId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -141,11 +137,9 @@ func (this *SalesPointDomainServiceImpl) setArchived(
 	return result, nil
 }
 
-// AssertCreatable refuses a sales point whose channel cannot take one.
-//
-// Called by the create guard. The channel must exist, be active and be unarchived: a point created
-// under a suspended channel could never sell, and one under an archived channel would be invisible
-// from the moment it was written.
+// AssertCreatable refuses a sales point whose channel cannot take one. The channel must exist, be
+// active and be unarchived: a point under a suspended channel could never sell, and one under an
+// archived channel would be invisible from the moment it was written.
 func (this *SalesPointDomainServiceImpl) AssertCreatable(
 	ctx corectx.Context, channelId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -178,12 +172,10 @@ func (this *SalesPointDomainServiceImpl) AssertCreatable(
 	return mutateOk(), nil
 }
 
-// FindByExternalReference resolves the point a module already registered for one of its records.
-//
-// This is what makes registration idempotent: a caller retrying after a timeout is handed the point
-// it created the first time rather than making a second one. Returning "not found" as a nil record
-// rather than a refusal is deliberate — the caller's next step is to create, and an error here
-// would make the ordinary first-time path look like a failure.
+// FindByExternalReference resolves the point a module already registered for one of its records,
+// which is what makes registration idempotent: a caller retrying after a timeout is handed the
+// point it created the first time. Not-found is a nil record rather than a refusal, because the
+// caller's next step is to create and an error would make the first-time path look like a failure.
 func (this *SalesPointDomainServiceImpl) FindByExternalReference(
 	ctx corectx.Context, channelId string, externalReferenceId string,
 ) (dmodel.DynamicFields, error) {
@@ -207,12 +199,9 @@ func (this *SalesPointDomainServiceImpl) FindByExternalReference(
 
 // DeleteOrArchive removes a sales point, or retires it when history forbids removal.
 //
-// One operation rather than two because the choice belongs where the data is. A caller cannot know
-// whether a point has ever carried an order without asking, and making it ask, branch, and call
-// again turns one decision into a race: an order could arrive between the question and the delete.
-//
-// The result reports which happened, so a client can tell the operator "removed" from "archived,
-// because it has sales history".
+// One operation rather than two because a caller cannot know whether a point has ever carried an
+// order without asking, and making it ask, branch and call again turns one decision into a race.
+// The result reports which happened, so a client can distinguish removed from archived.
 func (this *SalesPointDomainServiceImpl) DeleteOrArchive(
 	ctx corectx.Context, salesPointId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -229,10 +218,9 @@ func (this *SalesPointDomainServiceImpl) DeleteOrArchive(
 			return nil
 		}
 
-		// Until sales orders exist there is nothing that can reference a point, so the safe branch
-		// is unreachable and the point is always removable. SALES-007 adds the order table; when it
-		// does, this is the one place that has to learn to count references, and the operation's
-		// contract does not change.
+		// Until sales orders exist there is nothing that can reference a point, so the safe branch is
+		// unreachable and the point is always removable. When the order table lands, this is the one
+		// place that has to learn to count references; the operation's contract does not change.
 		hasHistory, err := this.hasSalesHistory(tranxCtx, salesPointId)
 		if err != nil {
 			return err
@@ -268,11 +256,9 @@ func (this *SalesPointDomainServiceImpl) DeleteOrArchive(
 	return result, nil
 }
 
-// hasSalesHistory reports whether anything references this sales point.
-//
-// Always false for now: the sales order resource does not exist yet, so nothing can reference a
-// point. It is a named function rather than an inline false so that the rule has one home when
-// SALES-007 lands, and so the reason is written down where somebody would look for it.
+// hasSalesHistory reports whether anything references this sales point. Always false for now: the
+// sales order resource does not exist yet. A named function rather than an inline false so the rule
+// has one home when orders land.
 func (this *SalesPointDomainServiceImpl) hasSalesHistory(
 	ctx corectx.Context, salesPointId string,
 ) (bool, error) {

@@ -9,12 +9,9 @@ import (
 	taxsvc "github.com/sky-as-code/nikki-erp/modules/accounting/domain/services/tax"
 )
 
-// Bounds on how much configuration one calculation will read.
-//
-// These are guards against a runaway query, not business limits: an organization with more than a
-// few hundred published rules has a configuration problem that silently truncating would hide. The
-// loader reports the truncation rather than proceeding on a partial rule set, because a rule that
-// was not read is a rule that did not fire, and the caller would be charged as if it did not exist.
+// Bounds on how much configuration one calculation will read: guards against a runaway query, not
+// business limits. The loader reports truncation rather than proceeding on a partial rule set,
+// because a rule that was not read is a rule that did not fire.
 const (
 	maxPublishedRules    = 500
 	maxConditionsPerRule = 50
@@ -23,11 +20,8 @@ const (
 )
 
 // LoadEffectiveRules reads every published rule in force on a date, with its conditions and results.
-//
-// Rules are returned unsorted; the determination engine sorts them by priority, which is where that
-// decision belongs. The effective-period filter happens here rather than in the query for the
-// reason given on the version lookups: a nullable upper bound is awkward in the search graph and
-// exact in memory.
+// Rules come back unsorted; the determination engine sorts them by priority. The effective-period
+// filter runs in memory because a nullable upper bound is awkward in the search graph.
 func LoadEffectiveRules(
 	ctx corectx.Context, repos *TaxRepos, taxDate string,
 ) ([]taxsvc.Rule, error) {
@@ -86,8 +80,7 @@ func loadConditions(
 			CurrencyCode: derefString(stored.GetValueCurrencyCode()),
 		}
 		// The list operators read the same stored column as the scalar ones. A JSON array arrives
-		// already split; a plain string is split on commas, so an author who typed "a,b" into a
-		// text field gets what they plainly meant rather than one value named "a,b".
+		// already split; a plain string is split on commas, so "a,b" means two values.
 		if operator == models.OperatorIn || operator == models.OperatorNotIn {
 			if list != nil {
 				condition.Values = list
@@ -122,11 +115,9 @@ func loadResults(
 	return results, nil
 }
 
-// LoadMapping reads one mapping and its lines.
-//
-// Returns nil when the mapping does not exist, which the caller must treat as an unresolved
-// determination rather than as "no substitution": a rule that names a missing mapping is broken
-// configuration, and quietly applying no mapping would charge the un-substituted tax.
+// LoadMapping reads one mapping and its lines, returning nil when it does not exist. The caller
+// must treat that as an unresolved determination, not as "no substitution": quietly applying no
+// mapping would charge the un-substituted tax.
 func LoadMapping(
 	ctx corectx.Context, repos *TaxRepos, mappingId string,
 ) (*taxsvc.Mapping, error) {
@@ -158,11 +149,8 @@ func LoadMapping(
 	}, nil
 }
 
-// LoadMappingsForRules loads every mapping the given rules can reach.
-//
-// Loading them up front rather than on demand keeps determination a pure function of its input:
-// the engine receives the mappings it might need and performs no I/O of its own, which is what
-// makes it testable without a database.
+// LoadMappingsForRules loads every mapping the given rules can reach. Loading up front keeps
+// determination a pure function of its input, performing no I/O of its own.
 func LoadMappingsForRules(
 	ctx corectx.Context, repos *TaxRepos, rules []taxsvc.Rule,
 ) (map[string]taxsvc.Mapping, error) {
@@ -188,7 +176,7 @@ func LoadMappingsForRules(
 }
 
 // splitList turns a stored comma-separated list into its values, dropping empties and surrounding
-// whitespace so that "a, b," is the two values an author plainly meant.
+// whitespace, so "a, b," is two values.
 func splitList(value string) []string {
 	if value == "" {
 		return nil

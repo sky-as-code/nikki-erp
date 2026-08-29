@@ -6,15 +6,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// The Product Variant port other modules bind to.
-//
-// A variant is what is physically stocked and sold, so a consumer that stocks shelves works in
-// variants rather than templates. Reading one now also yields its template's display fields
-// through the template_* virtual fields, so a caller no longer needs a second read to label what
-// it is showing.
-//
-// Inventory deliberately no longer uses the word "catalog": this is the Product Variant service,
-// named for the single resource it owns.
+// The Product Variant port other modules bind to. A variant is what is physically stocked and
+// sold; reading one also yields its template's display fields through the template_* virtual
+// fields, so no second read is needed to label it.
 
 type SearchProductVariantsQuery = dyn.SearchQuery
 type SearchProductVariantsResultData = dyn.PagedResultData[models.ProductVariant]
@@ -26,16 +20,12 @@ type GetProductVariantResult = dyn.OpResult[models.ProductVariant]
 type ProductVariantsExistQuery = dyn.ExistsQuery
 type ProductVariantsExistResult = dyn.OpResult[dyn.ExistsResultData]
 
-// ProductVariantDomainService reads product variants on behalf of another module.
-//
-// Kept deliberately small: it covers what a consumer needs to resolve and validate the variants
-// it references, and nothing that would let it manage master data. Writes stay with Inventory.
+// ProductVariantDomainService reads product variants on behalf of another module. Deliberately
+// read-only: a consumer can resolve and validate references but not manage master data.
 type ProductVariantDomainService interface {
-	// SearchProductVariants finds variants matching a search graph.
-	//
-	// Requesting a template_* field fills it for the whole page in one batched read, so a listing
-	// costs two queries however many rows it returns. Filtering or sorting on one works too: the
-	// service rewrites it to the underlying template edge path.
+	// SearchProductVariants finds variants matching a search graph. A requested template_* field
+	// is filled for the whole page in one batched read, so a listing costs two queries whatever
+	// its row count; filtering and sorting on one are rewritten to the template edge path.
 	SearchProductVariants(
 		ctx corectx.Context, query SearchProductVariantsQuery,
 	) (*SearchProductVariantsResult, error)

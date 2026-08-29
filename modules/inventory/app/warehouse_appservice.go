@@ -1,10 +1,7 @@
-// Package app holds the Inventory operations that span more than one domain service.
-//
-// Inventory serves its resources through the dynamic resource engine, so most work needs no
-// application layer: the engine checks permissions and the derived domain service holds the rules.
-// Warehouse creation and flow reconfiguration are different. Each one writes a warehouse *and* its
-// locations, and has to leave neither half applied — so they are orchestrated here, above the two
-// domain services, rather than one service reaching into the other.
+// Package app holds the Inventory operations that span more than one domain service. Most
+// resources need no application layer because the dynamic resource engine handles them. Warehouse
+// creation and flow reconfiguration each write a warehouse and its locations, and must leave
+// neither half applied, so they are orchestrated here above the two domain services.
 package app
 
 import (
@@ -19,7 +16,6 @@ import (
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/warehouse"
 )
 
-// NewWarehouseAppService wires the orchestration onto the two domain services it coordinates.
 func NewWarehouseAppService(
 	warehouseSvc *services.WarehouseDomainServiceImpl,
 	locationSvc *services.InventoryLocationDomainServiceImpl,
@@ -34,11 +30,8 @@ type WarehouseAppServiceImpl struct {
 
 var _ itWarehouse.WarehouseAppService = (*WarehouseAppServiceImpl)(nil)
 
-// CreateWarehouse creates a warehouse together with the locations it needs to function.
-//
-// The two happen in one transaction because half of the result is useless: a warehouse with no
-// Stock location cannot hold anything, and a set of orphan locations describes nowhere. If any
-// required location fails, the warehouse goes with it.
+// CreateWarehouse creates a warehouse together with the locations it needs to function. Both
+// happen in one transaction: if any required location fails, the warehouse goes with it.
 func (this *WarehouseAppServiceImpl) CreateWarehouse(
 	ctx corectx.Context, cmd itWarehouse.CreateWarehouseCommand,
 ) (*itWarehouse.CreateWarehouseResult, error) {
@@ -73,11 +66,9 @@ func (this *WarehouseAppServiceImpl) CreateWarehouse(
 	}, nil
 }
 
-// ConfigureIncomingFlow changes how many stops goods make on the way in.
-//
-// It provisions whatever the new flow needs and suspends what it no longer does. It creates no
-// stock move: a flow is policy for transactions made from now on, and a receipt already under way
-// keeps the shape it was created with.
+// ConfigureIncomingFlow changes how many stops goods make on the way in. It creates no stock move:
+// a flow applies only to transactions made from now on, and a receipt already under way keeps the
+// shape it was created with.
 func (this *WarehouseAppServiceImpl) ConfigureIncomingFlow(
 	ctx corectx.Context, cmd itWarehouse.ConfigureFlowCommand,
 ) (*itWarehouse.ConfigureFlowResult, error) {
@@ -139,17 +130,14 @@ func (this *WarehouseAppServiceImpl) configureFlow(
 	}, nil
 }
 
-// ResolveIncomingFlow reports the ordered path goods take into a warehouse.
-//
-// A pure read, for the Stock movement engine to plan against. Calling it creates nothing and moves
-// nothing.
+// ResolveIncomingFlow reports the ordered path goods take into a warehouse. A pure read for the
+// Stock movement engine to plan against: it creates nothing and moves nothing.
 func (this *WarehouseAppServiceImpl) ResolveIncomingFlow(
 	ctx corectx.Context, query itWarehouse.ResolveFlowQuery,
 ) (*itWarehouse.ResolveFlowResult, error) {
 	return this.resolveFlow(ctx, query, false)
 }
 
-// ResolveOutgoingFlow reports the ordered path goods take out of a warehouse.
 func (this *WarehouseAppServiceImpl) ResolveOutgoingFlow(
 	ctx corectx.Context, query itWarehouse.ResolveFlowQuery,
 ) (*itWarehouse.ResolveFlowResult, error) {
@@ -203,11 +191,9 @@ func flowViolation(key string, message string) *itWarehouse.ConfigureFlowResult 
 	return &itWarehouse.ConfigureFlowResult{ClientErrors: *vErrs}
 }
 
-// clientErrorSignal carries a rule violation out through the transaction body, so that a rejected
-// operation rolls back rather than committing half of itself.
-//
-// It is an error only in the plumbing sense; the caller unwraps it back into client errors, which
-// are a 400 rather than a 500.
+// clientErrorSignal carries a rule violation out through the transaction body so a rejected
+// operation rolls back rather than committing half of itself. The caller unwraps it back into
+// client errors, which are a 400 rather than a 500.
 type clientErrorSignal struct {
 	errors ft.ClientErrors
 }
@@ -228,8 +214,7 @@ func asClientErrorSignal(err error) (clientErrorSignal, bool) {
 	return signal, ok
 }
 
-// clientErrorsOf reads the violations off a result, tolerating a nil one so a caller can report a
-// rejection without first checking whether there was a result at all.
+// clientErrorsOf reads the violations off a result, tolerating a nil one.
 func clientErrorsOf(result *dyn.OpResult[dmodel.DynamicFields]) ft.ClientErrors {
 	if result == nil {
 		return *ft.NewClientErrors()

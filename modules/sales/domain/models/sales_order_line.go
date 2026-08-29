@@ -42,12 +42,9 @@ const (
 	SalesOrderLineEdgeSalesOrder = "sales_order"
 )
 
-// SnapshotFields are the columns frozen at confirmation (BR §11).
-//
-// They are listed once, here, so that the rule "a snapshot is immutable after confirm" has a single
-// definition rather than being restated at each place that enforces it. A field added to the line
-// that captures how the world looked at the time of sale belongs in this list, and forgetting to add
-// it is how a snapshot silently becomes editable.
+// SnapshotFields are the columns frozen at confirmation. Any new field capturing how the world
+// looked at the time of sale belongs here; forgetting to add it is how a snapshot silently becomes
+// editable.
 var SnapshotFields = []string{
 	SalesOrderLineFieldProductVariantId,
 	SalesOrderLineFieldProductCodeSnapshot,
@@ -65,15 +62,10 @@ func SalesOrderLineSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(salesOrderLineSchemaJson)
 }
 
-// SalesOrderLine is one thing sold on one order.
-//
-// It carries three quantities rather than one, and the distinction is load-bearing (BR §87.8): what
-// was ordered, what was actually handed over, and what came back. Partial fulfilment is normal — a
-// kiosk dispenses two of three items and the third jams — so a single quantity would have no way to
-// express the resulting state, and the customer's refund could not be computed from the line.
-//
-// The snapshot fields exist because a product renamed or repriced next year must not change what a
-// receipt issued today says was sold.
+// SalesOrderLine is one thing sold on one order. It carries three quantities — ordered, fulfilled,
+// returned — because partial fulfilment is normal and a refund is computed from the difference. The
+// snapshot fields exist so a product renamed or repriced later cannot change what a receipt issued
+// today says was sold.
 type SalesOrderLine struct {
 	basemodel.DynamicModelBase
 }
@@ -262,11 +254,9 @@ func (this *SalesOrderLine) SetSalesComboId(id *model.Id) {
 	this.GetFieldData().SetModelId(SalesOrderLineFieldSalesComboId, id)
 }
 
-// RemainingFulfillable is how much of this line has still to be handed over.
-//
-// Never negative: a line whose fulfilled quantity somehow exceeded what was ordered would be a
-// broken invariant, and returning a negative number here would propagate it into whatever computes
-// the next fulfilment request rather than surfacing it.
+// RemainingFulfillable is how much of this line has still to be handed over. Clamped at zero rather
+// than going negative, so a broken quantity invariant does not propagate into the next fulfilment
+// request.
 func (this SalesOrderLine) RemainingFulfillable() decimal.Decimal {
 	ordered := decimalOrZero(this.GetOrderedQuantity())
 	fulfilled := decimalOrZero(this.GetFulfilledQuantity())
@@ -277,11 +267,8 @@ func (this SalesOrderLine) RemainingFulfillable() decimal.Decimal {
 	return remaining
 }
 
-// RemainingReturnable is how much of this line may still come back.
-//
-// Measured against what was FULFILLED, not what was ordered, and the difference is the point: a
-// customer cannot return what was never handed over, so an unfulfilled line has nothing to return
-// however much was ordered.
+// RemainingReturnable is how much of this line may still come back. Measured against what was
+// fulfilled, not ordered: a customer cannot return what was never handed over.
 func (this SalesOrderLine) RemainingReturnable() decimal.Decimal {
 	fulfilled := decimalOrZero(this.GetFulfilledQuantity())
 	returned := decimalOrZero(this.GetReturnedQuantity())
@@ -292,13 +279,9 @@ func (this SalesOrderLine) RemainingReturnable() decimal.Decimal {
 	return remaining
 }
 
-// QuantitiesAreConsistent reports whether this line satisfies the BR §55 invariant:
-// 0 < ordered, fulfilled <= ordered, returned <= fulfilled.
-//
-// It lives on the model rather than only in the service that writes lines, because the invariant is
-// a property of the line itself and every path that produces one — create, fulfil, return, combo
-// expansion — has to satisfy the same rule. The database cannot help: the framework declares no
-// CHECK constraints, so this is the only place it is enforced.
+// QuantitiesAreConsistent reports whether this line satisfies 0 < ordered,
+// fulfilled <= ordered, returned <= fulfilled. The framework declares no CHECK constraints, so this
+// is the only place the invariant is enforced, for every path that produces a line.
 func (this SalesOrderLine) QuantitiesAreConsistent() bool {
 	ordered := decimalOrZero(this.GetOrderedQuantity())
 	if !ordered.IsPositive() {
@@ -318,12 +301,8 @@ func (this SalesOrderLine) IsFullyFulfilled() bool {
 	return ordered.IsPositive() && decimalOrZero(this.GetFulfilledQuantity()).GreaterThanOrEqual(ordered)
 }
 
-// decimalOrZero treats an absent amount as zero.
-//
-// Every quantity and money field on a line is required with a default of "0", so a nil here means
-// the record was read with a partial field set rather than that the value is unknown. Zero is the
-// reading that keeps arithmetic total: propagating nil would make every caller nil-check before it
-// could add two numbers.
+// decimalOrZero treats an absent amount as zero. Every quantity and money field on a line defaults
+// to "0", so a nil means a partial field set was read, not an unknown value.
 func decimalOrZero(value *decimal.Decimal) decimal.Decimal {
 	if value == nil {
 		return decimal.Zero

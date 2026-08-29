@@ -18,36 +18,27 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// NewStockTransferDomainService derives the transfer service from the engine's default one.
-//
-// base is the Stock Transfer engine's own resource service, which this type embeds: built-in CRUD
-// keeps running through the default implementation, and the movement operations are layered on
-// top. The result is installed with Engine.SetResourceService.
+// NewStockTransferDomainService derives the transfer service from the engine's default one, which
+// it embeds so built-in CRUD keeps running unchanged. Installed with Engine.SetResourceService.
 func NewStockTransferDomainService(base drif.DynamicResourceService) *StockTransferDomainServiceImpl {
 	return &StockTransferDomainServiceImpl{DynamicResourceService: base}
 }
 
-// StockTransferDomainServiceImpl adds the movement operations to the transfer resource.
-//
-// Every one of them is a transaction over several resources — the transfer, its moves, their move
-// lines and the balances on both sides — so they live on the service rather than in an engine
-// callback: a dynamicengines callback may adapt and validate, but the writes belong here. See
-// docs/wiki/07 §6.7.
+// StockTransferDomainServiceImpl adds the movement operations to the transfer resource. Each is a
+// transaction over the transfer, its moves, their lines and the balances on both sides, so they
+// live on the service rather than in an engine callback, which may only adapt and validate.
 type StockTransferDomainServiceImpl struct {
 	drif.DynamicResourceService
 }
 
 var _ drif.DynamicResourceService = (*StockTransferDomainServiceImpl)(nil)
 
-// The published goods-movement port (SALES-049). Asserted here so that changing one of the six
-// operations' signatures breaks the build in this file, naming the contract it broke — rather than
-// at the deps.Register in index.go, or, worse, at a consumer in another module that can no longer
-// bind. The port is the promise; this line is what keeps the promise checked.
+// The published goods-movement port, asserted here so changing an operation's signature breaks the
+// build in this file rather than at deps.Register or in a consuming module.
 var _ itStock.StockTransferMovementService = (*StockTransferDomainServiceImpl)(nil)
 
 // transferOperationContext carries what every movement operation needs: the engines it writes
-// through, and the transfer it is acting on. Assembling it in one place keeps each operation's
-// body about its own rule rather than about lookups.
+// through and the transfer it is acting on.
 type transferOperationContext struct {
 	TransferEngine drif.DynamicResourceEngine
 	MoveEngine     drif.DynamicResourceEngine
@@ -58,11 +49,9 @@ type transferOperationContext struct {
 	Moves    []dmodel.DynamicFields
 }
 
-// loadTransferOperation resolves the engines and reads the transfer with its moves.
-//
-// The read happens inside the caller's transaction when there is one, because ctx carries it: the
-// same call is therefore safe both for the read-only availability check and for the operations
-// that go on to write.
+// loadTransferOperation resolves the engines and reads the transfer with its moves. The read joins
+// the caller's transaction when ctx carries one, so it is safe both for the read-only availability
+// check and for the operations that go on to write.
 func loadTransferOperation(
 	ctx corectx.Context, transferId string,
 ) (*transferOperationContext, error) {
@@ -117,15 +106,11 @@ func resolveStockEngines() (*transferOperationContext, error) {
 	}, nil
 }
 
-// withTransferTransaction runs body inside one transaction on a scoped copy of the context.
+// withTransferTransaction runs body inside one transaction on a cloned context. The transaction
+// must go on a clone, never on ctx itself, or a committed transaction stays visible to whatever
+// runs next; CloneRequestContext carries the caller's identity across for the audit columns.
 //
-// The transaction goes on a clone, never on ctx itself: setting it on the caller's context would
-// leave a committed transaction visible to whatever runs next. CloneRequestContext carries the
-// caller's identity across, which the audit columns need. See docs/wiki/02 §5.1.
-//
-// There is no "join an existing transaction" branch, because pgTxClient.BeginTx returns
-// ErrTxNested: these operations are entry points, and nesting one inside another is a bug rather
-// than a case to handle.
+// There is no join-an-existing branch: BeginTx returns ErrTxNested, so nesting is a bug.
 func withTransferTransaction(
 	ctx corectx.Context, body func(tranxCtx corectx.Context) error,
 ) error {
@@ -149,8 +134,8 @@ func withTransferTransaction(
 	return errors.Wrap(tranx.Commit(), "withTransferTransaction")
 }
 
-// notFoundResult is the answer when an operation names a transfer that does not exist. It is a
-// client error rather than a server one: the id came from the caller.
+// notFoundResult is the answer when an operation names a transfer that does not exist. A client
+// error, not a server one: the id came from the caller.
 func notFoundResult(transferId string) *dyn.OpResult[dyn.MutateResultData] {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
@@ -167,11 +152,9 @@ func violationResult(key, message string) *dyn.OpResult[dyn.MutateResultData] {
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
 }
 
-// mutateOk is the success envelope of a movement operation.
-//
-// AffectedCount is 1 for the transfer itself, not a count of the moves, lines and balances the
-// operation touched: the caller asked to act on one transfer, and reporting the internal write
-// count would make the number mean something different for each operation.
+// mutateOk is the success envelope of a movement operation. AffectedCount is 1 for the transfer
+// itself, never a count of the moves, lines and balances touched, which would mean something
+// different for each operation.
 func mutateOk() *dyn.OpResult[dyn.MutateResultData] {
 	return &dyn.OpResult[dyn.MutateResultData]{
 		Data:    dyn.MutateResultData{AffectedCount: 1},
@@ -180,9 +163,8 @@ func mutateOk() *dyn.OpResult[dyn.MutateResultData] {
 }
 
 // updateTransferStatus writes a new transfer state, refusing a transition the machine forbids.
-//
-// The guard is here rather than only in the callers because every path that changes a state goes
-// through it: an illegal transition should be impossible to write, not merely unlikely.
+// The guard sits here because every state-changing path goes through it, making an illegal
+// transition impossible to write rather than merely unlikely.
 func updateTransferStatus(
 	ctx corectx.Context, engine drif.DynamicResourceEngine, transfer models.StockTransfer, next string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -240,13 +222,10 @@ func moveStatuses(moves []dmodel.DynamicFields) []string {
 	return statuses
 }
 
-// generateTransferNumber builds the document number a transfer is known by.
-//
-// It is derived from the operation type's code and a fresh ULID rather than from a counter,
-// because a counter needs a sequence table and a lock of its own, and would serialise every
-// create in an org. The ULID's leading characters are time-ordered, so numbers still sort roughly
-// by creation. The uniqueness that matters is enforced by the composite unique on
-// (transfer_number, org_id), not by this function being clever.
+// generateTransferNumber builds the document number from the operation type's code and a fresh
+// ULID rather than a counter, which would need a sequence table and serialise every create in an
+// org. ULID prefixes are time-ordered, so numbers still sort roughly by creation. Uniqueness is
+// enforced by the composite unique on (transfer_number, org_id), not by this function.
 func generateTransferNumber(operationCode string) (string, error) {
 	id, err := model.NewId()
 	if err != nil {

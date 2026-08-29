@@ -12,14 +12,10 @@ import (
 
 // The lifecycle operations of Warehouse and Inventory Location, and the putaway suggestion.
 //
-// Only these two resources have a suspend and resume, because only they have an operational state
-// that is independent of archiving. Supply Relation, Storage Category and Putaway Rule are either
-// part of the working set or archived, so archiving is their whole lifecycle and there is nothing
-// here for them beyond the built-in actions.
-//
-// There is deliberately no activate or deactivate anywhere: suspension is reversible and temporary,
-// archiving is how something leaves the working set, and a third pair of verbs meaning one of
-// those would only invite them to drift apart.
+// Only these two resources have suspend and resume, because only they have an operational state
+// independent of archiving; for the others archiving is the whole lifecycle. There is deliberately
+// no activate or deactivate: suspension is reversible and temporary, archiving is how something
+// leaves the working set, and a third pair of verbs would drift from those.
 
 const (
 	ActionSuspend                = "suspend"
@@ -51,10 +47,9 @@ const (
 	paramPackageType      = "package_type_id"
 )
 
-// defineWarehouseActions adds suspend, resume and the two flow reconfigurations.
-//
-// The flow actions reach the application service rather than the domain one: each writes the
-// warehouse and provisions its locations, and those have to happen together or not at all.
+// defineWarehouseActions adds suspend, resume and the two flow reconfigurations. The flow actions
+// reach the application service rather than the domain one: each writes the warehouse and
+// provisions its locations, which must happen together or not at all.
 func defineWarehouseActions(engine drif.DynamicResourceEngine) error {
 	return stdErr.Join(
 		engine.DefineAction(drif.DynamicActionDefinition{
@@ -88,11 +83,9 @@ func defineWarehouseActions(engine drif.DynamicResourceEngine) error {
 	)
 }
 
-// defineInventoryLocationActions adds suspend, resume and move.
-//
-// Suspend is allowed while the location still holds stock — locking a damaged rack that holds
-// goods is the point — whereas archiving one that does is refused by the built-in set_archived.
-// The asymmetry is deliberate and is enforced in the domain service.
+// defineInventoryLocationActions adds suspend, resume and move. Suspend is allowed while the
+// location still holds stock — locking a damaged rack is the point — whereas archiving one that
+// does is refused by the built-in set_archived. The asymmetry is enforced in the domain service.
 func defineInventoryLocationActions(engine drif.DynamicResourceEngine) error {
 	return stdErr.Join(
 		engine.DefineAction(drif.DynamicActionDefinition{
@@ -119,10 +112,8 @@ func defineInventoryLocationActions(engine drif.DynamicResourceEngine) error {
 	)
 }
 
-// definePutawayRuleActions adds the suggestion lookup.
-//
-// It has no id in its path because it asks a question of the whole rule set rather than acting on
-// one rule. It changes nothing: the answer is a destination and the rule that produced it.
+// definePutawayRuleActions adds the suggestion lookup. It has no id in its path because it asks a
+// question of the whole rule set rather than acting on one rule, and it changes nothing.
 func definePutawayRuleActions(engine drif.DynamicResourceEngine) error {
 	return engine.DefineAction(drif.DynamicActionDefinition{
 		ActionName:  ActionSuggestPutawayLocation,
@@ -133,10 +124,8 @@ func definePutawayRuleActions(engine drif.DynamicResourceEngine) error {
 	})
 }
 
-// warehouseServiceOf reaches the derived warehouse service installed during Init.
-//
-// A failed assertion means Init did not install it, which is a wiring bug rather than a request
-// problem, so it is a plain error and not a client one.
+// warehouseServiceOf reaches the derived warehouse service installed during Init. A failed
+// assertion is a wiring bug rather than a request problem, so it is a plain error.
 func warehouseServiceOf(input drif.ProcessInput) (*services.WarehouseDomainServiceImpl, error) {
 	service, ok := input.ResourceService.(*services.WarehouseDomainServiceImpl)
 	if !ok {

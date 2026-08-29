@@ -47,10 +47,9 @@ func loadWarehouseById(
 	return models.NewWarehouseFrom(found.Data), vErrs, nil
 }
 
-// WriteStatus sets a warehouse's operational state.
-//
-// It goes through the repository rather than the service, so the rules the caller already checked
-// are not re-run and the write cannot recurse into the overridden Update.
+// WriteStatus sets a warehouse's operational state through the repository, not the service, so the
+// caller's already-checked rules are not re-run and the write cannot recurse into the overridden
+// Update.
 func (this *WarehouseDomainServiceImpl) WriteStatus(
 	ctx corectx.Context, warehouseId string, status string,
 ) error {

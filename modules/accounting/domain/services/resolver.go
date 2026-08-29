@@ -10,12 +10,10 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
-// ResolvedTax is one tax's configuration as it stood on a given date.
-//
-// It is the bridge between stored rows and the calculator's ComponentSpec: everything the
-// calculator needs, already chosen, so that it cannot reach back into the database and choose
-// differently. The version ids travel with it because the snapshot has to record which
-// configuration produced an amount — a rate alone is not auditable (BR-TAX-ESS-028).
+// ResolvedTax is one tax's configuration as it stood on a given date: everything the calculator
+// needs, already chosen, so it cannot reach back into the database and choose differently. The
+// version ids travel with it because the snapshot must record which configuration produced an
+// amount.
 type ResolvedTax struct {
 	TaxId   string
 	TaxCode string
@@ -43,8 +41,8 @@ type ResolvedTax struct {
 	// is every non-fixed tax.
 	RateUomId string
 
-	// RateCurrencyCode is the currency a fixed amount is denominated in. A percentage rate has
-	// none: a percentage of the transaction amount is already in the transaction's currency.
+	// RateCurrencyCode is the currency a fixed amount is denominated in. A percentage rate has none;
+	// a percentage of the transaction amount is already in the transaction's currency.
 	RateCurrencyCode string
 
 	AffectSubsequentBase   bool
@@ -55,32 +53,25 @@ type ResolvedTax struct {
 	Components []ResolvedTax
 }
 
-// ResolutionProblem explains why a tax could not be resolved on a date.
-//
-// It is a value rather than an error because an unresolvable tax is a business outcome the caller
-// must report per line, not a failure of the request as a whole: one bad line must not deny the
-// other twenty their answer.
+// ResolutionProblem explains why a tax could not be resolved on a date. It is a value rather than
+// an error because one bad line must not deny the rest of the document its answer.
 type ResolutionProblem struct {
 	TaxId     string
 	ErrorCode string
 	Detail    string
 }
 
-// ResolveTax loads one tax's effective configuration for a date.
-//
-// A nil ResolvedTax with a nil problem cannot happen: exactly one of the two is always set, so a
-// caller that forgets to check one still cannot proceed on nothing.
+// ResolveTax loads one tax's effective configuration for a date. Exactly one of the resolved tax
+// and the problem is always set.
 func ResolveTax(
 	ctx corectx.Context, repos *TaxRepos, taxId string, taxDate string,
 ) (*ResolvedTax, *ResolutionProblem, error) {
 	return resolveTaxDepth(ctx, repos, taxId, taxDate, 0)
 }
 
-// maxComponentDepth bounds the group-tax recursion.
-//
-// Configuration validation already rejects component cycles, so reaching this depth means the
-// guard there was bypassed or a row was written around it. Recursing forever would take the
-// process down, so the resolver refuses instead.
+// maxComponentDepth bounds the group-tax recursion. Configuration validation already rejects
+// cycles, so reaching this depth means a row was written around that guard; refusing beats
+// recursing until the process dies.
 const maxComponentDepth = 8
 
 // maxComponentsPerGroup bounds one group tax's component fetch. A group with more parts than this
@@ -114,10 +105,9 @@ func resolveTaxDepth(
 	if err != nil {
 		return nil, nil, err
 	}
-	// Both the absence and the multiplicity are configuration faults the caller must see rather
-	// than have resolved for it. BR-TAX-ESS-SUP-006 forbids breaking a tie by taking the newest:
-	// two published versions covering one date means the data is wrong, and silently picking one
-	// would charge a customer under a configuration nobody chose.
+	// Both absence and multiplicity are configuration faults the caller must see. A tie is never
+	// broken by taking the newest: two published versions covering one date means the data is
+	// wrong, and picking one would charge under a configuration nobody chose.
 	if count == 0 {
 		return nil, &ResolutionProblem{
 			TaxId:     taxId,
@@ -162,8 +152,7 @@ func resolveTaxDepth(
 
 	case models.CalculationNone:
 		// An exempt or out-of-scope tax is calculated as zero, not skipped: the line still needs a
-		// component recording which legal treatment applied to it. It has no rate by construction,
-		// so there is nothing further to resolve.
+		// component recording its legal treatment. It has no rate, so nothing further to resolve.
 		return &resolved, nil, nil
 	}
 
@@ -215,9 +204,9 @@ func resolveComponents(
 	for _, row := range rows {
 		parsed = append(parsed, models.NewTaxComponentFrom(row))
 	}
-	// Sequence orders a compound chain, and a compound chain is order-dependent by definition: the
-	// second component's base includes the first's amount. The database returns rows in no
-	// guaranteed order, so sorting here is what makes the answer reproducible.
+	// A compound chain is order-dependent: the second component's base includes the first's amount.
+	// The database returns rows in no guaranteed order, so sorting here makes the answer
+	// reproducible.
 	sort.SliceStable(parsed, func(i, j int) bool {
 		return derefInt32(parsed[i].GetSequence()) < derefInt32(parsed[j].GetSequence())
 	})
@@ -230,13 +219,12 @@ func resolveComponents(
 			return nil, problem, err
 		}
 
-		// The component's own sequence orders it within the group, overriding whatever sequence its
-		// definition carries for standalone use: the same tax may sit second in one group and
-		// fourth in another, and only the group knows which.
+		// The component's own sequence overrides the one its definition carries for standalone use:
+		// the same tax may sit second in one group and fourth in another.
 		child.Sequence = derefInt32(row.GetSequence())
 
-		// A component may override compounding for this group alone. Absent an override the child's
-		// own definition decides, which is why this is a nullable field rather than a plain bool.
+		// A component may override compounding for this group alone; absent an override the child's
+		// definition decides, hence the nullable field rather than a plain bool.
 		if override := row.GetAffectSubsequentBaseOverride(); override != nil {
 			child.AffectSubsequentBase = *override
 		}
@@ -245,12 +233,9 @@ func resolveComponents(
 	return components, nil, nil
 }
 
-// ToComponentSpecs flattens a resolved tax into the calculator's inputs.
-//
-// A group tax contributes its children and never itself: the group is a container for display and
-// reporting, not a rate, so calculating it as well as its parts would tax the line twice
-// (BR-TAX-ESS-018). quantity is the line's quantity already converted into each fixed rate's own
-// unit by the caller, keyed by tax id.
+// ToComponentSpecs flattens a resolved tax into the calculator's inputs. A group tax contributes
+// its children and never itself, or the line would be taxed twice. quantity is the line's quantity
+// already converted into each fixed rate's own unit by the caller, keyed by tax id.
 func ToComponentSpecs(
 	resolved ResolvedTax, quantityByTaxId map[string]decimal.Decimal,
 ) []taxsvc.ComponentSpec {
@@ -277,11 +262,9 @@ func ToComponentSpecs(
 	}}
 }
 
-// FlattenResolved returns every leaf tax of a resolved tree, in the order they will be calculated.
-//
-// The caller needs this to attribute component results back to the configuration that produced
-// them: the calculator returns amounts keyed by tax id and sequence, and only the resolver knows
-// which version ids those came from.
+// FlattenResolved returns every leaf tax of a resolved tree, in calculation order. The calculator
+// returns amounts keyed by tax id and sequence, and only the resolver knows which version ids
+// those came from.
 func FlattenResolved(resolved ResolvedTax) []ResolvedTax {
 	if resolved.CalculationType != models.CalculationGroup {
 		return []ResolvedTax{resolved}

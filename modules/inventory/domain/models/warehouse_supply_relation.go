@@ -10,15 +10,10 @@ import (
 )
 
 // Warehouse Supply Relation declares which warehouse may resupply which. It is topology, not
-// execution: creating one reserves no stock, creates no quant, and starts no transfer.
-//
-// It is independent of the warehouse hierarchy. parent_warehouse_id answers "which warehouse
-// system does this belong to"; a supply relation answers "who is allowed to restock it". They are
-// usually the same warehouse and are not required to be — a POS under a regional warehouse can be
-// supplied by a backup warehouse when the regional one runs dry.
-//
-// Like Storage Category and Putaway Rule, it has no status field: being available for resupply
-// planning is exactly "not archived", so a second flag would say the same thing twice.
+// execution: creating one reserves no stock, creates no quant, and starts no transfer. It is
+// independent of the warehouse hierarchy — parent_warehouse_id says which warehouse system a
+// warehouse belongs to, this says who may restock it, and the two need not match. It has no status
+// field: available for resupply planning is exactly "not archived".
 const (
 	WarehouseSupplyRelationSchemaName = "inventory_warehouse_supply_relation"
 

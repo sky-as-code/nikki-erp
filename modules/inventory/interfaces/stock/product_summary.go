@@ -10,31 +10,23 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
-// The read-only port onto what Stock knows about a product, for the Product UI to display.
+// The read-only port onto what Stock knows about a product. Product displays these numbers and
+// stores none of them: nothing here writes, and every quantity-changing operation stays behind a
+// stock command.
 //
-// Product is an entry point onto stock, not an owner of it: it shows these numbers and links to
-// the stock capability that produces them, and it stores none of them. Nothing here writes, and
-// nothing here gives Product a way to change a quantity — every quantity-changing operation stays
-// behind a stock command. See CR §4.1, §6.2 and PROD-INT-INV-004..006.
-//
-// The summaries are computed rather than stored. There is no product_stock_summary table and no
-// materialized projection: the numbers are derived from quants and moves on each read, so they
-// cannot go stale and cannot become a second source of truth (CR §21.4, PROD-INT-INV-022).
+// The summaries are computed on each read from quants and moves — there is no summary table or
+// materialized projection — so they cannot go stale or become a second source of truth.
 
-// MaxSummaryVariants bounds how many variants one batch summary call resolves.
-//
-// A product listing is a page of rows, so a few hundred is already past any real page size. The
-// bound exists so that a caller passing an unbounded id list cannot turn one summary into an
-// unbounded scan.
+// MaxSummaryVariants bounds how many variants one batch summary call resolves, so a caller
+// passing an unbounded id list cannot turn one summary into an unbounded scan.
 const MaxSummaryVariants = 500
 
 // VariantStockSummary is what Stock reports about one variant, in its inventory UoM.
 //
-// The quantities answer different questions and are not interchangeable. OnHand is what is
-// physically present. Reserved is the part of OnHand already promised to an outgoing move — it is
-// included in OnHand, never additional to it. Available is OnHand minus Reserved (BR §4.2.2.3).
-// Forecasted projects confirmed incoming and outgoing movement onto today's balance
-// (BR §4.2.13.3). InTransit is stock that has left one place and not yet arrived at the next.
+// The quantities are not interchangeable. OnHand is what is physically present. Reserved is the
+// part of OnHand already promised to an outgoing move — included in OnHand, never additional to
+// it. Available is OnHand minus Reserved. Forecasted projects confirmed incoming and outgoing
+// movement onto today's balance. InTransit has left one place and not yet arrived at the next.
 type VariantStockSummary struct {
 	OnHand     decimal.Decimal
 	Reserved   decimal.Decimal
@@ -42,8 +34,7 @@ type VariantStockSummary struct {
 	Forecasted decimal.Decimal
 	InTransit  decimal.Decimal
 
-	// LocationCount and WarehouseCount are how many distinct places hold a non-zero balance,
-	// which is what the Product UI shows as "Number of Locations" (CR §6.1).
+	// LocationCount and WarehouseCount are how many distinct places hold a non-zero balance.
 	LocationCount  int
 	WarehouseCount int
 
@@ -54,24 +45,21 @@ type VariantStockSummary struct {
 	// LastMovementAt is when stock for this variant last actually moved. Nil when it never has.
 	LastMovementAt *time.Time
 
-	// Truncated reports that the read hit its bound and the numbers above are therefore a
-	// partial total. A caller must not present a truncated summary as authoritative: a wrong
-	// on-hand shown as if it were right is worse than a visibly incomplete one.
+	// Truncated reports that the read hit its bound, so the numbers above are a partial total. A
+	// caller must not present a truncated summary as authoritative.
 	Truncated bool
 }
 
-// WarehouseStockRow is one warehouse's holding of a variant (CR §9.1).
-//
-// WarehouseId is nil for stock held at locations that belong to no warehouse — vendor, customer,
-// transit and inventory-loss locations all legitimately have none (overlap CR §8, §8.2).
+// WarehouseStockRow is one warehouse's holding of a variant. WarehouseId is nil for stock at
+// locations belonging to no warehouse — vendor, customer, transit and inventory-loss locations
+// all legitimately have none.
 type WarehouseStockRow struct {
 	WarehouseId   *model.Id
 	WarehouseCode string
 	WarehouseName string
 
-	// WarehouseStatus is carried so the UI can badge a suspended warehouse. Stock at one is
-	// still shown: suspension governs whether new operations may select it, not whether its
-	// contents exist (CR §9.5, AC-PROD-INT-018).
+	// WarehouseStatus lets the UI badge a suspended warehouse. Its stock is still shown:
+	// suspension governs whether new operations may select it, not whether its contents exist.
 	WarehouseStatus string
 
 	OnHand    decimal.Decimal
@@ -79,14 +67,14 @@ type WarehouseStockRow struct {
 	Available decimal.Decimal
 }
 
-// LocationStockRow is one location's holding of a variant (CR §9.2).
+// LocationStockRow is one location's holding of a variant.
 type LocationStockRow struct {
 	LocationId   model.Id
 	LocationCode string
 	LocationName string
 
-	// LocationStatus lets the UI badge a suspended location, which keeps its stock and keeps
-	// being displayed (CR §9.4, AC-PROD-INT-017, TS-PROD-05).
+	// LocationStatus lets the UI badge a suspended location, which keeps its stock and keeps being
+	// displayed.
 	LocationStatus string
 
 	WarehouseId   *model.Id
@@ -97,7 +85,7 @@ type LocationStockRow struct {
 	Available decimal.Decimal
 }
 
-// TemplateVariantStockRow is one row of a template's variant breakdown (CR §5.3, §24).
+// TemplateVariantStockRow is one row of a template's variant breakdown.
 type TemplateVariantStockRow struct {
 	VariantId      model.Id
 	Sku            string
@@ -107,15 +95,14 @@ type TemplateVariantStockRow struct {
 }
 
 type GetVariantSummariesQuery struct {
-	// VariantIds is the batch to resolve. Batching is the point of this call: a product listing
-	// summarises its whole page in one request rather than one per row, which is the N+1 the
-	// requirement forbids (CR §8.4, AC-PROD-INT-035).
+	// VariantIds is the batch to resolve: a listing summarises its whole page in one request
+	// rather than one per row, avoiding an N+1.
 	VariantIds []string
 }
 
 type GetVariantSummariesResultData struct {
 	// Summaries is keyed by variant id. A variant with no stock is present with a zero summary
-	// rather than absent, so a caller need not distinguish "no stock" from "not asked for".
+	// rather than absent.
 	Summaries map[string]VariantStockSummary
 }
 
@@ -125,10 +112,9 @@ type GetTemplateSummaryQuery struct {
 	TemplateId string
 }
 
-// GetTemplateSummaryResultData carries the aggregate and the rows it was computed from.
-//
-// The aggregate is the sum of the variants, never a quantity of its own: a template has no quants
-// and must never acquire any (CR §5.2, PROD-INT-INV-002, PROD-INT-INV-003, TS-PROD-02).
+// GetTemplateSummaryResultData carries the aggregate and the rows it was computed from. The
+// aggregate is the sum of the variants, never a quantity of its own: a template has no quants and
+// must never acquire any.
 type GetTemplateSummaryResultData struct {
 	Summary  VariantStockSummary
 	Variants []TemplateVariantStockRow
@@ -149,8 +135,7 @@ type GetStockByWarehouseResult = dyn.OpResult[GetStockByWarehouseResultData]
 type GetStockByLocationQuery struct {
 	VariantId string
 
-	// WarehouseId narrows the rows to one warehouse, for the drill-down from the by-warehouse
-	// view into the locations inside it (CR §9.2). Empty returns every location.
+	// WarehouseId narrows the rows to one warehouse. Empty returns every location.
 	WarehouseId string
 }
 
@@ -160,18 +145,16 @@ type GetStockByLocationResultData struct {
 
 type GetStockByLocationResult = dyn.OpResult[GetStockByLocationResultData]
 
-// StockProductSummaryReader is what Product reads to show stock without owning it.
-//
-// Every method takes variant ids, never a template id: a variant is the concrete stocked product
-// and the only thing a quant references (CR §5, PROD-INT-INV-001). GetTemplateSummary is the one
-// exception in its argument, and it resolves the template to its variants before reading anything.
+// StockProductSummaryReader is what Product reads to show stock without owning it. Methods take
+// variant ids because a variant is the only thing a quant references; GetTemplateSummary is the
+// exception and resolves the template to its variants before reading anything.
 type StockProductSummaryReader interface {
 	// GetVariantSummaries resolves a batch of variants in one call.
 	GetVariantSummaries(
 		ctx corectx.Context, query GetVariantSummariesQuery,
 	) (*GetVariantSummariesResult, error)
 
-	// GetTemplateSummary aggregates a template's variants, and reports the breakdown alongside.
+	// GetTemplateSummary aggregates a template's variants and reports the breakdown alongside.
 	GetTemplateSummary(
 		ctx corectx.Context, query GetTemplateSummaryQuery,
 	) (*GetTemplateSummaryResult, error)

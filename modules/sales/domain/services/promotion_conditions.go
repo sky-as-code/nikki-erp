@@ -14,26 +14,18 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services/pricing"
 )
 
-// Loading a program's conditions out of the three tables SALES-018 stores them in, into the shape
-// the evaluator takes.
-//
-// The split is the whole point of D-13: the evaluator in pricing/eligibility.go is pure and knows
-// nothing about repositories, so it can be tested exhaustively without a database. This file is the
-// only place that turns rows into its inputs, and it is deliberately thin — every decision about
-// what the conditions MEAN lives in the evaluator, not here.
-//
-// Three levels, because a set-valued condition ("any of these five variants") stores its members in
-// their own table rather than a column (D-07):
+// Loading a program's conditions out of the three tables that store them, into the shape the
+// evaluator takes. The evaluator in pricing/eligibility.go is pure and knows nothing about
+// repositories; this file is the only place that turns rows into its inputs, and every decision about
+// what the conditions mean lives there, not here.
 //
 //	sales_promotion_condition_groups   -> ORed with each other
 //	sales_promotion_conditions         -> ANDed within a group
 //	sales_promotion_condition_targets  -> the set an `in` / `not_in` reads
 
-// loadConditionGroups reads one program's conditions, ready for pricing.IsEligible.
-//
-// A program with no groups comes back empty, which the evaluator reads as unconditionally eligible.
-// That is correct rather than a special case: a program with no conditions is one the operator wants
-// applied to everything, and "10% off everything" would otherwise be inexpressible.
+// loadConditionGroups reads one program's conditions, ready for pricing.IsEligible. A program with no
+// groups comes back empty, which the evaluator reads as unconditionally eligible — otherwise "10% off
+// everything" would be inexpressible.
 func loadConditionGroups(
 	ctx corectx.Context, programId string,
 ) ([]pricing.ConditionGroup, error) {
@@ -73,17 +65,15 @@ func loadConditionGroups(
 		})
 	}
 
-	// Sorted by sequence so that evaluation is reproducible whatever order the rows came back in —
-	// the same property BR 29 demands of conflict resolution. The evaluator ORs the groups, so the
-	// order cannot change the ANSWER; it can change which group short-circuits first, and a
-	// determinism requirement that holds only for the answer is one nobody can test.
+	// Sorted by sequence so evaluation is reproducible whatever order the rows came back in. The
+	// evaluator ORs the groups, so order cannot change the answer, only which group short-circuits
+	// first — but determinism that holds only for the answer is untestable.
 	sort.SliceStable(groups, func(i, j int) bool {
 		return groups[i].Sequence < groups[j].Sequence
 	})
 	return groups, nil
 }
 
-// conditionFrom turns one condition row, plus its targets, into an evaluator condition.
 func conditionFrom(
 	ctx corectx.Context, record dmodel.DynamicFields,
 ) (pricing.Condition, error) {
@@ -110,11 +100,9 @@ func conditionFrom(
 	return condition, nil
 }
 
-// searchBy reads every row of a schema whose field holds the given value.
-//
-// One page of MODEL_RULE_PAGE_MAX. A program with more conditions than that page holds is a
-// misconfiguration rather than a case to paginate for — the sum-of-products shape is meant to
-// express a campaign an operator can reason about, not an arbitrary boolean formula.
+// searchBy reads every row of a schema whose field holds the given value, in one page of
+// MODEL_RULE_PAGE_MAX. A program with more conditions than that is a misconfiguration rather than a
+// case to paginate for.
 func searchBy(
 	ctx corectx.Context, schemaName, field, value string,
 ) ([]dmodel.DynamicFields, error) {
@@ -140,10 +128,9 @@ func searchBy(
 	return found.Data.Items, nil
 }
 
-// int32Of reads an integer field, treating an absent one as zero.
-//
-// Every numeric shape is accepted because a value that has been through a jsonb column and back
-// arrives as whatever the JSON decoder chose — a whole number is a float64, not an int.
+// int32Of reads an integer field, treating an absent one as zero. Every numeric shape is accepted
+// because a value that went through a jsonb column arrives as whatever the JSON decoder chose — a
+// whole number comes back a float64.
 func int32Of(record dmodel.DynamicFields, field string) int32 {
 	value, present := record[field]
 	if !present || value == nil {
@@ -168,11 +155,9 @@ func int32Of(record dmodel.DynamicFields, field string) int32 {
 	return 0
 }
 
-// decimalOf reads a decimal field, treating an absent one as zero.
-//
-// A decimal crosses JSON as a string precisely so it does not lose precision; a malformed one reads
-// as zero rather than propagating, because a condition threshold that will not parse must not become
-// a threshold of NaN.
+// decimalOf reads a decimal field, treating an absent one as zero. A decimal crosses JSON as a string
+// so it does not lose precision, and a malformed one reads as zero rather than becoming a NaN
+// threshold.
 func decimalOf(record dmodel.DynamicFields, field string) decimal.Decimal {
 	value, present := record[field]
 	if !present || value == nil {
@@ -195,7 +180,6 @@ func decimalOf(record dmodel.DynamicFields, field string) decimal.Decimal {
 	return decimal.Zero
 }
 
-// dateTimeOf reads a datetime field, or nil when it is absent.
 func dateTimeOf(record dmodel.DynamicFields, field string) *model.ModelDateTime {
 	value, present := record[field]
 	if !present || value == nil {

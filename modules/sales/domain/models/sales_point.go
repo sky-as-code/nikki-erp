@@ -24,11 +24,9 @@ const (
 	SalesPointEdgeSalesChannel = "sales_channel"
 )
 
-// KioskReferenceType is the external_reference_type a vending kiosk's sales point carries.
-//
-// It names the owning module and resource so that external_reference_id is unambiguous: a bare
-// ulid says nothing about which module to resolve it against, and more than one module may
-// register points on the same channel.
+// KioskReferenceType is the external_reference_type a vending kiosk's sales point carries. It names
+// the owning module and resource so external_reference_id is unambiguous: a bare ulid says nothing
+// about which module to resolve it against.
 const KioskReferenceType = "vending_machine.kiosk"
 
 //go:embed sales_point.json
@@ -110,13 +108,9 @@ func (this SalesPoint) GetIsArchived() *bool {
 	return this.GetFieldData().GetBool(basemodel.FieldIsArchived)
 }
 
-// IsActive reports whether the point may take new orders.
-//
-// As with a channel, both gates are checked together and a nil status counts as inactive. Note
-// this answers only the point's own state: an order also requires its channel to be active, which
-// is a separate check the caller must not skip — a suspended channel does not cascade a status
-// onto its points, because reactivating the channel would then have to guess which points were
-// suspended in their own right.
+// IsActive reports whether the point may take new orders; a nil status counts as inactive. It
+// answers only the point's own state — an order also requires its channel to be active, a separate
+// check the caller must not skip, because a suspended channel does not cascade onto its points.
 func (this SalesPoint) IsActive() bool {
 	status := this.GetStatus()
 	if status == nil || SalesPointStatus(*status) != SalesPointStatusActive {

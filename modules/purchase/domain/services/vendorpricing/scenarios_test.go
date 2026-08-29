@@ -4,17 +4,11 @@ import (
 	"testing"
 )
 
-// The change request's purchase-side named scenarios (section 43), asserted by identifier.
-//
-// resolve_test.go covers the same ground from the rules; this file exists so that somebody auditing
-// the requirement can find TS-PRICE-06 by name rather than working out which behavioural test
-// happens to imply it. The overlap is deliberate: a comment pointing at another test does not fail
-// when that test is renamed.
+// The named purchase-side pricing scenarios, asserted by identifier. resolve_test.go covers the
+// same ground from the rules; the overlap is deliberate so an auditor can find a scenario by name.
 
-// TS-PRICE-06: breaks at 1/10/100 priced 250/240/220, a quantity of 120, and the answer is 220.
-//
-// The highest break REACHED wins, which is the opposite of the cheapest row winning. A resolver
-// that simply took the lowest price would give the 100+ rate to a buyer ordering one.
+// Breaks at 1/10/100 priced 250/240/220, a quantity of 120, and the answer is 220: the highest
+// break reached wins, not the cheapest row.
 func TestScenarioVendorQuantityBreak(t *testing.T) {
 	candidates := []Candidate{
 		row("R1", "250", "1"),
@@ -29,8 +23,7 @@ func TestScenarioVendorQuantityBreak(t *testing.T) {
 	}
 }
 
-// The same ladder at each rung, so that a resolver which merely happened to pick 220 for 120 is not
-// mistaken for one that resolves correctly.
+// The same ladder at each rung, so a resolver that merely happened to pick 220 for 120 is caught.
 func TestScenarioEachBreakResolvesAtItsOwnRung(t *testing.T) {
 	candidates := []Candidate{
 		row("R1", "250", "1"),
@@ -56,17 +49,13 @@ func TestScenarioEachBreakResolvesAtItsOwnRung(t *testing.T) {
 	}
 }
 
-// TS-PRICE-07: a negotiated price does not change the vendor's quote.
-//
-// This package cannot write anywhere, which is most of the guarantee. What it can be asked is
-// whether resolving twice returns the same answer — an override on an order line must leave the
-// master exactly as it was, so the second resolution of an unchanged candidate set must be
-// identical to the first.
+// A negotiated price does not change the vendor's quote. This package cannot write anywhere, so
+// what is asserted is that resolving an unchanged candidate set twice gives the same answer.
 func TestScenarioNegotiatingDoesNotChangeTheQuote(t *testing.T) {
 	candidates := []Candidate{row("R1", "9500", "1")}
 
 	first, foundFirst := Resolve(request("1"), candidates)
-	// A negotiation happens on the order line — 9,200 agreed — and then the same product is priced
+	// A negotiation happens on the order line — 9,200 agreed — then the same product is priced
 	// again. The vendor still says 9,500.
 	second, foundSecond := Resolve(request("1"), candidates)
 
@@ -81,11 +70,8 @@ func TestScenarioNegotiatingDoesNotChangeTheQuote(t *testing.T) {
 	}
 }
 
-// TS-PRICE-10: no vendor price means NO price. Never the product's cost, never another vendor's.
-//
-// The most important assertion in this file. A resolver that fell back to a cost would put a number
-// on a purchase order that no supplier ever quoted, and it would look entirely ordinary to whoever
-// approved it.
+// No vendor price means no price — never the product's cost, never another vendor's. A fallback to
+// cost would put a number on a purchase order that no supplier ever quoted.
 func TestScenarioNoVendorPriceDoesNotFallBackToCost(t *testing.T) {
 	// Nothing applies: the only row is for a different variant of the same template.
 	other := row("R_OTHER", "100", "1")
@@ -101,10 +87,9 @@ func TestScenarioNoVendorPriceDoesNotFallBackToCost(t *testing.T) {
 	}
 }
 
-// TS-PRICE-11: this package never sees another organization's rows — the caller filters by org
-// before reading. What it does enforce is the same shape of protection one level down: a row for a
-// different PRODUCT is not a candidate, so a row that escaped the org filter would still have to
-// name this exact product to price it.
+// This package never sees another organization's rows; the caller filters by org first. What it
+// enforces one level down is that a row for a different product is not a candidate, so a row
+// escaping the org filter would still have to name this exact product to price it.
 func TestScenarioARowForAnotherProductIsNotACandidate(t *testing.T) {
 	elsewhere := row("R_ELSEWHERE", "1", "1")
 	elsewhere.ProductTemplateId = "TPL_ELSEWHERE"
@@ -114,20 +99,16 @@ func TestScenarioARowForAnotherProductIsNotACandidate(t *testing.T) {
 	}
 }
 
-// TS-PRICE-12: an archived quote must not price anything new.
-//
-// Archived rows are excluded by the caller's read, so the assertion here is the consequence: with
-// the archived row absent and nothing else applicable, the answer is "none" rather than a stale
-// price. The row stays readable for the orders that already resolved through it (PRICE-INV-024) —
-// readable and usable are different things.
+// An archived quote must not price anything new. Archived rows are excluded by the caller's read,
+// so with nothing else applicable the answer is "none" rather than a stale price. The row stays
+// readable for orders that already resolved through it.
 func TestScenarioAnArchivedQuoteResolvesToNothing(t *testing.T) {
 	if _, found := Resolve(request("1"), nil); found {
 		t.Fatal("with the archived row filtered out there is nothing to price with")
 	}
 }
 
-// And the case that makes archiving safe rather than destructive: a live row still prices, so
-// retiring one quote does not retire the product.
+// A live row still prices, so retiring one quote does not retire the product.
 func TestScenarioALiveQuoteStillPricesAfterAnotherIsArchived(t *testing.T) {
 	got, found := Resolve(request("1"), []Candidate{row("R_LIVE", "250", "1")})
 

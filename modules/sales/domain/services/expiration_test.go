@@ -13,12 +13,9 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
-// Expiry (BR §87.3, SALES-040). The sweep reads the repository and is exercised live; what is pinned
-// here is the cutoff arithmetic and the staleness test, where being wrong either expires a basket the
-// customer is still filling in or never expires one at all.
+// Expiry. The sweep is exercised live; pinned here are the cutoff arithmetic and staleness test.
 
-// The window runs BACKWARDS from now. Getting the sign wrong would expire everything created in the
-// future — which is to say, nothing — or everything ever created, which is every live basket.
+// The window runs BACKWARDS from now: a sign error expires nothing, or everything.
 func TestTheCutoffIsTheWindowBeforeNow(t *testing.T) {
 	now := time.Date(2026, 8, 27, 12, 0, 0, 0, time.UTC)
 	policy := SalesPolicy{DraftOrderExpiryHours: 24}
@@ -34,8 +31,7 @@ func TestTheCutoffIsTheWindowBeforeNow(t *testing.T) {
 	}
 }
 
-// An unconfigured window must not expire everything instantly. Zero hours would put the cutoff at
-// `now`, making every draft stale the moment it was created — including the one being typed into.
+// An unconfigured window must not expire everything: zero hours puts the cutoff at `now`.
 func TestAnUnconfiguredWindowDoesNotExpireEverything(t *testing.T) {
 	now := time.Date(2026, 8, 27, 12, 0, 0, 0, time.UTC)
 
@@ -48,8 +44,8 @@ func TestAnUnconfiguredWindowDoesNotExpireEverything(t *testing.T) {
 	}
 }
 
-// A longer window expires strictly less. The obvious property, and the one a sign or unit error
-// breaks: hours must not be read as minutes, nor added instead of subtracted.
+// A longer window expires strictly less: hours must not be read as minutes, nor added instead of
+// subtracted.
 func TestALongerWindowExpiresLess(t *testing.T) {
 	now := time.Date(2026, 8, 27, 12, 0, 0, 0, time.UTC)
 
@@ -70,8 +66,7 @@ func draftAged(createdAt time.Time) dmodel.DynamicFields {
 	}
 }
 
-// The staleness test is strictly BEFORE the cutoff. A draft created exactly at the boundary is not
-// yet stale — it has had its full window, not one instant less.
+// Strictly BEFORE the cutoff: a draft created exactly at the boundary has had its full window.
 func TestADraftIsStaleOnlyOnceItsWindowHasPassed(t *testing.T) {
 	cutoff := time.Date(2026, 8, 26, 12, 0, 0, 0, time.UTC)
 
@@ -100,8 +95,8 @@ func TestADraftIsStaleOnlyOnceItsWindowHasPassed(t *testing.T) {
 	}
 }
 
-// A draft with NO creation timestamp is not expired. Reading an absent timestamp as the zero time
-// would make it infinitely old, and the sweep would delete baskets whose only fault was a bad read.
+// A draft with NO creation timestamp is not expired: reading an absent timestamp as the zero time
+// would make it infinitely old and delete baskets whose only fault was a bad read.
 func TestADraftWithNoTimestampIsNotExpired(t *testing.T) {
 	record := dmodel.DynamicFields{
 		models.SalesOrderFieldId:     "OR01",
@@ -111,12 +106,11 @@ func TestADraftWithNoTimestampIsNotExpired(t *testing.T) {
 	if createdAt := dateTimeOf(record, basemodel.FieldCreatedAt); createdAt != nil {
 		t.Fatal("the fixture must have no timestamp")
 	}
-	// draftOrdersOlderThan skips exactly this case; the assertion is that a nil reads as nil rather
-	// than as the zero time, which is what makes the skip possible.
+	// draftOrdersOlderThan skips this case; the assertion is that a nil reads as nil, not zero time.
 }
 
-// An expired ORDER is stored as `cancelled`, because sales_orders has no `expired` status — and the
-// audit ACTION is what keeps expiry distinguishable from a withdrawal.
+// An expired ORDER is stored as `cancelled`; the audit ACTION is what keeps expiry
+// distinguishable from a withdrawal.
 func TestAnExpiredOrderIsStoredAsCancelled(t *testing.T) {
 	if CanTransitionOrderStatus(
 		string(models.SalesOrderStatusDraft),
@@ -124,15 +118,14 @@ func TestAnExpiredOrderIsStoredAsCancelled(t *testing.T) {
 		t.Error("draft → cancelled must be permitted: it is how an expired draft is stored")
 	}
 
-	// And the action exists to carry the distinction the status cannot.
+	// The action carries the distinction the status cannot.
 	if models.SalesOrderActionExpire == models.SalesOrderActionCancel {
 		t.Error("expire and cancel must be different actions: one went stale, the other was " +
 			"withdrawn by somebody, and the trail is the only place that difference survives")
 	}
 }
 
-// A quotation lapses on ITS OWN deadline, not the org window. The quotation carries the deadline the
-// customer was actually given, and applying the org default would move a promise already made.
+// A quotation lapses on ITS OWN deadline: the org default would move a promise already made.
 func TestAQuotationLapsesOnItsOwnDeadline(t *testing.T) {
 	now := time.Date(2026, 8, 27, 12, 0, 0, 0, time.UTC)
 
@@ -158,9 +151,8 @@ func TestAQuotationLapsesOnItsOwnDeadline(t *testing.T) {
 	}
 }
 
-// Variant sellability (BR §69, SALES-048). The port itself reads Inventory and is exercised live;
-// what is pinned here is the gate's behaviour, where being wrong either sells a withdrawn product or
-// refuses a whole deployment.
+// Variant sellability. The port itself is exercised live; pinned here is the gate, where being
+// wrong either sells a withdrawn product or refuses a whole deployment.
 
 // stubProducts answers AssertSellable from a fixed map.
 type stubProducts struct {
@@ -179,9 +171,8 @@ func lineFor(variantId string) CreateOrderLine {
 	return CreateOrderLine{ProductVariantId: variantId, Quantity: dec("1")}
 }
 
-// A withdrawn variant is refused, and the refusal names the LINE — because the caller sent lines and
-// fixing the order means editing one. Naming only the variant id would leave an operator scanning a
-// twenty-line basket for it.
+// A withdrawn variant is refused, and the refusal names the LINE, because fixing the order means
+// editing one.
 func TestAWithdrawnVariantIsRefusedByLine(t *testing.T) {
 	products := &stubProducts{notSellable: map[string]string{
 		"VAR-GONE": itExt.ReasonVariantNotSellable,
@@ -200,8 +191,7 @@ func TestAWithdrawnVariantIsRefusedByLine(t *testing.T) {
 	}
 }
 
-// An order of sellable variants passes, and asks the port once for the whole basket rather than once
-// per line — an N-line order must not cost N round trips at this layer.
+// A sellable basket passes, asking the port once: an N-line order must not cost N round trips.
 func TestASellableOrderPassesInOneCall(t *testing.T) {
 	products := &stubProducts{notSellable: map[string]string{}}
 
@@ -221,12 +211,9 @@ func TestASellableOrderPassesInOneCall(t *testing.T) {
 	}
 }
 
-// A NIL port permits rather than refuses. It means a deployment without inventory, where there is no
-// master to be withdrawn from — refusing would make Sales unusable there rather than safe.
-//
-// Deliberately the OPPOSITE reading from the tax port, which fails closed: an unresolved tax silently
-// undercharges the business, while an unchecked variant is a question nobody in that deployment can
-// answer.
+// A NIL port permits rather than refuses: it means a deployment without inventory, where there is
+// no master to be withdrawn from. Deliberately the OPPOSITE reading from the tax port, which fails
+// closed, because an unresolved tax silently undercharges the business.
 func TestANilProductPortPermits(t *testing.T) {
 	vErrs, err := assertVariantsSellable(nil, []CreateOrderLine{lineFor("VAR-1")}, nil)
 	if err != nil {
@@ -238,8 +225,8 @@ func TestANilProductPortPermits(t *testing.T) {
 	}
 }
 
-// An order with no variants asks nothing. Calling the port with an empty batch would be a round trip
-// to learn what the caller already knew.
+// An order with no variants asks nothing: an empty batch would be a round trip to learn what the
+// caller already knew.
 func TestAnOrderWithNoVariantsAsksNothing(t *testing.T) {
 	products := &stubProducts{notSellable: map[string]string{}}
 
@@ -251,8 +238,8 @@ func TestAnOrderWithNoVariantsAsksNothing(t *testing.T) {
 	}
 }
 
-// A missing variant and a withdrawn one are refused with DIFFERENT reasons: one is usually a bad
-// reference, the other a business decision, and an operator chases them differently.
+// A missing variant and a withdrawn one get DIFFERENT reasons: one is usually a bad reference,
+// the other a business decision.
 func TestNotFoundAndNotSellableAreDistinct(t *testing.T) {
 	if itExt.ReasonVariantNotFound == itExt.ReasonVariantNotSellable {
 		t.Error("the two refusals must stay distinct: a bad id and a withdrawn product need " +

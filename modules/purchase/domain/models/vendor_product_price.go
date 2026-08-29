@@ -11,18 +11,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// What a vendor currently offers a product at.
+// What a vendor currently offers a product at, in what unit, from what quantity, and until when.
+// A standing offer, distinct from an agreement line, which is a commitment negotiated for a period.
 //
-// The resource this change request adds, and the answer to a question the system previously could
-// not express: "what does this supplier charge for this product, in what unit, from what quantity,
-// and until when". Before it, the nearest thing was a purchase agreement line — but an agreement is
-// a commitment negotiated for a period, while this is a standing offer, and conflating the two
-// would mean a price could not be recorded without pretending a contract existed.
-//
-// It is emphatically NOT the product's cost (PRICE-INV-004, PRICE-INV-009). A vendor's offer and
-// what the business has actually paid and valued are different numbers and routinely differ: a
-// product costing 10,200 may be offered at 10,000 by one vendor and 9,500 by another. Cost is
-// Inventory's to calculate from goods actually received; this is what somebody is asking.
+// This is not the product's cost. Cost is Inventory's, calculated from goods actually received; a
+// vendor's asking price is a different number and routinely differs.
 const (
 	VendorProductPriceSchemaName = "purchase_vendor_product_price"
 

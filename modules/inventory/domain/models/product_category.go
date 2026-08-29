@@ -58,7 +58,7 @@ func (this *ProductCategory) SetName(v *model.LangJson) {
 	this.GetFieldData().SetLangJson(ProductCategoryFieldName, v)
 }
 
-// GetParentCategoryId returns the parent in the category tree, or nil for a root category.
+// GetParentCategoryId is nil for a root category.
 func (this ProductCategory) GetParentCategoryId() *model.Id {
 	return this.GetFieldData().GetModelId(ProductCategoryFieldParentCategoryId)
 }

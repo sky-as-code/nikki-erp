@@ -9,12 +9,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// The archive-cascade rules. They decide which variants a template's archive takes down and
-// which its unarchive brings back — see AC-PROD-019, AC-PROD-020 and BR-PROD-TPL-003.
+// The archive-cascade rules: which variants a template's archive takes down, and which its
+// unarchive brings back.
 
-// BR-PROD-TPL-003 and BR §8.9: unarchiving a template restores the variants it cascaded to and
-// leaves the ones a user archived deliberately alone. A plain boolean cannot express that, which
-// is exactly why archive_source exists.
+// Unarchiving a template restores the variants it cascaded to and leaves the ones a user archived
+// deliberately alone. A plain boolean cannot express that, which is why archive_source exists.
 func TestCascadeSkipsUserArchivedVariantOnUnarchive(t *testing.T) {
 	testCases := []struct {
 		name        string
@@ -47,9 +46,8 @@ func TestCascadeSkipsUserArchivedVariantOnUnarchive(t *testing.T) {
 			wantSkipped: false,
 		},
 		{
-			// A variant archived before archive_source existed carries no stamp. Leaving it
-			// archived is the conservative reading: wrongly resurrecting a deliberately
-			// withdrawn product is worse than leaving one a user can restore by hand.
+			// A variant archived before archive_source existed carries no stamp; leaving it archived
+			// beats resurrecting a deliberately withdrawn product.
 			name:        "an unstamped variant stays archived",
 			source:      nil,
 			unarchiving: true,

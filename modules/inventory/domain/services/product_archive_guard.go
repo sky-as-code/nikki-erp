@@ -11,29 +11,21 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// Whether a product may be withdrawn from the working set.
+// Whether a product may be withdrawn from the working set. Archiving is not a way to make stock go
+// away: a variant still holding goods, owing them to a reservation, or named by work in flight
+// cannot be archived until the stock is dealt with through a stock operation.
 //
-// Archiving is not a way to make stock go away. A variant still holding goods, still owing them to
-// a reservation, or still named by work in flight cannot be archived: the stock must be dealt with
-// through a stock operation first (CR §14, §14.4, PROD-INT-INV-013..016).
+// History does not block it. A variant whose only remaining trace is completed movement archives
+// fine, or a product that has ever been sold could never be retired.
 //
-// What does *not* block it is history. A variant whose only remaining trace is completed movement
-// archives fine, because those records keep resolving it afterwards — treating them as blockers
-// would make a product that has ever been sold impossible to retire (CR §14.2, TS-PROD-11).
-//
-// Stock reports the numbers, Product decides what they mean. The two are separate so that Stock
-// stays free to change how it stores any of it, and so this rule lives in one place rather than
-// being restated at each call site.
+// Stock reports the numbers, Product decides what they mean.
 
-// stockUsageReader resolves the service that answers what a variant holds.
-//
-// It is the quant engine's service, which implements the port. Resolving it here rather than
-// injecting it keeps the guard callable from the archive path without threading a dependency
-// through the resource service's constructor, which the engine builds.
+// stockUsageReader resolves the quant engine's service, which implements the port. Resolved here
+// rather than injected so the guard stays callable from the archive path without threading a
+// dependency through the engine-built constructor.
 //
 // An error means the stock side is not wired in this deployment. Callers treat that as "cannot
-// check" rather than "must fail": Product has to keep working when Stock is unavailable
-// (CR §25, AC-PROD-INT-036).
+// check" rather than "must fail": Product keeps working when Stock is unavailable.
 func stockUsageReader() (itStock.StockProductUsageReader, error) {
 	engine, err := engineFor(models.StockQuantSchemaName)
 	if err != nil {
@@ -49,10 +41,8 @@ func stockUsageReader() (itStock.StockProductUsageReader, error) {
 	return reader, nil
 }
 
-// AssertVariantArchivable adds a violation for each reason the variant cannot be archived.
-//
-// All four are reported rather than the first, so a user fixing them learns the whole story at
-// once instead of discovering the next blocker after clearing each one.
+// AssertVariantArchivable adds a violation for each reason the variant cannot be archived. All four
+// are reported rather than the first, so a user learns the whole story at once.
 func AssertVariantArchivable(usage itStock.ProductUsage, vErrs *ft.ClientErrors) {
 	if !usage.OnHandQuantity.IsZero() {
 		vErrs.Append(*ft.NewBusinessViolation(
@@ -84,15 +74,10 @@ func AssertVariantArchivable(usage itStock.ProductUsage, vErrs *ft.ClientErrors)
 	}
 }
 
-// AssertTemplateArchivable refuses a template archive when any of its variants is still in use.
-//
-// The whole set is judged before anything is written. Archiving a template cascades to its
-// variants, so checking one variant at a time inside that cascade would leave the first few
-// archived when a later one turns out to hold stock — a half-archived template that no single
-// operation had asked for (CR §14.3, AC-PROD-INT-032, TS-PROD-12).
-//
-// The offending variant is named. "Some variant has stock" sends a user through a product line
-// one row at a time looking for the one that does.
+// AssertTemplateArchivable refuses a template archive when any of its variants is still in use. The
+// whole set must be judged before anything is written: archiving cascades to the variants, so
+// checking one at a time would leave the first few archived when a later one turns out to hold
+// stock. The offending variant is named, so a user need not hunt through the product line.
 func AssertTemplateArchivable(
 	usages map[string]itStock.ProductUsage, skuOf map[string]string, vErrs *ft.ClientErrors,
 ) {
@@ -114,10 +99,9 @@ func AssertTemplateArchivable(
 	}
 }
 
-// GuardVariantArchive checks one variant before it is archived.
-//
-// Unarchiving is never guarded: restoring a product to the working set strands nothing, and
-// requiring it to be stockless would make an archived-by-mistake variant unrecoverable.
+// GuardVariantArchive checks one variant before it is archived. Unarchiving is never guarded:
+// restoring a product strands nothing, and guarding it would make an archived-by-mistake variant
+// unrecoverable.
 func GuardVariantArchive(
 	ctx corectx.Context, reader itStock.StockProductUsageReader,
 	variantId string, archiving bool, vErrs *ft.ClientErrors,
@@ -134,10 +118,8 @@ func GuardVariantArchive(
 	return nil
 }
 
-// guardVariantStockUsage refuses a variant archive that would strand stock.
-//
-// It returns a non-nil result when the operation is refused, which the caller returns as-is; nil
-// means it may proceed. Unarchiving is waved through: it strands nothing.
+// guardVariantStockUsage refuses a variant archive that would strand stock. A non-nil result is the
+// refusal, which the caller returns as-is; nil means proceed. Unarchiving is waved through.
 func guardVariantStockUsage(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -148,8 +130,8 @@ func guardVariantStockUsage(
 
 	reader, err := stockUsageReader()
 	if err != nil {
-		// No reader means the stock side is not wired in this deployment. Product must keep
-		// working without it rather than becoming unusable (CR §25, AC-PROD-INT-036).
+		// No reader means the stock side is not wired in this deployment; Product must keep working
+		// without it.
 		return nil, nil
 	}
 
@@ -164,11 +146,9 @@ func guardVariantStockUsage(
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 }
 
-// GuardTemplateArchive checks every variant of a template before any of them is archived.
-//
-// Variants already archived are skipped. One of those is not being withdrawn by this operation —
-// it is already out — so its stock, if any, is a pre-existing condition rather than something this
-// archive would strand, and blocking on it would make the template permanently unarchivable.
+// GuardTemplateArchive checks every variant of a template before any is archived. Already-archived
+// variants are skipped: their stock is a pre-existing condition this archive would not strand, and
+// blocking on it would make the template permanently unarchivable.
 func GuardTemplateArchive(
 	ctx corectx.Context, reader itStock.StockProductUsageReader,
 	templateId string, archiving bool, vErrs *ft.ClientErrors,

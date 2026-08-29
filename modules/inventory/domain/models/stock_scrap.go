@@ -40,10 +40,8 @@ const (
 	StockScrapEdgeScrapLocation  = "scrap_location"
 )
 
-// Stock scrap states (BR §4.2.9.2).
-//
-// There are only two, and deliberately no cancelled: an unwanted draft is deleted, and a done
-// scrap is corrected by a reverse movement rather than by reopening it (BR §4.2.9.6).
+// Stock scrap states. There is deliberately no cancelled: an unwanted draft is deleted, and a done
+// scrap is corrected by a reverse movement rather than by reopening it.
 const (
 	StockScrapStatusDraft = "draft"
 	StockScrapStatusDone  = "done"
@@ -56,9 +54,9 @@ func StockScrapSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(stockScrapSchemaJson)
 }
 
-// StockScrap is the document that removes goods from usable stock by moving them to a scrap
-// location. It owns no balance of its own: while draft it changes nothing, and completing it
-// generates a movement, which is the only thing that touches a quant. See BR §4.2.9.
+// StockScrap removes goods from usable stock by moving them to a scrap location. It owns no
+// balance: a draft changes nothing, and completing it generates a movement, the only thing that
+// touches a quant.
 type StockScrap struct {
 	basemodel.DynamicModelBase
 }

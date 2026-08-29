@@ -46,10 +46,9 @@ func StockQuantSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(stockQuantSchemaJson)
 }
 
-// StockQuant is the current stock state at one combination of dimensions: a variant, in a
-// location, optionally narrowed by lot, package and owner. It is not a transaction document —
-// its quantities are the running total of the movements that have completed against it, which is
-// why no client may write them directly. See BR §4.2.2 and §3.3.
+// StockQuant is the current stock state at one dimension combination: a variant, in a location,
+// optionally narrowed by lot, package and owner. Its quantities are the running total of completed
+// movements, so no client may write them directly.
 type StockQuant struct {
 	basemodel.DynamicModelBase
 }
@@ -118,8 +117,8 @@ func (this *StockQuant) SetReservedQuantity(v *decimal.Decimal) {
 	this.GetFieldData().SetDecimal(StockQuantFieldReservedQuantity, v)
 }
 
-// GetAvailableQuantity reads the virtual field. It is filled on read by the quant service, so it
-// is absent on a model the caller built itself — use services.AvailableQuantity for that.
+// GetAvailableQuantity reads a virtual field the quant service fills on read; it is absent on a
+// model the caller built itself, where services.AvailableQuantity is needed instead.
 func (this StockQuant) GetAvailableQuantity() *decimal.Decimal {
 	return this.GetFieldData().GetDecimal(StockQuantFieldAvailableQuantity)
 }

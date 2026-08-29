@@ -61,8 +61,8 @@ func TestContextCarriesTheWhitelistedFacts(t *testing.T) {
 	}
 }
 
-// The whitelist is closed by BR-TAX-ESS-SUP-022: a rule may test these fields and nothing else, so
-// a context key outside the declared set would be a rule depending on something no one guaranteed.
+// The whitelist is closed: a rule may test these fields and nothing else, so a context key outside
+// the declared set would be a rule depending on something no one guaranteed.
 func TestContextCarriesNothingOutsideTheWhitelist(t *testing.T) {
 	context := buildContext(
 		it.CalculationRequest{OperationType: models.OperationSale, TaxDate: "2026-08-25"},
@@ -94,8 +94,8 @@ func TestRegistrationAnywhereCountsAsRegistered(t *testing.T) {
 	}
 }
 
-// Two components of different taxes must never pool for rounding, because the per-tax document
-// total is exactly what a VAT return reports.
+// Two components of different taxes must never pool for rounding: the per-tax document total is
+// what a VAT return reports.
 func TestGroupKeySeparatesDistinctTaxes(t *testing.T) {
 	vat10 := ResolvedTax{TaxId: "vat10", RateVersionId: "rv1", Treatment: models.TaxTreatmentTaxable, JurisdictionId: "vn"}
 	vat8 := ResolvedTax{TaxId: "vat8", RateVersionId: "rv2", Treatment: models.TaxTreatmentTaxable, JurisdictionId: "vn"}
@@ -124,8 +124,8 @@ func TestGroupKeySeparatesTreatmentAndJurisdiction(t *testing.T) {
 	}
 }
 
-// A group tax is a container for display and reporting, not a rate: calculating it as well as its
-// parts would tax the line twice (BR-TAX-ESS-018).
+// A group tax is a container, not a rate: calculating it as well as its parts would tax the line
+// twice.
 func TestGroupTaxFlattensToItsComponentsOnly(t *testing.T) {
 	group := ResolvedTax{
 		TaxId:           "group",
@@ -180,8 +180,8 @@ func TestFixedTaxCarriesItsConvertedQuantity(t *testing.T) {
 	}
 }
 
-// A document is only as resolved as its least resolved line. Reporting "resolved" while a line
-// silently contributed no tax is how a caller stores a total that is quietly wrong.
+// A document is only as resolved as its least resolved line; reporting "resolved" while a line
+// contributed no tax stores a quietly wrong total.
 func TestOneUnresolvedLineDowngradesTheDocument(t *testing.T) {
 	result := it.CalculationResult{
 		Status: models.DeterminationResolved,
@@ -223,9 +223,8 @@ func TestNoTaxApplicableDoesNotDowngradeTheDocument(t *testing.T) {
 	}
 }
 
-// The line total is the sum of the rounded components, not the rounding of the summed ones: an
-// invoice shows the components, and a total that does not add up to what is printed beside it is
-// the defect this ordering avoids.
+// The line total is the sum of the rounded components, not the rounding of the summed ones, so the
+// printed total adds up to what is printed beside each component.
 func TestLineTotalIsTheSumOfRoundedComponents(t *testing.T) {
 	line := it.LineResult{
 		TotalExcluded: decimal.NewFromInt(100),
@@ -285,8 +284,8 @@ func TestAllocationKeyIsUniquePerLineAndSequence(t *testing.T) {
 	}
 }
 
-// Document-scoped rounding writes back to the component the allocation names, so a mismatched key
-// would silently leave a component unrounded.
+// Document-scoped rounding writes back by the key the allocation names; a mismatch silently leaves
+// a component unrounded.
 func TestDocumentRoundingWritesBackToItsComponent(t *testing.T) {
 	result := it.CalculationResult{Lines: []it.LineResult{{
 		LineReference: "L1",

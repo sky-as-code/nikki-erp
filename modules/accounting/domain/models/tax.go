@@ -29,11 +29,10 @@ func TaxSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(taxSchemaJson)
 }
 
-// Tax is the stable business identity of a tax, and holds nothing that affects calculation.
-//
-// Everything that decides an amount - rate, treatment, calculation type, effective period -
-// lives on TaxDefinitionVersion (BR-TAX-ESS-SUP-004), so that publishing a change is a new
-// version rather than an edit that would reinterpret every past transaction.
+// Tax is the stable business identity of a tax and holds nothing that affects calculation.
+// Everything deciding an amount (rate, treatment, calculation type, effective period) lives on
+// TaxDefinitionVersion, so a change is a new version rather than an edit that would reinterpret
+// past transactions.
 type Tax struct {
 	basemodel.DynamicModelBase
 }

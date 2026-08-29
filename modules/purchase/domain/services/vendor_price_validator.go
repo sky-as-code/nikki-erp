@@ -11,20 +11,11 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/external"
 )
 
-// VendorPriceValidator checks a vendor price against the three masters it references (section 23).
-//
-// Each reference is a plain ulid — the vendor belongs to Contacts, the product and its unit to
-// Inventory and Essential — so nothing in the database stops a row naming something that does not
-// exist, is archived, or belongs to a different product. A foreign key across a module boundary is
-// exactly what this codebase refuses to declare, and this is the price of that: the checks are
-// here, at write time, where a useful message can be produced.
-//
-// The ports are held rather than looked up per call, matching ProductLineValidator. Init resolves
-// all three or fails, following the convention the two validators beside this one set: a module
-// that booted without them would silently accept prices for parties nobody may order from, on
-// products nobody may buy, in units that convert to nothing — and no such row announces itself
-// until an order tries to resolve through it. The nil checks below are therefore belt-and-braces
-// for a validator constructed by hand in a test, not a supported deployment.
+// VendorPriceValidator checks a vendor price against the vendor, product and unit masters it
+// references. Those references are plain ulids owned by other modules, so no foreign key stops a
+// row naming something missing, archived, or belonging to a different product; the checks happen
+// here at write time. The nil port checks below cover a validator built by hand in a test, not a
+// supported deployment.
 type VendorPriceValidator struct {
 	vendors  itExt.VendorExtService
 	products itExt.ProductExtService
@@ -39,11 +30,8 @@ func NewVendorPriceValidator(
 	return &VendorPriceValidator{vendors: vendors, products: products, uoms: uoms}
 }
 
-// Validate checks one vendor price about to be written.
-//
-// It reports through vErrs rather than returning an error, so several problems are reported at once
-// — someone correcting a bad import wants every fault in the row, not the first one and then
-// another round trip.
+// Validate checks one vendor price about to be written. Problems go to vErrs rather than a returned
+// error so every fault in the row is reported in one pass.
 func (this *VendorPriceValidator) Validate(
 	ctx corectx.Context, record dmodel.DynamicFields, vErrs *ft.ClientErrors,
 ) error {
@@ -59,12 +47,9 @@ func (this *VendorPriceValidator) Validate(
 	return this.assertPurchaseUomCompatible(ctx, record, inventoryUomId, vErrs)
 }
 
-// assertVendorOrderable refuses a price for a party that is not a usable vendor.
-//
-// AssertOrderable rather than a plain existence check: a party may exist, and even have a vendor
-// profile, while being blocked or archived. Recording a new offer from a supplier the business has
-// stopped buying from is the case this catches — and it is a quiet one, because the row would look
-// perfectly ordinary until somebody tried to raise an order against it.
+// assertVendorOrderable refuses a price for a party that is not a usable vendor. AssertOrderable
+// rather than an existence check, because a party may exist and have a vendor profile while being
+// blocked or archived.
 func (this *VendorPriceValidator) assertVendorOrderable(
 	ctx corectx.Context, record dmodel.DynamicFields, vErrs *ft.ClientErrors,
 ) error {
@@ -76,29 +61,23 @@ func (this *VendorPriceValidator) assertVendorOrderable(
 	result, err := this.vendors.AssertOrderable(ctx, itExt.AssertOrderableQuery{
 		PartyId: model.Id(vendorId),
 		OrgId:   model.Id(recordString(record, models.VendorProductPriceFieldOrgId)),
-		// Field is echoed back on any violation, so the error points at this row's own column
-		// rather than at whatever Contacts calls it.
+		// Echoed back on any violation so the error names this row's column, not the Contacts one.
 		Field: models.VendorProductPriceFieldVendorId,
 	})
 	if err != nil {
 		return errors.Wrap(err, "assertVendorOrderable")
 	}
 	if result != nil && result.ClientErrors.Count() > 0 {
-		// The port already phrased the refusal — whether the party is unknown, has no vendor
-		// profile, or is blocked. Restating it here would put a second, vaguer sentence in front of
-		// a caller who was told the specific one.
+		// The port already phrased the specific refusal; restating it would only make it vaguer.
 		vErrs.Append(result.ClientErrors...)
 	}
 	return nil
 }
 
 // assertProductPurchasable refuses a price for something that may not be bought, and returns the
-// product's inventory unit for the compatibility check that follows.
-//
-// The variant, when given, must belong to the named template. Nothing else checks it: the two
-// columns would otherwise describe different products, and resolution — which finds candidates by
-// template and then prefers the variant-specific one — would return a price for a product nobody
-// asked about.
+// product's inventory unit for the compatibility check that follows. A given variant must belong to
+// the named template; nothing else checks that, and resolution (which finds candidates by template
+// then prefers the variant-specific one) would otherwise return a price for the wrong product.
 func (this *VendorPriceValidator) assertProductPurchasable(
 	ctx corectx.Context, record dmodel.DynamicFields, vErrs *ft.ClientErrors,
 ) (string, error) {
@@ -106,8 +85,8 @@ func (this *VendorPriceValidator) assertProductPurchasable(
 	templateId := recordString(record, models.VendorProductPriceFieldProductTemplateId)
 
 	// A template-wide price names no variant, so there is nothing to resolve. The template's own
-	// existence is not checked here: the port reads a variant, and a template with no variants
-	// cannot be bought anyway.
+	// existence is not checked: the port reads a variant, and a template with no variants cannot be
+	// bought anyway.
 	if variantId == "" || this.products == nil {
 		return "", nil
 	}
@@ -139,18 +118,12 @@ func (this *VendorPriceValidator) assertProductPurchasable(
 	return string(found.Data.InventoryUomId), nil
 }
 
-// assertPurchaseUomCompatible enforces BR-PRICE-UOM-003.
-//
-// The vendor's unit need not be the unit stock is counted in — a supplier sells by the carton while
-// the warehouse counts bottles — but the two must share a UoM category, or the conversion that
-// turns a quoted quantity into an inventory quantity is not a conversion at all. Quoting a price
-// per litre for a product stocked in kilograms produces a number in the wrong dimension, and
-// nothing downstream would notice.
-//
-// The check is a conversion attempt rather than a category comparison, deliberately: Essential owns
-// what is convertible, and asking it is the only way to get the same answer it will give later
-// (BR-UOM-ESS-023). Reading factors and comparing categories here would be a second implementation
-// of the rule, free to disagree with the first.
+// assertPurchaseUomCompatible requires the vendor's unit to be convertible to the unit stock is
+// counted in. The two need not match (a supplier sells cartons, the warehouse counts bottles), but
+// they must share a UoM category, or a quoted quantity converts into the wrong dimension and
+// nothing downstream notices. The check is an actual conversion attempt rather than a category
+// comparison so that Essential, which owns convertibility, gives the answer instead of a second
+// implementation of the rule here.
 func (this *VendorPriceValidator) assertPurchaseUomCompatible(
 	ctx corectx.Context, record dmodel.DynamicFields, inventoryUomId string, vErrs *ft.ClientErrors,
 ) error {

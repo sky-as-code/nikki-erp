@@ -20,9 +20,8 @@ func TestProductAttributeSchemaParses(t *testing.T) {
 	assert.Equal(t, ProductAttributeFieldName, schema.RecordLabelField())
 }
 
-// BR §4.7: the three creation modes are a closed set that variant generation switches on. A
-// fourth value appearing here without generation logic to match would silently create no
-// variants at all.
+// The three creation modes are a closed set variant generation switches on; a fourth value with
+// no matching generation logic would silently create no variants.
 func TestVariantCreationModeEnumValues(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -37,8 +36,8 @@ func TestVariantCreationModeEnumValues(t *testing.T) {
 		field.DataType().Options()[dmodel.FieldDataTypeOptEnumValues])
 }
 
-// BR §6.5.3 and §14.3 step 2: only instant and dynamic attributes contribute to variant
-// identity. This pins the rule the combination-key builder depends on.
+// Only instant and dynamic attributes contribute to variant identity; the combination-key builder
+// depends on this.
 func TestVariantCreationModeCreatesVariants(t *testing.T) {
 	assert.True(t, VariantCreationModeInstant.CreatesVariants())
 	assert.True(t, VariantCreationModeDynamic.CreatesVariants())
@@ -70,11 +69,11 @@ func TestProductAttributeValueSchemaParses(t *testing.T) {
 	assert.Equal(t, ProductAttributeValueSchemaName, schema.Name())
 	assert.Equal(t, "inventory_product_attribute_values", schema.TableName())
 	assert.Equal(t, ProductAttributeValueFieldName, schema.RecordLabelField())
-	// BR §6.6.1: a value cannot exist outside an attribute.
+	// A value cannot exist outside an attribute.
 	assert.True(t, requireField(t, schema, ProductAttributeValueFieldAttributeId).IsRequiredForCreate())
 }
 
-// BR §6.6.1: price_extra is money, so it must be a decimal rather than a float that would drift.
+// price_extra is money, so it must be a decimal rather than a float that would drift.
 func TestProductAttributeValuePriceExtraIsDecimal(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 

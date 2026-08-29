@@ -11,8 +11,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// ProductVariantStatus lets a single variant be discontinued while its siblings stay on sale.
-// Independent of is_archived. See BR §6.2.2.
+// ProductVariantStatus lets one variant be discontinued while its siblings stay on sale.
+// Independent of is_archived.
 type ProductVariantStatus string
 
 const (
@@ -29,21 +29,20 @@ func WrapProductVariantStatus(s string) *ProductVariantStatus {
 	return &st
 }
 
-// ArchiveSource records why a variant was archived, so that unarchiving a template restores only
-// the variants it cascaded to and leaves deliberately archived ones alone. A plain boolean cannot
-// express that difference. See BR §8.9 and BR-PROD-TPL-003.
+// ArchiveSource records why a variant was archived, so unarchiving a template restores only the
+// variants it cascaded to and leaves deliberately archived ones alone.
 type ArchiveSource string
 
 const (
 	// ArchiveSourceUser is a deliberate archive by a user. Never undone by a template cascade.
 	ArchiveSourceUser = ArchiveSource("user")
 
-	// ArchiveSourceTemplateCascade is an archive that followed from archiving the template.
-	// Unarchiving the template unarchives exactly these.
+	// ArchiveSourceTemplateCascade followed from archiving the template; unarchiving the template
+	// unarchives exactly these.
 	ArchiveSourceTemplateCascade = ArchiveSource("template_cascade")
 
-	// ArchiveSourceSystemSync is an archive performed by variant synchronization when a
-	// combination stopped being valid.
+	// ArchiveSourceSystemSync is set by variant synchronization when a combination stopped being
+	// valid.
 	ArchiveSourceSystemSync = ArchiveSource("system_sync")
 )
 
@@ -75,9 +74,8 @@ const (
 	ProductVariantFieldArchiveSource     = "archive_source"
 	ProductVariantFieldOrgId             = "org_id"
 
-	// Computed fields, copied from the owning template when a variant is read. They have no
-	// database column: each is declared in product_variant.json as a related computed field
-	// (template_name copies template.name, ...), filled by the engine's computed-field layer.
+	// Computed fields copied from the owning template on read. No database column: each is declared
+	// in product_variant.json as a related computed field and filled by the engine.
 	ProductVariantFieldTemplateName                = "template_name"
 	ProductVariantFieldTemplateShortName           = "template_short_name"
 	ProductVariantFieldTemplateDescription         = "template_description"
@@ -90,18 +88,16 @@ const (
 	ProductVariantFieldTemplateSaleOk              = "template_sale_ok"
 	ProductVariantFieldTemplatePurchaseOk          = "template_purchase_ok"
 
-	// The pricing read model. Constants rather than literals because Sales reads these across a
-	// module boundary through its product port, and a literal there would survive a rename here
-	// as a field that silently resolves to nothing.
+	// Pricing read model. Constants rather than literals because Sales reads these across a module
+	// boundary, where a literal would survive a rename here and silently resolve to nothing.
 	ProductVariantFieldTemplateBaseSalesPrice  = "template_base_sales_price"
 	ProductVariantFieldSalesPriceExtraTotal    = "sales_price_extra_total"
 	ProductVariantFieldEffectiveBaseSalesPrice = "effective_base_sales_price"
 
 	ProductVariantEdgeTemplate = "template"
 
-	// EmptyCombinationKey is the combination of a template that has no variant-generating
-	// attributes. Such a template still gets exactly one concrete variant, which is what
-	// transactions reference. See BR §4.5 and AC-PROD-008.
+	// EmptyCombinationKey is the combination of a template with no variant-generating attributes.
+	// Such a template still gets exactly one concrete variant, which transactions reference.
 	EmptyCombinationKey = ""
 )
 
@@ -132,8 +128,8 @@ func (this *ProductVariant) SetProductTemplateId(v *model.Id) {
 	this.GetFieldData().SetModelId(ProductVariantFieldProductTemplateId, v)
 }
 
-// GetCombinationKey returns the normalized identity of this variant's attribute-value
-// combination. An empty string is a valid key, not a missing one.
+// GetCombinationKey is the normalized identity of the attribute-value combination. An empty string
+// is a valid key, not a missing one.
 func (this ProductVariant) GetCombinationKey() *string {
 	return this.GetFieldData().GetString(ProductVariantFieldCombinationKey)
 }
@@ -166,8 +162,8 @@ func (this *ProductVariant) SetIsMaterialized(v *bool) {
 	this.GetFieldData().SetBool(ProductVariantFieldIsMaterialized, v)
 }
 
-// GetVariantImageId returns this variant's image override. Nil means fall back to the template's
-// default image rather than "no image". See BR §8.4 and AC-PROD-014.
+// GetVariantImageId is an override; nil means fall back to the template's default image, not
+// "no image".
 func (this ProductVariant) GetVariantImageId() *model.Id {
 	return this.GetFieldData().GetModelId(ProductVariantFieldVariantImageId)
 }
@@ -259,8 +255,7 @@ func (this *ProductVariant) SetOrgId(v *model.Id) {
 }
 
 // IsSelectable reports whether this variant may be chosen for a new transaction. Archiving and
-// discontinuing are separate concepts, and either one alone is enough to withdraw a variant from
-// new business. See AC-PROD-019 and AC-PROD-020.
+// discontinuing are separate, and either alone withdraws a variant.
 func (this ProductVariant) IsSelectable() bool {
 	if archived := this.IsArchived(); archived != nil && *archived {
 		return false

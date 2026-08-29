@@ -16,21 +16,16 @@ func NewStorageCategoryDomainService(base drif.DynamicResourceService) *StorageC
 	return &StorageCategoryDomainServiceImpl{DynamicResourceService: base}
 }
 
-// StorageCategoryDomainServiceImpl guards archiving a category something still uses.
-//
-// The category has no status of its own: it is either part of the master data available for new
-// assignments or it is archived. What it does have is dependants, and withdrawing it while a live
-// location still points at it would leave that location citing a policy nobody can look up.
+// StorageCategoryDomainServiceImpl guards archiving a category something still uses: withdrawing
+// one while a live location points at it leaves that location citing a policy nobody can look up.
 type StorageCategoryDomainServiceImpl struct {
 	drif.DynamicResourceService
 }
 
 var _ drif.DynamicResourceService = (*StorageCategoryDomainServiceImpl)(nil)
 
-// SetArchived refuses to archive a category an unarchived location still uses.
-//
-// Historical use does not count. A location that once carried this category and has since been
-// archived itself is not a reason to keep the category in the working set forever.
+// SetArchived refuses to archive a category an unarchived location still uses. Historical use does
+// not count: an archived location that once carried it is no reason to keep it forever.
 func (this *StorageCategoryDomainServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {

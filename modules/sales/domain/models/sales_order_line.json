@@ -121,7 +121,7 @@
 			"required_for_create": true,
 			"default_value": "0",
 			"description": {
-				"en-US": "How much has come back. Must never exceed fulfilled_quantity rather than ordered_quantity, and the difference matters: a customer cannot return what was never handed over, so an unfulfilled line has nothing to return however much was ordered."
+				"en-US": "How much has come back. The ceiling depends on whether the line ever owed physical goods (D-32, confirmed 28/08/2026): for goods that ship it is fulfilled_quantity, since a customer cannot return what was never handed over; for a service or any non-stocked line it is ordered_quantity instead, because there was no delivery step and measuring against one would make such lines permanently un-refundable - which BR 52 forbids, requiring refund without physical return to be possible. See ReturnableQuantity in domain/services/return_states.go, which is the single implementation of that rule."
 			}
 		},
 		{

@@ -45,9 +45,8 @@ const (
 	StockMoveEdgeDestinationLocation = "destination_location"
 )
 
-// Stock move lifecycle states. The two the transfer does not have — partially_available and
-// assigned — are the allocation outcomes: a move knows how much of its demand is reserved, and a
-// transfer only knows whether all of its moves are ready.
+// Stock move lifecycle states. partially_available and assigned have no transfer equivalent: a move
+// knows how much of its demand is reserved, a transfer only whether all its moves are ready.
 const (
 	StockMoveStatusDraft              = "draft"
 	StockMoveStatusWaiting            = "waiting"
@@ -65,10 +64,9 @@ func StockMoveSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(stockMoveSchemaJson)
 }
 
-// StockMove is one line of demand: this much of this variant, from here to there. It records what
-// was asked for, never what was delivered — that is what its move lines are for, and keeping the
-// two apart is what lets a partial delivery be reported without rewriting the original demand.
-// See BR §4.2.4.
+// StockMove is one line of demand. It records what was asked for, never what was delivered; its
+// move lines hold that, and keeping them apart lets a partial delivery be reported without
+// rewriting the original demand.
 type StockMove struct {
 	basemodel.DynamicModelBase
 }

@@ -13,29 +13,20 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// CreateWithMoves raises a draft transfer and its moves in one transaction (SALES-049).
+// CreateWithMoves raises a draft transfer and its moves in one transaction.
 //
-// # Why the two halves must not be separable
+// The halves must not be separable: the move engine is unpublished, so a consumer could raise a
+// header with no supported way to fill it, and an empty transfer VALIDATES SUCCESSFULLY, reporting
+// goods moved that were never named.
 //
-// Create writes the header alone. Inside Inventory that is fine — the engine action that follows it
-// writes the moves through the move engine, and both are Inventory's own code. From outside it is
-// not: the move engine is unpublished, so a consumer could raise a header and have no supported way
-// to fill it. An empty transfer is the dangerous shape, because it VALIDATES SUCCESSFULLY and
-// reports goods moved that were never named. Committing both together makes that unreachable
-// rather than merely discouraged.
-//
-// # What the caller does not get to say
-//
-// Locations, status, sequence and base quantity are all derived here. The caller names a variant, a
-// unit and an amount; everything about where the goods sit and what state the move is in comes from
-// the transfer, which took it from the operation type. A caller cannot assert a location it has no
-// way to know is right.
+// Locations, status, sequence and base quantity are derived here from the transfer, which took them
+// from the operation type; the caller names only a variant, a unit and an amount.
 func (this *StockTransferDomainServiceImpl) CreateWithMoves(
 	ctx corectx.Context, params dmodel.DynamicFields, moves []itStock.TransferMoveRequest,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	if len(moves) == 0 {
-		// Refused rather than accepted-and-empty. See above: an empty transfer is worse than no
-		// transfer, because it succeeds.
+		// Refused rather than accepted-and-empty: an empty transfer is worse than none, because it
+		// validates successfully.
 		return transferViolation(
 			"stock_transfer.no_moves",
 			"a transfer must be created with at least one move",
@@ -48,9 +39,8 @@ func (this *StockTransferDomainServiceImpl) CreateWithMoves(
 	var created *dyn.OpResult[dmodel.DynamicFields]
 
 	err := withTransferTransaction(ctx, func(tranxCtx corectx.Context) error {
-		// The header goes through Create rather than straight to the repository, so that the
-		// operation type's defaults, the generated number and the archived-type refusal all apply
-		// exactly as they do for a transfer raised from a request.
+		// The header goes through Create, not the repository, so the operation type's defaults, the
+		// generated number and the archived-type refusal all apply.
 		result, err := this.Create(tranxCtx, params)
 		if err != nil {
 			return err
@@ -101,10 +91,9 @@ func (this *StockTransferDomainServiceImpl) writeTransferMoves(
 			models.StockMoveFieldProductVariantId: move.ProductVariantId,
 			models.StockMoveFieldDemandQuantity:   quantity,
 
-			// Base equals demand, which is what every other move-writing path in this module does:
-			// no UoM conversion exists here yet. Written explicitly rather than left absent because
-			// reservation and validation both read the BASE quantity — a move without one would
-			// reserve nothing and appear fully satisfied.
+			// Base equals demand: no UoM conversion exists here yet. It must be written explicitly,
+			// because reservation and validation both read the BASE quantity and a move without one
+			// would reserve nothing and appear fully satisfied.
 			models.StockMoveFieldBaseDemandQuantity: quantity,
 
 			// Copied from the transfer, which took them from the operation type's defaults.
@@ -125,11 +114,9 @@ func (this *StockTransferDomainServiceImpl) writeTransferMoves(
 	return nil
 }
 
-// assertMovesWellFormed refuses a line that could not move anything.
-//
-// Checked before the transfer is created rather than after, so a bad line leaves no orphan header
-// behind. A zero or negative quantity is the case worth naming: it would insert cleanly, reserve
-// nothing, and validate as complete — a move that reports success having moved no goods.
+// assertMovesWellFormed refuses a line that could not move anything, before the transfer is created
+// so a bad line leaves no orphan header. A zero or negative quantity would insert cleanly, reserve
+// nothing and validate as complete — a move reporting success having moved no goods.
 func assertMovesWellFormed(moves []itStock.TransferMoveRequest) *dyn.OpResult[dmodel.DynamicFields] {
 	vErrs := ft.NewClientErrors()
 

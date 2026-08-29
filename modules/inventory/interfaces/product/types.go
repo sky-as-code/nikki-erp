@@ -1,9 +1,7 @@
 // Package product is the Inventory module's cross-module port: the only Products capability
-// other modules bind to.
-//
-// Consumer modules must not re-derive which product fields come from the template and which from
-// the variant. They call GetEffectiveProduct and read the flattened result, so that the
-// inheritance rules live in one place. See AC-PROD-032.
+// other modules bind to. Consumers must not re-derive which fields come from the template and
+// which from the variant; they call GetEffectiveProduct so the inheritance rules live in one
+// place.
 package product
 
 import (
@@ -12,12 +10,10 @@ import (
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
-// EffectiveProduct and AttributeSelection are defined in product_types.go, in this package. They
-// deliberately do not live in domain/services: the implementation depends on the contract, so
-// this package must never import domain/services.
+// EffectiveProduct and AttributeSelection live in this package, not domain/services: the
+// implementation depends on the contract, so this package must never import domain/services.
 
-// The results are wrapped in dyn.OpResult, like every other service here: it carries the
-// "succeeded but found nothing" case that a missing product is, and the REST helpers bind to it.
+// dyn.OpResult carries the "succeeded but found nothing" case a missing product is.
 
 type GetEffectiveProductQuery struct {
 	VariantId string
@@ -34,22 +30,21 @@ type GetEffectiveProductsQuery struct {
 }
 
 type GetEffectiveProductsResultData struct {
-	// Products is keyed by variant id, so a caller resolving a batch can look each one up
-	// without matching by position.
+	// Products is keyed by variant id, not matched by position.
 	Products map[string]EffectiveProduct
 }
 
 type GetEffectiveProductsResult = dyn.OpResult[GetEffectiveProductsResultData]
 
-// ResolveProductSelectionQuery asks which concrete variant a template plus a set of chosen
-// attribute values identifies.
+// ResolveProductSelectionQuery asks which concrete variant a template plus chosen attribute
+// values identifies.
 type ResolveProductSelectionQuery struct {
 	TemplateId string
 	Selections []AttributeSelection
 
-	// MaterializeIfMissing creates the variant when the combination is valid but has no
-	// variant yet, which is what a DYNAMIC-mode template needs. Left false, an unknown
-	// combination resolves to nothing rather than silently creating master data.
+	// MaterializeIfMissing creates the variant when the combination is valid but has none yet, as
+	// a DYNAMIC-mode template needs. Left false, an unknown combination resolves to nothing rather
+	// than silently creating master data.
 	MaterializeIfMissing bool
 }
 
@@ -70,9 +65,9 @@ type GenerateVariantsQuery struct {
 type GenerateVariantsResultData struct {
 	CreatedVariantIds []string
 
-	// ObsoleteVariantIds are variants whose combination is no longer valid. They are reported
-	// rather than deleted: one that a transaction already references must be archived instead,
-	// and only the caller knows which. See BR §8.5 and AC-PROD-030.
+	// ObsoleteVariantIds are variants whose combination is no longer valid. Reported rather than
+	// deleted: one a transaction already references must be archived, and only the caller knows
+	// which.
 	ObsoleteVariantIds []string
 
 	UnchangedCount int
@@ -80,13 +75,10 @@ type GenerateVariantsResultData struct {
 
 type GenerateVariantsResult = dyn.OpResult[GenerateVariantsResultData]
 
-// ProductService is the Products capability, and the resource service installed on the Product
-// Template engine.
-//
-// It embeds drif.DynamicResourceService so that the engine keeps serving every built-in CRUD
-// action through it unchanged; the methods below are the additions a custom action reaches by
-// type-asserting ProcessInput.ResourceService to this interface. See the extended-service
-// pattern in docs/wiki/05. Dynamic resource engine.md §6.2.
+// ProductService is the Products capability and the resource service installed on the Product
+// Template engine. It embeds drif.DynamicResourceService so the engine keeps serving built-in
+// CRUD unchanged; a custom action reaches the extra methods by type-asserting
+// ProcessInput.ResourceService to this interface.
 type ProductService interface {
 	drif.DynamicResourceService
 

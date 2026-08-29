@@ -13,8 +13,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The gates and the arithmetic of split and merge. Both operations write through the repository and
-// are exercised live; what is pinned here is what they refuse and how they apportion.
+// The gates and the arithmetic of split and merge. Both write through the repository and are
+// exercised live; what is pinned here is what they refuse and how they apportion.
 
 func billRecord(id, status, currency, total string) dmodel.DynamicFields {
 	return dmodel.DynamicFields{
@@ -109,7 +109,7 @@ func TestASplitMustAccountForExactlyWhatTheBillHeld(t *testing.T) {
 	}
 }
 
-// A part naming a line the bill does not hold is refused, not silently ignored. Ignoring it would
+// A part naming a line the bill does not hold is refused, not silently ignored: ignoring it would
 // let a caller believe goods were billed that never were.
 func TestASplitCannotAllocateALineTheBillDoesNotHold(t *testing.T) {
 	vErrs := assertAllocationsCoverSource(
@@ -125,8 +125,8 @@ func TestASplitCannotAllocateALineTheBillDoesNotHold(t *testing.T) {
 }
 
 // Splitting an amount that does not divide evenly must still sum back exactly. 1000 across three
-// equal parts is 333.33 three times, which is 999.99 — and a business whose split loses a dong on
-// every uneven bill has a slow leak.
+// equal parts is 333.33 three times, which is 999.99, and a split that loses a dong on every uneven
+// bill is a slow leak.
 func TestASplitSumsBackToTheSourceExactly(t *testing.T) {
 	for _, total := range []string{"1000", "999", "100", "7"} {
 		t.Run(total, func(t *testing.T) {
@@ -149,7 +149,7 @@ func TestASplitSumsBackToTheSourceExactly(t *testing.T) {
 	}
 }
 
-// A merge needs at least two bills — merging one is a no-op the caller did not mean.
+// A merge needs at least two bills; merging one is a no-op the caller did not mean.
 func TestAMergeNeedsAtLeastTwoBills(t *testing.T) {
 	_, vErrs, err := MergeBills(nil, MergeBillParams{SourceBillIds: []string{"B1"}}, stubLock{})
 	if err != nil {

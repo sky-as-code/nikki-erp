@@ -16,16 +16,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// DoScrap executes a draft scrap, removing the goods from usable stock (BR §4.2.9.5).
+// DoScrap executes a draft scrap, removing the goods from usable stock: validate the document, lock
+// the source balance and check what it can spare, generate the movement through
+// ApplyCorrectionMovement, mark the document done.
 //
-// The requirement's nine steps reduce to four here, because Phase 2 already owns most of them:
-// validate the document, lock the source balance and check what it can actually spare, generate
-// the movement through the shared correction helper, and mark the document done. Steps 5 to 8 of
-// the requirement — create move, create move line, move to scrap location, mark move done — are
-// exactly what ApplyCorrectionMovement does, which is why it exists.
-//
-// Per decision F4 this is not left for a user to validate afterwards: the scrap *is* the decision,
-// and a half-executed scrap would leave goods that are neither usable nor written off.
+// It is not left for a user to validate afterwards: a half-executed scrap would leave goods that
+// are neither usable nor written off.
 func (this *StockScrapDomainServiceImpl) DoScrap(
 	ctx corectx.Context, scrapId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -95,13 +91,10 @@ func executeScrap(
 	return mutateOk(), nil
 }
 
-// assertScrappableStock locks the source balance and refuses to scrap what is not free.
-//
-// It checks Available(), not OnHand: reserved stock is already promised to a transfer, and
-// scrapping it would leave that transfer unable to ship with nothing to explain why. The lock is
-// what makes the answer trustworthy — a figure read before it is stale by definition — and it is
-// held for the rest of the transaction, so the movement below applies against the same balance
-// this check approved.
+// assertScrappableStock locks the source balance and refuses to scrap what is not free. It checks
+// Available(), not OnHand: reserved stock is promised to a transfer, and scrapping it would leave
+// that transfer unable to ship. The lock is held for the rest of the transaction, so the movement
+// applies against the same balance this check approved.
 func assertScrappableStock(
 	ctx corectx.Context, scrap models.StockScrap, quantity decimal.Decimal,
 ) (*ft.ClientErrors, error) {
@@ -138,11 +131,9 @@ func assertScrappableStock(
 	return vErrs, nil
 }
 
-// matchesScrapDimension keeps the availability sum to the balances the scrap actually names.
-//
-// An empty lot/package/owner on the document means "not tracked", which matches every row: the
-// caller did not narrow the request, so the whole location's balance is fair game. A named one
-// matches only its own row, because scrapping lot A must not draw on lot B's stock.
+// matchesScrapDimension keeps the availability sum to the balances the scrap names. An empty
+// lot/package/owner means "not tracked" and matches every row; a named one matches only its own,
+// because scrapping lot A must not draw on lot B's stock.
 func matchesScrapDimension(scrap models.StockScrap, row LockedQuant) bool {
 	if lot := derefString(scrap.GetLotRef()); lot != "" && lot != row.LotRef {
 		return false
@@ -156,17 +147,16 @@ func matchesScrapDimension(scrap models.StockScrap, row LockedQuant) bool {
 	return true
 }
 
-// generateScrapMovement moves the goods from their location to the org's scrap location.
-//
-// The direction never varies, unlike an adjustment's: goods always leave usable stock for the
-// scrap location, which is what makes them written off rather than merely moved (BR §4.2.9.1).
+// generateScrapMovement moves the goods to the org's scrap location. The direction never varies,
+// unlike an adjustment's: goods always leave usable stock, which is what writes them off rather
+// than merely moving them.
 func generateScrapMovement(
 	ctx corectx.Context, scrap models.StockScrap, quantity decimal.Decimal,
 ) (string, *ft.ClientErrors, error) {
 	orgId := derefString(scrap.GetOrgId())
 
-	// The document names its own scrap location, but a client could name any location at all — so
-	// it is checked to be a scrap location rather than trusted.
+	// The document's scrap location comes from a client, so it is checked to be a scrap location
+	// rather than trusted.
 	destination, err := loadScrapDestination(ctx, scrap, orgId)
 	if err != nil {
 		return "", nil, err
@@ -187,8 +177,8 @@ func generateScrapMovement(
 		PackageRef:            derefString(scrap.GetPackageRef()),
 		OwnerRef:              derefString(scrap.GetOwnerRef()),
 		OriginReference:       "scrap:" + derefString(scrap.GetScrapNumber()),
-		// False: a scrap is a write-off, not a count correction, and reporting the two together
-		// would make adjustment figures include losses that were never a counting discrepancy.
+		// False: a scrap is a write-off, not a count correction, and mixing them would make adjustment
+		// figures include losses that were never a counting discrepancy.
 		IsInventoryAdjustment: false,
 	})
 	if err != nil || (vErrs != nil && vErrs.Count() > 0) {
@@ -197,11 +187,10 @@ func generateScrapMovement(
 	return result.MoveId, ft.NewClientErrors(), nil
 }
 
-// loadScrapDestination resolves where the goods are written off to.
-//
-// The document's own scrap_location_id wins when it names a real scrap location; otherwise the
-// org's seeded one is used. A location of the wrong type is ignored rather than accepted, because
-// "scrapping" into an internal location would silently move usable stock instead of writing it off.
+// loadScrapDestination resolves where the goods are written off to: the document's own
+// scrap_location_id when it names a real scrap location, otherwise the org's seeded one. A location
+// of the wrong type is ignored, since scrapping into an internal location would silently move
+// usable stock instead of writing it off.
 func loadScrapDestination(
 	ctx corectx.Context, scrap models.StockScrap, orgId string,
 ) (string, error) {
@@ -232,10 +221,8 @@ func loadScrapDestination(
 	return derefString(fallback.GetId()), nil
 }
 
-// closeScrap marks the document done and records the movement it generated.
-//
-// All three fields are written together: a done scrap with no move id would be a write-off nobody
-// could trace to the stock it removed.
+// closeScrap marks the document done and records the movement it generated. All three fields are
+// written together: a done scrap with no move id is a write-off nobody could trace.
 func closeScrap(ctx corectx.Context, scrap models.StockScrap, moveId string) error {
 	engine, err := engineFor(models.StockScrapSchemaName)
 	if err != nil {

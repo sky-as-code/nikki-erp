@@ -6,8 +6,8 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// Purchase price resolution (section 27), exercised for real: the package is a pure function, so
-// the inputs below are the whole world it sees.
+// Purchase price resolution. The package is a pure function, so the inputs below are the whole
+// world it sees.
 
 const (
 	tpl     = "TPL1"
@@ -43,8 +43,7 @@ func request(quantity string) Request {
 	}
 }
 
-// TS-PRICE-06, the change request's own worked example: breaks at 1/10/100 priced 250/240/220, a
-// quantity of 120, and the answer must be 220.
+// The worked example: breaks at 1/10/100 priced 250/240/220, a quantity of 120, answer 220.
 func TestHighestReachedBreakWins(t *testing.T) {
 	candidates := []Candidate{
 		row("R1", "250", "1"),
@@ -68,8 +67,8 @@ func TestQuantityBelowEveryBreakFindsNothing(t *testing.T) {
 	}
 }
 
-// PRICE-INV-018: a variant-specific row beats a template-wide one, even when the template row has
-// the higher quantity break — specificity is checked before quantity.
+// A variant-specific row beats a template-wide one even when the template row has the higher
+// quantity break: specificity is checked before quantity.
 func TestVariantBeatsTemplate(t *testing.T) {
 	templateWide := row("R_TPL", "220", "100")
 	variantSpecific := row("R_VAR", "235", "1")
@@ -92,8 +91,8 @@ func TestRowForAnotherVariantIsNotACandidate(t *testing.T) {
 	}
 }
 
-// The window verdict is the caller's; an inapplicable row is simply skipped. This covers both an
-// expired price and a future one, which is why the flag is a boolean rather than two dates.
+// The window verdict is the caller's; an inapplicable row is skipped. The flag is a boolean rather
+// than two dates because it covers both an expired price and a future one.
 func TestInapplicableRowsAreSkipped(t *testing.T) {
 	expired := row("R_OLD", "180", "1")
 	expired.Applicable = false
@@ -106,8 +105,8 @@ func TestInapplicableRowsAreSkipped(t *testing.T) {
 	}
 }
 
-// BR-PRICE-UOM-004: a break is compared in its OWN unit. Here the request converts to 2 cases or
-// 48 pieces, and only the per-piece row's break of 24 is reached.
+// A break is compared in its own unit: the request converts to 2 cases or 48 pieces, so only the
+// per-piece row's break of 24 is reached.
 func TestBreakIsComparedInTheCandidatesOwnUnit(t *testing.T) {
 	perCase := row("R_CASE", "250", "10")
 	perPiece := row("R_PC", "11", "24")
@@ -129,7 +128,7 @@ func TestBreakIsComparedInTheCandidatesOwnUnit(t *testing.T) {
 	}
 }
 
-// A unit the caller could not convert into is skipped, NOT treated as a quantity of zero — which
+// A unit the caller could not convert into is skipped, not treated as a quantity of zero, which
 // would make every break in that unit look reachable.
 func TestUnconvertibleUnitIsSkippedNotZeroed(t *testing.T) {
 	perKilo := row("R_KG", "90", "0")
@@ -140,7 +139,7 @@ func TestUnconvertibleUnitIsSkippedNotZeroed(t *testing.T) {
 	}
 }
 
-// Section 28 and TS-PRICE-10: no candidates means no price. The caller must not substitute a cost.
+// No candidates means no price; the caller must not substitute a cost.
 func TestNoCandidatesFindsNothing(t *testing.T) {
 	if _, found := Resolve(request("120"), nil); found {
 		t.Fatal("with nothing to choose from there is no price")
@@ -160,8 +159,7 @@ func TestLowestSequenceBreaksATie(t *testing.T) {
 	}
 }
 
-// PRICE-INV-020: two rows alike in every ranked respect must resolve identically however the
-// database happened to order them.
+// Two rows alike in every ranked respect resolve identically however the database ordered them.
 func TestResolutionDoesNotDependOnInputOrder(t *testing.T) {
 	first := row("R_AAA", "250", "1")
 	second := row("R_BBB", "240", "1")
@@ -178,8 +176,8 @@ func TestResolutionDoesNotDependOnInputOrder(t *testing.T) {
 	}
 }
 
-// The result reports the REQUEST's variant. A template-wide row prices a specific variant, and
-// echoing the row's empty variant back would lose which product was actually priced.
+// The result reports the request's variant: a template-wide row prices a specific variant, and
+// echoing the row's empty variant back would lose which product was priced.
 func TestResolutionReportsTheRequestedVariant(t *testing.T) {
 	got, found := Resolve(request("120"), []Candidate{row("R1", "250", "1")})
 
@@ -188,8 +186,7 @@ func TestResolutionReportsTheRequestedVariant(t *testing.T) {
 	}
 }
 
-// Currency and lead time travel with the price: neither is implied, and the lead time is half the
-// content of a quote.
+// Currency and lead time travel with the price; neither is implied.
 func TestResolutionCarriesCurrencyAndLeadTime(t *testing.T) {
 	candidate := row("R1", "3.20", "1")
 	candidate.CurrencyId = "USD"

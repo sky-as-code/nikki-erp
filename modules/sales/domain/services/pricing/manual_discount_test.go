@@ -4,12 +4,8 @@ import (
 	"testing"
 )
 
-// Manual overrides (BR §87.4, SALES-039).
-//
-// The rule the whole feature turns on: the base price is NEVER overwritten. The line keeps what the
-// catalogue and pricelist gave it, and the override is one visible link in the chain — which is what
-// keeps BR §87.9's explanation readable, and what stops an override being indistinguishable from a
-// catalogue price that happened to be low.
+// Manual overrides. The rule the whole feature turns on: the base price is NEVER overwritten, so an
+// override stays a visible link in the chain rather than looking like a low catalogue price.
 
 func manualOf(id, lineKey, amount, reason string) ManualDiscountInput {
 	return ManualDiscountInput{
@@ -20,9 +16,8 @@ func manualOf(id, lineKey, amount, reason string) ManualDiscountInput {
 	}
 }
 
-// THE rule. The gross amount — what the goods list at — is untouched; only the discount and the net
-// move. An override that rewrote the base price would leave the order saying the goods cost less
-// than they do, and nothing would record that anyone had decided so.
+// The gross amount is untouched; only the discount and the net move. Rewriting the base price would
+// leave the order saying the goods cost less than they do, with nobody recorded as deciding so.
 func TestAManualDiscountNeverRewritesTheBasePrice(t *testing.T) {
 	result := Calculate(Input{
 		Lines:           []LineInput{lineOf("a", 1, "2", "50000")},
@@ -44,7 +39,7 @@ func TestAManualDiscountNeverRewritesTheBasePrice(t *testing.T) {
 }
 
 // The override appears in the chain, typed and attributed, with the operator's reason as its
-// description. Without this the explanation would show a number changing for no stated cause.
+// description.
 func TestAManualDiscountIsExplainable(t *testing.T) {
 	result := Calculate(Input{
 		Lines:           []LineInput{lineOf("a", 1, "1", "80000")},
@@ -78,11 +73,8 @@ func TestAManualDiscountIsExplainable(t *testing.T) {
 	}
 }
 
-// An order-level override — no line named — must actually reduce what the customer pays.
-//
-// The failure this guards is specific and was real: step 6 ignores the adjustment list and totalise()
-// sums the LINES alone, so an adjustment touching no line would show on the paperwork as a discount
-// the customer never received.
+// An order-level override must actually reduce what the customer pays: totalise() sums the LINES
+// alone, so an adjustment touching no line would be a discount the customer never received.
 func TestAnOrderLevelOverrideReachesTheTotal(t *testing.T) {
 	result := Calculate(Input{
 		Lines: []LineInput{
@@ -98,7 +90,7 @@ func TestAnOrderLevelOverrideReachesTheTotal(t *testing.T) {
 			"not merely appear beside it", result.GrandTotal)
 	}
 
-	// And it lands proportionally, by the same allocator every other order-level discount uses.
+	// And it lands proportionally, via the allocator every other order-level discount uses.
 	if got := lineByKey(t, result, "a").DiscountAmount; !got.Equal(dec("6000")) {
 		t.Errorf("line a discount = %s, want 6000 (60%% of the basket)", got)
 	}
@@ -107,8 +99,7 @@ func TestAnOrderLevelOverrideReachesTheTotal(t *testing.T) {
 	}
 }
 
-// The spread is EXACT: the parts sum to the whole, with no residual lost to rounding. D-04's
-// allocator is what guarantees it, and this asserts the guarantee holds through this path too.
+// The spread is EXACT: the parts sum to the whole, with no residual lost to rounding.
 func TestAnOrderLevelOverrideSpreadsExactly(t *testing.T) {
 	result := Calculate(Input{
 		Lines: []LineInput{
@@ -129,8 +120,8 @@ func TestAnOrderLevelOverrideSpreadsExactly(t *testing.T) {
 	}
 }
 
-// An override cannot take a line below zero. Past the end is a REFUND — its own workflow with its own
-// money movement — not a discount that overshot.
+// An override cannot take a line below zero: past the end is a REFUND, with its own workflow and
+// money movement.
 func TestAnOverrideIsCappedAtWhatIsOwed(t *testing.T) {
 	result := Calculate(Input{
 		Lines:           []LineInput{lineOf("a", 1, "1", "50000")},
@@ -151,9 +142,8 @@ func TestAnOverrideIsCappedAtWhatIsOwed(t *testing.T) {
 	}
 }
 
-// A non-positive override is ignored. Zero changes nothing, and a NEGATIVE one is a surcharge —
-// silently adding money to a customer's bill is the worst failure available here, and BR §87.4
-// authorises a discount, not a markup.
+// A non-positive override is ignored: a negative one would be an unauthorised surcharge, silently
+// adding money to the customer's bill.
 func TestANegativeOverrideIsNotASurcharge(t *testing.T) {
 	for _, amount := range []string{"0", "-5000"} {
 		result := Calculate(Input{
@@ -174,8 +164,8 @@ func TestANegativeOverrideIsNotASurcharge(t *testing.T) {
 	}
 }
 
-// An override naming a line that does not exist must not panic the whole calculation. The engine is
-// pure and takes its input on trust, so it declines one bad row rather than failing the sale.
+// An override naming a nonexistent line must not panic; the engine declines one bad row rather than
+// failing the sale.
 func TestAnOverrideNamingNoLineIsDeclined(t *testing.T) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
@@ -195,9 +185,8 @@ func TestAnOverrideNamingNoLineIsDeclined(t *testing.T) {
 	}
 }
 
-// Overrides REPLAY. This is why they are engine input rather than adjustments written afterwards:
-// repricing deletes the whole chain and rewrites it from engine output, and confirm reprices
-// unconditionally — so an override written outside the engine would vanish before the sale completed.
+// Overrides REPLAY, which is why they are engine input: repricing deletes the whole chain and
+// rewrites it from engine output, so one written outside the engine would vanish.
 func TestOverridesSurviveRecalculation(t *testing.T) {
 	input := Input{
 		Lines:           []LineInput{lineOf("a", 1, "2", "50000")},
@@ -217,8 +206,8 @@ func TestOverridesSurviveRecalculation(t *testing.T) {
 	}
 }
 
-// Several overrides on one order all apply, each explainable on its own. An operator may discount one
-// line for damage and another as a gesture, and collapsing them would lose both reasons.
+// Several overrides on one order all apply, each explainable on its own; collapsing them would lose
+// the individual reasons.
 func TestSeveralOverridesEachApply(t *testing.T) {
 	result := Calculate(Input{
 		Lines: []LineInput{
@@ -249,11 +238,10 @@ func TestSeveralOverridesEachApply(t *testing.T) {
 	}
 }
 
-// The override is taxed. It happens before the tax step because it changes what is being taxed —
-// discounting goods and then charging tax on the undiscounted price would overcharge the customer.
+// The override runs before the tax step because it changes what is taxed; taxing the undiscounted
+// price would overcharge the customer.
 func TestAnOverrideChangesWhatIsTaxed(t *testing.T) {
-	// Tax supplied for the DISCOUNTED base, which is what ResolveBasketTax would compute: the
-	// caller reprices, then asks Accounting about the net it arrived at.
+	// Tax supplied for the DISCOUNTED base, as ResolveBasketTax would compute it.
 	result := Calculate(Input{
 		Lines:           []LineInput{lineOf("a", 1, "1", "110000")},
 		ManualDiscounts: []ManualDiscountInput{manualOf("MD10", "a", "10000", "Gesture")},

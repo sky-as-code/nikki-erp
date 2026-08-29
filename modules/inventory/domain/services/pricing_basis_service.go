@@ -10,19 +10,14 @@ import (
 
 var _ itProduct.ProductPricingBasisService = (*ProductVariantDomainServiceImpl)(nil)
 
-// maxCategoryDepth bounds the ancestor walk.
-//
-// A category tree deeper than this is a data error rather than a filing scheme, and the bound is
-// what keeps a cycle in parent_category_id — which the category engine refuses to create, but which
-// a direct database edit could still produce — from turning one price resolution into an infinite
-// loop. Cheap insurance against a failure that would otherwise present as a hung request.
+// maxCategoryDepth bounds the ancestor walk, so a cycle in parent_category_id — which the category
+// engine refuses to create but a direct database edit could produce — cannot turn one price
+// resolution into an infinite loop.
 const maxCategoryDepth = 32
 
-// GetPricingBasis reads the pricing inputs for a batch of variants.
-//
-// Three reads for the whole batch regardless of its size: the variants, then their categories, then
-// each ancestor level. The alternative — resolving one variant at a time — would cost a round trip
-// per line, and an order is repriced on every edit.
+// GetPricingBasis reads the pricing inputs for a batch of variants in three reads regardless of
+// batch size: the variants, their categories, then each ancestor level. Resolving one variant at a
+// time would cost a round trip per line, and an order is repriced on every edit.
 func (this *ProductVariantDomainServiceImpl) GetPricingBasis(
 	ctx corectx.Context, query itProduct.GetPricingBasisQuery,
 ) (*itProduct.GetPricingBasisResult, error) {
@@ -37,9 +32,8 @@ func (this *ProductVariantDomainServiceImpl) GetPricingBasis(
 		return nil, err
 	}
 
-	// The category ancestry is resolved once for the distinct categories in the batch. Several
-	// lines of one order routinely share a category, and walking it per line would repeat the
-	// same reads.
+	// Ancestry is resolved once per distinct category: lines of one order routinely share a category,
+	// and walking it per line would repeat the same reads.
 	paths, err := this.resolveCategoryPaths(ctx, distinctCategoryIds(variants))
 	if err != nil {
 		return nil, err
@@ -58,8 +52,8 @@ func (this *ProductVariantDomainServiceImpl) GetPricingBasis(
 			ProductTemplateId: basisString(variant, models.ProductVariantFieldProductTemplateId),
 			CategoryPath:      paths[categoryId],
 			// The EFFECTIVE base price, not the template's raw one: it already includes what this
-			// variant's attribute values add (BR-PRICE-VARIANT-003). It is a computed field, so
-			// asking for it by name is what makes the engine project it.
+			// variant's attribute values add. Being a computed field, it is projected only because it
+			// is asked for by name.
 			EffectiveBaseSalesPrice: basisString(variant,
 				models.ProductVariantFieldEffectiveBaseSalesPrice),
 			Cost:    cost,
@@ -73,11 +67,10 @@ func (this *ProductVariantDomainServiceImpl) GetPricingBasis(
 	}, nil
 }
 
-// readPricingVariants fetches only the fields pricing needs.
-//
-// Naming them explicitly is not only an optimisation: effective_base_sales_price is a COMPUTED
-// field, and the engine projects a computed field only when it is asked for by name. Reading the
-// whole record would leave it empty, and the price would silently fall back to the catalogue.
+// readPricingVariants fetches only the fields pricing needs. Naming them explicitly is required,
+// not an optimisation: effective_base_sales_price is a COMPUTED field, projected only when asked
+// for by name, and reading the whole record leaves it empty so the price silently falls back to the
+// catalogue.
 func (this *ProductVariantDomainServiceImpl) readPricingVariants(
 	ctx corectx.Context, variantIds []string,
 ) ([]dmodel.DynamicFields, error) {
@@ -107,11 +100,9 @@ func (this *ProductVariantDomainServiceImpl) readPricingVariants(
 	return page.Items, nil
 }
 
-// resolveCategoryPaths walks each starting category out to its root.
-//
-// Level by level across the whole batch rather than category by category: sibling categories share
-// ancestors, so a batch of ten variants in one department costs a handful of reads instead of ten
-// separate walks.
+// resolveCategoryPaths walks each starting category out to its root, level by level across the
+// whole batch: siblings share ancestors, so ten variants in one department cost a handful of reads
+// instead of ten walks.
 func (this *ProductVariantDomainServiceImpl) resolveCategoryPaths(
 	ctx corectx.Context, startIds []string,
 ) (map[string][]string, error) {
@@ -176,11 +167,9 @@ func (this *ProductVariantDomainServiceImpl) readCategoryParents(
 	return parents, nil
 }
 
-// walkUp turns the parent map into a path, nearest first.
-//
-// The visited set is not defensive tidiness: a cycle in parent_category_id would otherwise loop
-// forever here. The category engine refuses to create one, but this code must not depend on that
-// being true of every row that ever reaches it.
+// walkUp turns the parent map into a path, nearest first. The visited set is load-bearing: a cycle
+// in parent_category_id would otherwise loop forever, and this code must not assume the engine
+// prevented every one.
 func walkUp(startId string, parents map[string]string) []string {
 	path := make([]string, 0, 4)
 	visited := map[string]bool{}
@@ -208,10 +197,9 @@ func distinctCategoryIds(variants []dmodel.DynamicFields) []string {
 	return ids
 }
 
-// basisString reads one field as a string, tolerating whatever shape it arrives in.
-//
-// Never a bare type assertion. A decimal column comes back as a decimal, not a string, and an
-// absent column as nil; asserting would panic the request on data that is merely unset.
+// basisString reads one field as a string, tolerating whatever shape it arrives in. Never a bare
+// type assertion: a decimal column comes back as a decimal and an absent one as nil, so asserting
+// would panic the request on data that is merely unset.
 func basisString(record dmodel.DynamicFields, field string) string {
 	value, present := record[field]
 	if !present || value == nil {
@@ -226,11 +214,10 @@ func basisString(record dmodel.DynamicFields, field string) string {
 	return ""
 }
 
-// basisDecimalString reads a decimal field, reporting whether it was set at all.
-//
-// The second return is the whole reason this is not just basisString: an unset cost and a cost of
-// zero must not be confused. Zero is a real answer for a giveaway, while unset means a FORMULA rule
-// based on COST has nothing to compute from and must decline rather than price at nothing.
+// basisDecimalString reads a decimal field, reporting whether it was set at all. An unset cost and
+// a cost of zero must not be confused: zero is a real answer for a giveaway, while unset means a
+// COST-based formula rule has nothing to compute from and must decline rather than price at
+// nothing.
 func basisDecimalString(record dmodel.DynamicFields, field string) (string, bool) {
 	value, present := record[field]
 	if !present || value == nil {

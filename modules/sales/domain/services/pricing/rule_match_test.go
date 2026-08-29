@@ -6,10 +6,8 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// Rule targeting, the resolution ladder and the three calculation methods (sections 12–14, 18).
-//
-// This package is a pure function, so every case here is exercised for real rather than through a
-// stub: the inputs are the whole world the engine sees.
+// Rule targeting, the resolution ladder and the three calculation methods. The package is a pure
+// function, so every case is exercised for real: the inputs are the whole world the engine sees.
 
 // aLine is a plain product line, placed in a two-level category tree.
 func aLine() LineInput {
@@ -44,7 +42,7 @@ func fixedRule(id, appliesTo, targetId, price string) PricelistItem {
 	return item
 }
 
-// AC-PRICE-018: a variant rule beats a template rule.
+// A variant rule beats a template rule.
 func TestVariantRuleBeatsTemplateRule(t *testing.T) {
 	items := []PricelistItem{
 		fixedRule("R_TPL", AppliesToTemplate, "TPL1", "90"),
@@ -58,7 +56,7 @@ func TestVariantRuleBeatsTemplateRule(t *testing.T) {
 	}
 }
 
-// AC-PRICE-019: a template rule beats a category rule.
+// A template rule beats a category rule.
 func TestTemplateRuleBeatsCategoryRule(t *testing.T) {
 	items := []PricelistItem{
 		fixedRule("R_CAT", AppliesToCategory, "CAT_SOFT_DRINKS", "90"),
@@ -72,8 +70,7 @@ func TestTemplateRuleBeatsCategoryRule(t *testing.T) {
 	}
 }
 
-// PRICE-INV-017: the nearest ancestor category wins. Soft Drinks is the product's own category,
-// Beverages its parent, so a rule on Soft Drinks must beat one on Beverages.
+// The nearest ancestor category wins: a rule on Soft Drinks beats one on its parent Beverages.
 func TestNearestAncestorCategoryWins(t *testing.T) {
 	items := []PricelistItem{
 		fixedRule("R_PARENT", AppliesToCategory, "CAT_BEVERAGES", "70"),
@@ -116,7 +113,7 @@ func TestPricelistSpecificityOutranksTargetSpecificity(t *testing.T) {
 	}
 }
 
-// AC-PRICE-020 and TS-PRICE-06: the highest break the line actually reaches wins.
+// The highest quantity break the line actually reaches wins.
 func TestHighestReachedQuantityBreakWins(t *testing.T) {
 	line := aLine()
 	line.Quantity = dec("12")
@@ -134,7 +131,7 @@ func TestHighestReachedQuantityBreakWins(t *testing.T) {
 	}
 }
 
-// PRICE-INV-020: two rules alike in every ranked respect still resolve the same way every run.
+// Two rules alike in every ranked respect still resolve the same way every run.
 func TestIdBreaksTheFinalTie(t *testing.T) {
 	first := fixedRule("R_AAA", AppliesToVariant, "VAR1", "90")
 	second := fixedRule("R_BBB", AppliesToVariant, "VAR1", "80")
@@ -173,8 +170,8 @@ func TestRuleForAnotherProductDoesNotMatch(t *testing.T) {
 	}
 }
 
-// A rule written before targeting existed carries no applies_to. It named a variant and meant that,
-// so it must keep meaning it rather than silently widening to the whole catalogue.
+// A rule with no applies_to means the variant it names, and must not silently widen to the whole
+// catalogue.
 func TestMissingAppliesToIsReadAsVariant(t *testing.T) {
 	legacy := PricelistItem{
 		Id: "R_LEGACY", ProductVariantId: "VAR1", UomId: "UOM_BOTTLE",
@@ -192,7 +189,7 @@ func TestMissingAppliesToIsReadAsVariant(t *testing.T) {
 	}
 }
 
-// TS-PRICE-02: base 100, discount 10% resolves to 90.
+// Base 100, discount 10% resolves to 90.
 func TestDiscountMethod(t *testing.T) {
 	rule := fixedRule("R_D", AppliesToVariant, "VAR1", "0")
 	rule.CalculationMethod = MethodDiscount
@@ -205,7 +202,7 @@ func TestDiscountMethod(t *testing.T) {
 	}
 }
 
-// TS-PRICE-03: cost 60 plus 50% resolves to 90, expressed as a negative discount.
+// Cost 60 plus 50% resolves to 90, expressed as a negative discount.
 func TestFormulaOnCostMarksUp(t *testing.T) {
 	line := aLine()
 	line.UnitCost, line.HasCost = dec("60"), true
@@ -222,8 +219,8 @@ func TestFormulaOnCostMarksUp(t *testing.T) {
 	}
 }
 
-// A COST formula with no cost available must decline rather than price at zero. Zero is a real
-// cost for a giveaway, so the number alone cannot say which case this is.
+// A COST formula with no cost available must decline rather than price at zero: zero is a real cost
+// for a giveaway, so the number alone cannot say which case this is.
 func TestFormulaOnMissingCostDeclines(t *testing.T) {
 	rule := fixedRule("R_F", AppliesToVariant, "VAR1", "0")
 	rule.CalculationMethod = MethodFormula
@@ -253,8 +250,8 @@ func TestFormulaRoundsThenAddsSurcharge(t *testing.T) {
 	}
 }
 
-// A rule must never produce a negative unit price: that would flow into the totals as money owed
-// to the customer, a refund conjured out of a pricing rule.
+// A rule must never produce a negative unit price: it would reach the totals as money owed to the
+// customer.
 func TestPriceNeverGoesNegative(t *testing.T) {
 	rule := fixedRule("R_F", AppliesToVariant, "VAR1", "0")
 	rule.CalculationMethod = MethodFormula
@@ -269,8 +266,7 @@ func TestPriceNeverGoesNegative(t *testing.T) {
 	}
 }
 
-// A FIXED_PRICE rule quotes an amount PER a unit, so it cannot price a line counted in another —
-// the number would mean something else entirely.
+// A FIXED_PRICE rule quotes an amount PER unit, so it cannot price a line counted in another.
 func TestFixedPriceRuleInAnotherUnitDoesNotMatch(t *testing.T) {
 	rule := fixedRule("R_CASE", AppliesToVariant, "VAR1", "1000")
 	rule.UomId = "UOM_CASE"
@@ -280,8 +276,7 @@ func TestFixedPriceRuleInAnotherUnitDoesNotMatch(t *testing.T) {
 	}
 }
 
-// A DISCOUNT rule carries no unit of its own: it adjusts a base already in the line's unit, so it
-// applies whatever the line is counted in.
+// A DISCOUNT rule carries no unit: it adjusts a base already in the line's unit.
 func TestDiscountRuleAppliesRegardlessOfUnit(t *testing.T) {
 	rule := fixedRule("R_D", AppliesToVariant, "VAR1", "0")
 	rule.CalculationMethod = MethodDiscount

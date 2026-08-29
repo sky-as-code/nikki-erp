@@ -12,30 +12,19 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
 )
 
-// SALES-042's three invariants, as tests rather than as a one-time sweep.
-//
-// The task is "one IAM row per schema, a translation for every label, a route for every engine". Done
-// once by hand that is true for an afternoon: the next schema somebody adds is unreachable over HTTP,
-// or reachable and unlabelled, or routed and permission-denied — and each of those fails somewhere far
-// from the omission. Checked here, the omission fails in CI next to its cause.
-//
-// All three parse files rather than querying a database, deliberately: they must run in CI with no
-// infrastructure, and a check that needs a live system is a check that gets skipped.
+// These tests hold one IAM row per schema, a translation for every label, and a route for every
+// engine. They parse files rather than querying a database so they run in CI with no infrastructure.
 
-// junctionSchemas are the schemas that intentionally get no engine, no route and no IAM row.
-//
-// A _rel row is configured through its owner's capabilities, so exposing it as a CRUD resource would
-// let a client rewrite a channel's payment mapping without going through the validation that mapping
-// requires. The vending_machine_new precedent is the same: 25 engines for 27 schemas.
+// junctionSchemas are the schemas that intentionally get no engine, no route and no IAM row. A _rel
+// row is configured through its owner's capabilities; exposing it as a CRUD resource would let a
+// client rewrite a channel's payment mapping without the validation that mapping requires.
 var junctionSchemas = map[string]bool{
 	"sales_channel_payment_rel": true,
 }
 
-// Every registered schema is served by an engine, except the declared junctions.
-//
-// A schema with no engine has no route and no IAM resource: it exists in the database and is
-// unreachable, which is the failure mode hardest to notice because nothing errors — the endpoint
-// simply 404s.
+// Every registered schema is served by an engine, except the declared junctions. A schema with no
+// engine has no route and no IAM resource: it exists in the database, unreachable, and nothing
+// errors — the endpoint simply 404s.
 func TestEverySchemaHasAnEngineOrIsADeclaredJunction(t *testing.T) {
 	engines := map[string]bool{}
 	for _, name := range dynamicengines.EngineSchemaNames() {
@@ -70,10 +59,8 @@ func TestEveryEngineHasAnIamResource(t *testing.T) {
 	}
 }
 
-// Every label a schema references has a translation in every locale.
-//
-// A missing one surfaces as a raw key in the UI — "fields.tax_snapshot" where a column heading should
-// be. Harmless in isolation, and the reason nobody notices until a customer does.
+// Every label a schema references has a translation in every locale; a missing one surfaces as a raw
+// key in the UI.
 func TestEveryLabelIsTranslated(t *testing.T) {
 	labels := referencedLabels(t)
 	if len(labels) == 0 {
@@ -98,11 +85,8 @@ func TestEveryLabelIsTranslated(t *testing.T) {
 	}
 }
 
-// Labels are snake_case, matching the field names they describe.
-//
-// A camelCase key is not wrong so much as unfindable: somebody adding a translation looks for the
-// field's own name, does not find it, and adds a second key beside the first. One such typo
-// (fields.taxSnapshot) is exactly how this test came to exist.
+// Labels are snake_case, matching the field names they describe: a camelCase key is unfindable, so
+// somebody adding a translation adds a second key beside the first.
 func TestLabelKeysAreSnakeCase(t *testing.T) {
 	camel := regexp.MustCompile(`[a-z][A-Z]`)
 
@@ -114,10 +98,9 @@ func TestLabelKeysAreSnakeCase(t *testing.T) {
 	}
 }
 
-// registeredSchemaNames reads the schema names out of the module's RegisterModels list.
-//
-// Parsed from the source rather than by calling RegisterModels, which would need the base schemas
-// registered and a container built — infrastructure this test deliberately does without.
+// registeredSchemaNames reads the schema names out of the module's RegisterModels list. It parses
+// source rather than calling RegisterModels, which would need base schemas registered and a
+// container built.
 func registeredSchemaNames(t *testing.T) []string {
 	t.Helper()
 
@@ -169,10 +152,9 @@ func seededResourceCodes(t *testing.T) map[string]bool {
 		if err != nil {
 			t.Fatalf("reading %s: %v", name, err)
 		}
-		// The resource code is the third quoted field of an iam_resources row. Matching every
-		// sales_* literal over-collects — action descriptions mention them too — which is the safe
-		// direction: a false positive here weakens the test, a false negative would fail the build
-		// over a seed that exists.
+		// Matching every sales_* literal over-collects, since action descriptions mention them too.
+		// That is the safe direction: over-collecting only weakens the test, while under-collecting
+		// would fail the build over a seed that exists.
 		for _, match := range pattern.FindAllStringSubmatch(string(content), -1) {
 			codes[match[1]] = true
 		}

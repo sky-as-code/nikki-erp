@@ -7,8 +7,8 @@ import (
 	"go.bryk.io/pkg/errors"
 )
 
-// chainReader answers BasePricelistOf from a fixed map, so the traversal can be exercised without a
-// database. A missing key means the list derives from nothing, which is how a chain terminates.
+// chainReader answers BasePricelistOf from a fixed map; a missing key means the list derives from
+// nothing, which is how a chain terminates.
 type chainReader map[string]string
 
 func (this chainReader) BasePricelistOf(pricelistId string) (string, error) {
@@ -34,7 +34,7 @@ func TestSelfReferenceIsRefused(t *testing.T) {
 	}
 }
 
-// The ordinary case: a chain that ends. Retail derives from Wholesale, which derives from nothing.
+// The ordinary case: a chain that ends.
 func TestTerminatingChainIsAllowed(t *testing.T) {
 	reader := chainReader{"B": "C"}
 
@@ -53,9 +53,8 @@ func TestCycleBackToTheStartingListIsRefused(t *testing.T) {
 	}
 }
 
-// A loop that does NOT include the list being edited. Without the visited set the walk would spin
-// between B and C until the depth bound and blame the depth, which would send whoever hit it
-// looking for a long chain that does not exist.
+// A loop that does not include the list being edited. Without the visited set the walk would spin
+// between B and C until the depth bound and blame the depth.
 func TestCycleAmongTheBasesIsRefusedAsACycle(t *testing.T) {
 	reader := chainReader{"B": "C", "C": "B"}
 
@@ -68,8 +67,7 @@ func TestCycleAmongTheBasesIsRefusedAsACycle(t *testing.T) {
 	}
 }
 
-// A chain that is merely absurdly long, with no loop in it, is refused by the depth bound. This is
-// the second line of defence: the visited set already catches every real cycle.
+// A chain that is merely absurdly long, with no loop in it, is refused by the depth bound.
 func TestOverlyDeepChainIsRefused(t *testing.T) {
 	reader := chainReader{}
 	previous := "B"
@@ -89,7 +87,7 @@ func TestOverlyDeepChainIsRefused(t *testing.T) {
 }
 
 // A repository failure must surface as itself, not be mistaken for "no base" and silently allow a
-// cycle the walk never got to see.
+// cycle the walk never saw.
 func TestReaderErrorIsPropagated(t *testing.T) {
 	if err := AssertNoPricelistCycle("A", "B", failingReader{}); err == nil {
 		t.Fatal("a repository failure must not read as a terminating chain")

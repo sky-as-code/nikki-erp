@@ -28,10 +28,9 @@ func TaxComponentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(taxComponentSchemaJson)
 }
 
-// TaxComponent is one child tax inside a group tax.
-//
-// It hangs off a definition version rather than the tax itself, so that publishing freezes the
-// composition along with everything else that decides an amount.
+// TaxComponent is one child tax inside a group tax. It hangs off a definition version rather than
+// the tax itself, so publishing freezes the composition along with everything else deciding an
+// amount.
 type TaxComponent struct {
 	basemodel.DynamicModelBase
 }

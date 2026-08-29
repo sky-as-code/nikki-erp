@@ -16,12 +16,8 @@ const (
 	PutawaySublocationStrategyCategory = "category"
 )
 
-// Putaway Rule decides where arriving goods should be put. It only ever answers the question — the
-// suggestion carries a destination and the rule that matched, and changes no quantity. Moving the
-// goods is the Stock movement engine's job.
-//
-// It has no status field: a rule is evaluated when it is not archived, so a separate active flag
-// would be a second way to say the same thing.
+// Putaway Rule suggests where arriving goods go; it changes no quantity, the Stock movement engine
+// moves them. It has no status field: a rule is evaluated when it is not archived.
 const (
 	PutawayRuleSchemaName = "inventory_putaway_rule"
 
@@ -103,7 +99,7 @@ func (this *PutawayRule) SetStorageCategoryId(v *model.Id) {
 	this.GetFieldData().SetModelId(PutawayRuleFieldStorageCategoryId, v)
 }
 
-// GetPriority returns the order this rule is considered in. Lower is considered first.
+// GetPriority orders rule evaluation; lower is considered first.
 func (this PutawayRule) GetPriority() *int32 {
 	return this.GetFieldData().GetInt32(PutawayRuleFieldPriority)
 }

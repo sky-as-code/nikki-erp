@@ -11,12 +11,9 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
-// OrgCurrencyDomainServiceImpl resolves the organization's book currency from its settings.
-//
-// Two calls, in order: read the setting to learn which currency was configured, then resolve that
-// id through Essential to turn it into something a caller can use. The second call is not
-// decoration — a setting holds whatever was written into it, and a currency that has since been
-// deleted would otherwise be handed out as a valid reference.
+// OrgCurrencyDomainServiceImpl resolves the organization's book currency from its settings: read
+// the configured id, then resolve it through Essential. The second call is not decoration, since a
+// setting may name a currency that has since been deleted.
 type OrgCurrencyDomainServiceImpl struct {
 	settingsSvc itExt.EffectiveSettingsExtService
 	currencySvc itExt.CurrencyExtService
@@ -36,12 +33,9 @@ var _ itCurrency.OrgCurrencyService = (*OrgCurrencyDomainServiceImpl)(nil)
 
 // GetOrgDefaultCurrency implements itCurrency.OrgCurrencyService.
 //
-// Unlike Sales' ResolveSalesPolicy, this does NOT swallow a failed settings read and fall back to a
-// default. The reasoning there was that refusing to sell is a worse response to a misconfiguration
-// than selling under a documented default, and every default was a safe reading. Neither holds
-// here: there is no safe default currency, and a wrong one silently reinterprets every amount in
-// the system — the exact failure BR-PRICE-CUR-004 names. So an unreadable setting surfaces as an
-// error and an unconfigured one as HasData false, and the caller decides which it can live with.
+// Unlike Sales' ResolveSalesPolicy, this never swallows a failed settings read and falls back to a
+// default: there is no safe default currency, and a wrong one silently reinterprets every amount.
+// An unreadable setting surfaces as an error and an unconfigured one as HasData false.
 func (this *OrgCurrencyDomainServiceImpl) GetOrgDefaultCurrency(
 	ctx corectx.Context, query itCurrency.GetOrgDefaultCurrencyQuery,
 ) (*itCurrency.GetOrgDefaultCurrencyResult, error) {
@@ -59,9 +53,8 @@ func (this *OrgCurrencyDomainServiceImpl) GetOrgDefaultCurrency(
 	if err != nil {
 		return nil, errors.Wrap(err, "GetOrgDefaultCurrency")
 	}
-	// A configured id naming no currency is reported the same way as no configuration at all.
-	// The caller's remedy is identical — configure a usable currency — and inventing a second
-	// failure mode would only oblige every caller to handle both.
+	// A configured id naming no currency is reported as no configuration at all: the remedy is the
+	// same, so a second failure mode would only oblige every caller to handle both.
 	if currency == nil || !currency.HasData {
 		return &itCurrency.GetOrgDefaultCurrencyResult{HasData: false}, nil
 	}
@@ -92,8 +85,8 @@ func (this *OrgCurrencyDomainServiceImpl) readConfiguredCurrencyId(
 	}
 
 	key := modconstants.AccountingModuleName + "." + accsettings.OrgSettingOrgDefaultCurrency
-	// Never a bare type assertion: the value has been through a jsonb column and back, so a
-	// wrong-shaped value is a configuration defect rather than a reason to panic.
+	// Never a bare type assertion: the value has been through a jsonb column, so a wrong shape is a
+	// configuration defect rather than a reason to panic.
 	value, _ := result.Data.Values[key].(string)
 	return value, nil
 }

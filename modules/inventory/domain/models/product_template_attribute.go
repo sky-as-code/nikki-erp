@@ -11,11 +11,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// The two template-attribute junctions exist so that a template can narrow a global attribute to
-// a subset of its values: Color may be Black and White on one template and Red and Blue on
-// another. A variant references the template-scoped value, which is what makes "every value in a
-// combination is allowed by the template" checkable rather than merely conventional.
-// See BR §6.7 and BR-PROD-VAR-009.
+// The two template-attribute junctions let a template narrow a global attribute to a subset of its
+// values. A variant references the template-scoped value, which makes "every value in a
+// combination is allowed by the template" checkable rather than conventional.
 
 const (
 	ProductTemplateAttributeSchemaName = "inventory_product_template_attribute"

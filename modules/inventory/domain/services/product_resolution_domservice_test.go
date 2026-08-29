@@ -12,8 +12,7 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
-// AC-PROD-013 and BR §5.5: the display name is composed, never stored, so it cannot drift from
-// the combination it describes.
+// The display name is composed, never stored, so it cannot drift from the combination it describes.
 func TestBuildDisplayName(t *testing.T) {
 	name := langJson("Classic T-Shirt")
 
@@ -53,8 +52,8 @@ func TestDisplayNameFallsBackWhenEnglishAbsent(t *testing.T) {
 	assert.Equal(t, "Áo thun", BuildDisplayName(name, nil))
 }
 
-// AC-PROD-005: the variant reads name, type, category, brand and the capability flags from its
-// template rather than holding copies.
+// The variant reads name, type, category, brand and the capability flags from its template rather
+// than holding copies.
 func TestEffectiveProductInheritsTemplateOwnedFields(t *testing.T) {
 	template, variant := newTemplate(), newVariant()
 
@@ -68,8 +67,8 @@ func TestEffectiveProductInheritsTemplateOwnedFields(t *testing.T) {
 	assert.Equal(t, "Classic T-Shirt / Black", effective.DisplayName)
 }
 
-// AC-PROD-006: SKU and barcode belong to the variant, because a template with several variants
-// has nothing they could refer to.
+// SKU and barcode belong to the variant: a template with several variants has nothing they could
+// refer to.
 func TestEffectiveProductTakesIdentifiersFromVariant(t *testing.T) {
 	effective := BuildEffectiveProduct(newTemplate(), newVariant(), nil)
 
@@ -77,8 +76,8 @@ func TestEffectiveProductTakesIdentifiersFromVariant(t *testing.T) {
 	assert.Equal(t, "8931234567890", effective.Barcode)
 }
 
-// AC-PROD-014 and BR §8.4: a variant with no image of its own shows the template's; setting one
-// overrides it, and clearing it falls back again. Null means "inherit", not "no image".
+// A variant with no image of its own shows the template's; setting one overrides it, and clearing
+// it falls back again. Null means "inherit", not "no image".
 func TestEffectiveProductImageFallback(t *testing.T) {
 	template := newTemplate()
 
@@ -100,7 +99,7 @@ func TestEffectiveProductImageFallback(t *testing.T) {
 		"clearing the override returns to the template image")
 }
 
-// BR §5.4: weight and dimensions follow the same controlled fallback as the image.
+// Weight and dimensions follow the same controlled fallback as the image.
 func TestEffectiveProductWeightFallback(t *testing.T) {
 	template := newTemplate()
 
@@ -117,7 +116,7 @@ func TestEffectiveProductWeightFallback(t *testing.T) {
 	assert.True(t, effective.Weight.Equal(overridden))
 }
 
-// AC-PROD-019 and AC-PROD-020: either level can withdraw a product from new transactions.
+// Either level can withdraw a product from new transactions.
 func TestEffectiveProductSelectability(t *testing.T) {
 	testCases := []struct {
 		name             string
@@ -155,8 +154,8 @@ func TestEffectiveProductSelectability(t *testing.T) {
 	}
 }
 
-// Task K depends on this: the vending machine snapshots the product as an opaque map, so the key
-// set must keep carrying what its consumers already read.
+// The vending machine snapshots the product as an opaque map, so the key set must keep carrying
+// what its consumers already read.
 func TestEffectiveProductFieldMapKeepsConsumerKeys(t *testing.T) {
 	fields := BuildEffectiveProduct(newTemplate(), newVariant(), []string{"Black"}).ToFieldMap()
 

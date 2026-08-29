@@ -11,9 +11,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// The JSON model files are parsed at start-up by RegisterModels; a malformed file panics the
-// whole app. These tests turn that into a test failure instead, and pin the field set the
-// Products business rules depend on.
+// A malformed JSON model file panics the app at start-up; these tests turn that into a test
+// failure and pin the field set the Products rules depend on.
 
 func TestProductTypeSchemaParses(t *testing.T) {
 	requireBaseSchemasRegistered(t)
@@ -24,12 +23,12 @@ func TestProductTypeSchemaParses(t *testing.T) {
 	assert.Equal(t, "inventory_product_types", schema.TableName())
 	// Without a record label field the frontend relation picker shows raw ULIDs.
 	assert.Equal(t, ProductTypeFieldName, schema.RecordLabelField())
-	// BR §6.3.2: processing logic keys off the code, so it must be present and unique.
+	// Processing logic keys off the code, so it must be present and unique.
 	assert.True(t, requireField(t, schema, ProductTypeFieldCode).IsRequiredForCreate())
 }
 
-// BR §6.3.2: the capability flags decide which modules may consume a product, so they must all
-// exist as booleans rather than being inferred from the code.
+// The capability flags decide which modules may consume a product, so they must exist as booleans
+// rather than be inferred from the code.
 func TestProductTypeCapabilityFlags(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -55,7 +54,7 @@ func TestProductCategorySchemaParses(t *testing.T) {
 	assert.Equal(t, ProductCategorySchemaName, schema.Name())
 	assert.Equal(t, "inventory_product_categories", schema.TableName())
 	assert.Equal(t, ProductCategoryFieldName, schema.RecordLabelField())
-	// BR §6.4.2: a root category has no parent, so the self-FK must stay optional.
+	// A root category has no parent, so the self-FK must stay optional.
 	assert.False(t, requireField(t, schema, ProductCategoryFieldParentCategoryId).IsRequiredForCreate())
 }
 
@@ -67,12 +66,12 @@ func TestBrandSchemaParses(t *testing.T) {
 	assert.Equal(t, BrandSchemaName, schema.Name())
 	assert.Equal(t, "inventory_brands", schema.TableName())
 	assert.Equal(t, BrandFieldName, schema.RecordLabelField())
-	// BR §6.8.1: brand is optional on a template, but a brand record itself needs a name.
+	// Brand is optional on a template, but a brand record itself needs a name.
 	assert.True(t, requireField(t, schema, BrandFieldName).IsRequiredForCreate())
 }
 
-// BR §2.3 and AC-PROD-015/016: every Products resource carries Archive/Unarchive actions, so
-// every one of them must extend archivable_model. `is_archived` is never declared by hand.
+// Every Products resource carries Archive/Unarchive, so each must extend archivable_model;
+// is_archived is never declared by hand.
 func TestMasterModelsAreArchivable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 

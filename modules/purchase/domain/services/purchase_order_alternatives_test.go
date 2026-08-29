@@ -22,7 +22,7 @@ func alternativeOrder(code, vendorId, currencyId, total string) dmodel.DynamicFi
 	}
 }
 
-// §30: the comparison names the cheapest quote, which is the answer the buyer is looking for.
+// The comparison names the cheapest quote.
 func TestTheCheapestAlternativeIsMarked(t *testing.T) {
 	comparison := buildComparison([]dmodel.DynamicFields{
 		alternativeOrder("PO-A", "01V1", "01USD", "1200"),
@@ -42,9 +42,8 @@ func TestTheCheapestAlternativeIsMarked(t *testing.T) {
 	assert.Equal(t, []string{"PO-B"}, cheapest, "exactly one alternative is the cheapest")
 }
 
-// No exchange rate model exists (D5), so quotes in different currencies genuinely cannot be ranked.
-// Comparing 100 USD against 100 VND by their numbers would name the wrong winner with complete
-// confidence, which is worse than declining to name one.
+// No exchange rate model exists, so quotes in different currencies cannot be ranked: comparing 100
+// USD against 100 VND by their numbers would name the wrong winner with complete confidence.
 func TestAlternativesInDifferentCurrenciesAreNotRankedByPrice(t *testing.T) {
 	comparison := buildComparison([]dmodel.DynamicFields{
 		alternativeOrder("PO-A", "01V1", "01USD", "100"),
@@ -57,11 +56,8 @@ func TestAlternativesInDifferentCurrenciesAreNotRankedByPrice(t *testing.T) {
 	}
 }
 
-// A tie marks one row rather than both: "the cheapest" is a single answer, and marking two would
-// leave the caller to break the tie with no more information than the server had.
-//
-// The FIRST of the tied rows wins, which makes the answer stable: the same comparison asked twice
-// names the same vendor, where "whichever was scanned last" would flip with the row order.
+// A tie marks one row rather than both, and the first of the tied rows wins so the same comparison
+// asked twice names the same vendor.
 func TestATieMarksTheFirstAlternativeOnly(t *testing.T) {
 	comparison := buildComparison([]dmodel.DynamicFields{
 		alternativeOrder("PO-A", "01V1", "01USD", "500"),
@@ -85,8 +81,8 @@ func TestAnEmptyComparisonIsNotAnError(t *testing.T) {
 	assert.True(t, comparison.ComparableByPrice)
 }
 
-// §27: alternatives are raised while the requirement is still being quoted. Once confirmed, the
-// decision has been made and quoting for it again is asking about goods already bought.
+// Alternatives are raised while the requirement is still being quoted; once confirmed, the decision
+// has been made.
 func TestOnlyQuotableOrdersMayRaiseAlternatives(t *testing.T) {
 	testCases := []struct {
 		status models.PurchaseOrderStatus
@@ -106,8 +102,8 @@ func TestOnlyQuotableOrdersMayRaiseAlternatives(t *testing.T) {
 	}
 }
 
-// §31: the warning names the codes rather than only counting them, because the buyer's decision
-// depends on which vendors are still being asked.
+// The warning names the codes rather than only counting them, because the buyer's decision depends
+// on which vendors are still being asked.
 func TestTheOpenAlternativesWarningNamesTheCodes(t *testing.T) {
 	open := []dmodel.DynamicFields{
 		alternativeOrder("PO-B", "01V2", "01USD", "950"),
@@ -122,8 +118,8 @@ func TestTheOpenAlternativesWarningNamesTheCodes(t *testing.T) {
 	assert.Contains(t, violation.Message, "PO-B")
 	assert.Contains(t, violation.Message, "PO-C")
 
-	// The machine-readable form carries both the codes and the two answers the caller may give, so
-	// a client does not have to parse the sentence to build the prompt.
+	// The machine-readable form carries both the codes and the two answers the caller may give, so a
+	// client does not have to parse the sentence to build the prompt.
 	require.NotNil(t, violation.Vars)
 	assert.Equal(t, []string{"PO-B", "PO-C"}, violation.Vars["alternative_codes"])
 	assert.Equal(t,
@@ -131,8 +127,8 @@ func TestTheOpenAlternativesWarningNamesTheCodes(t *testing.T) {
 		violation.Vars["choices"])
 }
 
-// The two choices are the ones the confirm path accepts, so a client reading them out of the
-// warning and sending one back cannot be refused for using a value the server offered it.
+// The two choices are the ones the confirm path accepts, so a client echoing one back cannot be
+// refused for using a value the server offered it.
 func TestTheOfferedChoicesAreTheAcceptedOnes(t *testing.T) {
 	violation := alternativesWarningResult(
 		[]dmodel.DynamicFields{alternativeOrder("PO-B", "01V", "01USD", "1")}).ClientErrors[0]

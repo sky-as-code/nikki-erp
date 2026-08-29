@@ -4,9 +4,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// The master and junction resources below are plain CRUD: everything they need is already
-// expressed by their schema, so they define no actions of their own. Product Category is the
-// exception, and lives in its own file with the rules it needs.
+// The master and junction resources below are plain CRUD and define no actions of their own.
+// Product Category is the exception, and lives in its own file with the rules it needs.
 
 func productTypeEngineSpec() engineSpec {
 	return engineSpec{

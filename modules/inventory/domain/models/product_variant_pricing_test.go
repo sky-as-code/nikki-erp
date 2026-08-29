@@ -9,15 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The variant's effective base sales price (addendum §5.7, BR-PRICE-VARIANT-001..004).
-//
-// The field is computed in SQL, so a unit test cannot evaluate it — that needs a database, and the
-// migration replay covers it. What CAN be pinned here, and matters just as much, is the SHAPE of
-// the definition: which operands it sums, that it is never stored, and that its arithmetic is the
-// one the worked example requires. Those are the properties a well-meaning edit would break
-// silently, because a computed field that resolves is not thereby a computed field that is right.
+// The variant's effective base sales price is computed in SQL, so these tests pin the shape of the
+// definition rather than evaluating it: which operands it sums, that it is never stored, and that
+// its arithmetic is correct. A computed field that resolves is not thereby one that is right.
 
-// variantField returns one field definition from the variant schema JSON.
 func variantField(t *testing.T, name string) map[string]any {
 	t.Helper()
 
@@ -43,10 +38,8 @@ func computedOf(t *testing.T, field map[string]any) map[string]any {
 	return computed
 }
 
-// BR-PRICE-VARIANT-001: the effective price is the template's base plus the variant's extras.
-//
-// Asserted as structure because that is what the requirement actually constrains: any other pair of
-// operands would resolve perfectly well and price every variant wrongly.
+// The effective price is the template's base plus the variant's extras. Asserted as structure: any
+// other pair of operands would resolve perfectly well and price every variant wrongly.
 func TestEffectiveBaseSalesPriceSumsTheTemplatePriceAndTheExtras(t *testing.T) {
 	computed := computedOf(t, variantField(t, "effective_base_sales_price"))
 
@@ -86,11 +79,8 @@ func coalescedFieldNames(t *testing.T, args []any) []string {
 	return names
 }
 
-// BR-PRICE-VARIANT-004: raising the template's price moves every variant at once.
-//
-// True by construction only because the field is NOT stored. A stored copy would be correct until
-// somebody edited the template, and then wrong with nothing to indicate it — which is precisely the
-// failure the requirement names. All three fields in the chain must be virtual, not just the last.
+// Raising the template's price moves every variant at once, true by construction only because the
+// field is not stored. All three fields in the chain must be virtual, not just the last.
 func TestTheWholePricingChainIsComputedOnRead(t *testing.T) {
 	for _, name := range []string{
 		"template_base_sales_price",
@@ -108,12 +98,9 @@ func TestTheWholePricingChainIsComputedOnRead(t *testing.T) {
 	}
 }
 
-// The sum is over the variant's OWN attribute values, through a direct collection edge.
-//
-// That edge is load-bearing: an aggregate cannot reach a field two hops away, which is why
-// sales_price_extra is denormalised onto the junction row at all (D-06). A source pointing anywhere
-// else would fail to compile at boot rather than quietly — but it would fail late, and this says so
-// early.
+// The sum is over the variant's own attribute values, through a direct collection edge. That edge
+// is load-bearing: an aggregate cannot reach a field two hops away, which is why sales_price_extra
+// is denormalised onto the junction row at all.
 func TestTheExtrasAreSummedOverTheVariantsOwnValues(t *testing.T) {
 	computed := computedOf(t, variantField(t, "sales_price_extra_total"))
 
@@ -125,12 +112,9 @@ func TestTheExtrasAreSummedOverTheVariantsOwnValues(t *testing.T) {
 		"SUM over zero rows is NULL; a variant with no attribute values must read 0, not unknown")
 }
 
-// The addendum's worked example, as arithmetic: 100,000 + 10,000 + 20,000 = 130,000, and with a
-// 10% pricelist discount, 117,000.
-//
-// It does not exercise the SQL — it cannot. What it pins is that the numbers in the requirement are
-// self-consistent and that the sum is a plain addition of the extras onto the base, so a reader
-// comparing this test to §5.7 can see the same figures.
+// The worked example as arithmetic: 100,000 + 10,000 + 20,000 = 130,000, and 117,000 after a 10%
+// pricelist discount. It pins that the sum is a plain addition of the extras onto the base; it does
+// not exercise the SQL.
 func TestTheAddendumWorkedExample(t *testing.T) {
 	templateBase := decimal.RequireFromString("100000")
 	sizeExtra := decimal.RequireFromString("10000")
@@ -140,15 +124,15 @@ func TestTheAddendumWorkedExample(t *testing.T) {
 	assert.True(t, effective.Equal(decimal.RequireFromString("130000")),
 		"100,000 + 10,000 + 20,000 = %s, want 130,000", effective)
 
-	// BR-PRICE-VARIANT-003: a rule discounting BASE_SALES_PRICE discounts THIS number, not the
-	// template's raw 100,000 — which would have given 90,000 and undercharged for the options.
+	// A rule discounting BASE_SALES_PRICE discounts this number, not the template's raw 100,000,
+	// which would give 90,000 and undercharge for the options.
 	discounted := effective.Mul(decimal.RequireFromString("0.9"))
 	assert.True(t, discounted.Equal(decimal.RequireFromString("117000")),
 		"130,000 less 10%% = %s, want 117,000", discounted)
 }
 
-// A negative extra is legitimate: a plain colour may subtract. The field's own bounds have to allow
-// it, or the rule the addendum states could not be configured.
+// A negative extra is legitimate — a plain colour may subtract — so the field's bounds must allow
+// it.
 func TestASalesPriceExtraMayBeNegative(t *testing.T) {
 	var schema struct {
 		Fields []map[string]any `json:"fields"`

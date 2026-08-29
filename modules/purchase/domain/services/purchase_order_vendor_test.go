@@ -105,8 +105,8 @@ func orderParams(vendorId, currencyId string) dmodel.DynamicFields {
 	return params
 }
 
-// D3: "is a vendor" means "has a vendor profile", which Contacts answers. Purchase does not compare
-// a status itself, so that "may be ordered from" has exactly one definition.
+// "Is a vendor" means "has a vendor profile", which Contacts answers; Purchase does not compare a
+// status itself, so "may be ordered from" has exactly one definition.
 func TestAnUnorderableVendorIsRefused(t *testing.T) {
 	validator := NewOrderReferenceValidator(
 		&stubVendors{found: true, orderable: false}, usableCurrency(2))
@@ -133,7 +133,7 @@ func TestAnUnusableCurrencyIsRefused(t *testing.T) {
 	assert.Equal(t, models.PurchaseOrderFieldCurrencyId, (*vErrs)[0].Field)
 }
 
-// The vendor's currency defaults a new order, which is the convenience the port exists for.
+// The vendor's currency defaults a new order.
 func TestTheCurrencyDefaultsFromTheVendor(t *testing.T) {
 	validator := NewOrderReferenceValidator(usableVendor("01VND"), usableCurrency(0))
 	params := orderParams("01PARTY", "")
@@ -145,8 +145,7 @@ func TestTheCurrencyDefaultsFromTheVendor(t *testing.T) {
 	assert.Equal(t, "01VND", params[models.PurchaseOrderFieldCurrencyId])
 }
 
-// An explicit choice wins over the vendor's default. Overriding it would silently re-denominate an
-// order the caller had already decided the currency of.
+// An explicit choice wins over the vendor's default, or the order would be silently redenominated.
 func TestAnExplicitCurrencyIsNotOverriddenByTheVendorDefault(t *testing.T) {
 	validator := NewOrderReferenceValidator(usableVendor("01VND"), usableCurrency(2))
 	params := orderParams("01PARTY", "01USD")
@@ -159,7 +158,7 @@ func TestAnExplicitCurrencyIsNotOverriddenByTheVendorDefault(t *testing.T) {
 }
 
 // A vendor with no stated terms leaves the order without a currency, which is legitimate: the
-// schema makes currency_id optional and a draft may genuinely not have one yet.
+// schema makes currency_id optional and a draft may not have one yet.
 func TestAVendorWithNoTermsLeavesTheCurrencyUnset(t *testing.T) {
 	validator := NewOrderReferenceValidator(usableVendor(""), usableCurrency(2))
 	params := orderParams("01PARTY", "")
@@ -171,8 +170,7 @@ func TestAVendorWithNoTermsLeavesTheCurrencyUnset(t *testing.T) {
 	assert.NotContains(t, params, models.PurchaseOrderFieldCurrencyId)
 }
 
-// The rounding scale comes from the currency, which is what [PUR-014] deferred and what makes
-// Purchase the first reader of decimal_places.
+// The rounding scale comes from the currency's decimal_places.
 func TestScaleForReadsTheCurrencysDecimalPlaces(t *testing.T) {
 	testCases := []struct {
 		name       string
@@ -204,7 +202,7 @@ func TestScaleForReadsTheCurrencysDecimalPlaces(t *testing.T) {
 	}
 }
 
-// An inactive currency still rounds. Amounts already recorded in it must keep reconciling, and
+// An inactive currency still rounds: amounts already recorded in it must keep reconciling, and
 // reading a scale is not selecting a currency for something new.
 func TestAnInactiveCurrencyStillRounds(t *testing.T) {
 	validator := NewOrderReferenceValidator(
@@ -213,8 +211,7 @@ func TestAnInactiveCurrencyStillRounds(t *testing.T) {
 	assert.Equal(t, int32(3), validator.ScaleFor(nil, "01OLD"))
 }
 
-// The scale actually reaches the arithmetic: a JPY order must not be rounded to two places it does
-// not have, which is the whole point of [PUR-018] over the fixed 2 of [PUR-014].
+// The scale reaches the arithmetic: a JPY order must not be rounded to two places it does not have.
 func TestTheCurrencyScaleReachesTheLineArithmetic(t *testing.T) {
 	line := productLine("3", "33.3333", "0", "0")
 
@@ -224,8 +221,8 @@ func TestTheCurrencyScaleReachesTheLineArithmetic(t *testing.T) {
 	assert.True(t, ComputeLineTotals(line, 3).Subtotal.Equal(dec("99.9999").Round(3)))
 }
 
-// Unset, the resolver hook leaves every order at the fallback — which is exactly the behaviour
-// before [PUR-018], so a deployment that never installs it is not silently broken.
+// Unset, the resolver hook leaves every order at the fallback scale, so a deployment that never
+// installs it is not silently broken.
 func TestTheScaleHookDefaultsToTheFallback(t *testing.T) {
 	original := orderScaleResolver
 	t.Cleanup(func() { orderScaleResolver = original })

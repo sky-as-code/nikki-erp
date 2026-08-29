@@ -1,8 +1,6 @@
 // Package services holds the rules of the Purchase module: the totals recomputation, the order and
-// agreement lifecycles, and the audit trail that records them.
-//
-// Everything here is reachable from a dynamicengines action callback, which adapts and validates a
-// request; the writes belong in this package. See docs/wiki/07. ERP backend module.md §6.7.
+// agreement lifecycles, and the audit trail that records them. Everything here is reached from a
+// dynamicengines action callback, which adapts and validates the request; the writes belong here.
 package services
 
 import (
@@ -21,10 +19,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// engineFor resolves another resource's engine from the registry.
-//
-// It is a variable rather than a plain function so that a test can supply its own engines: the
-// registry is a package singleton populated during Init, which a unit test has no way to build.
+// engineFor resolves another resource's engine from the registry. It is a variable so a test can
+// substitute its own engines; the registry is a package singleton populated during Init.
 var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
 	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
 	if !ok {
@@ -33,22 +29,17 @@ var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
 	return engine, nil
 }
 
-// EngineFor exposes the registry lookup to the dynamicengines package, whose action callbacks
-// receive only their own engine but need another resource's repository to apply a cross-schema
-// rule. It delegates to engineFor so a test's substitution is honoured here too.
+// EngineFor exposes the registry lookup to dynamicengines, whose action callbacks receive only
+// their own engine. It delegates to engineFor so a test's substitution is honoured here too.
 func EngineFor(schemaName string) (drif.DynamicResourceEngine, error) {
 	return engineFor(schemaName)
 }
 
-// withOrderTransaction runs body inside one transaction on a scoped copy of the context.
-//
-// The transaction goes on a clone, never on ctx itself: setting it on the caller's context would
-// leave a committed transaction visible to whatever runs next. CloneRequestContext carries the
-// caller's identity across, which the audit columns and the audit event's actor both need.
-//
-// There is no "join an existing transaction" branch, because pgTxClient.BeginTx returns
-// ErrTxNested: the lifecycle actions are entry points, and nesting one inside another is a bug
-// rather than a case to handle.
+// withOrderTransaction runs body inside one transaction on a cloned context. The transaction must
+// go on the clone, never on ctx itself, or a committed transaction stays visible to whatever runs
+// next; the clone carries the caller's identity, which the audit columns and actor need. There is
+// no join-existing-transaction branch: BeginTx returns ErrTxNested, and nesting these entry points
+// is a bug rather than a case to handle.
 func withOrderTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
 	engine, err := engineFor(models.PurchaseOrderSchemaName)
 	if err != nil {
@@ -70,8 +61,7 @@ func withOrderTransaction(ctx corectx.Context, body func(tranxCtx corectx.Contex
 	return errors.Wrap(tranx.Commit(), "withOrderTransaction")
 }
 
-// orderNotFoundResult is the answer when an operation names an order that does not exist. It is a
-// client error rather than a server one: the id came from the caller.
+// orderNotFoundResult reports a missing order as a client error, since the id came from the caller.
 func orderNotFoundResult(orderId string) *dyn.OpResult[dyn.MutateResultData] {
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *orderNotFoundErrors(orderId)}
 }
@@ -80,11 +70,8 @@ func orderViolationResult(key, message string) *dyn.OpResult[dyn.MutateResultDat
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *orderViolationErrors(key, message)}
 }
 
-// The two builders above wrap these, which return the errors alone.
-//
-// Split because not every order operation returns a MutateResultData: reprice reports which lines
-// moved, so it needs the same refusals in a differently-typed envelope. Generics would express that
-// too, but two small functions read better than one signature nobody can scan.
+// The builders above wrap these, which return the errors alone. Split because not every order
+// operation returns a MutateResultData: reprice needs the same refusals in a different envelope.
 func orderNotFoundErrors(orderId string) *ft.ClientErrors {
 	return orderViolationErrors(
 		"purchase_order.not_found",
@@ -98,11 +85,8 @@ func orderViolationErrors(key, message string) *ft.ClientErrors {
 	return vErrs
 }
 
-// mutateOk is the success envelope of a lifecycle operation.
-//
-// AffectedCount is 1 for the order itself, not a count of the lines and audit events the operation
-// touched: the caller asked to act on one order, and reporting the internal write count would make
-// the number mean something different for each operation.
+// mutateOk is the success envelope of a lifecycle operation. AffectedCount is 1 for the order
+// itself, never a count of the lines and audit events written along the way.
 func mutateOk() *dyn.OpResult[dyn.MutateResultData] {
 	return &dyn.OpResult[dyn.MutateResultData]{
 		Data:    dyn.MutateResultData{AffectedCount: 1},
@@ -121,11 +105,9 @@ func derefBool(value *bool) bool {
 	return value != nil && *value
 }
 
-// decimalOf reads a decimal field, treating absent and null alike as zero.
-//
-// It does not use DynamicFields.GetDecimal, which type-asserts without checking and so panics on a
-// value the repository handed back in another shape. A total is summed from whatever the database
-// returns, and a panic in that path would take down the request rather than reporting a bad row.
+// decimalOf reads a decimal field, treating absent and null alike as zero. It avoids
+// DynamicFields.GetDecimal, which type-asserts unchecked and panics on a value the repository
+// returned in another shape.
 func decimalOf(fields dmodel.DynamicFields, key string) decimal.Decimal {
 	value, ok := fields[key]
 	if !ok || value == nil {
@@ -184,15 +166,10 @@ func boolOf(fields dmodel.DynamicFields, key string) bool {
 	}
 }
 
-// newOrderErrors is the client-error collector the lifecycle operations report refusals through.
 func newOrderErrors() *ft.ClientErrors {
 	return ft.NewClientErrors()
 }
 
-// timeNow is the clock the pricing path reads, as a variable so a test can pin it.
-//
-// A resolution that depends on the wall clock cannot be asserted against a fixed set of validity
-// windows otherwise — the same input would pass in January and fail in February. Only this one
-// seam exists: vendorpricing itself has no clock at all, precisely so that most of the logic needs
-// no seam.
+// timeNow is the clock the pricing path reads, as a variable so a test can pin it against fixed
+// validity windows. It is the only clock seam: vendorpricing itself has none.
 var timeNow = time.Now

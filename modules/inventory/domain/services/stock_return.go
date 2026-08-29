@@ -13,34 +13,26 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// Create Reverse Transfer: the correction for goods that physically come back (BR §4.2.10).
+// Create Reverse Transfer: the correction for goods that physically come back.
 //
-// Unlike an adjustment or a scrap, this one is *not* auto-validated (decision F5, BR §4.2.10.4
-// step 8). It produces a draft transfer the user then confirms, reserves and validates like any
-// other, because at the moment the document is raised the goods have not arrived yet. Raising a
-// return is a statement of intent; validating it is the statement that the goods are back.
+// Unlike an adjustment or a scrap this is not auto-validated: it produces a draft the user
+// confirms, reserves and validates, because when the document is raised the goods have not arrived.
 //
-// The original transfer is never touched — not edited, not reopened, not cancelled
-// (STOCK-INV-005, STOCK-INV-011, AC-STOCK-010, BR §4.2.10.5). The history must read
-// original move → reverse move, and a return that mutated its original would erase the very fact
-// it exists to record.
+// The original transfer is never edited, reopened or cancelled. History must read original move →
+// reverse move, and mutating the original would erase the fact the return exists to record.
 
-// ReturnRequest names how much of each move to send back.
+// ReturnRequest names how much of each move to send back; empty Lines means everything still
+// returnable.
 //
-// An empty Lines means "everything still returnable", which is the common case and the only one
-// the UI drives (F9). A caller that wants a partial return names the moves it cares about.
-//
-// An ALIAS of the published port's type rather than a separate struct, so that CreateReturn
-// satisfies StockTransferMovementService. Go matches method signatures by identity, so two
-// structurally identical types would not do: the service would silently fail to implement the
-// interface, and the failure would surface as a confusing assertion error at wiring time rather
-// than here. Aliasing also means there is one definition to change, not two that must agree.
+// It must stay an alias of the port's type, not a structurally identical copy: Go matches method
+// signatures by identity, so a copy would make CreateReturn silently fail to satisfy
+// StockTransferMovementService, surfacing as an assertion error at wiring time.
 type ReturnRequest = itStock.TransferReturnRequest
 
 // ReturnLineRequest is one move's requested return quantity.
 type ReturnLineRequest = itStock.TransferReturnLine
 
-// CreateReturn raises a draft reverse transfer for a done transfer (BR §4.2.10.4).
+// CreateReturn raises a draft reverse transfer for a done transfer.
 func (this *StockTransferDomainServiceImpl) CreateReturn(
 	ctx corectx.Context, transferId string, request ReturnRequest,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -108,11 +100,9 @@ func buildReturnTransfer(
 	return mutateOk(), nil
 }
 
-// collectReturnableLines works out what each of the original's moves can still take back.
-//
-// Completed comes from the move's *lines*, counting only those validate marked picked — not from
-// demand_quantity. A transfer of 100 that shipped 80 can return 80, and reading the demand here
-// would let a customer return goods that never left (BR §4.2.10.3).
+// collectReturnableLines works out what each of the original's moves can still take back. Completed
+// comes from the move's lines, counting only those validate marked picked — never from
+// demand_quantity, which would let a customer return goods that never left.
 func collectReturnableLines(
 	ctx corectx.Context, operation *transferOperationContext,
 ) ([]ReturnableLine, error) {
@@ -165,10 +155,9 @@ func sumPickedQuantity(
 	return total, nil
 }
 
-// sumAlreadyReturned totals what previous returns have taken back, keyed by original move.
-//
-// Only *done* return lines count. A draft return in flight must not reduce the returnable, or two
-// half-finished returns would each block the other and neither could ever be completed.
+// sumAlreadyReturned totals what previous returns have taken back, keyed by original move. Only
+// done returns count: a draft return in flight must not reduce the returnable, or two half-finished
+// returns would block each other forever.
 func sumAlreadyReturned(
 	ctx corectx.Context, operation *transferOperationContext,
 ) (map[string]decimal.Decimal, error) {
@@ -230,16 +219,10 @@ func findReturnsOf(
 }
 
 // resolveRequestedReturns turns the request into a per-move quantity, defaulting to everything.
-//
-// Requesting more than the returnable is refused, with no override (AC-STOCK-022).
-//
-// The AC says the cap applies "if there is no explicit override", and no override is built here.
-// That omission is deliberate rather than an oversight: a cap that any caller can waive with a
-// request flag is not a cap. If the business later wants one, it must be an authorisation
-// decision — a supervisor holding an override entitlement (`iam_entitlement`, see
-// modules/iam/domain/models/entitlement.go) approving the excess — and never a boolean on the
-// request body. Note that AssertReturnable and ReturnableLine.Returnable() take no waiver
-// parameter for the same reason: the check must stay somewhere a caller cannot reach past.
+// Requesting more than the returnable is refused with no override, deliberately: AssertReturnable
+// and ReturnableLine.Returnable() take no waiver parameter either, so the cap stays somewhere a
+// caller cannot reach past. Any future override must be an authorisation decision, not a request
+// flag.
 func resolveRequestedReturns(
 	lines []ReturnableLine, request ReturnRequest,
 ) ([]ReturnLineRequest, *ft.ClientErrors) {
@@ -271,10 +254,8 @@ func resolveRequestedReturns(
 	return resolved, vErrs
 }
 
-// defaultFullReturn returns everything still returnable, which is what the UI asks for.
-//
-// Per F9 the contextual action carries no per-line payload: the return lands as a draft and the
-// user adjusts its move quantities through ordinary CRUD before confirming.
+// defaultFullReturn returns everything still returnable. The return lands as a draft and the user
+// adjusts its move quantities through ordinary CRUD before confirming.
 func defaultFullReturn(lines []ReturnableLine) []ReturnLineRequest {
 	resolved := make([]ReturnLineRequest, 0, len(lines))
 	for _, line := range lines {
@@ -287,12 +268,9 @@ func defaultFullReturn(lines []ReturnableLine) []ReturnLineRequest {
 	return resolved
 }
 
-// insertReturnTransfer writes the reverse transfer's header.
-//
-// The operation code is inverted, because a return of an outgoing delivery is an incoming receipt:
-// the goods travel the other way. That inversion is what makes the reverse transfer take
-// ensureIncomingLine's path at validate when the original was outgoing — the one place Phase 2's
-// asymmetry between the directions meets this phase.
+// insertReturnTransfer writes the reverse transfer's header. The operation code is inverted, since
+// a return of an outgoing delivery is an incoming receipt; that inversion is what makes the reverse
+// transfer take ensureIncomingLine's path at validate.
 func insertReturnTransfer(
 	ctx corectx.Context, operation *transferOperationContext,
 ) (string, error) {
@@ -324,7 +302,7 @@ func insertReturnTransfer(
 		models.StockTransferFieldOrgId:                 derefString(original.GetOrgId()),
 	}
 	// An operation type of the opposite direction is preferred, but its absence must not block a
-	// return: the reversed code on the transfer is what actually drives the movement.
+	// return: the reversed code on the transfer is what drives the movement.
 	if operationType != nil {
 		fields[models.StockTransferFieldOperationTypeId] = derefString(operationType.GetId())
 	} else {
@@ -362,8 +340,8 @@ func insertReturnMoves(
 			models.StockMoveFieldSourceLocationId:      derefString(source.GetDestinationLocationId()),
 			models.StockMoveFieldDestinationLocationId: derefString(source.GetSourceLocationId()),
 			models.StockMoveFieldStatus:                models.StockMoveStatusDraft,
-			// Points at the move being reversed, so history reads original move → reverse move
-			// (BR §4.2.10.5) and the next return can tell what has already come back.
+			// Points at the move being reversed, so history reads original move → reverse move and the
+			// next return can tell what has already come back.
 			models.StockMoveFieldOriginMoveId: line.MoveId,
 			models.StockMoveFieldOrgId:        derefString(source.GetOrgId()),
 		})
@@ -374,10 +352,8 @@ func insertReturnMoves(
 	return nil
 }
 
-// reverseOperationCode flips the direction of a movement.
-//
-// An internal transfer reverses to another internal one: both ends are the company's own
-// locations, so there is no direction to invert.
+// reverseOperationCode flips the direction of a movement. An internal transfer reverses to another
+// internal one: both ends are the company's own locations, so there is no direction to invert.
 func reverseOperationCode(code string) string {
 	switch code {
 	case models.StockOperationCodeOutgoing:

@@ -22,7 +22,6 @@ func (this *ProductServiceImpl) CreateAttributeGroup(ctx corectx.Context, cmd it
 		BaseRepoGetter: this.attrGrpRepo,
 		Data:           cmd,
 		BeforeValidation: func(ctx corectx.Context, attributeGroup *domain.AttributeGroup, _ *ft.ClientErrors) (*domain.AttributeGroup, error) {
-			// Set the next index if not provided
 			if attributeGroup.GetIndex() == nil {
 				nextIndex, err := this.getNextIndex(ctx, attributeGroup.GetProductId())
 				if err != nil {
@@ -34,7 +33,6 @@ func (this *ProductServiceImpl) CreateAttributeGroup(ctx corectx.Context, cmd it
 			return attributeGroup, nil
 		},
 		ValidateExtra: func(ctx corectx.Context, attributeGroup *domain.AttributeGroup, vErrs *ft.ClientErrors) error {
-			// Check if product exists
 			productId := attributeGroup.GetProductId()
 			if productId != nil {
 				productResult, err := this.GetProduct(ctx, itProduct.GetProductQuery{Id: *productId})
@@ -56,7 +54,6 @@ func (this *ProductServiceImpl) UpdateAttributeGroup(ctx corectx.Context, cmd it
 		DbRepoGetter: this.attrGrpRepo,
 		Data:         cmd,
 		ValidateExtra: func(ctx corectx.Context, attributeGroup *domain.AttributeGroup, foundAttributeGroup *domain.AttributeGroup, vErrs *ft.ClientErrors) error {
-			// Check if product exists (if product ID is being changed)
 			productId := attributeGroup.GetProductId()
 			if productId != nil {
 				productResult, err := this.GetProduct(ctx, itProduct.GetProductQuery{Id: *productId})
@@ -104,13 +101,11 @@ func (this *ProductServiceImpl) AttributeGroupExists(ctx corectx.Context, query 
 	})
 }
 
-// getNextIndex returns the next available index for a product's attribute groups
 func (this *ProductServiceImpl) getNextIndex(ctx corectx.Context, productId *model.Id) (int, error) {
 	if productId == nil {
 		return 0, nil
 	}
 
-	// Search for all attribute groups with the given product ID to find max index
 	graph := dmodel.NewSearchGraph().NewCondition(domain.AttrGrpFieldProductId, dmodel.Equals, *productId)
 	searchResult, err := this.attrGrpRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph:  graph,
@@ -127,7 +122,6 @@ func (this *ProductServiceImpl) getNextIndex(ctx corectx.Context, productId *mod
 		return 0, nil
 	}
 
-	// Find the maximum index
 	maxIndex := int64(0)
 	for _, item := range searchResult.Data.Items {
 		index := item.GetIndex()

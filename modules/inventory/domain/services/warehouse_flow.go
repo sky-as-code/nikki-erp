@@ -4,12 +4,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// The warehouse flow topology: which locations a flow needs, and what ordered path goods take
-// through them.
-//
-// This is configuration, expressed as pure functions over the flow setting. Nothing here reads or
-// writes stock. The Stock movement engine asks what the path is and then creates the moves; a
-// change to a flow provisions locations and leaves every existing quant and transfer alone.
+// The warehouse flow topology: which locations a flow needs and what ordered path goods take
+// through them. Pure functions over the flow setting; nothing here reads or writes stock, and a
+// flow change provisions locations while leaving every existing quant and transfer alone.
 
 // systemLocationSpec describes one location a warehouse creates for itself.
 type systemLocationSpec struct {
@@ -17,8 +14,7 @@ type systemLocationSpec struct {
 	Purpose string
 }
 
-// The codes are the segment names that appear in a location path, so 'MAIN/Quality Control' reads
-// the way a person would say it.
+// The codes are the segment names that appear in a location path, e.g. 'MAIN/Quality Control'.
 const (
 	warehouseStockLocationCode   = "Stock"
 	warehouseInputLocationCode   = "Input"
@@ -27,10 +23,8 @@ const (
 	warehouseOutputLocationCode  = "Output"
 )
 
-// requiredSystemLocations lists what a warehouse must have for its two flows.
-//
-// Stock is always present: it is where goods live, and a warehouse without it could not hold
-// anything. The rest depend on how many stops the flows declare.
+// requiredSystemLocations lists what a warehouse must have for its two flows. Stock is always
+// present, being where goods live; the rest depend on how many stops the flows declare.
 func requiredSystemLocations(incomingFlow string, outgoingFlow string) []systemLocationSpec {
 	specs := []systemLocationSpec{
 		{Code: warehouseStockLocationCode, Purpose: models.InventoryLocationPurposeStorage},
@@ -74,27 +68,23 @@ func outgoingFlowLocations(flow string) []systemLocationSpec {
 	}
 }
 
-// FlowLeg is one hop of a movement plan: goods leave one place and arrive at another.
-//
-// The endpoints outside the warehouse are named rather than resolved to ids here, because which
-// vendor or customer location applies depends on the transaction, which is the movement engine's
-// business and not the warehouse's.
+// FlowLeg is one hop of a movement plan. Endpoints outside the warehouse are named rather than
+// resolved to ids: which vendor or customer location applies depends on the transaction, and the
+// movement engine decides that.
 type FlowLeg struct {
 	FromCode string
 	ToCode   string
 }
 
-// The two endpoints outside the warehouse. They are locations in the shared master with no
-// warehouse of their own, which is why they are referred to by usage rather than by path.
+// The two endpoints outside the warehouse: locations in the shared master with no warehouse of
+// their own, referred to by usage rather than by path.
 const (
 	FlowEndpointVendor   = "vendor"
 	FlowEndpointCustomer = "customer"
 )
 
-// ResolveIncomingFlow returns the ordered path goods take from a vendor into stock.
-//
-// It is a pure read of configuration. Calling it moves nothing and creates nothing; the movement
-// engine takes the legs and builds the transfer.
+// ResolveIncomingFlow returns the ordered path goods take from a vendor into stock. A pure read of
+// configuration: it moves nothing, and the movement engine builds the transfer from the legs.
 func ResolveIncomingFlow(flow string) []FlowLeg {
 	stops := incomingFlowLocations(flow)
 
@@ -120,11 +110,9 @@ func ResolveOutgoingFlow(flow string) []FlowLeg {
 	return append(legs, FlowLeg{FromCode: from, ToCode: FlowEndpointCustomer})
 }
 
-// obsoleteSystemLocations lists the stops a flow change leaves unused.
-//
-// They are reported so the caller can suspend them, never delete them: a location that once held
-// goods is named by the moves that passed through it, and removing it would break the history that
-// explains where stock went.
+// obsoleteSystemLocations lists the stops a flow change leaves unused, so the caller can suspend
+// them. Never delete them: the moves that passed through still name them, and removing one would
+// break the history explaining where stock went.
 func obsoleteSystemLocations(previousFlow string, nextFlow string, outgoing bool) []systemLocationSpec {
 	lister := incomingFlowLocations
 	if outgoing {

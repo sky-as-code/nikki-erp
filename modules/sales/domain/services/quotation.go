@@ -15,29 +15,18 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
-// Quotations and their conversion to orders (BR 87.1, SALES-038).
+// Quotations and their conversion to orders.
 //
-// # The conversion RE-PRICES rather than copying the quoted numbers
+// The conversion re-prices rather than copying the quoted numbers: a copied total has no adjustment
+// chain, so the price explanation could not rebuild it, and a six-month-old quotation would create an
+// order at prices, taxes and promotions that no longer exist. The quotation carries the lines, not
+// the money; valid_until keeps that honest by refusing an offer outside its window rather than
+// silently repricing it. Holding a stale price deliberately is a manual discount on the resulting
+// order, which is permission-gated and audited.
 //
-// This is the decision in this file, and the tempting alternative is wrong. Copying the quoted
-// amounts onto the order would honour the offer exactly — which sounds right, and is how a quotation
-// is often described — but it makes the order's numbers unexplainable: SALES-021's price explanation
-// rebuilds a total from its adjustment chain, and a copied total has no chain. It would also let a
-// quotation from six months ago create an order at prices, taxes and promotions that no longer
-// exist, with nothing recording that it had happened.
-//
-// So the conversion runs the same engine a new order runs, and the quotation's role is to carry the
-// LINES — what the customer asked for — not the money. `valid_until` is what makes that honest: an
-// offer inside its window prices to substantially the same numbers, and one outside it is refused
-// rather than silently repriced. Where the business genuinely wants to hold a stale price, that is a
-// manual discount on the resulting order (SALES-039), which is permission-gated, reasoned and
-// audited — all things a silent copy would not be.
-//
-// # Conversion is idempotent through converted_sales_order_id
-//
-// A second accept returns the first accept's order. A customer who accepted once agreed to buy once,
-// and two orders from one acceptance is two deliveries and two invoices. The column is set inside
-// the same transaction as the status move, so the two cannot disagree.
+// Conversion is idempotent through converted_sales_order_id: a second accept returns the first
+// accept's order, since two orders from one acceptance is two deliveries and two invoices. The column
+// is set in the same transaction as the status move, so the two cannot disagree.
 
 // The refusal reasons the quotation operations can produce.
 const (
@@ -53,13 +42,12 @@ type ConvertQuotationParams struct {
 	SalesQuotationId string
 
 	// SalesPointId names where the sale will be made. Supplied at conversion rather than taken from
-	// the quotation, because a quotation may be prepared centrally with no point decided — and
-	// because the order's anti-spoofing rule (D-20) derives the channel from the POINT, so the point
-	// is the thing that must be current.
+	// the quotation, because a quotation may be prepared centrally with no point decided, and the
+	// order's anti-spoofing rule derives the channel from the point, which must be current.
 	SalesPointId string
 
-	// IdempotencyKey is passed through to the order. Belt to converted_sales_order_id's braces:
-	// that column stops a second accept, and this stops a retry of the first one racing itself.
+	// IdempotencyKey is passed through to the order: converted_sales_order_id stops a second accept,
+	// and this stops a retry of the first one racing itself.
 	IdempotencyKey string
 }
 
@@ -69,18 +57,16 @@ type ConvertQuotationResult struct {
 	SalesOrderId     string
 	OrderNumber      string
 
-	// AlreadyConverted marks the replay path: the quotation had already become an order, and that
-	// order is what came back.
+	// AlreadyConverted marks the replay path: the quotation had already become the order returned here.
 	AlreadyConverted bool
 
-	// QuotedTotal and OrderTotal are BOTH returned, so a caller can see whether repricing moved the
-	// number rather than taking it on trust. A back-office operator handing an order to a customer
-	// who is holding the quotation needs to know before they do, not after.
+	// Both totals are returned so a caller can see whether repricing moved the number, before handing
+	// an order to a customer who is holding the quotation.
 	QuotedTotal decimal.Decimal
 	OrderTotal  decimal.Decimal
 }
 
-// ConvertQuotation turns an accepted offer into a sales order (BR 87.1).
+// ConvertQuotation turns an accepted offer into a sales order.
 func ConvertQuotation(
 	ctx corectx.Context,
 	params ConvertQuotationParams,
@@ -101,9 +87,9 @@ func ConvertQuotation(
 		return nil, vErrs, nil
 	}
 
-	// The replay check comes first, before the gates. A retry of a conversion that already happened
-	// must succeed even if the quotation has since expired: the sale was made, and refusing the
-	// acknowledgement would leave the caller retrying against an order that already exists.
+	// The replay check comes before the gates: a retry of a conversion that already happened must
+	// succeed even if the quotation has since expired, or the caller retries against an order that
+	// already exists.
 	typed := models.NewSalesQuotationFrom(quotation)
 	if typed.IsConverted() {
 		return replayConversion(ctx, quotation)
@@ -125,10 +111,8 @@ func ConvertQuotation(
 		return nil, vErrs, nil
 	}
 
-	// The order is created through the ordinary path, not a private one. That is deliberate: it
-	// keeps the anti-spoofing rule, the idempotency handling and the repricing identical to a
-	// directly-created order, so a converted order cannot be a second class of order with its own
-	// bugs.
+	// Created through the ordinary path, so the anti-spoofing rule, idempotency handling and repricing
+	// are identical to a directly-created order.
 	created, vErrs, err := CreateOrder(ctx, CreateOrderParams{
 		SalesPointId:      params.SalesPointId,
 		CustomerReference: stringOf(quotation, models.SalesQuotationFieldCustomerRef),
@@ -166,14 +150,10 @@ func assertConvertible(quotation dmodel.DynamicFields) *ft.ClientErrors {
 
 	status := stringOf(quotation, models.SalesQuotationFieldStatus)
 
-	// Already-accepted is refused HERE, explicitly, rather than left to canTransition. That helper
-	// treats from == to as an allowed no-op, which is right for an idempotent status retry and wrong
-	// for this: accepting has a SIDE EFFECT, and a second one would create a second order.
-	//
-	// ConvertQuotation normally never reaches this point for an accepted quotation, because the
-	// converted_sales_order_id replay catches it first. This is the case where that column is
-	// missing but the status is not - a half-written accept - and the safe reading of that is to
-	// refuse rather than to make a second sale.
+	// Already-accepted is refused here rather than left to canTransition, which treats from == to as
+	// an allowed no-op — right for an idempotent status retry, wrong when accepting creates an order.
+	// This path is only reached when converted_sales_order_id is missing but the status is not, a
+	// half-written accept, and refusing is safer than making a second sale.
 	if status == string(models.SalesQuotationStatusAccepted) {
 		vErrs.Append(*ft.NewBusinessViolation("status", ReasonQuotationNotConvertible,
 			"this quotation has already been accepted"))
@@ -186,10 +166,9 @@ func assertConvertible(quotation dmodel.DynamicFields) *ft.ClientErrors {
 		return vErrs
 	}
 
-	// Expiry is checked HERE as well as by the sweep, and the redundancy is the point: the sweep
-	// runs on a schedule, so between a quotation lapsing and the sweep noticing there is a window in
-	// which the stored status still says `sent`. Converting inside that window would honour an offer
-	// that had already expired, at prices nobody re-agreed to.
+	// Expiry is checked here as well as by the sweep: the sweep runs on a schedule, so between a
+	// quotation lapsing and the sweep noticing, the stored status still says sent, and converting in
+	// that window would honour an expired offer.
 	if validUntil := dateTimeOf(quotation, models.SalesQuotationFieldValidUntil); validUntil != nil {
 		if validUntil.GoTime().Before(time.Now().UTC()) {
 			vErrs.Append(*ft.NewBusinessViolation("valid_until", ReasonQuotationExpired,
@@ -204,11 +183,9 @@ func assertConvertible(quotation dmodel.DynamicFields) *ft.ClientErrors {
 	return nil
 }
 
-// orderLinesFromQuotation carries WHAT was asked for, and not what it was quoted at.
-//
-// The unit price travels as the caller's catalogue fallback, which the engine overrides whenever a
-// pricelist matches — so a quoted price survives only where nothing else has an opinion. That is the
-// intended behaviour: see the package comment on why the conversion reprices.
+// orderLinesFromQuotation carries what was asked for, not what it was quoted at. The unit price
+// travels as the catalogue fallback, which the engine overrides whenever a pricelist matches, so a
+// quoted price survives only where nothing else has an opinion.
 func orderLinesFromQuotation(lines []dmodel.DynamicFields) []CreateOrderLine {
 	converted := make([]CreateOrderLine, 0, len(lines))
 	for _, line := range lines {
@@ -222,10 +199,8 @@ func orderLinesFromQuotation(lines []dmodel.DynamicFields) []CreateOrderLine {
 	return converted
 }
 
-// stampQuotationAccepted records the acceptance and the order it produced.
-//
-// Both writes in ONE transaction. A quotation marked accepted with no order recorded would be
-// unconvertible and unexplainable — the offer is spent and nothing says what it bought — and the
+// stampQuotationAccepted records the acceptance and the order it produced, both in one transaction:
+// a quotation marked accepted with no order recorded is spent with nothing to show for it, and the
 // reverse would let a second accept create a second order.
 func stampQuotationAccepted(
 	ctx corectx.Context, quotation dmodel.DynamicFields, orderId string,
@@ -247,9 +222,8 @@ func stampQuotationAccepted(
 				return err
 			}
 
-			// The audit trail hangs off the ORDER, because that is the document that survives and
-			// the one an operator investigating a price will be looking at. It names the quotation,
-			// so the lineage reads in the direction somebody actually asks about it.
+			// The audit trail hangs off the order, the document that survives and the one an operator
+			// investigating a price is looking at, and names the quotation it came from.
 			return WriteSalesAuditEvent(tranxCtx, SalesAuditEntry{
 				SalesOrderId: orderId,
 				EntityType:   models.SalesQuotationSchemaName,
@@ -288,10 +262,8 @@ func replayConversion(
 	return result, nil, nil
 }
 
-// TransitionQuotation moves a quotation between statuses, refusing what the table forbids.
-//
-// The one entry point for a quotation's status, so the transition table is enforced rather than
-// merely documented — the field is declared no_update, so this is the only way a status moves at all.
+// TransitionQuotation moves a quotation between statuses, refusing what the table forbids. The status
+// field is declared no_update, so this is the only way a status moves at all.
 func TransitionQuotation(
 	ctx corectx.Context, quotationId, toStatus string,
 ) (*ft.ClientErrors, error) {
@@ -315,9 +287,8 @@ func TransitionQuotation(
 		return vErrs, nil
 	}
 
-	// Accepting is NOT done here. It has to create an order and set converted_sales_order_id in the
-	// same breath, which is ConvertQuotation's job — and a status-only accept would leave a spent
-	// quotation with nothing to show for it.
+	// Accepting is ConvertQuotation's job: it must create an order and set converted_sales_order_id in
+	// the same breath, and a status-only accept leaves a spent quotation with nothing to show for it.
 	if toStatus == string(models.SalesQuotationStatusAccepted) {
 		vErrs := ft.NewClientErrors()
 		vErrs.Append(*ft.NewBusinessViolation("status", ReasonQuotationBadTransition,

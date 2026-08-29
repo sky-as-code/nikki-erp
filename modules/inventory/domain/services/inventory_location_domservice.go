@@ -15,21 +15,17 @@ import (
 )
 
 // NewInventoryLocationDomainService derives the location service from the engine's default one.
-//
-// usage is how the service learns what Stock holds at a location, which the archive guard needs.
-// It is injected rather than looked up so the rule can be tested without a stock engine.
+// usage tells it what Stock holds at a location, injected rather than looked up so the archive
+// guard can be tested without a stock engine.
 func NewInventoryLocationDomainService(
 	base drif.DynamicResourceService, usage itStock.LocationUsageReadService,
 ) *InventoryLocationDomainServiceImpl {
 	return &InventoryLocationDomainServiceImpl{DynamicResourceService: base, usage: usage}
 }
 
-// InventoryLocationDomainServiceImpl adds the tree rules and the lifecycle guards to the location
-// resource.
-//
-// Location is the shared master of the whole module: Warehouse configures it and Stock references
-// it. Everything here is about keeping the tree coherent and stopping a location from being
-// retired while something still depends on it. None of it changes a quantity.
+// InventoryLocationDomainServiceImpl adds the tree rules and lifecycle guards to the location
+// resource: keeping the tree coherent, and stopping a location from being retired while something
+// depends on it. None of it changes a quantity.
 type InventoryLocationDomainServiceImpl struct {
 	drif.DynamicResourceService
 
@@ -38,11 +34,9 @@ type InventoryLocationDomainServiceImpl struct {
 
 var _ drif.DynamicResourceService = (*InventoryLocationDomainServiceImpl)(nil)
 
-// Create applies the tree rules and derives the cached path.
-//
-// is_system_generated is stripped from whatever the client sent: only the warehouse service
-// creates the locations a warehouse needs for itself, and a client able to set the flag could mint
-// a location that then refuses to be archived.
+// Create applies the tree rules and derives the cached path. is_system_generated is stripped from
+// whatever the client sent: a client able to set it could mint a location that then refuses to be
+// archived.
 func (this *InventoryLocationDomainServiceImpl) Create(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
@@ -63,10 +57,9 @@ func (this *InventoryLocationDomainServiceImpl) Create(
 	return this.DynamicResourceService.Create(ctx, prepared)
 }
 
-// Update applies the same placement rules, and refuses to restructure a system-generated location.
-//
-// A warehouse's own Stock, Input or Output location may be renamed and given a storage category,
-// but re-parenting it or changing what it is for would break the flow that created it.
+// Update applies the same placement rules and refuses to restructure a system-generated location.
+// A warehouse's Stock, Input or Output location may be renamed and given a storage category, but
+// re-parenting it or changing its purpose would break the flow that created it.
 func (this *InventoryLocationDomainServiceImpl) Update(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -81,7 +74,7 @@ func (this *InventoryLocationDomainServiceImpl) Update(
 
 	prepared := copyFields(params)
 	// Structural fields belong to the move and lifecycle operations, which validate what a plain
-	// update cannot: the subtree, the stock behind it and the paths that have to be rewritten.
+	// update cannot: the subtree, the stock behind it and the paths to be rewritten.
 	delete(prepared, models.InventoryLocationFieldIsSystemGenerated)
 	delete(prepared, models.InventoryLocationFieldStatus)
 	delete(prepared, models.InventoryLocationFieldCompletePath)
@@ -101,12 +94,9 @@ func (this *InventoryLocationDomainServiceImpl) Update(
 	return this.DynamicResourceService.Update(ctx, prepared)
 }
 
-// SetArchived guards archiving, and leaves unarchiving to put the location back in a safe state.
-//
-// Archiving requires the location to be empty of stock and of work in flight, to have no
-// unarchived children, and not to be a system location its warehouse still needs. Unarchiving
-// always lands on suspended rather than active: the topology it sat in may have changed while it
-// was away, so someone has to look before it is used again.
+// SetArchived guards archiving: the location must be empty of stock and work in flight, have no
+// unarchived children, and not be a system location its warehouse still needs. Unarchiving always
+// lands on suspended rather than active, because the topology may have changed while it was away.
 func (this *InventoryLocationDomainServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -135,11 +125,9 @@ func (this *InventoryLocationDomainServiceImpl) SetArchived(
 	return result, this.writeStatus(ctx, locationId, models.InventoryLocationStatusSuspended)
 }
 
-// Suspend takes a location out of use while leaving everything it holds exactly where it is.
-//
-// Deliberately no emptiness check: suspending a rack that holds goods is the point of the
-// operation. What it does check is that suspending would not strand work already under way,
-// because silently unreserving or cancelling someone's move is never the right answer.
+// Suspend takes a location out of use while leaving everything it holds where it is. There is
+// deliberately no emptiness check — suspending a rack that holds goods is the point — but it does
+// refuse to strand work already under way rather than silently unreserving or cancelling a move.
 func (this *InventoryLocationDomainServiceImpl) Suspend(
 	ctx corectx.Context, locationId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -201,10 +189,9 @@ func (this *InventoryLocationDomainServiceImpl) Resume(
 	return locationMutateOk(), nil
 }
 
-// Move re-parents a location and rewrites the cached path of everything beneath it.
-//
-// The whole subtree is rewritten in one transaction: a half-applied move would leave descendants
-// claiming a path that no longer describes where they are.
+// Move re-parents a location and rewrites the cached path of everything beneath it. The whole
+// subtree is rewritten in one transaction, or descendants would claim a path that no longer
+// describes where they are.
 func (this *InventoryLocationDomainServiceImpl) Move(
 	ctx corectx.Context, locationId string, newParentId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -241,9 +228,8 @@ func (this *InventoryLocationDomainServiceImpl) Move(
 }
 
 // assertArchivable is the full archive guard: stock, work in flight, children and system status.
-//
-// Historical movements are deliberately not consulted. A location referenced only by completed
-// moves archives cleanly, because those records keep resolving it afterwards.
+// Historical movements are deliberately not consulted — a location referenced only by completed
+// moves archives cleanly, since those records keep resolving it.
 func (this *InventoryLocationDomainServiceImpl) assertArchivable(
 	ctx corectx.Context, location models.InventoryLocation,
 ) (*ft.ClientErrors, error) {
@@ -302,10 +288,9 @@ func (this *InventoryLocationDomainServiceImpl) assertArchivable(
 	return vErrs, nil
 }
 
-// assertResumable checks that what the location hangs off is itself usable.
-//
-// A location cannot be more available than its warehouse or its parent: making it active under a
-// suspended parent would advertise it for work that the parent has already been taken out of.
+// assertResumable checks that what the location hangs off is itself usable. A location cannot be
+// more available than its warehouse or parent: active under a suspended parent would advertise it
+// for work the parent has been taken out of.
 func (this *InventoryLocationDomainServiceImpl) assertResumable(
 	ctx corectx.Context, location models.InventoryLocation,
 ) (*ft.ClientErrors, error) {
@@ -359,10 +344,8 @@ func (this *InventoryLocationDomainServiceImpl) readUsage(
 	return result.Data.Usage, nil
 }
 
-// fillDerivedPath computes complete_path and hierarchy_depth from the parent.
-//
-// Both are caches of what the tree already says. They exist so a listing can show and sort by
-// where a location sits without walking the tree for every row.
+// fillDerivedPath computes complete_path and hierarchy_depth from the parent. Both are caches of
+// what the tree already says, so a listing can sort by placement without walking the tree per row.
 func (this *InventoryLocationDomainServiceImpl) fillDerivedPath(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) error {

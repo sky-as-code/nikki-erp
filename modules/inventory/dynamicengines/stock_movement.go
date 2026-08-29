@@ -14,15 +14,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 )
 
-// The movement resources. Transfer carries the six operations that make stock move; move and move
-// line are mostly read surfaces, because what writes them is the reservation and validation engine
-// rather than a client.
+// The movement resources. Transfer carries the operations that make stock move; move and move line
+// are mostly read surfaces, written by the reservation and validation engine rather than a client.
 
-// Permission codes for the movement operations.
-//
-// They are separate actions rather than folded into "update" because they are materially different
-// powers: validating a transfer moves real goods and cannot be undone by an edit, while updating
-// one changes a note. A role that may do the second should not thereby be able to do the first.
+// Permission codes for the movement operations, kept separate from "update" because they are
+// materially different powers: validating moves real goods and cannot be undone by an edit.
 const (
 	PermissionConfirm           = "confirm"
 	PermissionCheckAvailability = "check_availability"
@@ -30,8 +26,8 @@ const (
 	PermissionUnreserve         = "unreserve"
 	PermissionValidate          = "validate"
 	PermissionCancel            = "cancel"
-	// Raising a return commits the company to taking goods back, which is a commercial decision
-	// rather than an edit to a shipping document, so it carries its own permission.
+	// Raising a return commits the company to taking goods back — a commercial decision rather
+	// than an edit to a shipping document, so it carries its own permission.
 	PermissionCreateReturn = "create_return"
 )
 
@@ -82,16 +78,13 @@ func stockMoveDependencyEngineSpec() engineSpec {
 	}
 }
 
-// defineStockMoveLineActions closes the move line's write surface.
+// defineStockMoveLineActions closes the move line's write surface. A move line is an allocation
+// the reservation engine creates and validate stamps; a client-written line would be a claim on a
+// balance the balance does not know about, leaving the two irreconcilable. Editing an allocation
+// by hand needs the release-and-re-reserve flow, which is not in this phase.
 //
-// A move line is an allocation decision, not a document: the reservation engine creates it when it
-// claims stock and validate stamps it when the stock moves. A client-written line would be a claim
-// on a balance that the balance itself does not know about, so the two would disagree with nothing
-// to reconcile them. Editing an allocation by hand needs the release-and-re-reserve flow of
-// BR §4.2.5.4, which is not in this phase.
-//
-// As with the quant, the actions are refused rather than removed, so a caller gets a 400 naming the
-// reason instead of a 404 that reads as a wrong URL.
+// The actions are refused rather than removed, so a caller gets a 400 naming the reason instead of
+// a 404 that reads as a wrong URL.
 func defineStockMoveLineActions(engine drif.DynamicResourceEngine) error {
 	for _, action := range []string{drif.ActionCreate, drif.ActionUpdate, drif.ActionDelete} {
 		err := engine.ModifyAction(drif.DynamicActionDelta{
@@ -117,12 +110,10 @@ func rejectMoveLineWrite(
 	return nil
 }
 
-// defineStockTransferActions exposes the six movement operations as engine actions.
-//
-// They are engine actions rather than hand-written REST handlers, per docs/wiki/07 §6.7: the engine
-// already does the permission check, the param binding and the response shaping, and a handler
-// would have to restate all three. Each is a POST, because none of them is a CRUD verb — a
-// validate is not an update to a transfer, it is an event that happens to one.
+// defineStockTransferActions exposes the movement operations as engine actions rather than
+// hand-written REST handlers: the engine already does the permission check, param binding and
+// response shaping. Each is a POST because none is a CRUD verb — a validate is not an update to a
+// transfer, it is an event that happens to one.
 func defineStockTransferActions(engine drif.DynamicResourceEngine) error {
 	return stdErr.Join(
 		engine.DefineAction(drif.DynamicActionDefinition{
@@ -132,8 +123,7 @@ func defineStockTransferActions(engine drif.DynamicResourceEngine) error {
 			Permission:  PermissionConfirm,
 			MainProcess: processConfirm,
 		}),
-		// Read permission, because it takes nothing and changes nothing: it answers a question
-		// about stock the caller can already see.
+		// Read permission: it takes nothing and changes nothing.
 		engine.DefineAction(drif.DynamicActionDefinition{
 			ActionName:  ActionCheckAvailability,
 			ActionType:  drif.ActionTypeGeneric,
@@ -194,12 +184,8 @@ func processCreateReturn(ctx corectx.Context, input drif.ProcessInput) (*drif.Ac
 	return toMutateActionResult(result, err)
 }
 
-// readReturnRequest reads the optional per-line quantities from the request body.
-//
-// Absent `lines` means "return everything still returnable" (F9), which is what the contextual
-// action on the transfer page sends: the return lands as a draft and the user adjusts its move
-// quantities through ordinary CRUD before confirming. An API caller that wants a partial return
-// names the moves explicitly.
+// readReturnRequest reads the optional per-line quantities from the request body. Absent `lines`
+// means "return everything still returnable"; a caller wanting a partial return names the moves.
 func readReturnRequest(params dmodel.DynamicFields) (services.ReturnRequest, *ft.ClientErrors) {
 	vErrs := ft.NewClientErrors()
 	request := services.ReturnRequest{}
@@ -252,12 +238,9 @@ func readReturnLine(item any) (services.ReturnLineRequest, *ft.ClientErrorItem) 
 	return services.ReturnLineRequest{MoveId: moveId, Quantity: quantity}, nil
 }
 
-// transferServiceOf reaches the derived service the module installed during Init.
-//
-// The type assertion is what makes the extra operations reachable: the engine hands the action its
-// service as the base interface, and only the derived type carries Confirm, Reserve and the rest.
-// A failed assertion means Init did not install it, which is a wiring bug rather than a request
-// problem.
+// transferServiceOf reaches the derived service installed during Init. The engine hands the action
+// its service as the base interface, and only the derived type carries Confirm, Reserve and the
+// rest. A failed assertion is a wiring bug, not a request problem.
 func transferServiceOf(input drif.ProcessInput) (*services.StockTransferDomainServiceImpl, error) {
 	service, ok := input.ResourceService.(*services.StockTransferDomainServiceImpl)
 	if !ok {
@@ -327,11 +310,9 @@ func readActionId(input drif.ProcessInput) string {
 	return readStringField(input.Params, paramTransferId)
 }
 
-// toMutateActionResult widens a mutation result into the engine's generic action result.
-//
-// The engine's own toActionResult is package-private to modules/dynamicresource/engine, so this is
-// a local equivalent rather than an unnecessary duplicate: the ClientErrors must survive, because
-// a refused operation reports its reason through them and not through err.
+// toMutateActionResult widens a mutation result into the engine's generic action result. The
+// engine's own toActionResult is package-private, hence this local equivalent. ClientErrors must
+// survive: a refused operation reports its reason through them, not through err.
 func toMutateActionResult(
 	result *dyn.OpResult[dyn.MutateResultData], err error,
 ) (*drif.ActionResult, error) {
@@ -360,7 +341,7 @@ func readStringField(params dmodel.DynamicFields, field string) string {
 }
 
 // readOptionalBool distinguishes "absent" from "false", which the `ask` backorder policy depends
-// on: absent means the caller has not decided, and false means they decided not to.
+// on: absent means the caller has not decided, false means they decided not to.
 func readOptionalBool(params dmodel.DynamicFields, field string) *bool {
 	value, ok := params[field]
 	if !ok || value == nil {

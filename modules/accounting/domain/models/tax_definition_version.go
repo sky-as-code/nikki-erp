@@ -40,11 +40,9 @@ func TaxDefinitionVersionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(taxDefinitionVersionSchemaJson)
 }
 
-// TaxDefinitionVersion carries every attribute of a tax that affects determination or
-// calculation, for one effective period.
-//
-// Once published its material fields are immutable: a transaction calculated against them must
-// stay explainable for as long as the transaction exists.
+// TaxDefinitionVersion carries every attribute of a tax that affects determination or calculation,
+// for one effective period. Once published its material fields are immutable, so a transaction
+// calculated against them stays explainable for as long as it exists.
 type TaxDefinitionVersion struct {
 	basemodel.DynamicModelBase
 }

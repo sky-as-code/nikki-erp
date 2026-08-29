@@ -14,11 +14,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// Reservation: claiming stock for a demand without moving it.
-//
-// Everything here changes reserved_quantity and nothing changes on_hand_quantity (AC-STOCK-005).
-// A reservation is a promise about stock that is still physically where it was; only validate
-// moves it.
+// Reservation claims stock for a demand without moving it: everything here changes
+// reserved_quantity and nothing changes on_hand_quantity. Only validate moves stock.
 
 // MoveAvailability reports what one move needs and what it can get.
 type MoveAvailability struct {
@@ -37,15 +34,9 @@ type TransferAvailability struct {
 	HasShortage bool               `json:"has_shortage"`
 }
 
-// CheckAvailability reports whether a transfer's demand can be met, and takes nothing.
-//
-// It is deliberately read-only, and that is the whole point of it being a separate operation: it
-// acquires no lock, writes no status and creates no move line, so the stock it reports as available
-// may be reserved by someone else a moment later (BR §4.2.3.7, AC-STOCK-033). A caller that needs
-// the stock must reserve it; this only answers "is it worth trying".
-//
-// Because it takes no ownership it also needs no transaction. Adding one would suggest a guarantee
-// it does not provide.
+// CheckAvailability reports whether a transfer's demand can be met, and claims nothing. It takes no
+// lock and needs no transaction, so the stock it reports as available may be reserved by someone
+// else a moment later; a caller that needs the stock must reserve it.
 func (this *StockTransferDomainServiceImpl) CheckAvailability(
 	ctx corectx.Context, transferId string,
 ) (*dyn.OpResult[any], error) {
@@ -127,14 +118,10 @@ func checkMoveAvailability(
 	}, nil
 }
 
-// Reserve claims stock for every open move of a transfer.
-//
-// The sequence per move is fixed by BR §8.6 and is the reason [INV-STK-204] exists: lock the
-// candidate balances, recompute availability from what the lock returned, then allocate. A figure
-// read before the lock is stale by definition, so none is carried across.
-//
-// Reserving an already-reserved transfer is a no-op rather than a second allocation: each move
-// asks only for its outstanding quantity, which is zero once it is fully assigned.
+// Reserve claims stock for every open move of a transfer. The order per move is fixed: lock the
+// candidate balances, recompute availability from what the lock returned, then allocate — a figure
+// read before the lock is stale by definition. Reserving an already-reserved transfer is a no-op,
+// since each move asks only for its outstanding quantity.
 func (this *StockTransferDomainServiceImpl) Reserve(
 	ctx corectx.Context, transferId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -175,9 +162,8 @@ func reserveTransferMoves(
 ) (decimal.Decimal, error) {
 	total := decimal.Zero
 
-	// An incoming transfer draws from a supplier, which holds no balance to claim: there is
-	// nothing to reserve, and locking it would be work with no possible outcome. Its lines are
-	// written by validate instead — see ensureIncomingLine.
+	// An incoming transfer draws from a supplier, which holds no balance to claim, so there is
+	// nothing to reserve; its lines are written by validate instead — see ensureIncomingLine.
 	if derefString(operation.Transfer.GetOperationCode()) == models.StockOperationCodeIncoming {
 		return total, nil
 	}
@@ -208,7 +194,7 @@ func reserveOneMove(
 	}
 	outstanding := orZero(move.GetBaseDemandQuantity()).Sub(alreadyReserved)
 	if outstanding.LessThanOrEqual(decimal.Zero) {
-		// Fully reserved already. Re-entrant by construction rather than by a flag.
+		// Fully reserved already; re-entrant by construction rather than by a flag.
 		return decimal.Zero, nil
 	}
 
@@ -238,11 +224,9 @@ func reserveOneMove(
 	return claimed, nil
 }
 
-// applyReservation raises a balance's reserved quantity and records the claim as a move line.
-//
-// Both writes are needed and neither is redundant: the quant says how much of the balance is
-// spoken for, and the move line says who spoke for it. Without the line there is no way to release
-// exactly this reservation later; without the quant another demand would be told the stock is free.
+// applyReservation raises a balance's reserved quantity and records the claim as a move line. Both
+// writes are needed: without the line there is no way to release exactly this reservation later,
+// and without the quant another demand would be told the stock is free.
 func applyReservation(
 	ctx corectx.Context, operation *transferOperationContext, allocation Allocation, move models.StockMove,
 ) error {
@@ -268,16 +252,10 @@ func applyReservation(
 	return errors.Wrap(err, "applyReservation")
 }
 
-// addToQuantReserved adds a delta to a balance's reserved quantity.
-//
-// The read is safe without a further lock because the caller already holds a row lock on this
-// quant: LockQuantsForUpdate ran in the same transaction, so no other writer can be between this
-// read and this write.
-//
-// It writes reserved_quantity even though the field is `no_update` in the schema. That flag is
-// enforced by ModelSchema.Validate in the service layer, which is what closes the field to clients;
-// the repository writes what it is given, which is how a balance can be changed by a movement and
-// only by a movement.
+// addToQuantReserved adds a delta to a balance's reserved quantity. Callers must already hold the
+// row lock on the quant, so no other writer can slip between this read and this write. It writes
+// reserved_quantity although the field is `no_update`: that flag is enforced in the service layer
+// to close the field to clients, while the repository writes what it is given.
 func addToQuantReserved(
 	ctx corectx.Context, quantEngine drif.DynamicResourceEngine, quantId model.Id, delta decimal.Decimal,
 ) error {
@@ -294,8 +272,8 @@ func addToQuantReserved(
 	quant := models.NewStockQuantFrom(found.Data)
 	next := orZero(quant.GetReservedQuantity()).Add(delta)
 	if next.LessThan(decimal.Zero) {
-		// STOCK-INV-002. Reaching here means the caller's bookkeeping disagrees with the stored
-		// balance, which is a bug rather than a client mistake, so it fails loudly.
+		// Reserved quantity must never go negative. Reaching here means the caller's bookkeeping
+		// disagrees with the stored balance, which is a bug, so it fails loudly.
 		return errors.Errorf(
 			"releasing %s from stock quant '%s' would drive its reserved quantity negative", delta.String(), quantId)
 	}
@@ -327,10 +305,8 @@ func reservedForMove(
 	return total, nil
 }
 
-// Unreserve gives back everything a transfer is holding, without moving any stock.
-//
-// On-hand is untouched: the goods never went anywhere, so releasing the claim restores the
-// availability and nothing else (BR §4.2.3.9).
+// Unreserve gives back everything a transfer is holding. On-hand is untouched: the goods never
+// moved, so releasing the claim restores availability and nothing else.
 func (this *StockTransferDomainServiceImpl) Unreserve(
 	ctx corectx.Context, transferId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -370,8 +346,8 @@ func unreserveTransferMoves(ctx corectx.Context, operation *transferOperationCon
 	for _, item := range operation.Moves {
 		move := models.NewStockMoveFrom(item)
 		if !IsMoveOpen(derefString(move.GetStatus())) {
-			// A done move's lines are its recorded movement, not a reservation: deleting them
-			// would erase the history of stock that has already moved.
+			// A done move's lines are its recorded movement, not a reservation; deleting them would
+			// erase the history of stock that has already moved.
 			continue
 		}
 		if err := releaseMoveLines(ctx, operation, *move); err != nil {
@@ -415,11 +391,9 @@ func releaseMoveLines(
 	return nil
 }
 
-// findQuantForLine locates the balance a move line drew from, by its full dimension key.
-//
-// A line records where it took the stock from, so the release goes back to exactly that balance
-// rather than to whichever row happens to be first: returning it to the wrong lot would leave both
-// rows wrong while their total stayed right.
+// findQuantForLine locates the balance a move line drew from, by its full dimension key, so a
+// release goes back to exactly that balance: returning it to the wrong lot leaves both rows wrong
+// while their total stays right.
 func findQuantForLine(
 	ctx corectx.Context, operation *transferOperationContext, move models.StockMove, line models.StockMoveLine,
 ) (model.Id, error) {

@@ -14,16 +14,12 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// The reads that let the Product UI show stock it does not own.
+// The reads that let the Product UI show stock it does not own. They hang off the quant engine
+// because what they read is quants, and they are all reads: none creates a movement, reserves
+// anything or changes a balance.
 //
-// They hang off the quant engine because what they read is quants. They are all reads: none
-// creates a movement, reserves anything or changes a balance, so a client holding only these
-// permissions can look at stock and do nothing to it (CR §6.2, AC-PROD-INT-034).
-//
-// The batch action exists because a product listing must summarise a whole page in one request.
-// Calling the single-variant action once per row is the N+1 the requirement names explicitly
-// (CR §8.4, AC-PROD-INT-035) — so the batch form is the one the frontend list uses, and the
-// single form is for a detail page showing one product.
+// The batch action exists so a listing summarises a whole page in one request; calling the
+// single-variant action once per row would be an N+1. The single form is for a detail page.
 
 const (
 	ActionVariantStockSummary   = "variant_stock_summary"
@@ -34,11 +30,8 @@ const (
 	ActionProductUsage          = "product_usage"
 )
 
-// One permission covers all of them.
-//
-// They are the same power — reading stock levels — sliced by which product you are looking at, so
-// granting them separately would only let an administrator produce a nonsensical combination like
-// "may see a total but not the rows behind it".
+// One permission covers all of them: they are the same power sliced by which product you look at,
+// and granting them separately would allow "may see a total but not the rows behind it".
 const PermissionReadProductStock = "read_product_stock"
 
 const (
@@ -48,11 +41,9 @@ const (
 	paramSummaryWarehouse  = "warehouse_id"
 )
 
-// variantSummaryResponse is the wire shape of one variant's stock.
-//
-// Quantities are rendered as strings rather than numbers: they are decimals, and JSON numbers are
-// float64 at the far end, which is exactly how a quantity acquires a rounding error it never had
-// in the database.
+// variantSummaryResponse is the wire shape of one variant's stock. Quantities are strings, not
+// numbers: they are decimals, and a JSON number is float64 at the far end, which is how a quantity
+// acquires a rounding error it never had in the database.
 type variantSummaryResponse struct {
 	ProductVariantId string `json:"productVariantId,omitempty"`
 	OnHand           string `json:"onHand"`
@@ -65,8 +56,8 @@ type variantSummaryResponse struct {
 	BaseUomId        string `json:"baseUomId,omitempty"`
 	LastMovementAt   string `json:"lastMovementAt,omitempty"`
 
-	// Truncated warns that the totals are partial. It is on the wire rather than swallowed so a
-	// UI can say so instead of presenting an incomplete number as the whole one.
+	// Truncated warns that the totals are partial, so a UI can say so instead of presenting an
+	// incomplete number as the whole one.
 	Truncated bool `json:"truncated,omitempty"`
 }
 
@@ -116,8 +107,8 @@ type productUsageResponse struct {
 	OpenMoveCount     int    `json:"openMoveCount"`
 	OpenTransferCount int    `json:"openTransferCount"`
 
-	// CanArchive is the reader's own verdict on its four numbers, so a caller does not restate
-	// the rule and risk restating it differently.
+	// CanArchive is the reader's own verdict on its four numbers, so a caller does not restate the
+	// rule and risk restating it differently.
 	CanArchive bool `json:"canArchive"`
 }
 
@@ -169,9 +160,8 @@ func defineProductStockActions(engine drif.DynamicResourceEngine) error {
 	)
 }
 
-// productStockReaderOf reaches the quant service, which implements both product-facing ports.
-//
-// A failed assertion is a wiring bug rather than a bad request, so it is a plain error.
+// productStockReaderOf reaches the quant service, which implements both product-facing ports. A
+// failed assertion is a wiring bug rather than a bad request, so it is a plain error.
 func productStockReaderOf(input drif.ProcessInput) (*services.StockQuantDomainServiceImpl, error) {
 	service, ok := input.ResourceService.(*services.StockQuantDomainServiceImpl)
 	if !ok {
@@ -217,8 +207,8 @@ func processVariantStockSummaries(
 		return nil, err
 	}
 
-	// Keyed by variant id so a caller matches each summary to its row without relying on
-	// order, which a map-backed result does not preserve anyway.
+	// Keyed by variant id so a caller matches each summary to its row without relying on order,
+	// which a map-backed result does not preserve anyway.
 	response := make(map[string]variantSummaryResponse, len(result.Data.Summaries))
 	for variantId, summary := range result.Data.Summaries {
 		response[variantId] = toVariantSummaryJson("", summary)
@@ -326,11 +316,9 @@ func processStockByLocation(
 	return &drif.ActionResult{Data: rows, HasData: true}, nil
 }
 
-// processProductUsage reports what would be stranded if a variant were archived now.
-//
-// It is exposed so a UI can explain a refusal before the user attempts it. The archive itself is
-// guarded independently in the product service: a client that skipped this call must still be
-// refused, so this is a courtesy rather than the enforcement point.
+// processProductUsage reports what would be stranded if a variant were archived now, so a UI can
+// explain a refusal before the user attempts it. Not the enforcement point: the archive is guarded
+// independently in the product service, which still refuses a client that skipped this call.
 func processProductUsage(ctx corectx.Context, input drif.ProcessInput) (*drif.ActionResult, error) {
 	service, err := productStockReaderOf(input)
 	if err != nil {
@@ -380,8 +368,8 @@ func toVariantSummaryJson(
 	return response
 }
 
-// decimalOrZero renders a quantity, spelling the zero value "0" rather than leaving it blank so
-// that a UI showing the number never has to decide what an empty string means.
+// decimalOrZero renders a quantity, spelling zero as "0" rather than blank so a UI never has to
+// decide what an empty string means.
 func decimalOrZero(value decimal.Decimal) string {
 	return value.String()
 }
@@ -393,12 +381,9 @@ func idOrEmpty[T ~string](value *T) string {
 	return string(*value)
 }
 
-// readStringSliceField reads a list of ids out of the action params.
-//
-// A decoded JSON array arrives as []any whose elements are strings, so that is the case that
-// matters; []string is accepted too for a caller that built the params in Go. Anything else reads
-// as absent rather than erroring, matching readStringField's tolerance — the reads this feeds are
-// all "summarise these", and an unparseable list means there is nothing to summarise.
+// readStringSliceField reads a list of ids out of the action params. A decoded JSON array arrives
+// as []any of strings; []string is accepted too for params built in Go. Anything else reads as
+// absent rather than erroring — an unparseable list means there is nothing to summarise.
 func readStringSliceField(params dmodel.DynamicFields, field string) []string {
 	value, ok := params[field]
 	if !ok || value == nil {

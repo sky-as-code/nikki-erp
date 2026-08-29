@@ -28,9 +28,9 @@ func StockMoveDependencySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(stockMoveDependencySchemaJson)
 }
 
-// StockMoveDependency orders the steps of a multi-step flow: the successor stays 'waiting' until
-// its predecessor is done. The pair must stay acyclic, which a domain service enforces because the
-// schema cannot express it. See BR §7.7.
+// StockMoveDependency orders the steps of a multi-step flow: the successor stays 'waiting' until its
+// predecessor is done. The graph must stay acyclic, enforced by a domain service because the schema
+// cannot express it.
 type StockMoveDependency struct {
 	basemodel.DynamicModelBase
 }

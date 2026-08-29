@@ -8,11 +8,9 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
-// Registering every Products schema in one go is what the app does at start-up, and it is the
-// only place cross-schema edges are actually resolved. A schema registered before the one its
-// edge points at fails here rather than panicking the whole app on boot.
-//
-// The order below is the order InventoryModule.RegisterModels uses; keep the two in step.
+// Registering every schema at once mirrors start-up and is the only place cross-schema edges are
+// resolved: a schema registered before the one its edge points at fails here rather than panicking
+// on boot. The order below is InventoryModule.RegisterModels' order; keep the two in step.
 func TestProductSchemasRegisterInOrder(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -46,14 +44,10 @@ func TestProductSchemasRegisterInOrder(t *testing.T) {
 		require.NoErrorf(t, dmodel.RegisterSchemaB(builder), "failed to register %q", schema.Name())
 	}
 
-	// Registering is only half of what start-up does. FinalizeRelations resolves the edges AND
-	// compiles every computed field, and it is the step that rejects a computed field that cannot
-	// be answered — an aggregate whose source traverses more than one edge, or whose operand is
-	// itself computed and so has no column to query.
-	//
-	// It runs here rather than in its own test because the schema registry is global and has no
-	// reset: a second test registering this module fails on the first schema. So the assertions
-	// that need a finalized registry belong to whichever test owns it, which is this one.
+	// FinalizeRelations resolves edges and compiles computed fields, rejecting one that cannot be
+	// answered: an aggregate crossing more than one edge, or over an operand that is itself computed
+	// and so has no column. It runs here because the registry is global with no reset, so a second
+	// test registering this module would fail on the first schema.
 	require.NoError(t, dmodel.GetSchemaRegistry().FinalizeRelations(),
 		"every registered schema must finalize, including the variant's derived pricing fields")
 
@@ -61,13 +55,10 @@ func TestProductSchemasRegisterInOrder(t *testing.T) {
 	assertTemplateCostRangeResolved(t)
 }
 
-// assertTemplateCostRangeResolved checks the template's cost READ MODEL.
-//
-// The template deliberately has no cost column: cost belongs to the concrete variant, because two
-// variants of one product genuinely cost different amounts (BR-PRICE-VARIANT-006). What it exposes
-// instead is the range across its variants, so a caller can tell "one cost" from "several" without
-// a second query — and BR-PRICE-VARIANT-014 forbids collapsing that range back into a single
-// number and calling it the product's cost.
+// assertTemplateCostRangeResolved checks the template's cost read model. The template has no cost
+// column: cost belongs to the variant, since two variants of one product genuinely cost different
+// amounts. It exposes the range across its variants instead, and that range must never be
+// collapsed into a single number called the product's cost.
 func assertTemplateCostRangeResolved(t *testing.T) {
 	t.Helper()
 
@@ -89,10 +80,9 @@ func assertTemplateCostRangeResolved(t *testing.T) {
 			"value here would be an authoritative product cost that BR-PRICE-VARIANT-006 denies exists")
 }
 
-// assertVariantPricingFieldsResolved checks the pricing read model added by the product-pricing
-// change request. effective_base_sales_price is an expression over a related field and an
-// aggregate over a collection edge; if that composition were ever replaced by a two-hop source or
-// an aggregate over a computed field, it would fail at boot rather than here.
+// effective_base_sales_price is an expression over a related field plus an aggregate over a
+// collection edge. Replacing that with a two-hop source or an aggregate over a computed field
+// would fail at boot rather than here.
 func assertVariantPricingFieldsResolved(t *testing.T) {
 	t.Helper()
 

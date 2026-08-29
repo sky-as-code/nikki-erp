@@ -9,8 +9,7 @@ import (
 	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
 )
 
-// The invoicing rules that can be pinned without a repository. The gated operation reads bills and
-// their allocations and is exercised live; what is pinned here is the part where being wrong means
+// The invoicing rules that can be pinned without a repository: the parts where being wrong means
 // issuing a legal document that should not exist, or refusing one that should.
 
 func fiscalRow(intent, status string) dmodel.DynamicFields {
@@ -20,8 +19,8 @@ func fiscalRow(intent, status string) dmodel.DynamicFields {
 	}
 }
 
-// THE rule of BR 77. Only a provider-confirmed request is issued; everything else is not, and
-// `pending` most of all — a request in flight has produced no document a customer can deduct.
+// Only a provider-confirmed request is issued; `pending` most of all is not, since a request in
+// flight has produced no document a customer can deduct.
 func TestOnlyAConfirmedRequestReadsAsIssued(t *testing.T) {
 	cases := []struct {
 		status string
@@ -41,9 +40,8 @@ func TestOnlyAConfirmedRequestReadsAsIssued(t *testing.T) {
 	}
 }
 
-// BOTH pending and issued block a second original invoice, and the pending half is the one worth
-// the test. Sales does not know whether an in-flight request became issued; assuming it did not is
-// exactly how a sale acquires two VAT invoices, which is a tax filing to correct.
+// Both pending and issued block a second original invoice. Sales does not know whether an
+// in-flight request became issued; assuming it did not is how a sale acquires two VAT invoices.
 func TestPendingBlocksASecondOriginalInvoice(t *testing.T) {
 	cases := []struct {
 		status string
@@ -65,8 +63,7 @@ func TestPendingBlocksASecondOriginalInvoice(t *testing.T) {
 	}
 }
 
-// A record with no status at all must not read as issued. Absent is not confirmed, and the default
-// reading here has to be the safe one: the opposite would report a document nobody issued.
+// A record with no status at all must not read as issued: absent is not confirmed.
 func TestAnAbsentStatusIsNotIssued(t *testing.T) {
 	empty := models.NewSalesFiscalRequestFrom(dmodel.DynamicFields{})
 	if empty.IsIssued() {
@@ -78,9 +75,8 @@ func TestAnAbsentStatusIsNotIssued(t *testing.T) {
 	}
 }
 
-// The buyer gate checks the two fields that make an invoice valid, and NOT the two that merely make
-// it useful. Requiring an address would refuse invoices a provider would have accepted, which is
-// Sales deciding invoice law by the back door (BR 46).
+// The buyer gate checks the two fields that make an invoice valid, not the two that merely make
+// it useful; requiring an address would refuse invoices a provider would have accepted.
 func TestBuyerCompletenessChecksTaxCodeAndNameOnly(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -116,9 +112,8 @@ func TestBuyerCompletenessChecksTaxCodeAndNameOnly(t *testing.T) {
 	}
 }
 
-// The four business intents are accepted and a document type is not. The negative half is the point:
-// a caller that could pass "credit_note" would be choosing the legal document, which is the
-// provider's decision (BR 50).
+// The four business intents are accepted and a document type is not: choosing the legal document
+// is the provider's decision.
 func TestOnlyBusinessIntentsAreAccepted(t *testing.T) {
 	for _, intent := range []string{
 		string(models.SalesFiscalIntentIssueOriginal),
@@ -141,9 +136,8 @@ func TestOnlyBusinessIntentsAreAccepted(t *testing.T) {
 	}
 }
 
-// The Sales intent constants and the port's must agree exactly. They are declared separately - the
-// model must not import the port, and the port must not import the model - so nothing but a test
-// stops them drifting, and a drift would send the provider an intent it does not recognise.
+// The Sales intent constants and the port's must agree exactly. They are declared separately (the
+// model must not import the port and vice versa), so only this test stops them drifting.
 func TestModelAndPortIntentsAgree(t *testing.T) {
 	pairs := []struct {
 		model models.SalesFiscalIntent
@@ -162,8 +156,8 @@ func TestModelAndPortIntentsAgree(t *testing.T) {
 	}
 }
 
-// The buyer snapshot stores what was supplied, under the names the column is read back by. Stored
-// as a map rather than the struct so the read path does not depend on Go field names (BR 87.7).
+// The buyer snapshot is stored as a map under the names the column is read back by, so the read
+// path does not depend on Go field names.
 func TestBuyerSnapshotFreezesWhatWasSupplied(t *testing.T) {
 	snapshot := buyerSnapshotOf(itInvoicing.BuyerInfo{
 		TaxCode:   "0101234567",
@@ -184,7 +178,7 @@ func TestBuyerSnapshotFreezesWhatWasSupplied(t *testing.T) {
 	}
 }
 
-// A provider message longer than the column must not cost the whole record of why an invoice failed.
+// A provider message longer than the column must not cost the whole record of why it failed.
 func TestALongProviderErrorIsTruncatedNotDropped(t *testing.T) {
 	long := make([]byte, 4000)
 	for index := range long {

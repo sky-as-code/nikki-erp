@@ -13,13 +13,8 @@ import (
 
 // The billing trio: a settlement unit, its allocations, and the lineage between bills.
 //
-// One file because none is meaningful alone. A bill without allocations has a total nobody can
-// account for, an allocation without a bill belongs to nothing, and a lineage row exists only to
-// explain why one of the first two stopped being live.
-//
-// **A bill is not a VAT invoice** (BR 33). The requirement forbids conflating them, and the whole
-// reason BR 34 exists is that one sale may need several settlement units and one legal document, or
-// the reverse. Nothing here should ever grow an invoice number.
+// A bill is not a VAT invoice: one sale may need several settlement units and one legal document,
+// or the reverse. Nothing here should ever grow an invoice number.
 
 const (
 	SalesBillSchemaName = "sales_bill"
@@ -162,15 +157,12 @@ func (this *SalesBill) SetCancelledAt(at *model.ModelDateTime) {
 }
 
 // IsOpen reports whether this bill may still be split, merged or paid into.
-//
-// The three operations that change a bill all ask this first, so the rule lives here rather than
-// being restated at each of them.
 func (this SalesBill) IsOpen() bool {
 	status := this.GetStatus()
 	return status != nil && *status == string(SalesBillStatusOpen)
 }
 
-// IsSettled reports whether the money is fully in and the allocations have frozen (BR 76).
+// IsSettled reports whether the money is fully in and the allocations have frozen.
 func (this SalesBill) IsSettled() bool {
 	status := this.GetStatus()
 	return status != nil && *status == string(SalesBillStatusSettled)
@@ -209,11 +201,8 @@ func (this SalesBillLine) GetAllocatedTotalAmount() *decimal.Decimal {
 	return this.GetFieldData().GetDecimal(SalesBillLineFieldAllocatedTotalAmount)
 }
 
-// SumAllocatedTotal adds up what a set of allocations comes to.
-//
-// The BR 36 invariant is stated as a sum, so it gets one implementation rather than a loop written
-// out at each place that checks it - which is how two checks come to disagree about whether an
-// absent value counts as zero.
+// SumAllocatedTotal adds up what a set of allocations comes to. One implementation, so callers
+// cannot disagree about whether an absent value counts as zero.
 func SumAllocatedTotal(allocations []dmodel.DynamicFields) decimal.Decimal {
 	total := decimal.Zero
 	for _, allocation := range allocations {
@@ -222,16 +211,10 @@ func SumAllocatedTotal(allocations []dmodel.DynamicFields) decimal.Decimal {
 	return total
 }
 
-// allocatedTotalOf reads one allocation's total in whatever shape it arrived in.
-//
-// NOT GetDecimal. That accessor bare type-asserts to decimal.Decimal and PANICS on anything else -
-// including a string, which is exactly how a decimal comes back through a jsonb column, since a
-// decimal crosses JSON as a string precisely so it does not lose precision. A sum over rows fresh
-// from the repository would therefore crash rather than answer.
-//
-// An unreadable amount counts as zero. That is the safe direction here: the sum feeds BR 36's
-// invariant check, so a value nobody can parse makes the bills LOOK short and the mutation is
-// refused - which is better than crediting an amount that may not be what was stored.
+// allocatedTotalOf reads one allocation's total in whatever shape it arrived in. Not GetDecimal:
+// that accessor panics on anything but decimal.Decimal, and a jsonb round trip returns a decimal as
+// a string. An unreadable amount counts as zero, which makes the bills look short and the mutation
+// gets refused - safer than crediting an amount that may not be what was stored.
 func allocatedTotalOf(allocation dmodel.DynamicFields) decimal.Decimal {
 	value, present := allocation[SalesBillLineFieldAllocatedTotalAmount]
 	if !present || value == nil {
@@ -345,21 +328,16 @@ func (this SalesPayment) GetExternalTransactionId() *string {
 	return this.GetFieldData().GetString(SalesPaymentFieldExternalTransactionId)
 }
 
-// IsCaptured reports whether this payment's money is actually in.
-//
-// The one question the settlement rule asks. An authorization is deliberately NOT captured: it is a
-// hold the provider may still release, and counting it would settle a bill against funds that never
-// arrived.
+// IsCaptured reports whether this payment's money is actually in. An authorization does not count:
+// it is a hold the provider may still release, and counting it would settle a bill against funds
+// that never arrived.
 func (this SalesPayment) IsCaptured() bool {
 	status := this.GetStatus()
 	return status != nil && *status == string(SalesPaymentStatusCaptured)
 }
 
-// SumCapturedAmount adds up the money actually taken against a bill.
-//
-// Only captured payments count, and the filter lives here rather than in each caller so that
-// "how much has been paid" has exactly one answer. Reads every numeric shape a jsonb round trip can
-// produce, for the same reason SumAllocatedTotal does.
+// SumCapturedAmount adds up the money actually taken against a bill. Only captured payments count,
+// so that "how much has been paid" has exactly one answer.
 func SumCapturedAmount(payments []dmodel.DynamicFields) decimal.Decimal {
 	total := decimal.Zero
 	for _, payment := range payments {
@@ -433,11 +411,8 @@ func (this SalesFulfillmentRequest) GetRequestType() *string {
 	return this.GetFieldData().GetString(SalesFulfillmentRequestFieldRequestType)
 }
 
-// IsCompleted reports whether the goods actually moved.
-//
-// The one question the fulfilled-quantity derivation asks. An ACCEPTED request has stock held but
-// nothing moved, and counting it would tell a customer their goods had shipped when they had not -
-// which is precisely BR 7.3's failure, seen from the other side.
+// IsCompleted reports whether the goods actually moved. An ACCEPTED request has stock held but
+// nothing moved, so counting it would tell a customer their goods had shipped when they had not.
 func (this SalesFulfillmentRequest) IsCompleted() bool {
 	status := this.GetStatus()
 	return status != nil && *status == string(SalesFulfillmentStatusCompleted)

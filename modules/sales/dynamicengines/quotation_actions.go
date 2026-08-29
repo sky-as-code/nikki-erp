@@ -10,33 +10,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 )
 
-// The quotation actions (BR 87.1, SALES-038).
-//
-// # Convert is its own permission, `convert`, and not `update`
-//
-// Accepting a quotation creates a sales order — it commits the business to a sale. A role that may
-// draft and correct an offer should not thereby be able to turn one into a binding order, which is
-// exactly what folding this into `update` would do.
-//
-// Sending and cancelling ride on `update`, because both are ordinary handling of a document by
-// whoever owns it: sending is showing the customer what you wrote, cancelling is withdrawing it.
-// Neither creates anything.
-
 const (
-	// PermissionConvertQuotation commits the business to a sale. See above.
+	// Convert has its own permission because it creates a sales order and commits the business to a
+	// sale; a role that may draft and correct an offer must not thereby be able to bind one.
 	PermissionConvertQuotation = "convert"
 
 	ActionConvertQuotation = "convert"
 
-	// PermissionTransitionQuotation is `update`: sending and cancelling are ordinary handling of a
-	// document, not powers of their own.
+	// Sending and cancelling are ordinary handling of a document, so they ride on `update`.
 	PermissionTransitionQuotation = "update"
 
 	ActionSendQuotation   = "send"
 	ActionCancelQuotation = "cancel"
 )
 
-// defineSalesQuotationActions adds convert, send and cancel to the quotation engine.
 func defineSalesQuotationActions(engine drif.DynamicResourceEngine) error {
 	return stdErr.Join(
 		engine.DefineAction(drif.DynamicActionDefinition{
@@ -63,7 +50,6 @@ func defineSalesQuotationActions(engine drif.DynamicResourceEngine) error {
 	)
 }
 
-// processConvertQuotation turns an accepted offer into a sales order.
 func processConvertQuotation(
 	ctx corectx.Context, input drif.ProcessInput,
 ) (*drif.ActionResult, error) {
@@ -89,9 +75,7 @@ func processConvertQuotation(
 			"order_number":       result.OrderNumber,
 			"already_converted":  result.AlreadyConverted,
 
-			// BOTH totals, so a caller can see whether repricing moved the number rather than
-			// taking it on trust. An operator handing an order to a customer holding the quotation
-			// needs to know before the customer does.
+			// Both totals, so the caller can see whether repricing moved the number.
 			"quoted_total": result.QuotedTotal,
 			"order_total":  result.OrderTotal,
 		},
@@ -110,7 +94,6 @@ func processCancelQuotation(
 		readStringParam(input.Params, paramId), string(models.SalesQuotationStatusCancelled))
 }
 
-// transitionQuotationResult applies one status move and reports the outcome.
 func transitionQuotationResult(
 	ctx corectx.Context, quotationId, toStatus string,
 ) (*drif.ActionResult, error) {

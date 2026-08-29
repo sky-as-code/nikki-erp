@@ -9,11 +9,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// WarehouseRole says what a warehouse is for organisationally. It carries no behaviour: every role
+// WarehouseRole says what a warehouse is for organisationally and carries no behaviour: every role
 // is configured and moved against identically, and only reporting and selection lists read it.
-//
-// A future Vending Machine requirement may add a role of its own. Nothing here needs to change for
-// that to work, which is the point of keeping the roles behaviour-free.
 const (
 	WarehouseRoleCentral = "central"
 	WarehouseRoleSub     = "sub"
@@ -21,20 +18,17 @@ const (
 	WarehouseRoleOther   = "other"
 )
 
-// WarehouseFlow is how many stops goods make on the way in or out. It is policy: the Stock
-// movement engine reads it to plan legs, and changing it never moves anything by itself.
+// WarehouseFlow is how many stops goods make on the way in or out. The Stock movement engine reads
+// it to plan legs; changing it never moves anything by itself.
 const (
 	WarehouseFlowOneStep   = "one_step"
 	WarehouseFlowTwoStep   = "two_step"
 	WarehouseFlowThreeStep = "three_step"
 )
 
-// WarehouseStatus is the operational state, and is deliberately not where archiving lives.
-//
-// Suspended means temporarily closed and reversible by Resume. Archived means withdrawn from the
-// master data used for new work, and is carried by is_archived. There is no "archived" status: a
-// warehouse is usable when status is Active AND is_archived is false, and code asking whether a
-// warehouse is usable must test both.
+// WarehouseStatus is the operational state, not archiving. Suspended is temporary and reversible by
+// Resume; withdrawal from master data is is_archived. There is no "archived" status: a warehouse is
+// usable only when status is Active and is_archived is false, so code must test both.
 const (
 	WarehouseStatusActive    = "active"
 	WarehouseStatusSuspended = "suspended"
@@ -102,9 +96,8 @@ func (this *Warehouse) SetWarehouseRole(v *string) {
 	this.GetFieldData().SetString(WarehouseFieldWarehouseRole, v)
 }
 
-// GetParentWarehouseId returns the parent in the warehouse hierarchy, or nil for a root warehouse.
-//
-// The relationship is organisational only. Stock at the parent is not stock at the child.
+// GetParentWarehouseId is nil for a root warehouse. The relationship is organisational only: stock
+// at the parent is not stock at the child.
 func (this Warehouse) GetParentWarehouseId() *model.Id {
 	return this.GetFieldData().GetModelId(WarehouseFieldParentWarehouseId)
 }

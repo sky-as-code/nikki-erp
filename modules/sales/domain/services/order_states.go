@@ -8,36 +8,23 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The four status state machines, as pure transition tables.
-//
-// No repository, no context, no engine. That is deliberate and is what makes them the cheapest
-// thing in the module to test: every rule about which status may follow which is decidable from two
-// strings, so the tests need no database and can cover the whole table.
-//
-// The four are separate machines because BR §9 insists the four statuses are independent. A single
-// combined machine would have to enumerate the product of four dimensions, most of whose
-// combinations are legal and uninteresting, and would make "paid but undelivered" a state to be
-// declared rather than simply the pair it is.
+// The four status state machines, as pure transition tables. They stay separate because the four
+// statuses are independent: a combined machine would enumerate the product of four dimensions and
+// make "paid but undelivered" a declared state rather than simply the pair it is.
 
-// orderTransitions maps each order status to the statuses reachable from it (D-14).
+// orderTransitions maps each order status to the statuses reachable from it.
 //
-// completed and cancelled are both terminal. Completed is terminal because a finished sale is
-// corrected through a Return rather than by being reopened — reopening would produce a document
-// whose receipt says one thing and whose current state says another. Cancelled is terminal for the
-// same reason purchase's is: reviving it would give a record whose history says it was called off
-// and whose status says it is live.
-//
-// There is no `failed` status (D-16). A vending sale where money was captured but nothing was
-// dispensed is `cancelled` with `payment_status = refunded` and an event recording the dispense
-// failure — one less terminal state to reason about, and the money is where it belongs either way.
+// completed and cancelled are both terminal: a finished sale is corrected through a Return rather
+// than reopened, and reviving a cancelled one would give a record whose history says it was called
+// off. There is no failed status — a vending sale that took money but dispensed nothing is cancelled
+// with payment_status refunded plus an event recording the failure.
 var orderTransitions = map[string][]string{
 	string(models.SalesOrderStatusDraft): {
 		string(models.SalesOrderStatusConfirmed),
 		string(models.SalesOrderStatusCancelled),
 	},
-	// confirmed reaches completed directly, without passing through processing, when the order
-	// needs no fulfilment at all (D-14): an order of services or fees has nothing to dispatch, and
-	// routing it through a state named for goods movement would be a lie about what happened.
+	// confirmed reaches completed directly when the order needs no fulfilment at all: an order of
+	// services or fees has nothing to dispatch.
 	string(models.SalesOrderStatusConfirmed): {
 		string(models.SalesOrderStatusProcessing),
 		string(models.SalesOrderStatusCompleted),
@@ -51,15 +38,10 @@ var orderTransitions = map[string][]string{
 	string(models.SalesOrderStatusCancelled): {},
 }
 
-// paymentTransitions maps each payment status to those reachable from it (BR §9.2).
-//
-// Nothing here is terminal, and that is the point: money keeps moving after a sale is over. A paid
-// order can be refunded months later, and a partially refunded one can be refunded again.
-//
-// unpaid is reachable from partially_paid because a payment can be voided before capture, which
-// returns the order to owing its full amount. It is NOT reachable from paid or from either refund
-// state: once money has actually been captured, the way back is a refund, which is a different
-// status and a different record.
+// paymentTransitions maps each payment status to those reachable from it. Money keeps moving after a
+// sale is over, so a paid order can still be refunded. unpaid is reachable from partially_paid
+// because a payment can be voided before capture; it is not reachable from paid or either refund
+// state, since once money is captured the way back is a refund.
 var paymentTransitions = map[string][]string{
 	string(models.SalesOrderPaymentStatusUnpaid): {
 		string(models.SalesOrderPaymentStatusPartiallyPaid),
@@ -91,14 +73,9 @@ var paymentTransitions = map[string][]string{
 	string(models.SalesOrderPaymentStatusRefunded): {},
 }
 
-// fulfillmentTransitions maps each fulfilment status to those reachable from it (BR §9.3).
-//
-// not_required is terminal and reachable only from pending: whether an order owes any goods is
-// settled by what its lines are, which is fixed at confirmation. An order cannot discover later
-// that it never needed fulfilling.
-//
-// fulfilled is not terminal — returns come afterwards — but returned is, since everything that
-// moved has come back and there is nothing left to move either way.
+// fulfillmentTransitions maps each fulfilment status to those reachable from it. not_required is
+// terminal and reachable only from pending, because whether an order owes goods is fixed at
+// confirmation. fulfilled is not terminal since returns come afterwards; returned is.
 var fulfillmentTransitions = map[string][]string{
 	string(models.SalesOrderFulfillmentStatusPending): {
 		string(models.SalesOrderFulfillmentStatusNotRequired),
@@ -122,11 +99,9 @@ var fulfillmentTransitions = map[string][]string{
 	string(models.SalesOrderFulfillmentStatusReturned): {},
 }
 
-// invoiceTransitions maps each invoice status to those reachable from it (BR §9.4).
-//
-// failed returns to requested because retrying is the whole point of recording the failure: a tax
-// authority rejecting a document is usually a transient or correctable condition, and the operator
-// fixes it and asks again. D-17 applies the same reasoning to returns.
+// invoiceTransitions maps each invoice status to those reachable from it. failed returns to requested
+// because a tax authority rejecting a document is usually transient or correctable, and the operator
+// fixes it and asks again.
 var invoiceTransitions = map[string][]string{
 	string(models.SalesOrderInvoiceStatusNotRequested): {
 		string(models.SalesOrderInvoiceStatusRequested),
@@ -147,11 +122,9 @@ var invoiceTransitions = map[string][]string{
 	string(models.SalesOrderInvoiceStatusCancelled): {},
 }
 
-// CanTransitionOrderStatus reports whether an order may move from one status to another.
-//
-// An unknown `from` answers false rather than panicking: the value came from a database row, and a
-// status this build does not recognise is a reason to refuse the transition, not to crash the
-// request.
+// CanTransitionOrderStatus reports whether an order may move from one status to another. An unknown
+// from answers false: the value came from a database row, and a status this build does not recognise
+// is a reason to refuse, not to crash.
 func CanTransitionOrderStatus(from, to string) bool {
 	return canTransition(orderTransitions, from, to)
 }
@@ -168,16 +141,14 @@ func CanTransitionInvoiceStatus(from, to string) bool {
 	return canTransition(invoiceTransitions, from, to)
 }
 
-// NextOrderStatuses lists what an order may move to, for a caller building a UI or an error message
-// that says what WOULD have been allowed.
+// NextOrderStatuses lists what an order may move to.
 func NextOrderStatuses(from string) []string {
 	return slices.Clone(orderTransitions[from])
 }
 
 func canTransition(table map[string][]string, from, to string) bool {
-	// A transition to the status already held is always allowed, and is a no-op. Refusing it would
-	// make every idempotent retry an error: a caller re-confirming an already-confirmed order has
-	// asked for a state that holds, and reporting failure would drive it to keep retrying.
+	// A transition to the status already held is a no-op and always allowed, so an idempotent retry
+	// is not an error.
 	if from == to {
 		return true
 	}
@@ -189,18 +160,11 @@ func canTransition(table map[string][]string, from, to string) bool {
 }
 
 // DerivePaymentStatus answers what an order's payment status should be, from the money against it.
-//
-// Pure: it takes the numbers rather than reading them, so the rule can be tested exhaustively and
-// so the caller controls which transaction the numbers came from.
-//
-// `paid iff captured == payable` EXACTLY (BR §42) — not "within a rounding tolerance". The amounts
-// are decimals at a fixed scale precisely so that an exact comparison is meaningful; a tolerance
-// would let a sale be marked paid while a fraction remained owed, and those fractions would
-// accumulate across a day of trading.
+// paid means captured == payable exactly, never within a rounding tolerance: the amounts are decimals
+// at a fixed scale, and a tolerance would leave fractions owed that accumulate across a trading day.
 func DerivePaymentStatus(payable, captured, refunded decimal.Decimal) string {
 	if refunded.IsPositive() {
-		// Refund state takes precedence over payment state: what matters once money has started
-		// coming back is how much has, not that it was once fully paid.
+		// Refund state takes precedence over payment state once money starts coming back.
 		if refunded.GreaterThanOrEqual(captured) {
 			return string(models.SalesOrderPaymentStatusRefunded)
 		}
@@ -218,25 +182,21 @@ func DerivePaymentStatus(payable, captured, refunded decimal.Decimal) string {
 	return string(models.SalesOrderPaymentStatusPartiallyPaid)
 }
 
-// LineQuantities is the fulfilment state of one line, as three numbers.
-//
-// Taking a slice of these rather than the line records keeps DeriveFulfillmentStatus pure and makes
-// its tests readable: the interesting cases are combinations of quantities, not of database rows.
+// LineQuantities is the fulfilment state of one line, as three numbers, so
+// DeriveFulfillmentStatus stays pure.
 type LineQuantities struct {
 	Ordered   decimal.Decimal
 	Fulfilled decimal.Decimal
 	Returned  decimal.Decimal
 
 	// RequiresFulfillment is false for a line that owes no goods — a service, a fee, a non-stocked
-	// item. An order of only such lines is not_required rather than pending forever (D-14).
+	// item. An order of only such lines is not_required rather than pending forever.
 	RequiresFulfillment bool
 }
 
-// DeriveFulfillmentStatus answers what an order's fulfilment status should be, from its lines.
-//
-// The return states are checked before the fulfilment ones because a return is later news: an order
-// that was fulfilled and then partly returned is partially_returned, and reporting it as fulfilled
-// would hide that goods came back.
+// DeriveFulfillmentStatus answers what an order's fulfilment status should be, from its lines. Return
+// states are checked first because a return is later news: reporting a partly returned order as
+// fulfilled would hide that goods came back.
 func DeriveFulfillmentStatus(lines []LineQuantities) string {
 	var (
 		ordered   = decimal.Zero
@@ -254,7 +214,6 @@ func DeriveFulfillmentStatus(lines []LineQuantities) string {
 		returned = returned.Add(line.Returned)
 	}
 
-	// No line owes anything — every line is a service or a fee, or the order has no lines at all.
 	if !anyNeeded {
 		return string(models.SalesOrderFulfillmentStatusNotRequired)
 	}
@@ -274,16 +233,11 @@ func DeriveFulfillmentStatus(lines []LineQuantities) string {
 	return string(models.SalesOrderFulfillmentStatusPartiallyFulfilled)
 }
 
-// DeriveOrderStatus answers whether an order has reached completion, given the other two statuses
-// (D-15).
+// DeriveOrderStatus answers whether an order has reached completion, given the other two statuses.
 //
-// Invoice status is deliberately absent from the inputs. BR §9 insists the four are independent,
-// and an unissued VAT invoice must not hold a commercial transaction open: the goods are delivered,
-// the money is in, and the fiscal document is somebody else's problem to chase.
-//
-// It answers only "should this become completed", returning the current status otherwise. Deciding
-// draft-to-confirmed or anything-to-cancelled is an operator's act, not a derivation from state,
-// and a function that guessed at those would cancel orders nobody asked to cancel.
+// Invoice status is deliberately not an input: an unissued VAT invoice must not hold a commercial
+// transaction open. It answers only "should this become completed" and returns the current status
+// otherwise, because confirming or cancelling is an operator's act, not a derivation from state.
 func DeriveOrderStatus(current, paymentStatus, fulfillmentStatus string) string {
 	if current != string(models.SalesOrderStatusConfirmed) &&
 		current != string(models.SalesOrderStatusProcessing) {
@@ -302,18 +256,11 @@ func DeriveOrderStatus(current, paymentStatus, fulfillmentStatus string) string 
 
 // voucherRedemptionTransitions maps each redemption status to what it may become.
 //
-// A reservation is the only non-terminal state, and it settles exactly one of two ways: 'redeemed'
-// when the order confirms, 'released' when the draft is cancelled or expires. A redemption can then
-// be undone by a return, which is 'reversed'.
-//
-// Released and reversed are both terminal and both mean "the code has its use back", but they are
-// not interchangeable: a release says no sale ever happened, a reversal says one happened and was
-// returned. A campaign report counts them differently, and collapsing them would lose that.
-//
-// Nothing returns to 'reserved'. Re-applying a released code to the same order writes a new
-// redemption rather than reviving the old one, because the composite unique on
-// (voucher_code_id, sales_order_id) would refuse it — which is the correct refusal: BR 26 allows one
-// use of a code per order, and a released reservation has already recorded that this order used it.
+// A reservation settles as redeemed when the order confirms or released when the draft is cancelled
+// or expires; a redemption is undone by a return as reversed. Released and reversed both give the
+// code its use back but are not interchangeable — a release says no sale happened, a reversal says
+// one happened and was returned, and campaign reports count them differently. Nothing returns to
+// reserved: the composite unique on (voucher_code_id, sales_order_id) allows one use per order.
 var voucherRedemptionTransitions = map[string][]string{
 	string(models.VoucherRedemptionStatusReserved): {
 		string(models.VoucherRedemptionStatusRedeemed),
@@ -326,38 +273,28 @@ var voucherRedemptionTransitions = map[string][]string{
 	string(models.VoucherRedemptionStatusReversed): {},
 }
 
-// CanTransitionVoucherRedemption reports whether a redemption may move between two statuses.
 func CanTransitionVoucherRedemption(from, to string) bool {
 	return canTransition(voucherRedemptionTransitions, from, to)
 }
 
-// NextVoucherRedemptionStatuses lists what a redemption may become.
 func NextVoucherRedemptionStatuses(from string) []string {
 	return slices.Clone(voucherRedemptionTransitions[from])
 }
 
-// quotationTransitions maps each quotation status to what it may become (BR 87.1).
+// quotationTransitions maps each quotation status to what it may become.
 //
-// The shape worth noticing: `draft` and `sent` may BOTH expire and BOTH be cancelled, and neither
-// `accepted`, `expired` nor `cancelled` goes anywhere. An accepted quotation is spent — it produced
-// an order, and re-accepting it would produce a second, which is two deliveries for one agreement.
-//
-// An expired quotation does not reopen. The customer was given a deadline and it passed; honouring
-// it afterwards is a commercial decision that belongs in a NEW quotation carrying its own dates,
-// rather than in silently reviving one whose terms nobody re-agreed to. Reviving would also leave the
-// stored prices unrepriced, which is exactly the staleness the expiry existed to prevent.
-//
-// Nothing returns to `draft`. A quotation the customer has seen cannot be un-seen, so un-sending one
-// would let an offer be edited while the customer holds the version they were sent.
+// accepted, expired and cancelled are all terminal: an accepted quotation is spent, and re-accepting
+// would produce a second order for one agreement. An expired one does not reopen — honouring it later
+// belongs in a new quotation with its own dates and freshly priced lines. Nothing returns to draft,
+// which would let an offer be edited while the customer holds the version they were sent.
 var quotationTransitions = map[string][]string{
 	string(models.SalesQuotationStatusDraft): {
 		string(models.SalesQuotationStatusSent),
 		string(models.SalesQuotationStatusCancelled),
 		string(models.SalesQuotationStatusExpired),
 
-		// Direct draft → accepted is permitted: a back-office operator quoting a customer on the
-		// phone may take the acceptance in the same conversation, and forcing a send in between
-		// would be recording a step that did not happen.
+		// Direct draft → accepted is permitted: an operator quoting a customer on the phone may take
+		// the acceptance in the same conversation.
 		string(models.SalesQuotationStatusAccepted),
 	},
 	string(models.SalesQuotationStatusSent): {
@@ -370,12 +307,10 @@ var quotationTransitions = map[string][]string{
 	string(models.SalesQuotationStatusCancelled): {},
 }
 
-// CanTransitionQuotation reports whether a quotation may move between two statuses.
 func CanTransitionQuotation(from, to string) bool {
 	return canTransition(quotationTransitions, from, to)
 }
 
-// NextQuotationStatuses lists what a quotation may become.
 func NextQuotationStatuses(from string) []string {
 	return slices.Clone(quotationTransitions[from])
 }

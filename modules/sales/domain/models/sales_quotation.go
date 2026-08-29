@@ -11,26 +11,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// Quotations: an offer, and the lines it offers (BR 87.1, SALES-038).
-//
-// # A quotation is NOT a draft order
-//
-// The tempting simplification is a status on sales_orders. It fails on the numbering: a quotation
-// that never becomes an order would leave a hole in the order sequence, and several quotations to one
-// customer would burn several order numbers before one was accepted. Fiscal and accounting systems
-// read that sequence, so the holes are not cosmetic.
-//
-// The second reason is that the two documents mean different things. An order is a commitment; a
-// quotation is an offer that lapses. `expired` is a legitimate resting state for a quotation and
-// would be meaningless on an order.
-//
-// # The lines are DERIVED from sales_order_lines, not shared with them
-//
-// Same shape where the shape means the same thing - product snapshots, quantity, the money columns -
-// and deliberately missing where it does not. There is no fulfilled_quantity, no returned_quantity
-// and no requires_fulfillment, because a quotation moves no goods; there is one unit_price where an
-// order line has base and effective, because a quotation states the offer rather than explaining how
-// it was reached. The explanation is rebuilt when the engine runs again at conversion.
+// Quotations: an offer, and the lines it offers. A quotation is not a status on sales_orders,
+// because a quotation that never converts would leave a hole in the order sequence that fiscal and
+// accounting systems read. The lines are derived from sales_order_lines, not shared: a quotation
+// moves no goods, so there is no fulfilled/returned quantity, and one unit_price rather than base
+// and effective — the explanation is rebuilt when the engine runs again at conversion.
 
 const (
 	SalesQuotationSchemaName = "sales_quotation"
@@ -132,19 +117,15 @@ func (this SalesQuotation) GetConvertedSalesOrderId() *model.Id {
 	return this.GetFieldData().GetModelId(SalesQuotationFieldConvertedOrder)
 }
 
-// IsConverted reports whether this quotation already became an order.
-//
-// The idempotency check of the conversion. A second accept must return the order the first one made
-// rather than creating another: a customer who accepted once has agreed to buy once, and two orders
-// from one acceptance is two deliveries and two invoices.
+// IsConverted reports whether this quotation already became an order. This is conversion's
+// idempotency check: a second accept must return the first order, not create a second delivery and
+// invoice.
 func (this SalesQuotation) IsConverted() bool {
 	return this.GetConvertedSalesOrderId() != nil
 }
 
-// IsOffered reports whether the customer has been shown this quotation.
-//
-// A sent quotation may still be edited, but doing so changes an offer already made - so the
-// operations that edit one check this and the audit trail records it. A draft has no such concern.
+// IsOffered reports whether the customer has been shown this quotation. A sent quotation may still
+// be edited, but that changes an offer already made, so edits check this and are audited.
 func (this SalesQuotation) IsOffered() bool {
 	status := this.GetStatus()
 	if status == nil {
@@ -178,15 +159,10 @@ func (this SalesQuotationLine) GetFinalAmount() *decimal.Decimal {
 	return this.GetFieldData().GetDecimal(SalesQuotationLineFieldFinalAmount)
 }
 
-// Manual price overrides (BR 87.4, SALES-039).
-//
-// Stored rather than applied-and-forgotten, and that is forced by how repricing works: it deletes the
-// whole adjustment chain and rewrites it from engine output, and confirm reprices unconditionally.
-// An override written straight into sales_order_adjustments would therefore vanish before the sale
-// completed. These rows are ENGINE INPUT, replayed on every calculation, which is what makes them
-// survive.
-//
-// The base price is never rewritten. See the package comment on pricing.ManualDiscountInput.
+// Manual price overrides. Stored rather than applied-and-forgotten because repricing deletes the
+// whole adjustment chain and rewrites it from engine output, and confirm reprices unconditionally —
+// an override written into sales_order_adjustments would vanish before the sale completed. These
+// rows are engine input, replayed on every calculation. The base price is never rewritten.
 
 const (
 	SalesManualDiscountSchemaName = "sales_manual_discount"
@@ -231,10 +207,9 @@ func (this SalesManualDiscount) GetReason() *string {
 	return this.GetFieldData().GetString(SalesManualDiscountFieldReason)
 }
 
-// IsOrderLevel reports whether this override applies to the basket rather than to one line.
-//
-// The distinction the pricing engine acts on: an order-level override is spread proportionally
-// across the lines, a line-level one lands where it was granted.
+// IsOrderLevel reports whether this override applies to the basket rather than to one line. An
+// order-level override is spread proportionally across the lines; a line-level one lands where it
+// was granted.
 func (this SalesManualDiscount) IsOrderLevel() bool {
 	return this.GetFieldData().GetModelId(SalesManualDiscountFieldOrderLineId) == nil
 }

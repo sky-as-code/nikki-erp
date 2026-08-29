@@ -11,10 +11,8 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// Where a variant's stock sits, grouped two ways.
-//
-// The cases that matter here are the ones the requirement calls out: a suspended place still shows
-// its contents, and stock outside any warehouse is not attributed to one.
+// Where a variant's stock sits, grouped two ways: a suspended place still shows its contents, and
+// stock outside any warehouse is not attributed to one.
 
 const testExternalLocationId = "01LOCATIONEXT0000000000000"
 
@@ -39,8 +37,8 @@ func warehouseRow(id, status, code string) dmodel.DynamicFields {
 	}
 }
 
-// TS-PROD-05: a suspended location keeps its stock and keeps being listed. Suspension governs what
-// may be chosen for new work, not whether what is already there exists.
+// A suspended location keeps its stock and keeps being listed: suspension governs what may be
+// chosen for new work, not whether what is already there exists.
 func TestStockByLocationShowsSuspendedLocations(t *testing.T) {
 	useSchemaEngines(t, map[string][]dmodel.DynamicFields{
 		models.StockQuantSchemaName: {quantRow(testVariantAId, testLocationAId, 10, 0)},
@@ -92,7 +90,7 @@ func TestStockByWarehouseKeepsWarehouselessStockSeparate(t *testing.T) {
 	assert.Equal(t, "30", result.Data.Rows[1].OnHand.String())
 }
 
-// TS-PROD-04: the warehouse rollup adds up the locations inside it.
+// The warehouse rollup adds up the locations inside it.
 func TestStockByWarehouseSumsTheLocationsWithinIt(t *testing.T) {
 	useSchemaEngines(t, map[string][]dmodel.DynamicFields{
 		models.StockQuantSchemaName: {

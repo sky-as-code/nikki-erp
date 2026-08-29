@@ -10,40 +10,25 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The bill allocation invariant (BR 36, SALES-024).
-//
-//	Sum of allocations across every bill of an order == the order amount, EXACTLY.
-//
-// Exactly, not approximately. The word matters: allocations are produced by dividing an order across
-// bills, and dividing rarely comes out even. Rounding each share independently and hoping is how a
-// business ends up with a customer who paid three bills that sum to one dong less than the sale.
-// The D-04 allocator assigns the whole residual rather than letting it vanish, and this file is what
-// checks the result.
-//
-// It is enforced on every bill mutation - create, split, merge - rather than only at settlement,
-// because a wrong allocation discovered at settlement has already been shown to a customer.
+// The bill allocation invariant: the sum of allocations across every bill of an order equals the
+// order amount EXACTLY. Enforced on every bill mutation - create, split, merge - rather than only
+// at settlement, because a wrong allocation found at settlement has already reached a customer.
 
-// AllocationCheck is what a verification concluded.
 type AllocationCheck struct {
 	OrderTotal     decimal.Decimal
 	AllocatedTotal decimal.Decimal
 
-	// Difference is order minus allocated: positive means the bills do not cover the order, negative
-	// means they cover more than it. Carried rather than recomputed so a caller reporting the
-	// failure names the same number the check used.
+	// Difference is order minus allocated: positive means the bills do not cover the order.
 	Difference decimal.Decimal
 
-	// BillCount is how many live bills were summed, so an operator can tell "no bills yet" from
-	// "the bills are wrong".
+	// BillCount lets an operator tell "no bills yet" from "the bills are wrong".
 	BillCount int
 }
 
-// Balances reports whether the invariant holds.
 func (this AllocationCheck) Balances() bool {
 	return this.Difference.IsZero()
 }
 
-// The refusal reasons the allocation rules produce.
 const (
 	ReasonAllocationMismatch = "sales_bill.allocation_mismatch"
 	ReasonBillNotOpen        = "sales_bill.not_open"
@@ -51,11 +36,8 @@ const (
 	ReasonQuantityExceeded   = "sales_bill.quantity_over_allocated"
 )
 
-// CheckOrderAllocation verifies BR 36 for one order.
-//
-// Cancelled bills are excluded. They were superseded by a split or a merge and their allocations
-// live on in whatever replaced them; counting both would double every amount the operation touched
-// and report a failure that is really an artefact of keeping history (BR 83).
+// CheckOrderAllocation excludes cancelled bills: they were superseded by a split or a merge and
+// their allocations live on in whatever replaced them, so counting both would double every amount.
 func CheckOrderAllocation(
 	ctx corectx.Context, orderId string,
 ) (*AllocationCheck, error) {
@@ -98,15 +80,10 @@ func CheckOrderAllocation(
 	}, nil
 }
 
-// AssertOrderAllocationBalances refuses a mutation that would break BR 36.
-//
-// Called AFTER the write, inside the same transaction, so a failure rolls the whole thing back. That
-// is the opposite of the usual validate-then-write shape and is deliberate: a split produces several
-// bills whose individual allocations mean nothing on their own, and the only checkable statement is
-// about the set they form once written.
-//
-// An order with no bills at all passes. A sale that has not been billed yet has nothing to reconcile,
-// and refusing it would make creating the first bill impossible.
+// AssertOrderAllocationBalances is called AFTER the write, inside the same transaction, so a
+// failure rolls the whole thing back: a split produces several bills whose individual allocations
+// mean nothing on their own, and only the resulting set is checkable. An order with no bills
+// passes, or creating the first bill would be impossible.
 func AssertOrderAllocationBalances(
 	ctx corectx.Context, orderId string,
 ) (*ft.ClientErrors, error) {
@@ -126,12 +103,8 @@ func AssertOrderAllocationBalances(
 	return vErrs, nil
 }
 
-// CheckLineAllocation verifies that one order line is not over-allocated across bills.
-//
-// Separate from the amount check because they fail differently and an operator fixes them
-// differently: an amount mismatch is a rounding or a lost residual, a quantity mismatch means the
-// same goods were put on two bills. BR 36 states the amount rule; BR 37 forbids the double
-// allocation a split could otherwise produce.
+// CheckLineAllocation is separate from the amount check because they fail differently: an amount
+// mismatch is a lost residual, a quantity mismatch means the same goods went on two bills.
 func CheckLineAllocation(
 	ctx corectx.Context, orderLineId string,
 ) (ordered decimal.Decimal, allocated decimal.Decimal, err error) {
@@ -150,8 +123,7 @@ func CheckLineAllocation(
 
 	allocated = decimal.Zero
 	for _, allocation := range allocations {
-		// A cancelled bill's allocations do not count, for the same reason they do not in the amount
-		// check: they were superseded, not undone.
+		// A cancelled bill's allocations do not count: they were superseded, not undone.
 		billId := stringOf(allocation, models.SalesBillLineFieldSalesBillId)
 		bill, err := loadRecord(ctx, models.SalesBillSchemaName, models.SalesBillFieldId, billId)
 		if err != nil {
@@ -166,8 +138,6 @@ func CheckLineAllocation(
 	return ordered, allocated, nil
 }
 
-// AssertLineNotOverAllocated refuses an allocation that would put more of a line on bills than the
-// order actually contains.
 func AssertLineNotOverAllocated(
 	ctx corectx.Context, orderLineId string,
 ) (*ft.ClientErrors, error) {
@@ -186,15 +156,10 @@ func AssertLineNotOverAllocated(
 	return vErrs, nil
 }
 
-// AllocateAcrossBills splits one order line's value between bills in proportion to their quantities.
-//
-// It exists so that split (SALES-025) and the initial bill both apportion the same way. The D-04
-// residual rule guarantees the shares sum to the line's amount EXACTLY, which is what makes BR 36
-// checkable rather than merely approximately true.
-//
-// The caller supplies AllocationInputs rather than a map so it controls the TIEBREAK: two bills
-// taking equal quantities must still receive the residual reproducibly, and a map has no order to
-// break the tie with.
+// AllocateAcrossBills splits one order line's value between bills in proportion to their
+// quantities, so a split and the initial bill apportion the same way. The caller supplies
+// AllocationInputs rather than a map so it controls the TIEBREAK: two bills taking equal
+// quantities must still receive the residual reproducibly, and a map has no order.
 func AllocateAcrossBills(
 	lineAmount decimal.Decimal, inputs []AllocationInput, scale int32,
 ) map[string]decimal.Decimal {
@@ -205,7 +170,6 @@ func AllocateAcrossBills(
 	return shares
 }
 
-// billsOfOrder reads an order's live bills, newest constraint first.
 func billsOfOrder(
 	ctx corectx.Context, orderId string, includeCancelled bool,
 ) ([]dmodel.DynamicFields, error) {

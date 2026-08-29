@@ -16,8 +16,8 @@ func storedWithStatus(status models.LifecycleStatus) *dmodel.DynamicFields {
 	return &found
 }
 
-// hasViolation reports whether any recorded violation carries the key, so a test asserts the
-// specific refusal rather than merely that something was refused.
+// hasViolation lets a test assert the specific refusal rather than merely that something was
+// refused.
 func hasViolation(cErrs *ft.ClientErrors, key string) bool {
 	for _, item := range *cErrs {
 		if item.Key == key {
@@ -27,7 +27,7 @@ func hasViolation(cErrs *ft.ClientErrors, key string) bool {
 	return false
 }
 
-// AC-TAX-SUP-01: a draft is freely editable — that is what draft is for.
+// A draft is freely editable.
 func TestDraftMaterialFieldsAreEditable(t *testing.T) {
 	cErrs := ft.NewClientErrors()
 	params := dmodel.DynamicFields{
@@ -43,8 +43,8 @@ func TestDraftMaterialFieldsAreEditable(t *testing.T) {
 	}
 }
 
-// AC-TAX-SUP-02: once published, every field that decides an amount is frozen. Editing one in
-// place would silently reinterpret transactions already priced under it (BR-TAX-ESS-SUP-002).
+// Once published, every field that decides an amount is frozen; editing one in place would
+// silently reinterpret transactions already priced under it.
 func TestPublishedMaterialFieldsAreImmutable(t *testing.T) {
 	for _, field := range materialFieldsBySchema[models.TaxDefinitionVersionSchemaName] {
 		cErrs := ft.NewClientErrors()
@@ -59,8 +59,7 @@ func TestPublishedMaterialFieldsAreImmutable(t *testing.T) {
 	}
 }
 
-// Descriptive fields stay editable after publication, so correcting a typo in a label does not
-// force a new version nobody needs.
+// Descriptive fields stay editable after publication.
 func TestPublishedDescriptiveFieldsStayEditable(t *testing.T) {
 	cErrs := ft.NewClientErrors()
 	params := dmodel.DynamicFields{
@@ -75,8 +74,7 @@ func TestPublishedDescriptiveFieldsStayEditable(t *testing.T) {
 	}
 }
 
-// The rate is the most consequential material field of all, so it gets its own assertion on its
-// own schema rather than relying on the definition-version loop above.
+// The rate gets its own assertion on its own schema rather than relying on the loop above.
 func TestPublishedRateIsImmutable(t *testing.T) {
 	cErrs := ft.NewClientErrors()
 	params := dmodel.DynamicFields{models.TaxRateVersionFieldRate: "8"}
@@ -113,8 +111,8 @@ func TestLifecycleTransitionsThatAreAllowed(t *testing.T) {
 	}
 }
 
-// Withdrawn is terminal. Letting it return to draft would reopen exactly the history that
-// withdrawing it was meant to close, and republishing would silently re-price transactions.
+// Withdrawn is terminal: returning to draft would reopen closed history, and republishing would
+// silently re-price transactions.
 func TestWithdrawnIsTerminal(t *testing.T) {
 	for _, target := range []models.LifecycleStatus{models.LifecycleDraft, models.LifecyclePublished} {
 		cErrs := ft.NewClientErrors()
@@ -128,7 +126,7 @@ func TestWithdrawnIsTerminal(t *testing.T) {
 	}
 }
 
-// Publication is not reversible: a published configuration cannot go back to draft to be edited.
+// Publication is not reversible.
 func TestPublishedCannotReturnToDraft(t *testing.T) {
 	cErrs := ft.NewClientErrors()
 	params := dmodel.DynamicFields{statusField: string(models.LifecycleDraft)}
@@ -140,8 +138,8 @@ func TestPublishedCannotReturnToDraft(t *testing.T) {
 	}
 }
 
-// A no-op status write is not a transition, so it must not be refused — a client resubmitting the
-// whole record unchanged is ordinary, not an error.
+// A no-op status write is not a transition, so a client resubmitting the record unchanged must not
+// be refused.
 func TestUnchangedStatusIsNotATransition(t *testing.T) {
 	cErrs := ft.NewClientErrors()
 	params := dmodel.DynamicFields{statusField: string(models.LifecyclePublished)}
@@ -153,7 +151,7 @@ func TestUnchangedStatusIsNotATransition(t *testing.T) {
 	}
 }
 
-// AC-TAX-SUP-01: a draft has priced nothing, so deleting it destroys no history.
+// A draft has priced nothing, so deleting it destroys no history.
 func TestDraftIsDeletable(t *testing.T) {
 	cErrs := ft.NewClientErrors()
 
@@ -164,8 +162,8 @@ func TestDraftIsDeletable(t *testing.T) {
 	}
 }
 
-// Publication is the boundary Tax owns and therefore the one it enforces: anything ever published
-// may have priced a transaction whose snapshot still references it (BR-TAX-ESS-SUP-026).
+// Publication is the boundary Tax enforces: anything ever published may have priced a transaction
+// whose snapshot still references it.
 func TestPublishedAndWithdrawnAreNotDeletable(t *testing.T) {
 	for _, status := range []models.LifecycleStatus{models.LifecyclePublished, models.LifecycleWithdrawn} {
 		cErrs := ft.NewClientErrors()
@@ -178,9 +176,8 @@ func TestPublishedAndWithdrawnAreNotDeletable(t *testing.T) {
 	}
 }
 
-// Every versioned resource has to freeze something on publication. A schema that reached the
-// lifecycle rules with an empty material list would accept edits to a published configuration
-// while appearing to be governed — the most misleading way for this to fail.
+// A schema reaching the lifecycle rules with an empty material list would accept edits to a
+// published configuration while appearing to be governed.
 func TestEveryLifecycleResourceDeclaresMaterialFields(t *testing.T) {
 	lifecycleSchemas := []string{
 		models.TaxDefinitionVersionSchemaName,

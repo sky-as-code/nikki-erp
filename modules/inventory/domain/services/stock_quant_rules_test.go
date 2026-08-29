@@ -45,8 +45,8 @@ func TestAvailableQuantityIsZeroWhenFullyReserved(t *testing.T) {
 	assert.True(t, AvailableQuantity(&quantity, &quantity).IsZero())
 }
 
-// The precision the BR requires: a decimal that a float64 cannot hold exactly must survive the
-// subtraction unchanged, which is why quantities are decimals rather than floats.
+// A decimal a float64 cannot hold exactly must survive the subtraction unchanged, which is why
+// quantities are decimals rather than floats.
 func TestAvailableQuantityKeepsDecimalPrecision(t *testing.T) {
 	onHand := dec(t, "0.3")
 	reserved := dec(t, "0.1")
@@ -54,10 +54,8 @@ func TestAvailableQuantityKeepsDecimalPrecision(t *testing.T) {
 	assert.Equal(t, "0.2", AvailableQuantity(&onHand, &reserved).String())
 }
 
-// The schema now declares available_quantity as a computed field, so the read-time fill runs in
-// the engine's computed-field layer instead of hand-written service overrides. This test pins
-// the declared formula to the pure rule above: whatever values AvailableQuantity gives for a
-// row, evaluating the schema's expression over that row must give the same number.
+// available_quantity is a computed field in the schema, so this pins the declared formula to the
+// pure rule above: evaluating the schema's expression over a row must match AvailableQuantity.
 func TestComputedDefinitionMatchesAvailableQuantityRule(t *testing.T) {
 	schema := models.StockQuantSchemaBuilder().Build()
 	field, ok := schema.Field(models.StockQuantFieldAvailableQuantity)

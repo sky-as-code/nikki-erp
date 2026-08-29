@@ -9,17 +9,11 @@ import (
 	"testing"
 )
 
-// The same invariants SALES-046 established, applied to every module this pricing change touched.
+// Migration invariants across every module the pricing change touched, hence the module block as a
+// parameter rather than one module hard-coded.
 //
-// It is deliberately NOT a copy of sales/migrations_test.go with one word changed. That file checks
-// one module; this one takes the module block as a parameter, because the pricing work wrote
-// migrations into three of them — purchase, inventory and contacts — and a guard that covers only
-// the module it happens to live in is a guard with two thirds of the surface missing.
-//
-// Every table is written twice, once per tree, and the two drift SILENTLY: a table added to one and
-// forgotten in the other breaks only a fresh install of the tree that missed it, which is the
-// environment nobody runs day to day. That is exactly how eight Sales migrations once shipped
-// without tenant_id while every existing database stayed perfectly happy.
+// Every table is written twice, once per tree, and the two drift silently: a table added to one and
+// forgotten in the other breaks only a fresh install of the tree that missed it.
 
 // checkedBlocks are the module blocks the pricing change wrote into, with the token that must
 // appear in a filename for it to belong to that block.
@@ -30,11 +24,8 @@ var checkedBlocks = []struct{ prefix, module string }{
 	{"1007", "sales"},
 }
 
-// postgresIdentifierLimit is where Postgres truncates a name, SILENTLY.
-//
-// Not an error, not a warning: the constraint is created under a shortened name, so the DDL applies
-// and every later DROP CONSTRAINT by the declared name fails instead. Two names in Sales were over
-// the limit and had been applying truncated for weeks before anybody noticed.
+// postgresIdentifierLimit is where Postgres truncates a name, with no error or warning: the DDL
+// applies under a shortened name and every later DROP CONSTRAINT by the declared name fails.
 const postgresIdentifierLimit = 63
 
 func TestPricingMigrationIdentifiersFitPostgres(t *testing.T) {
@@ -59,9 +50,6 @@ func TestPricingMigrationIdentifiersFitPostgres(t *testing.T) {
 }
 
 // Both trees carry the same migration files, block by block.
-//
-// This is the check that would have caught `contacts_vendor_profiles` existing in one tree and not
-// the other, which blocked the vendor price seeds until it was fixed.
 func TestBothTreesCarryTheSamePricingMigrations(t *testing.T) {
 	trees := pricingMigrationTrees(t)
 	if len(trees) < 2 {
@@ -82,15 +70,10 @@ func TestBothTreesCarryTheSamePricingMigrations(t *testing.T) {
 // migrationKinds reduces a block's filenames to their module-and-kind suffixes, dropping the
 // sequence number.
 //
-// The number is dropped because the two trees genuinely disagree on one and must keep disagreeing:
-// the contacts IAM migration is 1002003 in nikkierp and 1002002 in coremart, both committed long
-// before this change. Renaming either would rewrite a migration every existing install has already
-// applied and recorded in atlas.sum, which is a worse outcome than an inconsistent number.
-//
-// What actually matters is that neither tree is MISSING a migration the other has — a schema file
-// with no counterpart breaks a fresh install of the tree that lacks it, and that is what this
-// compares. (The same divergence is why `atlas migrate status` reports a pre-existing out-of-order
-// warning for that file; unrelated to this change, and left alone.)
+// The number is dropped because the trees legitimately disagree on one — the contacts IAM migration
+// is 1002003 in nikkierp and 1002002 in coremart — and renaming either would rewrite a migration
+// already applied and recorded in atlas.sum. What matters is that neither tree is missing a
+// migration the other has, since that breaks a fresh install of the tree that lacks it.
 func migrationKinds(t *testing.T, tree, prefix string) []string {
 	t.Helper()
 
@@ -106,12 +89,9 @@ func migrationKinds(t *testing.T, tree, prefix string) []string {
 	return kinds
 }
 
-// Every coremart table carries tenant_id, and every unique constraint is tenant-prefixed.
-//
-// The unprefixed unique is the dangerous half: it makes a value globally unique ACROSS tenants, so
-// one tenant recording a vendor product code would stop every other tenant from recording the same
-// one. That surfaces as a duplicate-key error in an unrelated tenant's data, which is close to
-// undiagnosable from the message alone.
+// Every coremart table carries tenant_id, and every unique constraint is tenant-prefixed. An
+// unprefixed unique makes a value globally unique across tenants, so one tenant's row blocks
+// another's with a duplicate-key error in unrelated data.
 func TestCoremartPricingTablesAreTenantScoped(t *testing.T) {
 	trees := pricingMigrationTrees(t)
 	if len(trees) < 2 {
@@ -125,8 +105,7 @@ func TestCoremartPricingTablesAreTenantScoped(t *testing.T) {
 	for _, block := range checkedBlocks {
 		for _, file := range blockMigrations(t, coremart, block.prefix) {
 			if strings.Contains(file, "iam") || strings.Contains(file, "seed") {
-				// IAM rows describe what the software can do rather than what a tenant's data
-				// contains, and seeds insert rather than define. Neither declares a table.
+				// IAM rows and seeds insert rather than declare a table.
 				continue
 			}
 			content := readPricingMigration(t, coremart, file)
@@ -152,12 +131,9 @@ func TestCoremartPricingTablesAreTenantScoped(t *testing.T) {
 	}
 }
 
-// Every coremart IAM and seed row this change added carries a tenant_id.
-//
-// `iam_resources.tenant_id` is NOT NULL in coremart, so a row without one fails the INSERT — on a
-// FRESH install only, because an existing database already has the rows and skips them via ON
-// CONFLICT. That asymmetry is the whole reason this check exists rather than being left to the
-// database.
+// Every coremart IAM and seed row carries a tenant_id. The column is NOT NULL in coremart, so a row
+// without one fails the INSERT on a fresh install only — an existing database already has the rows
+// and skips them via ON CONFLICT, which is why this is checked here and not left to the database.
 func TestCoremartPricingInsertsCarryATenant(t *testing.T) {
 	trees := pricingMigrationTrees(t)
 	if len(trees) < 2 {
@@ -188,11 +164,8 @@ func TestCoremartPricingInsertsCarryATenant(t *testing.T) {
 	}
 }
 
-// Each module block stays exclusively its own module.
-//
-// Another module numbering into a block would interleave on a fresh install, and a table could then
-// be created before something it references. Existing installs are unaffected, which is the class of
-// mistake that shows up only when somebody provisions a new environment.
+// Each module block stays exclusively its own module: another module numbering into a block would
+// interleave on a fresh install, creating a table before something it references.
 func TestPricingMigrationBlocksAreExclusive(t *testing.T) {
 	for _, tree := range pricingMigrationTrees(t) {
 		entries, err := os.ReadDir(tree)
@@ -216,11 +189,8 @@ func TestPricingMigrationBlocksAreExclusive(t *testing.T) {
 	}
 }
 
-// The vendor price table exists in BOTH trees.
-//
-// Named specifically because its absence is what blocked PRICE-043: the seeds reported success and
-// inserted nothing, since their `IF EXISTS` guard silently made the whole file a no-op against a
-// table that had never been created.
+// The vendor price table exists in both trees. Its absence makes the seeds a silent no-op, because
+// their `IF EXISTS` guard reports success while inserting nothing.
 func TestTheVendorPriceTableExistsInBothTrees(t *testing.T) {
 	for _, tree := range pricingMigrationTrees(t) {
 		found := false
@@ -238,10 +208,8 @@ func TestTheVendorPriceTableExistsInBothTrees(t *testing.T) {
 	}
 }
 
-// pricingMigrationTrees returns the migration directories to check, nikkierp first.
-//
-// A missing coremart tree SKIPS rather than fails: somebody building nikkierp alone is not violating
-// an invariant that genuinely does not apply to a one-tree checkout.
+// pricingMigrationTrees returns the migration directories to check, nikkierp first. A missing
+// coremart tree skips rather than fails, since the invariant does not apply to a one-tree checkout.
 func pricingMigrationTrees(t *testing.T) []string {
 	t.Helper()
 

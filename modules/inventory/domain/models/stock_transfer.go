@@ -40,8 +40,8 @@ const (
 	StockTransferEdgeBackorderOf         = "backorder_of"
 )
 
-// Stock transfer lifecycle states. They are derived from the transfer's moves rather than set by
-// a client; see domain/services/stock_transfer_states.go for the transition table.
+// Stock transfer lifecycle states, derived from the transfer's moves rather than set by a client.
+// The transition table is in domain/services/stock_transfer_states.go.
 const (
 	StockTransferStatusDraft     = "draft"
 	StockTransferStatusWaiting   = "waiting"
@@ -51,9 +51,9 @@ const (
 	StockTransferStatusCancelled = "cancelled"
 )
 
-// The transfer's operation_code, reservation_method, backorder_policy and shipping_policy are
-// snapshots of the operation type's own fields, so they share its constants — see
-// stock_operation_type.go. Declaring a second set here would let the two drift apart silently.
+// operation_code, reservation_method, backorder_policy and shipping_policy are snapshots of the
+// operation type's fields and share its constants in stock_operation_type.go; a second set declared
+// here would drift apart silently.
 
 //go:embed stock_transfer.json
 var stockTransferSchemaJson string
@@ -62,10 +62,9 @@ func StockTransferSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(stockTransferSchemaJson)
 }
 
-// StockTransfer is the header of a stock transaction: which operation type, between which
-// locations, in what state. It owns no quantities — those live on its moves — and it carries its
-// own copies of the operation type's policies so that reconfiguring the type cannot reinterpret a
-// transfer already created. See BR §4.2.3.
+// StockTransfer is the header of a stock transaction. It owns no quantities, which live on its
+// moves, and carries its own copies of the operation type's policies so reconfiguring the type
+// cannot reinterpret a transfer already created.
 type StockTransfer struct {
 	basemodel.DynamicModelBase
 }

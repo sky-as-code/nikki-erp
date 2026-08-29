@@ -15,38 +15,22 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
-// Fulfilment (BR 44, 45, 87.8, SALES-029).
+// Fulfilment. Sales sends intent and never touches stock: this file writes what was asked and
+// records what Inventory answered, computing no availability and moving nothing.
 //
-// **Sales sends intent and never touches stock** (BR 3.2). This file writes what was asked and
-// records what Inventory answered; it computes no availability, chooses no warehouse and moves
-// nothing. BR 94.6 tests exactly that.
+// One order has many requests - partial delivery, several warehouses, split shipment - hence a
+// table rather than a `fulfillment_reference` column the second shipment would overwrite.
 //
-// # One order has many requests (BR 45)
-//
-// Partial delivery, several warehouses and split shipment each produce another request. That is why
-// this is a table rather than a `fulfillment_reference` column on the order - a single column would
-// have to be rewritten on the second shipment, losing the first.
-//
-// # Accepted is not completed
-//
-// A request Inventory accepted has stock HELD; one it completed has goods MOVED. Only completed
-// requests feed `fulfilled_quantity`, because BR 7.3's failure - money captured, goods not dispensed
-// - lives exactly between the two, and counting an acceptance would tell a customer their goods had
-// shipped when they had not.
-//
-// # The port is declared but not bound
-//
-// Inventory publishes no mutation interface (see interfaces/external/fulfillment.go). A request is
-// therefore written and left `pending` when no port is available. That is the honest state: the sale
-// really has asked for goods, and Inventory really has not answered.
+// Accepted is not completed: an accepted request has stock HELD, a completed one has goods MOVED.
+// Only completed requests feed `fulfilled_quantity`, because counting an acceptance would tell a
+// customer their goods had shipped when they had not. The port is declared but not bound, so a
+// request is written and left `pending` when none is available.
 
-// RaiseFulfillmentResult is what raising a request concluded.
 type RaiseFulfillmentResult struct {
 	RequestId string
 	Status    string
 
-	// Dispatched says whether the request actually reached Inventory. False means it was recorded
-	// and is waiting for the port to exist - not that anything failed.
+	// Dispatched false means the request was recorded and awaits the port, not that anything failed.
 	Dispatched bool
 
 	InventoryReference string
@@ -58,9 +42,7 @@ const (
 	ReasonOrderNotFulfilled = "sales_fulfillment.order_not_confirmed"
 )
 
-// RaiseFulfillmentRequest records an intent and, when the port is bound, sends it.
-//
-// Only lines that still need fulfilling are included: asking Inventory again for goods it has
+// RaiseFulfillmentRequest includes only lines that still need fulfilling: asking again for goods
 // already issued would move them twice.
 func RaiseFulfillmentRequest(
 	ctx corectx.Context,
@@ -76,8 +58,7 @@ func RaiseFulfillmentRequest(
 		return nil, OrderNotFoundErrors(orderId), nil
 	}
 
-	// A draft has not been sold yet, so there is nothing to ask for. Confirmation is what commits
-	// the business, and it is confirmation that raises the first request.
+	// A draft has not been sold yet. Confirmation raises the first request.
 	if stringOf(order, models.SalesOrderFieldStatus) == string(models.SalesOrderStatusDraft) {
 		vErrs := ft.NewClientErrors()
 		vErrs.Append(*ft.NewBusinessViolation("status", ReasonOrderNotFulfilled,
@@ -101,8 +82,8 @@ func RaiseFulfillmentRequest(
 		return nil, nil, err
 	}
 
-	// No port bound: the request stands pending. Deliberately not an error - the sale is valid and
-	// the goods are genuinely owed, and refusing here would make confirmation impossible.
+	// No port bound: the request stands pending. Deliberately not an error - the goods are genuinely
+	// owed, and refusing here would make confirmation impossible.
 	if fulfillment == nil {
 		return &RaiseFulfillmentResult{
 			RequestId: requestId,
@@ -134,11 +115,8 @@ func RaiseFulfillmentRequest(
 	}, nil, nil
 }
 
-// outstandingLines finds what an order still owes, as fulfilment lines.
-//
-// A line whose fulfilled quantity already covers what was ordered is skipped. A line needing no
-// fulfilment at all - a service, a digital item - is skipped too, and an order made entirely of
-// those produces no request, which is what makes `not_required` reachable.
+// outstandingLines skips a line already fulfilled and one needing no fulfilment at all, so an
+// order made entirely of those produces no request - which is what makes `not_required` reachable.
 func outstandingLines(
 	ctx corectx.Context, orderId string,
 ) ([]itExt.FulfillmentLine, error) {
@@ -158,9 +136,8 @@ func outstandingLines(
 			continue
 		}
 		if !boolOrTrue(record, models.SalesOrderLineFieldRequiresFulfillment) {
-			// A service or a fee owes no goods, so there is nothing to ask Inventory for. An order
-			// made entirely of these produces no request at all, which is what makes
-			// `not_required` reachable rather than leaving the order pending forever.
+			// A service or a fee owes no goods. An order made entirely of these produces no request,
+			// which makes `not_required` reachable rather than pending forever.
 			continue
 		}
 
@@ -174,7 +151,6 @@ func outstandingLines(
 	return outstanding, nil
 }
 
-// dispatchFulfillment sends the intent to whichever port method matches the request type.
 func dispatchFulfillment(
 	ctx corectx.Context,
 	fulfillment itExt.FulfillmentExtService,
@@ -185,8 +161,8 @@ func dispatchFulfillment(
 		SalesOrderId:              orderId,
 		SalesFulfillmentRequestId: requestId,
 
-		// The request id IS the idempotency key. It is unique, it is already stored, and it means a
-		// retry of the same request cannot issue the goods twice.
+		// The request id IS the idempotency key: unique, already stored, so a retry of the same
+		// request cannot issue the goods twice.
 		IdempotencyKey: requestId,
 		Lines:          lines,
 	}
@@ -206,7 +182,6 @@ func dispatchFulfillment(
 	}, nil
 }
 
-// writeFulfillmentRequest stores the intent and its lines, in one transaction.
 func writeFulfillmentRequest(
 	ctx corectx.Context,
 	order dmodel.DynamicFields,
@@ -257,8 +232,8 @@ func writeFulfillmentRequest(
 				}
 			}
 
-			// Announced inside the same transaction as the request itself, so a consumer can never
-			// be told goods were asked for by a request that then rolled back.
+			// Announced inside the same transaction as the request, so a consumer can never be told
+			// goods were asked for by a request that then rolled back.
 			_, err = RecordEvent(tranxCtx, RecordEventParams{
 				EventType:   models.EventSalesFulfillmentRequested,
 				AggregateId: stringOf(order, models.SalesOrderFieldId),
@@ -278,7 +253,6 @@ func writeFulfillmentRequest(
 	return requestId, nil
 }
 
-// recordFulfillmentOutcome stamps what Inventory answered onto the request.
 func recordFulfillmentOutcome(
 	ctx corectx.Context, requestId string, response *itExt.FulfillmentResponse,
 ) error {
@@ -315,11 +289,8 @@ func recordFulfillmentOutcome(
 }
 
 // SyncFulfilledQuantities recomputes each line's fulfilled quantity from the COMPLETED requests.
-//
-// Derived rather than incremented. An increment assumes every previous update landed exactly once,
-// and compounds the error if one did not; a recount is self-correcting, and it is what makes the
-// stored quantity honestly a summary of the requests rather than a second source of truth that can
-// drift from them.
+// Derived rather than incremented: an increment compounds any update that did not land, while a
+// recount is self-correcting.
 func SyncFulfilledQuantities(ctx corectx.Context, orderId string) error {
 	requests, err := searchBy(ctx,
 		models.SalesFulfillmentRequestSchemaName,
@@ -365,10 +336,8 @@ func SyncFulfilledQuantities(ctx corectx.Context, orderId string) error {
 	return nil
 }
 
-// DeriveOrderFulfillmentStatus answers an order's fulfilment status from its lines.
-//
-// Reuses SALES-015's pure derivation rather than restating the rule, so a line and an order cannot
-// come to different conclusions about what "partially fulfilled" means.
+// DeriveOrderFulfillmentStatus reuses the pure derivation rather than restating the rule, so a
+// line and an order cannot disagree about what "partially fulfilled" means.
 func DeriveOrderFulfillmentStatus(
 	ctx corectx.Context, orderId string,
 ) (string, error) {
@@ -385,19 +354,17 @@ func DeriveOrderFulfillmentStatus(
 			Fulfilled: decimalOf(record, models.SalesOrderLineFieldFulfilledQuantity),
 			Returned:  decimalOf(record, models.SalesOrderLineFieldReturnedQuantity),
 
-			// Absent reads as TRUE, matching the column default. A missing value must not silently
-			// make a line need no goods, which would report an unshipped sale as complete.
+			// Absent reads as TRUE, matching the column default. A missing value must not silently make
+			// a line need no goods, which would report an unshipped sale as complete.
 			RequiresFulfillment: boolOrTrue(record, models.SalesOrderLineFieldRequiresFulfillment),
 		})
 	}
 	return DeriveFulfillmentStatus(quantities), nil
 }
 
-// boolOrTrue reads a boolean field, treating an absent one as TRUE.
-//
-// The opposite of the usual zero-value reading, and deliberately. This backs requires_fulfillment,
-// where the two mistakes are not symmetric: a line wrongly needing goods holds an order open until
-// somebody notices, while a line wrongly needing none reports a sale as shipped that never was.
+// boolOrTrue treats an absent boolean as TRUE - the opposite of the usual zero-value reading, and
+// deliberate. It backs requires_fulfillment, where a line wrongly needing goods holds an order
+// open until somebody notices, while one wrongly needing none reports a sale as shipped.
 func boolOrTrue(record dmodel.DynamicFields, field string) bool {
 	value, present := record[field]
 	if !present || value == nil {

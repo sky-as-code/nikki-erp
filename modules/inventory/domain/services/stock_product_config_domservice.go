@@ -11,19 +11,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// The rules behind a product's inventory unit.
-//
-// Product does not own the unit and does not own conversion: the UoM master, its categories, its
-// factors and its rounding all live in Essential, and Inventory holds a reference to one of them
-// (CR §11.1, §11.3, PROD-INT-INV-009, PROD-INT-INV-010). What lives here is only the question
-// Stock is entitled to answer — may this product's unit still be changed?
+// The rules behind a product's inventory unit. Inventory holds only a reference: the UoM master,
+// its categories, conversion factors and rounding all live in Essential. What lives here is the one
+// question Stock can answer — may this product's unit still be changed?
 
-// AssertInventoryUomNotInUse refuses a unit change on a product whose stock has been used.
-//
-// The change is not merely inconvenient at this point: every quantity ever recorded for the
-// product was written in the old unit, and reinterpreting them is a data migration rather than an
-// edit. The requirement routes that through an explicit administrative operation, out of scope
-// here (CR §12.2, §12.3, TS-PROD-09).
+// AssertInventoryUomNotInUse refuses a unit change on a product whose stock has been used: every
+// quantity ever recorded was written in the old unit, so reinterpreting them is a data migration
+// rather than an edit.
 func AssertInventoryUomNotInUse(vErrs *ft.ClientErrors) {
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.StockProductConfigSchemaName,
@@ -33,10 +27,8 @@ func AssertInventoryUomNotInUse(vErrs *ft.ClientErrors) {
 	))
 }
 
-// AssertInventoryUomNotArchived refuses an archived unit for new configuration.
-//
-// An archived UoM stays resolvable so historical records keep displaying it; what it may not do is
-// be adopted afresh (CR §11.7, §11.8, AC-PROD-INT-023).
+// AssertInventoryUomNotArchived refuses an archived unit for new configuration. An archived UoM
+// stays resolvable so historical records keep displaying it, but may not be adopted afresh.
 func AssertInventoryUomNotArchived(vErrs *ft.ClientErrors) {
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.StockProductConfigSchemaName,
@@ -46,11 +38,8 @@ func AssertInventoryUomNotArchived(vErrs *ft.ClientErrors) {
 }
 
 // IsTemplateStockInUse reports whether any of a template's variants has stock or stock history.
-//
-// History counts, unlike the archive guard where it deliberately does not. The two ask different
-// questions: archiving asks "would anything be stranded", which completed movement does not
-// affect, while this asks "would anything already recorded change meaning", which is precisely
-// what completed movement is (CR §12.1 versus §14.2).
+// History counts here, unlike in the archive guard: archiving asks whether anything would be
+// stranded, while this asks whether anything already recorded would change meaning.
 func IsTemplateStockInUse(ctx corectx.Context, templateId string) (bool, error) {
 	if templateId == "" {
 		return false, nil
@@ -78,7 +67,7 @@ func IsTemplateStockInUse(ctx corectx.Context, templateId string) (bool, error) 
 		return false, nil
 	}
 
-	// A quant is enough on its own: one exists only because stock was put there, and it holds a
+	// A quant is enough on its own: it exists only because stock was put there, and it holds a
 	// quantity in the unit being changed even when that quantity is now zero.
 	hasQuants, err := anyMatching(ctx, models.StockQuantSchemaName,
 		models.StockQuantFieldProductVariantId, variantIds)
@@ -89,22 +78,18 @@ func IsTemplateStockInUse(ctx corectx.Context, templateId string) (bool, error) 
 		return true, nil
 	}
 
-	// Moves are checked too, and in every state. A cancelled or draft move still names a quantity
-	// in the current unit, and a product whose only trace is one of those is not a product that
-	// has never been used.
+	// Moves are checked in every state: a cancelled or draft move still names a quantity in the
+	// current unit.
 	return anyMatching(ctx, models.StockMoveSchemaName,
 		models.StockMoveFieldProductVariantId, variantIds)
 }
 
-// IsUomUsable reports whether a unit of measure may be chosen for new configuration.
+// IsUomUsable reports whether a unit of measure may be chosen for new configuration. The answer
+// comes from Essential's record, not Inventory's tables: an archived unit stays resolvable for
+// history but is no longer selectable.
 //
-// Inventory does not own the UoM and must not decide this from its own tables. The answer comes
-// from Essential's own record: a unit that has been archived is still resolvable for history but
-// no longer selectable (CR §11.7, §11.8).
-//
-// A unit that cannot be found reads as unusable. Treating an unknown id as acceptable would let a
-// typo configure a product with a unit that does not exist, and every balance afterwards would be
-// expressed in nothing.
+// A unit that cannot be found reads as unusable, or a typo would configure a product with a unit
+// that does not exist and every balance afterwards would be expressed in nothing.
 func IsUomUsable(ctx corectx.Context, uomId string) (bool, error) {
 	if uomId == "" {
 		return false, nil
@@ -112,9 +97,9 @@ func IsUomUsable(ctx corectx.Context, uomId string) (bool, error) {
 
 	engine, err := engineFor(uomSchemaName)
 	if err != nil {
-		// Essential not being present is a deployment without the UoM module rather than a bad
-		// request. Nothing can be validated, so nothing is claimed: the unit passes, and Stock
-		// still refuses to move goods it cannot express a quantity for.
+		// Essential missing means a deployment without the UoM module, not a bad request. Nothing can
+		// be validated, so the unit passes; Stock still refuses to move goods it cannot express a
+		// quantity for.
 		return true, nil
 	}
 
@@ -122,8 +107,8 @@ func IsUomUsable(ctx corectx.Context, uomId string) (bool, error) {
 		Graph: uomByIdGraph(uomId),
 		Page:  0,
 		Size:  1,
-		// nil rather than false: the archived rows are exactly the ones this needs to see, since
-		// finding one is how it reports the unit as unusable rather than as missing.
+		// nil rather than false: the archived rows are the ones this needs to see, since finding one
+		// is how it reports the unit as unusable rather than missing.
 		IncludeArchived: nil,
 	})
 	if err != nil {
@@ -138,11 +123,9 @@ func IsUomUsable(ctx corectx.Context, uomId string) (bool, error) {
 	return !archived, nil
 }
 
-// uomSchemaName is Essential's unit-of-measure resource.
-//
-// Spelled out rather than imported: Inventory reaching into another module's model package would
-// couple the two at compile time, which is exactly what the interfaces/ ports exist to avoid. The
-// name must match essential/domain/models/uom.go's UomSchemaName verbatim.
+// uomSchemaName is Essential's unit-of-measure resource. Spelled out rather than imported, which
+// would couple the modules at compile time; it must match essential/domain/models/uom.go's
+// UomSchemaName verbatim.
 const uomSchemaName = "essential_uom"
 
 func uomByIdGraph(uomId string) *dmodel.SearchGraph {

@@ -29,7 +29,7 @@ func productLine(quantity, unitPrice, discount, tax string) dmodel.DynamicFields
 	}
 }
 
-// The arithmetic of one line, which is the whole of PUR-R4 at the line level.
+// The arithmetic of one line.
 func TestComputeLineTotals(t *testing.T) {
 	testCases := []struct {
 		name                       string
@@ -53,7 +53,7 @@ func TestComputeLineTotals(t *testing.T) {
 		},
 		{
 			// The discount is applied to the whole line, so the rounding happens once. Per-unit it
-			// would be 33.3333 -> 33.33 x 3 = 99.99, which is a cent adrift of the honest answer.
+			// would be 33.3333 -> 33.33 x 3 = 99.99, a cent adrift.
 			name: "the discount is rounded once for the line", quantity: "3", unitPrice: "33.3333", discount: "0", tax: "0",
 			subtotal: "100.00", taxOut: "0", totalOut: "100.00",
 		},
@@ -83,7 +83,7 @@ func TestComputeLineTotals(t *testing.T) {
 	}
 }
 
-// A section, subsection or note organizes the printed order. Letting a heading carry money would
+// A section, subsection or note organizes the printed order; letting a heading carry money would
 // put a number in the total that no product accounts for.
 func TestNonProductLinesContributeNothing(t *testing.T) {
 	for _, lineType := range []models.PurchaseOrderLineType{
@@ -104,8 +104,8 @@ func TestNonProductLinesContributeNothing(t *testing.T) {
 	}
 }
 
-// A line whose type is missing or unrecognised is PRICED, not silently zeroed. Dropping money out
-// of an order's total with nothing to show for it is the worse of the two failures.
+// A line whose type is missing or unrecognised is priced, not silently zeroed: dropping money out
+// of a total with nothing to show for it is the worse failure.
 func TestAnUnknownLineTypeIsStillPriced(t *testing.T) {
 	for _, lineType := range []any{nil, "", "something_new"} {
 		line := productLine("2", "10", "0", "0")
@@ -117,7 +117,7 @@ func TestAnUnknownLineTypeIsStillPriced(t *testing.T) {
 	}
 }
 
-// The header equals the sum of the lines' STORED values, so the total always matches the column a
+// The header equals the sum of the lines' stored values, so the total always matches the column a
 // reader can add up by hand.
 func TestComputeOrderTotals(t *testing.T) {
 	lines := []dmodel.DynamicFields{
@@ -138,8 +138,7 @@ func TestComputeOrderTotals(t *testing.T) {
 	assert.True(t, totals.Total.Equal(dec("385.00")), "total: %s", totals.Total)
 }
 
-// An order with no lines totals zero rather than erroring: that is the state every order is created
-// in, and it is a perfectly good order that nobody has filled in yet.
+// An order with no lines totals zero rather than erroring: that is the state every order starts in.
 func TestAnEmptyOrderTotalsZero(t *testing.T) {
 	totals := ComputeOrderTotals(nil)
 
@@ -148,8 +147,8 @@ func TestAnEmptyOrderTotalsZero(t *testing.T) {
 	assert.True(t, totals.Total.IsZero())
 }
 
-// A client-supplied subtotal or total is overwritten, never trusted (§10.2, §55.12). They are
-// no_update in the schema for the same reason; this is the check that the service agrees.
+// A client-supplied subtotal or total is overwritten, never trusted. They are no_update in the
+// schema for the same reason; this checks the service agrees.
 func TestStampLineTotalsOverwritesClientValues(t *testing.T) {
 	line := productLine("2", "10", "0", "3")
 	line[models.PurchaseOrderLineFieldSubtotal] = dec("999999")
@@ -159,12 +158,12 @@ func TestStampLineTotalsOverwritesClientValues(t *testing.T) {
 
 	assert.True(t, decimalOf(line, models.PurchaseOrderLineFieldSubtotal).Equal(dec("20")))
 	assert.True(t, decimalOf(line, models.PurchaseOrderLineFieldTotal).Equal(dec("23")))
-	// The tax the client sent IS kept — it is an input, not a calculation (D9).
+	// The tax the client sent is kept: it is an input, not a calculation.
 	assert.True(t, decimalOf(line, models.PurchaseOrderLineFieldTaxAmount).Equal(dec("3")))
 }
 
 // decimalOf is the reader every total is summed through, so it must not panic on whatever shape the
-// repository hands back — a panic there takes down the request instead of reporting a bad row.
+// repository hands back: a panic takes down the request instead of reporting a bad row.
 func TestDecimalOfReadsEveryShapeWithoutPanicking(t *testing.T) {
 	value := dec("12.34")
 	testCases := []struct {

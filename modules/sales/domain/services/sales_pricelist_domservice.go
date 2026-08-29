@@ -9,12 +9,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// SalesPricelistDomainServiceImpl adds to the engine's default service the two rules a pricelist
-// carries that plain CRUD cannot express: at most one default per organization, and a currency
-// that stops being editable once anything depends on it.
-//
-// It wraps rather than replaces, like every other derived service here: ordinary create, read and
-// delete keep running through the engine's implementation underneath.
+// SalesPricelistDomainServiceImpl adds the two rules a pricelist carries that plain CRUD cannot
+// express: at most one default per organization, and a currency that stops being editable once
+// anything depends on it. It wraps rather than replaces the engine's default service.
 type SalesPricelistDomainServiceImpl struct {
 	drif.DynamicResourceService
 }
@@ -24,16 +21,11 @@ func NewSalesPricelistDomainService(base drif.DynamicResourceService) *SalesPric
 }
 
 // SetDefault promotes one pricelist to be its organization's default, demoting whatever held that
-// place before (BR-PRICE-SAL-003, section 9).
+// place before.
 //
-// It is a single operation rather than two updates, and that is the whole reason it exists. Doing
-// it as "clear the old, set the new" from a client leaves a window in which the organization has
-// no default — and if the second call fails, it stays that way. Doing it as "set the new, clear the
-// old" leaves a window with two. Inside one transaction there is no window at all.
-//
-// Demotion is a loop rather than a single update because FindDefaultPricelists returns every
-// current default: if the invariant has already been broken by an earlier race, this repairs it
-// instead of tripping over it.
+// A single transaction rather than two client calls, which would leave a window with no default (or
+// two) and could leave it that way if the second call failed. Demotion loops over every current
+// default, so an invariant already broken by an earlier race is repaired instead of tripping this.
 func (this *SalesPricelistDomainServiceImpl) SetDefault(
 	ctx corectx.Context, pricelistId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -49,8 +41,8 @@ func (this *SalesPricelistDomainServiceImpl) SetDefault(
 			result = notFoundResult(models.SalesPricelistSchemaName, pricelistId)
 			return nil
 		}
-		// An archived list may not become the default: the default is what a new order falls back
-		// to, and an archived list may not price new business (PRICE-INV-023). Unarchive it first.
+		// An archived list may not become the default: the default is what a new order falls back to,
+		// and an archived list may not price new business. Unarchive it first.
 		if boolOf(target, basemodel.FieldIsArchived) {
 			result = violationResult(models.SalesPricelistSchemaName,
 				"sales_pricelist.archived",
@@ -99,16 +91,12 @@ func (this *SalesPricelistDomainServiceImpl) SetDefault(
 	return result, nil
 }
 
-// Update refuses a currency change once the list has priced anything (section 8).
+// Update refuses a currency change once the list has priced anything.
 //
-// Every price on a list is quoted in that list's currency and carries no currency of its own, so
-// changing it does not convert those prices — it reinterprets them. A list of VND prices relabelled
-// USD is off by a factor of twenty-five thousand, silently, and there is no FX service that could
-// have converted them even if this wanted to (BR-PRICE-CUR-004). Create a new list instead.
-//
-// The guard is on having RULES rather than on having priced a transaction. A transaction already
-// snapshots its own price and currency, so it is not retroactively harmed; the rules are what would
-// be reinterpreted. Checking the cheaper and stricter condition also means the answer does not
+// Prices carry no currency of their own, so changing the list's does not convert them, it
+// reinterprets them, and no FX service exists to convert them either. Create a new list instead.
+// The guard is on having RULES rather than on having priced a transaction: a transaction snapshots
+// its own price and currency, so the rules are what would be reinterpreted, and the answer does not
 // change as order history grows.
 func (this *SalesPricelistDomainServiceImpl) Update(
 	ctx corectx.Context, params dmodel.DynamicFields,
@@ -123,8 +111,8 @@ func (this *SalesPricelistDomainServiceImpl) Update(
 	if err != nil {
 		return nil, err
 	}
-	// A missing record is the engine's business to report, not this guard's. Falling through lets
-	// it produce its own not-found rather than inventing a second shape for the same failure.
+	// A missing record is the engine's business to report, not this guard's. Falling through lets it
+	// produce its own not-found rather than a second shape for the same failure.
 	if stored == nil {
 		return this.DynamicResourceService.Update(ctx, params)
 	}
@@ -154,13 +142,9 @@ func (this *SalesPricelistDomainServiceImpl) Update(
 // isCurrencyChanging reports whether an update actually moves the pricelist to a different
 // currency, as opposed to naming the one it already has.
 //
-// Split out from Update because it is the whole decision and it needs no repository: everything it
-// reads is already in hand. That makes the rule testable without a registry, which is what the
-// rest of this package does with its pure parts too.
-//
-// A client that PUTs the whole record sends currency_id every time. Treating "present" as
-// "changing" would refuse every such update the moment a list had one rule, which is not what
-// section 8 asks for — it forbids REinterpreting the prices, not resubmitting the same currency.
+// Split out from Update because it needs no repository, which makes the rule testable without a
+// registry. A client that PUTs the whole record sends currency_id every time, so treating present
+// as changing would refuse every such update the moment a list had one rule.
 //
 // An absent or non-string value counts as no change and falls through to the engine. Never a bare
 // type assertion: the value arrives from a JSON body, so a number where an id belongs would panic

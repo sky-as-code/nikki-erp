@@ -278,7 +278,7 @@ func (this Attribute) GetEnumValueText() []model.LangJson {
 			} else if ljMap, ok := item.(map[string]string); ok {
 				result = append(result, model.LangJson(ljMap))
 			} else if ljMap, ok := item.(map[string]interface{}); ok {
-				// Convert map[string]interface{} to LangJson (from JSON unmarshaling)
+				// Shape produced by JSON unmarshaling.
 				converted := make(model.LangJson)
 				for k, val := range ljMap {
 					if str, ok := val.(string); ok {
@@ -287,7 +287,6 @@ func (this Attribute) GetEnumValueText() []model.LangJson {
 				}
 				result = append(result, converted)
 			} else if jsonStr, ok := item.(string); ok {
-				// Handle case where each item is a JSON string
 				var lj model.LangJson
 				if err := json.Unmarshal([]byte(jsonStr), &lj); err == nil {
 					result = append(result, lj)
@@ -328,13 +327,12 @@ func (this Attribute) GetEnumValueNumber() []int64 {
 	if items, ok := v.([]any); ok {
 		result := make([]int64, 0, len(items))
 		for _, item := range items {
-			// Try direct int64
 			if num, ok := item.(int64); ok {
 				result = append(result, num)
 			} else if num, ok := item.(int); ok {
 				result = append(result, int64(num))
 			} else if num, ok := item.(float64); ok {
-				// JSON numbers are unmarshaled as float64
+				// JSON numbers arrive as float64.
 				result = append(result, int64(num))
 			} else if num, ok := item.(int32); ok {
 				result = append(result, int64(num))

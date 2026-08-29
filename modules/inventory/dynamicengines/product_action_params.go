@@ -9,14 +9,11 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
-// Shared plumbing for the Products custom actions: reaching the derived service, and turning an
-// untyped request body into a typed query.
+// Shared plumbing for the Products custom actions.
 
-// asProductService recovers the derived Products service the module installed on the engine.
-//
-// A failed assertion means SetResourceService was never called for this engine, which is a
-// wiring mistake rather than anything a caller did — so it surfaces as an error (500), not as
-// client errors (400).
+// asProductService recovers the derived Products service installed on the engine. A failed
+// assertion means SetResourceService was never called — a wiring mistake, so it surfaces as an
+// error (500) rather than client errors (400).
 func asProductService(input drif.ProcessInput) (itProduct.ProductService, error) {
 	productSvc, ok := input.ResourceService.(itProduct.ProductService)
 	if !ok {
@@ -26,11 +23,10 @@ func asProductService(input drif.ProcessInput) (itProduct.ProductService, error)
 	return productSvc, nil
 }
 
-// buildResolveSelectionQuery validates and converts the resolve_selection body.
-//
-// Without a ParamSchema the params arrive untyped, and a body whose selections are malformed
-// would otherwise decode to an empty list — resolving to the empty combination, which is a real
-// and different variant, answered 200. Every shape problem below is therefore a client error.
+// buildResolveSelectionQuery validates and converts the resolve_selection body. The params arrive
+// untyped, so malformed selections would otherwise decode to an empty list and resolve to the
+// empty combination — a real and different variant, answered 200. Every shape problem is therefore
+// a client error.
 func buildResolveSelectionQuery(
 	params dmodel.DynamicFields,
 ) (itProduct.ResolveProductSelectionQuery, *ft.ClientErrors) {

@@ -9,14 +9,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The BR §55 quantity invariant has exactly ONE enforcement point, and it is the function these
-// tests cover.
-//
-// The plan asked for it as a database CHECK constraint as well, on the reasoning that an invariant
-// this important is worth enforcing in two places. That is not available: the dynamic-model
-// framework declares no CHECK constraints and no migration in either tree contains one. So there is
-// no second line of defence, and these tests are correspondingly load-bearing — a gap here is a gap
-// everywhere.
+// The quantity invariant has exactly ONE enforcement point, the function these tests cover: the
+// dynamic-model framework declares no CHECK constraints, so there is no second line of defence and
+// a gap here is a gap everywhere.
 
 func lineFields(ordered, fulfilled, returned string) dmodel.DynamicFields {
 	return dmodel.DynamicFields{
@@ -45,8 +40,8 @@ func TestQuantityInvariant(t *testing.T) {
 		{"ordering a negative amount", "-1", "0", "0", false},
 		{"fulfilling more than was ordered", "3", "4", "0", false},
 		{"a negative fulfilment", "3", "-1", "0", false},
-		// Measured against fulfilled rather than ordered, and the difference is the point: a
-		// customer cannot return what was never handed over.
+		// Measured against fulfilled rather than ordered: a customer cannot return what was never
+		// handed over.
 		{"returning more than was fulfilled", "3", "1", "2", false},
 		{"returning from a line that fulfilled nothing", "3", "0", "1", false},
 		{"a negative return", "3", "3", "-1", false},
@@ -64,8 +59,8 @@ func TestQuantityInvariant(t *testing.T) {
 	}
 }
 
-// A violation must name the field the caller has to fix, not just report that something is wrong.
-// A form showing "invalid line" against no particular box is not actionable.
+// A violation must name the field the caller has to fix; a message against no particular box is
+// not actionable.
 func TestQuantityViolationNamesTheOffendingField(t *testing.T) {
 	vErrs := assertQuantitiesConsistent(lineFields("3", "5", "0"))
 	if vErrs == nil {
@@ -83,10 +78,9 @@ func TestQuantityViolationNamesTheOffendingField(t *testing.T) {
 	}
 }
 
-// The check runs against the row as it WOULD BE after the update, not against the payload alone.
-//
-// This is the case a payload-only check gets wrong: an update carrying just "fulfilled_quantity = 5"
-// looks fine in isolation, and is a violation once merged with a stored ordered_quantity of 3.
+// The check runs against the row as it WOULD BE after the update, not the payload alone: an update
+// carrying only a fulfilled quantity looks fine in isolation and is a violation once merged with a
+// smaller stored ordered_quantity.
 func TestQuantityCheckUsesTheMergedRow(t *testing.T) {
 	stored := lineFields("3", "0", "0")
 	update := dmodel.DynamicFields{
@@ -94,9 +88,8 @@ func TestQuantityCheckUsesTheMergedRow(t *testing.T) {
 	}
 
 	if assertQuantitiesConsistent(update) == nil {
-		// Sanity: the payload alone is missing ordered_quantity, which reads as zero and so fails
-		// the ordered > 0 rule. If this ever passed, the merged check below would be the only thing
-		// standing between a caller and a broken row.
+		// Sanity: the payload alone is missing ordered_quantity, which reads as zero and so fails the
+		// ordered > 0 rule.
 		t.Log("the bare payload passes on its own; the merge is what catches the real problem")
 	}
 	if assertQuantitiesConsistent(mergedFields(stored, update)) == nil {
@@ -106,7 +99,7 @@ func TestQuantityCheckUsesTheMergedRow(t *testing.T) {
 }
 
 // Quantities arrive in whatever shape the caller and the round trip produced. A reader that only
-// accepted decimal.Decimal would treat a JSON-supplied "3" as zero and refuse a valid line.
+// accepted decimal.Decimal would treat a JSON-supplied string as zero and refuse a valid line.
 func TestQuantitiesAreReadFromEveryShape(t *testing.T) {
 	shapes := map[string]any{
 		"decimal":         decimal.RequireFromString("3"),
@@ -132,8 +125,7 @@ func TestQuantitiesAreReadFromEveryShape(t *testing.T) {
 }
 
 // A malformed decimal reads as zero, which fails the ordered > 0 rule and is REPORTED as a
-// violation rather than silently accepted. Silently treating it as zero would store a line that
-// ordered nothing.
+// violation rather than silently accepted.
 func TestMalformedQuantityIsRefused(t *testing.T) {
 	fields := dmodel.DynamicFields{
 		models.SalesOrderLineFieldOrderedQuantity:   "not a number",
@@ -145,11 +137,9 @@ func TestMalformedQuantityIsRefused(t *testing.T) {
 	}
 }
 
-// The model's own view of the invariant must agree with the service's.
-//
-// They are two implementations of one rule — the model answers for a loaded record, the service for
-// an incoming write — so a divergence would mean a line the service accepted and the model
-// considered broken, or the reverse.
+// The model's own view of the invariant must agree with the service's. They are two
+// implementations of one rule (the model answers for a loaded record, the service for an incoming
+// write), so a divergence would mean a line one accepted and the other considered broken.
 func TestModelAndServiceAgreeOnConsistency(t *testing.T) {
 	cases := [][3]string{
 		{"3", "0", "0"},
@@ -171,9 +161,9 @@ func TestModelAndServiceAgreeOnConsistency(t *testing.T) {
 	}
 }
 
-// The remaining-quantity helpers never go negative. A line whose stored quantities somehow broke
-// the invariant must not propagate a negative into whatever computes the next fulfilment request or
-// refund — it would turn one bad row into a bad transaction.
+// The remaining-quantity helpers never go negative: a line whose stored quantities somehow broke
+// the invariant must not propagate a negative into whatever computes the next fulfilment request
+// or refund.
 func TestRemainingQuantitiesNeverGoNegative(t *testing.T) {
 	broken := models.NewSalesOrderLineFrom(lineFields("3", "5", "9"))
 
@@ -197,12 +187,10 @@ func TestRemainingQuantities(t *testing.T) {
 	}
 }
 
-// sameFieldValue must see through the type differences a round trip introduces.
-//
-// A decimal read from the database and the same decimal submitted as a string are equal in value
-// and different in type. A plain == would report every re-submitted snapshot as an attempt to
-// change it, which would make a confirmed order unupdatable in ANY field — a read-modify-write
-// cycle sends the whole line back.
+// sameFieldValue must see through the type differences a round trip introduces. A decimal read
+// from the database and the same decimal submitted as a string are equal in value and different in
+// type; a plain == would make a confirmed order unupdatable in ANY field, since a
+// read-modify-write cycle sends the whole line back.
 func TestSameFieldValueSeesThroughTypeDifferences(t *testing.T) {
 	price := decimal.RequireFromString("12.5000")
 
@@ -230,10 +218,8 @@ func TestSameFieldValueSeesThroughTypeDifferences(t *testing.T) {
 	}
 }
 
-// The order's own editability gate: only a draft may be changed.
-//
-// A cancelled order is refused too, and deliberately — it records something that was attempted, and
-// rewriting it would destroy the evidence of what was attempted.
+// The order's own editability gate: only a draft may be changed. A cancelled order is refused too,
+// deliberately, since rewriting it would destroy the evidence of what was attempted.
 func TestOnlyDraftOrdersAreEditable(t *testing.T) {
 	cases := map[string]bool{
 		string(models.SalesOrderStatusDraft):     true,
@@ -253,8 +239,8 @@ func TestOnlyDraftOrdersAreEditable(t *testing.T) {
 	}
 }
 
-// An archived draft is not editable either. Archiving is the system lifecycle and the status is the
-// business one; a draft put away for good should not still accept line edits.
+// An archived draft is not editable either. Archiving is the system lifecycle and the status is
+// the business one; a draft put away for good should not still accept line edits.
 func TestArchivedDraftIsNotEditable(t *testing.T) {
 	order := models.NewSalesOrderFrom(dmodel.DynamicFields{
 		models.SalesOrderFieldStatus: string(models.SalesOrderStatusDraft),
@@ -265,8 +251,8 @@ func TestArchivedDraftIsNotEditable(t *testing.T) {
 	}
 }
 
-// Confirmation is what freezes the snapshots (BR §11), and a completed order counts as confirmed:
-// it passed through confirmation to get there, and its receipt has been printed.
+// Confirmation is what freezes the snapshots, and a completed order counts as confirmed: it passed
+// through confirmation to get there.
 func TestIsConfirmedCoversCompleted(t *testing.T) {
 	cases := map[string]bool{
 		string(models.SalesOrderStatusDraft):     false,

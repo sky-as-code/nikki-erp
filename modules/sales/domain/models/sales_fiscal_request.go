@@ -9,16 +9,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// The fiscal document request: what Sales asked an eInvoice provider for, and what came back.
-//
-// **A bill is not a VAT invoice** (BR 33). This table is the join between the two, and the reason it
-// exists rather than a set of columns on sales_bills: a bill may need an original invoice and then
-// several adjustments as goods come back, so one bill has MANY fiscal requests. Columns on the bill
-// would have to be rewritten by the first adjustment, losing the original.
-//
-// Nothing here names a document type, a serial or a template. Sales states what commercially
-// happened and the provider decides what document that requires (BR 50) - see the package comment on
-// interfaces/external/invoicing.
+// The fiscal document request: what Sales asked an eInvoice provider for, and what came back. A
+// table rather than columns on sales_bills because one bill may need an original invoice and then
+// several adjustments as goods come back. Nothing here names a document type, serial or template:
+// Sales states what commercially happened and the provider decides what document that requires.
 
 const (
 	SalesFiscalRequestSchemaName = "sales_fiscal_request"
@@ -104,11 +98,9 @@ func (this SalesFiscalRequest) GetIssuedAt() *model.ModelDateTime {
 	return this.GetFieldData().GetModelDateTime(SalesFiscalRequestFieldIssuedAt)
 }
 
-// GetBuyerSnapshot returns the buyer's fiscal identity as supplied at issuance.
-//
-// Typed as `any` for the same reason the tax snapshot is: domain/models must not import another
-// module, and a stored jsonmap comes back as whatever the JSON decoder chose. A caller needing the
-// structured shape unmarshals it.
+// GetBuyerSnapshot returns the buyer's fiscal identity as supplied at issuance. Typed as `any`
+// because domain/models must not import another module, and a stored jsonmap comes back as whatever
+// the JSON decoder chose.
 func (this SalesFiscalRequest) GetBuyerSnapshot() any {
 	return this.GetFieldData().GetAny(SalesFiscalRequestFieldBuyerSnapshot)
 }
@@ -117,31 +109,25 @@ func (this *SalesFiscalRequest) SetBuyerSnapshot(snapshot any) {
 	this.GetFieldData().SetAny(SalesFiscalRequestFieldBuyerSnapshot, snapshot)
 }
 
-// IsIssued reports whether the provider confirmed the document exists.
-//
-// THE question this table answers, and the one BR 77 turns on. A request that has not come back is
-// pending, not issued: reporting a document as issued before confirmation would tell a customer they
-// hold a VAT invoice that does not exist, and a VAT invoice that does not exist cannot be deducted.
+// IsIssued reports whether the provider confirmed the document exists. A request that has not come
+// back is pending, not issued: reporting early would tell a customer they hold a VAT invoice that
+// does not exist and cannot be deducted.
 func (this SalesFiscalRequest) IsIssued() bool {
 	status := this.GetStatus()
 	return status != nil && *status == string(SalesFiscalStatusIssued)
 }
 
-// IsInFlight reports whether the provider has been asked and has not yet answered.
-//
-// Distinct from failed, and the distinction matters for retry: a failed request is one the provider
-// refused and Sales may safely resend, while an in-flight one may already have issued a document
-// Sales has not heard about. Resending that is how a duplicate legal document gets created.
+// IsInFlight reports whether the provider has been asked and has not yet answered. Distinct from
+// failed, which Sales may safely resend: an in-flight request may already have issued a document
+// Sales has not heard about, and resending it creates a duplicate legal document.
 func (this SalesFiscalRequest) IsInFlight() bool {
 	status := this.GetStatus()
 	return status != nil && *status == string(SalesFiscalStatusPending)
 }
 
-// BlocksNewRequest reports whether this request stops another being raised for the same bill.
-//
-// Both pending and issued block: issued because a second original invoice for one sale is a tax
-// filing to correct, and pending because Sales does not know whether it became issued. Only failed
-// and cancelled leave the bill free to ask again.
+// BlocksNewRequest reports whether this request stops another being raised for the same bill. Both
+// pending and issued block — issued because a second original invoice is a tax filing to correct,
+// pending because Sales does not know whether it became issued.
 func (this SalesFiscalRequest) BlocksNewRequest() bool {
 	return this.IsIssued() || this.IsInFlight()
 }

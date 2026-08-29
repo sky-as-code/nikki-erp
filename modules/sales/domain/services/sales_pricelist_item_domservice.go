@@ -10,12 +10,9 @@ import (
 )
 
 // SalesPricelistItemDomainServiceImpl enforces the rules a pricing rule carries that the schema
-// cannot express.
-//
-// All three are conditional on another field, which is exactly what `required_for_create` cannot
-// say: which target column must be set depends on applies_to, which price fields are required
-// depends on calculation_method, and whether a base pricelist is acceptable depends on the whole
-// derivation graph. The schema declares the columns; this decides when each one means anything.
+// cannot express, because all three are conditional on another field: which target column must be
+// set depends on applies_to, which price fields are required depends on calculation_method, and
+// whether a base pricelist is acceptable depends on the whole derivation graph.
 type SalesPricelistItemDomainServiceImpl struct {
 	drif.DynamicResourceService
 }
@@ -41,11 +38,9 @@ func (this *SalesPricelistItemDomainServiceImpl) Create(
 	return this.DynamicResourceService.Create(ctx, params)
 }
 
-// Update validates the record as it will BE, not as it was sent.
-//
-// A partial update names only the fields it changes, so validating the payload alone would reject
-// a rule for lacking a target it already has. Merging the stored record with the change is what
-// makes "exactly one target" mean the same thing on create and on update.
+// Update validates the record as it will BE, not as it was sent. A partial update names only the
+// fields it changes, so validating the payload alone would reject a rule for lacking a target it
+// already has.
 func (this *SalesPricelistItemDomainServiceImpl) Update(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -73,10 +68,9 @@ func (this *SalesPricelistItemDomainServiceImpl) Update(
 	return this.DynamicResourceService.Update(ctx, params)
 }
 
-// assertNoCycle refuses a rule that would make pricelist derivation circular.
-//
-// Skipped entirely when the change does not touch the derivation: walking the graph costs a read
-// per level, and a rule that only moves its price cannot create a loop.
+// assertNoCycle refuses a rule that would make pricelist derivation circular. Skipped when the
+// change does not touch the derivation: walking the graph costs a read per level, and a rule that
+// only moves its price cannot create a loop.
 func (this *SalesPricelistItemDomainServiceImpl) assertNoCycle(
 	ctx corectx.Context, merged dmodel.DynamicFields, changed dmodel.DynamicFields,
 ) (*ft.ClientErrors, error) {
@@ -116,11 +110,9 @@ func (this *SalesPricelistItemDomainServiceImpl) assertNoCycle(
 // assertRuleConsistent checks a rule against itself: the right target for its applies_to, and the
 // right operands for its calculation_method.
 //
-// Pure, so the whole rule table is testable without a database. Every branch answers the same
-// question — does this row say something coherent — and a row that does not is rejected at write
-// time rather than silently never matching anything at resolution time. That distinction matters:
-// a rule that never matches is invisible, and the operator who wrote it sees a price that did not
-// change and no reason why.
+// Pure, so the whole rule table is testable without a database. An incoherent row is rejected at
+// write time rather than silently never matching at resolution time: a rule that never matches is
+// invisible, and its author sees a price that did not change and no reason why.
 func assertRuleConsistent(record dmodel.DynamicFields) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 
@@ -134,11 +126,9 @@ func assertRuleConsistent(record dmodel.DynamicFields) *ft.ClientErrors {
 	return vErrs
 }
 
-// assertTargetConsistent enforces exactly one target, chosen by applies_to (section 12).
-//
-// Both directions are checked. A missing target makes the rule match nothing; a SURPLUS target
-// makes the row lie about what it prices — a variant rule that also carries a category id reads,
-// to anyone browsing the table, as though it applied to the category too.
+// assertTargetConsistent enforces exactly one target, chosen by applies_to. Both directions are
+// checked: a missing target makes the rule match nothing, and a SURPLUS target makes the row lie
+// about what it prices.
 func assertTargetConsistent(record dmodel.DynamicFields, vErrs *ft.ClientErrors) {
 	variantId := stringOf(record, models.SalesPricelistItemFieldProductVariantId)
 	templateId := stringOf(record, models.SalesPricelistItemFieldProductTemplateId)
@@ -166,10 +156,9 @@ func assertTargetConsistent(record dmodel.DynamicFields, vErrs *ft.ClientErrors)
 		return
 	}
 
-	// A slice rather than a map: two surplus targets would otherwise be reported in whichever
-	// order the map happened to iterate, so the same bad row would produce different errors on
-	// different runs — and a client showing "the first problem" would show a different one each
-	// time.
+	// A slice rather than a map: two surplus targets would otherwise be reported in whichever order
+	// the map happened to iterate, so the same bad row would produce different errors on different
+	// runs.
 	present := []struct {
 		field string
 		value string
@@ -193,7 +182,7 @@ func assertTargetConsistent(record dmodel.DynamicFields, vErrs *ft.ClientErrors)
 	}
 }
 
-// assertCalculationConsistent checks that a rule carries the operands its method needs (§13, §14).
+// assertCalculationConsistent checks that a rule carries the operands its method needs.
 func assertCalculationConsistent(record dmodel.DynamicFields, vErrs *ft.ClientErrors) {
 	method := stringOf(record, models.SalesPricelistItemFieldCalculationMethod)
 	if method == "" {
@@ -202,8 +191,8 @@ func assertCalculationConsistent(record dmodel.DynamicFields, vErrs *ft.ClientEr
 
 	switch method {
 	case models.PricelistMethodFixedPrice:
-		// The price may be zero — a giveaway is a real price — so its ABSENCE is what is refused,
-		// not its value. A fixed-price rule with no price would match and then quote nothing.
+		// The price may be zero (a giveaway is a real price), so its ABSENCE is what is refused, not
+		// its value. A fixed-price rule with no price would match and then quote nothing.
 		if _, present := record[models.SalesPricelistItemFieldPrice]; !present {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesPricelistItemFieldPrice,
 				"sales_pricelist_item.price_required",
@@ -244,11 +233,8 @@ func assertCalculationConsistent(record dmodel.DynamicFields, vErrs *ft.ClientEr
 	}
 }
 
-// assertValidityConsistent refuses a window that never opens.
-//
-// A rule whose valid_from is after its valid_to matches on no date at all. Nothing would fail; the
-// rule would simply never apply, and its author would be left looking for a price change that
-// never happened.
+// assertValidityConsistent refuses a window that never opens. A rule whose valid_from is after its
+// valid_to matches on no date at all: nothing fails, the rule simply never applies.
 func assertValidityConsistent(record dmodel.DynamicFields, vErrs *ft.ClientErrors) {
 	from := stringOf(record, models.SalesPricelistItemFieldValidFrom)
 	to := stringOf(record, models.SalesPricelistItemFieldValidTo)

@@ -1,89 +1,70 @@
 // Package pricing is the sales pricing engine: a pure function from a basket to a priced result.
-//
-// It performs NO I/O (D-13). Every catalogue price, pricelist, combo, promotion and voucher is
-// loaded by the caller and passed in. That is what makes BR §13's "same input ⇒ same output, always"
-// testable at all, and it is why the same engine serves both a quote preview and a confirm: neither
-// can drift from the other, because there is only one calculation.
-//
-// The nine steps of BR §13 run in a fixed order, and the order is load-bearing — discounts do not
-// commute, so a percentage applied before a fixed amount gives a different total than the reverse.
-// Every step that changes a number emits an Adjustment recording what it did, so the result can be
-// replayed rather than merely trusted.
+// It performs no I/O — the caller loads every price, combo, promotion and voucher and passes them in
+// — so the same input always gives the same output and quote and confirm cannot drift apart. Its
+// nine steps run in a fixed order because discounts do not commute, and every step that changes a
+// number emits an Adjustment so the result can be replayed.
 package pricing
 
 import (
 	"github.com/shopspring/decimal"
 )
 
-// InternalScale is the number of decimal places carried through the calculation (D-01).
-//
-// Four rather than the currency's own scale, deliberately: a chain of proportional allocations
-// rounded to whole dong at every step accumulates error, so the working precision stays finer than
-// the presentation precision and rounding happens once, at step 8.
+// InternalScale is the number of decimal places carried through the calculation. It is finer than
+// any currency's own scale on purpose: rounding to the currency happens once, at step 8, because
+// rounding at every allocation accumulates error.
 const InternalScale int32 = 4
 
 // LineInput is one thing the customer wants to buy.
 type LineInput struct {
-	// Key identifies this line to the caller. Passed through untouched, so the caller can match
-	// results back without depending on slice order.
+	// Key identifies this line to the caller; passed through untouched so results match back without
+	// depending on slice order.
 	Key string
 
-	// LineNumber orders the lines and breaks allocation ties (D-04).
+	// LineNumber orders the lines and breaks allocation ties.
 	LineNumber int32
 
 	ProductVariantId string
 	UomId            string
 	Quantity         decimal.Decimal
 
-	// CatalogueUnitPrice is the fallback price, used when no pricelist item matches. The caller
-	// resolves it from Inventory; the engine never looks one up.
+	// CatalogueUnitPrice is the fallback price when no pricelist item matches. The caller resolves it
+	// from Inventory; the engine never looks one up.
 	CatalogueUnitPrice decimal.Decimal
 
-	// ProductTemplateId and CategoryPath place the variant in the product hierarchy, so a rule
-	// targeting a template or a category can be matched without the engine reading anything.
-	//
-	// CategoryPath runs from the variant's OWN category outward to the root, and the order is the
-	// precedence: the nearest ancestor wins (PRICE-INV-017), so a rule on Soft Drinks beats one on
-	// Beverages for a product in both. The caller walks parent_category_id to build it — that walk
-	// is I/O, and keeping it outside is what lets this package stay a pure function.
+	// ProductTemplateId and CategoryPath place the variant in the product hierarchy so template- and
+	// category-targeted rules match without a lookup. CategoryPath runs from the variant's OWN
+	// category outward to the root, and that order IS the precedence: the nearest ancestor wins. The
+	// caller builds it by walking parent_category_id, keeping the I/O outside this package.
 	ProductTemplateId string
 	CategoryPath      []string
 
-	// UnitCost is the variant's cost, for a FORMULA rule based on COST. Sales READS this and never
-	// writes it back (PRICE-INV-010): the number belongs to Inventory, and a pricing engine that
-	// could change it would be a costing engine.
-	//
-	// Zero is indistinguishable from unset here, which is why HasCost says which it is. A cost of
-	// zero is a real answer for a giveaway; an absent cost must refuse rather than price at zero.
+	// UnitCost is the variant's cost, for a FORMULA rule based on COST. Sales only reads it; the
+	// number belongs to Inventory. HasCost distinguishes a real zero cost (a giveaway) from an absent
+	// one, which must refuse rather than price at zero.
 	UnitCost decimal.Decimal
 	HasCost  bool
 
-	// ProductCode and ProductName are snapshotted onto the result so the caller can write them to
-	// the order line without a second lookup.
+	// ProductCode and ProductName are snapshotted onto the result, sparing the caller a lookup.
 	ProductCode string
 	ProductName string
 
-	// ComboId, when set, marks this line as a combo parent. Its components are expanded from the
-	// ComboDefinition the caller supplied.
+	// ComboId, when set, marks this line a combo parent, expanded from the caller's ComboDefinition.
 	ComboId string
 
-	// RequiresFulfillment is false for a service or a fee. Carried through untouched — the engine
-	// does not price differently for it, but the caller needs it to derive fulfilment status.
+	// RequiresFulfillment is false for a service or a fee. Carried through untouched; the caller
+	// needs it to derive fulfilment status.
 	RequiresFulfillment bool
 }
 
-// PricelistItem is one applicable price the caller has already filtered to this context.
-//
-// The engine does not decide which pricelists apply — that is scope resolution, which needs the
-// channel and point and belongs to the caller. It only picks the best matching item per line.
+// PricelistItem is one applicable price the caller has already filtered to this context. Scope
+// resolution belongs to the caller; the engine only picks the best matching item per line.
 type PricelistItem struct {
-	// Id is the rule, echoed onto the result so a caller can say which rule set a price and so
-	// that two otherwise identical rules still resolve deterministically (PRICE-INV-020).
+	// Id is the rule, echoed onto the result for provenance and as the final deterministic tiebreak
+	// between otherwise identical rules.
 	Id string
 
-	// AppliesTo names which of the three target fields below is meaningful, or ALL_PRODUCTS for a
-	// rule that matches anything. It is the enum from the schema, passed through as a string so
-	// this package depends on no model.
+	// AppliesTo names which of the three target fields below is meaningful, or ALL_PRODUCTS. The
+	// schema enum, as a string so this package depends on no model.
 	AppliesTo string
 
 	ProductVariantId  string
@@ -96,33 +77,28 @@ type PricelistItem struct {
 	// MinQuantity is the quantity break this price applies from, inclusive.
 	MinQuantity decimal.Decimal
 
-	// Specificity ranks the PRICELIST this item came from: higher wins. The caller computes it
-	// from the pricelist's scope, so the engine needs no knowledge of channels or points.
-	//
-	// Distinct from and above target specificity below. A point-scoped list beats a channel-scoped
-	// one whatever either rule targets, because the two answer different questions: which policy
-	// applies here, then which rule within it applies to this product.
+	// Specificity ranks the PRICELIST this item came from: higher wins. The caller computes it from
+	// the pricelist's scope. It is distinct from and outranks target specificity — a point-scoped
+	// list beats a channel-scoped one whatever either rule targets.
 	Specificity int32
 
 	// Priority breaks ties between items of equal specificity, higher winning.
 	Priority int32
 
-	// Sequence breaks ties between rules that are equally specific and equally applicable, LOWEST
-	// winning (section 18 step 7). Note the direction is opposite to Priority above; the two come
-	// from different requirements and neither was worth renaming to match the other.
+	// Sequence breaks ties between equally specific, equally applicable rules, LOWEST winning — the
+	// opposite direction to Priority above.
 	Sequence int32
 
-	// CalculationMethod is FIXED_PRICE, DISCOUNT or FORMULA. Empty means FIXED_PRICE, so a caller
-	// that has not been updated still gets the behaviour it had before this field existed.
+	// CalculationMethod is FIXED_PRICE, DISCOUNT or FORMULA. Empty means FIXED_PRICE, preserving the
+	// behaviour callers had before this field existed.
 	CalculationMethod string
 
 	// DiscountPercent is taken off the base for DISCOUNT and FORMULA. Signed: negative marks up,
-	// which is how "cost plus 50%" is expressed without a second field.
+	// expressing "cost plus 50%" without a second field.
 	DiscountPercent decimal.Decimal
 
-	// BasePriceSource is what a FORMULA rule starts from: BASE_SALES_PRICE, COST or
-	// OTHER_PRICELIST. For OTHER_PRICELIST the caller resolves the other list first and supplies
-	// the answer in ResolvedBasePrice — chasing it here would need I/O.
+	// BasePriceSource is what a FORMULA rule starts from: BASE_SALES_PRICE, COST or OTHER_PRICELIST.
+	// For OTHER_PRICELIST the caller resolves the other list and supplies ResolvedBasePrice.
 	BasePriceSource   string
 	ResolvedBasePrice decimal.Decimal
 	HasResolvedBase   bool
@@ -151,17 +127,13 @@ type ComboComponentInput struct {
 	ProductCode      string
 	ProductName      string
 
-	// ReferencePrice is what this component would cost standalone. It is the BASIS for allocating
-	// the combo price across components (BR §18) — never an input to the combo price itself, which
-	// is independent by BR §15.
+	// ReferencePrice is what this component would cost standalone: the basis for allocating the combo
+	// price across components, never an input to the combo price itself.
 	ReferencePrice decimal.Decimal
 }
 
 // AppliedProgram is a promotion the caller has already found eligible and resolved for conflicts.
-//
-// Eligibility and conflict resolution happen outside the engine, in ResolvePromotions and the
-// caller's condition evaluation. The engine's job is to apply what it is given, in the order it is
-// given, which keeps it a pure function of its inputs.
+// The engine applies what it is given, in the order it is given.
 type AppliedProgram struct {
 	ProgramId   string
 	ProgramName string
@@ -177,8 +149,8 @@ type RewardInput struct {
 	RewardId string
 	Sequence int32
 
-	// Type is one of the models.PromotionReward* values. A string rather than the typed constant so
-	// this package does not import the models package, keeping the engine free of schema concerns.
+	// Type is one of the models.PromotionReward* values, as a string so this package imports no
+	// models.
 	Type string
 
 	Value decimal.Decimal
@@ -189,9 +161,9 @@ type RewardInput struct {
 	// TargetLineKeys names the lines a line-scoped reward applies to. Empty means every line.
 	TargetLineKeys []string
 
-	// FreeProductVariantId and FreeUom describe the giveaway line a free_quantity reward creates
-	// (D-11). A free item is a real order line rather than an adjustment, because Inventory must
-	// physically fulfil it and its VAT treatment is a line-level question.
+	// FreeProductVariantId and FreeUom describe the giveaway line a free_quantity reward creates. A
+	// free item is a real order line, not an adjustment: Inventory must fulfil it and its VAT
+	// treatment is a line-level question.
 	FreeProductVariantId string
 	FreeUomId            string
 	FreeProductCode      string
@@ -200,40 +172,30 @@ type RewardInput struct {
 
 // Context is what the engine needs to know about the sale, beyond the basket.
 type Context struct {
-	// CurrencyScale is the currency's own number of decimal places — 0 for VND. The final rounding
+	// CurrencyScale is the currency's own number of decimal places (0 for VND). The final rounding
 	// step rounds to this, not to InternalScale.
 	CurrencyScale int32
 
-	// TaxByLineKey carries the tax Accounting computed for each line, keyed by LineResult.Key.
-	//
-	// The engine does not call Accounting itself. It is pure (D-13) — no I/O, no clock — and a
-	// calculation that reached into another module could not be replayed from its inputs, which is
-	// the whole property that makes a historical sale reproducible. The caller resolves tax first
-	// and hands the answer in; see services.ResolveBasketTax.
-	//
-	// A line absent from the map is taxed at zero. That is the correct reading for a giveaway line
-	// Accounting was not asked about, and it is safe because a document Accounting could not resolve
-	// never reaches this point at all — ResolveBasketTax refuses it.
+	// TaxByLineKey carries the tax Accounting computed for each line, keyed by LineResult.Key. The
+	// engine never calls Accounting itself — that would break replayability; the caller resolves tax
+	// first via services.ResolveBasketTax. A line absent from the map is taxed at zero, which is safe
+	// because ResolveBasketTax refuses any document it could not resolve.
 	TaxByLineKey map[string]LineTax
 }
 
-// LineTax is Accounting's answer for one line, in the units the engine and the schema use.
-//
-// Converted at the boundary rather than carried in Accounting's own units on purpose. Accounting
-// stores a rate as a PERCENTAGE (8 means 8%); sales_order_line.tax_rate_snapshot is documented as a
-// FRACTION. Keeping the two apart in one struct would leave every reader to remember which is which,
-// and the failure is silent and hundredfold.
+// LineTax is Accounting's answer for one line, converted at this boundary into the units the engine
+// and schema use. Accounting stores a rate as a PERCENTAGE (8 means 8%) while
+// sales_order_line.tax_rate_snapshot is a FRACTION; mixing them fails silently and hundredfold.
 type LineTax struct {
-	// RateSnapshot is the effective rate as a FRACTION: 0.1 for 10%. It is the sum of the line's
-	// component rates, recorded so a historical line can be read without the tax master.
+	// RateSnapshot is the effective rate as a FRACTION (0.1 for 10%), the sum of the line's component
+	// rates, recorded so a historical line reads without the tax master.
 	RateSnapshot decimal.Decimal
 
 	// Amount is the rounded tax Accounting charged on this line.
 	Amount decimal.Decimal
 
-	// ComponentAmounts is the per-combo-component split, keyed by ComponentResult.Key, when the
-	// caller asked Accounting to tax components individually. Empty means the engine allocates the
-	// line's tax across its components itself.
+	// ComponentAmounts is the per-combo-component split, keyed by ComponentResult.Key. Empty means
+	// the engine allocates the line's tax across its components itself.
 	ComponentAmounts map[string]decimal.Decimal
 }
 
@@ -249,10 +211,9 @@ const (
 	AdjustmentRounding           = "rounding"
 )
 
-// Adjustment is one step of the calculation, recorded so the price can be explained.
-//
-// BR §13 requires the engine to return a LIST of these rather than a total: discounts do not
-// commute, so a total alone could never be reproduced. Sequence is what makes the replay exact.
+// Adjustment is one step of the calculation, recorded so the price can be explained. The engine
+// returns a list rather than a total because discounts do not commute; Sequence makes the replay
+// exact.
 type Adjustment struct {
 	Sequence int32
 
@@ -264,14 +225,12 @@ type Adjustment struct {
 	SourceId    string
 	Description string
 
-	// BaseAmount is what the adjustment was calculated FROM. Stored because it depends on where in
-	// the sequence the adjustment fell: ten percent applied third operates on a different base than
-	// the same ten percent applied first.
+	// BaseAmount is what the adjustment was calculated FROM; it depends on where in the sequence the
+	// adjustment fell.
 	BaseAmount decimal.Decimal
 
-	// Amount is SIGNED: negative for a discount, positive for a clawback or a rounding increase.
-	// The order's discount_total is positive by convention, but that is a presentation choice; here
-	// the sign says what the step did to the number.
+	// Amount is SIGNED: negative for a discount, positive for a clawback or rounding increase. The
+	// order's discount_total is positive by convention; the sign here says what the step did.
 	Amount decimal.Decimal
 }
 
@@ -289,16 +248,12 @@ type LineResult struct {
 	LineType      string
 	PricingSource string
 
-	// PricelistItemId names the rule that set this price, when one did.
-	//
-	// Recorded for the same reason SourcePromotionProgramId is: when somebody asks why a line cost
-	// what it did, the answer has to be a row they can go and read. Without it a resolved price is
-	// a number with no provenance, and the pricing rules are exactly the configuration people
-	// change most often and understand least.
+	// PricelistItemId names the rule that set this price, when one did, so a resolved price has
+	// provenance somebody can go and read.
 	PricelistItemId string
 
-	// SourcePromotionProgramId is set on a giveaway line (D-11), tying the free item back to the
-	// campaign that gave it away — which is the question asked when a campaign's cost is reviewed.
+	// SourcePromotionProgramId ties a giveaway line back to the campaign that gave it away, for
+	// campaign cost review.
 	SourcePromotionProgramId string
 	ComboId                  string
 
@@ -348,49 +303,34 @@ type Input struct {
 	Combos         []ComboDefinition
 	Programs       []AppliedProgram
 
-	// ManualDiscounts are the operator overrides stored against this order (BR 87.4).
-	//
-	// They are ENGINE INPUT, replayed on every reprice, rather than adjustments written once
-	// afterwards. That is forced by how repricing works: it deletes the whole adjustment chain and
-	// rewrites it from engine output, so an adjustment written outside the engine would vanish on
-	// the next line edit - and confirm reprices unconditionally, so it would vanish before the sale
-	// completed. Feeding them in is what makes them survive.
+	// ManualDiscounts are the operator overrides stored against this order. They must be engine
+	// INPUT, replayed on every reprice: repricing deletes the whole adjustment chain and rewrites it
+	// from engine output, so an adjustment written outside the engine would vanish on the next edit.
 	ManualDiscounts []ManualDiscountInput
 
 	Context Context
 }
 
-// ManualDiscountInput is one operator override (BR 87.4).
-//
-// It NEVER touches the base price. The line keeps the price the catalogue and the pricelist gave it,
-// and this rides on top as an adjustment - so BR 87.9's explanation still reads as a chain from
-// catalogue price to final amount, with the override as one visible link rather than as an
-// unexplained difference at the start.
+// ManualDiscountInput is one operator override. It NEVER touches the base price: the line keeps its
+// catalogue/pricelist price and this rides on top as an adjustment, so the price explanation stays a
+// visible chain.
 type ManualDiscountInput struct {
-	// Id identifies the stored override, so the adjustment it produces can point back at it and an
-	// operator can see which record authorised the change.
+	// Id identifies the stored override, so the adjustment can point back at the authorising record.
 	Id string
 
-	// LineKey names the line this applies to. Empty means the whole order, which is how a
-	// goodwill discount on a basket is expressed.
+	// LineKey names the line this applies to; empty means the whole order.
 	LineKey string
 
-	// Amount is what comes off, as a POSITIVE number. The engine subtracts it; a negative value
-	// here would be a surcharge, which BR 87.4 does not authorise and which the caller rejects
-	// before it reaches the engine.
+	// Amount is what comes off, as a POSITIVE number; the engine subtracts it. A negative value would
+	// be an unauthorised surcharge and the caller rejects it before this point.
 	Amount decimal.Decimal
 
-	// Reason is mandatory (BR 87.4) and travels into the adjustment description, so the price
-	// explanation says WHY rather than merely that somebody was allowed to.
+	// Reason is mandatory and travels into the adjustment description.
 	Reason string
 }
 
-// The rule vocabulary, mirrored from the schema as plain strings.
-//
-// Duplicated here rather than imported from models, deliberately: this package is a pure function
-// and depends on nothing, which is what lets it be tested without a registry or a database. The
-// values are byte-identical to the enum in sales_pricelist_item.json, and the engine's own tests
-// would fail the moment they drifted.
+// The rule vocabulary, mirrored as plain strings rather than imported from models so this package
+// depends on nothing. The values are byte-identical to the enum in sales_pricelist_item.json.
 const (
 	AppliesToVariant     = "PRODUCT_VARIANT"
 	AppliesToTemplate    = "PRODUCT_TEMPLATE"

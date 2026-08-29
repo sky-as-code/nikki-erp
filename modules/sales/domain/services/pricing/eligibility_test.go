@@ -27,8 +27,7 @@ func group(conditions ...Condition) []ConditionGroup {
 	return []ConditionGroup{{Sequence: 1, Conditions: conditions}}
 }
 
-// A program with no conditions applies to everything. Refusing it would make "10% off everything"
-// inexpressible, which is a campaign operators genuinely run.
+// A program with no conditions applies to everything.
 func TestNoConditionsMeansEligible(t *testing.T) {
 	if !IsEligible(nil, facts()) {
 		t.Error("a program with no conditions must apply unconditionally")
@@ -38,15 +37,14 @@ func TestNoConditionsMeansEligible(t *testing.T) {
 	}
 }
 
-// An empty group holds: an operator who created a group and added nothing to it has expressed no
-// restriction.
+// An empty group holds: it expresses no restriction.
 func TestEmptyGroupHolds(t *testing.T) {
 	if !IsEligible([]ConditionGroup{{Sequence: 1}}, facts()) {
 		t.Error("a group with no conditions expresses no restriction and must hold")
 	}
 }
 
-// D-06: conditions AND within a group.
+// Conditions AND within a group.
 func TestConditionsAndWithinAGroup(t *testing.T) {
 	both := group(
 		Condition{Type: "order_subtotal", Operator: "gte", ValueDecimal: dec("50000")},
@@ -65,7 +63,7 @@ func TestConditionsAndWithinAGroup(t *testing.T) {
 	}
 }
 
-// D-06: groups OR with each other.
+// Groups OR with each other.
 func TestGroupsOrWithEachOther(t *testing.T) {
 	groups := []ConditionGroup{
 		{Sequence: 1, Conditions: []Condition{
@@ -128,7 +126,7 @@ func TestDecimalOperators(t *testing.T) {
 	}
 }
 
-// `in` over a product set holds when the basket contains at least one target — "buy any of these".
+// `in` over a product set holds when the basket contains at least one target.
 func TestProductVariantInHoldsOnAnyMatch(t *testing.T) {
 	condition := Condition{
 		Type: "product_variant", Operator: "in",
@@ -144,8 +142,8 @@ func TestProductVariantInHoldsOnAnyMatch(t *testing.T) {
 	}
 }
 
-// `not_in` requires the basket to contain NONE of the targets. It is not the plain inverse of `in`
-// over a single element, and the distinction matters for exclusion campaigns.
+// `not_in` requires the basket to contain NONE of the targets — not the plain inverse of `in` over a
+// single element.
 func TestProductVariantNotInRequiresNoMatch(t *testing.T) {
 	excludesAPresentItem := Condition{
 		Type: "product_variant", Operator: "not_in",
@@ -208,7 +206,7 @@ func TestChannelAndPointConditions(t *testing.T) {
 	}
 }
 
-// A day-of-week set is naturally written as a comma-separated list by hand, so both forms work.
+// A day-of-week set may be written as a comma-separated list, so both forms work.
 func TestDayOfWeek(t *testing.T) {
 	viaTargets := Condition{
 		Type: "day_of_week", Operator: "in", TargetIds: []string{"monday", "tuesday"},
@@ -251,8 +249,7 @@ func TestTimeOfDay(t *testing.T) {
 	}
 }
 
-// valid_until is EXCLUSIVE, matching every other window in this module: a campaign ending at an
-// instant does not apply at that instant.
+// valid_until is EXCLUSIVE: a campaign ending at an instant does not apply at that instant.
 func TestValidityWindowIsExclusiveAtTheEnd(t *testing.T) {
 	basketFacts := facts()
 
@@ -281,8 +278,8 @@ func TestValidityWindowIsExclusiveAtTheEnd(t *testing.T) {
 	}
 }
 
-// A condition type this build does not recognise answers FALSE. Silently applying a discount whose
-// restriction nobody could evaluate is the expensive direction of that mistake.
+// A condition type this build does not recognise answers FALSE, rather than silently applying a
+// discount whose restriction nobody could evaluate.
 func TestUnknownConditionTypeIsNotEligible(t *testing.T) {
 	unknown := Condition{Type: "customer_loyalty_tier", Operator: "eq", ValueText: "gold"}
 	if IsEligible(group(unknown), facts()) {
@@ -297,9 +294,8 @@ func TestUnknownOperatorIsNotEligible(t *testing.T) {
 	}
 }
 
-// FactsFromLines must agree with what the engine computed, and must exclude giveaway lines: counting
-// a free item toward a spend threshold would let one promotion qualify a basket for another it did
-// not earn.
+// FactsFromLines must agree with what the engine computed and exclude giveaway lines, or one
+// promotion would qualify a basket for another it did not earn.
 func TestFactsFromLinesExcludesGiveaways(t *testing.T) {
 	result := Calculate(Input{
 		Lines: []LineInput{lineOf("a", 1, "2", "50000")},

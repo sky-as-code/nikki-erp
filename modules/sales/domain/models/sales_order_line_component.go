@@ -36,16 +36,11 @@ func SalesOrderLineComponentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(salesOrderLineComponentSchemaJson)
 }
 
-// SalesOrderLineComponent is one real product inside a combo.
-//
-// The order keeps BOTH the combo parent line and its components (BR 17), which looks like
-// duplication and is not: the parent line is what the customer bought and was charged for, the
-// components are what Inventory must actually hand over. Inventory fulfils real variants and has no
-// concept of a virtual bundle, so without components a combo could be sold and never dispatched.
-//
-// The allocated amounts are what tie the two views together. Their sum across a line must equal
-// that line's net amount exactly, or the receipt and the stock valuation disagree about what the
-// bundle was worth.
+// SalesOrderLineComponent is one real product inside a combo. The order keeps both the combo parent
+// line and its components: the parent is what the customer was charged for, the components are what
+// Inventory must hand over, since Inventory fulfils real variants and has no concept of a virtual
+// bundle. The allocated amounts must sum to the parent line's net amount exactly, or the receipt and
+// the stock valuation disagree about what the bundle was worth.
 type SalesOrderLineComponent struct {
 	basemodel.DynamicModelBase
 }
@@ -138,11 +133,8 @@ func (this *SalesOrderLineComponent) SetAllocatedTaxAmount(amount *decimal.Decim
 	this.GetFieldData().SetDecimal(SalesOrderLineComponentFieldAllocatedTaxAmount, amount)
 }
 
-// SumAllocatedNet totals the net amounts of a set of components.
-//
-// It exists so that the D-04 invariant has one implementation: the sum across a combo line's
-// components must equal that line's net_amount EXACTLY, and every place that checks it should add
-// the numbers the same way.
+// SumAllocatedNet totals the net amounts of a set of components, so every place checking that they
+// equal the parent line's net_amount exactly adds the numbers the same way.
 func SumAllocatedNet(components []dmodel.DynamicFields) decimal.Decimal {
 	total := decimal.Zero
 	for _, record := range components {

@@ -1,8 +1,8 @@
 // Package services holds the Sales business rules.
 //
-// The rules live here rather than in dynamicengines because an engine action is transport: it reads
-// params and hands them on. A rule written in the action is unreachable from CQRS, from another
-// module's port, and from a test that does not build an engine. See docs/wiki/07 §6.7.
+// The rules live here rather than in dynamicengines because an engine action is transport: a rule
+// written in the action is unreachable from CQRS, from another module's port, and from a test that
+// does not build an engine.
 package services
 
 import (
@@ -19,10 +19,9 @@ import (
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
-// engineFor resolves a resource engine from the shared registry.
-//
-// It is a var rather than a plain function so a test can substitute the registry without building
-// one, which is how the lifecycle rules are tested without a database.
+// engineFor resolves a resource engine from the shared registry. It is a var rather than a plain
+// function so a test can substitute the registry, which is how the lifecycle rules are tested
+// without a database.
 var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
 	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
 	if !ok {
@@ -31,19 +30,17 @@ var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
 	return engine, nil
 }
 
-// EngineFor exposes the registry lookup to the sibling packages that need another resource's
-// engine — an action reaching the service of the resource it is not itself attached to.
+// EngineFor exposes the registry lookup to sibling packages that need another resource's engine.
 func EngineFor(schemaName string) (drif.DynamicResourceEngine, error) {
 	return engineFor(schemaName)
 }
 
 // withTransaction runs body inside one database transaction on the named schema's repository.
 //
-// The rollback is deferred unconditionally: a commit that already ran makes it a no-op, and a body
-// that returned an error must not leave a half-applied change behind. Note what this means for a
-// refusal — a rule that rejects the request sets its result and returns nil, so the transaction
-// commits harmlessly. Returning an error would roll back AND answer 500, which is wrong for a
-// violation the caller could fix.
+// The rollback is deferred unconditionally: a commit that already ran makes it a no-op. Note what
+// this means for a refusal: a rule that rejects the request sets its result and returns nil, so the
+// transaction commits harmlessly. Returning an error would roll back and answer 500, which is wrong
+// for a violation the caller could fix.
 func withTransaction(
 	ctx corectx.Context, schemaName string, body func(tranxCtx corectx.Context) error,
 ) error {
@@ -88,11 +85,9 @@ func loadRecord(
 // writeChanges applies a change set to an existing row.
 //
 // It goes through the repository rather than the resource service because the lifecycle fields are
-// declared no_update: the client-facing rule is that a status cannot be edited through a plain
-// update, and these operations are the only sanctioned way to move one.
-//
-// The etag of the row as read is carried into the update, so a concurrent writer that moved the
-// record between the read and the write loses rather than silently overwriting.
+// declared no_update: a status cannot be edited through a plain update, and these operations are
+// the only sanctioned way to move one. The etag of the row as read is carried into the update, so a
+// concurrent writer that moved the record between read and write loses rather than overwriting.
 func writeChanges(
 	ctx corectx.Context, schemaName string, record dmodel.DynamicFields, changes dmodel.DynamicFields,
 ) error {
@@ -112,10 +107,9 @@ func writeChanges(
 	return errors.Wrap(err, "writeChanges")
 }
 
-// violationResult refuses an operation with a business violation the caller can act on.
-//
-// The Field carries the schema name rather than a payload field: an operation-level refusal has no
-// single offending input, and naming one would point a form at the wrong box.
+// violationResult refuses an operation with a business violation the caller can act on. The Field
+// carries the schema name rather than a payload field: an operation-level refusal has no single
+// offending input, and naming one would point a form at the wrong box.
 func violationResult(schemaName, key, message string) *dyn.OpResult[dyn.MutateResultData] {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(schemaName, key, message))
@@ -173,18 +167,15 @@ func boolOf(record dmodel.DynamicFields, field string) bool {
 
 // NormalizeChannelCode lowercases and trims an integration code before it is stored.
 //
-// The change request permits uppercase input and requires it be normalised BEFORE create, never
-// after: once persisted the code is immutable, so a later normalisation would silently repoint
-// every integration that had already resolved the old spelling.
+// Normalisation must happen BEFORE create, never after: once persisted the code is immutable, so a
+// later normalisation would silently repoint every integration that resolved the old spelling.
 func NormalizeChannelCode(code string) string {
 	return strings.ToLower(strings.TrimSpace(code))
 }
 
-// IsValidChannelCode reports whether a code matches the canonical [a-z0-9]+ format.
-//
-// Alphanumeric only: no whitespace, no underscore, hyphen or slash. The code travels in URLs and
-// configuration files of other modules, so the narrow alphabet keeps it from needing escaping
-// anywhere it appears.
+// IsValidChannelCode reports whether a code matches the canonical [a-z0-9]+ format. Alphanumeric
+// only, because the code travels in URLs and in other modules' configuration files, so the narrow
+// alphabet keeps it from needing escaping.
 func IsValidChannelCode(code string) bool {
 	if code == "" {
 		return false

@@ -11,10 +11,9 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// What Stock reports when Product asks whether a variant can be retired.
-//
-// The distinction these protect is history versus work in flight: a variant that has merely *been*
-// moved archives fine, while one that is *being* moved does not.
+// What Stock reports when Product asks whether a variant can be retired. The distinction is history
+// versus work in flight: a variant that has BEEN moved archives fine, one that IS being moved does
+// not.
 
 const testTransferId = "01TRANSFER00000000000000AA"
 
@@ -52,8 +51,8 @@ func TestProductUsageReportsOnHandStock(t *testing.T) {
 	assert.False(t, usage.IsEmpty(), "a variant with stock cannot be archived")
 }
 
-// TS-PROD-11: a variant referenced only by completed movement archives fine. History keeps
-// resolving it, so counting it would block a safe archive forever.
+// A variant referenced only by completed movement archives fine: history keeps resolving it, so
+// counting it would block a safe archive forever.
 func TestProductUsageIgnoresCompletedMovement(t *testing.T) {
 	useSchemaEngines(t, map[string][]dmodel.DynamicFields{
 		models.StockQuantSchemaName: {quantRow(testVariantAId, testLocationAId, 0, 0)},

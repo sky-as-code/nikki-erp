@@ -6,13 +6,8 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// BR §13's "same input ⇒ same output, always" is the acceptance test for this package, and the
-// engine has no I/O, so there is no excuse for thin coverage.
-//
-// Two invariants recur and matter more than any individual number:
-//   - Σ line net == order net at every step (D-05's reason for using post-discount net as the
-//     allocation basis)
-//   - Σ component allocated == the combo line's amount, exactly (D-04)
+// Two invariants recur here and matter more than any individual number: Σ line net == order net at
+// every step, and Σ component allocated == the combo line's amount, exactly.
 
 func dec(value string) decimal.Decimal {
 	return decimal.RequireFromString(value)
@@ -33,13 +28,12 @@ func lineOf(key string, number int32, quantity, price string) LineInput {
 }
 
 func vndContext() Context {
-	// VND has no minor unit. No tax entries means every line is taxed at zero, which is what an
-	// organization with no default tax code configured gets.
+	// VND has no minor unit. No tax entries means every line is taxed at zero.
 	return Context{CurrencyScale: 0}
 }
 
-// taxedContext taxes each named line at the given amount and fraction rate, standing in for what
-// ResolveBasketTax returns after Accounting has computed it.
+// taxedContext taxes each named line at the given amount and fraction rate, standing in for
+// ResolveBasketTax.
 func taxedContext(rate string, amountByKey map[string]string) Context {
 	byLineKey := make(map[string]LineTax, len(amountByKey))
 	for key, amount := range amountByKey {
@@ -59,15 +53,15 @@ func lineByKey(t *testing.T, result Result, key string) LineResult {
 	return LineResult{}
 }
 
-// assertLineNetSumsToOrderNet is the invariant D-05 exists to preserve.
+// assertLineNetSumsToOrderNet checks the core allocation invariant.
 func assertLineNetSumsToOrderNet(t *testing.T, result Result) {
 	t.Helper()
 	total := decimal.Zero
 	for _, line := range result.Lines {
 		total = total.Add(line.NetAmount)
 	}
-	// The grand total may differ by the rounding adjustment, which is applied to the order rather
-	// than to the lines. Compare against the pre-rounding sum instead.
+	// The grand total may differ by the rounding adjustment, which applies to the order rather than
+	// the lines, so compare against the pre-rounding sum.
 	expected := result.Subtotal.Sub(result.DiscountTotal)
 	if !total.Equal(expected) {
 		t.Errorf("Σ line net = %s, but subtotal - discount = %s", total, expected)
@@ -144,8 +138,8 @@ func TestPricelistSelection(t *testing.T) {
 			MinQuantity: dec("10"), Specificity: 2, Priority: 0},
 	}
 
-	// A line of 2 cannot reach the ten-break, so the specific list's base price applies — and it
-	// beats the global list despite that list's much higher priority.
+	// A line of 2 cannot reach the ten-break, so the specific list's base price applies despite the
+	// global list's much higher priority.
 	small := Calculate(Input{
 		Lines: []LineInput{lineOf("a", 1, "2", "50000")}, PricelistItems: items,
 		Context: vndContext(),
@@ -164,8 +158,7 @@ func TestPricelistSelection(t *testing.T) {
 	}
 }
 
-// BR §18's worked example, through the engine: references 30/20/10, combo price 48,000, expected
-// component shares 24,000/16,000/8,000.
+// Worked combo example: references 30/20/10, combo price 48,000, shares 24,000/16,000/8,000.
 func TestComboAllocationWorkedExample(t *testing.T) {
 	comboLine := lineOf("combo", 1, "1", "0")
 	comboLine.ComboId = "combo-1"
@@ -203,7 +196,7 @@ func TestComboAllocationWorkedExample(t *testing.T) {
 		}
 	}
 
-	// D-04's invariant, which is the whole reason the residual rule exists.
+	// The exact-sum invariant the residual rule exists for.
 	total := decimal.Zero
 	for _, component := range line.Components {
 		total = total.Add(component.AllocatedNetAmount)
@@ -245,7 +238,7 @@ func TestComboAllocationWithResidual(t *testing.T) {
 	}
 }
 
-// A percentage discount, allocated across lines by D-05's post-discount-net basis.
+// A percentage discount, allocated across lines on the post-discount-net basis.
 func TestPercentageDiscount(t *testing.T) {
 	result := Calculate(Input{
 		Lines: []LineInput{
@@ -277,7 +270,7 @@ func TestPercentageDiscount(t *testing.T) {
 	}
 	assertLineNetSumsToOrderNet(t, result)
 
-	// BR §13 requires a list of adjustments, never a silent total.
+	// The engine must produce a list of adjustments, never a silent total.
 	if len(result.Adjustments) != 1 {
 		t.Fatalf("expected one adjustment, got %d", len(result.Adjustments))
 	}
@@ -314,7 +307,7 @@ func TestFixedDiscountIsCappedAtTheBasketValue(t *testing.T) {
 	}
 }
 
-// D-11: a free item becomes a REAL line at zero price, not an adjustment.
+// A free item becomes a REAL line at zero price, not an adjustment.
 func TestFreeQuantityCreatesARealLine(t *testing.T) {
 	result := Calculate(Input{
 		Lines: []LineInput{lineOf("a", 1, "2", "50000")},
@@ -353,8 +346,7 @@ func TestFreeQuantityCreatesARealLine(t *testing.T) {
 	}
 }
 
-// A giveaway line is never itself discounted — it is already free, and allocating a share to it
-// would take that share from a line the customer is actually paying for.
+// A giveaway line is never itself discounted: its share would come off a line being paid for.
 func TestGiveawayLineIsNotDiscounted(t *testing.T) {
 	result := Calculate(Input{
 		Lines: []LineInput{lineOf("a", 1, "1", "100000")},
@@ -385,8 +377,7 @@ func TestGiveawayLineIsNotDiscounted(t *testing.T) {
 	}
 }
 
-// Rewards do not commute, so the sequence decides the answer. This is the reason adjustments carry
-// one and the reason BR §13 fixes the step order.
+// Rewards do not commute, so the sequence decides the answer.
 func TestRewardOrderChangesTheTotal(t *testing.T) {
 	percentFirst := Calculate(Input{
 		Lines: []LineInput{lineOf("a", 1, "1", "100000")},
@@ -425,7 +416,7 @@ func TestRewardOrderChangesTheTotal(t *testing.T) {
 }
 
 // Step 8: rounding is applied once, to the grand total, and recorded as its own adjustment so the
-// difference between the line sum and the total is explained rather than unaccounted for.
+// gap between the line sum and the total is explained.
 func TestRoundingIsRecordedAsAnAdjustment(t *testing.T) {
 	result := Calculate(Input{
 		// A third of 100 at VND scale cannot come out whole.
@@ -452,8 +443,7 @@ func TestRoundingIsRecordedAsAnAdjustment(t *testing.T) {
 	}
 }
 
-// An already-round total must not produce a rounding adjustment: rounding is applied once and only
-// when it changes something.
+// An already-round total must not produce a rounding adjustment.
 func TestNoRoundingAdjustmentWhenNothingToRound(t *testing.T) {
 	result := Calculate(Input{
 		Lines:   []LineInput{lineOf("a", 1, "2", "5000")},
@@ -467,13 +457,9 @@ func TestNoRoundingAdjustmentWhenNothingToRound(t *testing.T) {
 	}
 }
 
-// Tax is taken from what Accounting decided, and the rate is snapshotted onto every line so a later
-// rate change cannot reinterpret a historical sale.
-//
-// The engine no longer extracts tax itself. It used to compute net × rate / (1 + rate); that
-// arithmetic now lives in accounting, which also handles the compound, division and fixed cases this
-// engine never did. What is tested here is that the engine carries Accounting's figures through
-// faithfully and does not re-derive them.
+// Tax comes from Accounting and the rate is snapshotted onto every line, so a later rate change
+// cannot reinterpret a historical sale. This asserts the engine carries Accounting's figures through
+// faithfully rather than re-deriving them.
 func TestTaxComesFromAccountingAndIsSnapshotted(t *testing.T) {
 	// A 110,000 tax-inclusive line at 10%: Accounting extracts 10,000, not 11,000.
 	result := Calculate(Input{
@@ -490,17 +476,15 @@ func TestTaxComesFromAccountingAndIsSnapshotted(t *testing.T) {
 		t.Errorf("grand total = %s, want 110000: recording tax must not change what is owed",
 			result.GrandTotal)
 	}
-	// A FRACTION, not a percentage. The boundary converts; see services.effectiveRateFraction.
+	// A FRACTION, not a percentage; the boundary converts. See services.effectiveRateFraction.
 	if !line.TaxRateSnapshot.Equal(dec("0.1")) {
 		t.Errorf("tax rate snapshot = %s, want the fraction 0.1 rather than the percentage 10",
 			line.TaxRateSnapshot)
 	}
 }
 
-// A line Accounting was not asked about is taxed at zero rather than left undefined.
-//
-// This is the giveaway-line case: a free item may be excluded from the tax request, and the engine
-// must still produce a complete, readable line for it.
+// A line Accounting was not asked about is taxed at zero rather than left undefined — the giveaway
+// case, where the engine must still produce a complete line.
 func TestLineWithNoTaxEntryIsTaxedAtZero(t *testing.T) {
 	result := Calculate(Input{
 		Lines: []LineInput{
@@ -520,7 +504,7 @@ func TestLineWithNoTaxEntryIsTaxedAtZero(t *testing.T) {
 	}
 }
 
-// With no tax configured the step still runs, writing real zeros rather than leaving the fields unset.
+// With no tax configured the step still runs, writing real zeros rather than leaving fields unset.
 func TestZeroTaxRateStillPopulatesTheFields(t *testing.T) {
 	result := Calculate(Input{
 		Lines:   []LineInput{lineOf("a", 1, "1", "50000")},
@@ -537,7 +521,7 @@ func TestZeroTaxRateStillPopulatesTheFields(t *testing.T) {
 	}
 }
 
-// BR §13's acceptance criterion: the same input produces the same output, every time.
+// The same input produces the same output, every time.
 func TestSameInputSameOutput(t *testing.T) {
 	build := func() Input {
 		comboLine := lineOf("combo", 3, "2", "0")
@@ -596,8 +580,8 @@ func TestSameInputSameOutput(t *testing.T) {
 	assertLineNetSumsToOrderNet(t, first)
 }
 
-// The engine must not mutate the caller's input. A caller reusing a basket for a preview and then a
-// confirm would otherwise get two different answers from what it believed was one input.
+// The engine must not mutate the caller's input, or a basket reused for preview then confirm would
+// give two different answers.
 func TestCalculateDoesNotMutateInput(t *testing.T) {
 	input := Input{
 		Lines:   []LineInput{lineOf("a", 1, "2", "10000")},
@@ -648,7 +632,7 @@ func TestLineScopedRewardTargetsOnlyItsLines(t *testing.T) {
 	}
 }
 
-// BR §20's conditional bundle pricing: a program whose reward sets a per-unit price. Not a combo.
+// Conditional bundle pricing: a program whose reward sets a per-unit price. Not a combo.
 func TestFixedProductPriceReward(t *testing.T) {
 	result := Calculate(Input{
 		Lines: []LineInput{lineOf("z", 1, "2", "50000")},
@@ -674,8 +658,7 @@ func TestFixedProductPriceReward(t *testing.T) {
 	}
 }
 
-// Adjustment sequences must be strictly increasing: the sequence is what makes the replay exact, so
-// a duplicate or a gap in the wrong direction would make the calculation unreproducible.
+// Adjustment sequences must be strictly increasing; the sequence is what makes the replay exact.
 func TestAdjustmentSequencesAreStrictlyIncreasing(t *testing.T) {
 	result := Calculate(Input{
 		Lines: []LineInput{lineOf("a", 1, "3", "33.3333")},

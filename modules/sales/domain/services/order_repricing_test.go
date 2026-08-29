@@ -9,9 +9,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services/pricing"
 )
 
-// The pure parts of repricing. RepriceOrder itself reads and writes the repository and is exercised
-// live; what is testable here is how stored lines become engine input, which is where a wrong answer
-// would be silent rather than loud.
+// The pure parts of repricing: how stored lines become engine input. RepriceOrder itself touches the
+// repository and is exercised live.
 
 func lineRecord(id string, number int32, lineType, quantity, unitPrice string) dmodel.DynamicFields {
 	return dmodel.DynamicFields{
@@ -24,8 +23,6 @@ func lineRecord(id string, number int32, lineType, quantity, unitPrice string) d
 }
 
 // toLineInputs mirrors what buildPricingInput does to each record, without the repository read.
-// Kept in the test rather than exported, because production has no reason to convert a slice it
-// did not just fetch.
 func toLineInputs(t *testing.T, records []dmodel.DynamicFields) []pricing.LineInput {
 	t.Helper()
 	lines := make([]pricing.LineInput, 0, len(records))
@@ -44,9 +41,8 @@ func toLineInputs(t *testing.T, records []dmodel.DynamicFields) []pricing.LineIn
 	return lines
 }
 
-// A giveaway line is an OUTPUT of pricing, never an input. Feeding one back would make the engine
-// give away a second free item on every reprice, compounding on each edit — the single most
-// expensive way this could go wrong.
+// A giveaway line is an output of pricing; feeding one back would give away another free item on
+// every reprice, compounding on each edit.
 func TestGiveawayLinesAreNotFedBackIntoTheEngine(t *testing.T) {
 	records := []dmodel.DynamicFields{
 		lineRecord("L1", 1, string(models.SalesOrderLineTypeProduct), "2", "10000"),
@@ -66,7 +62,7 @@ func TestGiveawayLinesAreNotFedBackIntoTheEngine(t *testing.T) {
 	}
 }
 
-// A combo parent IS an input — unlike a giveaway, the engine needs it to expand components.
+// A combo parent is an input — unlike a giveaway, the engine needs it to expand components.
 func TestComboLinesAreFedIn(t *testing.T) {
 	records := []dmodel.DynamicFields{
 		lineRecord("L1", 1, string(models.SalesOrderLineTypeCombo), "1", "48000"),
@@ -77,8 +73,8 @@ func TestComboLinesAreFedIn(t *testing.T) {
 	}
 }
 
-// An empty draft prices to nothing rather than failing. BR §69 says an order with zero lines is a
-// valid draft; it is confirming one that is not allowed.
+// An order with zero lines is a valid draft that prices to nothing; it is confirming one that is not
+// allowed.
 func TestAnEmptyBasketPricesToZero(t *testing.T) {
 	result := pricing.Calculate(pricing.Input{
 		Lines:   nil,
@@ -91,9 +87,8 @@ func TestAnEmptyBasketPricesToZero(t *testing.T) {
 	}
 }
 
-// Quantity and price come from the stored line, and both must survive the numeric shapes a jsonb
-// round trip produces. Read as zero, every line would price to nothing and the order would total
-// zero — wrong, and entirely silent.
+// Quantity and price must survive the numeric shapes a jsonb round trip produces; read as zero,
+// every line would silently price to nothing.
 func TestQuantityAndPriceSurviveJsonShapes(t *testing.T) {
 	for name, value := range map[string]any{
 		"string":  "2",
@@ -116,9 +111,8 @@ func TestQuantityAndPriceSurviveJsonShapes(t *testing.T) {
 	}
 }
 
-// Repricing the same basket twice must produce the same numbers. This is BR §13's acceptance
-// criterion applied at the reprice level rather than inside the engine: if the ordering of the
-// stored lines leaked into the answer, an untouched draft would drift every time it was read.
+// Repricing the same basket twice must produce the same numbers: if the ordering of the stored lines
+// leaked into the answer, an untouched draft would drift every time it was read.
 func TestRepricingAnUnchangedBasketIsStable(t *testing.T) {
 	build := func() pricing.Input {
 		return pricing.Input{
@@ -140,9 +134,8 @@ func TestRepricingAnUnchangedBasketIsStable(t *testing.T) {
 	}
 }
 
-// The adjustment chain renumbers from one on every reprice, which is why the old chain must be
-// deleted rather than amended: sequence is unique per order, so keeping the old rows would either
-// collide on the index or leave a chain that no longer replays to the stored totals.
+// The adjustment chain renumbers from one on every reprice, which is why the old chain is deleted
+// rather than amended: sequence is unique per order.
 func TestAdjustmentSequencesRestartFromOne(t *testing.T) {
 	result := pricing.Calculate(pricing.Input{
 		Lines: []pricing.LineInput{

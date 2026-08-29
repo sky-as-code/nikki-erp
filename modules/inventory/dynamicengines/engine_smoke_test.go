@@ -41,11 +41,8 @@ func TestEngineSchemaNamesCoverEveryProductResource(t *testing.T) {
 }
 
 // The resources carrying business rules must declare DefineActions; a spec that loses it still
-// serves CRUD, so the rules would go missing without any visible failure.
-//
-// Storage Category and Supply Relation are deliberately absent: their rules live in overrides of
-// the built-in actions rather than in actions of their own, because neither has an operation
-// beyond create, update, archive and delete.
+// serves CRUD, so the rules would go missing without any visible failure. Storage Category and
+// Supply Relation are deliberately absent: their rules live in overrides of the built-in actions.
 func TestRuleBearingResourcesDefineActions(t *testing.T) {
 	withActions := map[string]bool{
 		models.ProductCategorySchemaName: true,

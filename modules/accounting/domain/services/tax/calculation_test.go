@@ -29,7 +29,7 @@ func percentageSpec(code string, rate string, sequence int32) ComponentSpec {
 	}
 }
 
-// AC-TAX-07 and AC-TAX-12: percentage tax on a tax-excluded price.
+// Percentage tax on a tax-excluded price.
 func TestPercentageTaxExcluded(t *testing.T) {
 	result := CalculateLine(LineInput{
 		LineReference:  "L1",
@@ -43,10 +43,8 @@ func TestPercentageTaxExcluded(t *testing.T) {
 	assert.True(t, result.TotalIncluded.Equal(dec("110000")), "included = %s", result.TotalIncluded)
 }
 
-// AC-TAX-11: a tax-inclusive price has the tax extracted, not added on top.
-//
-// The worked example from BR-TAX-ESS-016: 110,000 at 10% inclusive is 100,000 base and 10,000 tax,
-// never 110,000 base and 11,000 tax.
+// A tax-inclusive price has the tax extracted, not added on top: 110,000 at 10% inclusive is
+// 100,000 base and 10,000 tax, never 110,000 base and 11,000 tax.
 func TestPercentageTaxIncluded(t *testing.T) {
 	result := CalculateLine(LineInput{
 		LineReference:  "L1",
@@ -60,7 +58,7 @@ func TestPercentageTaxIncluded(t *testing.T) {
 	assert.True(t, result.TotalIncluded.Equal(dec("110000")), "included = %s", result.TotalIncluded)
 }
 
-// BR-TAX-ESS-017: the tax's own inclusion mode overrides the document's.
+// The tax's own inclusion mode overrides the document's.
 func TestPriceInclusionPrecedence(t *testing.T) {
 	spec := percentageSpec("VAT10", "10", 1)
 	spec.InclusionMode = models.PriceInclusionExcluded
@@ -77,7 +75,7 @@ func TestPriceInclusionPrecedence(t *testing.T) {
 	assert.True(t, result.TotalTax.Equal(dec("10000")))
 }
 
-// BR-TAX-ESS-SUP-013: division tax, with the doc's worked example of base 180 at 10% giving 20.
+// Division tax: base 180 at 10% gives 20.
 func TestDivisionTax(t *testing.T) {
 	spec := percentageSpec("DIV10", "10", 1)
 	spec.CalculationType = models.CalculationDivision
@@ -93,7 +91,7 @@ func TestDivisionTax(t *testing.T) {
 	assert.True(t, result.TotalIncluded.Equal(dec("200")), "included = %s", result.TotalIncluded)
 }
 
-// AC-TAX-08: fixed tax multiplies a converted quantity by an amount per unit.
+// Fixed tax multiplies a converted quantity by an amount per unit.
 func TestFixedTax(t *testing.T) {
 	result := CalculateLine(LineInput{
 		LineReference:  "L1",
@@ -114,10 +112,8 @@ func TestFixedTax(t *testing.T) {
 	assert.True(t, result.TotalTax.Equal(dec("36000")), "tax = %s", result.TotalTax)
 }
 
-// AC-TAX-09 and AC-TAX-10: a compound tax feeds the base of the one after it.
-//
-// The worked example from BR-TAX-ESS-019: base 100, A at 10% gives 10, and B at 5% is computed on
-// 110 rather than 100, giving 5.5.
+// A compound tax feeds the base of the one after it: base 100, A at 10% gives 10, and B at 5% is
+// computed on 110 rather than 100, giving 5.5.
 func TestCompoundTaxAffectsSubsequentBase(t *testing.T) {
 	first := percentageSpec("A", "10", 1)
 	first.AffectSubsequentBase = true
@@ -160,7 +156,7 @@ func TestCompoundFlagsAreIndependent(t *testing.T) {
 	assert.True(t, result.Components[1].Amount.Equal(dec("5")))
 }
 
-// AC-TAX-15: zero-rated is a real tax computed at 0%, and keeps its treatment on the result.
+// Zero-rated is a real tax computed at 0%, and keeps its treatment on the result.
 func TestZeroRatedIsCalculatedNotSkipped(t *testing.T) {
 	spec := percentageSpec("VAT0", "0", 1)
 	spec.Treatment = models.TaxTreatmentZeroRated
@@ -177,8 +173,8 @@ func TestZeroRatedIsCalculatedNotSkipped(t *testing.T) {
 	assert.Equal(t, models.TaxTreatmentZeroRated, result.Components[0].Treatment)
 }
 
-// BR-TAX-ESS-SUP-015: a "none" calculation produces no amount but still reports its treatment, so
-// that an exemption keeps its legal identity on the document.
+// A "none" calculation produces no amount but still reports its treatment, so an exemption keeps
+// its legal identity on the document.
 func TestNoneCalculationProducesNoAmount(t *testing.T) {
 	result := CalculateLine(LineInput{
 		LineReference:  "L1",
@@ -199,7 +195,7 @@ func TestNoneCalculationProducesNoAmount(t *testing.T) {
 	assert.True(t, result.TotalExcluded.Equal(dec("100000")))
 }
 
-// AC-TAX-34 in miniature: two different rates on one document, computed per line.
+// Two different rates on one document, computed per line.
 func TestDifferentRatesAcrossLines(t *testing.T) {
 	reduced := CalculateLine(LineInput{
 		LineReference:  "L1",
@@ -218,10 +214,8 @@ func TestDifferentRatesAcrossLines(t *testing.T) {
 	assert.True(t, standard.TotalTax.Equal(dec("10000")))
 }
 
-// TAX-INV-20 / AC-TAX-21: the same input yields the same result, and the arithmetic is decimal.
-//
-// The rate 8.5% on 1,234,567 is chosen because it has no exact binary representation: a float
-// implementation drifts here, a decimal one does not.
+// The same input yields the same result and the arithmetic is decimal. 8.5% on 1,234,567 has no
+// exact binary representation, so a float implementation drifts here and a decimal one does not.
 func TestCalculationIsDeterministicAndExact(t *testing.T) {
 	line := LineInput{
 		LineReference:  "L1",

@@ -8,12 +8,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The fulfilment rules that decide what an order owes. The dispatch path reads the repository and is
-// exercised live; what is pinned here is which requests count and which lines need goods.
+// The fulfilment rules that decide what an order owes; the dispatch path is exercised live.
 
 // THE fulfilment rule. An ACCEPTED request has stock held; only a COMPLETED one has goods moved.
-// Counting an acceptance would tell a customer their goods had shipped when they had not — which is
-// BR §7.3's failure seen from the other side.
 func TestOnlyCompletedRequestsCount(t *testing.T) {
 	cases := map[string]bool{
 		string(models.SalesFulfillmentStatusCompleted): true,
@@ -33,8 +30,8 @@ func TestOnlyCompletedRequestsCount(t *testing.T) {
 	}
 }
 
-// A request with no status does not count. The field is required, so a missing one means a row
-// written outside the sanctioned path — and reading it as completed would report goods shipped.
+// A request with no status does not count: the field is required, and reading a missing one as
+// completed would report goods shipped.
 func TestARequestWithNoStatusDoesNotCount(t *testing.T) {
 	request := models.NewSalesFulfillmentRequestFrom(dmodel.DynamicFields{})
 	if request.IsCompleted() {
@@ -42,9 +39,8 @@ func TestARequestWithNoStatusDoesNotCount(t *testing.T) {
 	}
 }
 
-// requires_fulfillment defaults to TRUE when absent, and the asymmetry is deliberate: a line wrongly
-// needing goods holds an order open until somebody notices, while one wrongly needing none reports a
-// sale as shipped that never was.
+// requires_fulfillment defaults to TRUE when absent, deliberately asymmetric: a line wrongly
+// needing goods holds an order open, while one wrongly needing none reports a sale as shipped.
 func TestAbsentRequiresFulfillmentReadsAsTrue(t *testing.T) {
 	cases := map[string]struct {
 		record dmodel.DynamicFields
@@ -67,8 +63,7 @@ func TestAbsentRequiresFulfillmentReadsAsTrue(t *testing.T) {
 	}
 }
 
-// An order of only non-stocked lines is `not_required`, not pending forever (D-14). This is what the
-// requires_fulfillment column exists for.
+// An order of only non-stocked lines is `not_required`, not pending forever.
 func TestAnOrderOfServicesNeedsNoFulfilment(t *testing.T) {
 	status := DeriveFulfillmentStatus([]LineQuantities{
 		{Ordered: dec("1"), RequiresFulfillment: false},

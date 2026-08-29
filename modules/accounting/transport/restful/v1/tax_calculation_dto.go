@@ -7,18 +7,14 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
 )
 
-// Money and quantities travel as JSON strings, never as JSON numbers.
-//
-// A JSON number is parsed as a float64 by most clients, and a float64 cannot hold a decimal
-// fraction exactly. On a tax figure that is not an academic point: 0.1 + 0.2 is famously not 0.3,
-// and an invoice total that disagrees with the sum of its lines by a cent is a defect an auditor
-// will find. Requests bind decimal.Decimal, which parses a JSON string exactly; responses emit
-// .String().
+// Money and quantities travel as JSON strings, never as JSON numbers: a JSON number is parsed as a
+// float64 by most clients and cannot hold a decimal fraction exactly. Requests bind
+// decimal.Decimal, which parses a JSON string exactly; responses emit .String().
 
 type CalculateTaxRequest struct {
 	OperationType string `json:"operation_type"`
 
-	// TaxDate is mandatory and never defaulted from the server clock (BR-TAX-ESS-SUP-020).
+	// TaxDate is mandatory and never defaulted from the server clock.
 	TaxDate      string `json:"tax_date"`
 	CurrencyCode string `json:"currency_code"`
 
@@ -102,7 +98,7 @@ type CalculateTaxLineRequest struct {
 	DiscountAmount decimal.Decimal `json:"discount_amount"`
 
 	// CommercialBaseAmount is the taxable base as the caller computed it, already net of discount.
-	// Tax takes it as given rather than deriving it (TAX-INV-17).
+	// Tax takes it as given rather than deriving it.
 	CommercialBaseAmount decimal.Decimal `json:"commercial_base_amount"`
 
 	CandidateTaxIds []string `json:"candidate_tax_ids"`
@@ -141,7 +137,7 @@ type CalculateTaxResponse struct {
 	Lines []TaxLineResponse `json:"lines"`
 
 	// Snapshot is the payload the caller stores on its own transaction. Accounting keeps no copy
-	// and holds no foreign key into the caller's schema (BR-TAX-ESS-030).
+	// and holds no foreign key into the caller's schema.
 	Snapshot TaxSnapshotResponse `json:"snapshot"`
 }
 
@@ -163,8 +159,8 @@ type TaxLineResponse struct {
 	LineReference string `json:"line_reference"`
 	Status        string `json:"status"`
 
-	// ErrorCode explains an unresolved line — a missing rate, an ambiguous one, an impossible UoM
-	// conversion. It is a code rather than prose so a caller can branch on it.
+	// ErrorCode explains an unresolved line. It is a code rather than prose so a caller can branch
+	// on it.
 	ErrorCode string `json:"error_code,omitempty"`
 	Treatment string `json:"treatment,omitempty"`
 
@@ -198,11 +194,9 @@ func newTaxLineResponses(lines []it.LineResult) []TaxLineResponse {
 	return responses
 }
 
-// TaxComponentResponse is the full detail of one tax applied to one line.
-//
-// It is this detailed because "tax = 8%" is not enough to issue a VAT invoice, reverse a refund or
-// answer an auditor: each of those needs the base it was computed on, the version of the
-// configuration that produced it, and its legal basis (BR-TAX-ESS-028).
+// TaxComponentResponse is the full detail of one tax applied to one line. Issuing a VAT invoice,
+// reversing a refund and answering an auditor each need the base it was computed on, the
+// configuration version that produced it, and its legal basis.
 type TaxComponentResponse struct {
 	TaxId   string `json:"tax_id"`
 	TaxCode string `json:"tax_code"`
@@ -226,9 +220,8 @@ type TaxComponentResponse struct {
 
 	TaxableBase string `json:"taxable_base"`
 
-	// UnroundedTaxAmount and TaxAmount are both carried: the difference between them is what
-	// rounding_adjustment accounts for, and a refund must reverse the rounded figure that was
-	// actually charged rather than the exact one that was not.
+	// Both are carried: their difference is what rounding_adjustment accounts for, and a refund
+	// must reverse the rounded figure actually charged, not the exact one.
 	UnroundedTaxAmount string `json:"unrounded_tax_amount"`
 	TaxAmount          string `json:"tax_amount"`
 	RoundingAdjustment string `json:"rounding_adjustment"`
@@ -297,10 +290,8 @@ func newTaxSnapshotResponse(snapshot it.Snapshot) TaxSnapshotResponse {
 	}
 }
 
-// SimulateTaxRequest is the same input as a calculation.
-//
-// A distinct type rather than an alias so the simulator's request can gain a field — a hypothetical
-// rate to test against, say — without changing the contract every Sales order already depends on.
+// SimulateTaxRequest is the same input as a calculation, kept a distinct type rather than an alias
+// so the simulator can gain a field without changing the contract Sales depends on.
 type SimulateTaxRequest struct {
 	CalculateTaxRequest
 }

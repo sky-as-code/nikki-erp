@@ -13,63 +13,46 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
-// Manual discount and price override (BR 87.4, SALES-039).
+// Manual discount and price override.
 //
-// # The base price is never overwritten
+// The base price is never overwritten: the override is stored as its own row and replayed through
+// the pricing engine as an adjustment on top. Overwriting base_unit_price would make the price
+// explanation start from a price the catalogue never charged, and make an override
+// indistinguishable from a genuinely cheap product.
 //
-// The override is stored as its own row and replayed through the pricing engine as an adjustment on
-// top. Overwriting base_unit_price would be simpler and is wrong twice: BR 87.9's explanation would
-// show a chain starting from a price the catalogue never charged, and an override would become
-// indistinguishable from a genuinely cheap product — so nobody could audit who had discounted what.
+// A stored row rather than a written adjustment, because repricing DELETES the whole adjustment
+// chain and rewrites it from engine output, and confirm reprices unconditionally. An adjustment
+// written straight into sales_order_adjustments would be erased before the sale completed.
 //
-// # Why a stored row rather than a written adjustment
-//
-// Repricing DELETES the whole adjustment chain and rewrites it from engine output, and confirm
-// reprices unconditionally. An adjustment written straight into sales_order_adjustments would
-// therefore be erased before the sale completed, silently, with the customer charged full price
-// after being promised a discount. Storing the override and feeding it back in on every calculation
-// is what makes it survive.
-//
-// # Reason is mandatory, and the permission is checked in app/
-//
-// BR 87.4 gates this on permission. That check belongs in app/ like every other authorization, so
-// this service records WHO granted it rather than deciding whether they could — but it does enforce
-// the reason, because a reason is a business invariant rather than an access decision, and an
-// override with no stated cause is indistinguishable from a mistake.
+// Reason is mandatory here, but the permission is checked in app/: a reason is a business
+// invariant rather than an access decision.
 
-// GrantManualDiscountParams is what an override needs.
 type GrantManualDiscountParams struct {
 	SalesOrderId string
 
-	// SalesOrderLineId is empty for an order-level override, which the engine spreads across the
-	// lines proportionally.
+	// Empty for an order-level override, which the engine spreads across the lines proportionally.
 	SalesOrderLineId string
 
-	// Amount is POSITIVE — what comes off. A negative value is a surcharge, which BR 87.4 does not
-	// authorise.
+	// Amount is POSITIVE - what comes off. A negative value would be a surcharge.
 	Amount decimal.Decimal
 
 	// Reason is mandatory. See the package comment.
 	Reason string
 
-	// GrantedBy is deliberately ABSENT. The actor comes from the context, like the audit trail's,
-	// so that a caller cannot record somebody else as having authorised a discount - which is
-	// exactly the claim an auditor is relying on when they read this field.
+	// GrantedBy is deliberately ABSENT: the actor comes from the context, so a caller cannot record
+	// somebody else as having authorised a discount - exactly the claim an auditor relies on.
 }
 
-// GrantManualDiscountResult is what granting produced.
 type GrantManualDiscountResult struct {
 	SalesManualDiscountId string
 	SalesOrderId          string
 
-	// TotalBefore and TotalAfter are both returned so the caller can see what the override actually
-	// did. The engine caps a discount at what is owed, so the difference is not always the amount
-	// asked for — and an operator told only "granted" would not know that.
+	// TotalBefore and TotalAfter show what the override actually did: the engine caps a discount at
+	// what is owed, so the difference is not always the amount asked for.
 	TotalBefore decimal.Decimal
 	TotalAfter  decimal.Decimal
 }
 
-// The refusal reasons granting an override can produce.
 const (
 	ReasonDiscountReasonRequired = "sales_manual_discount.reason_required"
 	ReasonDiscountNotPositive    = "sales_manual_discount.amount_not_positive"
@@ -77,7 +60,6 @@ const (
 	ReasonDiscountLineNotFound   = "sales_manual_discount.line_not_found"
 )
 
-// GrantManualDiscount records an operator override and reprices the order (BR 87.4).
 func GrantManualDiscount(
 	ctx corectx.Context,
 	params GrantManualDiscountParams,
@@ -109,9 +91,8 @@ func GrantManualDiscount(
 		return nil, nil, err
 	}
 
-	// Reprice immediately rather than leaving the order stale. The override only takes effect
-	// through the engine, so an order that was not repriced would show the old total while carrying
-	// a discount somebody had already authorised — and a till reading that total would charge it.
+	// Reprice immediately: the override only takes effect through the engine, so an unrepriced order
+	// would show the old total while carrying an authorised discount, and a till would charge it.
 	if _, vErrs, err := RepriceOrder(ctx, params.SalesOrderId, taxSvc, policy, basisSvc); err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}
@@ -130,15 +111,13 @@ func GrantManualDiscount(
 	}, nil, nil
 }
 
-// assertDiscountable applies the gates BR 87.4 puts before an override.
 func assertDiscountable(
 	ctx corectx.Context, order dmodel.DynamicFields, params GrantManualDiscountParams,
 ) (*ft.ClientErrors, error) {
 	vErrs := ft.NewClientErrors()
 
-	// The reason is a business invariant, not an access decision, so it is enforced here rather
-	// than in app/. An override with no stated cause is indistinguishable from a mistake, and it is
-	// the field an auditor asking why this customer paid less actually reads.
+	// The reason is a business invariant, not an access decision, so it is enforced here rather than
+	// in app/. It is the field an auditor asking why this customer paid less actually reads.
 	if params.Reason == "" {
 		vErrs.Append(*ft.NewBusinessViolation("reason", ReasonDiscountReasonRequired,
 			"a manual discount must say why the price was changed"))
@@ -149,19 +128,17 @@ func assertDiscountable(
 			"a manual discount must be a positive amount; a negative one would be a surcharge"))
 	}
 
-	// A CONFIRMED order is frozen (BR 11). Discounting one would change what a customer already
-	// agreed to pay, after any bill was raised against it — so the correction after confirmation is
-	// a return or a refund, each with its own money movement, not a retrospective price edit.
+	// A CONFIRMED order is frozen: the correction after confirmation is a return or a refund, not a
+	// retrospective price edit.
 	status := stringOf(order, models.SalesOrderFieldStatus)
 	if status != string(models.SalesOrderStatusDraft) {
 		vErrs.Append(*ft.NewBusinessViolation("status", ReasonOrderNotDiscountable,
 			"an order in status '"+status+"' is frozen; correct it with a return or a refund"))
 	}
 
-	// A line-level override must name a line of THIS order. Naming another order's line would move
-	// an approval onto a sale nobody authorised it for, and the engine — which is pure and takes its
-	// input on trust — would silently ignore it, leaving an override that appears granted and does
-	// nothing.
+	// A line-level override must name a line of THIS order. The engine is pure and takes its input on
+	// trust, so it would silently ignore a foreign line id, leaving an override that appears granted
+	// and does nothing.
 	if params.SalesOrderLineId != "" {
 		line, err := loadRecord(ctx, models.SalesOrderLineSchemaName,
 			models.SalesOrderLineFieldId, params.SalesOrderLineId)
@@ -182,11 +159,8 @@ func assertDiscountable(
 	return nil, nil
 }
 
-// writeManualDiscount stores the override and audits it.
-//
-// Both writes in ONE transaction. BR 87.4 requires the old and the new price to be audited, and an
-// override stored without its audit entry is exactly the untraceable price change the requirement
-// exists to prevent.
+// writeManualDiscount stores the override and audits it in ONE transaction: an override stored
+// without its audit entry is exactly the untraceable price change the rule exists to prevent.
 func writeManualDiscount(
 	ctx corectx.Context,
 	order dmodel.DynamicFields,
@@ -213,9 +187,8 @@ func writeManualDiscount(
 				models.SalesManualDiscountFieldAmount:       params.Amount,
 				models.SalesManualDiscountFieldReason:       params.Reason,
 
-				// The price as it stood when the operator decided. Stored rather than derived,
-				// because repricing moves the surrounding numbers afterwards and this is the only
-				// record of what they were actually looking at.
+				// The price as it stood when the operator decided. Stored rather than derived, because
+				// repricing moves the surrounding numbers afterwards.
 				models.SalesManualDiscountFieldOriginalAmount: totalBefore,
 
 				basemodel.FieldOrgId: orgId,
@@ -231,10 +204,9 @@ func writeManualDiscount(
 				return err
 			}
 
-			// BR 87.4's audit requirement: both prices, and the reason, on the order's own trail.
-			// The ACTOR is not passed: WriteSalesAuditEvent takes it from the context, so that an
-			// operation cannot record somebody else as having performed it. granted_by on the row
-			// above is the caller's own record of who authorised it, which is a different claim.
+			// The ACTOR is not passed: WriteSalesAuditEvent takes it from the context, so an operation
+			// cannot record somebody else as having performed it. granted_by above is the caller's own
+			// record of who authorised it, a different claim.
 			return WriteSalesAuditEvent(tranxCtx, SalesAuditEntry{
 				SalesOrderId: params.SalesOrderId,
 				EntityType:   models.SalesManualDiscountSchemaName,
@@ -255,12 +227,9 @@ func writeManualDiscount(
 	return discountId, nil
 }
 
-// RevokeManualDiscount removes an override and reprices.
-//
-// A hard delete rather than a status, and deliberately: the audit trail already records that the
-// discount was granted and by whom, so the history survives the row — while a revoked-but-present
-// row would have to be filtered out of the engine input by every future reader, and the one that
-// forgot would reapply a discount somebody had withdrawn.
+// RevokeManualDiscount hard-deletes rather than flagging: the audit trail already records that the
+// discount was granted and by whom, while a revoked-but-present row would have to be filtered out
+// of the engine input by every future reader, and the one that forgot would reapply it.
 func RevokeManualDiscount(
 	ctx corectx.Context,
 	orderId, discountId string,

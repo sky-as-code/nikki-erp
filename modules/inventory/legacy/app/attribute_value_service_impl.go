@@ -23,7 +23,6 @@ func (this *ProductServiceImpl) CreateAttributeValue(ctx corectx.Context, cmd it
 		BaseRepoGetter: this.attrValueRepo,
 		Data:           cmd,
 		ValidateExtra: func(ctx corectx.Context, attributeValue *domain.AttributeValue, vErrs *ft.ClientErrors) error {
-			// Check if attribute exists
 			attributeId := attributeValue.GetAttributeId()
 			if attributeId == nil {
 				return nil
@@ -41,7 +40,6 @@ func (this *ProductServiceImpl) CreateAttributeValue(ctx corectx.Context, cmd it
 				return nil
 			}
 
-			// Validate data type compatibility
 			attribute := attributeResult.Data
 			dataType := attribute.GetDataType()
 			if dataType == nil {
@@ -56,7 +54,6 @@ func (this *ProductServiceImpl) CreateAttributeValue(ctx corectx.Context, cmd it
 				vErrs.Append(*ft.NewBusinessViolation(fieldName, "attribute_value.value_mismatch", "value type does not match attribute data type"))
 			}
 
-			// Check for duplicate attribute value
 			existingValue, err := this.findByAttributeAndValue(ctx, attributeValue)
 			if err != nil {
 				return err
@@ -76,7 +73,6 @@ func (this *ProductServiceImpl) UpdateAttributeValue(ctx corectx.Context, cmd it
 		DbRepoGetter: this.attrValueRepo,
 		Data:         cmd,
 		ValidateExtra: func(ctx corectx.Context, attributeValue *domain.AttributeValue, foundAttributeValue *domain.AttributeValue, vErrs *ft.ClientErrors) error {
-			// Check if attribute exists
 			attributeId := attributeValue.GetAttributeId()
 			if attributeId != nil {
 				attributeResult, err := this.GetAttribute(ctx, itAttr.GetAttributeQuery{
@@ -91,7 +87,6 @@ func (this *ProductServiceImpl) UpdateAttributeValue(ctx corectx.Context, cmd it
 					return nil
 				}
 
-				// Validate data type compatibility
 				attribute := attributeResult.Data
 				dataType := attribute.GetDataType()
 				if dataType == nil {
@@ -106,7 +101,7 @@ func (this *ProductServiceImpl) UpdateAttributeValue(ctx corectx.Context, cmd it
 					}
 				}
 
-				// Check for duplicate attribute value (excluding current one)
+				// Excluding the row being updated.
 				existingValue, err := this.findByAttributeAndValue(ctx, attributeValue)
 				if err != nil {
 					return err
@@ -185,7 +180,6 @@ func (this *ProductServiceImpl) AttributeValueExists(ctx corectx.Context, query 
 	})
 }
 
-// findByAttributeAndValue finds an attribute value by attribute ID and value
 func (this *ProductServiceImpl) findByAttributeAndValue(ctx corectx.Context, attributeValue *domain.AttributeValue) (*domain.AttributeValue, error) {
 	attributeId := attributeValue.GetAttributeId()
 	if attributeId == nil {
@@ -202,7 +196,7 @@ func (this *ProductServiceImpl) findByAttributeAndValue(ctx corectx.Context, att
 		*dmodel.NewSearchNode().NewCondition(fieldName, dmodel.Equals, value),
 	}
 
-	// Also restrict by product_id if present on the attribute value (denormalized).
+	// product_id is denormalized onto the value; restrict by it when present.
 	if pId := attributeValue.GetProductId(); pId != nil {
 		nodes = append(nodes, *dmodel.NewSearchNode().NewCondition(domain.AttrValFieldProductId, dmodel.Equals, *pId))
 	}
@@ -226,7 +220,6 @@ func (this *ProductServiceImpl) findByAttributeAndValue(ctx corectx.Context, att
 	return &searchResult.Data.Items[0], nil
 }
 
-// BuildAttributeValue builds an AttributeValue domain object from the raw value and data type
 func (this *ProductServiceImpl) BuildAttributeValue(
 	attributeId model.Id,
 	productId *model.Id,
@@ -249,8 +242,7 @@ func (this *ProductServiceImpl) BuildAttributeValue(
 	return attrValue
 }
 
-// FindOrCreateAttributeValue finds an existing attribute value or creates a new one
-// Returns the AttributeValue ID
+// FindOrCreateAttributeValue returns the id of the matching value, creating it if absent.
 func (this *ProductServiceImpl) FindOrCreateAttributeValue(
 	ctx corectx.Context,
 	attribute *domain.Attribute,
@@ -268,24 +260,20 @@ func (this *ProductServiceImpl) FindOrCreateAttributeValue(
 		return nil, nil
 	}
 
-	// Build the attribute value based on data type
 	attrValue := this.BuildAttributeValue(*attributeId, attribute.GetProductId(), *dataType, value, codeName, vErrs)
 	if attrValue == nil {
 		return nil, nil
 	}
 
-	// Try to find existing attribute value
 	existingValue, err := this.findByAttributeAndValue(ctx, attrValue)
 	if err != nil {
 		return nil, err
 	}
 
-	// If found, return existing ID
 	if existingValue != nil {
 		return existingValue.GetId(), nil
 	}
 
-	// Create new attribute value
 	createResult, err := this.CreateAttributeValue(ctx, itAttrVal.CreateAttributeValueCommand{
 		AttributeValue: *attrValue,
 	})
@@ -301,7 +289,6 @@ func (this *ProductServiceImpl) FindOrCreateAttributeValue(
 	return createResult.Data.GetId(), nil
 }
 
-// GetAttributeValueIdsByVariantId returns all AttributeValue IDs linked to the given variant
 func (this *ProductServiceImpl) GetAttributeValueIdsByVariantId(ctx corectx.Context, variantId model.Id) ([]model.Id, error) {
 	return this.attrValueRepo.GetIdsByVariantId(ctx, variantId)
 }

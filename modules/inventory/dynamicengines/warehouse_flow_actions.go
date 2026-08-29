@@ -10,17 +10,14 @@ import (
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/warehouse"
 )
 
-// The flow reconfigurations reach the application service rather than a domain one, because each
-// writes the warehouse and provisions its locations together.
-//
-// Neither creates a stock move. A flow is policy for transactions made from now on: a receipt
-// already under way keeps the shape it was created with, and existing quants are untouched.
+// The flow reconfigurations reach the application service rather than a domain one because each
+// writes the warehouse and provisions its locations together. Neither creates a stock move: a flow
+// is policy for later transactions, so a receipt already under way keeps its shape and existing
+// quants are untouched.
 
-// warehouseAppService resolves the orchestration layer from the container.
-//
-// The action callbacks receive only their own engine, so unlike the domain services there is no
-// handle to type-assert; it is looked up instead. A failure here means Init did not register it,
-// which is a wiring bug rather than a request problem.
+// warehouseAppService resolves the orchestration layer from the container. The action callbacks
+// receive only their own engine, so there is no handle to type-assert. A failure is a wiring bug
+// rather than a request problem.
 func warehouseAppService() (itWarehouse.WarehouseAppService, error) {
 	var service itWarehouse.WarehouseAppService
 	err := deps.Invoke(func(resolved itWarehouse.WarehouseAppService) { service = resolved })

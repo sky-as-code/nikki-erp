@@ -42,8 +42,8 @@ const (
 	SalesPricelistItemFieldPrice            = "price"
 	SalesPricelistItemFieldMinQuantity      = "min_quantity"
 
-	// Targeting. Exactly one of the three id columns is set, chosen by applies_to; ALL_PRODUCTS
-	// sets none. The schema cannot express "exactly one of these", so the domain service does.
+	// Exactly one of the three id columns is set, chosen by applies_to; ALL_PRODUCTS sets none. The
+	// schema cannot express "exactly one of these", so the domain service does.
 	SalesPricelistItemFieldAppliesTo         = "applies_to"
 	SalesPricelistItemFieldProductTemplateId = "product_template_id"
 	SalesPricelistItemFieldProductCategoryId = "product_category_id"
@@ -68,12 +68,9 @@ const (
 	SalesPricelistItemEdgeSalesPricelist = "sales_pricelist"
 )
 
-// PricelistScope ranks how specifically a pricelist applies, which is what decides between two that
-// both match.
-//
-// Specificity beats priority, always: a point-scoped list wins over a channel-scoped one whatever
-// their priority numbers, because otherwise a high-priority global list would silently undo every
-// local price an operator had set. Priority only breaks ties between lists of the SAME scope.
+// PricelistScope ranks how specifically a pricelist applies, which decides between two that both
+// match. Specificity beats priority always: a point-scoped list wins over a channel-scoped one
+// whatever their priority numbers. Priority only breaks ties between lists of the same scope.
 type PricelistScope int
 
 const (
@@ -99,11 +96,9 @@ func SalesPricelistItemSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(salesPricelistItemSchemaJson)
 }
 
-// SalesPricelist is a set of prices that applies to some scope for some window.
-//
-// It exists because BR §87.2 forbids hard-coding every price onto the product: the same variant
-// legitimately costs different amounts in an airport kiosk and a high street store, and a price
-// scheduled for next month must not change what today's sales are charged.
+// SalesPricelist is a set of prices that applies to some scope for some window. The same variant
+// legitimately costs different amounts in different places, and a price scheduled for next month
+// must not change what today's sales are charged.
 type SalesPricelist struct {
 	basemodel.DynamicModelBase
 }
@@ -164,10 +159,8 @@ func (this SalesPricelist) GetIsArchived() *bool {
 	return this.GetFieldData().GetBool(basemodel.FieldIsArchived)
 }
 
-// Scope reports how specifically this pricelist applies.
-//
-// The point scope is checked first: a list naming both a point and a channel is point-scoped, since
-// the point already implies its channel and the narrower answer is the one that should win.
+// Scope reports how specifically this pricelist applies. A list naming both a point and a channel is
+// point-scoped: the point already implies its channel, and the narrower answer wins.
 func (this SalesPricelist) Scope() PricelistScope {
 	if this.GetSalesPointId() != nil {
 		return PricelistScopePoint
@@ -178,8 +171,8 @@ func (this SalesPricelist) Scope() PricelistScope {
 	return PricelistScopeGlobal
 }
 
-// The targets a pricelist rule may name, most specific first. Resolution walks them in this order
-// (PRICE-INV-016, PRICE-INV-017), so the sequence here is the precedence, not a preference.
+// The targets a pricelist rule may name, most specific first. Resolution walks them in this order,
+// so the sequence here is the precedence.
 const (
 	PricelistAppliesToVariant     = "PRODUCT_VARIANT"
 	PricelistAppliesToTemplate    = "PRODUCT_TEMPLATE"
@@ -187,15 +180,14 @@ const (
 	PricelistAppliesToAllProducts = "ALL_PRODUCTS"
 )
 
-// How a rule arrives at its price (section 13).
+// How a rule arrives at its price.
 const (
 	PricelistMethodFixedPrice = "FIXED_PRICE"
 	PricelistMethodDiscount   = "DISCOUNT"
 	PricelistMethodFormula    = "FORMULA"
 )
 
-// What a FORMULA rule starts from (section 14). COST is a read of Inventory's number; Sales never
-// writes it back (PRICE-INV-010).
+// What a FORMULA rule starts from. COST is a read of Inventory's number; Sales never writes it back.
 const (
 	PricelistBaseSourceBaseSalesPrice = "BASE_SALES_PRICE"
 	PricelistBaseSourceOtherPricelist = "OTHER_PRICELIST"
@@ -239,9 +231,8 @@ func (this SalesPricelistItem) GetMinQuantity() *decimal.Decimal {
 	return this.GetFieldData().GetDecimal(SalesPricelistItemFieldMinQuantity)
 }
 
-// AppliesToQuantity reports whether this item's quantity break covers the quantity being bought.
-//
-// Inclusive of the break itself: an item declaring min_quantity 10 applies to exactly 10.
+// AppliesToQuantity reports whether this item's quantity break covers the quantity being bought,
+// inclusive of the break itself: min_quantity 10 applies to exactly 10.
 func (this SalesPricelistItem) AppliesToQuantity(quantity decimal.Decimal) bool {
 	return quantity.GreaterThanOrEqual(decimalOrZero(this.GetMinQuantity()))
 }

@@ -22,12 +22,9 @@ func NewSupplyRelationDomainService(base drif.DynamicResourceService) *SupplyRel
 	return &SupplyRelationDomainServiceImpl{DynamicResourceService: base}
 }
 
-// SupplyRelationDomainServiceImpl keeps the resupply topology sane.
-//
-// A relation only ever declares who may restock whom. It reserves nothing and starts no transfer;
-// when replenishment actually happens the Stock movement engine creates the movement. What is
-// guarded here is the shape of the graph: no self-supply, no duplicates, at most one default per
-// destination, and no cycles.
+// SupplyRelationDomainServiceImpl keeps the resupply topology sane. A relation only declares who
+// may restock whom — it reserves nothing and starts no transfer — so what is guarded is the shape
+// of the graph: no self-supply, no duplicates, one default per destination, no cycles.
 type SupplyRelationDomainServiceImpl struct {
 	drif.DynamicResourceService
 }
@@ -47,11 +44,9 @@ func (this *SupplyRelationDomainServiceImpl) Create(
 	return this.DynamicResourceService.Create(ctx, params)
 }
 
-// Update re-checks the same rules, because priority and the default flag can both change.
-//
-// Source and destination are left out of the update path deliberately: repointing a relation is
-// really a different relation, and rewriting one in place would make the audit trail read as
-// though the old route had always been the new one.
+// Update re-checks the same rules, since priority and the default flag can change. Source and
+// destination are deliberately not updatable: repointing a relation is really a different relation,
+// and rewriting one in place would make the audit trail read as though the old route never existed.
 func (this *SupplyRelationDomainServiceImpl) Update(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -135,8 +130,8 @@ func (this *SupplyRelationDomainServiceImpl) assertRelationValid(
 		}
 	}
 
-	// A cycle would let replenishment planning chase its own tail: A restocks B, B restocks C, and
-	// C restocks A, with no warehouse actually holding the goods.
+	// A cycle would let replenishment planning chase its own tail: A restocks B, B restocks C, C
+	// restocks A, with no warehouse actually holding the goods.
 	cyclic, err := this.wouldCreateCycle(ctx, sourceId, destinationId)
 	if err != nil {
 		return vErrs, err

@@ -1,13 +1,10 @@
-// Package dynamicengines declares the resource engines the Inventory module serves through the
-// dynamic resource engine, and creates them during the module's Init().
+// Package dynamicengines declares the resource engines the Inventory module serves, and creates
+// them during the module's Init().
 //
-// Its imports point one way only: the domain (models and services), the module's own interfaces,
-// and the dynamicresource module — never app/, infra/ or transport/. That keeps the package
-// importable by both inventory (which creates the engines) and inventory/transport/restful
-// (which registers their routes) without a cycle.
-//
-// The package declares engines and adapts their callbacks; the rules those callbacks enforce
-// live in domain/services. See docs/wiki/07. ERP backend module.md §6.7.
+// Its imports point one way only: domain, the module's own interfaces, and the dynamicresource
+// module — never app/, infra/ or transport/. That keeps it importable by both inventory and
+// inventory/transport/restful without a cycle. The rules the callbacks enforce live in
+// domain/services.
 package dynamicengines
 
 import (
@@ -25,13 +22,12 @@ type engineSpec struct {
 	// constant, never a string derived from the resource path.
 	SchemaName string
 
-	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD
-	// ones. It is optional: a resource without custom behavior leaves it nil.
+	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD ones.
+	// Optional: a resource without custom behavior leaves it nil.
 	DefineActions func(drif.DynamicResourceEngine) error
 }
 
-// engineSpecs lists the resources Inventory serves through the dynamic resource engine, each
-// with the field set its listing UI needs.
+// engineSpecs lists the resources Inventory serves through the dynamic resource engine.
 var engineSpecs = []engineSpec{
 	productTypeEngineSpec(),
 	productCategoryEngineSpec(),
@@ -59,8 +55,8 @@ var engineSpecs = []engineSpec{
 	stockProductConfigEngineSpec(),
 }
 
-// EngineSchemaNames lists the schemas Inventory creates an engine for, so that route
-// registration and engine creation cannot drift apart.
+// EngineSchemaNames lists the schemas Inventory creates an engine for, so route registration and
+// engine creation cannot drift apart.
 func EngineSchemaNames() []string {
 	return array.Map(engineSpecs, func(spec engineSpec) string {
 		return spec.SchemaName
@@ -68,7 +64,7 @@ func EngineSchemaNames() []string {
 }
 
 // InitDynamicEngines creates the resource engines this module owns and publishes them into the
-// dependency container, so that other modules can inject them by name.
+// dependency container, so other modules can inject them by name.
 func InitDynamicEngines() error {
 	for _, spec := range engineSpecs {
 		if err := initEngine(spec); err != nil {
@@ -92,7 +88,7 @@ func initEngine(spec engineSpec) error {
 		}
 	}
 
-	// After DefineActions, because ModifyAction replaces ValidateExtra rather than chaining it:
+	// Must run after DefineActions: ModifyAction replaces ValidateExtra rather than chaining it, so
 	// attaching the guard first would let a spec's own create validation silently drop it.
 	if err := rejectArchivedOnCreate(engine); err != nil {
 		return errors.Wrapf(err, "failed to attach the create guard of the '%s' resource engine", spec.SchemaName)

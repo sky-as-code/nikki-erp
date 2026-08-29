@@ -11,9 +11,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// ProductTemplateStatus is the business lifecycle of a product line. It is deliberately separate
-// from is_archived, which is system visibility: a discontinued product may stay unarchived so it
-// still appears in discontinued-product listings. See BR §2.3 and AC-PROD-018.
+// ProductTemplateStatus is the business lifecycle, separate from is_archived, which is system
+// visibility: a discontinued product may stay unarchived so it still appears in listings.
 type ProductTemplateStatus string
 
 const (
@@ -54,9 +53,8 @@ const (
 	ProductTemplateFieldStatus              = "status"
 	ProductTemplateFieldOrgId               = "org_id"
 
-	// The cost read model. A template has no cost of its own — cost belongs to the concrete
-	// variant — so these expose the RANGE across its variants and nothing more. Never treat
-	// either as the product's cost (BR-PRICE-VARIANT-014).
+	// Cost read model. A template has no cost of its own; these expose the range across its
+	// variants and must never be treated as the product's cost.
 	ProductTemplateFieldMinVariantCost = "min_variant_cost"
 	ProductTemplateFieldMaxVariantCost = "max_variant_cost"
 

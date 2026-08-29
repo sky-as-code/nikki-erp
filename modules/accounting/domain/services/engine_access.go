@@ -1,8 +1,6 @@
-// Package services holds the Accounting business rules that reach for stored configuration.
-//
-// The pure arithmetic lives one level down in services/tax: given a resolved rate, what does the
-// tax come to. This package is what turns rows into those resolved inputs, and it is deliberately
-// the only place in the domain that knows a database exists.
+// Package services holds the Accounting business rules that reach for stored configuration. The
+// pure arithmetic lives one level down in services/tax; this package turns rows into its resolved
+// inputs and is the only place in the domain that knows a database exists.
 package services
 
 import (
@@ -13,10 +11,8 @@ import (
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
-// engineFor resolves a resource engine from the shared registry.
-//
-// It is a var rather than a plain function so a test can substitute the registry without building
-// one, which is how the resolver is tested without a database.
+// engineFor resolves a resource engine from the shared registry. It is a var so a test can
+// substitute the registry, which is how the resolver is tested without a database.
 var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
 	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
 	if !ok {
@@ -25,18 +21,14 @@ var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
 	return engine, nil
 }
 
-// EngineFor exposes the registry lookup to the sibling packages that need another resource's
-// engine — an application service reaching the repository of a resource it does not own.
+// EngineFor exposes the registry lookup to sibling packages needing another resource's engine.
 func EngineFor(schemaName string) (drif.DynamicResourceEngine, error) {
 	return engineFor(schemaName)
 }
 
-// RepoFor resolves the repository of one schema's engine.
-//
-// Every schema has its own engine, and an engine's repository answers only for the schema it was
-// built for — asking the tax engine for a rounding policy fails with "field is not defined on this
-// schema", because it is searching the wrong table. Each lookup therefore has to be handed the
-// repository of the resource it reads.
+// RepoFor resolves the repository of one schema's engine. A repository answers only for the schema
+// it was built for, so asking the tax engine for a rounding policy fails with "field is not defined
+// on this schema"; each lookup must be handed the repository of the resource it reads.
 func RepoFor(schemaName string) (models.TaxSearcher, error) {
 	engine, err := engineFor(schemaName)
 	if err != nil {
@@ -45,11 +37,8 @@ func RepoFor(schemaName string) (models.TaxSearcher, error) {
 	return engine.ResourceRepository(), nil
 }
 
-// TaxRepos is the set of repositories one calculation reads.
-//
-// Gathered once at the start of a request and passed down, rather than resolved at each call site:
-// the registry lookup is cheap but the mistake it invites is not, and a struct with named fields
-// makes handing the wrong repository to a lookup a compile error rather than a runtime one.
+// TaxRepos is the set of repositories one calculation reads, gathered once per request. Named
+// fields make handing the wrong repository to a lookup a compile error rather than a runtime one.
 type TaxRepos struct {
 	Tax               models.TaxSearcher
 	DefinitionVersion models.TaxSearcher

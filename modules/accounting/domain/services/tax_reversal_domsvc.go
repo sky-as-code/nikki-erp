@@ -12,11 +12,8 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
 )
 
-// ReverseFull negates an entire original charge.
-//
-// The rate is deliberately not re-resolved. A full reversal undoes what was charged, and what was
-// charged is in the snapshot the caller supplies — resolving today's rate would refund a different
-// amount than was taken whenever a rate has changed since (BR-TAX-ESS-055).
+// ReverseFull negates an entire original charge. The rate is deliberately not re-resolved: the
+// amount charged is in the caller's snapshot, and today's rate would refund a different amount.
 func (this *TaxCalculationDomainServiceImpl) ReverseFull(
 	ctx corectx.Context, request it.FullReversalRequest,
 ) (*it.ReverseResult, error) {
@@ -26,12 +23,9 @@ func (this *TaxCalculationDomainServiceImpl) ReverseFull(
 	return this.reversalResult(request.OriginalSnapshot, request.TaxDate, reversed), nil
 }
 
-// ReversePartial reverses part of an original charge.
-//
-// The rounding policy applies to the refund because a proportion of a rounded amount is rarely a
-// round number itself. The final reversal absorbs whatever residual the proportions left, so a
-// sequence of partial refunds sums to exactly the original charge rather than approximately
-// (BR-TAX-ESS-033).
+// ReversePartial reverses part of an original charge. The rounding policy applies to the refund
+// because a proportion of a rounded amount rarely rounds itself, and the final reversal absorbs the
+// residual so a sequence of partials sums to exactly the original charge.
 func (this *TaxCalculationDomainServiceImpl) ReversePartial(
 	ctx corectx.Context, request it.PartialReversalRequest,
 ) (*it.ReverseResult, error) {
@@ -90,10 +84,9 @@ func (this *TaxCalculationDomainServiceImpl) reversalResult(
 	}
 }
 
-// reversalSnapshot is the refund's own frozen record.
-//
-// It carries the original's rounding configuration rather than resolving it again: a refund must
-// round the way the sale did, or the reversals will not close to zero against it.
+// reversalSnapshot is the refund's own frozen record. It reuses the original's rounding
+// configuration rather than resolving it again: a refund must round the way the sale did, or the
+// reversals will not close to zero against it.
 func (this *TaxCalculationDomainServiceImpl) reversalSnapshot(
 	original it.Snapshot, taxDate string, components []it.ReversalComponentResult,
 ) it.Snapshot {
@@ -131,11 +124,9 @@ func toReversalInputs(requested []it.ReversalComponentRequest) []taxsvc.Reversal
 	return inputs
 }
 
-// parseAmount reads a decimal that travelled as a string.
-//
-// Money crosses the wire as text precisely so no float ever touches it; an unparseable value is
-// treated as zero rather than as an error, because the reversal arithmetic clamps to what was
-// originally charged and a zero basis reverses nothing.
+// parseAmount reads a decimal that travelled as a string. Money crosses the wire as text so no
+// float touches it; an unparseable value becomes zero rather than an error, since the reversal
+// arithmetic clamps to the original charge and a zero basis reverses nothing.
 func parseAmount(value string) decimal.Decimal {
 	if value == "" {
 		return decimal.Zero
@@ -147,11 +138,9 @@ func parseAmount(value string) decimal.Decimal {
 	return parsed
 }
 
-// buildSnapshot freezes how a calculation was reached.
-//
-// Self-contained by requirement (BR-TAX-ESS-SUP-032): a screen showing a three-year-old invoice
-// reads this and never the current tax master, which is the entire mechanism by which a rate change
-// cannot reinterpret a historical sale.
+// buildSnapshot freezes how a calculation was reached. It must stay self-contained: readers of an
+// old invoice use this and never the current tax master, so a rate change cannot reinterpret a
+// historical sale.
 func (this *TaxCalculationDomainServiceImpl) buildSnapshot(
 	request it.CalculationRequest, result it.CalculationResult, policy taxsvc.RoundingPolicy,
 ) it.Snapshot {
@@ -169,10 +158,8 @@ func (this *TaxCalculationDomainServiceImpl) buildSnapshot(
 	}
 }
 
-// stamp is the calculated-at time, in RFC 3339.
-//
-// Distinct from the tax date in every way that matters: this records when the arithmetic ran, while
-// the tax date decides which configuration governed it and is always the caller's.
+// stamp is the calculated-at time, in RFC 3339. It records when the arithmetic ran and is not the
+// tax date, which decides which configuration governed it and is always the caller's.
 func (this *TaxCalculationDomainServiceImpl) stamp() string {
 	if this.now != nil {
 		return this.now()

@@ -17,11 +17,8 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// The product stock summary, from the rollup side.
-//
-// What these pin down is the arithmetic and the grouping, which is where the requirement's
-// numbers live: available is derived not stored, a template total is the sum of its variants, and
-// a place holding several lots of one product counts as one place.
+// The product stock summary from the rollup side: available is derived not stored, a template total
+// is the sum of its variants, and a place holding several lots of one product counts once.
 
 const (
 	testVariantAId  = "01VARIANTA0000000000000000"
@@ -31,12 +28,9 @@ const (
 	testWarehouseId = "01WAREHOUSE000000000000000"
 )
 
-// stubRowRepository stands in for one schema's repository, returning the rows it was given.
-//
-// It applies the search graph's status conditions rather than ignoring them. The real repository
-// filters in SQL, so a stub that returned everything would let a test pass while the production
-// query excluded the very rows the test is about — which is exactly the case for the reads that
-// separate open work from completed history.
+// stubRowRepository stands in for one schema's repository, returning the rows it was given. It must
+// apply the graph's status conditions: the real repository filters in SQL, so a stub returning
+// everything would let a test pass while the production query excluded the rows under test.
 type stubRowRepository struct {
 	drif.DynamicResourceRepository
 
@@ -56,11 +50,8 @@ func (this *stubRowRepository) Search(
 	}, nil
 }
 
-// filterRowsByStatus applies whatever status restriction the graph carries.
-//
-// Only the status field is honoured, because it is the only one whose omission would change an
-// outcome under test: the variant and location conditions merely select rows the fixture already
-// scopes by hand.
+// filterRowsByStatus applies whatever status restriction the graph carries. Only status is honoured;
+// the variant and location conditions merely select rows the fixture already scopes by hand.
 func filterRowsByStatus(
 	rows []dmodel.DynamicFields, graph *dmodel.SearchGraph,
 ) []dmodel.DynamicFields {
@@ -83,10 +74,8 @@ func filterRowsByStatus(
 	return kept
 }
 
-// statusConditionsOf reads the status restrictions out of a graph.
-//
-// The graph's conditions are unexported, but it marshals to JSON, so it is inspected through that
-// rather than by reimplementing its structure here.
+// statusConditionsOf reads the status restrictions out of a graph. Its conditions are unexported
+// but it marshals to JSON, so it is inspected through that.
 func statusConditionsOf(graph *dmodel.SearchGraph) (map[string]bool, map[string]bool) {
 	excluded, included := map[string]bool{}, map[string]bool{}
 	if graph == nil {
@@ -171,8 +160,8 @@ func summariseVariants(t *testing.T, variantIds ...string) map[string]itStock.Va
 	return result.Data.Summaries
 }
 
-// Available is on-hand minus reserved, computed on read. It is never stored, so nothing can
-// persist a value that disagrees with the two it is derived from (BR §4.2.2.3).
+// Available is on-hand minus reserved, computed on read and never stored, so nothing can persist a
+// value that disagrees with the two it comes from.
 func TestVariantSummaryDerivesAvailableFromOnHandAndReserved(t *testing.T) {
 	useSchemaEngines(t, map[string][]dmodel.DynamicFields{
 		models.StockQuantSchemaName:        {quantRow(testVariantAId, testLocationAId, 120, 20)},
@@ -219,7 +208,7 @@ func TestVariantSummaryReportsVariantsWithNoStock(t *testing.T) {
 }
 
 // One product commonly has several quants in the same location — a lot, a package, an owner each
-// make another row — and the page says how many *places* hold it, so the location counts once.
+// make another row — and the page counts places, so the location counts once.
 func TestVariantSummaryCountsALocationOnceAcrossSeveralQuants(t *testing.T) {
 	useSchemaEngines(t, map[string][]dmodel.DynamicFields{
 		models.StockQuantSchemaName: {
@@ -272,8 +261,8 @@ func TestVariantSummaryDedupesRequestedIds(t *testing.T) {
 	assert.Equal(t, "8", summaries[testVariantAId].OnHand.String())
 }
 
-// TS-PROD-02: a template's total is the sum of its variants, and no quant is ever attributed to
-// the template itself.
+// A template's total is the sum of its variants, and no quant is ever attributed to the template
+// itself.
 func TestTemplateSummaryIsTheSumOfItsVariants(t *testing.T) {
 	useSchemaEngines(t, map[string][]dmodel.DynamicFields{
 		models.ProductVariantSchemaName: {

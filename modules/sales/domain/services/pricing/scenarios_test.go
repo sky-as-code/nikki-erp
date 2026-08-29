@@ -6,23 +6,12 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// The change request's own named scenarios (section 43), asserted here by name.
-//
-// Several are already covered by tests written from the rules rather than from the scenario list —
-// TS-PRICE-02 and -03 in rule_match_test.go, TS-PRICE-01 as TestCataloguePriceWhenNoPricelistMatches
-// in engine_test.go. What this file adds is the ones with no home, plus a named entry point for the
-// ones that had one, so that somebody auditing the requirement can find each scenario by its
-// identifier instead of inferring which test happens to cover it.
-//
-// Traceability is the point. A scenario that is genuinely covered elsewhere is asserted here too
-// rather than merely referenced, because a comment pointing at another test does not fail when that
-// test is renamed or narrowed.
+// The named pricing scenarios, asserted here for traceability. Some are also covered by the
+// rule-driven tests elsewhere; they are re-asserted here rather than cross-referenced, because a
+// comment pointing at another test does not fail when that test is renamed or narrowed.
 
-// TS-PRICE-01: a base sales price of 100 with no rule matching resolves to 100.
-//
-// The catalogue price standing when nothing matches is what makes a pricelist optional. If an
-// unmatched line resolved to zero, a product with no rule would be given away, and every new
-// product would need a rule before it could be sold at all.
+// A base sales price of 100 with no rule matching resolves to 100. The catalogue price standing is
+// what makes a pricelist optional; resolving to zero would give unmatched products away.
 func TestScenarioBaseSalesPriceAppliesWhenNoRuleMatches(t *testing.T) {
 	result := Calculate(Input{
 		Lines:   []LineInput{lineOf("a", 1, "1", "100")},
@@ -38,7 +27,7 @@ func TestScenarioBaseSalesPriceAppliesWhenNoRuleMatches(t *testing.T) {
 	}
 }
 
-// TS-PRICE-02: base 100 less a 10% discount resolves to 90.
+// Base 100 less a 10% discount resolves to 90.
 func TestScenarioSalesDiscount(t *testing.T) {
 	item := fixedRule("R", AppliesToVariant, "VAR1", "0")
 	item.CalculationMethod = MethodDiscount
@@ -51,11 +40,8 @@ func TestScenarioSalesDiscount(t *testing.T) {
 	}
 }
 
-// TS-PRICE-03: a cost of 60 plus 50% resolves to 90, and Sales does not touch the cost.
-//
-// The second half is the half that matters. A formula READS the cost; writing back a "selling cost"
-// would make the margin computed from it meaningless, and the engine has no way to write anywhere
-// anyway — which is exactly why the calculation lives in a pure function.
+// A cost of 60 plus 50% resolves to 90, and Sales does not touch the cost: a formula READS it, and
+// writing back a "selling cost" would make the margin computed from it meaningless.
 func TestScenarioSalesFormulaOnCost(t *testing.T) {
 	line := aLine()
 	line.UnitCost = dec("60")
@@ -77,11 +63,8 @@ func TestScenarioSalesFormulaOnCost(t *testing.T) {
 	}
 }
 
-// TS-PRICE-10, on the SALES side: a formula whose cost is unavailable does not price at zero.
-//
-// Zero is a legitimate cost for a giveaway, so the number alone cannot say whether one was
-// configured — hence HasCost beside UnitCost. Without that distinction an unset cost would price
-// every line in the rule's scope at a 100% markup on nothing.
+// A formula whose cost is unavailable does not price at zero. Zero is a legitimate cost for a
+// giveaway, so the number alone cannot say whether one was configured — hence HasCost.
 func TestScenarioFormulaWithNoCostDoesNotPriceAtZero(t *testing.T) {
 	line := aLine()
 	line.HasCost = false
@@ -98,8 +81,7 @@ func TestScenarioFormulaWithNoCostDoesNotPriceAtZero(t *testing.T) {
 	}
 }
 
-// A cost that IS zero must still price, because a giveaway is a real configuration. This is the
-// other half of the test above, and the pair is what makes HasCost worth having.
+// A cost that IS zero must still price: the other half of the test above, and why HasCost exists.
 func TestScenarioAZeroCostStillPrices(t *testing.T) {
 	line := aLine()
 	line.UnitCost = decimal.Zero
@@ -117,14 +99,11 @@ func TestScenarioAZeroCostStillPrices(t *testing.T) {
 	}
 }
 
-// TS-PRICE-12: a rule from an archived pricelist must not price a line.
-//
-// Archived rules are excluded by the CALLER, which reads only live lists — the engine is handed
-// candidates and ranks them. What this asserts is the consequence: with the archived rule filtered
-// out, the line falls back to its catalogue price rather than to nothing.
+// A rule from an archived pricelist must not price a line. Archived rules are excluded by the
+// CALLER; this asserts the consequence, that the line falls back to the catalogue price.
 func TestScenarioArchivedRuleLeavesTheCataloguePriceStanding(t *testing.T) {
 	result := Calculate(Input{
-		// The archived list's rule is simply absent, which is what the repository read produces.
+		// The archived list's rule is simply absent, as the repository read produces.
 		Lines:   []LineInput{lineOf("a", 1, "1", "100")},
 		Context: vndContext(),
 	})
@@ -136,12 +115,9 @@ func TestScenarioArchivedRuleLeavesTheCataloguePriceStanding(t *testing.T) {
 	}
 }
 
-// TS-PRICE-11: a rule targeting another organization's product must not match.
-//
-// Org scoping is enforced by the repository read, not here — the engine never sees another org's
-// rows. What CAN be asserted at this level is the property that makes that safe: a rule whose
-// target does not match the line is not a candidate at all, so a row that slipped through would
-// still have to name this exact product to affect it.
+// A rule targeting another organization's product must not match. Org scoping is enforced by the
+// repository read; what is asserted here is the property making that safe — a rule whose target does
+// not match the line is not a candidate at all.
 func TestScenarioARuleForAnotherProductNeverMatches(t *testing.T) {
 	items := []PricelistItem{
 		fixedRule("R_OTHER_VARIANT", AppliesToVariant, "VAR_ELSEWHERE", "1"),

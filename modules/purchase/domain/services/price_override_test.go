@@ -12,17 +12,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// TS-PRICE-07 and TS-PRICE-08: negotiating a price changes the ORDER and nothing else.
-//
-// Two masters must survive an override untouched — the vendor's quote and the product's cost — and
-// they survive for different reasons. The quote is another module's record of what a supplier is
-// offering; the cost is Inventory's valuation of what the business has actually paid. Writing back
-// to either would let one buyer's negotiation silently reprice everybody else's orders, or inflate
-// a margin nobody chose to change.
-//
-// The strongest evidence is structural: nothing in the pricing path has a way to write to either.
-// What the tests below add is that the path does not even try, and that a line records enough to
-// show what happened.
+// Negotiating a price changes the order and nothing else. The vendor's quote and the product's cost
+// must both survive untouched: writing back to either would let one buyer's negotiation reprice
+// everybody else's orders or move a valuation nobody chose to change.
 
 func overrideLine(agreed string) dmodel.DynamicFields {
 	return dmodel.DynamicFields{
@@ -34,11 +26,8 @@ func overrideLine(agreed string) dmodel.DynamicFields {
 	}
 }
 
-// TS-PRICE-07: a line quoted at 9,500 and negotiated to 9,200 keeps 9,200.
-//
-// The stated price is what makes it a negotiation. Overwriting it with the vendor's list price on
-// every save would undo the negotiation each time somebody edited the quantity — which is exactly
-// what would happen if the pricer treated a present price as "not yet decided".
+// A line quoted at 9,500 and negotiated to 9,200 keeps 9,200: a stated price is a negotiation, and
+// treating it as "not yet decided" would undo it on every save.
 func TestANegotiatedPriceIsRecognisedAndKept(t *testing.T) {
 	line := overrideLine("9200")
 
@@ -48,9 +37,7 @@ func TestANegotiatedPriceIsRecognisedAndKept(t *testing.T) {
 		Equal(decimal.RequireFromString("9200")))
 }
 
-// A line with NO price is asking to be priced, which is the other half of the same decision. If
-// both cases looked alike, either every negotiation would be overwritten or no line would ever be
-// priced automatically.
+// A line with no price is asking to be priced — the other half of the same decision.
 func TestALineWithNoPriceIsPricedAutomatically(t *testing.T) {
 	line := overrideLine("0")
 	delete(line, models.PurchaseOrderLineFieldUnitPrice)
@@ -59,12 +46,9 @@ func TestALineWithNoPriceIsPricedAutomatically(t *testing.T) {
 		"an absent price is a request to resolve one, not a negotiated zero")
 }
 
-// TS-PRICE-08: a purchase order price does not move the product's cost.
-//
-// Asserted structurally, because that is where the guarantee actually lives: the line records the
-// resolved price and the quote it came from, and neither field is a cost. There is deliberately no
-// cost column on a purchase order line at all — a price paid is not a valuation, and the two differ
-// routinely (freight, duty, and the fact that cost is averaged across receipts).
+// A purchase order price does not move the product's cost. Asserted structurally: the line records
+// the resolved price and the quote it came from, and there is deliberately no cost column at all —
+// a price paid is not a valuation, given freight, duty and averaging across receipts.
 func TestThePurchaseLineRecordsNoCost(t *testing.T) {
 	line := overrideLine("9200")
 	line[models.PurchaseOrderLineFieldResolvedUnitPrice] = decimal.RequireFromString("9500")
@@ -78,12 +62,9 @@ func TestThePurchaseLineRecordsNoCost(t *testing.T) {
 	}
 }
 
-// The override is legible after the fact, which is what "audit user + old/new resolved price"
-// (§29.1) actually requires.
-//
-// One field would not have been enough. `vendor_product_price_id` alone says where the number came
-// from but not whether anybody changed it, and comparing against the master LATER would read what
-// the quote says now rather than what it said when the order was placed.
+// The override stays legible after the fact. One field would not do: vendor_product_price_id alone
+// says where the number came from but not whether anybody changed it, and comparing against the
+// master later reads what the quote says now, not what it said when the order was placed.
 func TestAnOverrideIsVisibleAsTheDifferenceBetweenTwoStoredNumbers(t *testing.T) {
 	line := overrideLine("9200")
 	line[models.PurchaseOrderLineFieldResolvedUnitPrice] = decimal.RequireFromString("9500")
@@ -97,10 +78,8 @@ func TestAnOverrideIsVisibleAsTheDifferenceBetweenTwoStoredNumbers(t *testing.T)
 		"and the quote it was negotiated against is named, so a reader can go and look at it")
 }
 
-// A line priced at exactly what was quoted is NOT an override, and must not be audited as one.
-//
-// Auditing every accepted price would fill the trail with events nobody caused, which is the fastest
-// way to make an audit trail unread.
+// A line priced at exactly what was quoted is not an override, and auditing it would fill the trail
+// with events nobody caused.
 func TestAcceptingTheQuotedPriceIsNotAnOverride(t *testing.T) {
 	line := overrideLine("9500")
 	line[models.PurchaseOrderLineFieldResolvedUnitPrice] = decimal.RequireFromString("9500")
@@ -111,10 +90,8 @@ func TestAcceptingTheQuotedPriceIsNotAnOverride(t *testing.T) {
 	assert.True(t, resolved.Equal(agreed), "nothing was overridden, so nothing is audited")
 }
 
-// The audit action for an override is its own name, distinct from every order transition.
-//
-// It is a LINE event where the others are order events: what a reader needs afterwards is which
-// line moved and by how much, which an order-level record could not say.
+// The audit action for an override is its own name: it is a line event where the others are order
+// events, and a reader needs to know which line moved and by how much.
 func TestTheOverrideAuditActionIsDistinct(t *testing.T) {
 	assert.Equal(t, "override_price", AuditActionOverridePrice)
 	assert.Equal(t, "reprice", AuditActionReprice)

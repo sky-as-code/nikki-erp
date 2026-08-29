@@ -37,12 +37,12 @@ func defineProductVariantActions(engine drif.DynamicResourceEngine) error {
 		return errors.Wrap(err, "failed to attach product variant update validation")
 	}
 
-	// BR-PROD-VAR-006/007: the template follows its variants' availability. The cascade lives in
-	// ProductVariantDomainServiceImpl.SetArchived rather than an action hook, because it must run
+	// The template follows its variants' availability. The cascade lives in
+	// ProductVariantDomainServiceImpl.SetArchived rather than an action hook because it must run
 	// after the variant row is written — AfterValidationSuccess runs before MainProcess.
 
-	// AC-PROD-032: consumers read the flattened product rather than re-deriving which fields
-	// come from the template and which from the variant.
+	// Consumers read the flattened product rather than re-deriving which fields come from the
+	// template and which from the variant.
 	err = engine.DefineAction(drif.DynamicActionDefinition{
 		ActionName:  "get_effective",
 		ActionType:  drif.ActionTypeRead,
@@ -54,12 +54,10 @@ func defineProductVariantActions(engine drif.DynamicResourceEngine) error {
 	return errors.Wrap(err, "failed to define get_effective")
 }
 
-// processGetEffectiveProduct flattens a variant together with its template.
-//
-// Unlike the template engine's actions it cannot read the capability off input.ResourceService:
-// the derived service is installed on the *template* engine, so this engine's service is the
-// plain default. It resolves the capability from the container instead. This is the one place
-// where "one derived service per engine" does not fit a capability spanning two resources.
+// processGetEffectiveProduct flattens a variant together with its template. It cannot read the
+// capability off input.ResourceService: the derived service is installed on the *template* engine,
+// so this engine's service is the plain default, and the capability is resolved from the container
+// instead.
 func processGetEffectiveProduct(
 	ctx corectx.Context, input drif.ProcessInput,
 ) (*drif.ActionResult, error) {
@@ -108,10 +106,9 @@ func validateVariantCreate(engine drif.DynamicResourceEngine) drif.ActionValidat
 	}
 }
 
-// validateVariantUpdate re-checks uniqueness when the combination changes.
-//
-// An update is partial, so the submitted fields are overlaid onto the stored record and the
-// result is validated, rather than only what was sent.
+// validateVariantUpdate re-checks uniqueness when the combination changes. An update is partial,
+// so the submitted fields are overlaid onto the stored record and the result validated, rather
+// than only what was sent.
 func validateVariantUpdate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
 		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
@@ -131,11 +128,9 @@ func validateVariantUpdate(engine drif.DynamicResourceEngine) drif.ActionValidat
 }
 
 // assertNotReparented refuses an update that moves a variant to another template.
-//
-// product_template_id is declared no_update, and the schema validator honours that by dropping the
-// field from the write — which answers 200 as though the change had been applied. Re-parenting
-// would silently reinterpret every transaction already referencing the variant, so it is reported
-// rather than ignored. See BR §6.1.
+// product_template_id is declared no_update and the schema validator honours that by dropping the
+// field, answering 200 as though the change had applied. Re-parenting would silently reinterpret
+// every transaction already referencing the variant, so it is reported rather than ignored.
 func assertNotReparented(submitted *models.ProductVariant, stored *models.ProductVariant, vErrs *ft.ClientErrors) {
 	newTemplateId := derefId(submitted.GetProductTemplateId())
 	if newTemplateId == "" || newTemplateId == derefId(stored.GetProductTemplateId()) {
@@ -159,11 +154,10 @@ func mergeVariantForValidation(submitted *models.ProductVariant, stored *models.
 	return models.NewProductVariantFrom(merged)
 }
 
-// assertUniqueCombination enforces BR-PROD-VAR-002 and AC-PROD-012: one template never holds two
-// variants with the same attribute combination. selfId excludes the record being updated.
-//
-// The database carries the same composite unique, so this exists to turn a constraint violation
-// into a field-level business error the UI can show, rather than a 500.
+// assertUniqueCombination enforces that one template never holds two variants with the same
+// attribute combination; selfId excludes the record being updated. The database carries the same
+// composite unique, so this exists to turn a constraint violation into a field-level business
+// error the UI can show rather than a 500.
 func assertUniqueCombination(
 	ctx corectx.Context,
 	engine drif.DynamicResourceEngine,

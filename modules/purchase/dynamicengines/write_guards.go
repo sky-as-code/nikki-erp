@@ -9,23 +9,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// Two of this module's resources are not client-writable, and both close the write surface the same
-// way: the action stays defined and refuses, rather than being removed.
-//
-// That distinction matters to whoever hits it. A removed action answers 404, which reads as a wrong
-// URL and sends someone looking for a typo; a refused one answers 400 naming the reason and what to
-// do instead. The inventory module settled on the same approach for its derived resources.
+// Two of this module's resources are not client-writable. The action stays defined and refuses
+// rather than being removed, so the caller gets a 400 naming the reason instead of a 404 that reads
+// as a wrong URL.
 
-// defineAuditEventGuards closes the audit trail to clients.
-//
-// An audit event is written by the audit helper inside the same transaction as the transition it
-// records, and by nothing else (PUR-R6). A client-written event would be a claim that something
-// happened, sitting in the same table as the events that did happen, with no way for a reader to
-// tell them apart — which destroys the value of the trail rather than adding to it.
-//
-// Update and delete are refused for the stronger reason that the record is immutable: an audit
-// trail someone can edit is not an audit trail. The schema says the same thing by extending the
-// readonly auditable mixin, so there is no updated_at for a change to be recorded in.
+// defineAuditEventGuards closes the audit trail to clients. An audit event is written only by the
+// audit helper, inside the same transaction as the transition it records; a client-written one
+// would be indistinguishable from a real event. Update and delete are refused because the record is
+// immutable — the schema extends the readonly auditable mixin, so there is no updated_at.
 func defineAuditEventGuards(engine drif.DynamicResourceEngine) error {
 	return attachWriteGuards(engine, models.AuditEventSchemaName, rejectAuditEventWrite)
 }
@@ -42,15 +33,10 @@ func rejectAuditEventWrite(
 	return nil
 }
 
-// defineSourcingGroupGuards closes direct creation and deletion of a sourcing group.
-//
-// The group is a technical record with no meaning of its own (BR 28): it exists to say that several
-// orders are alternatives for the same requirement. It is created by the create_alternative action
-// and reaped when it drops to one order or fewer, so a hand-made group would be an empty container
-// that nothing reaps, and a hand-deleted one would strand the orders that pointed at it.
-//
-// Update is left open: the group carries no fields of its own beyond the base ones, so there is
-// nothing meaningful to forbid, and refusing an update that changes nothing would only be noise.
+// defineSourcingGroupGuards closes direct creation and deletion of a sourcing group. The group is
+// created by create_alternative and reaped when it drops to one order or fewer, so a hand-made one
+// would be an empty container nothing reaps and a hand-deleted one would strand its orders. Update
+// stays open: the group carries no fields of its own beyond the base ones.
 func defineSourcingGroupGuards(engine drif.DynamicResourceEngine) error {
 	return attachWriteGuards(engine, models.SourcingGroupSchemaName, rejectSourcingGroupWrite,
 		drif.ActionCreate, drif.ActionDelete)

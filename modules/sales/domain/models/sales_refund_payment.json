@@ -1,0 +1,162 @@
+{
+	"name": "sales_refund_payment",
+	"label": "sales_refund_payment.label",
+	"table_name": "sales_refund_payments",
+	"should_build_db": true,
+	"record_label_field": "sales_return_id",
+	"default_search_fields": [
+		"sales_return_id",
+		"status"
+	],
+	"search_indexes": [
+		{
+			"index_name": "sales_refund_pays_tid_return",
+			"fields": [
+				"sales_return_id"
+			]
+		},
+		{
+			"index_name": "sales_refund_pays_tid_orig",
+			"fields": [
+				"original_sales_payment_id"
+			]
+		},
+		{
+			"index_name": "sales_refund_pays_tid_status",
+			"fields": [
+				"status"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "sales_return_id",
+			"label": "fields.sales_return_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The return this refund settles."
+			}
+		},
+		{
+			"name": "original_sales_payment_id",
+			"label": "fields.original_sales_payment_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The payment being given back. MANDATORY (BR 63): money returns by the route it arrived, so a refund that named no original payment would be an unexplained outflow. It also caps the amount — no single payment can refund more than it captured."
+			}
+		},
+		{
+			"name": "amount",
+			"label": "fields.amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "How much goes back through this particular payment. Capped at that payment's captured amount; the split across several payments is proportional to what each captured unless the caller supplies an explicit allocation, which is validated against the same caps (D-33)."
+			}
+		},
+		{
+			"name": "currency_code",
+			"label": "fields.currency_code",
+			"data_type": {
+				"type": "string",
+				"min": 3,
+				"max": 3
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The currency of the refund, which is the currency of the original payment. Refunding in another currency would make the pair impossible to reconcile."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"pending",
+					"processing",
+					"completed",
+					"failed"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"description": {
+				"en-US": "Where this refund leg has reached. Only 'completed' counts as money actually returned; a 'pending' one is a promise the provider has not yet honoured, and treating it as done would report a customer repaid who is not."
+			}
+		},
+		{
+			"name": "provider_reference",
+			"label": "fields.provider_reference",
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 100
+			},
+			"description": {
+				"en-US": "The payment provider's own handle for the refund. The only durable link to what happened on their side, so it is stored rather than re-derived."
+			}
+		},
+		{
+			"name": "failure_reason",
+			"label": "fields.failure_reason",
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 500
+			},
+			"description": {
+				"en-US": "Why the provider refused, in their words. Kept so a retry has something to act on."
+			}
+		},
+		{
+			"name": "completed_at",
+			"label": "fields.completed_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the money actually went back."
+			}
+		}
+	],
+	"edges_to": [
+		{
+			"edge": "sales_return",
+			"label": {
+				"en-US": "Sales return"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_return",
+			"key_map": {
+				"sales_return_id": "id"
+			},
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "original_payment",
+			"label": {
+				"en-US": "Original payment"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_payment",
+			"key_map": {
+				"original_sales_payment_id": "id"
+			},
+			"on_delete": "NO ACTION"
+		}
+	]
+}

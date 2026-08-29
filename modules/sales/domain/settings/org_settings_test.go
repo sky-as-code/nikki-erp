@@ -9,9 +9,8 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
-// A settings schema describes values; it must not own a table. PrimaryKeys is populated only by
-// populateDbMetadata, which runs only under ShouldBuildDb, so an empty one is the check. The
-// settings module refuses a registration that fails this, so getting it wrong fails the boot.
+// A settings schema describes values and must not own a table. PrimaryKeys is populated only under
+// ShouldBuildDb, so an empty one is the check.
 func TestOrgSettingsSchema_IsMetadataOnly(t *testing.T) {
 	schema := OrgSettingsSchemaBuilder().Build()
 
@@ -20,8 +19,8 @@ func TestOrgSettingsSchema_IsMetadataOnly(t *testing.T) {
 	assert.Empty(t, schema.TableName())
 }
 
-// The schema name is the contract with the settings module and with the frontend, which both key
-// off the string rather than off this package.
+// The schema name is the contract with the settings module and the frontend, which key off the
+// string rather than this package.
 func TestOrgSettingsSchema_Name(t *testing.T) {
 	schema := OrgSettingsSchemaBuilder().Build()
 
@@ -29,8 +28,8 @@ func TestOrgSettingsSchema_Name(t *testing.T) {
 	assert.Equal(t, "sales_org_settings", schema.Name())
 }
 
-// Every setting the plan names must be present. A missing one is not a compile error anywhere —
-// the constant would still exist and the reader would silently fall back to its default forever.
+// Every declared setting must be present: a missing one is no compile error, and the reader would
+// silently fall back to its default forever.
 func TestOrgSettingsSchema_DeclaresEverySetting(t *testing.T) {
 	schema := OrgSettingsSchemaBuilder().Build()
 
@@ -52,12 +51,9 @@ func TestOrgSettingsSchema_DeclaresEverySetting(t *testing.T) {
 	assert.Len(t, schema.Fields(), 10, "a field added without a constant is unreachable by name")
 }
 
-// The settings that change what money MEANS must not be overridable.
-//
-// Absent metadata reads as overridable, so a dropped entry would not fail anything — it would
-// quietly let two organizations round to different scales, producing totals that cannot be added
-// together in a consolidated report, or apply different tax rates to the same product, producing
-// fiscal documents that disagree about what was owed.
+// The settings that change what money MEANS must not be overridable. Absent metadata reads as
+// overridable, so a dropped entry would fail nothing and quietly let two organizations round to
+// different scales or tax the same product differently.
 func TestOrgSettingsSchema_MonetarySettingsForbidOverride(t *testing.T) {
 	schema := OrgSettingsSchemaBuilder().Build()
 
@@ -77,9 +73,8 @@ func TestOrgSettingsSchema_MonetarySettingsForbidOverride(t *testing.T) {
 	}
 }
 
-// The five genuine per-organization policies must stay overridable, and must say so explicitly
-// rather than relying on the absent-means-true default — an explicit true is a decision, an
-// omission is an oversight, and they read identically at runtime.
+// The genuine per-organization policies must stay overridable and say so explicitly: an omission
+// and a deliberate true read identically at runtime.
 func TestOrgSettingsSchema_PolicySettingsAllowOverride(t *testing.T) {
 	schema := OrgSettingsSchemaBuilder().Build()
 
@@ -100,19 +95,14 @@ func TestOrgSettingsSchema_PolicySettingsAllowOverride(t *testing.T) {
 	}
 }
 
-// The Go defaults and the JSON defaults must agree.
-//
-// They are deliberately duplicated: the JSON default governs what an administrator sees in the
-// settings UI, and the Go one governs what the code does when the settings read fails. That is a
-// real need, but it is also two copies of one number — so this test is what stops them drifting.
-//
-// rounding_scale and default_tax_rate are absent by design and are checked separately below.
+// The Go defaults and the JSON defaults are deliberately duplicated (UI vs. read-failure fallback);
+// this test stops the two copies drifting. rounding_scale and default_tax_rate are absent by design
+// and checked separately below.
 func TestDefaultsAgreeWithSchema(t *testing.T) {
 	schema := OrgSettingsSchemaBuilder().Build()
 
-	// The JSON default arrives as whatever encoding/json chose, so a number is a float64 however it
-	// was written. The comparison is therefore against that shape rather than against int32 - which
-	// is also exactly the conversion ResolveSalesPolicy has to make at runtime.
+	// The JSON default arrives as a float64 however it was written, so the comparison is against that
+	// shape — the same conversion ResolveSalesPolicy makes at runtime.
 	cases := map[string]any{
 		OrgSettingMaxPaymentMethodsPerBill: float64(DefaultMaxPaymentMethodsPerBill),
 		OrgSettingReturnWindowDays:         float64(DefaultReturnWindowDays),
@@ -132,12 +122,9 @@ func TestDefaultsAgreeWithSchema(t *testing.T) {
 	}
 }
 
-// rounding_scale deliberately carries NO default_value, and its floor is 1 rather than 0.
-//
-// ModelField.Validate treats a numeric zero as an ABSENT value platform-wide, so a declared
-// default of 0 would read back as "unset" and a min of 0 would reject nothing. The enforceable
-// range therefore starts at 1, and zero — whole-dong rounding for VND — lives in Go as
-// DefaultRoundingScale, applied when the setting is unset. This test pins that reasoning so a
+// rounding_scale deliberately carries NO default_value and its floor is 1: ModelField.Validate
+// treats a numeric zero as ABSENT platform-wide, so a declared 0 would read back as unset and a min
+// of 0 would reject nothing. Zero lives in Go as DefaultRoundingScale. This test pins that so a
 // later edit "fixing" the missing default reintroduces the trap knowingly.
 func TestRoundingScaleHasNoDefaultAndAFloorOfOne(t *testing.T) {
 	schema := OrgSettingsSchemaBuilder().Build()
@@ -159,9 +146,8 @@ func TestRoundingScaleHasNoDefaultAndAFloorOfOne(t *testing.T) {
 		"four places matches the internal monetary scale of D-01")
 }
 
-// default_tax_rate carries no default either, and that is D-38 rather than an oversight: there is
-// no tax master anywhere in the codebase, so the resolver returns zero and this setting exists as
-// the manual override for an organization that must charge a flat rate before one is built.
+// default_tax_rate carries no default either, deliberately: the resolver returns zero and the
+// setting survives only as a manual flat-rate override.
 func TestDefaultTaxRateHasNoDefaultAndIsAFraction(t *testing.T) {
 	schema := OrgSettingsSchemaBuilder().Build()
 

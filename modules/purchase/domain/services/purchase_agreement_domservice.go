@@ -15,17 +15,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// The agreement lifecycle (BR §32-§46): confirm, close, cancel, and create_rfq.
+// The agreement lifecycle: confirm, close, cancel and create_rfq. An agreement is a standing
+// arrangement with a vendor — a blanket order at agreed prices, or a reusable template — that
+// orders are drawn against; it is not itself an order.
 //
-// An agreement is a standing arrangement with a vendor — a blanket order committing to quantities
-// at agreed prices, or a reusable template with no commitment attached. Orders are drawn against
-// it; it is not itself an order.
-//
-// Unlike purchase_order, the agreement IS archivable. Archiving and restoring go through the
-// engine's built-in set_archived rather than actions of their own: restore is the same power
-// applied in reverse, so splitting them would let a role archive agreements it could not bring back.
+// Unlike purchase_order the agreement is archivable, through the engine's built-in set_archived
+// rather than actions of its own: separate archive and restore actions would let a role archive
+// agreements it could not bring back.
 
-// NewPurchaseAgreementDomainService derives the agreement service from the engine's default one.
 func NewPurchaseAgreementDomainService(
 	base drif.DynamicResourceService, references *OrderReferenceValidator,
 ) *PurchaseAgreementDomainServiceImpl {
@@ -40,11 +37,8 @@ type PurchaseAgreementDomainServiceImpl struct {
 
 var _ drif.DynamicResourceService = (*PurchaseAgreementDomainServiceImpl)(nil)
 
-// Create stamps the fields a client may not choose, mirroring the order's rule.
-//
-// The code and the status are both no_update and both server-owned: an agreement that could be
-// created `confirmed` would be a commitment nobody made, and one whose code a client picked could
-// collide with or impersonate another.
+// Create stamps code and status server-side; both are no_update and a client may not choose either,
+// or an agreement could be created already confirmed, or with a code that collides with another.
 func (this *PurchaseAgreementDomainServiceImpl) Create(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
@@ -60,9 +54,8 @@ func (this *PurchaseAgreementDomainServiceImpl) Create(
 	prepared[models.AgreementFieldCode] = code
 	prepared[models.AgreementFieldStatus] = string(models.AgreementStatusDraft)
 
-	// The vendor is OPTIONAL on an agreement where it is required on an order: a purchase template
-	// is a reusable skeleton that may exist before anyone has chosen who to buy from. When one is
-	// named it still has to be orderable.
+	// The vendor is optional on an agreement, unlike on an order: a template may exist before
+	// anyone has chosen who to buy from. A named vendor still has to be orderable.
 	if this.references != nil && stringOf(prepared, models.AgreementFieldVendorId) != "" {
 		vErrs := ft.NewClientErrors()
 		if err := this.references.PrepareAgreement(ctx, prepared, vErrs); err != nil {
@@ -76,7 +69,7 @@ func (this *PurchaseAgreementDomainServiceImpl) Create(
 	return this.DynamicResourceService.Create(ctx, prepared)
 }
 
-// Confirm makes the agreement live, so orders may be drawn against it (BR §38).
+// Confirm makes the agreement live, so orders may be drawn against it.
 func (this *PurchaseAgreementDomainServiceImpl) Confirm(
 	ctx corectx.Context, agreementId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -87,14 +80,10 @@ func (this *PurchaseAgreementDomainServiceImpl) Confirm(
 	})
 }
 
-// Close ends an agreement that has run its course (BR §42).
-//
-// The non-obvious part is the open-order guard. Closing an agreement with orders still open against
-// it would strand them: they reference terms that are no longer in force, and nothing would say
-// whether those terms still apply to the goods on their way. Cancel or confirm them first.
-//
-// The orders already CONFIRMED against it are untouched, and deliberately: closing says "no more
-// orders from here", not "the ones already placed are void".
+// Close ends an agreement that has run its course. It refuses while orders are still open against
+// it, which would strand them on terms no longer in force; confirm or cancel those first. Orders
+// already confirmed are deliberately left alone — closing stops new orders, it does not void
+// placed ones.
 func (this *PurchaseAgreementDomainServiceImpl) Close(
 	ctx corectx.Context, agreementId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -105,10 +94,8 @@ func (this *PurchaseAgreementDomainServiceImpl) Close(
 	})
 }
 
-// Cancel calls the agreement off (BR §43).
-//
-// It carries the same open-order guard as close, for the same reason: an order drawn against a
-// cancelled agreement quotes terms that were withdrawn.
+// Cancel calls the agreement off, with the same open-order guard as Close: an order drawn against
+// a cancelled agreement would quote withdrawn terms.
 func (this *PurchaseAgreementDomainServiceImpl) Cancel(
 	ctx corectx.Context, agreementId string, reason string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -194,10 +181,8 @@ func (this *PurchaseAgreementDomainServiceImpl) transitionAgreement(
 	return result, nil
 }
 
-// assertAgreementHasLines refuses to confirm an agreement that commits to nothing.
-//
-// A blanket order with no line commits to no quantity at no price, which is not an agreement any
-// vendor could act on. It is far more likely a half-filled form.
+// assertAgreementHasLines refuses to confirm an agreement with no lines: it commits to no quantity
+// at no price, and is far more likely a half-filled form.
 func assertAgreementHasLines(
 	ctx corectx.Context, agreement dmodel.DynamicFields,
 ) (*ft.ClientErrors, error) {
@@ -222,8 +207,7 @@ func assertAgreementHasLines(
 	return vErrs, nil
 }
 
-// assertNoOpenOrders refuses to close or cancel an agreement while orders are still open against
-// it (BR §42).
+// assertNoOpenOrders refuses to close or cancel an agreement while orders are open against it.
 func assertNoOpenOrders(
 	ctx corectx.Context, agreement dmodel.DynamicFields,
 ) (*ft.ClientErrors, error) {
@@ -249,19 +233,10 @@ func assertNoOpenOrders(
 	return vErrs, nil
 }
 
-// OrderedQuantities returns how much of each agreement line has been ordered (BR §41).
-//
-// It is DERIVED on read, never stored. The number changes whenever any referencing order is
-// confirmed or cancelled, so a stored copy would need invalidating from the order side — and the
-// day one of those paths forgot, the agreement would quietly under- or over-report its own
-// drawdown with nothing to reconcile against.
-//
-// Only CONFIRMED orders count. A draft RFQ is a question, not a commitment, and counting it would
-// show an agreement as drawn down by orders that may never be placed. A cancelled one is a
-// commitment that was withdrawn.
-//
-// The result is keyed by product variant rather than by line: an agreement line commits to a
-// quantity of a product, and an order drawn against the agreement names the product, not the line.
+// OrderedQuantities returns how much of each agreement line has been ordered. It is derived on
+// read and never stored, because the number changes whenever a referencing order is confirmed or
+// cancelled. Only confirmed orders count — a draft RFQ is not a commitment. The result is keyed by
+// product variant, not by line, because an order names the product rather than the agreement line.
 func OrderedQuantities(
 	ctx corectx.Context, agreementId string,
 ) (map[string]OrderedQuantity, error) {
@@ -293,9 +268,8 @@ func OrderedQuantities(
 			if variantId == "" {
 				continue
 			}
-			// The ORDERED quantity in the line's own unit, not the inventory one: the agreement
-			// commits to a quantity in a stated unit, and comparing against a converted number
-			// would compare two different things.
+			// The ordered quantity in the line's own unit, not the inventory one: the agreement
+			// commits to a quantity in a stated unit, so a converted number would not compare.
 			ordered[variantId] = OrderedQuantity{
 				Quantity: ordered[variantId].Quantity.Add(
 					decimalOf(line, models.PurchaseOrderLineFieldQuantity)),
@@ -306,8 +280,8 @@ func OrderedQuantities(
 	return ordered, nil
 }
 
-// OrderedQuantity is an amount with the unit it is expressed in. The unit travels with the number
-// because a quantity without one cannot be compared to anything.
+// OrderedQuantity is an amount together with the unit it is expressed in; the unit must travel with
+// the number, since a quantity without one cannot be compared to anything.
 type OrderedQuantity struct {
 	Quantity decimal.Decimal
 	UomId    string
@@ -366,16 +340,10 @@ func generateAgreementCode() (string, error) {
 	return "PA-" + *id, nil
 }
 
-// CreateRfq starts a new request for quotation from an agreement (BR §40).
-//
-// The agreement's lines become the order's lines, at the agreed quantities and prices — that is the
-// point of a blanket order, and of a template. What the new order does NOT inherit is the
-// agreement's status or history: it starts as an ordinary draft RFQ that happens to have been
-// pre-filled, and it must be confirmed like any other.
-//
-// Only a CONFIRMED agreement may raise one. A draft has not been agreed with anyone, so an order
-// quoting its prices would quote terms nobody committed to; a closed or cancelled one has been
-// withdrawn.
+// CreateRfq starts a request for quotation from an agreement, copying its lines at the agreed
+// quantities and prices. The new order inherits none of the agreement's status or history: it is an
+// ordinary pre-filled draft RFQ and must be confirmed like any other. Only a confirmed agreement
+// may raise one, since a draft, closed or cancelled agreement's prices commit nobody.
 func (this *PurchaseAgreementDomainServiceImpl) CreateRfq(
 	ctx corectx.Context, agreementId string, orderService *PurchaseOrderDomainServiceImpl,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
@@ -435,10 +403,8 @@ func (this *PurchaseAgreementDomainServiceImpl) CreateRfq(
 	return result, nil
 }
 
-// orderFromAgreement carries the agreement's terms onto the new order.
-//
-// agreement_id is set, which is what makes the order countable against the agreement's drawdown
-// (BR §41) and what the close guard looks for.
+// orderFromAgreement carries the agreement's terms onto the new order. It sets agreement_id, which
+// is what makes the order count against the drawdown and what the close guard looks for.
 func orderFromAgreement(agreement dmodel.DynamicFields, agreementId string) dmodel.DynamicFields {
 	params := dmodel.DynamicFields{
 		models.PurchaseOrderFieldAgreementId: agreementId,
@@ -485,8 +451,8 @@ func (this *PurchaseAgreementDomainServiceImpl) copyAgreementLines(
 			models.PurchaseOrderLineFieldQuantity:         line[models.AgreementLineFieldQuantity],
 			models.PurchaseOrderLineFieldUnitPrice:        line[models.AgreementLineFieldUnitPrice],
 			models.PurchaseOrderLineFieldDescription:      line[models.AgreementLineFieldDescription],
-			// An agreement carries no tax or discount, so the new line starts with neither. Tax is
-			// an input the buyer supplies per order (D9), not a term of the agreement.
+			// An agreement carries no tax or discount: tax is an input the buyer supplies per
+			// order, not a term of the agreement.
 			models.PurchaseOrderLineFieldDiscountPercent: decimal.Zero,
 			models.PurchaseOrderLineFieldTaxAmount:       decimal.Zero,
 		}

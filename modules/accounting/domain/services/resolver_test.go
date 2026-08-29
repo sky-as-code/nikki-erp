@@ -7,10 +7,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 )
 
-// Test configurations are built as raw rows rather than through the model builders, because the
-// point of most of these cases is a configuration the builders would refuse — two published
-// versions covering one date, a group with no components, a component cycle. Those are exactly the
-// states the resolver has to survive when a row reaches the database around the validation.
+// Test configurations are built as raw rows rather than through the model builders, because most of
+// these cases are configurations the builders would refuse: two published versions covering one
+// date, a group with no components, a component cycle. The resolver must survive them anyway.
 
 func taxRow(id, code string) dmodel.DynamicFields {
 	return dmodel.DynamicFields{
@@ -86,8 +85,8 @@ func TestResolveTaxReadsTheEffectiveVersions(t *testing.T) {
 	}
 }
 
-// AC: a tax with no definition in force on the date is unresolved, and says so specifically — a
-// missing definition is a different fault from a missing rate and the caller must be able to tell.
+// A tax with no definition in force on the date is unresolved and says so specifically: a missing
+// definition is a different fault from a missing rate.
 func TestResolveTaxOutsideEffectivePeriodIsUnresolved(t *testing.T) {
 	repos := reposFor(
 		newFakeRepo(taxRow("t1", "VAT10")),
@@ -106,9 +105,8 @@ func TestResolveTaxOutsideEffectivePeriodIsUnresolved(t *testing.T) {
 	}
 }
 
-// BR-TAX-ESS-SUP-006 forbids breaking a tie by taking the newest: two published versions covering
-// one date means the configuration is corrupt, and silently picking one would charge a customer
-// under a configuration nobody chose.
+// A tie is never broken by taking the newest: two published versions covering one date means the
+// configuration is corrupt, and picking one would charge under a configuration nobody chose.
 func TestTwoEffectiveDefinitionsAreAmbiguousNotResolved(t *testing.T) {
 	repos := reposFor(
 		newFakeRepo(taxRow("t1", "VAT10")),
@@ -176,8 +174,8 @@ func TestUnknownTaxIsReportedNotPanicked(t *testing.T) {
 	}
 }
 
-// A "none" calculation carries a legal treatment and no rate by construction, so the resolver must
-// not go looking for one — an exempt tax with no rate version is correct, not broken.
+// A "none" calculation carries a legal treatment and no rate, so an exempt tax with no rate version
+// is correct rather than broken.
 func TestNoneCalculationNeedsNoRate(t *testing.T) {
 	definition := definitionRow("dv1", "t1", "2025-01-01", "", models.CalculationNone)
 	definition[models.TaxDefinitionVersionFieldTaxTreatment] = string(models.TaxTreatmentExempt)
@@ -241,8 +239,8 @@ func TestGroupTaxResolvesItsComponentsInSequence(t *testing.T) {
 	if len(resolved.Components) != 2 {
 		t.Fatalf("expected 2 components, got %d", len(resolved.Components))
 	}
-	// The rows were supplied out of order on purpose: the database guarantees no ordering, and a
-	// compound chain is order-dependent, so the resolver has to sort them.
+	// Supplied out of order on purpose: the database guarantees no ordering and a compound chain is
+	// order-dependent, so the resolver has to sort.
 	if resolved.Components[0].TaxId != "c1" || resolved.Components[1].TaxId != "c2" {
 		t.Fatalf("expected components sorted by sequence, got %s then %s",
 			resolved.Components[0].TaxId, resolved.Components[1].TaxId)
@@ -259,8 +257,8 @@ func TestGroupTaxResolvesItsComponentsInSequence(t *testing.T) {
 	}
 }
 
-// A group with no components is a configuration error validation should have refused. The resolver
-// reports it rather than returning a group that would silently compute no tax at all.
+// A group with no components is reported rather than returned as a group that would silently
+// compute no tax.
 func TestGroupWithNoComponentsIsInvalid(t *testing.T) {
 	repos := reposFor(
 		newFakeRepo(taxRow("g1", "GROUP")),
@@ -279,8 +277,8 @@ func TestGroupWithNoComponentsIsInvalid(t *testing.T) {
 	}
 }
 
-// A component cycle would recurse forever. Validation rejects one, so reaching the depth limit means
-// a row was written around that guard — the resolver must refuse rather than take the process down.
+// A component cycle would recurse forever. Reaching the depth limit means a row was written around
+// the validation guard, so the resolver refuses rather than taking the process down.
 func TestComponentCycleIsRefusedRatherThanLooping(t *testing.T) {
 	repos := &TaxRepos{
 		Tax: newFakeRepo(taxRow("g1", "GROUP")),
@@ -326,8 +324,7 @@ func TestDraftVersionsAreNotEffective(t *testing.T) {
 	}
 }
 
-// A withdrawn version is retired from new determination but stays readable for audit — so it must
-// not price a new transaction either.
+// A withdrawn version stays readable for audit but must not price a new transaction.
 func TestWithdrawnVersionsAreNotEffective(t *testing.T) {
 	withdrawn := definitionRow("dv1", "t1", "2025-01-01", "", models.CalculationPercentage)
 	withdrawn[models.TaxDefinitionVersionFieldLifecycleStatus] = string(models.LifecycleWithdrawn)
@@ -346,8 +343,8 @@ func TestWithdrawnVersionsAreNotEffective(t *testing.T) {
 	}
 }
 
-// Effective bounds are inclusive at both ends, and the boundary day is exactly where an off-by-one
-// shows up: a rate change takes effect at midnight, so the last covered day must still resolve.
+// Effective bounds are inclusive at both ends: a rate change takes effect at midnight, so the last
+// covered day must still resolve.
 func TestEffectivePeriodBoundsAreInclusive(t *testing.T) {
 	build := func() *TaxRepos {
 		return reposFor(
@@ -370,9 +367,8 @@ func TestEffectivePeriodBoundsAreInclusive(t *testing.T) {
 	}
 }
 
-// AC-TAX-35: the same request against the same configuration must produce the same answer. The
-// resolver reads several rows per tax, and a map iteration leaking into the result would show up
-// as an occasional difference here rather than as an obvious failure.
+// The same request against the same configuration must produce the same answer; a map iteration
+// leaking into the result would show up as an occasional difference here.
 func TestResolutionIsDeterministic(t *testing.T) {
 	build := func() *TaxRepos {
 		return reposFor(

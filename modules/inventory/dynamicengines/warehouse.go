@@ -4,13 +4,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// The Warehouse Management resources: the warehouse itself, the resupply topology between
-// warehouses, the storage policy a location may carry, and the rules deciding where arriving goods
-// should be put.
+// The Warehouse Management resources: the warehouse, the resupply topology between warehouses, the
+// storage policy a location may carry, and the putaway rules.
 //
-// All four are configuration. None of them changes a quantity, and the operations that look like
-// they might — reconfiguring a flow, declaring a supply relation, suggesting a putaway
-// destination — deliberately do not: the Stock movement engine is the only thing that moves goods.
+// All four are configuration. None changes a quantity — not even the operations that look like
+// they might, such as reconfiguring a flow or suggesting a putaway destination. The Stock movement
+// engine is the only thing that moves goods.
 
 func warehouseEngineSpec() engineSpec {
 	return engineSpec{

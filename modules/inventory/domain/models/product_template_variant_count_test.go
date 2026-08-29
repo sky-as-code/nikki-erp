@@ -11,10 +11,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 )
 
-// variant_count is the module's adoption of the SQL-computed aggregate kind: one correlated
-// COUNT subquery over the template's "variants" inverse edge, opt-in by explicit projection.
-// These tests pin the resolved plan and the emitted SQL against the REAL schema builders, so a
-// schema edit that would silently change the query shape fails here first.
+// variant_count is one correlated COUNT subquery over the template's "variants" inverse edge,
+// opt-in by explicit projection. These tests pin the resolved plan and emitted SQL against the real
+// schema builders so a schema edit that changes the query shape fails here first.
 
 func TestVariantCount_ResolvesAsAggregatePlan(t *testing.T) {
 	finalizedVariantSchema(t)

@@ -99,17 +99,11 @@ func validateRateVersionDelete(
 	return nil
 }
 
-// assertRateFieldsExclusive rejects a rate version that is both a percentage and a fixed amount,
-// or neither.
-//
-// The two describe incompatible arithmetic — one multiplies a base, the other multiplies a
-// quantity — so a row carrying both leaves the engine no principled way to choose, and a row
-// carrying neither resolves to no charge at all while looking like a configured rate.
-//
-// Which of the two is required depends on the tax's calculation type, which lives on the
-// definition version rather than here. Checking that pairing needs the effective definition at
-// this rate's start date and belongs to the publish-time validation; what this function can settle
-// on its own is that exactly one of the two shapes is present.
+// assertRateFieldsExclusive rejects a rate version that is both a percentage and a fixed amount, or
+// neither. The two describe incompatible arithmetic: a percentage multiplies a base, a fixed amount
+// multiplies a quantity. Which one is required depends on the calculation type, which lives on the
+// definition version, so that pairing is checked at publish time; this settles only that exactly one
+// shape is present.
 func assertRateFieldsExclusive(version *models.TaxRateVersion, vErrs *ft.ClientErrors) {
 	hasRate := version.GetRate() != nil
 	hasFixed := version.GetFixedAmount() != nil
@@ -141,12 +135,9 @@ func assertRateFieldsExclusive(version *models.TaxRateVersion, vErrs *ft.ClientE
 	}
 }
 
-// assertNoPublishedRateOverlap is the rate-version counterpart of assertNoPublishedOverlap.
-//
-// This is TAX-SUP-INV-06 made enforceable: a tax_date must resolve to exactly one published rate.
-// Without it the engine would face two candidates and have to pick, and BR-TAX-ESS-SUP-006
-// explicitly forbids resolving that by taking the newest row — an arbitrary tie-break is how a
-// customer ends up charged 10% on a document that says 8%.
+// assertNoPublishedRateOverlap is the rate-version counterpart of assertNoPublishedOverlap. A
+// tax_date must resolve to exactly one published rate; a tie broken by taking the newest row is how
+// a customer ends up charged 10% on a document that says 8%.
 func assertNoPublishedRateOverlap(
 	ctx corectx.Context,
 	engine drif.DynamicResourceEngine,

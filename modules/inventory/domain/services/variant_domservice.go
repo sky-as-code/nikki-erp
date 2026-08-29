@@ -12,10 +12,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// engineFor resolves another resource's engine from the registry.
-//
-// It is a variable rather than a plain function so that a test can supply its own engines: the
-// registry is a package singleton populated during Init, which a unit test has no way to build.
+// engineFor resolves another resource's engine from the registry. It is a variable so a test can
+// substitute its own engines: the registry is a package singleton populated during Init, which a
+// unit test cannot build.
 var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
 	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
 	if !ok {
@@ -25,28 +24,23 @@ var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
 }
 
 // EngineFor exposes the registry lookup to the dynamicengines package, whose action callbacks
-// receive only their own engine but need another resource's repository to apply a cross-schema
-// rule. It delegates to engineFor so a test's substitution is honoured here too.
+// receive only their own engine but need another resource's repository. It delegates to engineFor
+// so a test's substitution is honoured here too.
 func EngineFor(schemaName string) (drif.DynamicResourceEngine, error) {
 	return engineFor(schemaName)
 }
 
-// NewProductVariantDomainService derives the variant service from the engine's default one.
+// NewProductVariantDomainService derives the variant service from the engine's default one, which
+// it embeds so built-in actions keep running unchanged. Installed with Engine.SetResourceService.
 //
-// base is the Product Variant engine's own resource service, which this type embeds: every
-// built-in action keeps running through the default implementation, and the archive handling
-// below is layered on top. The result is installed with Engine.SetResourceService.
-//
-// The template_* fields need no handling here anymore: product_variant.json declares each as a
-// related computed field (template_name copies template.name, and so on), and the engine's
-// computed-field layer batches the template read and fills them on every read path.
+// The template_* fields are declared as related computed fields in product_variant.json, and the
+// engine's computed-field layer batches the template read and fills them on every read path.
 func NewProductVariantDomainService(base drif.DynamicResourceService) *ProductVariantDomainServiceImpl {
 	return &ProductVariantDomainServiceImpl{DynamicResourceService: base}
 }
 
-// ProductVariantDomainServiceImpl carries the variant's domain behaviors: the archive cascade
-// kept in step with the owning template (below) and the read services in
-// variant_read_service.go.
+// ProductVariantDomainServiceImpl carries the variant's domain behaviors: the archive cascade kept
+// in step with the owning template, and the read services.
 type ProductVariantDomainServiceImpl struct {
 	drif.DynamicResourceService
 }
@@ -54,18 +48,15 @@ type ProductVariantDomainServiceImpl struct {
 var _ drif.DynamicResourceService = (*ProductVariantDomainServiceImpl)(nil)
 
 // SetArchived archives the variant, stamps why it was archived, and brings its template in step.
-//
-// Both follow-ups must happen after the variant row is written, which is why they live here rather
-// than in the engine's AfterValidationSuccess hook: that hook runs before MainProcess, so the
-// "are any variants left?" count would still see this variant unarchived and never archive the
-// template. See BR §8.9, BR-PROD-VAR-006 and BR-PROD-VAR-007.
+// Both follow-ups must run AFTER the variant row is written, which is why they are not in the
+// engine's AfterValidationSuccess hook: that runs before MainProcess, so the "are any variants
+// left?" count would still see this variant unarchived and never archive the template.
 func (this *ProductVariantDomainServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
-	// The stock guard runs before the write, not after it. Archiving must never be a way to make
-	// stock disappear: a variant still holding goods, owing them to a reservation, or named by
-	// work in flight is refused outright, and nothing about its stock is touched either way
-	// (CR §14.1, §14.4, PROD-INT-INV-013..016).
+	// The stock guard runs before the write. Archiving must never make stock disappear: a variant
+	// still holding goods, owing them to a reservation, or named by work in flight is refused
+	// outright, and nothing about its stock is touched either way.
 	if guarded, err := guardVariantStockUsage(ctx, params); err != nil || guarded != nil {
 		return guarded, err
 	}
@@ -83,8 +74,8 @@ func (this *ProductVariantDomainServiceImpl) SetArchived(
 	}
 
 	// The stamp is a second write, so it supersedes the etag the archive produced. Reporting the
-	// archive's stale one would have the caller's next request rejected as a concurrent
-	// modification by a change this same call made.
+	// archive's stale etag would have the caller's next request rejected as a concurrent modification
+	// by a change this same call made.
 	stampEtag, err := this.stampArchiveSource(ctx, variantId, *archived)
 	if err != nil {
 		return nil, err
@@ -103,10 +94,9 @@ func (this *ProductVariantDomainServiceImpl) SetArchived(
 	return result, nil
 }
 
-// stampArchiveSource records that this archive was the user's own doing, so that a later template
-// unarchive restores only the variants its cascade took down and leaves this one archived.
-// Unarchiving clears the stamp again.
-// It returns the etag the stamp produced, which becomes the row's current one.
+// stampArchiveSource records that this archive was the user's own doing, so a later template
+// unarchive restores only the variants its cascade took down. It returns the etag the stamp
+// produced, which becomes the row's current one.
 func (this *ProductVariantDomainServiceImpl) stampArchiveSource(
 	ctx corectx.Context, variantId string, archived bool,
 ) (string, error) {
@@ -131,9 +121,9 @@ func (this *ProductVariantDomainServiceImpl) stampArchiveSource(
 	return string(result.Data.Etag), nil
 }
 
-// syncTemplateAvailability archives a template once its last selectable variant is gone, and
-// brings it back when a variant returns. A template with nothing transactable left must not keep
-// advertising itself as available.
+// syncTemplateAvailability archives a template once its last selectable variant is gone, and brings
+// it back when a variant returns: a template with nothing transactable must not advertise itself as
+// available.
 func (this *ProductVariantDomainServiceImpl) syncTemplateAvailability(
 	ctx corectx.Context, templateId string, archived bool,
 ) error {
@@ -157,9 +147,8 @@ func (this *ProductVariantDomainServiceImpl) syncTemplateAvailability(
 	if err != nil {
 		return err
 	}
-	// Written through the repository rather than the template's own set_archived action: this is
-	// the consequence of a cascade, and re-entering that action would run the template's cascade
-	// back over the variants that triggered it.
+	// Written through the repository, not the template's set_archived action: re-entering that action
+	// would run the template's cascade back over the variants that triggered it.
 	_, err = templateEngine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
 		models.ProductTemplateFieldId: templateId,
 		basemodel.FieldIsArchived:     archived,

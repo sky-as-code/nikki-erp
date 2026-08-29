@@ -9,40 +9,37 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// The direction of the movements a transfer of this type performs. See BR §4.2.1.2.
+// The direction of the movements a transfer of this type performs.
 const (
 	StockOperationCodeIncoming = "incoming"
 	StockOperationCodeOutgoing = "outgoing"
 	StockOperationCodeInternal = "internal"
 )
 
-// When stock is reserved for a transfer of this type. See BR §4.2.6.4.
+// When stock is reserved for a transfer of this type.
 const (
 	StockReservationMethodAtConfirmation     = "at_confirmation"
 	StockReservationMethodManual             = "manual"
 	StockReservationMethodBeforeScheduledDay = "before_scheduled_date"
 )
 
-// What happens to the quantity a partially-processed transfer did not deliver. See BR §4.2.3.11.
+// What happens to the quantity a partially-processed transfer did not deliver.
 const (
 	StockBackorderPolicyAsk    = "ask"
 	StockBackorderPolicyAlways = "always"
 	StockBackorderPolicyNever  = "never"
 )
 
-// Whether a transfer of this type may ship what it has, or must wait for all of it. See BR §4.2.1.2.
+// Whether a transfer of this type may ship what it has, or must wait for all of it.
 const (
 	StockShippingPolicyPartial   = "partial"
 	StockShippingPolicyAllAtOnce = "all_at_once"
 )
 
-// StockCorrectionOperationTypeCode is the `code` of the operation type that inventory adjustments
-// and scraps generate their movements through (decision F3).
-//
-// It is seeded once per org. Corrections resolve it by this code rather than taking one from the
-// caller, so that every correction in an org lands under the same recognisable type in the
-// Transfers list. The seed and this constant must agree exactly: a mismatch makes every correction
-// fail with "no internal operation type", which reads as a data problem rather than a typo.
+// StockCorrectionOperationTypeCode is the `code` of the operation type adjustments and scraps
+// generate their movements through. Seeded once per org; corrections resolve it by this code rather
+// than take one from the caller. The seed and this constant must agree exactly, or every correction
+// fails with "no internal operation type", which reads as a data problem rather than a typo.
 const StockCorrectionOperationTypeCode = "INV_CORRECTION"
 
 const (

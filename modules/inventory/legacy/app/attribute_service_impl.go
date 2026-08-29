@@ -33,7 +33,6 @@ func (this *ProductServiceImpl) CreateAttribute(ctx corectx.Context, cmd itAttr.
 			return attribute, nil
 		},
 		ValidateExtra: func(ctx corectx.Context, attribute *domain.Attribute, vErrs *ft.ClientErrors) error {
-			// Validate product and enum values
 			if err := this.validateAttributeProduct(ctx, attribute, vErrs, true); err != nil {
 				return err
 			}
@@ -50,7 +49,6 @@ func (this *ProductServiceImpl) UpdateAttribute(ctx corectx.Context, cmd itAttr.
 		DbRepoGetter: this.attrRepo,
 		Data:         cmd,
 		ValidateExtra: func(ctx corectx.Context, attribute *domain.Attribute, foundAttribute *domain.Attribute, vErrs *ft.ClientErrors) error {
-			// Validate product and enum values
 			if err := this.validateAttributeProduct(ctx, attribute, vErrs, false); err != nil {
 				return err
 			}
@@ -141,13 +139,11 @@ func (this *ProductServiceImpl) AttributeExists(ctx corectx.Context, query itAtt
 	})
 }
 
-// getNextSortIndex returns the next available sort index for a product's attributes
 func (this *ProductServiceImpl) getNextSortIndex(ctx corectx.Context, productId *model.Id) (int, error) {
 	if productId == nil {
 		return 0, nil
 	}
 
-	// Search for all attributes with the given product ID to find max sort index
 	graph := dmodel.NewSearchGraph().NewCondition(domain.AttrFieldProductId, dmodel.Equals, *productId)
 	searchResult, err := this.attrRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph:  graph,
@@ -164,7 +160,6 @@ func (this *ProductServiceImpl) getNextSortIndex(ctx corectx.Context, productId 
 		return 0, nil
 	}
 
-	// Find the maximum sort index
 	maxSortIndex := int64(0)
 	for _, item := range searchResult.Data.Items {
 		sortIndex := item.GetSortIndex()
@@ -176,7 +171,7 @@ func (this *ProductServiceImpl) getNextSortIndex(ctx corectx.Context, productId 
 	return int(maxSortIndex + 1), nil
 }
 
-// validateAttributeProduct validates that the product exists and is not archived (for create)
+// validateAttributeProduct checks the product exists; checkArchived also rejects an archived one.
 func (this *ProductServiceImpl) validateAttributeProduct(ctx corectx.Context, attribute *domain.Attribute, vErrs *ft.ClientErrors, checkArchived bool) error {
 	productId := attribute.GetProductId()
 	if productId == nil {
@@ -199,12 +194,10 @@ func (this *ProductServiceImpl) validateAttributeProduct(ctx corectx.Context, at
 	return nil
 }
 
-// validateAttributeEnumValues validates that enum values match the data type
 func (this *ProductServiceImpl) validateAttributeEnumValues(attribute *domain.Attribute, vErrs *ft.ClientErrors) {
 	isEnum := attribute.GetIsEnum()
 	dataType := attribute.GetDataType()
 
-	// Only validate if is_enum is true
 	if isEnum == nil || !*isEnum {
 		return
 	}
@@ -215,7 +208,6 @@ func (this *ProductServiceImpl) validateAttributeEnumValues(attribute *domain.At
 
 	switch *dataType {
 	case domain.AttributeDataTypeNumber:
-		// If data type is number and is enum, enum_value_number must not be nil
 		enumValueNumber := attribute.GetEnumValueNumber()
 		if len(enumValueNumber) == 0 {
 			vErrs.Append(*ft.NewValidationError(
@@ -226,7 +218,6 @@ func (this *ProductServiceImpl) validateAttributeEnumValues(attribute *domain.At
 		}
 
 	case domain.AttributeDataTypeText:
-		// If data type is text and is enum, enum_value_text must not be nil
 		enumValueText := attribute.GetEnumValueText()
 		if len(enumValueText) == 0 {
 			vErrs.Append(*ft.NewValidationError(

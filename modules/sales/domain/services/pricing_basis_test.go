@@ -12,12 +12,9 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
-// applyPricingBasis re-reads the product's base price and cost onto the pricing input.
-//
-// Every case here is about what happens when that read does NOT produce an answer, because the
-// decision to fail soft is the one worth pinning: an unavailable Inventory must leave the stored
-// price standing rather than refuse to reprice, and a till must keep working when another module
-// is slow or mid-restart.
+// applyPricingBasis re-reads the product's base price and cost onto the pricing input. Most cases
+// here pin the fail-soft decision: an unavailable Inventory leaves the stored price standing rather
+// than refusing to reprice, so a till keeps working when another module is slow.
 
 type stubBasis struct {
 	bases map[string]itProduct.PricingBasis
@@ -80,8 +77,7 @@ func TestPricingBasisFillsTheLine(t *testing.T) {
 	}
 }
 
-// A nil port is a supported deployment, not an error: without Inventory there is no product to
-// re-read. The line keeps the price it was stored with.
+// A nil port is a supported deployment, not an error; the line keeps the price it was stored with.
 func TestNilPortLeavesTheStoredPrice(t *testing.T) {
 	lines := []pricing.LineInput{basisLine()}
 
@@ -92,8 +88,7 @@ func TestNilPortLeavesTheStoredPrice(t *testing.T) {
 	}
 }
 
-// A failing read must not zero the price. Refusing to reprice would block a till over another
-// module's availability; pricing at zero would give the goods away.
+// A failing read must not zero the price, which would give the goods away.
 func TestFailedReadLeavesTheStoredPrice(t *testing.T) {
 	lines := []pricing.LineInput{basisLine()}
 
@@ -105,8 +100,8 @@ func TestFailedReadLeavesTheStoredPrice(t *testing.T) {
 	}
 }
 
-// A variant absent from the answer — deleted, or not visible — is left as it was, for the same
-// reason: it is still in the basket and the order still has to total.
+// A variant absent from the answer — deleted, or not visible — is left as it was: it is still in the
+// basket and the order still has to total.
 func TestUnknownVariantIsLeftAlone(t *testing.T) {
 	lines := []pricing.LineInput{basisLine()}
 
@@ -118,8 +113,8 @@ func TestUnknownVariantIsLeftAlone(t *testing.T) {
 	}
 }
 
-// HasCost false must leave HasCost false on the line. A FORMULA rule based on COST then declines
-// rather than pricing at zero — which matters because zero is a legitimate cost for a giveaway.
+// HasCost false must stay false, so a COST formula declines rather than pricing at zero — zero is a
+// legitimate cost for a giveaway.
 func TestAbsentCostIsNotReadAsZero(t *testing.T) {
 	lines := []pricing.LineInput{basisLine()}
 	svc := &stubBasis{bases: map[string]itProduct.PricingBasis{

@@ -14,19 +14,15 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// Whether a product may be archived.
-//
-// The line these draw is between stock that is still live and stock that is merely remembered. A
-// variant with goods on the shelf, a promise against them, or work in flight cannot go; one whose
-// only trace is completed movement can.
+// Whether a product may be archived: the line is between stock that is still live and stock that is
+// merely remembered.
 
 // stubUsageReader answers with fixed usage, so a test states the stock situation directly rather
 // than assembling quants and moves to imply it.
 type stubUsageReader struct {
 	usages map[string]itStock.ProductUsage
 
-	// batchCalls counts how many times the batch read was made, which is how the "checked as one
-	// set" property is asserted.
+	// batchCalls counts the batch reads, which is how the "checked as one set" property is asserted.
 	batchCalls int
 }
 
@@ -58,8 +54,8 @@ func usageWithOnHand(quantity int64) itStock.ProductUsage {
 	return itStock.ProductUsage{OnHandQuantity: decimal.NewFromInt(quantity)}
 }
 
-// TS-PROD-10: a variant still holding stock cannot be archived, and archiving generates no
-// movement to make it go away.
+// A variant still holding stock cannot be archived, and archiving generates no movement to make it
+// go away.
 func TestVariantWithStockCannotBeArchived(t *testing.T) {
 	vErrs := &ft.ClientErrors{}
 
@@ -68,8 +64,8 @@ func TestVariantWithStockCannotBeArchived(t *testing.T) {
 	assert.Equal(t, 1, vErrs.Count(), "on-hand stock blocks the archive")
 }
 
-// TS-PROD-11: history alone does not block. A variant that has been moved but holds nothing now
-// archives fine, and the completed records keep resolving it afterwards.
+// History alone does not block: a variant that has been moved but holds nothing now archives fine,
+// and the completed records keep resolving it.
 func TestVariantWithOnlyHistoryCanBeArchived(t *testing.T) {
 	vErrs := &ft.ClientErrors{}
 
@@ -119,8 +115,7 @@ func TestUnarchivingIsNotGuarded(t *testing.T) {
 	assert.Equal(t, 0, vErrs.Count(), "restoring a product to use strands nothing")
 }
 
-// TS-PROD-12: one variant with stock blocks the whole template. The line is archived as a unit or
-// not at all.
+// One variant with stock blocks the whole template: the line is archived as a unit or not at all.
 func TestTemplateArchiveBlockedByASingleVariant(t *testing.T) {
 	vErrs := &ft.ClientErrors{}
 
@@ -151,11 +146,8 @@ func TestTemplateArchivePassesWhenEveryVariantIsClear(t *testing.T) {
 	assert.Equal(t, 0, vErrs.Count())
 }
 
-// The whole set is read in one call, before anything is written.
-//
-// This is the property that keeps a rejected archive from leaving half a product line archived:
-// the cascade writes as it walks, so a per-variant check made during that walk would already have
-// archived the variants it passed.
+// The whole set is read in one call, before anything is written: the cascade writes as it walks, so
+// a per-variant check during that walk would already have archived the variants it passed.
 func TestTemplateGuardReadsEveryVariantInOneCall(t *testing.T) {
 	repo := &stubVariantRepository{variants: []dmodel.DynamicFields{
 		archivedVariant(testVariantAId, false, nil),

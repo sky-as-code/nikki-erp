@@ -11,22 +11,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The price explanation (BR 87.9).
+// The price explanation: why a line costs what it does, as the ordered chain of steps that produced
+// the number.
 //
-// Given an order, answer "why does this line cost this" as the ordered chain of steps that produced
-// the number:
-//
-//	Base 12,000 / Conditional promotion -2,000 / Final 10,000
-//
-// **It adds no storage and computes no prices.** Every figure is read back from
-// sales_order_adjustments, which the pricing engine already wrote. That is the whole reason the
-// engine returns a LIST of adjustments rather than a total (BR 13): a total alone could never be
-// explained, because discounts do not commute and the same three of them in a different order give a
-// different answer.
-//
-// The consequence worth stating: this reads history, it does not re-derive it. An explanation of a
-// confirmed sale stays true even after the pricelist, the promotion or the tax rate that produced it
-// have all changed — which is what an operator answering a customer complaint actually needs.
+// It adds no storage and computes no prices — every figure is read back from
+// sales_order_adjustments, which the pricing engine already wrote. This reads history rather than
+// re-deriving it, so an explanation of a confirmed sale stays true after the pricelist, promotion or
+// tax rate that produced it have changed.
 
 // PriceExplanation is the full account of one order's pricing.
 type PriceExplanation struct {
@@ -35,10 +26,9 @@ type PriceExplanation struct {
 	// Lines is one chain per order line, in line-number order.
 	Lines []LinePriceExplanation
 
-	// OrderSteps are the adjustments that belong to the order rather than to any one line - an
-	// order-level voucher before it was allocated down, and the final monetary rounding. They are
-	// kept separate rather than distributed across the lines because an operator asking "where did
-	// this 1,234 go" needs to see the step as it was applied, not six fragments of it.
+	// OrderSteps are the adjustments that belong to the order rather than to any one line — an
+	// order-level voucher before allocation, and the final monetary rounding. Kept separate so an
+	// operator sees the step as it was applied, not six fragments of it.
 	OrderSteps []PriceStep
 
 	Subtotal      decimal.Decimal
@@ -57,15 +47,14 @@ type LinePriceExplanation struct {
 
 	Quantity decimal.Decimal
 
-	// BaseAmount is where the chain starts: the line's gross, before any adjustment.
+	// BaseAmount is the line's gross, before any adjustment.
 	BaseAmount decimal.Decimal
 
 	// Steps are the adjustments that touched this line, in the order they were applied.
 	Steps []PriceStep
 
-	// NetAmount, TaxAmount and FinalAmount are where it ends. They are read from the line rather
-	// than recomputed from the steps, so that an explanation whose arithmetic disagrees with the
-	// stored line is VISIBLE rather than silently papered over - see StepsReconcile.
+	// Read from the line rather than recomputed from the steps, so an explanation whose arithmetic
+	// disagrees with the stored line is visible — see StepsReconcile.
 	NetAmount   decimal.Decimal
 	TaxAmount   decimal.Decimal
 	FinalAmount decimal.Decimal
@@ -75,33 +64,28 @@ type LinePriceExplanation struct {
 type PriceStep struct {
 	Sequence int32
 
-	// Type is the adjustment type: combo_price, conditional_price, percentage_discount,
-	// fixed_discount, voucher, manual_discount, rounding.
+	// Type is one of combo_price, conditional_price, percentage_discount, fixed_discount, voucher,
+	// manual_discount, rounding.
 	Type string
 
-	// SourceType and SourceId name what caused it - the promotion program, the combo, the pricelist.
-	// Carried so a screen can link through to the campaign rather than only naming it.
+	// SourceType and SourceId name what caused it, so a screen can link through to the campaign.
 	SourceType string
 	SourceId   string
 
 	Description string
 
-	// BaseAmount is what this step was calculated FROM, which depends on where in the sequence it
-	// fell: ten percent applied third operates on a different base than the same ten percent applied
-	// first. Storing it is what makes the chain readable without replaying the engine.
+	// BaseAmount is what this step was calculated from, which depends on where in the sequence it
+	// fell; storing it makes the chain readable without replaying the engine.
 	BaseAmount decimal.Decimal
 
-	// Amount is SIGNED - negative for a discount, positive for a clawback or a rounding increase.
+	// Amount is signed: negative for a discount, positive for a clawback or a rounding increase.
 	Amount decimal.Decimal
 }
 
-// StepsReconcile reports whether a line's steps actually account for the difference between its base
-// and its net.
-//
-// Worth having as an explicit answer rather than an assumption. If it is ever false, either an
-// adjustment was written without its line, or a line was repriced without its adjustments being
-// rewritten - both are real bugs, and both would otherwise show up as an explanation that quietly
-// does not add up on a screen an operator is using to answer a customer.
+// StepsReconcile reports whether a line's steps account for the difference between its base and its
+// net. False means an adjustment was written without its line, or a line was repriced without its
+// adjustments being rewritten — both real bugs that would otherwise surface as an explanation that
+// quietly does not add up.
 func (this LinePriceExplanation) StepsReconcile() bool {
 	running := this.BaseAmount
 	for _, step := range this.Steps {
@@ -110,10 +94,8 @@ func (this LinePriceExplanation) StepsReconcile() bool {
 	return running.Equal(this.NetAmount)
 }
 
-// ExplainOrderPrice builds the explanation for one order.
-//
-// Returns nil when the order does not exist, rather than an error: a caller naming a record that is
-// not there has made a mistake it can correct.
+// ExplainOrderPrice builds the explanation for one order, returning nil when the order does not
+// exist rather than an error.
 func ExplainOrderPrice(
 	ctx corectx.Context, orderId string,
 ) (*PriceExplanation, error) {
@@ -163,9 +145,8 @@ func ExplainOrderPrice(
 		})
 	}
 
-	// Line number order, so the explanation reads down the receipt. The repository returns rows in
-	// whatever order it likes, and an explanation whose lines shuffle between two reads of the same
-	// unchanged order is one nobody can check against a printed receipt.
+	// Line number order, so the explanation reads down the receipt: the repository returns rows in
+	// whatever order it likes.
 	sort.SliceStable(explanation.Lines, func(i, j int) bool {
 		return explanation.Lines[i].LineNumber < explanation.Lines[j].LineNumber
 	})
@@ -173,11 +154,8 @@ func ExplainOrderPrice(
 }
 
 // groupSteps splits the adjustments into per-line chains and the order-level chain, each ordered by
-// sequence.
-//
-// Sequence is what makes the chain replayable and is unique per order, so ordering by it gives one
-// total order across the whole document - a line's steps keep their relative positions even though
-// they are shown separately.
+// sequence. Sequence is unique per order, so it gives one total order across the whole document and
+// a line's steps keep their relative positions even when shown separately.
 func groupSteps(
 	adjustmentRecords []dmodel.DynamicFields,
 ) (byLine map[string][]PriceStep, orderSteps []PriceStep) {

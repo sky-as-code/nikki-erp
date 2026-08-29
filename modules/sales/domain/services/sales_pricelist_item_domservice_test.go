@@ -7,11 +7,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The rule-consistency checks (sections 12–14).
-//
-// Every case here is a row that would otherwise be ACCEPTED and then silently never match anything
-// at resolution time. That is the failure worth preventing: a rule that never matches is invisible,
-// and whoever wrote it sees a price that did not change with nothing to explain why.
+// The rule-consistency checks. Every case here is a row that would otherwise be ACCEPTED and then
+// silently never match anything at resolution time: a rule that never matches is invisible, and
+// whoever wrote it sees a price that did not change with nothing to explain why.
 
 func keyOf(record dmodel.DynamicFields) string {
 	vErrs := assertRuleConsistent(record)
@@ -88,7 +86,7 @@ func TestMissingAppliesToIsTreatedAsVariant(t *testing.T) {
 	}
 }
 
-// Zero is a real price — a giveaway — so it is the ABSENCE of the field that is refused, never its
+// Zero is a real price (a giveaway), so it is the ABSENCE of the field that is refused, never its
 // value.
 func TestFixedPriceOfZeroIsAccepted(t *testing.T) {
 	row := fixedPriceRow()
@@ -118,7 +116,7 @@ func TestFixedPriceWithoutAUnitIsRefused(t *testing.T) {
 	}
 }
 
-// A discount carries no unit of its own — it adjusts a base already in the line's unit — so the
+// A discount carries no unit of its own (it adjusts a base already in the line's unit), so the
 // unit requirement must NOT apply to it.
 func TestDiscountRuleNeedsNoUnit(t *testing.T) {
 	row := dmodel.DynamicFields{
@@ -184,7 +182,7 @@ func TestFormulaOnCostNeedsNothingElse(t *testing.T) {
 	}
 }
 
-// An inverted window makes the rule match on no date at all — it would never apply, and nothing
+// An inverted window makes the rule match on no date at all: it would never apply, and nothing
 // would say so.
 func TestInvertedValidityWindowIsRefused(t *testing.T) {
 	row := fixedPriceRow()
@@ -223,12 +221,9 @@ func TestUnknownAppliesToIsRefused(t *testing.T) {
 	}
 }
 
-// Two surplus targets must be reported in a stable order.
-//
-// The check iterates a slice rather than a map for exactly this reason: a map would report them in
-// whichever order it happened to iterate, so the same bad row would yield different errors on
-// different runs — and a client that shows "the first problem" would show a different one each
-// time, which makes a bug report impossible to act on.
+// Two surplus targets must be reported in a stable order. The check iterates a slice rather than a
+// map for exactly this reason: a map would yield different errors on different runs, which makes a
+// bug report impossible to act on.
 func TestSurplusTargetsAreReportedDeterministically(t *testing.T) {
 	row := fixedPriceRow()
 	row[models.SalesPricelistItemFieldAppliesTo] = models.PricelistAppliesToAllProducts

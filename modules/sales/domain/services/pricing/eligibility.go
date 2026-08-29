@@ -6,22 +6,11 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// Promotion eligibility: deciding which programs apply to a basket (BR §23, D-06, D-07).
-//
-// It lives here rather than in the parent package for the same reason the engine does — it is pure,
-// and the caller needs it and the engine together. The split of responsibility is:
-//
-//	this file          — does this program's conditions hold for this basket?
-//	ResolvePromotions  — of the programs that hold, which may apply together? (BR §29)
-//	Calculate          — apply the survivors, in order
-//
-// Keeping eligibility separate from conflict resolution is deliberate: whether a program's
-// conditions hold is about the cart, while whether two programs may combine is about the programs.
-// Mixing them would make a compatibility rule depend on basket contents, which is not what BR §27
-// means.
+// Promotion eligibility: whether a program's conditions hold for a basket. Conflict resolution is
+// deliberately elsewhere (ResolvePromotions), because whether two programs may combine is about the
+// programs, not the cart — mixing them would make compatibility depend on basket contents.
 
-// ConditionGroup is a set of conditions ANDed together. Groups are ORed with each other (D-06) —
-// the standard sum-of-products shape, which expresses every BR §23 example and needs no parser.
+// ConditionGroup is a set of conditions ANDed together; groups are ORed with each other.
 type ConditionGroup struct {
 	Sequence   int32
 	Conditions []Condition
@@ -29,8 +18,8 @@ type ConditionGroup struct {
 
 // Condition is one test.
 type Condition struct {
-	// Type and Operator are the models.PromotionCondition* / PromotionOperator* values, as strings
-	// so this package imports no schema.
+	// Type and Operator are the models.PromotionCondition* / PromotionOperator* values, as strings so
+	// this package imports no schema.
 	Type     string
 	Operator string
 
@@ -39,16 +28,13 @@ type Condition struct {
 	ValueFrom    decimal.Decimal
 	ValueTo      decimal.Decimal
 
-	// TargetIds is the set an `in` or `not_in` operator reads. Set-valued conditions live in their
-	// own table rather than a column (D-07), so the caller passes the rows it loaded.
+	// TargetIds is the set an `in` or `not_in` operator reads; the caller passes the rows it loaded
+	// from the set-valued condition table.
 	TargetIds []string
 }
 
-// BasketFacts is what a condition can be tested against.
-//
-// A flat struct rather than the order itself: the engine prices baskets that are not yet orders —
-// a quote preview has no order id — and passing facts rather than a record keeps eligibility
-// answerable for both.
+// BasketFacts is what a condition can be tested against. Flat facts rather than an order, because
+// the engine also prices baskets that are not yet orders.
 type BasketFacts struct {
 	Subtotal      decimal.Decimal
 	TotalQuantity decimal.Decimal
@@ -56,17 +42,15 @@ type BasketFacts struct {
 	SalesChannelId string
 	SalesPointId   string
 
-	// VariantIds and CategoryIds are what the basket contains. Slices rather than sets because they
-	// are small and the caller has them in this shape already.
+	// VariantIds and CategoryIds are what the basket contains.
 	VariantIds  []string
 	CategoryIds []string
 
 	// QuantityByVariant supports a per-variant quantity condition ("buy 3 of X").
 	QuantityByVariant map[string]decimal.Decimal
 
-	// DayOfWeek is lowercase English ("monday"), and TimeOfDayMinutes is minutes since midnight.
-	// Both are supplied by the caller rather than read from a clock, because the engine takes no
-	// clock — that is what makes a replay of a historical sale reproducible.
+	// DayOfWeek is lowercase English ("monday"); TimeOfDayMinutes is minutes since midnight. Both are
+	// supplied by the caller, never read from a clock, so a historical sale replays reproducibly.
 	DayOfWeek        string
 	TimeOfDayMinutes int32
 
@@ -74,13 +58,8 @@ type BasketFacts struct {
 	NowUnix int64
 }
 
-// IsEligible reports whether a program's conditions hold.
-//
-// No groups means unconditionally eligible: a program with no conditions is one the operator wants
-// applied to everything, which is a legitimate campaign and not a misconfiguration. Refusing it
-// would make "10% off everything" inexpressible.
-//
-// Within a group every condition must hold; across groups any group holding is enough (D-06).
+// IsEligible reports whether a program's conditions hold: every condition within a group, any group
+// across groups. No groups means unconditionally eligible — "10% off everything" is a real campaign.
 func IsEligible(groups []ConditionGroup, facts BasketFacts) bool {
 	if len(groups) == 0 {
 		return true
@@ -93,11 +72,7 @@ func IsEligible(groups []ConditionGroup, facts BasketFacts) bool {
 	return false
 }
 
-// groupHolds ANDs a group's conditions.
-//
-// An EMPTY group holds. It contributes nothing to the OR across groups except "yes", which is the
-// same answer as having no groups at all — and an operator who created a group and added no
-// conditions to it has expressed no restriction.
+// groupHolds ANDs a group's conditions. An empty group holds: it expresses no restriction.
 func groupHolds(group ConditionGroup, facts BasketFacts) bool {
 	for _, condition := range group.Conditions {
 		if !conditionHolds(condition, facts) {
@@ -107,11 +82,8 @@ func groupHolds(group ConditionGroup, facts BasketFacts) bool {
 	return true
 }
 
-// conditionHolds evaluates one condition.
-//
-// An unrecognised condition type answers FALSE. The value came from a database row, and a type this
-// build does not understand must not be treated as satisfied: silently applying a discount whose
-// restriction nobody could evaluate is the expensive direction of that mistake.
+// conditionHolds evaluates one condition. An unrecognised type answers FALSE: a restriction this
+// build cannot evaluate must not be treated as satisfied.
 func conditionHolds(condition Condition, facts BasketFacts) bool {
 	switch condition.Type {
 	case "order_subtotal":
@@ -121,9 +93,8 @@ func conditionHolds(condition Condition, facts BasketFacts) bool {
 		return compareDecimal(condition, facts.TotalQuantity)
 
 	case "quantity":
-		// Per-variant quantity: holds when ANY named variant reaches the threshold. Any rather than
-		// all, because "buy 3 of anything in this range" is what BR §23's examples describe; a
-		// program needing several specific quantities expresses that as several conditions.
+		// Per-variant quantity: holds when ANY named variant reaches the threshold. A program needing
+		// several specific quantities expresses that as several conditions.
 		if len(condition.TargetIds) == 0 {
 			return compareDecimal(condition, facts.TotalQuantity)
 		}
@@ -158,8 +129,8 @@ func conditionHolds(condition Condition, facts BasketFacts) bool {
 		return decimal.NewFromInt(facts.NowUnix).GreaterThanOrEqual(condition.ValueDecimal)
 
 	case "valid_until":
-		// Exclusive, matching every other window in this module: a campaign ending at noon does not
-		// apply at noon.
+		// Exclusive, like every other window in this module: a campaign ending at noon does not apply
+		// at noon.
 		return decimal.NewFromInt(facts.NowUnix).LessThan(condition.ValueDecimal)
 	}
 	return false
@@ -180,8 +151,7 @@ func compareDecimal(condition Condition, actual decimal.Decimal) bool {
 	case "lte":
 		return actual.LessThanOrEqual(condition.ValueDecimal)
 	case "between":
-		// Inclusive of both bounds, unlike the validity windows: an operator writing "between 5 and
-		// 10" means a customer buying exactly 10 qualifies.
+		// Inclusive of both bounds, unlike the validity windows above.
 		return actual.GreaterThanOrEqual(condition.ValueFrom) &&
 			actual.LessThanOrEqual(condition.ValueTo)
 	}
@@ -200,8 +170,7 @@ func compareText(condition Condition, actual string) bool {
 				return true
 			}
 		}
-		// A text `in` may also carry a comma-separated list, which is how a day-of-week set is
-		// naturally written by hand.
+		// A text `in` may also carry a comma-separated list, e.g. a hand-written day-of-week set.
 		for _, target := range strings.Split(condition.ValueText, ",") {
 			if actual == strings.ToLower(strings.TrimSpace(target)) {
 				return true
@@ -231,12 +200,8 @@ func compareIdentity(condition Condition, actual string) bool {
 	return false
 }
 
-// compareSet tests the condition's targets against what the basket contains.
-//
-// `in` holds when the basket contains AT LEAST ONE of the targets — "buy any of these" — while
-// `not_in` requires the basket to contain NONE of them. They are not each other's inverse over a
-// set: the negation of "contains at least one" is "contains none", which is what not_in means, so
-// the asymmetry is only apparent.
+// compareSet tests the condition's targets against what the basket contains: `in` holds when the
+// basket contains at least one target, `not_in` when it contains none.
 func compareSet(condition Condition, basketIds []string) bool {
 	switch condition.Operator {
 	case "in", "eq":
@@ -272,11 +237,8 @@ func containsId(ids []string, wanted string) bool {
 	return false
 }
 
-// FactsFromLines derives the basket facts the conditions test, from the priced lines.
-//
-// A helper rather than a requirement: a caller may build BasketFacts itself. It exists so that the
-// subtotal a condition tests is the same number the engine computed, rather than one the caller
-// re-derived and could get subtly different.
+// FactsFromLines derives basket facts from the priced lines, so the subtotal a condition tests is
+// the number the engine computed rather than one the caller re-derived.
 func FactsFromLines(lines []LineResult) BasketFacts {
 	facts := BasketFacts{
 		Subtotal:          decimal.Zero,
@@ -284,8 +246,8 @@ func FactsFromLines(lines []LineResult) BasketFacts {
 		QuantityByVariant: make(map[string]decimal.Decimal, len(lines)),
 	}
 	for _, line := range lines {
-		// A giveaway line contributes nothing to the facts: counting a free item toward a spend
-		// threshold would let one promotion qualify a basket for another it did not earn.
+		// A giveaway line contributes nothing: counting a free item toward a spend threshold would let
+		// one promotion qualify a basket for another it did not earn.
 		if line.LineType == "promotion_reward" {
 			continue
 		}

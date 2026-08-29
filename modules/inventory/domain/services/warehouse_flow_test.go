@@ -8,8 +8,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// The three-step paths are named in the change request as TS-09 and AC-CR-LOC-028/029, so they are
-// asserted verbatim rather than derived.
+// The three-step paths are asserted verbatim rather than derived.
 func TestResolveIncomingFlow(t *testing.T) {
 	assert.Equal(t, []FlowLeg{
 		{FromCode: FlowEndpointVendor, ToCode: "Stock"},
@@ -75,8 +74,7 @@ func assertLegsConnect(t *testing.T, legs []FlowLeg, flow string) {
 	}
 }
 
-// A warehouse always has Stock; the rest follow from the flows. Three-step both ways is the
-// example given in the requirement's location-hierarchy sample.
+// A warehouse always has Stock; the rest follow from the flows.
 func TestRequiredSystemLocations(t *testing.T) {
 	oneStep := requiredSystemLocations(models.WarehouseFlowOneStep, models.WarehouseFlowOneStep)
 	assert.Equal(t, []systemLocationSpec{

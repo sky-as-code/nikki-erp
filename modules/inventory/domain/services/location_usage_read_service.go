@@ -11,19 +11,14 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// The Stock side of the location lifecycle contract, implemented on the quant service because
-// that is where the balances already live.
-//
-// Warehouse Management calls this before suspending or archiving a location. It reads and reports;
-// it never changes anything.
+// The Stock side of the location lifecycle contract, on the quant service because that is where the
+// balances live. Warehouse Management calls it before suspending or archiving a location; it reads
+// and reports, never changing anything.
 
 var _ itStock.LocationUsageReadService = (*StockQuantDomainServiceImpl)(nil)
 
-// GetLocationUsage reports what Stock holds at one location.
-//
-// Three reads rather than one: the quantities come off the quants, and the two counts off moves
-// and transfers. The counts use the repository's own Total instead of fetching rows, because the
-// caller only needs to know whether there are any.
+// GetLocationUsage reports what Stock holds at one location: quantities off the quants, and counts
+// off moves and transfers using the repository's Total rather than fetching rows.
 func (this *StockQuantDomainServiceImpl) GetLocationUsage(
 	ctx corectx.Context, query itStock.GetLocationUsageQuery,
 ) (*itStock.GetLocationUsageResult, error) {
@@ -60,11 +55,8 @@ func (this *StockQuantDomainServiceImpl) GetLocationUsage(
 }
 
 // sumQuantitiesAtLocation totals the on-hand and reserved quantities of every quant at a location.
-//
-// The rows are summed here rather than in SQL because a quant is one product-lot-package-owner
-// combination, and a location holding many still holds few enough to add up in memory. A location
-// with more quants than one page is read through to the end rather than being silently truncated,
-// since a partial total would report an empty location that is not.
+// Summed in memory because the dynamic-model layer offers no aggregation, and read through to the
+// last page rather than truncated: a partial total would report an empty location that is not.
 func sumQuantitiesAtLocation(
 	ctx corectx.Context, locationId string,
 ) (decimal.Decimal, decimal.Decimal, error) {
@@ -106,10 +98,8 @@ func sumQuantitiesAtLocation(
 }
 
 // countOpenMovesAtLocation counts the moves still in flight through a location, in either
-// direction.
-//
-// Done and cancelled moves are excluded: they are history, and history never blocks a lifecycle
-// change because an archived location still resolves for the records that name it.
+// direction. Done and cancelled moves are excluded: an archived location still resolves for the
+// records that name it, so history never blocks a lifecycle change.
 func countOpenMovesAtLocation(ctx corectx.Context, locationId string) (int, error) {
 	engine, err := engineFor(models.StockMoveSchemaName)
 	if err != nil {

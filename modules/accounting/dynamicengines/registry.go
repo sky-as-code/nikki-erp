@@ -1,9 +1,8 @@
-// Package dynamicengines declares the resource engines the Accounting module serves through the
-// dynamic resource engine, and creates them during the module's Init().
+// Package dynamicengines declares the resource engines Accounting serves through the dynamic
+// resource engine, and creates them during Init().
 //
-// It is deliberately a leaf package: it imports the domain models and the dynamicresource module,
-// but nothing else from accounting. That lets both accounting (which creates the engines) and
-// accounting/transport/restful (which registers their routes) import it without a cycle.
+// It must stay a leaf package importing nothing else from accounting, so that both accounting and
+// accounting/transport/restful can import it without a cycle.
 package dynamicengines
 
 import (
@@ -17,19 +16,15 @@ import (
 
 // engineSpec declares one resource engine the Accounting module owns.
 type engineSpec struct {
-	// SchemaName is the dynamic-model schema the engine serves. It must be an XSchemaName
-	// constant, never a string derived from the resource path.
+	// SchemaName must be an XSchemaName constant, never a string derived from the resource path.
 	SchemaName string
 
 	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD
-	// ones. It is optional: a resource without custom behavior leaves it nil.
+	// ones. Optional: nil for a resource without custom behavior.
 	DefineActions func(drif.DynamicResourceEngine) error
 }
 
-// engineSpecs lists the resources Accounting serves through the dynamic resource engine.
-//
-// The order mirrors the dependency order of the schemas themselves, so that a reader looking for
-// what references what can follow the list top to bottom.
+// engineSpecs lists the resources Accounting serves, in the dependency order of the schemas.
 var engineSpecs = []engineSpec{
 	taxJurisdictionEngineSpec(),
 	taxGroupEngineSpec(),
@@ -46,16 +41,15 @@ var engineSpecs = []engineSpec{
 	taxRuleResultEngineSpec(),
 }
 
-// EngineSchemaNames lists the schemas Accounting creates an engine for, so that route
-// registration and engine creation cannot drift apart.
+// EngineSchemaNames keeps route registration and engine creation from drifting apart.
 func EngineSchemaNames() []string {
 	return array.Map(engineSpecs, func(spec engineSpec) string {
 		return spec.SchemaName
 	})
 }
 
-// InitDynamicEngines creates the resource engines this module owns and publishes them into the
-// dependency container, so that other modules can inject them by name.
+// InitDynamicEngines creates this module's resource engines and publishes them into the dependency
+// container.
 func InitDynamicEngines() error {
 	for _, spec := range engineSpecs {
 		if err := initEngine(spec); err != nil {

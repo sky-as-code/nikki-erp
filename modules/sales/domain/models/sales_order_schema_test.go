@@ -5,16 +5,11 @@ import (
 	"testing"
 )
 
-// These pin the order schema against the rules the requirement states, so that an edit which
-// quietly changes a constraint fails here rather than in production data.
+// These pin the order schema against the business rules, so an edit that quietly changes a
+// constraint fails here rather than in production data.
 
-// TestSalesOrderKeepsFourIndependentStatuses pins BR §9, the single most important property of the
-// order schema.
-//
-// The four are never collapsed into one. A confirmed order can be fully paid and undelivered, or
-// delivered and unpaid, or complete with its VAT invoice rejected by a tax authority. A single
-// status would have to invent an ordering between those that the business does not have, and every
-// consumer would then be guessing which dimension a value referred to.
+// TestSalesOrderKeepsFourIndependentStatuses: the four are never collapsed into one. An order can be
+// fully paid and undelivered, or delivered and unpaid, or complete with its VAT invoice rejected.
 func TestSalesOrderKeepsFourIndependentStatuses(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -37,11 +32,9 @@ func TestSalesOrderKeepsFourIndependentStatuses(t *testing.T) {
 	}
 }
 
-// The idempotency mechanism of D-29 IS this index, not a comment about one.
-//
-// Strict rather than loose: the loose variant would additionally emit a unique over
-// sales_channel_id alone where the key IS NULL, capping each channel at one key-less order — and
-// most orders carry no key at all.
+// The idempotency mechanism is this index. Strict rather than loose: the loose variant would also
+// emit a unique over sales_channel_id alone where the key IS NULL, capping each channel at one
+// key-less order — and most orders carry no key.
 func TestSalesOrderIdempotencyKeyIsScopedToChannel(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -63,8 +56,7 @@ func TestSalesOrderIdempotencyKeyIsScopedToChannel(t *testing.T) {
 }
 
 // order_number is unique tenant-wide rather than per channel: a customer reading a number off a
-// receipt has no idea which channel sold it, so a number that identified an order only once the
-// channel was known would be useless for the one job it exists to do.
+// receipt has no idea which channel sold it.
 func TestSalesOrderNumberIsGloballyUniqueAndImmutable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -83,11 +75,9 @@ func TestSalesOrderNumberIsGloballyUniqueAndImmutable(t *testing.T) {
 	}
 }
 
-// D-19 and D-20: both are NOT NULL, and both are immutable.
-//
-// sales_channel_id is denormalised from the sales point and written ONLY from the point's own
-// channel, never from the request payload — which is what makes CR §20's consistency invariant true
-// by construction. Immutability is what keeps it true afterwards.
+// Both are NOT NULL and immutable. sales_channel_id is denormalised from the sales point and written
+// only from the point's own channel, never from the request payload, which makes the consistency
+// invariant true by construction; immutability keeps it true afterwards.
 func TestSalesOrderChannelAndPointAreRequiredAndImmutable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -105,8 +95,8 @@ func TestSalesOrderChannelAndPointAreRequiredAndImmutable(t *testing.T) {
 	}
 }
 
-// A customer is optional because anonymous sale is the DEFAULT, not the exception (BR §87.6) — a
-// vending kiosk never knows who is buying.
+// A customer is optional because anonymous sale is the default, not the exception: a vending kiosk
+// never knows who is buying.
 func TestSalesOrderCustomerIsOptional(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -116,9 +106,8 @@ func TestSalesOrderCustomerIsOptional(t *testing.T) {
 	}
 }
 
-// A line is identified within its order by line_number, and that pair must be unique: a return
-// names the line it returns and a fiscal document lists lines by number, so two lines sharing a
-// number would make both documents ambiguous.
+// A line is identified within its order by line_number, and that pair must be unique: returns and
+// fiscal documents name lines by number, so a shared number makes both ambiguous.
 func TestSalesOrderLineNumberIsUniquePerOrder(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -137,9 +126,8 @@ func TestSalesOrderLineNumberIsUniquePerOrder(t *testing.T) {
 	}
 }
 
-// The three quantities are all required (BR §87.8). The BR §10 field list names only "quantity",
-// and that is not enough: partial fulfilment is normal, and a single quantity could not express a
-// line where two of three items were dispensed and the third jammed.
+// All three quantities are required: partial fulfilment is normal, and a single quantity could not
+// express a line where two of three items were dispensed and the third jammed.
 func TestSalesOrderLineCarriesThreeQuantities(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -156,7 +144,7 @@ func TestSalesOrderLineCarriesThreeQuantities(t *testing.T) {
 }
 
 // product_variant_id is nullable because a combo parent line sells no single variant — its
-// components do (BR §17). Requiring it would make a combo unrepresentable.
+// components do. Requiring it would make a combo unrepresentable.
 func TestSalesOrderLineVariantIsNullableForCombos(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -167,10 +155,8 @@ func TestSalesOrderLineVariantIsNullableForCombos(t *testing.T) {
 	}
 }
 
-// Every snapshot field must actually exist on the schema.
-//
-// SnapshotFields is the single definition of "frozen after confirm", and the domain service walks
-// it. A name that drifted from the schema would silently stop being enforced, with nothing failing.
+// Every snapshot field must actually exist on the schema. SnapshotFields is the single definition of
+// "frozen after confirm", so a name that drifted from the schema would silently stop being enforced.
 func TestSnapshotFieldsAllExist(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -183,9 +169,9 @@ func TestSnapshotFieldsAllExist(t *testing.T) {
 	}
 }
 
-// uom_id is required on every line, which is what makes the UomUsageProbe necessary: without the
-// probe Essential would let somebody edit a unit that sales history depends on, and a receipt
-// issued last year would come to mean a different amount of goods.
+// uom_id is required on every line, which is what makes the UomUsageProbe necessary: without it
+// Essential would let somebody edit a unit that sales history depends on, and an old receipt would
+// come to mean a different amount of goods.
 func TestSalesOrderLineRequiresUom(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 

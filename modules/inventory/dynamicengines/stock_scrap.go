@@ -9,11 +9,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 )
 
-// The scrap document and the one operation that executes it.
-//
-// Unlike the quant, the scrap keeps its CRUD actions: it is a document a user raises, edits and
-// may abandon while it is still draft. What the derived service constrains is *when* — a done
-// scrap can be neither edited nor deleted, because the movement it generated is permanent.
+// The scrap document and the operation that executes it. Unlike the quant, the scrap keeps its
+// CRUD actions: it is a document a user raises, edits and may abandon while draft. The derived
+// service constrains when — a done scrap can be neither edited nor deleted, because the movement
+// it generated is permanent.
 
 const PermissionDoScrap = "do_scrap"
 
@@ -28,12 +27,9 @@ func stockScrapEngineSpec() engineSpec {
 	}
 }
 
-// defineStockScrapActions exposes Do Scrap as its own action.
-//
-// It is a POST rather than an update because it is not an edit to the document: it is the event
-// that writes off the goods, and it cannot be undone by editing the record afterwards. Its own
-// permission, for the same reason the transfer's validate has one — a role that may correct a
-// typo in a scrap note should not thereby be able to destroy stock.
+// defineStockScrapActions exposes Do Scrap as its own action. A POST rather than an update: it is
+// the event that writes off the goods and cannot be undone by editing the record afterwards. It
+// carries its own permission so a role that may fix a typo in a scrap note cannot destroy stock.
 func defineStockScrapActions(engine drif.DynamicResourceEngine) error {
 	return engine.DefineAction(drif.DynamicActionDefinition{
 		ActionName:  ActionDoScrap,

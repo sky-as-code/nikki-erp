@@ -11,20 +11,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// The audit trail (PUR-R6).
-//
-// Every state-changing action writes exactly one event, through this file and nowhere else. One
-// writer is what makes the trail trustworthy: a second path would eventually record a different
-// set of fields, and a reader comparing two events could no longer tell whether a blank actor
-// means "the system did it" or "that writer forgot to fill it in".
-//
-// The write is deliberately NOT its own transaction. It runs in the caller's, so that the event and
-// the transition it records commit together or not at all. An event that survived a rolled-back
-// transition would be a record of something that did not happen.
+// The audit trail. Every state-changing action writes exactly one event, through this file and
+// nowhere else, so a blank field always means the same thing. The write deliberately runs in the
+// caller's transaction rather than its own, so the event and the transition it records commit
+// together or not at all.
 
-// Audit action names. They are the operation the user asked for, not the transition it produced:
-// "confirm" says what was done, where "rfq -> to_approve" only says what came of it, and the two
-// are not the same when one operation can end in either of two statuses.
+// Audit action names. They record the operation the user asked for, not the transition it
+// produced, since one operation can end in either of two statuses.
 const (
 	AuditActionConfirm     = "confirm"
 	AuditActionApprove     = "approve"
@@ -38,47 +31,40 @@ const (
 	AuditActionClose       = "close"
 	AuditActionCreateRfq   = "create_rfq"
 
-	// AuditActionOverridePrice records a line priced differently from what the vendor quotes
-	// (section 29.1). It is a LINE action where every other action above is an order action, which
-	// is why AuditEntry carries EntityType rather than assuming one.
+	// AuditActionOverridePrice records a line priced differently from what the vendor quotes. It is
+	// a line action where every action above is an order action, hence AuditEntry.EntityType.
 	AuditActionOverridePrice = "override_price"
 
-	// AuditActionReprice records one line whose price was re-resolved from the vendor's current
-	// price list (section 30). Also a LINE action: repricing an order is an event per line, because
-	// what a reader needs to know afterwards is which line moved and by how much.
+	// AuditActionReprice records one line re-resolved from the vendor's current price list. Also a
+	// line action: repricing an order writes one event per line, so a reader sees which line moved.
 	AuditActionReprice = "reprice"
 )
 
 // AuditEntry is one thing that happened to one record.
 type AuditEntry struct {
-	// EntityType is the schema name of what changed, so that the order's trail and the
-	// agreement's can share a table without a reader having to guess which is which.
+	// EntityType is the schema name of what changed, so the order's trail and the agreement's can
+	// share one table.
 	EntityType string
 	EntityId   string
 	Action     string
 
-	// FromStatus and ToStatus are empty for an action that changes no status — locking an order
-	// is a real event with nothing to record in those two columns, and writing the unchanged
-	// status into both would suggest a transition that did not occur.
+	// Empty for an action that changes no status, such as locking; writing the unchanged status
+	// into both would suggest a transition that did not occur.
 	FromStatus string
 	ToStatus   string
 
-	// Reason is required by unlock (BR §21) and optional everywhere else.
+	// Reason is required by unlock and optional everywhere else.
 	Reason string
 
-	// Metadata carries whatever else is worth keeping about this particular action. It is
-	// free-form because the interesting detail differs per action, and a column per action would
-	// be a table of mostly-null columns.
+	// Metadata is free-form because the interesting detail differs per action.
 	Metadata map[string]any
 
 	OrgId string
 }
 
-// WriteAuditEvent records one entry, in the caller's transaction.
-//
-// The actor comes from the context rather than from the caller, so that an operation cannot record
-// somebody else as having performed it. It is left empty when the context carries no user — a
-// system-initiated transition genuinely has no actor, and inventing one would be worse than a blank.
+// WriteAuditEvent records one entry in the caller's transaction. The actor comes from the context,
+// not the caller, so an operation cannot record somebody else as having performed it; it stays
+// empty for a system-initiated transition, which genuinely has no actor.
 func WriteAuditEvent(ctx corectx.Context, entry AuditEntry) error {
 	engine, err := engineFor(models.AuditEventSchemaName)
 	if err != nil {
@@ -115,10 +101,8 @@ func WriteAuditEvent(ctx corectx.Context, entry AuditEntry) error {
 		event[basemodel.FieldOrgId] = entry.OrgId
 	}
 
-	// The insert goes through the repository rather than the resource service, because the
-	// service is where the client-facing guard lives: defineAuditEventGuards refuses every write
-	// to this resource, and it must keep refusing them for a client while still letting the
-	// system write its own.
+	// Through the repository, not the resource service: the service guard refuses every client
+	// write to this resource and must keep doing so while the system writes its own events.
 	_, err = engine.ResourceRepository().Insert(ctx, event)
 	return errors.Wrap(err, "WriteAuditEvent")
 }

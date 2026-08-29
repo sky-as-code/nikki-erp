@@ -22,15 +22,9 @@ func NewSalesPointApplicationServiceImpl() it.SalesPointAppService {
 	return &SalesPointApplicationServiceImpl{}
 }
 
-// CreateSalesPoint registers one selling place under a channel.
-//
-// Idempotent on (channel, external reference id). That pair is what makes creating a kiosk and
-// creating its sales point safe as two separate steps: the vending module writes its kiosk, calls
-// here, and if the response is lost it calls again with the same reference and is handed the same
-// point. Without it a timeout would leave a kiosk mapped to two sales points, splitting its orders.
-//
-// The channel is named by code, never by id, so nothing outside Sales stores one of our
-// identifiers.
+// CreateSalesPoint registers one selling place under a channel, idempotent on (channel, external
+// reference id) so a lost response cannot leave a kiosk mapped to two points with split orders. The
+// channel is named by code, never by id, so nothing outside Sales stores a Sales identifier.
 func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 	ctx corectx.Context, command it.CreateSalesPointCommand,
 ) (*it.CreateSalesPointResult, error) {
@@ -65,9 +59,8 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 				"SalesModule.Init must install it before CreateSalesPoint runs")
 	}
 
-	// The retry path, checked before the channel's own usability: a caller re-registering an
-	// existing point must succeed even if the channel has since been suspended, because it is not
-	// asking to create anything.
+	// The retry path, checked before channel usability: re-registering an existing point must
+	// succeed even if the channel has since been suspended.
 	if command.ExternalReferenceId != "" {
 		existing, err := service.FindByExternalReference(ctx, channelId, command.ExternalReferenceId)
 		if err != nil {
@@ -156,11 +149,8 @@ func (this *SalesPointApplicationServiceImpl) ActivateSalesPoint(
 		})
 }
 
-// DeleteSalesPoint removes a sales point, or archives it when it carries sales history.
-//
-// The caller is told which happened rather than having to ask again, because the answer is a
-// property of the moment the decision was made: a point with no orders now may have one by the time
-// a second call arrives.
+// DeleteSalesPoint removes a sales point, or archives it when it carries sales history. The caller
+// is told which happened, because a second call could see a different answer.
 func (this *SalesPointApplicationServiceImpl) DeleteSalesPoint(
 	ctx corectx.Context, command it.SalesPointCommand,
 ) (*it.DeleteSalesPointResult, error) {

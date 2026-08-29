@@ -10,11 +10,8 @@ import (
 )
 
 // Warehouse and Inventory Location are the only two resources with an operational state; the rest
-// express their whole lifecycle through archiving.
-//
-// Encoding that here makes a later "let's add a status to Putaway Rule for symmetry" fail a test
-// rather than diverge quietly. The distinction is the reason suspend and resume exist on two
-// resources and nowhere else.
+// express their whole lifecycle through archiving. That is why suspend and resume exist on these
+// two and nowhere else, and encoding it here makes adding a status elsewhere fail a test.
 func TestOnlyWarehouseAndLocationCarryStatus(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -38,9 +35,8 @@ func TestOnlyWarehouseAndLocationCarryStatus(t *testing.T) {
 	}
 }
 
-// The status values are active and suspended. Neither 'inactive' nor 'blocked' survives: the
-// change request folded both into suspension, and a stray value here would let a record reach a
-// state no operation can move it out of.
+// The status values are active and suspended; 'inactive' and 'blocked' are folded into suspension.
+// A stray value would let a record reach a state no operation can move it out of.
 func TestWarehouseAndLocationStatusValues(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -55,7 +51,7 @@ func TestWarehouseAndLocationStatusValues(t *testing.T) {
 	}
 }
 
-// enumValuesOf reads an enum field's allowed values out of its data-type options, which hold them
+// enumValuesOf reads an enum field's allowed values from its data-type options, which hold them
 // under a well-known key rather than behind an accessor.
 func enumValuesOf(t *testing.T, field *dmodel.ModelField) []string {
 	t.Helper()
@@ -78,9 +74,8 @@ func enumValuesOf(t *testing.T, field *dmodel.ModelField) []string {
 	}
 }
 
-// Every warehouse-bound location belongs to a warehouse, but plenty of locations do not: vendor,
-// customer, inventory-loss and shared transit locations belong to none. The column has to stay
-// nullable for those to exist at all.
+// Vendor, customer, inventory-loss and shared transit locations belong to no warehouse, so the
+// column must stay nullable for them to exist at all.
 func TestLocationWarehouseIdIsNullable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -91,10 +86,9 @@ func TestLocationWarehouseIdIsNullable(t *testing.T) {
 		"a vendor or shared transit location belongs to no warehouse")
 }
 
-// The usage list keeps 'scrap' distinct from 'inventory_loss'. They are different destinations:
-// an adjustment balances against loss while a write-off moves to scrap, and the scrap lifecycle
-// rejects a location of the wrong usage so a write-off cannot move usable stock somewhere it
-// would be counted again.
+// 'scrap' and 'inventory_loss' are different destinations: an adjustment balances against loss, a
+// write-off moves to scrap, and the scrap lifecycle rejects a location of the wrong usage so usable
+// stock is not counted twice.
 func TestLocationUsageValues(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -108,7 +102,7 @@ func TestLocationUsageValues(t *testing.T) {
 }
 
 // The three flow settings, on both directions. A fourth value would have no topology behind it:
-// the location provisioning and the movement plan are both switches over exactly these.
+// location provisioning and the movement plan are both switches over exactly these.
 func TestWarehouseFlowValues(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 

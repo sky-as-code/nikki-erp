@@ -2,7 +2,7 @@ package constants
 
 const InventoryModuleName = "inventory"
 
-// Resource codes for authorization. They are byte-identical to the dynamic-model schema names,
+// Resource codes for authorization. They must be byte-identical to the dynamic-model schema names,
 // because the dynamic resource engine asserts permissions using the schema name as the resource
 // code. A code that drifts from its schema name denies every request with no obvious cause.
 const (
@@ -15,8 +15,7 @@ const (
 	ResourceBrand                 = "inventory_brand"
 
 	// The canonical location resource of the whole Inventory module, owned by neither Warehouse
-	// nor Stock. It is named for the module rather than for Stock because Warehouse configures it
-	// and Stock only references its id. See the change request §4 and §7.
+	// nor Stock: Warehouse configures it and Stock only references its id.
 	ResourceInventoryLocation = "inventory_location"
 
 	ResourceWarehouse               = "inventory_warehouse"

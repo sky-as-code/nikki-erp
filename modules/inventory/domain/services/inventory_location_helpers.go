@@ -17,8 +17,8 @@ import (
 // paramIsArchived is the flag the set_archived action carries.
 const paramIsArchived = basemodel.FieldIsArchived
 
-// loadLocation fetches one location, reporting a missing id as a client error rather than a
-// server one: the id came from the caller.
+// loadLocation fetches one location, reporting a missing id as a client error: the id came from the
+// caller.
 func (this *InventoryLocationDomainServiceImpl) loadLocation(
 	ctx corectx.Context, locationId string,
 ) (*models.InventoryLocation, *ft.ClientErrors, error) {
@@ -46,10 +46,9 @@ func (this *InventoryLocationDomainServiceImpl) loadLocation(
 	return models.NewInventoryLocationFrom(found.Data), vErrs, nil
 }
 
-// writeStatus sets a location's operational state.
-//
-// It goes through the repository rather than the service so the lifecycle rules already checked by
-// the caller are not re-run, and so the write cannot recurse back into the overridden Update.
+// writeStatus sets a location's operational state through the repository, not the service, so the
+// caller's already-checked lifecycle rules are not re-run and the write cannot recurse back into
+// the overridden Update.
 func (this *InventoryLocationDomainServiceImpl) writeStatus(
 	ctx corectx.Context, locationId string, status string,
 ) error {
@@ -97,10 +96,9 @@ func (this *InventoryLocationDomainServiceImpl) writeLocationFields(
 	return errors.Wrap(err, "writeLocationFields")
 }
 
-// withLocationTransaction runs body inside one transaction on a scoped copy of the context.
-//
-// The transaction goes on a clone, never on ctx itself: setting it on the caller's context would
-// leave a committed transaction visible to whatever runs next. See docs/wiki/02 §5.1.
+// withLocationTransaction runs body inside one transaction on a cloned context. The transaction
+// must go on the clone, never ctx itself, or a committed transaction stays visible to whatever runs
+// next.
 func withLocationTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
 	engine, err := engineFor(models.InventoryLocationSchemaName)
 	if err != nil {
@@ -166,8 +164,8 @@ func derefId(v *model.Id) string {
 	return string(*v)
 }
 
-// toComparableString renders a param value for the equality check that protects a system
-// location's structural fields. Only strings and ids are compared, which is all those fields hold.
+// toComparableString renders a param value for the equality check protecting a system location's
+// structural fields. Only strings and ids are compared, which is all those fields hold.
 func toComparableString(value any) string {
 	if value == nil {
 		return ""

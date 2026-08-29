@@ -8,28 +8,22 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// The per-organization purchase policy (BR §47), and what happens when an organization has not set
-// one.
+// The per-organization purchase policy, and what happens when an organization has not set one.
 
 // PurchaseConfiguration is the policy an order is confirmed under.
 type PurchaseConfiguration struct {
 	ApprovalMode models.ApprovalMode
 
-	// ApprovalThreshold is nil when no threshold is set, which is NOT the same as zero. Zero means
-	// "approve everything"; nil means the organization chose two-step approval without saying from
-	// what value, and the sensible reading of that is also "approve everything" — but the two
-	// arrive here differently and a caller may want to tell them apart.
+	// Nil when no threshold is set, which is not the same as zero. Both end up approving
+	// everything, but they arrive differently and a caller may want to tell them apart.
 	ApprovalThreshold *decimal.Decimal
 
 	PoModificationPolicy models.PoModificationPolicy
 }
 
-// DefaultPurchaseConfiguration is the policy of an organization that has not configured one.
-//
-// One-step and allow_edit are the permissive defaults, matching the schema's own default_value on
-// both fields. Defaulting to two-step approval instead would mean that installing this module
-// silently blocked every purchase in an organization that had never asked for approvals — a module
-// must not start refusing work it was not configured to refuse.
+// DefaultPurchaseConfiguration is the policy of an organization that has not configured one. The
+// permissive values match the schema's own default_value on both fields; defaulting to two-step
+// approval would silently block every purchase in an org that never asked for approvals.
 func DefaultPurchaseConfiguration() PurchaseConfiguration {
 	return PurchaseConfiguration{
 		ApprovalMode:         models.ApprovalModeOneStep,
@@ -38,11 +32,8 @@ func DefaultPurchaseConfiguration() PurchaseConfiguration {
 	}
 }
 
-// LoadConfiguration reads one organization's purchase policy, falling back to the default.
-//
-// An org with no row gets the default rather than an error: configuration is optional, and a
-// module that refused to confirm an order until somebody visited a settings page would be broken
-// out of the box.
+// LoadConfiguration reads one organization's purchase policy. An org with no row gets the default
+// rather than an error, since configuration is optional.
 func LoadConfiguration(ctx corectx.Context, orgId string) (PurchaseConfiguration, error) {
 	config := DefaultPurchaseConfiguration()
 	if orgId == "" {
@@ -75,18 +66,10 @@ func LoadConfiguration(ctx corectx.Context, orgId string) (PurchaseConfiguration
 	return config, nil
 }
 
-// RequiresApproval decides whether confirming an order of this total needs an approver (BR §47.1-2).
-//
-// Under one-step it never does, whatever the threshold says: a threshold left over from a previous
-// policy must not keep gating orders after the organization has switched approvals off.
-//
-// Under two-step with no threshold, everything needs approval. That is the reading that matches
-// what the setting is for — an organization that turned on two-step approval and named no value
-// asked for approvals, not for none.
-//
-// The comparison is "at or above", so a threshold of 1000 catches an order of exactly 1000. A
-// threshold is the value at which control begins, and the alternative makes the single most likely
-// test case — an order for exactly the limit — fall the wrong side of it.
+// RequiresApproval decides whether confirming an order of this total needs an approver. Under
+// one-step it never does, whatever the threshold says, so a leftover threshold cannot keep gating
+// orders after approvals are switched off. Under two-step with no threshold everything needs
+// approval. The comparison is at-or-above, so a threshold of 1000 catches an order of exactly 1000.
 func RequiresApproval(config PurchaseConfiguration, total decimal.Decimal) bool {
 	if config.ApprovalMode != models.ApprovalModeTwoStep {
 		return false

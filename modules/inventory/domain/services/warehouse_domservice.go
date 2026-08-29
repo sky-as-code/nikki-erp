@@ -22,23 +22,18 @@ func NewWarehouseDomainService(base drif.DynamicResourceService) *WarehouseDomai
 	return &WarehouseDomainServiceImpl{DynamicResourceService: base}
 }
 
-// WarehouseDomainServiceImpl holds the rules about a warehouse considered on its own: its
-// hierarchy, its code, and its operational state.
-//
-// The operations that also touch locations — creating a warehouse with its tree, reconfiguring a
-// flow — live on the application service instead, because they span two resources and have to be
-// atomic across both.
+// WarehouseDomainServiceImpl holds the rules about a warehouse on its own: its hierarchy, code and
+// operational state. Operations that also touch locations live on the application service, because
+// they span two resources and must be atomic across both.
 type WarehouseDomainServiceImpl struct {
 	drif.DynamicResourceService
 }
 
 var _ drif.DynamicResourceService = (*WarehouseDomainServiceImpl)(nil)
 
-// Update keeps the hierarchy acyclic and protects the code once the warehouse is in use.
-//
-// The code is the first segment of every system location's path, so changing it after those exist
-// would leave the paths describing a warehouse that no longer goes by that name. Renaming would
-// have to rewrite them all, which is a dedicated operation rather than a side effect of an edit.
+// Update keeps the hierarchy acyclic and protects the code once the warehouse is in use: the code
+// is the first segment of every system location's path, so changing it would leave those paths
+// naming a warehouse that no longer exists. Renaming needs its own operation.
 func (this *WarehouseDomainServiceImpl) Update(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -69,10 +64,9 @@ func (this *WarehouseDomainServiceImpl) Update(
 	return this.DynamicResourceService.Update(ctx, prepared)
 }
 
-// SetArchived guards archiving, and leaves an unarchived warehouse suspended rather than active.
-//
-// A warehouse still holding up other things — live children, live supply routes — cannot be
-// archived, because archiving it would leave those pointing at something withdrawn from use.
+// SetArchived guards archiving and leaves an unarchived warehouse suspended rather than active. One
+// with live children or live supply routes cannot be archived, or those would point at something
+// withdrawn from use.
 func (this *WarehouseDomainServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -96,17 +90,15 @@ func (this *WarehouseDomainServiceImpl) SetArchived(
 	if err != nil || result == nil || result.ClientErrors.Count() > 0 {
 		return result, err
 	}
-	// Unarchiving never returns a warehouse straight to service: what it sat in may have changed
-	// while it was away, so someone confirms the configuration through Resume.
+	// Unarchiving never returns a warehouse straight to service: the configuration may have changed
+	// while it was away, so someone confirms it through Resume.
 	return result, this.WriteStatus(ctx, warehouseId, models.WarehouseStatusSuspended)
 }
 
-// Suspend closes a warehouse temporarily, leaving its locations and everything in them untouched.
-//
-// The child locations are deliberately not cascaded: a warehouse can hold thousands, and rewriting
-// them all to say what the warehouse already says would be slow and would lose their own state on
-// resume. Usability is read from both records instead — a location in a suspended warehouse is
-// unusable however the location itself reads.
+// Suspend closes a warehouse temporarily, leaving its locations untouched. Child locations are
+// deliberately not cascaded — rewriting thousands would be slow and would lose their own state on
+// resume — so usability is read from both records: a location in a suspended warehouse is unusable
+// however the location itself reads.
 func (this *WarehouseDomainServiceImpl) Suspend(
 	ctx corectx.Context, warehouseId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {

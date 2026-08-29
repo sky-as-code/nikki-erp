@@ -6,30 +6,18 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 )
 
-// The lifecycle rules shared by every versioned tax configuration.
+// The lifecycle rules shared by every versioned tax configuration: draft may be edited and deleted;
+// published may not have a material field changed and may not be deleted (a material field is
+// anything that could alter what a past calculation produced); withdrawn may not return to draft
+// and may not be deleted.
 //
-// Four resources carry a lifecycle_status — definition versions, rate versions, rules and mappings
-// — plus rounding policies. They all obey the same three rules, so the rules live here once rather
-// than in four near-identical copies that would drift the first time one of them gained a case.
-//
-// The rules (BR-TAX-ESS-SUP-002, SUP-027):
-//
-//  1. draft may be edited freely and deleted.
-//  2. published may not have a material field changed, and may not be deleted. A material field is
-//     anything that could alter what a past calculation produced.
-//  3. withdrawn may not return to draft, and may not be deleted.
-//
-// Why immutability is enforced here rather than by trusting callers: a published rate is cited by
-// name and version in every Tax Snapshot calculated against it. Editing 8% to 10% in place would
-// silently restate what every one of those historical documents says was charged, and there is no
-// way to detect it afterwards — the snapshot and the master would simply agree on the wrong number.
+// Immutability is enforced here rather than trusted to callers because a published rate is cited by
+// name and version in every Tax Snapshot calculated against it, so an in-place edit would silently
+// restate what those historical documents charged, undetectably.
 
-// materialFieldsBySchema lists the fields that freeze on publication, per resource.
-//
-// Everything that feeds determination, the formula, the rate, the base, the treatment, the
-// jurisdiction or the applicable period is material. Descriptive fields — a name, a description,
-// a legal reference correcting a typo — are not, so that fixing a label does not force a new
-// version nobody needs.
+// materialFieldsBySchema lists the fields that freeze on publication, per resource. Anything
+// feeding determination, the formula, rate, base, treatment, jurisdiction or applicable period is
+// material; purely descriptive fields are not.
 var materialFieldsBySchema = map[string][]string{
 	models.TaxDefinitionVersionSchemaName: {
 		models.TaxDefinitionVersionFieldTaxId,
@@ -94,11 +82,8 @@ func lifecycleStatusOf(found *dmodel.DynamicFields, field string) *models.Lifecy
 	return models.WrapLifecycleStatus(*raw)
 }
 
-// assertMaterialFieldsImmutable rejects an edit to a material field of a published record.
-//
-// It reports every offending field rather than stopping at the first, so that a user editing a
-// form is told everything they must undo in one response instead of discovering it a field at a
-// time.
+// assertMaterialFieldsImmutable rejects an edit to a material field of a published record. It
+// reports every offending field rather than stopping at the first.
 func assertMaterialFieldsImmutable(
 	schemaName string,
 	statusField string,
@@ -121,12 +106,9 @@ func assertMaterialFieldsImmutable(
 	}
 }
 
-// assertLifecycleTransition rejects a status change that the state machine does not allow.
-//
-// Only two transitions are legal, and both move forward: draft to published, and either of those
-// to withdrawn. Everything else is refused, most importantly withdrawn back to draft — a withdrawn
-// configuration is kept for audit, and letting it become editable again would reopen exactly the
-// history that withdrawing it was meant to close.
+// assertLifecycleTransition rejects a status change the state machine disallows. Only forward moves
+// are legal: draft to published, and either to withdrawn. Withdrawn never returns to draft, which
+// would reopen the history withdrawing it closed.
 func assertLifecycleTransition(
 	statusField string,
 	params dmodel.DynamicFields,
@@ -162,13 +144,9 @@ func assertLifecycleTransition(
 	}
 }
 
-// assertDeletableLifecycle rejects deletion of anything that has ever been published.
-//
-// Note what this does NOT do: ask any downstream module whether the configuration is in use.
-// BR-TAX-ESS-SUP-026 replaced that question with this one deliberately. Tax cannot enumerate its
-// consumers without depending on them, and a delete permitted because no consumer answered would
-// be exactly as destructive as one permitted because nobody asked. Publication is the boundary Tax
-// owns, so publication is the boundary it enforces.
+// assertDeletableLifecycle rejects deletion of anything that has ever been published. It
+// deliberately does not ask a downstream module whether the configuration is in use: Tax cannot
+// enumerate its consumers without depending on them, so publication is the boundary it enforces.
 func assertDeletableLifecycle(
 	statusField string, found *dmodel.DynamicFields, vErrs *ft.ClientErrors,
 ) {

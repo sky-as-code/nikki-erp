@@ -10,8 +10,7 @@ import (
 )
 
 // AttributeDataType is the shape of an attribute's values. Only AttributeDataTypeOption can take
-// part in a variant combination, because a combination is built from discrete Attribute Value
-// records. See BR §6.5.2.
+// part in a variant combination, which is built from discrete Attribute Value records.
 type AttributeDataType string
 
 const (
@@ -32,20 +31,16 @@ func WrapAttributeDataType(s string) *AttributeDataType {
 }
 
 // VariantCreationMode decides whether and when an attribute's values produce Product Variants.
-// See BR §4.7 and §6.5.3.
 type VariantCreationMode string
 
 const (
-	// VariantCreationModeInstant generates every valid combination as soon as values are
-	// assigned to a template.
+	// VariantCreationModeInstant generates every valid combination as soon as values are assigned.
 	VariantCreationModeInstant = VariantCreationMode("instant")
 
-	// VariantCreationModeDynamic materializes a variant only when a combination is actually
-	// used, for example when a sales configurator selects it.
+	// VariantCreationModeDynamic materializes a variant only when a combination is actually used.
 	VariantCreationModeDynamic = VariantCreationMode("dynamic")
 
-	// VariantCreationModeNever keeps the attribute out of the combination key entirely: it
-	// carries information but never creates a variant.
+	// VariantCreationModeNever keeps the attribute out of the combination key entirely.
 	VariantCreationModeNever = VariantCreationMode("never")
 )
 
@@ -58,8 +53,8 @@ func WrapVariantCreationMode(s string) *VariantCreationMode {
 	return &m
 }
 
-// CreatesVariants reports whether this mode contributes to variant identity. It is the single
-// place the "NEVER is excluded from the combination key" rule is expressed.
+// CreatesVariants reports whether this mode contributes to variant identity. Sole expression of
+// the rule that NEVER is excluded from the combination key.
 func (this VariantCreationMode) CreatesVariants() bool {
 	return this == VariantCreationModeInstant || this == VariantCreationModeDynamic
 }

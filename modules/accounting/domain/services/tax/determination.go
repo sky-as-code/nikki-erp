@@ -8,12 +8,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 )
 
-// Rule evaluation and the tax-set transformation of BR-TAX-ESS-SUP-010.
+// Rule evaluation and tax-set transformation.
 //
-// Determination answers "which taxes apply", never "how much". It starts from the candidate set the
-// caller proposes, lets rules add to and remove from it, optionally substitutes through a mapping,
-// and hands the result to the calculator. Keeping the two apart is what makes it possible to show a
-// user why a tax applied without recomputing what it came to.
+// Determination answers "which taxes apply", never "how much", and runs before calculation. It
+// starts from the caller's candidate set, lets rules add and remove, optionally substitutes through
+// a mapping, then hands the result to the calculator.
 
 // RuleCondition is one predicate, resolved into plain values.
 type RuleCondition struct {
@@ -25,8 +24,8 @@ type RuleCondition struct {
 	Value  string
 	Values []string
 
-	// CurrencyCode tags a money threshold. V1 does not convert, so a condition denominated in a
-	// currency other than the request's simply does not match (BR-TAX-ESS-SUP-007).
+	// CurrencyCode tags a money threshold. There is no FX conversion, so a condition in a currency
+	// other than the request's does not match.
 	CurrencyCode string
 }
 
@@ -74,8 +73,8 @@ type DeterminationInput struct {
 	// CurrencyCode is the request's currency, compared against a money condition's own.
 	CurrencyCode string
 
-	// CandidateTaxIds is what the caller proposes — typically a product's default tax. It is a
-	// starting proposal, not the answer: rules may empty it entirely (BR-TAX-ESS-SUP-010).
+	// CandidateTaxIds is the caller's proposal, typically a product's default tax. Rules may empty
+	// it entirely.
 	CandidateTaxIds []string
 
 	// Rules are every rule in force at the request's tax date, in any order. Evaluation sorts them.
@@ -84,9 +83,8 @@ type DeterminationInput struct {
 	// MappingsById supplies a mapping when a rule result asks to apply one.
 	MappingsById map[string]Mapping
 
-	// OverrideTaxIds, when non-empty, replaces the determined set outright. V1 permits substituting
-	// one set of taxes for another and nothing more — never a raw amount or an arbitrary rate
-	// (BR-TAX-ESS-SUP-023).
+	// OverrideTaxIds, when non-empty, replaces the determined set outright. It may only substitute
+	// taxes, never a raw amount or an arbitrary rate.
 	OverrideTaxIds []string
 }
 
@@ -97,22 +95,19 @@ type DeterminationOutcome struct {
 	// Treatment is set when Status is no_tax_applicable, and says which legal reason applies.
 	Treatment models.TaxTreatment
 
-	// ErrorCode names why an unresolved outcome could not be decided, so a caller can distinguish
-	// a missing rate from an ambiguous mapping without parsing prose.
+	// ErrorCode lets a caller tell a missing rate from an ambiguous mapping without parsing prose.
 	ErrorCode string
 
 	TaxIds []string
 
-	// AppliedRuleIds and AppliedMappingId are the audit trail the snapshot and the simulator need.
+	// AppliedRuleIds and AppliedMappingId are the audit trail the snapshot and simulator need.
 	AppliedRuleIds   []string
 	AppliedMappingId string
 }
 
-// Determine runs the tax-set transformation pipeline.
-//
-// The order is fixed by BR-TAX-ESS-SUP-010: candidates, then rules, then at most one mapping, then
-// an authorized override. It is a pipeline rather than three independent engines precisely so that
-// they cannot disagree — mapping is not a determination engine of its own (TAX-SUP-INV-08).
+// Determine runs the tax-set transformation pipeline in a fixed order: candidates, then rules, then
+// at most one mapping, then an authorized override. One pipeline rather than three engines, so they
+// cannot disagree; mapping is not a determination engine of its own.
 func Determine(input DeterminationInput) DeterminationOutcome {
 	outcome := DeterminationOutcome{
 		TaxIds:         append([]string{}, input.CandidateTaxIds...),
@@ -135,9 +130,9 @@ func Determine(input DeterminationInput) DeterminationOutcome {
 			case models.ActionRemoveTax:
 				outcome.TaxIds = removeTax(outcome.TaxIds, result.TaxId)
 			case models.ActionApplyMapping:
-				// More than one mapping in scope is unresolvable rather than a race to be won by
-				// whichever rule ran first: the two mappings may substitute the same tax for
-				// different targets, and guessing produces a wrong number silently.
+				// Two mappings in scope is unresolvable, not a race won by whichever rule ran first:
+				// they may substitute the same tax for different targets and guessing is silently
+				// wrong.
 				if mappingId != "" && mappingId != result.MappingId {
 					return DeterminationOutcome{
 						Status:         models.DeterminationUnresolved,
@@ -175,15 +170,14 @@ func Determine(input DeterminationInput) DeterminationOutcome {
 		outcome.AppliedMappingId = mappingId
 	}
 
-	// The override is last, so that what a user substitutes is the finished determination rather
-	// than an intermediate set the rules were still working on.
+	// The override runs last, so a user substitutes the finished determination rather than an
+	// intermediate set the rules were still working on.
 	if len(input.OverrideTaxIds) > 0 {
 		outcome.TaxIds = append([]string{}, input.OverrideTaxIds...)
 	}
 
-	// An empty set here is not "no tax due". Nothing positively established that the supply is
-	// outside tax — the configuration simply did not say. Defaulting that to zero is the single
-	// failure mode BR-TAX-ESS-011 exists to prevent, because it is invisible on the invoice.
+	// An empty set is not "no tax due": nothing established the supply is outside tax, the
+	// configuration just did not say. Defaulting it to zero would be invisible on the invoice.
 	if len(outcome.TaxIds) == 0 {
 		return DeterminationOutcome{
 			Status:         models.DeterminationUnresolved,
@@ -196,13 +190,10 @@ func Determine(input DeterminationInput) DeterminationOutcome {
 	return outcome
 }
 
-// evaluateRules returns the matching rules in evaluation order, honouring stop_processing.
-//
-// Order is priority ascending then id ascending, and nothing else. BR-TAX-ESS-SUP-009 removed the
-// old specificity tie-break because "more conditions means more specific" silently reorders rules
-// whenever an author adds one, making precedence an emergent property rather than a decision. The
-// id tie-break is not meaningful in itself; it is there so the order is total and therefore
-// reproducible.
+// evaluateRules returns matching rules in evaluation order, honouring stop_processing. Order is
+// priority ascending then id ascending, and nothing else: no specificity tie-break, since "more
+// conditions means more specific" reorders rules whenever an author adds one. The id tie-break only
+// makes the order total and reproducible.
 func evaluateRules(input DeterminationInput) []Rule {
 	candidates := append([]Rule{}, input.Rules...)
 	sort.SliceStable(candidates, func(left, right int) bool {
@@ -225,11 +216,9 @@ func evaluateRules(input DeterminationInput) []Rule {
 	return matched
 }
 
-// ruleMatches reports whether every condition of a rule holds.
-//
-// Conditions are ANDed, with no way to express OR inside one rule; that is deliberate, and OR is
-// written as a second rule (BR-TAX-ESS-SUP-007). A rule with no conditions matches everything,
-// which is how a generic fallback at low priority is expressed.
+// ruleMatches reports whether every condition of a rule holds. Conditions are ANDed; OR is written
+// as a second rule. A rule with no conditions matches everything, which is how a low-priority
+// fallback is expressed.
 func ruleMatches(rule Rule, input DeterminationInput) bool {
 	for _, condition := range rule.Conditions {
 		if !conditionHolds(condition, input) {
@@ -242,8 +231,8 @@ func ruleMatches(rule Rule, input DeterminationInput) bool {
 func conditionHolds(condition RuleCondition, input DeterminationInput) bool {
 	actual, present := input.Context[condition.FieldKey]
 
-	// A money threshold quoted in another currency is not comparable, and V1 has no FX contract to
-	// make it so. It fails to match rather than being converted at a rate nobody agreed.
+	// A money threshold in another currency is not comparable and there is no FX contract, so it
+	// fails to match rather than being converted at a rate nobody agreed.
 	if condition.CurrencyCode != "" && condition.CurrencyCode != input.CurrencyCode {
 		return false
 	}
@@ -269,11 +258,9 @@ func conditionHolds(condition RuleCondition, input DeterminationInput) bool {
 	return false
 }
 
-// compareValues orders two operands.
-//
-// Money and dates are the only orderable context fields. Dates are ISO-8601, which sorts
-// lexicographically, and money is compared numerically when both sides parse — falling back to a
-// string comparison would silently rank 9 above 10.
+// compareValues orders two operands. Money and dates are the only orderable context fields: dates
+// are ISO-8601 and sort lexicographically, money compares numerically when both sides parse, since
+// string comparison would rank 9 above 10.
 func compareValues(left string, right string) int {
 	leftNumber, leftOk := parseDecimal(left)
 	rightNumber, rightOk := parseDecimal(right)
@@ -298,10 +285,9 @@ func containsValue(values []string, actual string) bool {
 	return false
 }
 
-// sortedResults orders one rule's results by sequence.
-//
-// Load-bearing for substitution: removing VAT 10% and then adding VAT 8% replaces one with the
-// other, whereas the reverse order removes what was just added and leaves the line untaxed.
+// sortedResults orders one rule's results by sequence. Load-bearing for substitution: removing VAT
+// 10% then adding VAT 8% replaces one with the other, while the reverse order removes what was just
+// added and leaves the line untaxed.
 func sortedResults(results []RuleResult) []RuleResult {
 	ordered := append([]RuleResult{}, results...)
 	sort.SliceStable(ordered, func(left, right int) bool {
@@ -346,8 +332,8 @@ func applyMapping(taxIds []string, mapping Mapping) []string {
 			mapped = append(mapped, taxId)
 			continue
 		}
-		// A mapping may legitimately map a tax to nothing, which is how "this context is not taxed
-		// by that tax" is expressed without inventing a zero-rate tax for it.
+		// Mapping a tax to nothing is legitimate: it expresses "not taxed by that tax here"
+		// without inventing a zero-rate tax.
 		if target == "" {
 			continue
 		}
@@ -356,7 +342,6 @@ func applyMapping(taxIds []string, mapping Mapping) []string {
 	return mapped
 }
 
-// parseDecimal reports whether an operand is numeric, and its value if so.
 func parseDecimal(value string) (decimal.Decimal, bool) {
 	parsed, err := decimal.NewFromString(value)
 	if err != nil {

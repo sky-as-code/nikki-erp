@@ -1,17 +1,9 @@
-// Package accounting owns tax: the master data, the effective-dated configuration, the
-// determination rules and the calculation engine that turns them into an amount.
+// Package accounting owns tax: master data, effective-dated configuration, determination rules and
+// the calculation engine.
 //
-// It is a foundation service. Sales, and later Purchase and the point-of-sale surfaces, ask it what
-// tax applies and what it comes to; none of them compute VAT themselves, and none of them are
-// visible from here. The dependency runs one way on purpose (TAX-INV-01 to TAX-INV-03): Accounting
-// holds no foreign key into a sales order, queries no downstream module to ask whether a
-// configuration is in use, and would still calculate correctly in a deployment where Sales does
-// not exist.
-//
-// What it deliberately does not do: post to a ledger, issue a VAT invoice, decide a discount, or
-// convert a currency. Each of those either belongs to another module or has no agreed contract yet,
-// and the requirement is explicit that shipping a half-defined version of one is worse than
-// shipping none.
+// The dependency runs one way: Accounting holds no foreign key into a downstream module and must
+// stay calculable in a deployment without Sales. It does not post to a ledger, issue a VAT invoice,
+// decide a discount, or convert a currency.
 package accounting
 
 import (
@@ -32,17 +24,13 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
-// ModuleSingleton is the exported symbol that will be looked up by the plugin loader.
-//
-// It is typed DynamicModule rather than InCodeModule so that dropping RegisterModels fails the
-// build. Under the wider interface the method is found by a type assertion instead, and a module
-// that has lost it still compiles, still loads, and silently registers no schemas at all.
+// ModuleSingleton is the symbol the plugin loader looks up. It is typed DynamicModule rather than
+// InCodeModule so that dropping RegisterModels fails the build instead of silently registering no
+// schemas.
 var ModuleSingleton modules.DynamicModule = &AccountingModule{}
 
-// OnAppStarted is found by a type assertion rather than by the interface above, so a rename or a
-// changed signature would not fail the build — the module would simply load with its settings
-// schema never registered, and nothing would say so. This assertion is what turns that into a
-// compile error.
+// OnAppStarted is found by a type assertion, so this assertion is what turns a rename or signature
+// change into a compile error instead of a silently unregistered settings schema.
 var _ modules.InCodeModuleAppStarted = &AccountingModule{}
 
 type AccountingModule struct{}
@@ -55,14 +43,9 @@ func (*AccountingModule) Name() string {
 	return modconstants.AccountingModuleName
 }
 
-// Deps names every module Accounting reads through a port.
-//
-// dynamicresource hosts the resource engines. settings stores the organization's tax policy.
-// essential supplies the UoM conversion a fixed tax needs to turn a transaction quantity into the
-// unit its rate is quoted in — Accounting must not implement that conversion itself
-// (BR-TAX-ESS-SUP-014), which is the whole reason essential is named here.
-//
-// Sales is conspicuously absent and must stay so.
+// Deps names every module Accounting reads through a port. essential supplies the UoM conversion a
+// fixed tax needs to reach the unit its rate is quoted in; Accounting must not implement that
+// itself. Sales is absent and must stay so.
 func (*AccountingModule) Deps() []string {
 	return []string{
 		"dynamicresource",
@@ -79,12 +62,9 @@ func (*AccountingModule) Version() semver.SemVer {
 	return *semver.MustParseSemVer("v1.0.0")
 }
 
-// Init implements DynamicModule.
-//
-// The order is load-bearing: the external ports bind first, because a derived service resolves its
-// ports when it is constructed; the engines are created before the application services, because
-// those wrap the engines; and the REST layer is registered last, because it registers the engines'
-// routes and so cannot run before they exist.
+// Init implements DynamicModule. The order is load-bearing: external ports bind first (a derived
+// service resolves its ports at construction), engines before the application services that wrap
+// them, and REST last because it registers the engines' routes.
 func (*AccountingModule) Init() error {
 	if err := external.InitExternal(); err != nil {
 		return err
@@ -98,28 +78,19 @@ func (*AccountingModule) Init() error {
 	return restful.InitRestfulHandlers()
 }
 
-// OnAppStarted implements InCodeModuleAppStarted.
-//
-// The settings schema is registered here rather than in Init() because peer module init order is
-// nondeterministic: Init() cannot assume the settings module has built its engines yet, while
-// OnAppStarted runs after every module has initialized. Registration is idempotent, so it runs
-// unconditionally.
+// OnAppStarted implements InCodeModuleAppStarted. The settings schema is registered here, not in
+// Init(), because peer module init order is nondeterministic and Init() cannot assume the settings
+// module has built its engines. Registration is idempotent.
 func (*AccountingModule) OnAppStarted() error {
 	return deps.Invoke(func(settingsSvc itExt.SettingsRegistrationExtService) error {
 		return registerOrgSettings(corectx.NewRequestContext(context.Background()), settingsSvc)
 	})
 }
 
-// RegisterModels implements DynamicModule.
-//
-// Registration order is load-bearing: an edge is resolved against the schema registry at
-// registration time, so a referenced schema must be registered before the one pointing at it — the
-// jurisdiction before the taxes sited in it, the tax before its versions, the rule before its
-// conditions and results.
-//
-// The schemas are listed here rather than scattered across the packages that own them, so that the
-// order is visible in a single place and a missing registration is a gap in a list rather than an
-// absence nobody can see.
+// RegisterModels implements DynamicModule. Registration order is load-bearing: edges resolve
+// against the schema registry at registration time, so a referenced schema must be registered
+// before the one pointing at it (jurisdiction before taxes, tax before its versions, rule before
+// its conditions and results).
 func (*AccountingModule) RegisterModels() error {
 	return stdErr.Join(
 		dmodel.RegisterSchemaB(models.TaxJurisdictionSchemaBuilder()),

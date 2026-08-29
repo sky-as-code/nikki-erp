@@ -9,18 +9,13 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
-// The pricing fields added by the product-pricing change request, checked at the level that
-// actually catches a mistake.
-//
-// Building a schema proves the JSON parses; it does not prove a computed field can be answered.
-// That resolution happens in FinalizeRelations, and asserting it needs the whole module registered
-// — which the schema registry is global and un-resettable about, so exactly one test may do it.
-// That test is TestProductSchemasRegisterInOrder in product_registration_test.go, and the pricing
-// assertion lives there rather than being duplicated here.
+// Building a schema proves the JSON parses, not that a computed field can be answered; that needs
+// FinalizeRelations over the whole registered module. The registry is global and un-resettable, so
+// only TestProductSchemasRegisterInOrder may do it and the resolution assertions live there.
 
-// The base sales price is the one price the template owns. A variant must NOT carry a copy of it:
-// the whole point of deriving effective_base_sales_price is that raising the template's price
-// moves every variant at once (BR-PRICE-VARIANT-004), which a stored copy would quietly break.
+// The template owns the one base sales price; a variant must not copy it. Deriving
+// effective_base_sales_price is what makes a template price change move every variant at once,
+// which a stored copy would quietly break.
 func TestBaseSalesPriceLivesOnTemplateOnly(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -35,9 +30,8 @@ func TestBaseSalesPriceLivesOnTemplateOnly(t *testing.T) {
 		"variant must not store its own base_sales_price; it derives effective_base_sales_price")
 }
 
-// Cost is the mirror image: it lives on the VARIANT, because two variants of one product really
-// do cost different amounts and nothing relates them (BR-PRICE-VARIANT-006). The template exposes
-// it only as a read-only proxy, never as a stored column of its own.
+// Cost lives on the variant: two variants of one product genuinely cost different amounts and
+// nothing relates them. The template exposes it only as a read-only proxy, never a stored column.
 func TestCostLivesOnVariantAndIsNotStoredOnTemplate(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -54,9 +48,9 @@ func TestCostLivesOnVariantAndIsNotStoredOnTemplate(t *testing.T) {
 	}
 }
 
-// Both halves of the sum must be reachable, and the surcharge must be the template-scoped one.
-// The global inventory_product_attribute_value.price_extra is deprecated precisely because the
-// same value surcharges differently on different products (BR-PRICE-VARIANT-002).
+// Both halves of the sum must be reachable and the surcharge must be the template-scoped one: the
+// global inventory_product_attribute_value.price_extra is deprecated because the same value
+// surcharges differently on different products.
 func TestSalesPriceExtraIsTemplateScoped(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -73,19 +67,10 @@ func TestSalesPriceExtraIsTemplateScoped(t *testing.T) {
 			"whole reason it is denormalised rather than related")
 }
 
-// The generic Product Price resource is gone (PRICE-INV-001, AC-PRICE-044), and nothing may
-// quietly grow back in its place.
-//
-// This replaces an assertion that used to live in product_price_schema_test.go, deleted with the
-// resource. Its premise has inverted — the old test said price "lives on inventory_product_price",
-// whereas now the template owns base_sales_price outright — but the rule it protected is exactly
-// what this change request turns into an invariant: no second, vaguer price field on the product.
-//
-// The named fields are the shapes that would actually be reached for: a bare `price`, a Odoo-style
-// `list_price`, or a `purchase_price` on the product. That last one matters most. Product must
-// hold no authoritative purchase price at all (PRICE-INV-011, AC-PRICE-003) — a vendor's price
-// belongs to Purchase, where it is qualified by vendor, quantity and validity, none of which a
-// single column on a product can express.
+// There is no generic Product Price resource, and no second vaguer price field may grow back on
+// the product. The forbidden names are the shapes actually reached for. purchase_price matters
+// most: a product holds no authoritative purchase price at all, because a vendor's price is
+// qualified by vendor, quantity and validity, which one column cannot express.
 func TestNoGenericOrPurchasePriceOnProduct(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 

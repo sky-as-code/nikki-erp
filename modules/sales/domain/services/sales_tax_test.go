@@ -13,7 +13,7 @@ import (
 )
 
 // stubTaxService returns a canned answer, so these tests exercise the mapping and the refusal rules
-// rather than Accounting's arithmetic — which has its own tests, in its own module.
+// rather than Accounting's arithmetic, which has its own tests in its own module.
 type stubTaxService struct {
 	result  *itExt.CalculateResult
 	err     error
@@ -79,10 +79,9 @@ func testContext() TaxRequestContext {
 	}
 }
 
-// THE test of this file. Accounting stores a rate as a PERCENTAGE — 10 means 10% — and Sales stores
+// THE test of this file. Accounting stores a rate as a PERCENTAGE and Sales stores
 // tax_rate_snapshot as a FRACTION. Getting the conversion wrong is a hundredfold error that no
-// total flags as impossible: a 10% rate stored as 10 reads as 1000%, and every downstream report
-// built on it is wrong in a way that looks like a decimal-point typo rather than a bug.
+// total flags as impossible: a 10% rate stored as 10 reads as 1000%.
 func TestRateIsConvertedFromPercentageToFraction(t *testing.T) {
 	taxSvc := &stubTaxService{result: resolvedResult(itExt.TaxLineResult{
 		LineReference: "a",
@@ -107,8 +106,8 @@ func TestRateIsConvertedFromPercentageToFraction(t *testing.T) {
 	assert.True(t, tax.Total.Equal(dec("10000")))
 }
 
-// An 8% rate converts to 0.08, not 0.8 — the second would be a tenfold error that a careless
-// division by ten rather than a hundred would produce.
+// An 8% rate converts to 0.08, not 0.8; the second is what a division by ten rather than a hundred
+// would produce.
 func TestEightPercentConvertsToEightHundredths(t *testing.T) {
 	taxSvc := &stubTaxService{result: resolvedResult(itExt.TaxLineResult{
 		LineReference: "a",
@@ -127,8 +126,8 @@ func TestEightPercentConvertsToEightHundredths(t *testing.T) {
 		"8 percent must be 0.08, got %s", tax.ByLineKey["a"].RateSnapshot)
 }
 
-// The whole point of failing closed. BR-TAX-ESS forbids reading an undetermined tax as zero: doing so
-// under-charges VAT silently, and the mistake surfaces at a tax audit rather than at the till.
+// The whole point of failing closed. An undetermined tax must never read as zero: that
+// under-charges VAT silently and surfaces at a tax audit rather than at the till.
 func TestUnresolvedTaxIsRefusedRatherThanTreatedAsZero(t *testing.T) {
 	taxSvc := &stubTaxService{result: &itExt.CalculateResult{
 		HasData: true,
@@ -186,8 +185,8 @@ func TestEmptyTaxCodeSkipsTheCall(t *testing.T) {
 	assert.True(t, tax.Total.IsZero())
 }
 
-// The taxable base is the line's NET, after discounts. Passing gross would tax the customer on money
-// they never paid (BR-TAX-ESS-026).
+// The taxable base is the line's NET, after discounts. Passing gross would tax the customer on
+// money they never paid.
 func TestTheTaxableBaseIsNetOfDiscount(t *testing.T) {
 	line := pricedLine("a", "190000")
 	line.GrossAmount = dec("200000")
@@ -208,9 +207,8 @@ func TestTheTaxableBaseIsNetOfDiscount(t *testing.T) {
 		"the discount travels for audit even though it is not part of the base")
 }
 
-// One request for the whole basket, never one per line: a document-scoped rounding policy rounds the
-// total once, and per-line calls summed afterwards produce a number no policy asked for
-// (BR-TAX-ESS-022).
+// One request for the whole basket, never one per line: a document-scoped rounding policy rounds
+// the total once, and per-line calls summed afterwards produce a number no policy asked for.
 func TestTheWholeBasketIsOneRequest(t *testing.T) {
 	lines := []pricing.LineResult{
 		pricedLine("a", "110000"), pricedLine("b", "50000"), pricedLine("c", "20000"),
@@ -228,8 +226,8 @@ func TestTheWholeBasketIsOneRequest(t *testing.T) {
 	assert.Len(t, taxSvc.request.Lines, 3)
 }
 
-// The tax date is the caller's and is never defaulted from the clock (BR-TAX-ESS-SUP-020): a sale
-// must be taxed under the configuration in force when it legally happened.
+// The tax date is the caller's and is never defaulted from the clock: a sale must be taxed under
+// the configuration in force when it legally happened.
 func TestTheTaxDateTravelsUnchanged(t *testing.T) {
 	taxSvc := &stubTaxService{result: resolvedResult(
 		itExt.TaxLineResult{LineReference: "a", Status: itExt.DeterminationResolved})}

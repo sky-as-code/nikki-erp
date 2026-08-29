@@ -10,10 +10,8 @@ import (
 	modconstants "github.com/sky-as-code/nikki-erp/modules/accounting/constants"
 )
 
-// taxRoutePaths is the set of sub-paths initTaxCalculationV1 registers.
-//
-// Declared here and asserted against the real source below, so that adding an endpoint without
-// updating this list fails rather than silently going unchecked.
+// taxRoutePaths is the set of sub-paths initTaxCalculationV1 registers, asserted against the real
+// source below so that adding an endpoint without updating this list fails.
 var taxRoutePaths = []string{
 	"/tax/calculate",
 	"/tax/simulate",
@@ -22,10 +20,8 @@ var taxRoutePaths = []string{
 }
 
 // registerTaxRoutes mirrors what initTaxCalculationV1 registers, minus the dependency injection.
-//
-// The paths are asserted rather than the handlers because a handler bound to the wrong path is the
-// failure that actually happens: the DI wiring is proven by the application booting, but a typo in
-// a route string produces a 404 that nothing else catches.
+// Paths are asserted rather than handlers: booting proves the DI wiring, but a typo in a route
+// string produces a 404 nothing else catches.
 func registerTaxRoutes(routeV1 *echo.Group) {
 	noop := func(echoCtx *echo.Context) error { return nil }
 	for _, path := range taxRoutePaths {
@@ -62,8 +58,8 @@ func TestTaxRoutesAreRegisteredUnderTheModulePrefix(t *testing.T) {
 	}
 }
 
-// The prefix is the same string the IAM resource codes and the schema names share. A route group
-// that drifted from it would leave the endpoints reachable at a path no client is calling.
+// The prefix is the same string the IAM resource codes and schema names share; drifting from it
+// leaves the endpoints reachable at a path no client calls.
 func TestModuleRoutePrefixIsStable(t *testing.T) {
 	if modconstants.AccountingRouteV1 != "/v1/accounting" {
 		t.Fatalf("the module route prefix changed to %q; clients and docs assume /v1/accounting",
@@ -72,11 +68,8 @@ func TestModuleRoutePrefixIsStable(t *testing.T) {
 }
 
 // Every custom route must carry SmokeAuthz, and this test reads the real source to check it.
-//
-// Without that middleware the handler runs with an empty permission context, so every request is
-// denied — including an owner's, whose bypass depends on a flag the middleware is what populates.
-// The failure is invisible to a compiler and to a route-path assertion: the endpoint exists, is
-// reachable, and answers 403 to everyone. It cost a live debugging session to find once already.
+// Without it the handler runs with an empty permission context and answers 403 to everyone,
+// including an owner, which no compiler or route-path assertion would catch.
 func TestCustomRoutesCarrySmokeAuthz(t *testing.T) {
 	source, err := os.ReadFile("index.go")
 	if err != nil {

@@ -30,8 +30,7 @@ func at(day int, hour int) *time.Time {
 	return &moment
 }
 
-// The line compatibility rules of §26.1, which are what decide whether two requests for the same
-// goods become one line or stay two.
+// The line compatibility rules deciding whether two requests for the same goods become one line.
 func TestLinesAreMergeable(t *testing.T) {
 	testCases := []struct {
 		name   string
@@ -110,7 +109,7 @@ func TestFreeTextLinesAreNeverMerged(t *testing.T) {
 	assert.False(t, linesAreMergeable(freight, handling))
 }
 
-// A section or note is document structure, not a quantity. Merging two headings would drop one.
+// A section or note is document structure, not a quantity; merging two headings would drop one.
 func TestStructuralLinesAreNeverMerged(t *testing.T) {
 	for _, lineType := range []models.PurchaseOrderLineType{
 		models.PurchaseOrderLineTypeSection,
@@ -145,8 +144,8 @@ func orderFor(code, vendorId, currencyId, agreementId string, deadline *time.Tim
 	return order
 }
 
-// §26: merging must not cross vendor, currency or agreement. Each would produce a document that
-// commits to something none of the sources did.
+// Merging must not cross vendor, currency or agreement: each would produce a document that commits
+// to something none of the sources did.
 func TestIncompatibleOrdersAreRefused(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -193,7 +192,7 @@ func TestCompatibleOrdersPass(t *testing.T) {
 	assert.Nil(t, assertCompatibleOrders(orders))
 }
 
-// The oldest order is the target and keeps its code, so the vendor's own paperwork still matches.
+// The oldest order is the target and keeps its code, so the vendor's paperwork still matches.
 func TestTheOldestOrderIsTheMergeTarget(t *testing.T) {
 	t.Run("by deadline", func(t *testing.T) {
 		orders := []dmodel.DynamicFields{
@@ -233,7 +232,7 @@ func TestTheOldestOrderIsTheMergeTarget(t *testing.T) {
 }
 
 // timeOf must distinguish "no date" from "the zero time", or every dateless line would look like it
-// wanted delivery in year one — and every pair of them would merge on that basis.
+// wanted delivery in year one and every pair would merge on that basis.
 func TestTimeOfDistinguishesAbsentFromZero(t *testing.T) {
 	moment := time.Date(2026, 3, 10, 9, 0, 0, 0, time.UTC)
 

@@ -4,16 +4,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
-// The template-owned fields a variant exposes as its own.
-//
-// A variant's display name, category and lifecycle all live on its template: storing a second
-// copy on every variant would go stale the moment the template is edited. Each template_{x}
-// field is declared in product_variant.json as a related computed field copying template.{x},
-// and the engine's computed-field layer fills it on every read with one batched template query
-// per page. These getters only read the filled values.
-//
-// There are deliberately no setters. A computed value is derived, never authored: the engine is
-// its only writer.
+// The template-owned fields a variant exposes as its own. Each template_{x} field is declared in
+// product_variant.json as a related computed field copying template.{x}, filled by the engine on
+// read with one batched template query per page; a stored copy would go stale when the template is
+// edited. There are deliberately no setters: the engine is the only writer of a computed value.
 
 func (this ProductVariant) GetTemplateName() *model.LangJson {
 	return this.GetFieldData().GetLangJson(ProductVariantFieldTemplateName)
@@ -47,8 +41,8 @@ func (this ProductVariant) GetTemplateProductTypeId() *model.Id {
 	return this.GetFieldData().GetModelId(ProductVariantFieldTemplateProductTypeId)
 }
 
-// GetTemplateStatus is the template's lifecycle, which is not this variant's own: an active
-// variant of a discontinued template is a real state, so the two must stay readable apart.
+// GetTemplateStatus is the template's lifecycle, not the variant's: an active variant of a
+// discontinued template is a real state, so the two must stay readable apart.
 func (this ProductVariant) GetTemplateStatus() *ProductTemplateStatus {
 	status := this.GetFieldData().GetString(ProductVariantFieldTemplateStatus)
 	if status == nil {

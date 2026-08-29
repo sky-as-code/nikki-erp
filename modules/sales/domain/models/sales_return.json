@@ -1,0 +1,247 @@
+{
+	"name": "sales_return",
+	"label": "sales_return.label",
+	"table_name": "sales_returns",
+	"should_build_db": true,
+	"record_label_field": "return_number",
+	"default_search_fields": [
+		"return_number",
+		"status"
+	],
+	"search_indexes": [
+		{
+			"index_name": "sales_returns_tid_order",
+			"fields": [
+				"sales_order_id"
+			]
+		},
+		{
+			"index_name": "sales_returns_tid_status",
+			"fields": [
+				"status"
+			]
+		},
+		{
+			"index_name": "sales_returns_tid_fiscal",
+			"fields": [
+				"fiscal_adjustment_status"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "return_number",
+			"label": "fields.return_number",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 50
+			},
+			"required_for_create": true,
+			"unique": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The return's own reference, allocated on create and never reused. Separate from the order number because a return is its own document (BR 59): a partial return never rewrites the order it came from, so the two need distinct identities for anyone reconciling them later."
+			}
+		},
+		{
+			"name": "sales_order_id",
+			"label": "fields.sales_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order whose goods are coming back. Immutable: a return that could be re-pointed at a different order would move money and stock between two unrelated sales."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"draft",
+					"approved",
+					"processing",
+					"completed",
+					"cancelled"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"no_update": true,
+			"description": {
+				"en-US": "Where the return has reached COMMERCIALLY. Per D-17 it reaches 'completed' once the goods are back and the money is refunded — the customer-facing halves — and NOT when the tax paperwork succeeds. fiscal_adjustment_status carries that separately and never gates this one. Moved only by the return service, never by a plain update."
+			}
+		},
+		{
+			"name": "inventory_return_status",
+			"label": "fields.inventory_return_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"not_required",
+					"pending",
+					"processing",
+					"completed",
+					"failed"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"no_update": true,
+			"description": {
+				"en-US": "Whether the goods have physically come back. 'not_required' is the ordinary state for a return of services or non-stocked lines, which complete on the refund alone (D-32). One of the two halves that decide 'completed'."
+			}
+		},
+		{
+			"name": "refund_status",
+			"label": "fields.refund_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"not_required",
+					"pending",
+					"processing",
+					"completed",
+					"failed"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"no_update": true,
+			"description": {
+				"en-US": "Whether the customer has been paid back. 'not_required' covers a return against an order that was never paid — there is nothing to give back. The other half that decides 'completed'."
+			}
+		},
+		{
+			"name": "fiscal_adjustment_status",
+			"label": "fields.fiscal_adjustment_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"not_required",
+					"pending",
+					"processing",
+					"completed",
+					"failed"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"no_update": true,
+			"description": {
+				"en-US": "Whether the VAT invoice has been corrected with the authority. INDEPENDENT of status by design (BR 66, D-17): a failure here must never roll back goods already returned or money already refunded, and must never take money back from a customer. A 'failed' value is a retryable to-do for Accounting, not a customer-facing problem, and retrying it does not move the return's own status."
+			}
+		},
+		{
+			"name": "reason",
+			"label": "fields.reason",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 500
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "Why the goods are coming back. Mandatory: a return moves money out of the business, and one with no stated reason cannot be audited or disputed later."
+			}
+		},
+		{
+			"name": "inventory_disposition",
+			"label": "fields.inventory_disposition",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"restock",
+					"scrap",
+					"quarantine"
+				]
+			},
+			"description": {
+				"en-US": "What should happen to the goods once back — business intent only. Inventory decides the actual location and movement (BR 56); naming a warehouse here would put Inventory's decisions in Sales, which is the separation BR 44 exists to keep."
+			}
+		},
+		{
+			"name": "refund_total",
+			"label": "fields.refund_total",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "What the customer is owed, computed from the HISTORICAL amounts the returned quantities actually carried (BR 60), never from a current price. Includes any promotion clawback, capped so a clawback larger than the refund never turns the refund negative (D-12)."
+			}
+		},
+		{
+			"name": "inventory_reference",
+			"label": "fields.inventory_reference",
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 100
+			},
+			"description": {
+				"en-US": "Inventory's own handle for the incoming movement, once it has accepted one. The only durable link to what physically happened, so it is stored rather than re-derived."
+			}
+		},
+		{
+			"name": "failure_reason",
+			"label": "fields.failure_reason",
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 500
+			},
+			"description": {
+				"en-US": "Why the most recent step failed, in the words of whichever system refused it. Kept so an operator retrying has something to act on rather than a bare 'failed'."
+			}
+		},
+		{
+			"name": "requested_at",
+			"label": "fields.requested_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the return was raised. Stored rather than read from created_at because the return window is measured against the ORDER, and having both timestamps side by side is what makes that check auditable."
+			}
+		},
+		{
+			"name": "completed_at",
+			"label": "fields.completed_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the return became commercially complete — goods back and money refunded. Deliberately unrelated to when the tax correction succeeded, which may be later or never."
+			}
+		},
+		{
+			"name": "cancelled_at",
+			"label": "fields.cancelled_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the return was called off, which is only possible before anything irreversible has happened."
+			}
+		}
+	],
+	"edges_to": [
+		{
+			"edge": "sales_order",
+			"label": {
+				"en-US": "Sales order"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": {
+				"sales_order_id": "id"
+			},
+			"on_delete": "NO ACTION"
+		}
+	]
+}

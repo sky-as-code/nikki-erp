@@ -7,15 +7,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// The wire shapes of the Products capabilities.
+// The wire shapes of the Products capabilities. They live here, not transport/, because the
+// engine actions that build them are in dynamicengines/, which may not import outward. The engine
+// passes an action's Data to JSON untouched, so these tagged structs define the JSON contract.
 //
-// They live here rather than in transport/ because the engine actions that build them are in
-// dynamicengines/, which may not import outward. The engine's response path passes an action's
-// Data to JSON untouched, so these tagged structs — not the domain types — are what defines the
-// JSON contract.
-//
-// Weights and dimensions travel as strings. A JSON number is parsed as a float64 by most
-// clients, which would lose precision before the value ever reaches a caller.
+// Weights and dimensions travel as strings: most clients parse a JSON number as float64, losing
+// precision before the value reaches a caller.
 
 // EffectiveProductView is the flattened product a consumer reads instead of joining the template
 // and variant itself.
@@ -85,10 +82,9 @@ type AttributeSelectionInput struct {
 	Mode        string `json:"mode"`
 }
 
-// ToSelection maps the request shape onto the domain type.
-//
-// An unrecognized mode falls back to INSTANT, which keeps the attribute in the combination.
-// Dropping it silently would resolve the caller to a different variant than they asked for.
+// ToSelection maps the request shape onto the domain type. An unrecognized mode falls back to
+// INSTANT, keeping the attribute in the combination; dropping it would resolve the caller to a
+// different variant than they asked for.
 func (this AttributeSelectionInput) ToSelection() AttributeSelection {
 	return AttributeSelection{
 		AttributeId: this.AttributeId,
@@ -114,8 +110,8 @@ func NewResolveProductSelectionView(data ResolveProductSelectionResultData) Reso
 type GenerateVariantsView struct {
 	CreatedVariantIds []string `json:"created_variant_ids"`
 
-	// ObsoleteVariantIds are reported rather than removed: one a transaction already
-	// references must be archived, not deleted, and only the caller knows which.
+	// ObsoleteVariantIds are reported rather than removed: one a transaction already references
+	// must be archived, not deleted, and only the caller knows which.
 	ObsoleteVariantIds []string `json:"obsolete_variant_ids"`
 
 	UnchangedCount int `json:"unchanged_count"`

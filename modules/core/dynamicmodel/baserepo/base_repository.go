@@ -253,6 +253,12 @@ func (this *BaseDynamicRepositoryImpl) Insert(ctx corectx.Context, data dmodel.D
 	// if err := this.ensureTenantKeyIn(data); err != nil {
 	// 	return nil, err
 	// }
+	// created_at and etag are NOT NULL with no database default, and nothing below fills them:
+	// the schema's `auto_generated` flag is applied by the resource service, which a caller
+	// reaching the repository directly has bypassed. Without these the insert fails in Postgres
+	// rather than in Go, so it surfaces as a 500 with no indication of which column was missing.
+	this.trySetCreatedAt(data)
+	this.trySetEtag(data)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlInsert(this.schema, data, false)
 	if err != nil {
 		return nil, err
@@ -1483,6 +1489,21 @@ func (this *BaseDynamicRepositoryImpl) filterUniqueKeysWithValues(data dmodel.Dy
 		}
 	}
 	return result
+}
+
+// trySetCreatedAt stamps created_at on insert, the way trySetUpdatedAt does on update.
+//
+// A caller that already supplied one keeps it: an importer or a replay writes the time the record
+// was originally created, and overwriting that would silently restate history.
+func (this *BaseDynamicRepositoryImpl) trySetCreatedAt(data dmodel.DynamicFields) {
+	if _, ok := this.schema.Column(basemodel.FieldCreatedAt); !ok {
+		return
+	}
+	if existing, ok := data[basemodel.FieldCreatedAt]; ok && existing != nil {
+		return
+	}
+	field := this.schema.MustField(basemodel.FieldCreatedAt)
+	data[basemodel.FieldCreatedAt] = *field.DataType().DefaultValue().Get()
 }
 
 func (this *BaseDynamicRepositoryImpl) trySetUpdatedAt(data dmodel.DynamicFields) {

@@ -13,30 +13,15 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// Archiving and unarchiving a vendor price (section 25).
-//
-// The two directions are NOT symmetric, and that asymmetry is the whole of this file:
-//
-//   - ARCHIVING is always allowed. Withdrawing an offer is the vendor's or the buyer's prerogative
-//     and nothing downstream breaks, because a purchase order line records the price it resolved
-//     rather than a live reference to this row (PRICE-INV-024). An archived quote stays readable
-//     forever; what it stops doing is pricing anything new.
-//   - UNARCHIVING revalidates, because the world moved on while the row was retired. The vendor may
-//     have been blocked, the product delisted, the unit archived. Bringing back a row that would be
-//     refused if it were written today would put a price into resolution that no create or update
-//     would have accepted — a validation rule that can be bypassed by archiving and unarchiving is
-//     not a rule.
-//
-// It is a derived service rather than a ValidateExtra hook because the engine REFUSES that hook on
-// set_archived: DefineAction reports that "the crud helper behind it accepts none, so the hook would
-// never run". Attaching one would have failed at boot rather than silently — but it still means the
-// check has to live here.
+// Archiving and unarchiving a vendor price. The two directions are not symmetric: archiving is
+// always allowed, since an order line records the price it resolved rather than a live reference to
+// this row, so an archived quote stays readable and only stops pricing anything new. Unarchiving
+// revalidates, because the vendor, product or unit may have become unusable meanwhile, and a rule
+// that archiving and unarchiving can bypass is not a rule. This is a derived service rather than a
+// ValidateExtra hook because the engine refuses that hook on set_archived.
 
 // NewVendorProductPriceDomainService derives the vendor price service from the engine's default.
-//
-// Only SetArchived is overridden. Create and update are already guarded through ValidateExtra,
-// which the engine does support for them, and duplicating those checks here would give two places
-// for the same rule to drift apart.
+// Only SetArchived is overridden; create and update are already guarded through ValidateExtra.
 func NewVendorProductPriceDomainService(
 	base drif.DynamicResourceService, validator *VendorPriceValidator,
 ) *VendorProductPriceDomainServiceImpl {
@@ -49,14 +34,13 @@ func NewVendorProductPriceDomainService(
 type VendorProductPriceDomainServiceImpl struct {
 	drif.DynamicResourceService
 
-	// validator is the same one the write guards use, so archiving and creating enforce one set of
-	// rules rather than two implementations of the same intent.
+	// The same validator the write guards use, so archiving and creating enforce one set of rules.
 	validator *VendorPriceValidator
 }
 
 var _ drif.DynamicResourceService = (*VendorProductPriceDomainServiceImpl)(nil)
 
-// SetArchived archives freely and revalidates on the way back (section 25).
+// SetArchived archives freely and revalidates on the way back.
 func (this *VendorProductPriceDomainServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -69,9 +53,8 @@ func (this *VendorProductPriceDomainServiceImpl) SetArchived(
 		return nil, err
 	}
 	if stored == nil {
-		// Not found is the base call's answer to give, in its own shape. Producing a second one
-		// here would mean two different responses for the same condition depending on which
-		// direction was asked for.
+		// Let the base call report not-found in its own shape, so the answer does not depend on
+		// which direction was asked for.
 		return this.DynamicResourceService.SetArchived(ctx, params)
 	}
 
@@ -82,20 +65,16 @@ func (this *VendorProductPriceDomainServiceImpl) SetArchived(
 		}
 	}
 	if vErrs.Count() > 0 {
-		// The refusals name the vendor, the product or the unit that has since become unusable,
-		// which is what somebody restoring a price needs to know: the row is fine, the world
-		// around it changed.
+		// The refusals name whichever of the vendor, product or unit has since become unusable.
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
 
 	return this.DynamicResourceService.SetArchived(ctx, params)
 }
 
-// isUnarchiving reports whether this request is bringing a row back.
-//
-// An ABSENT is_archived is treated as archiving, matching the engine's own reading: the command
-// carries a nil flag and the repository leaves the value alone, so nothing is being restored and
-// there is nothing to revalidate. Only an explicit false asks for the check.
+// isUnarchiving reports whether this request is bringing a row back. An absent is_archived counts
+// as archiving, matching the engine: the repository leaves the value alone, so nothing is restored
+// and there is nothing to revalidate. Only an explicit false asks for the check.
 func isUnarchiving(params dmodel.DynamicFields) bool {
 	value, present := params[basemodel.FieldIsArchived]
 	if !present || value == nil {
@@ -112,11 +91,8 @@ func isUnarchiving(params dmodel.DynamicFields) bool {
 	return !archived
 }
 
-// loadVendorPrice reads the stored row so it can be validated as it stands.
-//
-// The stored record is validated, not the request: a set_archived request carries an id, an etag
-// and a flag, and validating that would check nothing at all. What matters is whether the row's own
-// vendor, product and unit are still usable.
+// loadVendorPrice reads the stored row so it can be validated as it stands. The stored record is
+// validated, not the request, which carries only an id, an etag and a flag.
 func (this *VendorProductPriceDomainServiceImpl) loadVendorPrice(
 	ctx corectx.Context, recordId string,
 ) (dmodel.DynamicFields, error) {

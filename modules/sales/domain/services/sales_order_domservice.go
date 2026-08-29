@@ -13,14 +13,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// SalesOrderDomainServiceImpl derives the order resource, adding the rules the built-in CRUD cannot
-// express.
+// SalesOrderDomainServiceImpl derives the order resource, adding the rules the built-in CRUD
+// cannot express.
 //
-// Two of those rules exist here because they exist NOWHERE else. The framework declares no CHECK
-// constraints — no migration in either tree contains one — so the BR §55 quantity invariant and the
-// BR §11 snapshot immutability rule have exactly one enforcement point, which is this file. The plan
-// asked for them in the database as well; that is not available, and the consequence is that a write
-// bypassing this service bypasses the invariant entirely.
+// The framework declares no CHECK constraints, so the quantity invariant and the snapshot
+// immutability rule have exactly one enforcement point, which is this file: a write bypassing this
+// service bypasses the invariant entirely.
 type SalesOrderDomainServiceImpl struct {
 	drif.DynamicResourceService
 }
@@ -31,12 +29,9 @@ func NewSalesOrderDomainService(base drif.DynamicResourceService) *SalesOrderDom
 	return &SalesOrderDomainServiceImpl{DynamicResourceService: base}
 }
 
-// AssertEditable refuses a change to an order that is no longer a draft.
-//
-// Confirmation is the line: before it the document may be repriced freely, after it the numbers are
-// what the business promised the customer (BR §11). A cancelled order is refused too, and
-// deliberately — it is a record of something that was attempted, and rewriting it would destroy the
-// evidence of what was attempted.
+// AssertEditable refuses a change to an order that is no longer a draft. Confirmation is the line:
+// after it the numbers are what the business promised the customer. A cancelled order is refused
+// too, deliberately, since rewriting it would destroy the evidence of what was attempted.
 func (this *SalesOrderDomainServiceImpl) AssertEditable(
 	ctx corectx.Context, orderId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -70,11 +65,9 @@ func NewSalesOrderLineDomainService(
 	return &SalesOrderLineDomainServiceImpl{DynamicResourceService: base}
 }
 
-// Create writes a line, refusing one whose quantities break the BR §55 invariant.
-//
-// The check runs on create as well as on update because a line can be born broken: a caller posting
-// ordered_quantity 0, or a fulfilled quantity above it, would otherwise be stored and only discovered
-// when something tried to compute a refund from it.
+// Create writes a line, refusing one whose quantities break the invariant. The check runs on
+// create as well as update because a line can be born broken: ordered_quantity 0, or a fulfilled
+// quantity above it, would otherwise surface only when something computed a refund from it.
 func (this *SalesOrderLineDomainServiceImpl) Create(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
@@ -87,9 +80,8 @@ func (this *SalesOrderLineDomainServiceImpl) Create(
 // Update refuses a change that would break the quantity invariant or edit a frozen snapshot.
 //
 // The merge with the stored row matters: an update carries only the fields the caller touched, so
-// checking the payload alone would let "fulfilled_quantity = 5" through against a stored
-// ordered_quantity of 3. The invariant is a property of the resulting row, so the resulting row is
-// what must be checked.
+// checking the payload alone would let a fulfilled_quantity of 5 through against a stored
+// ordered_quantity of 3. The invariant is a property of the resulting row.
 func (this *SalesOrderLineDomainServiceImpl) Update(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -118,17 +110,12 @@ func (this *SalesOrderLineDomainServiceImpl) Update(
 	return this.DynamicResourceService.Update(ctx, params)
 }
 
-// assertSnapshotsUnchanged enforces BR §11: once the order is confirmed, the line's snapshot fields
-// are frozen.
+// assertSnapshotsUnchanged freezes a line's snapshot fields once the order is confirmed.
 //
-// It is the order's status that decides, not the line's own state, because a snapshot records how
-// the world looked when the BUSINESS committed to the sale. A line added to a draft may be re-priced
-// as often as the basket changes; the same line on a confirmed order may not, because a receipt has
-// been printed from it.
-//
-// Only a field whose value actually DIFFERS is refused. A caller re-submitting a whole line
-// unchanged is not trying to edit a snapshot, and refusing it would make a read-modify-write cycle
-// impossible for the mutable fields alongside it.
+// The order's status decides, not the line's own state, because a snapshot records how the world
+// looked when the business committed to the sale. Only a field whose value actually DIFFERS is
+// refused, so a caller re-submitting a whole line unchanged can still read-modify-write the mutable
+// fields alongside it.
 func (this *SalesOrderLineDomainServiceImpl) assertSnapshotsUnchanged(
 	ctx corectx.Context, stored dmodel.DynamicFields, params dmodel.DynamicFields,
 ) (*ft.ClientErrors, error) {
@@ -139,8 +126,8 @@ func (this *SalesOrderLineDomainServiceImpl) assertSnapshotsUnchanged(
 		return nil, err
 	}
 	if orderRecord == nil {
-		// The line's order is gone. That is a broken reference rather than a rule the caller broke,
-		// so it is not this check's business to report it; leave the write to fail on its own terms.
+		// The line's order is gone: a broken reference rather than a rule the caller broke, so leave
+		// the write to fail on its own terms.
 		return nil, nil
 	}
 	if !models.NewSalesOrderFrom(orderRecord).IsConfirmed() {
@@ -166,11 +153,9 @@ func (this *SalesOrderLineDomainServiceImpl) assertSnapshotsUnchanged(
 	return vErrs, nil
 }
 
-// assertQuantitiesConsistent enforces BR §55 on the resulting row:
-// ordered > 0, 0 <= fulfilled <= ordered, 0 <= returned <= fulfilled.
-//
-// Each violation names the field the caller must fix rather than the rule as a whole, so a form can
-// point at the offending box. Returning nil means the row is consistent.
+// assertQuantitiesConsistent enforces, on the resulting row: ordered > 0, 0 <= fulfilled <=
+// ordered, 0 <= returned <= fulfilled. Each violation names the field the caller must fix rather
+// than the rule as a whole, so a form can point at the offending box.
 func assertQuantitiesConsistent(fields dmodel.DynamicFields) *ft.ClientErrors {
 	ordered := decimalField(fields, models.SalesOrderLineFieldOrderedQuantity)
 	fulfilled := decimalField(fields, models.SalesOrderLineFieldFulfilledQuantity)
@@ -209,7 +194,7 @@ func assertQuantitiesConsistent(fields dmodel.DynamicFields) *ft.ClientErrors {
 	return vErrs
 }
 
-// mergedFields is the stored row overlaid with the submitted changes — the row as it would be after
+// mergedFields is the stored row overlaid with the submitted changes: the row as it would be after
 // the update.
 func mergedFields(stored, params dmodel.DynamicFields) dmodel.DynamicFields {
 	merged := make(dmodel.DynamicFields, len(stored)+len(params))
@@ -222,11 +207,9 @@ func mergedFields(stored, params dmodel.DynamicFields) dmodel.DynamicFields {
 	return merged
 }
 
-// decimalField reads a quantity or money field, treating absent as zero.
-//
-// It accepts every shape the value can arrive in — a repository read, a JSON round-trip and a
-// directly-constructed payload each produce a different concrete type — and never bare
-// type-asserts, because a bare assertion on an unexpected type panics the request.
+// decimalField reads a quantity or money field, treating absent as zero. It accepts every shape
+// the value can arrive in (repository read, JSON round-trip, directly-constructed payload) and
+// never bare type-asserts, because a bare assertion on an unexpected type panics the request.
 func decimalField(fields dmodel.DynamicFields, name string) decimal.Decimal {
 	value, ok := fields[name]
 	if !ok || value == nil {
@@ -240,9 +223,9 @@ func decimalField(fields dmodel.DynamicFields, name string) decimal.Decimal {
 			return *typed
 		}
 	case string:
-		// A decimal crosses JSON as a string so it does not lose precision on the way. A value that
-		// will not parse is treated as zero, which fails the ordered > 0 check and is reported as a
-		// violation rather than silently accepted.
+		// A decimal crosses JSON as a string so it does not lose precision. A value that will not
+		// parse is treated as zero, which fails the ordered > 0 check and is reported as a violation
+		// rather than silently accepted.
 		if parsed, err := decimal.NewFromString(typed); err == nil {
 			return parsed
 		}
@@ -257,11 +240,9 @@ func decimalField(fields dmodel.DynamicFields, name string) decimal.Decimal {
 }
 
 // sameFieldValue compares a stored value with a submitted one across the type differences a round
-// trip introduces.
-//
-// A decimal read back from the database and the same decimal submitted as a string are equal in
-// value and different in type, so a plain == would report every re-submitted snapshot as an attempt
-// to change it — and confirmed orders would become unupdatable in any field.
+// trip introduces. A decimal read from the database and the same decimal submitted as a string are
+// equal in value and different in type, so a plain == would report every re-submitted snapshot as
+// an attempt to change it, making confirmed orders unupdatable in any field.
 func sameFieldValue(stored, submitted any) bool {
 	if stored == nil && submitted == nil {
 		return true
@@ -290,12 +271,9 @@ func asDecimal(value any) (decimal.Decimal, bool) {
 	return decimal.Zero, false
 }
 
-// stringValue renders a value for comparison without ever bare type-asserting.
-//
-// fmt.Sprint is the fallback rather than an assertion on some String() interface: the values here
-// arrive from a repository, a JSON decode or a hand-built payload, so the concrete type is not
-// knowable in advance, and an assertion that guessed wrong would panic the request rather than
-// report a mismatch.
+// stringValue renders a value for comparison without ever bare type-asserting. fmt.Sprint is the
+// fallback because these values arrive from a repository, a JSON decode or a hand-built payload,
+// so the concrete type is not knowable in advance and a wrong assertion would panic the request.
 func stringValue(value any) string {
 	switch typed := value.(type) {
 	case string:

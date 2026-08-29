@@ -1,14 +1,7 @@
-// This file contains the only raw SQL in the Inventory module, and it is a deliberate exception
-// to the engine-first rule in docs/wiki/07 §6.7 rather than drift.
-//
-// The reason is narrow and checkable: reserving stock safely requires SELECT ... FOR UPDATE, and
-// the query builder cannot emit it. orm.QueryBuilder exposes no lock clause and SqlSelectGraphOpts
-// has no lock field, so there is no combination of engine calls that produces a row lock. Without
-// one, two concurrent reservations both read the same available quantity and both reserve it,
-// which is precisely the over-reservation BR §8.6 and AC-STOCK-007 exist to prevent.
-//
-// Everything else about stock still goes through the engine. Only the lock is hand-written, and
-// only because the alternative is a race that no amount of application-level care can close.
+// The only raw SQL in the Inventory module, a deliberate exception to the engine-first rule:
+// reserving stock safely requires SELECT ... FOR UPDATE, and the query builder cannot emit it —
+// orm.QueryBuilder exposes no lock clause and SqlSelectGraphOpts has no lock field. Without the
+// lock, two concurrent reservations read the same available quantity and both reserve it.
 package services
 
 import (
@@ -27,10 +20,8 @@ import (
 )
 
 // LockedQuant is one stock balance row held under a row lock until the enclosing transaction ends.
-//
-// Its quantities are read inside the lock and are therefore current as of the lock being taken —
-// which is the only moment at which they can be trusted. A value read before the lock is stale by
-// definition, however recently it was fetched.
+// Its quantities are read inside the lock, the only moment they can be trusted; a value read before
+// the lock is stale by definition.
 type LockedQuant struct {
 	Id         model.Id
 	OnHand     decimal.Decimal
@@ -53,28 +44,20 @@ type QuantLockKey struct {
 }
 
 // LockQuantsForUpdate takes a row lock on every stock balance for a variant in a location and
-// returns them, ordered oldest first.
+// returns them, ordered oldest first. Three properties are load-bearing:
 //
-// Three properties make this correct, and none of them is optional:
+//   - It must run inside a transaction. ExtractClient falls back to the connection pool otherwise,
+//     where the locks are released the instant the statement returns, leaving a caller that
+//     believes it holds them and does not. It refuses to run rather than degrade silently.
+//   - The order is deterministic, so two reservations over overlapping rows queue instead of
+//     deadlocking. incoming_date alone is not enough — rows can share a timestamp — so id breaks
+//     the tie.
+//   - The tenant predicate comes from the schema, because coremart's shadow module adds tenant_id
+//     and nikkierp's does not; a hardcoded column list would lock another tenant's rows in one of
+//     the two binaries.
 //
-//   - **It must run inside a transaction.** ExtractClient returns the transaction's client when one
-//     is set on the context, and the connection pool's otherwise. On a pooled connection the locks
-//     would be released the instant the statement returned, leaving a caller that believes it holds
-//     them and does not. The function refuses to run without one rather than silently degrading to
-//     no locking at all, because that failure is invisible until two requests collide in production.
-//
-//   - **The order is deterministic.** Two reservations touching overlapping rows acquire the locks
-//     in the same sequence and therefore queue, rather than each holding what the other wants.
-//     Ordering by incoming_date alone is not enough — rows can share a timestamp — so id breaks the
-//     tie and gives a total order.
-//
-//   - **The tenant predicate comes from the schema.** Coremart's shadow module adds tenant_id to
-//     every table; nikkierp's does not have it. Reading the key from the schema means the same code
-//     is correct in both binaries, where a hardcoded column list would either fail to compile
-//     against one or, worse, lock another tenant's rows in the other.
-//
-// The caller must recompute availability from what this returns and never reuse a figure read
-// before the call (BR §8.6).
+// Callers must recompute availability from what this returns and never reuse a figure read before
+// the call.
 func LockQuantsForUpdate(
 	ctx corectx.Context, repo dyn.BaseDynamicRepository, key QuantLockKey,
 ) ([]LockedQuant, error) {
@@ -102,11 +85,9 @@ func LockQuantsForUpdate(
 	return locked, errors.Wrap(rows.Err(), "failed to read locked stock quants")
 }
 
-// buildQuantLockQuery assembles the locking SELECT with positional placeholders.
-//
-// The column and table names come from the schema and from this module's own constants, never from
-// caller input, so there is nothing here an untrusted value can reach: every value travels as a
-// bound argument.
+// buildQuantLockQuery assembles the locking SELECT with positional placeholders. Column and table
+// names come from the schema and this module's constants, never caller input, and every value
+// travels as a bound argument.
 func buildQuantLockQuery(
 	schema *dmodel.ModelSchema, ctx corectx.Context, key QuantLockKey,
 ) (string, []any) {
@@ -189,8 +170,8 @@ func scanLockedQuant(row rowScanner) (LockedQuant, error) {
 	}, nil
 }
 
-// nullDecimalOrZero reads a null quantity as zero, matching AvailableQuantity: a balance that has
-// never been written has moved nothing, which is not the same as being unknown.
+// nullDecimalOrZero reads a null quantity as zero, matching AvailableQuantity: a balance never
+// written has moved nothing.
 func nullDecimalOrZero(value decimal.NullDecimal) decimal.Decimal {
 	if !value.Valid {
 		return decimal.Zero

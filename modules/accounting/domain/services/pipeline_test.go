@@ -16,11 +16,8 @@ import (
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 )
 
-// fakeUom stands in for Essential's conversion service.
-//
-// The failing case is the one that matters: an impossible conversion has to make one line
-// unresolved rather than fail the request, and the only way to test that is to be able to make the
-// conversion fail on demand.
+// fakeUom stands in for Essential's conversion service, so a conversion can be made to fail on
+// demand: an impossible conversion must leave one line unresolved rather than fail the request.
 type fakeUom struct {
 	factor decimal.Decimal
 	fails  bool
@@ -61,8 +58,8 @@ func fixedTax(taxId, rateUomId, currencyCode, amount string) ResolvedTax {
 	}
 }
 
-// AC-TAX-SUP-13: a fixed tax whose unit cannot be reached from the line's unit fails explicitly.
-// The line is unresolved with a specific code, not silently taxed on an unconverted quantity.
+// A fixed tax whose unit cannot be reached from the line's unit leaves the line unresolved with a
+// specific code, not silently taxed on an unconverted quantity.
 func TestIncompatibleUomFailsExplicitly(t *testing.T) {
 	uom := &fakeUom{fails: true}
 	svc := &TaxCalculationDomainServiceImpl{uomSvc: uom}
@@ -99,8 +96,8 @@ func TestFixedTaxWithoutALineUomFails(t *testing.T) {
 	}
 }
 
-// AC-TAX-SUP-14: V1 has no FX capability, so a fixed tax denominated in another currency must fail
-// loudly. Converting at an implied rate would invent a number nobody chose.
+// V1 has no FX capability, so a fixed tax denominated in another currency must fail loudly rather
+// than convert at an implied rate.
 func TestFixedTaxInAnotherCurrencyFailsExplicitly(t *testing.T) {
 	uom := &fakeUom{factor: decimalOf("1")}
 	svc := &TaxCalculationDomainServiceImpl{uomSvc: uom}
@@ -135,8 +132,8 @@ func TestFixedTaxInTheTransactionCurrencyPasses(t *testing.T) {
 	}
 }
 
-// A rate with no currency of its own is in the transaction's currency by construction, so it must
-// not be refused — this is the ordinary case for every percentage tax.
+// A rate with no currency of its own is in the transaction's currency, the ordinary case for every
+// percentage tax, so it must not be refused.
 func TestRateWithoutACurrencyIsNotRefused(t *testing.T) {
 	svc := &TaxCalculationDomainServiceImpl{uomSvc: &fakeUom{factor: decimalOf("1")}}
 	line := it.CalculationLine{LineReference: "L1", Quantity: decimalOf("3"), UomId: "litre"}
@@ -149,8 +146,8 @@ func TestRateWithoutACurrencyIsNotRefused(t *testing.T) {
 	}
 }
 
-// A percentage tax needs no quantity at all, so the UoM service must not be called for one: an
-// outage in Essential must not stop ordinary VAT from being calculated.
+// A percentage tax needs no quantity, so the UoM service must not be called: an Essential outage
+// must not stop ordinary VAT being calculated.
 func TestPercentageTaxNeverCallsTheUomService(t *testing.T) {
 	uom := &fakeUom{fails: true}
 	svc := &TaxCalculationDomainServiceImpl{uomSvc: uom}
@@ -172,8 +169,8 @@ func TestPercentageTaxNeverCallsTheUomService(t *testing.T) {
 	}
 }
 
-// AC-TAX-22: a line-scoped policy rounds each component as it goes, and the line total is the sum
-// of those rounded components. Only the document scope was covered before.
+// A line-scoped policy rounds each component as it goes, and the line total is the sum of those
+// rounded components.
 func TestLineScopedPolicyRoundsEachComponentImmediately(t *testing.T) {
 	policy := taxsvc.RoundingPolicy{
 		Scope:     models.RoundingScopeLine,
@@ -201,8 +198,7 @@ func TestLineScopedPolicyRoundsEachComponentImmediately(t *testing.T) {
 	if !line.Components[1].TaxAmount.Equal(decimalOf("6")) {
 		t.Errorf("expected 5.6 rounded up to 6, got %s", line.Components[1].TaxAmount)
 	}
-	// 16, not the 16.0 that rounding the 16.0 sum would give — and importantly the total an invoice
-	// prints is the sum of what it prints beside each component.
+	// The total an invoice prints is the sum of what it prints beside each component.
 	if !line.TotalTax.Equal(decimalOf("16")) {
 		t.Fatalf("expected the line total to be the sum of rounded components, got %s", line.TotalTax)
 	}
@@ -211,9 +207,8 @@ func TestLineScopedPolicyRoundsEachComponentImmediately(t *testing.T) {
 	}
 }
 
-// AC-TAX-06: publishing a newer rate must not change what an already-dated transaction resolves to.
-// The mechanism is that resolution is a function of tax_date, so a past date keeps reading the
-// version that was in force then — this is what makes a historical invoice stable.
+// Publishing a newer rate must not change what an already-dated transaction resolves to: resolution
+// is a function of tax_date, so a past date keeps reading the version in force then.
 func TestANewerRateDoesNotChangeAHistoricalResolution(t *testing.T) {
 	// The original configuration: 10% from July 2025, closed at the end of that year.
 	original := func() []dmodel.DynamicFields {
@@ -253,7 +248,7 @@ func TestANewerRateDoesNotChangeAHistoricalResolution(t *testing.T) {
 			historical.RateVersionId, historical.Rate, again.RateVersionId, again.Rate)
 	}
 
-	// And the new date genuinely picks up the successor, so the test above is not passing merely
+	// The new date genuinely picks up the successor, so the assertion above is not passing merely
 	// because the successor was never visible.
 	current, problem, _ := ResolveTax(nil, withSuccessor, "t1", "2026-06-01")
 	if problem != nil || current.RateVersionId != "rv2" || !current.Rate.Equal(decimalOf("8")) {
@@ -261,12 +256,11 @@ func TestANewerRateDoesNotChangeAHistoricalResolution(t *testing.T) {
 	}
 }
 
-// AC-TAX-35 / TAX-INV-20: a calculation reads configuration and writes nothing. The repositories
-// expose only Search, so a write is not expressible — this test pins that down by asserting the
-// port stays read-only, which is what makes recalculating a draft order on every edit safe.
+// A calculation reads configuration and writes nothing. The repositories expose only Search, and
+// this pins the port read-only, which is what makes recalculating a draft order on every edit safe.
 func TestTheCalculationPortIsReadOnly(t *testing.T) {
-	// TaxSearcher is the whole surface the pipeline has over stored configuration. If a mutating
-	// method is ever added here, this assertion is where the decision gets noticed.
+	// TaxSearcher is the pipeline's whole surface over stored configuration; a mutating method
+	// added here gets noticed at this assertion.
 	var searcher models.TaxSearcher = newFakeRepo()
 
 	if _, ok := searcher.(interface {
@@ -276,8 +270,8 @@ func TestTheCalculationPortIsReadOnly(t *testing.T) {
 	}
 }
 
-// Repeating a calculation must not accumulate state. The service holds none between calls by
-// design, and a counter or cache creeping in would show up as a differing second answer.
+// Repeating a calculation must not accumulate state; a counter or cache creeping in would show up
+// as a differing second answer.
 func TestRepeatedResolutionDoesNotAccumulateState(t *testing.T) {
 	repos := reposFor(
 		newFakeRepo(taxRow("t1", "VAT10")),

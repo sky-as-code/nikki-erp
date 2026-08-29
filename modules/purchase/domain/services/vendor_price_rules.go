@@ -8,25 +8,18 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// The rules a vendor price carries that need nothing but the row itself.
-//
-// Separated from VendorPriceValidator so the whole rule table is testable without ports or a
-// database. What is left there is only what genuinely needs to ask another module a question.
+// The rules a vendor price carries that need nothing but the row itself, separated from
+// VendorPriceValidator so they are testable without ports or a database.
 
-// assertVendorPriceSelfConsistent checks a row against itself.
-//
-// The schema already bounds each number on its own — min and max on the decimal types — so what is
-// left here is what the schema cannot say: how two fields relate. A validity window is the whole of
-// it, and a row that fails it is not rejected by anything else.
+// assertVendorPriceSelfConsistent checks a row against itself. The schema already bounds each
+// number on its own; what is left is how two fields relate.
 func assertVendorPriceSelfConsistent(record dmodel.DynamicFields, vErrs *ft.ClientErrors) {
 	assertVendorPriceValidity(record, vErrs)
 }
 
-// assertVendorPriceValidity refuses a window that never opens.
-//
-// A price whose valid_from is after its valid_to applies on no date at all. Nothing fails: the row
-// is written, looks ordinary in a listing, and simply never resolves — so an order is priced from
-// some other row, or refused for having no vendor price, and the reason is invisible.
+// assertVendorPriceValidity refuses a window that never opens. A price whose valid_from is after
+// its valid_to applies on no date at all, and nothing else reports it: the row looks ordinary and
+// simply never resolves.
 func assertVendorPriceValidity(record dmodel.DynamicFields, vErrs *ft.ClientErrors) {
 	from := recordString(record, models.VendorProductPriceFieldValidFrom)
 	to := recordString(record, models.VendorProductPriceFieldValidTo)

@@ -10,12 +10,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The quotation rules that are pure. The conversion itself reads the repository and is exercised
-// live; what is pinned here is the state machine and the two gates, where being wrong means either
-// honouring an offer that lapsed or creating a second order from one acceptance.
+// The pure quotation rules: the state machine and the two gates, where being wrong means honouring a
+// lapsed offer or creating a second order from one acceptance. The conversion itself reads the
+// repository and is exercised live.
 
-// The transition table, in full. Written out rather than derived, so that a change to the table is a
-// change to this test — which is the point of having the table at all.
+// The transition table, written out rather than derived, so a change to the table is a change here.
 func TestQuotationTransitions(t *testing.T) {
 	draft := string(models.SalesQuotationStatusDraft)
 	sent := string(models.SalesQuotationStatusSent)
@@ -28,9 +27,8 @@ func TestQuotationTransitions(t *testing.T) {
 		{draft, cancelled},
 		{draft, expired},
 
-		// Direct draft → accepted: a back-office operator quoting on the phone may take the
-		// acceptance in the same conversation, and forcing a send in between would record a step
-		// that did not happen.
+		// Direct draft → accepted: an operator quoting on the phone may take the acceptance in the
+		// same conversation.
 		{draft, accepted},
 
 		{sent, accepted},
@@ -69,8 +67,7 @@ func TestQuotationTransitions(t *testing.T) {
 	}
 }
 
-// The three terminal states go nowhere. Asserted as a set rather than one by one, so a new outgoing
-// edge added to any of them fails here.
+// The three terminal states go nowhere; asserted as a set so a new outgoing edge on any fails here.
 func TestAcceptedExpiredAndCancelledAreTerminal(t *testing.T) {
 	for _, status := range []string{
 		string(models.SalesQuotationStatusAccepted),
@@ -83,9 +80,8 @@ func TestAcceptedExpiredAndCancelledAreTerminal(t *testing.T) {
 	}
 }
 
-// THE idempotency check of the conversion. A quotation that already produced an order must report
-// so, because a second accept creating a second order is two deliveries and two invoices for one
-// agreement.
+// A quotation that already produced an order must report so: a second accept creating a second order
+// is two deliveries and two invoices for one agreement.
 func TestAConvertedQuotationIsRecognised(t *testing.T) {
 	unconverted := models.NewSalesQuotationFrom(dmodel.DynamicFields{
 		models.SalesQuotationFieldStatus: string(models.SalesQuotationStatusSent),
@@ -104,10 +100,8 @@ func TestAConvertedQuotationIsRecognised(t *testing.T) {
 	}
 }
 
-// An expired quotation is refused at conversion, IN ADDITION to being caught by the sweep. The sweep
-// runs on a schedule, so between a quotation lapsing and the sweep noticing there is a window in
-// which the stored status still says `sent` — and converting inside it would honour an offer that
-// had already expired.
+// An expired quotation is refused at conversion as well as by the sweep: the sweep runs on a
+// schedule, so there is a window in which the stored status still says sent.
 func TestConversionRefusesALapsedOffer(t *testing.T) {
 	lapsed := dmodel.DynamicFields{
 		models.SalesQuotationFieldStatus: string(models.SalesQuotationStatusSent),
@@ -137,8 +131,8 @@ func TestConversionAcceptsAnOfferInsideItsWindow(t *testing.T) {
 	}
 }
 
-// No stated expiry means no expiry, rather than an expiry of zero. A null valid_until is a decision
-// the issuer made, and reading it as "already lapsed" would refuse every open-ended quotation.
+// No stated expiry means no expiry rather than an expiry of zero, or every open-ended quotation would
+// be refused.
 func TestAQuotationWithNoStatedExpiryDoesNotLapse(t *testing.T) {
 	openEnded := dmodel.DynamicFields{
 		models.SalesQuotationFieldStatus: string(models.SalesQuotationStatusSent),
@@ -150,8 +144,8 @@ func TestAQuotationWithNoStatedExpiryDoesNotLapse(t *testing.T) {
 	}
 }
 
-// A cancelled quotation cannot convert, and the refusal comes from the transition table rather than
-// from a second hand-written rule — so the table stays the single source of truth.
+// A cancelled quotation cannot convert, and the refusal comes from the transition table rather than a
+// second hand-written rule.
 func TestConversionRefusesAWithdrawnOffer(t *testing.T) {
 	for _, status := range []string{
 		string(models.SalesQuotationStatusCancelled),
@@ -165,8 +159,8 @@ func TestConversionRefusesAWithdrawnOffer(t *testing.T) {
 	}
 }
 
-// The conversion carries WHAT was asked for, and the quoted price only as the engine's fallback.
-// This is the file's central decision: the order is repriced, not copied.
+// The conversion carries what was asked for, and the quoted price only as the engine's fallback: the
+// order is repriced, not copied.
 func TestConversionCarriesLinesNotTotals(t *testing.T) {
 	lines := []dmodel.DynamicFields{
 		{
@@ -175,8 +169,8 @@ func TestConversionCarriesLinesNotTotals(t *testing.T) {
 			models.SalesQuotationLineFieldQuantity:  "3",
 			models.SalesQuotationLineFieldUnitPrice: "50000",
 
-			// Deliberately inconsistent with quantity × unit_price. If the conversion copied
-			// totals, this wrong number would reach the order; because it reprices, it cannot.
+			// Deliberately inconsistent with quantity × unit_price: if the conversion copied totals,
+			// this wrong number would reach the order.
 			models.SalesQuotationLineFieldFinalAmount: "999999",
 		},
 	}
@@ -198,21 +192,18 @@ func TestConversionCarriesLinesNotTotals(t *testing.T) {
 	}
 }
 
-// An empty quotation converts to nothing, and the conversion must say so rather than creating an
-// empty order — which would be a sale of nothing, payable and fulfillable.
+// An empty quotation converts to nothing rather than to an empty order, which would be a sale of
+// nothing, payable and fulfillable.
 func TestAnEmptyQuotationYieldsNoLines(t *testing.T) {
 	if got := orderLinesFromQuotation(nil); len(got) != 0 {
 		t.Errorf("an empty quotation must yield no lines, got %d", len(got))
 	}
 }
 
-// The same-status no-op is safe for `send` and `cancel` and would NOT be for `accept`.
-//
-// canTransition treats from == to as allowed, which is right for an idempotent retry of a status
-// move and wrong for anything with a side effect. Re-sending a sent quotation shows the customer the
-// same document; re-cancelling a cancelled one changes nothing. Accepting twice would make a second
-// order — which is why assertConvertible refuses it explicitly rather than relying on the table, and
-// why TransitionQuotation refuses `accepted` outright.
+// The same-status no-op is safe for send and cancel but not for accept. canTransition treats from ==
+// to as allowed, which suits an idempotent status retry but not a move with a side effect: accepting
+// twice would make a second order, so assertConvertible refuses it explicitly and TransitionQuotation
+// refuses accepted outright.
 func TestTheSameStatusNoOpIsSafeForSendAndCancelOnly(t *testing.T) {
 	for _, status := range []string{
 		string(models.SalesQuotationStatusSent),
@@ -225,7 +216,7 @@ func TestTheSameStatusNoOpIsSafeForSendAndCancelOnly(t *testing.T) {
 		}
 	}
 
-	// And the one that must not be treated as a harmless no-op, guarded outside the table.
+	// And the one that must not be a harmless no-op, guarded outside the table.
 	accepted := dmodel.DynamicFields{
 		models.SalesQuotationFieldStatus: string(models.SalesQuotationStatusAccepted),
 	}
@@ -235,8 +226,8 @@ func TestTheSameStatusNoOpIsSafeForSendAndCancelOnly(t *testing.T) {
 	}
 }
 
-// Manual discount gates (BR §87.4, SALES-039). The repository-backed parts are exercised live; what
-// is pinned here is the two refusals that are pure business rules.
+// Manual discount gates. The repository-backed parts are exercised live; pinned here are the two
+// refusals that are pure business rules.
 
 func discountParams(amount, reason string) GrantManualDiscountParams {
 	return GrantManualDiscountParams{
@@ -246,9 +237,8 @@ func discountParams(amount, reason string) GrantManualDiscountParams {
 	}
 }
 
-// A reason is MANDATORY. It is enforced in the domain rather than in app/ because it is a business
-// invariant, not an access decision — an override with no stated cause is indistinguishable from a
-// mistake, and it is the field an auditor asking why this customer paid less actually reads.
+// A reason is mandatory, enforced in the domain because it is a business invariant rather than an
+// access decision: an override with no stated cause is indistinguishable from a mistake.
 func TestAManualDiscountMustSayWhy(t *testing.T) {
 	draft := dmodel.DynamicFields{
 		models.SalesOrderFieldId:     "OR01",
@@ -273,8 +263,8 @@ func TestAManualDiscountMustSayWhy(t *testing.T) {
 	}
 }
 
-// A negative override is a SURCHARGE, which BR §87.4 does not authorise. Silently adding money to a
-// customer's bill is the worst failure available here, so it is refused rather than clamped.
+// A negative override is a surcharge, which is not authorised: silently adding money to a customer's
+// bill is refused rather than clamped.
 func TestAManualDiscountCannotBeASurcharge(t *testing.T) {
 	draft := dmodel.DynamicFields{
 		models.SalesOrderFieldId:     "OR01",
@@ -292,9 +282,9 @@ func TestAManualDiscountCannotBeASurcharge(t *testing.T) {
 	}
 }
 
-// A CONFIRMED order is frozen (BR §11). Discounting one would change what a customer already agreed
-// to pay, after a bill may already have been raised — so the correction after confirmation is a
-// return or a refund, each with its own money movement, not a retrospective price edit.
+// A confirmed order is frozen: discounting one would change what the customer already agreed to pay,
+// possibly after a bill was raised, so the correction is a return or refund with its own money
+// movement.
 func TestAConfirmedOrderCannotBeDiscounted(t *testing.T) {
 	for _, status := range []string{
 		string(models.SalesOrderStatusConfirmed),

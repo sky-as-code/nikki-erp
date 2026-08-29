@@ -13,44 +13,26 @@ import (
 	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
 )
 
-// Requesting a VAT invoice (BR 46-50, 58, 77, 87.7, SALES-030 and SALES-031).
+// Requesting a VAT invoice.
 //
-// # The row is written BEFORE the provider is called, and that ordering is the design
-//
-// The obvious shape - call the provider, then store what came back - loses a document on the one
-// failure that matters. If the call times out after the provider issued the invoice, Sales has no
-// row, no idempotency key and no way to find out; the customer holds a VAT invoice the system does
-// not know exists, and the next attempt issues a second one.
-//
-// So the request is persisted as `pending` first, with its idempotency key, and only then dispatched.
-// A crash anywhere after that leaves a row an operator can reconcile through GetStatus. The cost is
-// rows for requests that never left, which is the cheaper failure by a wide margin: a duplicate VAT
-// invoice is a tax filing to correct.
-//
-// # PENDING IS NOT ISSUED (BR 77)
-//
-// invoice_status moves to `issued` only on confirmed provider success, and provider_reference - the
-// only durable link to the document - is stored at that same moment. A request in flight leaves the
-// order at `requested`. Reporting otherwise would tell a customer they hold an invoice they cannot
-// deduct.
-//
-// # Sales validates what is ITS to validate
-//
-// The bill is eligible, no successful request already exists for it, and the buyer's fiscal
-// information is complete. Not: whether the tax code is genuine, whether the document type is right,
-// whether the serial is in range. Those are the provider's, and BR 46 and BR 94.26 keep them there.
+// The request row is persisted as `pending` with its idempotency key BEFORE the provider is
+// called, so a timeout after the provider issued the invoice still leaves a row an operator can
+// reconcile; the alternative risks a duplicate VAT invoice, which is a tax filing to correct.
+// invoice_status moves to `issued` only on confirmed provider success, and provider_reference is
+// stored at that same moment. Sales validates only its own concerns (bill eligible, no existing
+// successful request, buyer fiscal info complete); document type, serial and tax-code validity
+// are the provider's.
 
 // RequestInvoiceParams is what asking for a VAT invoice needs.
 type RequestInvoiceParams struct {
 	SalesBillId string
 
-	// Intent defaults to ISSUE_ORIGINAL. The adjustment intents are supplied by the return workflow
-	// (Phase 6), which knows what came back; a till asking for an invoice never sets it.
+	// Intent defaults to ISSUE_ORIGINAL. The adjustment intents are supplied by the return
+	// workflow; a till asking for an invoice never sets it.
 	Intent string
 
-	// OriginalFiscalRequestId names the request being adjusted. Required for every intent except
-	// ISSUE_ORIGINAL: an adjustment document that names no original is not a document a provider can
-	// produce (BR 58).
+	// Required for every intent except ISSUE_ORIGINAL: a provider cannot produce an adjustment
+	// that names no original.
 	OriginalFiscalRequestId string
 
 	Buyer itInvoicing.BuyerInfo
@@ -58,15 +40,14 @@ type RequestInvoiceParams struct {
 	// Reason justifies an adjustment, in the business's words.
 	Reason string
 
-	// IdempotencyKey is supplied by the caller when it has one - a till retrying its own request.
 	// Generated when empty, which is correct for a first call and wrong for a retry, so a caller
-	// that retries must send its key.
+	// that retries must send its own key.
 	IdempotencyKey string
 }
 
 // RequestInvoiceResult is what asking produced.
 type RequestInvoiceResult struct {
-	// FiscalDocumentRequestId is what BR 77 says the operation returns.
+	// FiscalDocumentRequestId identifies the request.
 	FiscalDocumentRequestId string
 
 	SalesBillId string
@@ -78,8 +59,8 @@ type RequestInvoiceResult struct {
 	// ProviderReference is set only alongside status `issued`, never before.
 	ProviderReference string
 
-	// AlreadyExisted marks the replay path: a second call with the same idempotency key returns the
-	// first call's request rather than raising another.
+	// AlreadyExisted marks the replay path: a second call with the same idempotency key returns
+	// the first call's request rather than raising another.
 	AlreadyExisted bool
 }
 
@@ -93,11 +74,10 @@ const (
 	ReasonUnknownFiscalIntent       = "sales_fiscal_request.unknown_intent"
 )
 
-// RequestInvoice asks the eInvoice provider for a fiscal document (BR 77).
+// RequestInvoice asks the eInvoice provider for a fiscal document.
 //
-// The invoicing port may be nil, and that is a supported state rather than a bug: no adapter is
-// bound yet. The request is written and left `pending`, which is exactly what BR 77 requires of a
-// request in flight, so no caller has to distinguish "not dispatched" from "not answered".
+// A nil invoicing port is supported rather than a bug: no adapter is bound yet, so the request is
+// written and left `pending`, the correct state for a request in flight.
 func RequestInvoice(
 	ctx corectx.Context,
 	params RequestInvoiceParams,
@@ -120,9 +100,8 @@ func RequestInvoice(
 		intent = string(models.SalesFiscalIntentIssueOriginal)
 	}
 
-	// The replay check comes before the gates, for the same reason it does in RecordPayment: a
-	// caller retrying a request it already made must get the first answer back even if the bill has
-	// since moved on. Refusing the retry is how a caller ends up asking a third time.
+	// The replay check comes before the gates: a caller retrying a request it already made must
+	// get the first answer back even if the bill has since moved on.
 	if params.IdempotencyKey != "" {
 		existing, err := findFiscalRequestByKey(ctx, params.IdempotencyKey)
 		if err != nil {
@@ -159,8 +138,8 @@ func RequestInvoice(
 		return nil, nil, err
 	}
 
-	// The order moves to `requested`, not `issued`. It is the honest state while the provider has
-	// not answered, and it is what makes an unanswered request visible instead of silent.
+	// The order moves to `requested`, not `issued`, the honest state while the provider has not
+	// answered.
 	if err := syncOrderInvoiceStatus(ctx,
 		stringOf(bill, models.SalesBillFieldSalesOrderId),
 		string(models.SalesOrderInvoiceStatusRequested)); err != nil {
@@ -173,8 +152,8 @@ func RequestInvoice(
 		Status:                  string(models.SalesFiscalStatusPending),
 	}
 	if provider == nil {
-		// No adapter bound. The row stands as `pending` and an operator or a later adapter picks it
-		// up; inventing a success here would report a document that does not exist.
+		// No adapter bound. The row stands as `pending`; inventing a success here would report a
+		// document that does not exist.
 		return result, nil, nil
 	}
 
@@ -186,9 +165,9 @@ func RequestInvoice(
 
 	response, err := provider.Issue(ctx, *issueRequest)
 	if err != nil {
-		// A transport failure is NOT a Go error to the caller. The provider being unreachable is
-		// normal operation, the request is already recorded, and turning it into a 500 would tell an
-		// operator the system is broken when the correct action is to retry.
+		// A transport failure is deliberately not a Go error to the caller: the provider being
+		// unreachable is normal operation and the request is already recorded, so a 500 would
+		// misreport a healthy system.
 		if recordErr := recordFiscalFailure(ctx, requestId, err.Error()); recordErr != nil {
 			return nil, nil, recordErr
 		}
@@ -208,7 +187,7 @@ func RequestInvoice(
 	return result, nil, nil
 }
 
-// assertInvoiceRequestable applies the three gates that are Sales' own (BR 77).
+// assertInvoiceRequestable applies the three gates that are Sales' own.
 func assertInvoiceRequestable(
 	ctx corectx.Context, bill dmodel.DynamicFields, intent string, params RequestInvoiceParams,
 ) *ft.ClientErrors {
@@ -220,9 +199,8 @@ func assertInvoiceRequestable(
 		return vErrs
 	}
 
-	// A cancelled bill settled nothing, so there is no transaction to invoice. An OPEN one is
-	// allowed: BR 33 separates the bill from the invoice, and a business may legitimately issue an
-	// invoice for goods delivered on credit before the money arrives.
+	// A cancelled bill settled nothing, so there is nothing to invoice. An OPEN one is allowed: a
+	// business may invoice goods delivered on credit before the money arrives.
 	if stringOf(bill, models.SalesBillFieldStatus) == string(models.SalesBillStatusCancelled) {
 		vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ReasonBillNotEligibleForInvoice,
 			"a cancelled bill has no transaction to invoice"))
@@ -233,14 +211,14 @@ func assertInvoiceRequestable(
 			"the buyer fiscal information is missing "+missing))
 	}
 
-	// Only ONE original invoice per bill. A second is a tax filing to correct, not a row to delete,
-	// so both an issued and an in-flight request block: Sales does not know whether an in-flight one
-	// became issued, and assuming it did not is how the duplicate happens.
+	// Only one original invoice per bill. Both issued and in-flight requests block, because Sales
+	// does not know whether an in-flight one became issued, and assuming it did not is how a sale
+	// acquires two VAT invoices.
 	if intent == string(models.SalesFiscalIntentIssueOriginal) {
 		blocking, err := findBlockingOriginalRequest(ctx, stringOf(bill, models.SalesBillFieldId))
 		if err != nil {
-			// A read failure here must not be swallowed into a permit. Refusing is the safe side:
-			// the caller retries, whereas a wrongly permitted request issues a second document.
+			// A read failure must not be swallowed into a permit: refusing makes the caller retry,
+			// whereas wrongly permitting issues a second document.
 			vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ReasonInvoiceAlreadyRequested,
 				"could not confirm whether an invoice was already requested for this bill"))
 			return vErrs
@@ -260,9 +238,8 @@ func assertInvoiceRequestable(
 
 // missingBuyerFields names what the buyer information lacks, or empty when it is complete.
 //
-// Tax code and legal name only. An address and an email make an invoice more useful and neither is
-// what makes it valid, and requiring them would refuse invoices a provider would have accepted -
-// Sales deciding invoice law by the back door.
+// Tax code and legal name only: requiring an address or email would refuse invoices a provider
+// would have accepted.
 func missingBuyerFields(buyer itInvoicing.BuyerInfo) string {
 	switch {
 	case buyer.TaxCode == "" && buyer.LegalName == "":
@@ -286,11 +263,10 @@ func isKnownFiscalIntent(intent string) bool {
 	return false
 }
 
-// resolveOriginalReference finds the provider reference of the document being adjusted (BR 58).
+// resolveOriginalReference finds the provider reference of the document being adjusted.
 //
-// An adjustment needs the ORIGINAL'S provider reference, not its Sales id: the provider knows the
-// document it issued and has never heard of a sales_fiscal_requests row. An original that was never
-// issued has no reference, and adjusting it is meaningless rather than merely unsupported.
+// The provider knows only the reference it issued, never a sales_fiscal_requests id. An original
+// that was never issued has no reference, so adjusting it is meaningless.
 func resolveOriginalReference(
 	ctx corectx.Context, intent string, params RequestInvoiceParams,
 ) (string, *ft.ClientErrors, error) {
@@ -366,7 +342,7 @@ func replayFiscalResult(existing dmodel.DynamicFields) *RequestInvoiceResult {
 	}
 }
 
-// writeFiscalRequest stores the intent before the provider is called. See the package comment.
+// writeFiscalRequest stores the intent before the provider is called.
 func writeFiscalRequest(
 	ctx corectx.Context,
 	bill dmodel.DynamicFields,
@@ -393,8 +369,8 @@ func writeFiscalRequest(
 		models.SalesFiscalRequestFieldIdempotencyKey: idempotencyKey,
 		models.SalesFiscalRequestFieldRequestedAt:    model.ModelDateTime(time.Now().UTC()),
 
-		// The buyer information is frozen here (BR 87.7). A later change of company name or address
-		// must not rewrite what a historical invoice said.
+		// The buyer information is frozen here: a later change of company name or address must not
+		// rewrite what a historical invoice said.
 		models.SalesFiscalRequestFieldBuyerSnapshot: buyerSnapshotOf(params.Buyer),
 
 		basemodel.FieldOrgId: stringOf(bill, basemodel.FieldOrgId),
@@ -407,9 +383,8 @@ func writeFiscalRequest(
 		return "", err
 	}
 
-	// The event says a document was REQUESTED, never that one was issued - matching the row, which
-	// is written as pending for the same reason (BR 77). A consumer learning that an invoice
-	// exists must learn it from the provider having confirmed, not from Sales having asked.
+	// The event says a document was REQUESTED, never that one was issued, matching the row. A
+	// consumer learns an invoice exists from the provider having confirmed, not from Sales asking.
 	eventType := models.EventFiscalDocumentRequested
 	if intent != string(models.SalesFiscalIntentIssueOriginal) {
 		eventType = models.EventFiscalAdjustmentRequested
@@ -433,9 +408,8 @@ func writeFiscalRequest(
 
 // buyerSnapshotOf freezes the buyer's fiscal identity as a plain map.
 //
-// A map rather than the struct, because it goes into a jsonmap column and comes back as one. Storing
-// the struct would make the read path depend on the struct's field names never changing, which is
-// exactly the coupling a snapshot exists to avoid.
+// A map rather than the struct, because it goes into a jsonmap column: storing the struct would
+// make the read path depend on Go field names never changing.
 func buyerSnapshotOf(buyer itInvoicing.BuyerInfo) map[string]any {
 	return map[string]any{
 		"tax_code":   buyer.TaxCode,
@@ -445,11 +419,10 @@ func buyerSnapshotOf(buyer itInvoicing.BuyerInfo) map[string]any {
 	}
 }
 
-// buildIssueRequest assembles the FACTS the provider needs (BR 50).
+// buildIssueRequest assembles the facts the provider needs.
 //
-// Historical amounts throughout, read from the bill and its allocations rather than recomputed from
-// current prices (BR 54, BR 60, BR 94.22). A document stating today's prices would state a sum the
-// customer never paid.
+// Historical amounts throughout, read from the bill and its allocations rather than recomputed
+// from current prices; a document stating today's prices would state a sum nobody paid.
 func buildIssueRequest(
 	ctx corectx.Context,
 	bill dmodel.DynamicFields,
@@ -478,9 +451,8 @@ func buildIssueRequest(
 			TaxAmount:        decimalOf(allocation, models.SalesBillLineFieldAllocatedTaxAmount),
 		}
 
-		// The description, unit and rate live on the order line, which the allocation points at.
-		// Read rather than derived: the line froze them at confirmation, and a provider must state
-		// what was sold rather than what the product master says today.
+		// Description, unit and rate are read from the order line rather than derived: the line
+		// froze them at confirmation, and a provider must state what was sold.
 		orderLine, err := loadRecord(ctx,
 			models.SalesOrderLineSchemaName, models.SalesOrderLineFieldId, orderLineId)
 		if err != nil {
@@ -511,7 +483,7 @@ func buildIssueRequest(
 		OccurredAt:                NowUnix(),
 	}
 
-	// The tax snapshot travels verbatim, so the provider can state what was actually charged rather
+	// The tax snapshot travels verbatim, so the provider states what was actually charged rather
 	// than what today's tax master would charge.
 	order, err := loadRecord(ctx,
 		models.SalesOrderSchemaName, models.SalesOrderFieldId,
@@ -525,10 +497,8 @@ func buildIssueRequest(
 	return request, nil
 }
 
-// recordFiscalOutcome stamps what the provider answered onto the request.
-//
-// provider_reference and issued_at are written HERE and nowhere else, and only when the provider
-// confirmed. That single write point is what makes BR 77 checkable rather than a convention.
+// recordFiscalOutcome stamps what the provider answered onto the request. provider_reference and
+// issued_at are written here and nowhere else, and only when the provider confirmed.
 func recordFiscalOutcome(
 	ctx corectx.Context,
 	bill dmodel.DynamicFields,
@@ -561,10 +531,8 @@ func recordFiscalOutcome(
 		stringOf(bill, models.SalesBillFieldSalesOrderId), orderStatus)
 }
 
-// issuedAtOf takes the date the DOCUMENT bears, which is the provider's, not Sales'.
-//
-// Falls back to now only when the provider said nothing, because a document with no date at all is
-// harder to reconcile than one dated a few seconds late.
+// issuedAtOf takes the date the document bears, which is the provider's, not Sales'. Falls back
+// to now only when the provider said nothing, because an undated document is harder to reconcile.
 func issuedAtOf(response *itInvoicing.IssueResult) model.ModelDateTime {
 	if response.IssuedAt > 0 {
 		return model.ModelDateTime(time.Unix(response.IssuedAt, 0).UTC())
@@ -572,10 +540,8 @@ func issuedAtOf(response *itInvoicing.IssueResult) model.ModelDateTime {
 	return model.ModelDateTime(time.Now().UTC())
 }
 
-// recordFiscalFailure notes a transport failure and counts the attempt.
-//
-// attempt_count is incremented from what was read rather than left to the caller, so a retry loop
-// cannot forget to count and a bounded policy has something to bound itself by.
+// recordFiscalFailure notes a transport failure. attempt_count is incremented from what was read
+// rather than left to the caller, so a retry loop cannot forget to count.
 func recordFiscalFailure(ctx corectx.Context, requestId, message string) error {
 	existing, err := loadRecord(ctx,
 		models.SalesFiscalRequestSchemaName, models.SalesFiscalRequestFieldId, requestId)
@@ -596,10 +562,8 @@ func recordFiscalFailure(ctx corectx.Context, requestId, message string) error {
 	return err
 }
 
-// truncateError keeps a provider message inside the column.
-//
-// A message longer than the column is a write failure, and losing the whole record of why an invoice
-// failed because the explanation was verbose is a poor trade for the first thousand characters.
+// truncateError keeps a provider message inside the column; an over-long message would fail the
+// write and lose the whole record of why an invoice failed.
 func truncateError(message string) string {
 	const maxLength = 1000
 	if len(message) <= maxLength {
@@ -610,10 +574,8 @@ func truncateError(message string) string {
 
 // syncOrderInvoiceStatus reflects the fiscal request onto the order.
 //
-// The order's invoice_status is a summary of its bills' fiscal requests, held on the order because
-// that is where an operator looks. It is written through the repository because the field is
-// declared no_update: it must not be editable through a plain PATCH, and this operation is the only
-// sanctioned way to move it.
+// Written through the repository because the field is declared no_update: it must not be editable
+// through a plain PATCH, and this operation is the only sanctioned way to move it.
 func syncOrderInvoiceStatus(ctx corectx.Context, orderId, status string) error {
 	if orderId == "" {
 		return nil

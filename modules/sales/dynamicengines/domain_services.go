@@ -9,15 +9,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 )
 
-// The derived services this module installs over the engines' default ones.
-//
-// A derived service is how a resource gets behavior the built-in CRUD cannot express: the channel
-// and the sales point each carry a lifecycle whose transitions are refused or allowed by rules, and
-// a plain update would let a client write any status over any other. Both wrap the engine's own
-// service rather than replacing it, so ordinary CRUD keeps running through the default
-// implementation underneath.
-
-// InitDomainServices installs them. It runs after InitDynamicEngines, whose engines it wraps.
+// InitDomainServices installs the derived services that carry behavior built-in CRUD cannot express
+// (mostly lifecycle transition rules). Each wraps the engine's own service rather than replacing it,
+// so ordinary CRUD still runs underneath. Must run after InitDynamicEngines.
 func InitDomainServices() error {
 	if err := installDerivedService(models.SalesChannelSchemaName,
 		func(base drif.DynamicResourceService) drif.DynamicResourceService {
@@ -37,29 +31,25 @@ func InitDomainServices() error {
 		}); err != nil {
 		return err
 	}
-	// The line service carries the two invariants the database cannot: BR 55's quantity rules and
-	// BR 11's snapshot immutability. Installing it is what makes them enforced at all - the
-	// framework declares no CHECK constraints, so there is no second line of defence.
+	// The line service carries the quantity rules and snapshot immutability. The framework declares
+	// no CHECK constraints, so installing it is the only enforcement.
 	if err := installDerivedService(models.SalesOrderLineSchemaName,
 		func(base drif.DynamicResourceService) drif.DynamicResourceService {
 			return services.NewSalesOrderLineDomainService(base)
 		}); err != nil {
 		return err
 	}
-	// The pricelist service carries the default-uniqueness rule and the currency guard. Neither is
-	// expressible as a constraint: "at most one default per org among non-archived rows" is a
-	// partial uniqueness the framework does not declare, and the currency guard depends on whether
-	// any rule exists.
+	// The pricelist service carries default-uniqueness ("at most one default per org among
+	// non-archived rows", a partial uniqueness the framework cannot declare) and the currency guard.
 	if err := installDerivedService(models.SalesPricelistSchemaName,
 		func(base drif.DynamicResourceService) drif.DynamicResourceService {
 			return services.NewSalesPricelistDomainService(base)
 		}); err != nil {
 		return err
 	}
-	// The item service holds the three rules that are conditional on another field, which is
-	// exactly what the schema cannot express: which target column is required depends on
-	// applies_to, which price fields are required depends on calculation_method, and whether a
-	// base pricelist is acceptable depends on the whole derivation graph.
+	// The item service holds the rules conditional on another field, which the schema cannot
+	// express: required target column depends on applies_to, required price fields on
+	// calculation_method, and base-pricelist acceptability on the whole derivation graph.
 	if err := installDerivedService(models.SalesPricelistItemSchemaName,
 		func(base drif.DynamicResourceService) drif.DynamicResourceService {
 			return services.NewSalesPricelistItemDomainService(base)
@@ -69,18 +59,13 @@ func InitDomainServices() error {
 	return initChannelPaymentService()
 }
 
-// channelPaymentService is the junction's service, reached through a package variable rather than
-// through an engine's ResourceService.
-//
-// The junction has an engine only so that it has a repository (see junctionSchemas), and nothing
-// routes to it, so there is no request for a derived service to be installed on. Resolving it once
-// here is what connects the application layer to it — the same shape paymentinvoice uses for its
-// order service.
+// channelPaymentService is a package variable rather than an engine ResourceService: the junction
+// has an engine only to get a repository (see junctionSchemas) and nothing routes to it, so there is
+// no request for a derived service to hang off.
 var channelPaymentService *services.ChannelPaymentDomainServiceImpl
 
-// ChannelPaymentService answers the application layer's mapping operations. It is nil until
-// InitDomainServices has run, which is a wiring bug rather than a request problem, so callers
-// report it as one.
+// ChannelPaymentService is nil until InitDomainServices has run; that is a wiring bug, not a
+// request problem, so callers report it as one.
 func ChannelPaymentService() (*services.ChannelPaymentDomainServiceImpl, error) {
 	if channelPaymentService == nil {
 		return nil, errors.New(
