@@ -16,16 +16,17 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	httpclientclient "github.com/sky-as-code/nikki-erp/modules/core/httpclient/client"
+	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/constants"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/app"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/constants"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/infra/gateway"
 	itGateway "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/gateway"
+	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/transport/restful"
 )
 
@@ -67,7 +68,7 @@ func (*PaymentInvoiceModule) Version() semver.SemVer {
 // from it, that service before the engines whose actions delegate to it, and the engines before
 // the REST layer that registers their routes.
 func (*PaymentInvoiceModule) Init() error {
-	if err := initOrderService(); err != nil {
+	if err := initDomainServices(); err != nil {
 		return err
 	}
 	// After initOrderService, because the payment-method service is constructed with the gateway
@@ -81,7 +82,7 @@ func (*PaymentInvoiceModule) Init() error {
 	return restful.InitRestfulHandlers()
 }
 
-// initOrderService builds the gateway registry and the domain services, and puts all three into
+// initDomainServices builds the gateway registry and the domain services, and puts them all into
 // the dependency container.
 //
 // They are *registered* rather than only handed to the engine setters, because two later steps
@@ -93,7 +94,7 @@ func (*PaymentInvoiceModule) Init() error {
 // The registry is built once and shared: each adapter holds a connection pool and, for VietQR, a
 // cached bearer token, so one instance per request would re-authenticate on every payment. dig
 // caches a constructor's result, so every consumer receives that same instance.
-func initOrderService() error {
+func initDomainServices() error {
 	err := deps.Register(
 		func(
 			cfg config.ConfigService,
@@ -104,6 +105,25 @@ func initOrderService() error {
 		},
 		services.NewOrderDomainService,
 		services.NewInvoiceDomainService,
+		services.NewPaymentProfileDomainService,
+
+		// The notifier is registered rather than built where it is used, because both paths that
+		// settle an order need the same one: the gateway callbacks, wired during Init, and the
+		// sweeps, wired at OnAppStarted. Two instances would mean two HTTP clients and two
+		// connection pools pointed at the same tenants for no gain.
+		func(cfg config.ConfigService) *app.ResultSyncClient {
+			return app.NewResultSyncClient(
+				time.Duration(cfg.GetInt(modconstants.SyncTimeoutSecs, defaultSyncTimeoutSecs))*time.Second,
+				cfg.GetInt(modconstants.SyncMaxRetries, defaultSyncMaxRetries),
+			)
+		},
+		app.NewResultNotifier,
+
+		// The order service under its public interface, so another module can inject the port
+		// rather than this module's concrete type. Registered as a second provider over the same
+		// instance — dig caches a constructor's result, so both names resolve to one service and
+		// there is no second set of sweeps or gateway connections.
+		func(orders *services.OrderDomainService) itOrder.OrderDomainService { return orders },
 	)
 	if err != nil {
 		return err
@@ -115,9 +135,11 @@ func initOrderService() error {
 	return deps.Invoke(func(
 		orders *services.OrderDomainService,
 		invoices *services.InvoiceDomainService,
+		profiles *services.PaymentProfileDomainService,
 	) error {
 		dynamicengines.SetOrderService(orders)
 		dynamicengines.SetInvoiceService(invoices)
+		dynamicengines.SetPaymentProfileService(profiles)
 		return nil
 	})
 }
@@ -128,10 +150,15 @@ func initOrderService() error {
 // schema registry at registration time: the payment method is pointed at by both the order and the
 // transaction, the transaction points at the order, and the invoice line at the invoice.
 //
+// The payment profile is first because nothing points at it and it points at nothing: it names the
+// merchant account a payment settles into, which an order records by id rather than by edge, so a
+// profile can be withdrawn without the orders it collected losing their history.
+//
 // The edges onto essential_currency resolve because Essential is named in Deps() and every
 // module's RegisterModels runs in dependency order, before any module's Init().
 func (*PaymentInvoiceModule) RegisterModels() error {
 	return stdErr.Join(
+		dmodel.RegisterSchemaB(models.PaymentProfileSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.PaymentMethodSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.OrderSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.TransactionSchemaBuilder()),
@@ -153,15 +180,11 @@ func (*PaymentInvoiceModule) OnAppStarted() error {
 	return deps.Invoke(func(
 		cfg config.ConfigService,
 		orders *services.OrderDomainService,
+		notifier *app.ResultNotifier,
 		cronRegistry job.CronjobRegistry,
 		logger logging.LoggerService,
 	) error {
-		syncClient := app.NewResultSyncClient(
-			time.Duration(cfg.GetInt(modconstants.SyncTimeoutSecs, defaultSyncTimeoutSecs))*time.Second,
-			cfg.GetInt(modconstants.SyncMaxRetries, defaultSyncMaxRetries),
-		)
-
-		manager := app.NewJobsManager(orders, syncClient, app.JobsConfig{
+		manager := app.NewJobsManager(orders, notifier, app.JobsConfig{
 			ExpireAfter: time.Duration(
 				cfg.GetInt(modconstants.OrderExpireAfterMins, defaultExpireAfterMins)) * time.Minute,
 			CleanAfter: time.Duration(

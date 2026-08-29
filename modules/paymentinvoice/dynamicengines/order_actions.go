@@ -29,14 +29,25 @@ import (
 // Parameter names of the three actions. They are snake_case to match the resource fields, and
 // amount is deliberately the same name it has on the order.
 const (
-	paramOrderId         = "order_id"
-	paramAmount          = "amount"
-	paramSource          = "source"
-	paramPaymentMethodId = "payment_method_id"
-	paramContent         = "content"
-	paramReturnUrl       = "return_url"
-	paramMetadata        = "metadata"
-	paramPosId           = "pos_id"
+	paramOrderId   = "order_id"
+	paramOrderCode = "order_code"
+	paramAmount    = "amount"
+	paramSource    = "source"
+	paramOrgId     = "org_id"
+
+	// A payment method may be named by id or by code. The code is what the standalone service was
+	// called with, so a caller migrating off it keeps working without learning our ids.
+	paramPaymentMethodId   = "payment_method_id"
+	paramPaymentMethodCode = "payment_method_code"
+
+	// paramPaymentProfileId names the merchant account to collect into. Optional: a request
+	// without it is collected with the credentials in this deployment's configuration, which is
+	// what every caller did before profiles existed.
+	paramPaymentProfileId = "payment_profile_id"
+	paramContent          = "content"
+	paramReturnUrl        = "return_url"
+	paramMetadata         = "metadata"
+	paramPosId            = "pos_id"
 )
 
 // defineOrderActions adds create_payment, refund and remove_pos_orders.
@@ -123,20 +134,23 @@ func processCreatePayment(ctx corectx.Context, input drif.ProcessInput) (*drif.A
 		return &drif.ActionResult{ClientErrors: *vErrs}, nil
 	}
 
-	result, cErrs, err := service.CreatePayment(ctx, cmd)
+	result, err := service.CreatePayment(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}
-	if cErrs.Count() > 0 {
-		return &drif.ActionResult{ClientErrors: *cErrs}, nil
+	if result.ClientErrors.Count() > 0 {
+		return &drif.ActionResult{ClientErrors: result.ClientErrors}, nil
 	}
 
 	return &drif.ActionResult{
 		HasData: true,
 		Data: map[string]any{
-			"order_id":    result.OrderId,
-			"qr_code_url": result.QrCodeUrl,
-			"pay_url":     result.PayUrl,
+			"order_id": result.Data.OrderId,
+			// order_code is what the gateway knows the order by and what its callback arrives
+			// under, so a caller reconciling against the gateway's own records needs it.
+			"order_code":  result.Data.OrderCode,
+			"qr_code_url": result.Data.QrCodeUrl,
+			"pay_url":     result.Data.PayUrl,
 		},
 	}, nil
 }
@@ -153,21 +167,21 @@ func processRefund(ctx corectx.Context, input drif.ProcessInput) (*drif.ActionRe
 		return &drif.ActionResult{ClientErrors: *vErrs}, nil
 	}
 
-	result, cErrs, err := service.Refund(ctx, cmd)
+	result, err := service.Refund(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}
-	if cErrs.Count() > 0 {
-		return &drif.ActionResult{ClientErrors: *cErrs}, nil
+	if result.ClientErrors.Count() > 0 {
+		return &drif.ActionResult{ClientErrors: result.ClientErrors}, nil
 	}
 
 	// rested_amount keeps the old service's spelling: the ordering system reads this key.
 	return &drif.ActionResult{
 		HasData: true,
 		Data: map[string]any{
-			"order_id":      result.OrderId,
-			"refund_amount": result.RefundAmount.String(),
-			"rested_amount": result.RestedAmount.String(),
+			"order_id":      result.Data.OrderId,
+			"refund_amount": result.Data.RefundAmount.String(),
+			"rested_amount": result.Data.RestedAmount.String(),
 		},
 	}, nil
 }
@@ -182,17 +196,29 @@ func buildCreatePaymentCommand(
 ) (services.CreatePaymentCommand, *ft.ClientErrors) {
 	vErrs := ft.NewClientErrors()
 	cmd := services.CreatePaymentCommand{
-		Source:          readString(params, paramSource),
-		PaymentMethodId: readString(params, paramPaymentMethodId),
-		Content:         readOptionalString(params, paramContent),
-		ReturnUrl:       readOptionalString(params, paramReturnUrl),
-		Metadata:        buildCreateMetadata(params),
+		OrgId:             readString(params, paramOrgId),
+		Source:            readString(params, paramSource),
+		PaymentMethodId:   readString(params, paramPaymentMethodId),
+		PaymentMethodCode: readString(params, paramPaymentMethodCode),
+		PaymentProfileId:  readString(params, paramPaymentProfileId),
+		Content:           readOptionalString(params, paramContent),
+		ReturnUrl:         readOptionalString(params, paramReturnUrl),
+		Metadata:          buildCreateMetadata(params),
 	}
 
-	if cmd.PaymentMethodId == "" {
+	if cmd.PaymentMethodId == "" && cmd.PaymentMethodCode == "" {
 		vErrs.Append(*ft.NewBusinessViolation(paramPaymentMethodId,
 			"paymentinvoice.payment_method_required",
-			"a payment method must be identified"))
+			"a payment method must be identified, by id or by code"))
+	}
+
+	// Every record this module writes carries an organization, and it cannot be derived from the
+	// request: a caller may belong to several. Refusing here names the missing field, where the
+	// schema would otherwise reject the composed record as a server fault.
+	if cmd.OrgId == "" {
+		vErrs.Append(*ft.NewBusinessViolation(paramOrgId,
+			"paymentinvoice.org_required",
+			"the organization the order belongs to must be identified"))
 	}
 
 	amount, ok := readDecimal(params, paramAmount)
@@ -230,14 +256,15 @@ func buildCreateMetadata(params dmodel.DynamicFields) map[string]any {
 func buildRefundCommand(params dmodel.DynamicFields) (services.RefundCommand, *ft.ClientErrors) {
 	vErrs := ft.NewClientErrors()
 	cmd := services.RefundCommand{
-		OrderId: readString(params, paramOrderId),
-		Content: readOptionalString(params, paramContent),
+		OrderId:   readString(params, paramOrderId),
+		OrderCode: readString(params, paramOrderCode),
+		Content:   readOptionalString(params, paramContent),
 	}
 
-	if cmd.OrderId == "" {
+	if cmd.OrderId == "" && cmd.OrderCode == "" {
 		vErrs.Append(*ft.NewBusinessViolation(paramOrderId,
 			"paymentinvoice.order_id_required",
-			"the order to refund must be identified"))
+			"the order to refund must be identified, by order_id or by order_code"))
 	}
 
 	amount, ok := readDecimal(params, paramAmount)

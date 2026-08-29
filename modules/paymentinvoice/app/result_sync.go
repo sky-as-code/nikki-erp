@@ -27,9 +27,20 @@ const (
 )
 
 // ResultSyncPayload is the body posted to an order's return_url.
+//
+// org_id is snake_case while its neighbours are camelCase, and that is not an oversight to tidy
+// up. The camelCase keys are the old service's and are frozen by the machines reading them; org_id
+// was never sent by that service, so it is new, and a new key follows this codebase's own
+// convention rather than inheriting a spelling nothing depends on.
 type ResultSyncPayload struct {
-	Type          string `json:"type"`
-	Status        string `json:"status"`
+	Type   string `json:"type"`
+	Status string `json:"status"`
+
+	// OrgId is the organization the order belongs to. The ordering system matches it against its
+	// own copy of the order and treats a callback that does not carry it as naming an order it
+	// has never heard of — so an omission here is a customer who paid and got nothing.
+	OrgId string `json:"org_id"`
+
 	OrderId       string `json:"orderId"`
 	Amount        int64  `json:"amount"`
 	PaymentMethod string `json:"paymentMethod"`
@@ -39,6 +50,7 @@ type ResultSyncPayload struct {
 // ResultSyncRequest is what the caller knows about the notification to send.
 type ResultSyncRequest struct {
 	ReturnUrl string
+	OrgId     string
 	OrderId   string
 
 	// Status is this module's own snake_case status. It is translated on the way out; callers
@@ -105,6 +117,7 @@ func (this *ResultSyncClient) Sync(ctx context.Context, req ResultSyncRequest) R
 	body, err := json.Marshal(ResultSyncPayload{
 		Type:          syncTypePaymentResult,
 		Status:        StatusToLegacyEnum(req.Status),
+		OrgId:         req.OrgId,
 		OrderId:       req.OrderId,
 		Amount:        req.Amount,
 		PaymentMethod: req.PaymentMethod,

@@ -40,6 +40,7 @@ func TestEverySchemaParsesUnderItsConstantName(t *testing.T) {
 		build      func() *dmodel.ModelSchemaBuilder
 	}{
 		{PaymentMethodSchemaName, "paymentinvoice_payment_methods", PaymentMethodSchemaBuilder},
+		{PaymentProfileSchemaName, "paymentinvoice_payment_profiles", PaymentProfileSchemaBuilder},
 		{OrderSchemaName, "paymentinvoice_orders", OrderSchemaBuilder},
 		{TransactionSchemaName, "paymentinvoice_transactions", TransactionSchemaBuilder},
 		{InvoiceSchemaName, "paymentinvoice_invoices", InvoiceSchemaBuilder},
@@ -159,5 +160,42 @@ func TestOrderIdentifiersAreRequiredAndImmutable(t *testing.T) {
 		field := requireField(t, schema, fieldName)
 		assert.Truef(t, field.IsRequiredForCreate(), "%s must be required for create", fieldName)
 		assert.Truef(t, field.IsNoUpdate(), "%s must be immutable", fieldName)
+	}
+}
+
+// An order records which merchant account collected it, and that record has to outlive the
+// account: the order is evidence of money that moved, so a profile being withdrawn must not take
+// it down with it. Optional, because an order collected with the deployment's own credentials
+// names no profile at all — which is every order taken before profiles existed.
+func TestOrderRecordsItsPaymentProfileWithoutDependingOnIt(t *testing.T) {
+	requireBaseSchemasRegistered(t)
+
+	schema := OrderSchemaBuilder().Build()
+	field := requireField(t, schema, OrderFieldPaymentProfileId)
+
+	assert.Equal(t, dmodel.FieldDataTypeNameUlid, field.DataType().String())
+	assert.False(t, field.IsRequiredForCreate(), "an order may be collected without a profile")
+	assert.True(t, field.IsNoUpdate(),
+		"the account that took the money cannot be rewritten after the fact")
+
+	_, hasEdge := schema.Fields()["payment_profile"]
+	assert.False(t, hasEdge, "held as a plain id: an edge would cascade a withdrawal into the orders")
+}
+
+// Every record this module writes belongs to an organization, and the schema enforces it. This is
+// here because it was not enforced anywhere else for a while: the payment flow composed an order
+// without org_id, and the only thing that noticed was the schema — as a Go error out of the
+// create, which reads as a server fault rather than as the missing field it is.
+func TestOrgIdIsRequiredOnEveryRecordThePaymentFlowWrites(t *testing.T) {
+	requireBaseSchemasRegistered(t)
+
+	for _, build := range []func() *dmodel.ModelSchemaBuilder{
+		OrderSchemaBuilder, TransactionSchemaBuilder,
+	} {
+		schema := build().Build()
+		field := requireField(t, schema, "org_id")
+
+		assert.Truef(t, field.IsRequiredForCreate(),
+			"%s must refuse a record that names no organization", schema.Name())
 	}
 }

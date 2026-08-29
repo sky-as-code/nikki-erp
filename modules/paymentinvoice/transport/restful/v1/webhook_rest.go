@@ -24,6 +24,7 @@ import (
 
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/app"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/infra/gateway/momo"
@@ -42,6 +43,7 @@ type InboundAuth interface {
 // WebhookRest serves the three gateways' callbacks.
 type WebhookRest struct {
 	orders   *services.OrderDomainService
+	notifier *app.ResultNotifier
 	registry *itGateway.Registry
 	inbound  InboundAuth
 	logger   logging.LoggerService
@@ -49,11 +51,18 @@ type WebhookRest struct {
 
 func NewWebhookRest(
 	orders *services.OrderDomainService,
+	notifier *app.ResultNotifier,
 	registry *itGateway.Registry,
 	inbound InboundAuth,
 	logger logging.LoggerService,
 ) *WebhookRest {
-	return &WebhookRest{orders: orders, registry: registry, inbound: inbound, logger: logger}
+	return &WebhookRest{
+		orders:   orders,
+		notifier: notifier,
+		registry: registry,
+		inbound:  inbound,
+		logger:   logger,
+	}
 }
 
 // MomoIpn receives MoMo's payment result.
@@ -76,7 +85,23 @@ func (this *WebhookRest) MomoIpn(echoCtx *echo.Context) error {
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
-	if !adapter.VerifyIpn(payload) {
+	reqCtx, ok := requestContext(echoCtx)
+	if !ok {
+		this.logger.Errorf("paymentinvoice: a webhook ran without a request context")
+		return echoCtx.NoContent(http.StatusNoContent)
+	}
+
+	// The signature is MoMo's, made with the secret of the account that took the money — so the
+	// order has to be found before the callback can be checked, to know which account that was.
+	// An unknown order code yields no credentials and the check then fails, which is the same
+	// answer an unknown code got before: a 204 that says nothing either way.
+	profileConfig, err := this.orders.ProfileConfigForOrderCode(reqCtx, payload.OrderId)
+	if err != nil {
+		this.logger.Errorf("paymentinvoice: resolving a MoMo IPN's payment profile failed: %s", err.Error())
+		return echoCtx.NoContent(http.StatusNoContent)
+	}
+
+	if !adapter.VerifyIpn(payload, profileConfig) {
 		// Deliberately not distinguished from a valid callback in the response: telling an
 		// unsigned caller that their signature was wrong helps them work out a correct one.
 		this.logger.Warnf("paymentinvoice: a MoMo IPN failed signature verification")
@@ -108,7 +133,21 @@ func (this *WebhookRest) MposWebhook(echoCtx *echo.Context) error {
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
-	payload, err := adapter.DecryptWebhook(envelope.ReqData)
+	reqCtx, ok := requestContext(echoCtx)
+	if !ok {
+		this.logger.Errorf("paymentinvoice: a webhook ran without a request context")
+		return echoCtx.NoContent(http.StatusNoContent)
+	}
+
+	profileConfig, found := this.mposProfileConfig(reqCtx, adapter, envelope.MerchantId)
+	if !found {
+		// The callback names a merchant account this deployment holds no credentials for, so there
+		// is nothing here that could read the body, let alone act on it.
+		this.logger.Warnf("paymentinvoice: an mPOS callback named an unknown merchant account")
+		return echoCtx.NoContent(http.StatusNoContent)
+	}
+
+	payload, err := adapter.DecryptWebhook(envelope.ReqData, profileConfig)
 	if err != nil {
 		// A body that will not decrypt did not come from mPOS, so it is refused rather than acted
 		// on. The reason is logged but not returned, for the same reason as MoMo's signature.
@@ -168,14 +207,14 @@ func (this *WebhookRest) VietQrTransactionSync(echoCtx *echo.Context) error {
 		return echoCtx.JSON(http.StatusBadRequest, vietqr.NewWebhookNotFound())
 	}
 
-	reqCtx, ok := echoCtx.Request().Context().(corectx.Context)
+	reqCtx, ok := requestContext(echoCtx)
 	if !ok {
 		return echoCtx.JSON(http.StatusInternalServerError, vietqr.NewWebhookNotFound())
 	}
 
 	// A bank transfer is only ever reported once it has arrived, so this callback existing is
 	// itself the confirmation of payment. There is no failure form of it.
-	outcome, err := this.orders.ApplyGatewayResult(reqCtx, services.GatewayResult{
+	outcome, err := this.settle(reqCtx, services.GatewayResult{
 		OrderCode:        payload.OrderId,
 		Paid:             true,
 		RefTransactionId: payload.ReferenceNumber,
@@ -198,13 +237,13 @@ func (this *WebhookRest) VietQrTransactionSync(echoCtx *echo.Context) error {
 // MoMo and mPOS are told nothing either way — both expect an empty 204 — so an unknown order or a
 // replayed callback has to be visible in the log or it is visible nowhere.
 func (this *WebhookRest) apply(echoCtx *echo.Context, result services.GatewayResult) {
-	reqCtx, ok := echoCtx.Request().Context().(corectx.Context)
+	reqCtx, ok := requestContext(echoCtx)
 	if !ok {
 		this.logger.Errorf("paymentinvoice: a webhook ran without a request context")
 		return
 	}
 
-	outcome, err := this.orders.ApplyGatewayResult(reqCtx, result)
+	outcome, err := this.settle(reqCtx, result)
 	if err != nil {
 		this.logger.Errorf("paymentinvoice: applying a gateway result failed: %s", err.Error())
 		return
@@ -218,6 +257,36 @@ func (this *WebhookRest) apply(echoCtx *echo.Context, result services.GatewayRes
 		// to, so the same result arriving twice is expected rather than exceptional.
 		this.logger.Infof("paymentinvoice: order '%s' had already settled; callback ignored", outcome.OrderId)
 	}
+}
+
+// settle applies a gateway's verdict and tells the ordering system about it.
+//
+// The notification is the whole point of a callback as far as the rest of the system is concerned:
+// the order changing status in this database releases nothing, and the vending machine holding the
+// customer's goods learns of the payment only by being called back. Settling without notifying
+// leaves a customer who has paid standing at a machine that will not open.
+//
+// It is sent only when this callback is what settled the order. A replay must not re-notify: the
+// gateways retry, and the ordering system would be told the same payment several times, once per
+// retry, long after it acted on the first.
+//
+// The send is detached, so answering the gateway is not held up by how quickly the ordering system
+// answers us — see ResultNotifier.NotifyDetached.
+func (this *WebhookRest) settle(
+	ctx corectx.Context, result services.GatewayResult,
+) (*services.GatewayResultOutcome, error) {
+	outcome, err := this.orders.ApplyGatewayResult(ctx, result)
+	if err != nil || !outcome.Applied {
+		return outcome, err
+	}
+
+	this.notifier.NotifyDetached(ctx, app.NotifyTarget{
+		Pk:        outcome.OrderPk,
+		OrderId:   outcome.OrderId,
+		ReturnUrl: outcome.ReturnUrl,
+	}, outcome.Status)
+
+	return outcome, nil
 }
 
 // adapterAs fetches a registered adapter and narrows it to its concrete type.
@@ -250,4 +319,43 @@ func asPayloadMap(payload any) map[string]any {
 		return nil
 	}
 	return decoded
+}
+
+// requestContext narrows the request's context to the module's own.
+func requestContext(echoCtx *echo.Context) (corectx.Context, bool) {
+	reqCtx, ok := echoCtx.Request().Context().(corectx.Context)
+	return reqCtx, ok
+}
+
+// mposProfileConfig finds the credentials that can read one inbound card-terminal callback.
+//
+// The callback carries the merchant account in the clear and everything else encrypted under that
+// account's secret, so the account has to be identified before the body can be read at all. The
+// deployment's own account is tried first because it is the common case and costs no query; only
+// then are the payment profiles scanned.
+//
+// It reports false when no account matches. That is not the same as a body that fails to decrypt:
+// here nothing was even attempted, and attempting it under the wrong secret would produce a
+// decrypt failure that reads as a forged callback rather than as a missing profile.
+func (this *WebhookRest) mposProfileConfig(
+	ctx corectx.Context, adapter *mpos.Adapter, merchantId string,
+) (map[string]any, bool) {
+	// A callback that names no merchant, or names this deployment's own, is served by the
+	// configured credentials — which is every callback on a deployment that has no profiles.
+	if merchantId == "" || merchantId == adapter.MerchantId() {
+		return nil, true
+	}
+
+	configs, err := this.orders.ProfileConfigsByMethod(ctx, models.PaymentProfileMethodMpos)
+	if err != nil {
+		this.logger.Errorf("paymentinvoice: reading the mPOS payment profiles failed: %s", err.Error())
+		return nil, false
+	}
+
+	for _, config := range configs {
+		if mpos.MerchantIdOf(config) == merchantId {
+			return config, true
+		}
+	}
+	return nil, false
 }

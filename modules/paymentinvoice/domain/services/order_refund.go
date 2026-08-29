@@ -9,24 +9,47 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	itGateway "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/gateway"
+	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
 )
 
-// RefundCommand asks for money to be given back against an order the caller quotes by its
-// business identifier — the one they were given, not this module's primary key.
-type RefundCommand struct {
-	OrderId string
-	Amount  decimal.Decimal
-	Content *string
+// The command and result of a refund are declared on the module's public port and aliased here,
+// for the same reason the create ones are. See interfaces/order.
+type (
+	RefundCommand    = itOrder.RefundCommand
+	RefundResultData = itOrder.RefundResultData
+	RefundResult     = itOrder.RefundResult
+)
+
+// refusedRefund is a refund that broke a rule the caller can fix.
+func refusedRefund(vErrs *ft.ClientErrors) *RefundResult {
+	return &RefundResult{ClientErrors: *vErrs}
 }
 
-// RefundResult reports what was returned and what remains.
-type RefundResult struct {
-	OrderId      string
-	RefundAmount decimal.Decimal
+// findOrderToRefund resolves the order from whichever identifier the caller kept.
+//
+// The standalone service handed out order_id and order_code together, and callers migrating off it
+// stored one or the other — one of this module's own callers stores the code in a field named for
+// the id. Accepting both is what stops a refund failing on a naming accident rather than on
+// anything about the money.
+func findOrderToRefund(ctx corectx.Context, cmd RefundCommand) (*models.Order, error) {
+	if cmd.OrderId != "" {
+		return findOrderByBusinessId(ctx, cmd.OrderId)
+	}
+	if cmd.OrderCode != "" {
+		return findOrderByCode(ctx, cmd.OrderCode)
+	}
+	return nil, nil
+}
 
-	// RestedAmount is what is left of the order after this refund. The spelling is the old
-	// service's and is kept: the ordering system reads this key.
-	RestedAmount decimal.Decimal
+// describeRefundTarget names what the caller quoted, so "not found" says which identifier missed.
+func describeRefundTarget(cmd RefundCommand) string {
+	if cmd.OrderId != "" {
+		return "id '" + cmd.OrderId + "'"
+	}
+	if cmd.OrderCode != "" {
+		return "code '" + cmd.OrderCode + "'"
+	}
+	return "no identifier at all"
 }
 
 // Refund gives money back for an order already paid.
@@ -45,38 +68,41 @@ type RefundResult struct {
 //     repeatedly for the full amount. The running total is checked instead.
 func (this *OrderDomainService) Refund(
 	ctx corectx.Context, cmd RefundCommand,
-) (*RefundResult, *ft.ClientErrors, error) {
+) (*RefundResult, error) {
 	vErrs := ft.NewClientErrors()
 
-	order, err := findOrderByBusinessId(ctx, cmd.OrderId)
+	order, err := findOrderToRefund(ctx, cmd)
 	if err != nil {
-		return nil, vErrs, err
+		return nil, err
 	}
 	if order == nil {
 		appendFieldViolation(vErrs, models.OrderFieldOrderId,
-			"paymentinvoice.order_not_found", "no order with id '"+cmd.OrderId+"'")
-		return nil, vErrs, nil
+			"paymentinvoice.order_not_found", "no order with "+describeRefundTarget(cmd))
+		return refusedRefund(vErrs), nil
 	}
 
 	if !assertRefundable(*order, cmd.Amount, vErrs) {
-		return nil, vErrs, nil
+		return refusedRefund(vErrs), nil
 	}
 
 	method, err := this.loadRefundMethod(ctx, *order, vErrs)
-	if err != nil || vErrs.Count() > 0 {
-		return nil, vErrs, err
+	if err != nil {
+		return nil, err
+	}
+	if vErrs.Count() > 0 {
+		return refusedRefund(vErrs), nil
 	}
 
 	adapter, exists := this.registry.Get(derefString(method.GetAdapterCode()))
 	if !exists {
 		appendOrderViolation(vErrs, "paymentinvoice.gateway_unavailable",
 			"payment method '"+derefString(method.GetCode())+"' is not available on this deployment")
-		return nil, vErrs, nil
+		return refusedRefund(vErrs), nil
 	}
 
 	assertAmountWithinMethodBounds(cmd.Amount, method, vErrs)
 	if vErrs.Count() > 0 {
-		return nil, vErrs, nil
+		return refusedRefund(vErrs), nil
 	}
 
 	return this.reverse(ctx, adapter, *order, *method, cmd, vErrs)
@@ -90,10 +116,18 @@ func (this *OrderDomainService) reverse(
 	method models.PaymentMethod,
 	cmd RefundCommand,
 	vErrs *ft.ClientErrors,
-) (*RefundResult, *ft.ClientErrors, error) {
+) (*RefundResult, error) {
 	paymentRefId, err := findPaymentRefTransactionId(ctx, derefString(order.GetId()))
 	if err != nil {
-		return nil, vErrs, err
+		return nil, err
+	}
+
+	// The refund goes back through the account the payment came in on. Any other account would
+	// have the gateway refuse it — it has no such transaction — and if it did not, the money would
+	// leave the wrong merchant's balance.
+	profileConfig, err := this.profileConfigForOrder(ctx, order)
+	if err != nil {
+		return nil, err
 	}
 
 	refunded, gatewayErr := adapter.Refund(ctx, itGateway.RefundRequest{
@@ -103,27 +137,31 @@ func (this *OrderDomainService) reverse(
 		RefTransactionId: paymentRefId,
 		Metadata:         order.GetMetadata(),
 		MethodConfig:     method.GetConfig(),
+		ProfileConfig:    profileConfig,
 	})
 
 	if gatewayErr != nil {
 		if err := this.markRefundFailed(ctx, order, method, cmd, gatewayErr); err != nil {
-			return nil, vErrs, err
+			return nil, err
 		}
 		appendOrderViolation(vErrs, "paymentinvoice.refund_failed",
 			"the payment gateway refused the refund: "+gatewayErr.Error())
-		return nil, vErrs, nil
+		return refusedRefund(vErrs), nil
 	}
 
 	total := derefDecimal(order.GetRefundAmount()).Add(cmd.Amount)
 	if err := this.markRefundSucceeded(ctx, order, method, cmd, refunded, total); err != nil {
-		return nil, vErrs, err
+		return nil, err
 	}
 
 	return &RefundResult{
-		OrderId:      derefString(order.GetOrderId()),
-		RefundAmount: cmd.Amount,
-		RestedAmount: derefDecimal(order.GetAmount()).Sub(total),
-	}, vErrs, nil
+		HasData: true,
+		Data: RefundResultData{
+			OrderId:      derefString(order.GetOrderId()),
+			RefundAmount: cmd.Amount,
+			RestedAmount: derefDecimal(order.GetAmount()).Sub(total),
+		},
+	}, nil
 }
 
 // markRefundSucceeded closes the order and appends the refund transaction.
@@ -201,6 +239,7 @@ func appendRefundTransaction(
 		models.TransactionFieldCurrencyId:      derefString(order.GetCurrencyId()),
 		models.TransactionFieldPaymentMethodId: derefString(method.GetId()),
 		models.TransactionFieldTransactionType: models.TransactionTypeRefund,
+		models.TransactionFieldOrgId:           derefString((*string)(order.GetOrgId())),
 	}
 	if cmd.Content != nil && *cmd.Content != "" {
 		fields[models.TransactionFieldContent] = *cmd.Content

@@ -21,6 +21,23 @@ CREATE TABLE "paymentinvoice_payment_methods" (
 CREATE INDEX "payinv_pay_methods_adapter_idx" ON "paymentinvoice_payment_methods" ("adapter_code");
 -- Create index "payinv_pay_methods_is_active_idx" to table: "paymentinvoice_payment_methods"
 CREATE INDEX "payinv_pay_methods_is_active_idx" ON "paymentinvoice_payment_methods" ("is_active");
+-- Create "paymentinvoice_payment_profiles" table
+CREATE TABLE "paymentinvoice_payment_profiles" (
+  "id" character varying NOT NULL,
+  "name" character varying NOT NULL,
+  "method" character varying NOT NULL,
+  "encrypted_config" character varying NULL,
+  "org_id" character varying NOT NULL,
+  "is_archived" boolean NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "payinv_pay_profiles_method_idx" to table: "paymentinvoice_payment_profiles"
+CREATE INDEX "payinv_pay_profiles_method_idx" ON "paymentinvoice_payment_profiles" ("method");
+-- Create index "payinv_pay_profiles_org_idx" to table: "paymentinvoice_payment_profiles"
+CREATE INDEX "payinv_pay_profiles_org_idx" ON "paymentinvoice_payment_profiles" ("org_id");
 -- Create "paymentinvoice_orders" table
 CREATE TABLE "paymentinvoice_orders" (
   "id" character varying NOT NULL,
@@ -32,6 +49,7 @@ CREATE TABLE "paymentinvoice_orders" (
   "refund_amount" numeric NOT NULL,
   "currency_id" character varying NOT NULL,
   "payment_method_id" character varying NOT NULL,
+  "payment_profile_id" character varying NULL,
   "content" character varying NULL,
   "return_url" character varying NULL,
   "last_sync_status" character varying NULL,
@@ -127,3 +145,4 @@ CREATE INDEX "payinv_trans_order_biz_id_idx" ON "paymentinvoice_transactions" ("
 CREATE INDEX "payinv_trans_order_id_idx" ON "paymentinvoice_transactions" ("order_id");
 -- Create index "payinv_trans_ref_tran_id_idx" to table: "paymentinvoice_transactions"
 CREATE INDEX "payinv_trans_ref_tran_id_idx" ON "paymentinvoice_transactions" ("ref_transaction_id");
+

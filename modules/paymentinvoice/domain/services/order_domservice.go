@@ -7,6 +7,7 @@
 package services
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -17,11 +18,15 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	itGateway "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/gateway"
+	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
 )
 
-// NewOrderDomainService wires the order rules onto the gateway registry they select from.
-func NewOrderDomainService(registry *itGateway.Registry) *OrderDomainService {
-	return &OrderDomainService{registry: registry, now: time.Now}
+// NewOrderDomainService wires the order rules onto the gateway registry they select from and the
+// profiles that say which merchant account each payment lands in.
+func NewOrderDomainService(
+	registry *itGateway.Registry, profiles *PaymentProfileDomainService,
+) *OrderDomainService {
+	return &OrderDomainService{registry: registry, profiles: profiles, now: time.Now}
 }
 
 // OrderDomainService takes payments and gives them back.
@@ -33,29 +38,33 @@ func NewOrderDomainService(registry *itGateway.Registry) *OrderDomainService {
 type OrderDomainService struct {
 	registry *itGateway.Registry
 
+	// profiles resolves the merchant credentials an order is collected with. Every step after
+	// the payment is created reads them back through it, because a refund or a callback has to
+	// use the same account the money moved through. See order_profile.go.
+	profiles *PaymentProfileDomainService
+
 	// now is injected so the order-code date prefix can be pinned in a test.
 	now func() time.Time
 }
 
-// CreatePaymentCommand is what a caller asks for. Amount and the method are theirs; every
-// identifier on the resulting order is generated here.
-type CreatePaymentCommand struct {
-	Source          string
-	Amount          decimal.Decimal
-	PaymentMethodId string
-	Content         *string
-	ReturnUrl       *string
+// The command and result of taking a payment are declared on the module's public port and aliased
+// here, so the domain code and the modules calling in from outside speak one set of types rather
+// than two that have to be kept in step. See interfaces/order.
+type (
+	CreatePaymentCommand    = itOrder.CreatePaymentCommand
+	CreatePaymentResultData = itOrder.CreatePaymentResultData
+	CreatePaymentResult     = itOrder.CreatePaymentResult
+)
 
-	// Metadata is the method-specific input, uninterpreted. Only the selected adapter reads it.
-	Metadata map[string]any
-}
+// assert that the domain service really is the module's public port. Without this the interface
+// and the implementation can drift and nothing says so until a caller in another module fails to
+// compile — by which time the mistake is in someone else's build.
+var _ itOrder.OrderDomainService = (*OrderDomainService)(nil)
 
-// CreatePaymentResult is what the payer needs in order to pay. Both URLs are empty for a card
-// terminal, where the prompt is pushed to the device the customer is standing at.
-type CreatePaymentResult struct {
-	OrderId   string
-	QrCodeUrl string
-	PayUrl    string
+// refusedCreate is a create that broke a rule the caller can fix. The errors travel inside the
+// result rather than as a Go error, so the REST layer answers 400 rather than 500.
+func refusedCreate(vErrs *ft.ClientErrors) *CreatePaymentResult {
+	return &CreatePaymentResult{ClientErrors: *vErrs}
 }
 
 // CreatePayment records an order and asks its gateway to start collecting.
@@ -67,12 +76,15 @@ type CreatePaymentResult struct {
 // payment_failed instead.
 func (this *OrderDomainService) CreatePayment(
 	ctx corectx.Context, cmd CreatePaymentCommand,
-) (*CreatePaymentResult, *ft.ClientErrors, error) {
+) (*CreatePaymentResult, error) {
 	vErrs := ft.NewClientErrors()
 
-	method, err := this.loadActiveMethod(ctx, cmd.PaymentMethodId, vErrs)
-	if err != nil || vErrs.Count() > 0 {
-		return nil, vErrs, err
+	method, err := this.loadActiveMethod(ctx, cmd, vErrs)
+	if err != nil {
+		return nil, err
+	}
+	if vErrs.Count() > 0 {
+		return refusedCreate(vErrs), nil
 	}
 
 	adapter, exists := this.registry.Get(derefString(method.GetAdapterCode()))
@@ -82,38 +94,47 @@ func (this *OrderDomainService) CreatePayment(
 		// 500 would have them retry against a deployment that will never accept it.
 		appendOrderViolation(vErrs, "paymentinvoice.gateway_unavailable",
 			"payment method '"+derefString(method.GetCode())+"' is not available on this deployment")
-		return nil, vErrs, nil
+		return refusedCreate(vErrs), nil
 	}
 
 	assertAmountWithinMethodBounds(cmd.Amount, method, vErrs)
 
+	// Errors accumulate rather than returning here: the adapter's own ValidateOrder runs next, and
+	// short-circuiting would report an out-of-bounds amount while hiding a missing terminal id, so
+	// the caller would fix one problem and be told about the other on the next attempt.
+	profile, err := this.loadProfileForCreate(ctx, cmd.PaymentProfileId, *method, vErrs)
+	if err != nil {
+		return nil, err
+	}
+
 	orderReq := itGateway.OrderRequest{
-		Amount:       cmd.Amount,
-		CurrencyCode: "",
-		Content:      cmd.Content,
-		Metadata:     cmd.Metadata,
-		MethodConfig: method.GetConfig(),
+		Amount:        cmd.Amount,
+		CurrencyCode:  "",
+		Content:       cmd.Content,
+		Metadata:      cmd.Metadata,
+		MethodConfig:  method.GetConfig(),
+		ProfileConfig: profileConfigOf(profile),
 	}
 	if err := adapter.ValidateOrder(ctx, orderReq, vErrs); err != nil {
-		return nil, vErrs, err
+		return nil, err
 	}
 	if vErrs.Count() > 0 {
-		return nil, vErrs, nil
+		return refusedCreate(vErrs), nil
 	}
 
 	adapterMeta, err := adapter.PrepareMetadata(ctx, orderReq)
 	if err != nil {
-		return nil, vErrs, err
+		return nil, err
 	}
 
-	order, transaction, err := this.persistNewOrder(ctx, cmd, *method, adapterMeta)
+	order, transaction, err := this.persistNewOrder(ctx, cmd, *method, profile, adapterMeta)
 	if err != nil {
-		return nil, vErrs, err
+		return nil, err
 	}
 	if order == nil {
 		appendOrderViolation(vErrs, "paymentinvoice.order_code_exhausted",
 			"could not allocate an unused order code; please retry")
-		return nil, vErrs, nil
+		return refusedCreate(vErrs), nil
 	}
 
 	return this.collect(ctx, adapter, *order, *transaction, orderReq, vErrs)
@@ -127,40 +148,51 @@ func (this *OrderDomainService) collect(
 	transaction models.Transaction,
 	orderReq itGateway.OrderRequest,
 	vErrs *ft.ClientErrors,
-) (*CreatePaymentResult, *ft.ClientErrors, error) {
+) (*CreatePaymentResult, error) {
 	orderCode := derefString(order.GetOrderCode())
 
-	created, gatewayErr := adapter.CreatePayment(ctx, itGateway.CreatePaymentRequest{
+	req := itGateway.CreatePaymentRequest{
 		OrderRequest: itGateway.OrderRequest{
-			Amount:       orderReq.Amount,
-			CurrencyCode: orderReq.CurrencyCode,
-			Content:      orderReq.Content,
-			Metadata:     order.GetMetadata(),
-			MethodConfig: orderReq.MethodConfig,
+			Amount:        orderReq.Amount,
+			CurrencyCode:  orderReq.CurrencyCode,
+			Content:       orderReq.Content,
+			Metadata:      order.GetMetadata(),
+			MethodConfig:  orderReq.MethodConfig,
+			ProfileConfig: orderReq.ProfileConfig,
 		},
 		OrderCode: orderCode,
-	})
+	}
+
+	fmt.Println("")
+	fmt.Println(req)
+	fmt.Println("")
+
+	created, gatewayErr := adapter.CreatePayment(ctx, req)
 
 	if gatewayErr != nil {
 		if err := this.markCreateFailed(ctx, order, transaction, gatewayErr); err != nil {
-			return nil, vErrs, err
+			return nil, err
 		}
 		// The gateway refusing is not a bug in this service, and the caller can act on it — by
 		// paying another way, or by retrying. A 500 would say the opposite.
 		appendOrderViolation(vErrs, "paymentinvoice.create_payment_failed",
 			"the payment gateway refused the payment: "+gatewayErr.Error())
-		return nil, vErrs, nil
+		return refusedCreate(vErrs), nil
 	}
 
 	if err := this.markCreateAccepted(ctx, order, transaction, created); err != nil {
-		return nil, vErrs, err
+		return nil, err
 	}
 
 	return &CreatePaymentResult{
-		OrderId:   derefString(order.GetOrderId()),
-		QrCodeUrl: created.QrCodeUrl,
-		PayUrl:    created.PayUrl,
-	}, vErrs, nil
+		HasData: true,
+		Data: CreatePaymentResultData{
+			OrderId:   derefString(order.GetOrderId()),
+			OrderCode: orderCode,
+			QrCodeUrl: created.QrCodeUrl,
+			PayUrl:    created.PayUrl,
+		},
+	}, nil
 }
 
 // markCreateAccepted advances the order to processing and keeps the gateway's reply.
@@ -235,6 +267,7 @@ func (this *OrderDomainService) persistNewOrder(
 	ctx corectx.Context,
 	cmd CreatePaymentCommand,
 	method models.PaymentMethod,
+	profile *models.PaymentProfile,
 	adapterMeta map[string]any,
 ) (*models.Order, *models.Transaction, error) {
 	orderCode, err := this.allocateOrderCode(ctx)
@@ -269,9 +302,18 @@ func (this *OrderDomainService) persistNewOrder(
 			models.OrderFieldCurrencyId:      derefString(method.GetCurrencyId()),
 			models.OrderFieldPaymentMethodId: derefString(method.GetId()),
 			models.OrderFieldContent:         *content,
+			// Required by the schema and not derivable here: a caller may belong to several
+			// organizations, so which one owns the money is theirs to state, not ours to guess.
+			models.OrderFieldOrgId: cmd.OrgId,
 		}
 		if cmd.ReturnUrl != nil && *cmd.ReturnUrl != "" {
 			orderFields[models.OrderFieldReturnUrl] = *cmd.ReturnUrl
+		}
+		// Recorded on the order, not only used for this call: every later step — the refund, the
+		// callback verification, the watchdog's question — has to reach for the same credentials
+		// the money was taken with.
+		if profile != nil {
+			orderFields[models.OrderFieldPaymentProfileId] = derefString((*string)(profile.GetId()))
 		}
 		if metadata := mergeMetadata(cmd.Metadata, adapterMeta); metadata != nil {
 			orderFields[models.OrderFieldMetadata] = metadata
@@ -292,6 +334,7 @@ func (this *OrderDomainService) persistNewOrder(
 			models.TransactionFieldPaymentMethodId: derefString(method.GetId()),
 			models.TransactionFieldTransactionType: models.TransactionTypePayment,
 			models.TransactionFieldContent:         *content,
+			models.TransactionFieldOrgId:           cmd.OrgId,
 		})
 		if err != nil {
 			return err

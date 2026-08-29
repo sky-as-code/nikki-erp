@@ -39,6 +39,19 @@ type GatewayResultOutcome struct {
 
 	// OrderId is the order's quoted identifier, which the result sync is keyed by.
 	OrderId string
+
+	// OrderPk is the order's primary key, which the sync outcome is recorded against.
+	OrderPk string
+
+	// ReturnUrl is where the ordering system is to be told of this verdict. It is carried out of
+	// the transaction that applied the verdict rather than read again afterwards: the caller needs
+	// it on exactly the path where it has just been loaded, and a second read would be a second
+	// chance for the order to have moved.
+	ReturnUrl string
+
+	// Status is the status the order now holds. It is only meaningful when Applied — for an order
+	// that had already settled it is the earlier verdict, which this callback must not re-report.
+	Status string
 }
 
 // ApplyGatewayResult records a gateway's verdict against an order and its payment transaction.
@@ -73,11 +86,14 @@ func (this *OrderDomainService) ApplyGatewayResult(
 
 		outcome.OrderFound = true
 		outcome.OrderId = derefString(order.GetOrderId())
+		outcome.OrderPk = derefString(order.GetId())
+		outcome.ReturnUrl = derefString(order.GetReturnUrl())
+		outcome.Status = derefString(order.GetStatus())
 
 		// An order that has already reached a verdict keeps it. A late "failed" arriving after a
 		// success would otherwise un-pay an order the customer has paid, and the goods have
 		// likely already been released.
-		if isTerminalPaymentStatus(derefString(order.GetStatus())) {
+		if isTerminalPaymentStatus(outcome.Status) {
 			return nil
 		}
 
@@ -85,6 +101,7 @@ func (this *OrderDomainService) ApplyGatewayResult(
 			return err
 		}
 		outcome.Applied = true
+		outcome.Status = statusForResult(result.Paid)
 		return nil
 	})
 
@@ -95,15 +112,13 @@ func (this *OrderDomainService) ApplyGatewayResult(
 func (this *OrderDomainService) applyToOrder(
 	ctx corectx.Context, order models.Order, result GatewayResult,
 ) error {
-	orderStatus := models.OrderStatusPaymentFailed
 	transactionStatus := models.TransactionStatusFailed
 	if result.Paid {
-		orderStatus = models.OrderStatusPaymentSuccess
 		transactionStatus = models.TransactionStatusCompleted
 	}
 
 	if err := writeOrderFields(ctx, derefString(order.GetId()), dmodel.DynamicFields{
-		models.OrderFieldStatus: orderStatus,
+		models.OrderFieldStatus: statusForResult(result.Paid),
 	}); err != nil {
 		return err
 	}
@@ -130,6 +145,18 @@ func (this *OrderDomainService) applyToOrder(
 		fields[models.TransactionFieldRefPayload] = result.RefPayload
 	}
 	return writeTransactionFields(ctx, derefString(transaction.GetId()), fields)
+}
+
+// statusForResult is the order status a gateway's verdict puts an order into.
+//
+// It is one function rather than two assignments so that what is written to the order and what is
+// reported to the ordering system cannot drift apart: those are the same fact, and a machine told
+// "failed" about an order stored as paid would refuse goods the customer has paid for.
+func statusForResult(paid bool) string {
+	if paid {
+		return models.OrderStatusPaymentSuccess
+	}
+	return models.OrderStatusPaymentFailed
 }
 
 // isTerminalPaymentStatus reports whether an order has already reached a verdict.

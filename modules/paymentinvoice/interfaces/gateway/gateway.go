@@ -70,6 +70,16 @@ type OrderRequest struct {
 	// MethodConfig is the non-secret configuration of the payment-method row in play, which is
 	// how one adapter serves two merchant accounts.
 	MethodConfig map[string]any
+
+	// ProfileConfig is the decrypted credentials of the payment profile this order is collected
+	// through, or nil when it names none.
+	//
+	// It is separate from MethodConfig because the two answer different questions and carry
+	// different risk. A method config says how a gateway behaves and is readable through the API;
+	// a profile config is the merchant secret and is encrypted at rest. An adapter overlays the
+	// credentials it recognizes onto the ones it was built with, so a deployment that configures
+	// one merchant account keeps working untouched and a profile only overrides what it supplies.
+	ProfileConfig map[string]any
 }
 
 // CreatePaymentRequest is a persisted order handed to its gateway.
@@ -109,6 +119,10 @@ type RefundRequest struct {
 
 	Metadata     map[string]any
 	MethodConfig map[string]any
+
+	// ProfileConfig is the decrypted credentials of the payment profile the order was collected
+	// through, or nil when it names none. See OrderRequest.ProfileConfig.
+	ProfileConfig map[string]any
 }
 
 type RefundResult struct {
@@ -124,6 +138,10 @@ type CheckOrderRequest struct {
 
 	Metadata     map[string]any
 	MethodConfig map[string]any
+
+	// ProfileConfig is the decrypted credentials of the payment profile the order was collected
+	// through, or nil when it names none. See OrderRequest.ProfileConfig.
+	ProfileConfig map[string]any
 }
 
 // CheckOrderResult is the gateway's verdict on an order it was asked about.
@@ -135,4 +153,30 @@ type CheckOrderResult struct {
 	Paid             bool
 	RefTransactionId string
 	RawResponse      map[string]any
+}
+
+// ProfileString reads one credential out of a payment profile's decrypted config.
+//
+// The config is written by an operator rather than by this codebase, and the same credential is
+// spelled differently depending on which console wrote it — the service this module supersedes
+// used camelCase throughout, while everything on this side is snake_case. Accepting both here is
+// what stops a profile that reads correctly in one system from silently falling back to the
+// deployment's own credentials in the other. The first key present wins.
+//
+// A missing key answers "", which callers read as "the profile does not override this".
+func ProfileString(config map[string]any, keys ...string) string {
+	if config == nil {
+		return ""
+	}
+
+	for _, key := range keys {
+		value, exists := config[key]
+		if !exists || value == nil {
+			continue
+		}
+		if text, isText := value.(string); isText && text != "" {
+			return text
+		}
+	}
+	return ""
 }

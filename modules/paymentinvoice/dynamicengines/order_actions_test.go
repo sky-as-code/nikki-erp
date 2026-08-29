@@ -10,6 +10,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 )
 
+// testOrgId stands in for the organization every order belongs to. It is required on every create,
+// so the fixtures below carry it and each test isolates the one rule it is about.
+const testOrgId = "01ORG00000000000000000000"
+
 // The actions declare no ParamSchema — their params are a mix of order fields and method-specific
 // input that no single schema describes — so the request body is checked here instead. These tests
 // cover what that check has to get right.
@@ -25,7 +29,7 @@ func TestAMalformedAmountIsRefusedNotDefaultedToZero(t *testing.T) {
 		"an_object":    map[string]any{"amount": 1},
 		"a_bool":       true,
 	} {
-		params := dmodel.DynamicFields{paramPaymentMethodId: "01METHOD0000000000000000000"}
+		params := dmodel.DynamicFields{paramPaymentMethodId: "01METHOD0000000000000000000", paramOrgId: testOrgId}
 		if value != nil {
 			params[paramAmount] = value
 		}
@@ -41,6 +45,7 @@ func TestAMalformedAmountIsRefusedNotDefaultedToZero(t *testing.T) {
 func TestAnAmountKeepsItsExactValueThroughAString(t *testing.T) {
 	cmd, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
 		paramPaymentMethodId: "01METHOD0000000000000000000",
+		paramOrgId:           testOrgId,
 		paramAmount:          "150000.75",
 	})
 
@@ -57,6 +62,7 @@ func TestTheNumericJsonShapesAreAccepted(t *testing.T) {
 	} {
 		cmd, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
 			paramPaymentMethodId: "01METHOD0000000000000000000",
+			paramOrgId:           testOrgId,
 			paramAmount:          value,
 		})
 
@@ -66,7 +72,7 @@ func TestTheNumericJsonShapesAreAccepted(t *testing.T) {
 }
 
 func TestAPaymentMethodIsRequired(t *testing.T) {
-	_, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{paramAmount: "150000"})
+	_, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{paramAmount: "150000", paramOrgId: testOrgId})
 
 	assert.Equal(t, 1, vErrs.Count())
 }
@@ -77,6 +83,7 @@ func TestAPaymentMethodIsRequired(t *testing.T) {
 func TestATopLevelPosIdIsFoldedIntoTheMetadata(t *testing.T) {
 	cmd, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
 		paramPaymentMethodId: "01METHOD0000000000000000000",
+		paramOrgId:           testOrgId,
 		paramAmount:          "150000",
 		paramPosId:           "POS-01",
 	})
@@ -88,6 +95,7 @@ func TestATopLevelPosIdIsFoldedIntoTheMetadata(t *testing.T) {
 func TestAMetadataPosIdIsPassedThrough(t *testing.T) {
 	cmd, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
 		paramPaymentMethodId: "01METHOD0000000000000000000",
+		paramOrgId:           testOrgId,
 		paramAmount:          "150000",
 		paramMetadata:        map[string]any{models.OrderMetaPosId: "POS-02"},
 	})
@@ -101,6 +109,7 @@ func TestAMetadataPosIdIsPassedThrough(t *testing.T) {
 func TestUnknownMetadataKeysAreNotDropped(t *testing.T) {
 	cmd, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
 		paramPaymentMethodId: "01METHOD0000000000000000000",
+		paramOrgId:           testOrgId,
 		paramAmount:          "150000",
 		paramMetadata:        map[string]any{"terminal_group": "G1", "till": 4},
 	})
@@ -115,6 +124,7 @@ func TestUnknownMetadataKeysAreNotDropped(t *testing.T) {
 func TestNoMetadataMeansNilNotAnEmptyMap(t *testing.T) {
 	cmd, _ := buildCreatePaymentCommand(dmodel.DynamicFields{
 		paramPaymentMethodId: "01METHOD0000000000000000000",
+		paramOrgId:           testOrgId,
 		paramAmount:          "150000",
 	})
 
@@ -136,4 +146,90 @@ func TestARefundCommandIsBuiltFromTheBusinessOrderId(t *testing.T) {
 	assert.Zero(t, vErrs.Count())
 	assert.Equal(t, "VDMCMOM0Q8HABCDEFGH", cmd.OrderId)
 	assert.Equal(t, "50000", cmd.Amount.String())
+}
+
+// The merchant account is optional: a caller that names none is collected with the credentials in
+// this deployment's configuration, which is what every caller did before profiles existed. Making
+// it required would have broken every existing vending machine on the day profiles shipped.
+func TestAPaymentProfileIsOptional(t *testing.T) {
+	cmd, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
+		paramPaymentMethodId: "01METHOD0000000000000000000",
+		paramOrgId:           testOrgId,
+		paramAmount:          "150000",
+	})
+
+	assert.Zero(t, vErrs.Count())
+	assert.Empty(t, cmd.PaymentProfileId)
+}
+
+func TestAPaymentProfileIsCarriedIntoTheCommand(t *testing.T) {
+	cmd, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
+		paramPaymentMethodId:  "01METHOD0000000000000000000",
+		paramOrgId:            testOrgId,
+		paramPaymentProfileId: "01PROFILE000000000000000000",
+		paramAmount:           "150000",
+	})
+
+	assert.Zero(t, vErrs.Count())
+	assert.Equal(t, "01PROFILE000000000000000000", cmd.PaymentProfileId)
+}
+
+// Every record this module writes carries an organization, and it cannot be derived from the
+// request context: a caller may belong to several. Refusing here names the missing field; letting
+// it through would have the order schema reject the composed record as a server fault instead.
+func TestAnOrganizationIsRequired(t *testing.T) {
+	_, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
+		paramPaymentMethodId: "01METHOD0000000000000000000",
+		paramAmount:          "150000",
+	})
+
+	assert.Equal(t, 1, vErrs.Count())
+}
+
+// A caller migrating off the standalone service has "momo", not one of our ids. Naming the method
+// by code has to be accepted, or every such caller would need a lookup it has no way to perform.
+func TestAPaymentMethodMayBeNamedByCode(t *testing.T) {
+	cmd, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
+		paramPaymentMethodCode: "momo",
+		paramOrgId:             testOrgId,
+		paramAmount:            "150000",
+	})
+
+	assert.Zero(t, vErrs.Count())
+	assert.Equal(t, "momo", cmd.PaymentMethodCode)
+	assert.Empty(t, cmd.PaymentMethodId)
+}
+
+// Both spellings reaching the command is not an error — they name the same row when the caller is
+// consistent. The id is carried through as well so the service can prefer it.
+func TestBothMethodSpellingsAreCarriedThrough(t *testing.T) {
+	cmd, vErrs := buildCreatePaymentCommand(dmodel.DynamicFields{
+		paramPaymentMethodId:   "01METHOD0000000000000000000",
+		paramPaymentMethodCode: "momo",
+		paramOrgId:             testOrgId,
+		paramAmount:            "150000",
+	})
+
+	assert.Zero(t, vErrs.Count())
+	assert.Equal(t, "01METHOD0000000000000000000", cmd.PaymentMethodId)
+	assert.Equal(t, "momo", cmd.PaymentMethodCode)
+}
+
+// The standalone service handed out order_id and order_code together, and callers stored one or
+// the other. A refund must not fail because the caller kept the one we did not ask for.
+func TestARefundMayQuoteTheOrderCode(t *testing.T) {
+	cmd, vErrs := buildRefundCommand(dmodel.DynamicFields{
+		paramOrderCode: "ORD1234ABCD5",
+		paramAmount:    "50000",
+	})
+
+	assert.Zero(t, vErrs.Count())
+	assert.Equal(t, "ORD1234ABCD5", cmd.OrderCode)
+	assert.Empty(t, cmd.OrderId)
+}
+
+func TestARefundStillNeedsOneOfTheTwoIdentifiers(t *testing.T) {
+	_, vErrs := buildRefundCommand(dmodel.DynamicFields{paramAmount: "50000"})
+
+	assert.Equal(t, 1, vErrs.Count())
 }

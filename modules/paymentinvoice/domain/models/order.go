@@ -14,21 +14,22 @@ import (
 const (
 	OrderSchemaName = "paymentinvoice_order"
 
-	OrderFieldId              = basemodel.FieldId
-	OrderFieldOrderId         = "order_id"
-	OrderFieldOrderCode       = "order_code"
-	OrderFieldSource          = "source"
-	OrderFieldStatus          = "status"
-	OrderFieldAmount          = "amount"
-	OrderFieldRefundAmount    = "refund_amount"
-	OrderFieldCurrencyId      = "currency_id"
-	OrderFieldPaymentMethodId = "payment_method_id"
-	OrderFieldContent         = "content"
-	OrderFieldReturnUrl       = "return_url"
-	OrderFieldLastSyncStatus  = "last_sync_status"
-	OrderFieldSyncLogs        = "sync_logs"
-	OrderFieldMetadata        = "metadata"
-	OrderFieldOrgId           = "org_id"
+	OrderFieldId               = basemodel.FieldId
+	OrderFieldOrderId          = "order_id"
+	OrderFieldOrderCode        = "order_code"
+	OrderFieldSource           = "source"
+	OrderFieldStatus           = "status"
+	OrderFieldAmount           = "amount"
+	OrderFieldRefundAmount     = "refund_amount"
+	OrderFieldCurrencyId       = "currency_id"
+	OrderFieldPaymentMethodId  = "payment_method_id"
+	OrderFieldPaymentProfileId = "payment_profile_id"
+	OrderFieldContent          = "content"
+	OrderFieldReturnUrl        = "return_url"
+	OrderFieldLastSyncStatus   = "last_sync_status"
+	OrderFieldSyncLogs         = "sync_logs"
+	OrderFieldMetadata         = "metadata"
+	OrderFieldOrgId            = "org_id"
 )
 
 // Keys an adapter may require inside an order's metadata. Each adapter owns the keys it declares;
@@ -233,4 +234,14 @@ func (this Order) GetOrgId() *model.Id {
 
 func (this *Order) SetOrgId(v *model.Id) {
 	this.GetFieldData().SetModelId(OrderFieldOrgId, v)
+}
+
+// GetPaymentProfileId is the merchant account this order was collected through, or nil when it was
+// collected with the deployment's own credentials.
+func (this Order) GetPaymentProfileId() *model.Id {
+	return this.GetFieldData().GetModelId(OrderFieldPaymentProfileId)
+}
+
+func (this *Order) SetPaymentProfileId(v *model.Id) {
+	this.GetFieldData().SetModelId(OrderFieldPaymentProfileId, v)
 }

@@ -2,9 +2,9 @@
 --
 -- The dynamic resource engine asserts permissions using the schema name as the resource code, so
 -- these codes must stay byte-identical to the "paymentinvoice_payment_method",
--- "paymentinvoice_order", "paymentinvoice_transaction", "paymentinvoice_invoice" and
--- "paymentinvoice_invoice_line" schema names. A code that drifts from its schema denies every
--- request, with nothing in the response pointing at the seed.
+-- "paymentinvoice_payment_profile", "paymentinvoice_order", "paymentinvoice_transaction",
+-- "paymentinvoice_invoice" and "paymentinvoice_invoice_line" schema names. A code that drifts from
+-- its schema denies every request, with nothing in the response pointing at the seed.
 --
 -- Payment Order carries no create action. An order is not typed in: it comes into existence only
 -- through create_payment, which generates its identifiers and asks the gateway for the payment
@@ -24,6 +24,10 @@
 -- from a gap-free sequence and freezes the totals, and an issued invoice is an accounting document
 -- rather than a draft someone may still correct.
 --
+-- Payment Profile is a resource of its own rather than a corner of Payment Method. A method says
+-- what a payer may choose; a profile holds the merchant credentials the money settles into, and
+-- reading one is not the same power as reading the other.
+--
 -- Deliberately no iam_entitlements rows. Payment and invoice data is not universally readable —
 -- it contains customer identities, tax codes and amounts — so access follows explicitly assigned
 -- roles rather than a blanket grant.
@@ -41,6 +45,7 @@ BEGIN
 		('01M0PAY1V59JZP88YNHA9FEC4F', 'Payment Transaction', 'paymentinvoice_transaction', 'One payment or refund attempt recorded against an order', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY16EZ1JQ1TS64Q21TPE7', 'Invoice', 'paymentinvoice_invoice', 'An accounting document issued for a sale', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY13K1F11EGR7EET7DHAM', 'Invoice Line', 'paymentinvoice_invoice_line', 'One charged item of an invoice', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1PRF7Z8QK3M2N4T5V6W', 'Payment Profile', 'paymentinvoice_payment_profile', 'One merchant account at a gateway: the credentials a payment settles into', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY1GEVS6GFS22NP6V3ZRW', 'Payment Method', 'paymentinvoice_payment_method', 'A configured way the business can be paid, naming the adapter that carries it out', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
@@ -57,6 +62,15 @@ BEGIN
 		('01M0PAY1RSEQZJJHXZ2FMVG54N', 'Update', 'update', NULL, '01M0PAY1GEVS6GFS22NP6V3ZRW', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY1QHHPQ1HBD5ABESXBKS', 'Delete', 'delete', NULL, '01M0PAY1GEVS6GFS22NP6V3ZRW', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0PAY11YGG1SE82N91KSX4MX', 'Set archived status', 'set_archived', 'Archive a payment method so it is out of the working set', '01M0PAY1GEVS6GFS22NP6V3ZRW', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+
+		-- Payment Profile. The credentials a payment settles into, so read is a materially larger
+		-- grant here than on a payment method: reading one profile hands back the merchant secrets in
+		-- the clear, and so does a search that names the config field.
+		('01M0PAY1PRF7Z8QK3M2N4T5V70', 'Create', 'create', NULL, '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1PRF7Z8QK3M2N4T5V71', 'Read', 'read', 'Read a profile, including the gateway credentials it holds', '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1PRF7Z8QK3M2N4T5V72', 'Update', 'update', NULL, '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1PRF7Z8QK3M2N4T5V73', 'Delete', 'delete', NULL, '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1PRF7Z8QK3M2N4T5V74', 'Set archived status', 'set_archived', 'Withdraw a merchant account from use without losing the payments it collected', '01M0PAY1PRF7Z8QK3M2N4T5V6W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Payment Order. No create: see the note at the top of this file.
 		('01M0PAY10AA5Y9QZ20ZKN9CQ89', 'Read', 'read', NULL, '01M0PAY1SMY4Q2E7VC4DDZAPWF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),

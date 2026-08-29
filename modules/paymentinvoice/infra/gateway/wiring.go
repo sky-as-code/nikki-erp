@@ -79,6 +79,7 @@ func registerMomo(
 		ApiEndpoint: endpoint,
 		IpnUrl:      cfg.GetStr(constants.MomoIpnUrl, ""),
 		RedirectUrl: cfg.GetStr(constants.MomoRedirectUrl, ""),
+		StoreId:     cfg.GetStr(constants.MomoStoreId, ""),
 	}, httpclient.NewHttpCaller(endpoint, httpClient, logger))
 
 	return registry.Register(adapter)

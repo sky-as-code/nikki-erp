@@ -31,6 +31,15 @@ const (
 	jobNameSyncRetry = "paymentinvoice-sync-retry"
 )
 
+// syncGracePeriod is how long a just-settled order is left alone before the retry sweep considers
+// it un-notified.
+//
+// It is comfortably longer than one full send — the client's per-attempt timeout times its
+// retries, plus the backoff between them — so a notification still in flight is not duplicated by
+// a sweep that happens to tick while it runs. It is a constant rather than configuration because
+// it is derived from the client's own bounds, not from anything a deployment chooses.
+const syncGracePeriod = 2 * time.Minute
+
 // JobsConfig is the tuning the sweeps read from configuration.
 type JobsConfig struct {
 	// ExpireAfter is how long an order may sit unpaid before the gateway is asked for a verdict.
@@ -42,10 +51,10 @@ type JobsConfig struct {
 
 // JobsManager runs the module's background sweeps.
 type JobsManager struct {
-	orders *services.OrderDomainService
-	sync   *ResultSyncClient
-	config JobsConfig
-	logger logging.LoggerService
+	orders   *services.OrderDomainService
+	notifier *ResultNotifier
+	config   JobsConfig
+	logger   logging.LoggerService
 
 	// now is injected so the sweeps can be tested against a fixed clock rather than by waiting.
 	now func() time.Time
@@ -53,16 +62,16 @@ type JobsManager struct {
 
 func NewJobsManager(
 	orders *services.OrderDomainService,
-	syncClient *ResultSyncClient,
+	notifier *ResultNotifier,
 	config JobsConfig,
 	logger logging.LoggerService,
 ) *JobsManager {
 	return &JobsManager{
-		orders: orders,
-		sync:   syncClient,
-		config: config,
-		logger: logger,
-		now:    time.Now,
+		orders:   orders,
+		notifier: notifier,
+		config:   config,
+		logger:   logger,
+		now:      time.Now,
 	}
 }
 
@@ -174,8 +183,11 @@ func (this *JobsManager) Cleaner(ctx corectx.Context) error {
 // was down when a payment settled never learned of it at all. The retry is bounded by the client's
 // own attempt count; an order whose notification keeps failing stops being retried and stays
 // visibly failed rather than being retried forever.
+//
+// Orders settled within the grace period are left for the next run: a callback sends its
+// notification off the request, so one that has only just settled probably has a send in flight.
 func (this *JobsManager) SyncRetry(ctx corectx.Context) error {
-	pending, err := services.FindOrdersNeedingSync(ctx)
+	pending, err := services.FindOrdersNeedingSync(ctx, this.now().Add(-syncGracePeriod))
 	if err != nil {
 		return errors.Wrap(err, jobNameSyncRetry)
 	}
@@ -194,39 +206,17 @@ func (this *JobsManager) SyncRetry(ctx corectx.Context) error {
 	return nil
 }
 
-// notify tells the ordering system what became of an order and records the outcome on it.
+// notify reports one order, blocking until the send is done.
 //
-// The outcome is recorded whether or not it succeeded: a failure is what the retry job looks for,
-// so losing it would mean the notification is never re-attempted.
+// A sweep notifies inline rather than detaching, unlike the gateway callbacks: nothing is waiting
+// on it, and working through a page one order at a time is what stops a backlog from opening a
+// goroutine and a connection for every order at once.
 func (this *JobsManager) notify(ctx corectx.Context, order services.StaleOrder, status string) {
-	amount, method, err := this.orders.SyncFactsFor(ctx, order.OrderId)
-	if err != nil {
-		this.logger.Warnf("paymentinvoice: order '%s' could not be read for notification: %s",
-			order.OrderId, err.Error())
-		return
-	}
-
-	outcome := this.sync.Sync(ctx, ResultSyncRequest{
-		ReturnUrl:     order.ReturnUrl,
-		OrderId:       order.OrderId,
-		Status:        status,
-		Amount:        amount,
-		PaymentMethod: method,
-	})
-
-	if err := this.orders.RecordSyncOutcome(ctx, order.Pk, services.SyncOutcome{
-		Status:   outcome.Status,
-		Attempts: outcome.Attempts,
-		Detail:   outcome.Detail,
-		At:       this.now(),
-	}); err != nil {
-		this.logger.Errorf("paymentinvoice: order '%s' sync outcome could not be recorded: %s",
-			order.OrderId, err.Error())
-	}
-	if !outcome.Succeeded() {
-		this.logger.Warnf("paymentinvoice: order '%s' could not be reported to its caller: %s",
-			order.OrderId, outcome.Detail)
-	}
+	this.notifier.Notify(ctx, NotifyTarget{
+		Pk:        order.Pk,
+		OrderId:   order.OrderId,
+		ReturnUrl: order.ReturnUrl,
+	}, status)
 }
 
 // verdictStatus turns a paid/not-paid verdict into the status the ordering system is told.
