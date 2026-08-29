@@ -11,9 +11,7 @@ import (
 )
 
 // BuildEffectiveProduct flattens a variant and its template into the view consumers read.
-//
-// valueLabels are the display labels of the variant's attribute values, in combination-key
-// order; they are what turns "Classic T-Shirt" into "Classic T-Shirt / Black / M".
+// valueLabels are the display labels of the variant's attribute values, in combination-key order.
 func BuildEffectiveProduct(
 	template *models.ProductTemplate,
 	variant *models.ProductVariant,
@@ -43,8 +41,7 @@ func BuildEffectiveProduct(
 
 	effective.DisplayName = BuildDisplayName(template.GetName(), valueLabels)
 
-	// The fallbacks. A nil variant value means "inherit the template's", which is why these
-	// are not simply copied across.
+	// A nil variant value means "inherit the template's", so these are not simply copied across.
 	effective.ImageId = firstNonEmpty(
 		derefString(variant.GetVariantImageId()), derefString(template.GetDefaultImageId()))
 	effective.Weight = firstDecimal(variant.GetWeight(), template.GetDefaultWeight())
@@ -57,7 +54,7 @@ func BuildEffectiveProduct(
 
 // BuildDisplayName composes a variant's user-facing name from its template's name and its
 // attribute values, e.g. "Classic T-Shirt / Black / M". A variant with no values renders as the
-// template name alone, which is the single-variant case. See BR §5.5.
+// template name alone, which is the single-variant case.
 func BuildDisplayName(templateName *model.LangJson, valueLabels []string) string {
 	parts := make([]string, 0, len(valueLabels)+1)
 	if base := langJsonToString(templateName); base != "" {
@@ -72,11 +69,8 @@ func BuildDisplayName(templateName *model.LangJson, valueLabels []string) string
 }
 
 // ResolveProductSelection turns a template plus the attribute values a user picked into the
-// combination key identifying the concrete variant.
-//
-// Consumer modules must not decide for themselves whether to store a template or a variant: a
-// transaction line always references a variant. This is the contract they call instead.
-// See BR §14.4 and AC-PROD-007.
+// combination key identifying the concrete variant. A transaction line always references a variant,
+// never a template, so consumers call this rather than deciding for themselves.
 func ResolveProductSelection(selections []itProduct.AttributeSelection) string {
 	return BuildCombinationKey(selections)
 }
@@ -138,11 +132,9 @@ func joinNonEmpty(parts []string, separator string) string {
 	return result
 }
 
-// langJsonToString picks a single string out of a localized value, for the display name.
-//
-// The caller's language is not known here, so it prefers en-US and otherwise takes the
-// lowest-sorting locale present. Iterating the map directly would pick an arbitrary language on
-// every call, making the same product render under a different name each time.
+// langJsonToString picks a single string out of a localized value. The caller's language is unknown
+// here, so it prefers en-US and otherwise the lowest-sorting locale present; iterating the map
+// directly would render the same product under a different name on each call.
 func langJsonToString(value *model.LangJson) string {
 	if value == nil || len(*value) == 0 {
 		return ""

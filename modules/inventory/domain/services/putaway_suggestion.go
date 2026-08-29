@@ -11,16 +11,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// Putaway: deciding where goods that have just arrived somewhere should be put next.
-//
-// The answer is a suggestion and nothing else. No quant changes, no move is created, nothing is
-// reserved — the caller takes the destination and asks the Stock movement engine to do the moving.
+// Putaway decides where goods that have just arrived should be put next. The answer is a suggestion
+// only: no quant changes, no move is created, nothing is reserved.
 
-// PutawayContext is what is known about the goods that just arrived.
-//
-// The three product references are optional. A rule that names one only matches when the caller
-// supplies it, so a caller who knows nothing beyond the arrival location still gets whatever
-// general rule applies.
+// PutawayContext is what is known about the goods that just arrived. The three product references
+// are optional: a rule that names one matches only when the caller supplies it.
 type PutawayContext struct {
 	WarehouseId       string
 	ArrivalLocationId string
@@ -29,20 +24,16 @@ type PutawayContext struct {
 	PackageTypeId     string
 }
 
-// PutawaySuggestion is the destination and the rule that chose it.
-//
-// MatchedRuleId is returned alongside the destination so a caller can explain the decision, which
-// matters when a warehouse has many overlapping rules and someone asks why goods went where.
+// PutawaySuggestion is the destination and the rule that chose it. MatchedRuleId lets a caller
+// explain the decision when many rules overlap.
 type PutawaySuggestion struct {
 	DestinationLocationId string
 	MatchedRuleId         string
 }
 
 // SuggestPutawayLocation returns where arriving goods should be put, or nothing if no rule applies.
-//
-// Rules are considered in priority order, lowest first, and the first one whose destination is
-// actually usable wins. A rule pointing at a suspended or archived location is skipped rather than
-// returned, because suggesting somewhere goods may not go is worse than suggesting nowhere.
+// Rules are considered lowest priority first, and the first whose destination is actually usable
+// wins; one pointing at a suspended or archived location is skipped rather than returned.
 func SuggestPutawayLocation(
 	ctx corectx.Context, putawayCtx PutawayContext,
 ) (*PutawaySuggestion, error) {
@@ -77,10 +68,8 @@ func SuggestPutawayLocation(
 	return nil, nil
 }
 
-// sortRulesByPriority orders rules so the lowest priority is considered first.
-//
-// The sort is stable, so two rules of equal priority resolve in the order the repository returned
-// them rather than at random: the same arrival should always produce the same suggestion.
+// sortRulesByPriority orders rules lowest priority first. The sort must stay stable, so equal
+// priorities resolve in repository order and the same arrival always produces the same suggestion.
 func sortRulesByPriority(rules []models.PutawayRule) {
 	sort.SliceStable(rules, func(i, j int) bool {
 		return derefInt(rules[i].GetPriority()) < derefInt(rules[j].GetPriority())
@@ -88,9 +77,6 @@ func sortRulesByPriority(rules []models.PutawayRule) {
 }
 
 // findCandidatePutawayRules reads the unarchived rules for a warehouse and arrival location.
-//
-// Archived rules are excluded here rather than skipped later: an archived rule is out of the
-// working set entirely, which is the whole of what archiving means for this resource.
 func findCandidatePutawayRules(
 	ctx corectx.Context, putawayCtx PutawayContext,
 ) ([]models.PutawayRule, error) {
@@ -133,11 +119,9 @@ func findCandidatePutawayRules(
 	return rules, nil
 }
 
-// ruleMatchesContext checks the optional product criteria.
-//
-// A criterion the rule leaves empty matches anything, which is what makes a general rule general.
-// A criterion the rule names but the caller did not supply does not match: the rule asked about
-// something the caller cannot answer, so it cannot be shown to apply.
+// ruleMatchesContext checks the optional product criteria. A criterion the rule leaves empty
+// matches anything; one the rule names but the caller did not supply does not match, since the rule
+// cannot be shown to apply.
 func ruleMatchesContext(rule models.PutawayRule, putawayCtx PutawayContext) bool {
 	return criterionMatches(derefId(rule.GetProductId()), putawayCtx.ProductId) &&
 		criterionMatches(derefId(rule.GetProductCategoryId()), putawayCtx.ProductCategoryId) &&
@@ -151,10 +135,8 @@ func criterionMatches(ruleValue string, contextValue string) bool {
 	return ruleValue == contextValue
 }
 
-// isLocationUsableForPutaway reports whether goods may actually be put in a location.
-//
-// Suspended is excluded here, which is what suspension is for: the location still exists and still
-// holds whatever it held, but nothing new is routed to it.
+// isLocationUsableForPutaway reports whether goods may actually be put in a location. Suspended is
+// excluded: the location still holds what it held, but nothing new is routed to it.
 func isLocationUsableForPutaway(ctx corectx.Context, locationId string) (bool, error) {
 	if locationId == "" {
 		return false, nil
@@ -181,7 +163,6 @@ func isLocationUsableForPutaway(ctx corectx.Context, locationId string) (bool, e
 	if derefString(location.GetStatus()) != models.InventoryLocationStatusActive {
 		return false, nil
 	}
-	// A purely organisational node holds nothing, so routing goods to it would be routing them
-	// nowhere.
+	// A purely organisational node holds nothing, so routing goods there routes them nowhere.
 	return derefString(location.GetLocationUsage()) == models.InventoryLocationUsageInternal, nil
 }

@@ -29,10 +29,9 @@ func TaxProductClassificationSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(taxProductClassificationSchemaJson)
 }
 
-// TaxProductClassification is what a product is for tax purposes.
-//
-// Determination runs Product -> Classification -> Rule -> Tax. The indirection is the point: a
-// statutory rate change becomes a new rule rather than an edit to every product row.
+// TaxProductClassification is what a product is for tax purposes. Determination runs
+// Product -> Classification -> Rule -> Tax, so a statutory rate change becomes a new rule rather
+// than an edit to every product row.
 type TaxProductClassification struct {
 	basemodel.DynamicModelBase
 }

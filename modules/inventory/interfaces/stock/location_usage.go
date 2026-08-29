@@ -1,17 +1,12 @@
-// Package stock is the read-only port onto what Stock knows about a location.
+// Package stock is the port onto what Stock knows about a location.
 //
-// Warehouse Management decides whether a location may be suspended or archived, but that decision
-// depends on facts only Stock holds: what is sitting there, what is promised to someone, and what
-// is on its way. Rather than have the warehouse services read stock tables directly, they ask
-// through this contract — so the dependency runs one way and Stock stays free to change how it
-// stores any of it.
+// Warehouse Management decides whether a location may be suspended or archived, but that depends
+// on facts only Stock holds. Asking through this contract keeps the dependency one-way and leaves
+// Stock free to change how it stores any of it.
 //
-// The LOCATION USAGE port is read-only by design. Nothing Warehouse does may change a quantity.
-//
-// The package as a whole is no longer read-only: StockTransferMovementService in
-// transfer_movement.go publishes the goods movements themselves, for modules that must sequence a
-// transfer's life. That port is deliberately narrow and separate — a consumer that only needs to
-// read usage binds this contract and gains no power to move anything.
+// The location usage port is read-only by design: nothing Warehouse does may change a quantity.
+// StockTransferMovementService in transfer_movement.go publishes the movements themselves, kept
+// separate so a consumer binding this contract gains no power to move anything.
 package stock
 
 import (
@@ -25,12 +20,10 @@ type GetLocationUsageQuery struct {
 	LocationId string
 }
 
-// LocationUsage is what Stock reports about one location.
-//
-// The four numbers answer different questions and are not interchangeable. On-hand is what is
-// physically there. Reserved is what has been promised to an outgoing move but not yet moved — it
-// is part of on-hand, not additional to it. The two counts are work in flight that would be left
-// dangling if the location went away.
+// LocationUsage is what Stock reports about one location. The four numbers are not
+// interchangeable: on-hand is what is physically there, reserved is promised to an outgoing move
+// and is part of on-hand rather than additional to it, and the counts are work in flight that
+// would dangle if the location went away.
 type LocationUsage struct {
 	OnHandQuantity    decimal.Decimal
 	ReservedQuantity  decimal.Decimal
@@ -38,11 +31,9 @@ type LocationUsage struct {
 	OpenTransferCount int
 }
 
-// IsEmpty reports whether the location can be retired without stranding anything.
-//
-// Archiving requires all four to be clear. Suspending deliberately does not: locking a rack that
-// still holds goods is the whole point of suspension, so a caller checking whether to suspend must
-// not use this.
+// IsEmpty reports whether the location can be retired without stranding anything. Archiving
+// requires all four clear; suspending does not — locking a rack that still holds goods is the
+// point of suspension, so a caller deciding whether to suspend must not use this.
 func (this LocationUsage) IsEmpty() bool {
 	return this.OnHandQuantity.IsZero() &&
 		this.ReservedQuantity.IsZero() &&
@@ -57,11 +48,9 @@ type GetLocationUsageResultData struct {
 type GetLocationUsageResult = dyn.OpResult[GetLocationUsageResultData]
 
 // LocationUsageReadService answers what Stock holds at a location, for the lifecycle decisions
-// Warehouse Management owns.
-//
-// Historical movements are deliberately not reported. A location referenced only by completed
-// moves can still be archived — the records keep resolving it — so counting them would block a
-// perfectly safe operation forever.
+// Warehouse Management owns. Historical movements are deliberately not reported: a location
+// referenced only by completed moves can still be archived, so counting them would block a safe
+// operation forever.
 type LocationUsageReadService interface {
 	GetLocationUsage(ctx corectx.Context, query GetLocationUsageQuery) (*GetLocationUsageResult, error)
 }

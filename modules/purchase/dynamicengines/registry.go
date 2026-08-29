@@ -1,13 +1,7 @@
-// Package dynamicengines declares the resource engines the Purchase module serves through the
-// dynamic resource engine, and creates them during the module's Init().
-//
-// Its imports point one way only: the domain, the module's own interfaces, and the dynamicresource
-// module — never app/, infra/ or transport/. That keeps the package importable by both purchase
-// (which creates the engines) and purchase/transport/restful (which registers their routes) without
-// a cycle.
-//
-// The package declares engines and adapts their callbacks; the rules those callbacks enforce live
-// in domain/services. See docs/wiki/07. ERP backend module.md §6.7.
+// Package dynamicengines declares the resource engines the Purchase module serves, and creates them
+// during Init(). It may import only the domain, the module's own interfaces and dynamicresource —
+// never app/, infra/ or transport/ — so that both purchase and purchase/transport/restful can
+// import it without a cycle. The rules its callbacks enforce live in domain/services.
 package dynamicengines
 
 import (
@@ -22,23 +16,19 @@ import (
 
 // engineSpec declares one resource engine the Purchase module owns.
 type engineSpec struct {
-	// SchemaName is the dynamic-model schema the engine serves. It must be an XSchemaName
-	// constant, never a string derived from the resource path.
+	// SchemaName must be an XSchemaName constant, never a string derived from the resource path.
 	SchemaName string
 
 
-	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD
-	// ones. It is optional: a resource without custom behavior leaves it nil.
+	// DefineActions is optional; a resource without custom behavior leaves it nil.
 	DefineActions func(drif.DynamicResourceEngine) error
 }
 
-// engineSpecs lists the resources this module serves through the dynamic resource engine.
-//
-// The order matches RegisterModels: referenced before referencing. It does not have to — engines
-// are created after every schema is registered — but keeping the two lists in the same order makes
-// a missing entry obvious when reading them side by side.
+// engineSpecs lists the resources this module serves. The order matches RegisterModels for
+// readability only; engines are created after every schema is registered.
 var engineSpecs = []engineSpec{
 	configurationEngineSpec(),
+	vendorProductPriceEngineSpec(),
 	sourcingGroupEngineSpec(),
 	agreementEngineSpec(),
 	agreementLineEngineSpec(),
@@ -50,6 +40,13 @@ var engineSpecs = []engineSpec{
 func configurationEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.ConfigurationSchemaName,
+	}
+}
+
+func vendorProductPriceEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName:    models.VendorProductPriceSchemaName,
+		DefineActions: defineVendorProductPriceGuards,
 	}
 }
 
@@ -101,8 +98,8 @@ func EngineSchemaNames() []string {
 	})
 }
 
-// InitDynamicEngines creates the resource engines this module owns and publishes them into the
-// dependency container, so that other modules can inject them by name.
+// InitDynamicEngines creates this module's engines and publishes them into the dependency
+// container so other modules can inject them by name.
 func InitDynamicEngines() error {
 	for _, spec := range engineSpecs {
 		if err := initEngine(spec); err != nil {

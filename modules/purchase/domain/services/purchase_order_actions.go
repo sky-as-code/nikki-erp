@@ -12,25 +12,12 @@ import (
 )
 
 // The order operations that are not lifecycle transitions: send, duplicate, lock, unlock and
-// acknowledge (BR §13-§15, §20-§22).
-//
-// Each is its own permission, for the reason the IAM seed gives: they are materially different
-// powers. Sending an RFQ puts the company's name in front of a vendor; unlocking reopens a document
-// that was deliberately closed. Folding them into `update` would let a role that may fix a typo do
-// both.
-//
-// Print is deliberately NOT here. It produces a document from data the caller can already read, so
-// it needs no server-side state change and no permission of its own beyond `read` — which is why
-// the IAM seed has no `print` action either.
+// acknowledge. Each carries its own permission because they are materially different powers;
+// folding them into `update` would let a role that may fix a typo also send an RFQ to a vendor.
+// Print is deliberately absent: it changes no server state and needs nothing beyond `read`.
 
-// Send marks a request for quotation as sent to the vendor (BR §13).
-//
-// The status change is the whole of it: this module does not send email. What it records is that
-// the RFQ went out, which is what makes "waiting on a quote" distinguishable from "not yet asked",
-// and what stops a second send from being the first.
-//
-// Only an RFQ can be sent. Sending a confirmed order would be asking for a quotation on something
-// already bought.
+// Send records that a request for quotation went out to the vendor. It only changes status — this
+// module does not send email. Only an RFQ can be sent; a confirmed order has already been bought.
 func (this *PurchaseOrderDomainServiceImpl) Send(
 	ctx corectx.Context, orderId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -46,26 +33,17 @@ func (this *PurchaseOrderDomainServiceImpl) Send(
 	})
 }
 
-// Lock closes an order to further editing (BR §20).
-//
-// Locking is a boolean and never a status (PUR-R2): an order is locked *and* confirmed, not locked
-// *instead of* confirmed. Keeping them apart is what lets auto_lock work without inventing a
-// status that the transition table would then have to route around.
-//
-// Only a committed order can be locked. Locking a draft would freeze a document nobody has agreed
-// to, which is a state with no way out except unlocking it again.
+// Lock closes an order to further editing. Locking is a boolean and never a status: an order is
+// locked and confirmed, not locked instead of confirmed, which is what lets auto_lock work without
+// a status the transition table would have to route around. Only a committed order can be locked.
 func (this *PurchaseOrderDomainServiceImpl) Lock(
 	ctx corectx.Context, orderId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return this.setLocked(ctx, orderId, true, "", AuditActionLock)
 }
 
-// Unlock reopens a locked order for editing, and requires a reason (BR §21).
-//
-// The reason is mandatory here and optional on cancel, which is the requirement's judgement and a
-// defensible one: unlocking undoes a control that was deliberately applied, so the trail needs to
-// say why. Refusing the operation without one is better than accepting a blank, because a trail of
-// unexplained unlocks is the same as no trail.
+// Unlock reopens a locked order for editing. The reason is mandatory here, unlike on cancel:
+// unlocking undoes a deliberately applied control, so the audit trail has to say why.
 func (this *PurchaseOrderDomainServiceImpl) Unlock(
 	ctx corectx.Context, orderId string, reason string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -76,12 +54,9 @@ func (this *PurchaseOrderDomainServiceImpl) Unlock(
 	return this.setLocked(ctx, orderId, false, reason, AuditActionUnlock)
 }
 
-// Acknowledge records that the vendor confirmed receipt of the order (BR §22).
-//
-// Like is_locked this is a flag rather than a status, and for the same reason: acknowledgement is
-// something the vendor does, and an order is confirmed whether or not they have got round to it.
-//
-// Only a committed order can be acknowledged — there is nothing to acknowledge before then.
+// Acknowledge records that the vendor confirmed receipt. Like is_locked it is a flag, not a status:
+// an order is confirmed whether or not the vendor has acknowledged it. Only a committed order can be
+// acknowledged.
 func (this *PurchaseOrderDomainServiceImpl) Acknowledge(
 	ctx corectx.Context, orderId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -131,14 +106,9 @@ func (this *PurchaseOrderDomainServiceImpl) Acknowledge(
 	return result, nil
 }
 
-// Duplicate copies an order and its lines into a new draft RFQ (BR §15).
-//
-// The copy starts at rfq with a fresh code and none of the original's history: no confirmed_at, no
-// approval, no acknowledgement, not locked. Carrying any of those across would produce a document
-// claiming to have been approved by someone who never saw it.
-//
-// This is also the answer to "can I revive a cancelled order" — duplicate it. The new order is
-// visibly a new one, which a revived original would not be.
+// Duplicate copies an order and its lines into a new draft RFQ with a fresh code and none of the
+// original's history — no confirmed_at, approval, acknowledgement or lock — which would otherwise
+// claim approval by someone who never saw the document. It is also how a cancelled order is revived.
 func (this *PurchaseOrderDomainServiceImpl) Duplicate(
 	ctx corectx.Context, orderId string,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
@@ -186,11 +156,8 @@ func (this *PurchaseOrderDomainServiceImpl) Duplicate(
 	return result, nil
 }
 
-// copyableOrderFields is the terms of the order without any of its history.
-//
-// It is an allowlist rather than "everything except a few", deliberately: a field added to the
-// schema later defaults to NOT being copied, which is the safe direction. The alternative would
-// silently carry a new history-bearing field into every duplicate from the day it was added.
+// copyableOrderFields is the order's terms without its history. It is deliberately an allowlist, so
+// a field added to the schema later defaults to not being copied.
 func copyableOrderFields(order dmodel.DynamicFields) dmodel.DynamicFields {
 	copied := dmodel.DynamicFields{}
 	for _, field := range []string{
@@ -209,9 +176,7 @@ func copyableOrderFields(order dmodel.DynamicFields) dmodel.DynamicFields {
 			copied[field] = value
 		}
 	}
-	// order_deadline is deliberately NOT copied: it is a date in the original's past by the time
-	// anyone duplicates it, and a deadline that has already gone is worse than none.
-	//
+	// order_deadline is deliberately not copied: it is already past by the time anyone duplicates.
 	// sourcing_group_id is not copied either — a duplicate is a new requirement, not another
 	// alternative for the one being compared.
 	return copied
@@ -324,9 +289,8 @@ type transitionRequest struct {
 	Stamp func(now time.Time) dmodel.DynamicFields
 }
 
-// transition is the shared body of the simple status changes. Confirm, Approve and Cancel do NOT
-// use it: each of them reads configuration, stamps evidence or decides its own target, and folding
-// those into a table-driven helper would hide the rules rather than share them.
+// transition is the shared body of the simple status changes. Confirm, Approve and Cancel do not
+// use it: each reads configuration, stamps evidence or picks its own target.
 func (this *PurchaseOrderDomainServiceImpl) transition(
 	ctx corectx.Context, orderId string, request transitionRequest,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {

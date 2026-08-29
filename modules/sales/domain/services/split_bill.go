@@ -16,28 +16,18 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// Splitting a bill (BR 37 and 73, SALES-025).
+// Splitting a bill: one settlement unit becomes several.
 //
-// One settlement unit becomes several - a table paying separately, a company wanting one invoice per
-// cost centre. Two rules make this harder than it looks, and both are in BR 37:
+// Total before equals total after. The allocator apportions each line with the residual rule so the
+// parts sum to the whole exactly, and the balance check runs afterwards inside the same transaction
+// so a split that failed to balance rolls back.
 //
-// # Total before == total after
+// A split is NOT a pricing event: promotions are not recalculated, prices are not re-resolved and
+// the order is not repriced. Splitting can change which promotions WOULD apply if the basket were
+// re-evaluated, and re-evaluating would silently rewrite what the customer already agreed to.
 //
-// A split moves value between bills; it never creates or destroys any. The allocator apportions each
-// line with the D-04 residual rule so the parts sum to the whole EXACTLY, and the BR 36 check runs
-// afterwards inside the same transaction so a split that failed to balance rolls back rather than
-// leaving an order whose bills no longer add up.
-//
-// # A split is NOT a pricing event (BR 37.2)
-//
-// Promotions are not recalculated, prices are not re-resolved, and the order is not repriced. This is
-// the rule most likely to be got wrong by well-meaning code: splitting a bill can change which
-// promotions WOULD apply if the basket were re-evaluated, and re-evaluating would silently rewrite
-// what the customer already agreed to. A split is a settlement concern. The order's pricing is
-// already frozen (BR 11) and stays frozen.
-//
-// The source bill is never deleted (BR 83). It is marked cancelled and lineage rows point from it to
-// each bill it became, because a payment already recorded against it must still resolve to something.
+// The source bill is never deleted. It is marked cancelled and lineage rows point from it to each
+// bill it became, because a payment already recorded against it must still resolve to something.
 
 // SplitBillParams describes how to divide a bill.
 type SplitBillParams struct {
@@ -76,9 +66,9 @@ const (
 
 // SplitBill divides one open bill into several.
 //
-// Under the ORDER's lock rather than the bill's: a split touches every bill of the order through the
-// BR 36 invariant, and locking one bill would let a concurrent split of a sibling bill produce a set
-// that individually balances and collectively does not.
+// Under the ORDER's lock rather than the bill's: a split touches every bill of the order through
+// the balance invariant, and locking one bill would let a concurrent split of a sibling produce a
+// set that individually balances and collectively does not.
 func SplitBill(
 	ctx corectx.Context, params SplitBillParams, dLock lock.DistributedLock, policy SalesPolicy,
 ) (*SplitBillResult, *ft.ClientErrors, error) {
@@ -114,7 +104,7 @@ func SplitBill(
 	}
 	defer func() { _ = dLock.Release(ctx, key) }()
 
-	// Re-read under the lock. The record fetched above described the world as it was while we were
+	// Re-read under the lock: the record fetched above described the world as it was while we were
 	// still queuing, and its status may have moved.
 	source, err = loadRecord(ctx,
 		models.SalesBillSchemaName, models.SalesBillFieldId, params.SourceBillId)
@@ -161,7 +151,7 @@ func splitUnderLock(
 			return err
 		}
 
-		// BR 36, checked inside the transaction so a split that does not balance rolls back whole.
+		// Checked inside the transaction so a split that does not balance rolls back whole.
 		vErrs, err := AssertOrderAllocationBalances(tranxCtx, orderId)
 		if err != nil {
 			return err
@@ -176,8 +166,8 @@ func splitUnderLock(
 		return nil, nil, err
 	}
 
-	// Total before == total after (BR 37). Asserted rather than assumed: the allocator guarantees
-	// each LINE apportions exactly, and this is the statement about the bills as a set.
+	// Total before equals total after. Asserted rather than assumed: the allocator guarantees each
+	// LINE apportions exactly, and this is the statement about the bills as a set.
 	if !totalAfter.Equal(totalBefore) {
 		vErrs := ft.NewClientErrors()
 		vErrs.Append(*ft.NewBusinessViolation("parts", ReasonSplitTotalChanged,
@@ -193,7 +183,7 @@ func splitUnderLock(
 	}, nil, nil
 }
 
-// assertSplittable applies the gates BR 37 and 73 put before a split.
+// assertSplittable applies the gates that come before a split.
 func assertSplittable(source dmodel.DynamicFields, params SplitBillParams) *ft.ClientErrors {
 	refuse := func(field, reason, message string) *ft.ClientErrors {
 		vErrs := ft.NewClientErrors()
@@ -210,8 +200,8 @@ func assertSplittable(source dmodel.DynamicFields, params SplitBillParams) *ft.C
 	}
 
 	if len(params.Parts) < 2 {
-		// Splitting into one is not a split, and splitting into none would destroy the bill. Both
-		// are refused rather than treated as a no-op, because either is a caller mistake.
+		// Splitting into one is not a split, and splitting into none would destroy the bill. Both are
+		// refused rather than treated as a no-op, because either is a caller mistake.
 		return refuse("parts", ReasonSplitNeedsTwoParts,
 			"a split must produce at least two bills")
 	}
@@ -219,10 +209,8 @@ func assertSplittable(source dmodel.DynamicFields, params SplitBillParams) *ft.C
 }
 
 // assertAllocationsCoverSource checks the split accounts for exactly what the source bill held.
-//
-// Both directions matter and they fail differently. Under-allocating leaves value on no bill at all,
-// so the customer is never asked for it. Over-allocating bills the same goods twice. Neither can be
-// caught by looking at one part.
+// Both directions matter: under-allocating leaves value on no bill at all so the customer is never
+// asked for it, and over-allocating bills the same goods twice. Neither shows up in one part.
 func assertAllocationsCoverSource(
 	existing []dmodel.DynamicFields, params SplitBillParams,
 ) *ft.ClientErrors {
@@ -284,9 +272,9 @@ func writeSplitParts(
 		billIds = append(billIds, string(*id))
 	}
 
-	// Each source allocation is apportioned across the parts in proportion to the quantity each
-	// part takes of that line. One allocator call per line, so the D-04 residual lands on exactly
-	// one part per line rather than being spread and re-rounded.
+	// Each source allocation is apportioned across the parts in proportion to the quantity each part
+	// takes of that line. One allocator call per line, so the residual lands on exactly one part per
+	// line rather than being spread and re-rounded.
 	perBill := make(map[string]*billTotals, len(billIds))
 	for _, billId := range billIds {
 		perBill[billId] = &billTotals{}
@@ -318,8 +306,8 @@ func writeSplitParts(
 			billId := billIds[index]
 			quantity := part.Allocations[lineId]
 			if quantity.IsZero() {
-				// A part taking none of this line gets no allocation row for it. Writing a zero row
-				// would clutter the bill with lines the customer did not buy.
+				// A part taking none of this line gets no allocation row for it. A zero row would
+				// clutter the bill with lines the customer did not buy.
 				continue
 			}
 			if err := insertBillLine(ctx, billId, lineId, orgId,
@@ -355,11 +343,9 @@ func (this *billTotals) add(net, tax, total decimal.Decimal) {
 	this.total = this.total.Add(total)
 }
 
-// billNumberOf derives a child bill's number from its parent's.
-//
-// Derived rather than sequential so the relationship is legible on a printed bill: BILL-7 splitting
-// gives BILL-7-1 and BILL-7-2, and a customer holding one can be matched to the original without a
-// lookup.
+// billNumberOf derives a child bill's number from its parent's, rather than allocating a sequential
+// one, so BILL-7 splits into BILL-7-1 and BILL-7-2 and a customer holding one can be matched to the
+// original without a lookup.
 func billNumberOf(source dmodel.DynamicFields, index int) string {
 	parent := stringOf(source, models.SalesBillFieldBillNumber)
 	return parent + "-" + decimal.NewFromInt(int64(index+1)).String()
@@ -413,10 +399,9 @@ func insertBillLine(
 	return err
 }
 
-// cancelSupersededBill marks a bill superseded and writes the lineage rows.
-//
-// Never a delete (BR 83). A payment already recorded against the source must still resolve to
-// something, and an auditor tracing it needs to arrive at a row that explains where the value went.
+// cancelSupersededBill marks a bill superseded and writes the lineage rows. Never a delete: a
+// payment already recorded against the source must still resolve to something, and an auditor
+// tracing it needs a row that explains where the value went.
 func cancelSupersededBill(
 	ctx corectx.Context, source dmodel.DynamicFields, targets []string, relationType string,
 ) error {

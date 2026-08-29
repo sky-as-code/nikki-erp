@@ -17,27 +17,18 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
-// Recording a payment (BR 39-42 and 75, CR 33/36/37/78, SALES-027).
+// Recording a payment.
 //
-// # Two gates on the method, not one (CR 33)
+// A method must be both mapped to the bill's channel and currently usable: the mapping is Sales' own
+// configuration, while usability belongs to paymentinvoice and depends on the gateway registry of the
+// running build, so a local mapping alone would let a till accept a payment the gateway then refuses.
 //
-// A method must be BOTH mapped to the bill's channel AND currently usable. They are different
-// questions with different owners: the mapping is Sales' own configuration, usability belongs to
-// paymentinvoice and depends on the gateway registry of the running build as well as the row. A
-// local mapping is not proof of usability - the deployment may simply not ship that adapter - and
-// checking only the mapping would let a till accept a payment the gateway then refuses.
+// A duplicate external_transaction_id returns success, not an error: a gateway told "conflict"
+// retries forever, and each retry is another chance to record the money twice. The second call
+// returns the payment the first one created.
 //
-// # A replay returns SUCCESS (D-29)
-//
-// A duplicate external_transaction_id is not an error. A gateway told "conflict" retries forever,
-// and each retry is another chance to record the money twice. The unique index is the mechanism; the
-// contract is that the second call returns the payment the first one created.
-//
-// # CR 78: the method is revalidated on every NEW payment
-//
-// A bill that was open when a method was disabled must not become unpayable. Only the payment being
-// added is checked, never the ones already recorded, so a partially-paid bill can legitimately be
-// finished with a different method.
+// The method is revalidated only on the payment being added, never on ones already recorded, so a
+// bill open when a method was disabled can still be finished with a different method.
 
 // RecordPaymentParams is what taking a payment needs.
 type RecordPaymentParams struct {
@@ -47,13 +38,12 @@ type RecordPaymentParams struct {
 	Amount       decimal.Decimal
 	CurrencyCode string
 
-	// ExternalTransactionId is the provider's identifier. Empty for cash, which no provider issued
-	// an id for - and which therefore has no replay protection, correctly, since a cash payment
-	// cannot arrive twice by retry.
+	// ExternalTransactionId is the provider's identifier. Empty for cash, which therefore has no
+	// replay protection — correctly, since a cash payment cannot arrive twice by retry.
 	ExternalTransactionId string
 	ProviderReference     string
 
-	// Status is what the provider says. Defaults to captured, because the common case at a till is
+	// Status is what the provider says, defaulting to captured because the common case at a till is
 	// money already taken; a gateway flow supplies pending or authorized explicitly.
 	Status string
 }
@@ -66,9 +56,8 @@ type RecordPaymentResult struct {
 	CapturedTotal decimal.Decimal
 	BillTotal     decimal.Decimal
 
-	// ChangeDue is the excess when the cash-change policy permits overpayment (BR 42). It is NOT
-	// part of the payment amount of the order: the customer hands over more and gets the difference
-	// back, so counting it would overstate what the sale was worth.
+	// ChangeDue is the excess when the cash-change policy permits overpayment. It is not part of the
+	// order's payment amount: counting it would overstate what the sale was worth.
 	ChangeDue decimal.Decimal
 
 	// AlreadyExisted marks the replay path.
@@ -105,9 +94,8 @@ func RecordPayment(
 		return nil, vErrs, nil
 	}
 
-	// The replay check comes first, before any gate. A retry of a payment already recorded must
-	// succeed even if the method has since been disabled - the money is already taken, and refusing
-	// the acknowledgement would make the gateway retry forever against a bill that is already paid.
+	// The replay check comes before any gate: a retry of a payment already recorded must succeed even
+	// if the method has since been disabled, or the gateway retries forever against a paid bill.
 	if params.ExternalTransactionId != "" {
 		existing, err := findPaymentByTransactionId(ctx,
 			params.SalesBillId, params.ExternalTransactionId)
@@ -128,7 +116,7 @@ func RecordPayment(
 	paymentId, err := writePayment(ctx, bill, params)
 	if err != nil {
 		if isUniqueViolation(err) && params.ExternalTransactionId != "" {
-			// A concurrent retry won the race. The success path, not a failure.
+			// A concurrent retry won the race: the success path, not a failure.
 			existing, lookupErr := findPaymentByTransactionId(ctx,
 				params.SalesBillId, params.ExternalTransactionId)
 			if lookupErr != nil {
@@ -156,10 +144,8 @@ func RecordPayment(
 	}, nil, nil
 }
 
-// assertPaymentAcceptable runs every gate BR 39-42 and CR 33/36/37 put before a payment.
-//
-// Ordered cheapest-first: the local checks that need no other module run before the two that call
-// across a boundary, so an obviously wrong request costs nothing.
+// assertPaymentAcceptable runs every gate before a payment, cheapest first: the local checks run
+// before the two that call across a module boundary.
 func assertPaymentAcceptable(
 	ctx corectx.Context,
 	bill dmodel.DynamicFields,
@@ -187,8 +173,8 @@ func assertPaymentAcceptable(
 
 	billCurrency := stringOf(bill, models.SalesBillFieldCurrencyCode)
 	if params.CurrencyCode != "" && params.CurrencyCode != billCurrency {
-		// Refused rather than converted: Sales has no FX, and a payment in another currency cannot
-		// be reconciled against what the bill is owed.
+		// Refused rather than converted: Sales has no FX, and a payment in another currency cannot be
+		// reconciled against what the bill is owed.
 		return refuse("currency_code", ReasonPaymentCurrencyMismatch,
 			"this bill settles in "+billCurrency+", not "+params.CurrencyCode), nil
 	}
@@ -204,7 +190,7 @@ func assertPaymentAcceptable(
 	return assertMethodPermitted(ctx, bill, params, methods, channelPayments)
 }
 
-// assertMethodPermitted applies CR 33's two gates: mapped to the channel, AND usable.
+// assertMethodPermitted applies the two gates: mapped to the channel, and usable.
 func assertMethodPermitted(
 	ctx corectx.Context,
 	bill dmodel.DynamicFields,
@@ -229,8 +215,8 @@ func assertMethodPermitted(
 	}
 	channelId := stringOf(order, models.SalesOrderFieldSalesChannelId)
 
-	// Gate 1: the channel accepts this method. Default-deny (CR 76) — a channel with no mappings
-	// accepts nothing, so a nil service refuses rather than waving everything through.
+	// Gate 1: the channel accepts this method. Default-deny — a channel with no mappings accepts
+	// nothing, so a nil service refuses rather than waving everything through.
 	if channelPayments == nil {
 		return refuse(ReasonMethodNotAllowedForChannel,
 			"payment method mappings are unavailable, so no method can be accepted"), nil
@@ -248,9 +234,8 @@ func assertMethodPermitted(
 			"this payment method is not enabled for the sales channel of this bill"), nil
 	}
 
-	// Gate 2: paymentinvoice can actually serve it. A mapping is not proof — usability depends on
-	// the gateway registry of the running build and on the amount bounds, neither of which Sales
-	// can see.
+	// Gate 2: paymentinvoice can actually serve it. A mapping is not proof — usability depends on the
+	// gateway registry of the running build and on amount bounds, neither of which Sales can see.
 	if methods == nil {
 		return refuse(ReasonMethodNotUsable,
 			"the payment method service is unavailable, so usability cannot be confirmed"), nil
@@ -268,8 +253,8 @@ func assertMethodPermitted(
 			"this payment method cannot currently take a payment"), nil
 	}
 	if usable.ClientErrors.Count() > 0 {
-		// The upstream reason travels through unchanged, so a till can tell "we stopped offering
-		// that" from "that is over the limit for this method".
+		// The upstream reason travels through unchanged, so a till can tell "we stopped offering that"
+		// from "that is over the limit for this method".
 		out := ft.NewClientErrors()
 		out.ConcatPtr(&usable.ClientErrors)
 		return out, nil
@@ -277,11 +262,8 @@ func assertMethodPermitted(
 	return nil, nil
 }
 
-// assertMethodCountWithinPolicy enforces BR 39/40 and CR 37 together.
-//
-// The limit counts DISTINCT methods, not payments: three card taps on one card are one method, and a
-// rule counting payments would refuse a legitimate split across two cards while allowing five taps
-// on one.
+// assertMethodCountWithinPolicy counts distinct methods, not payments: counting payments would refuse
+// a legitimate split across two cards while allowing five taps on one.
 func assertMethodCountWithinPolicy(
 	ctx corectx.Context, params RecordPaymentParams, policy SalesPolicy,
 ) (*ft.ClientErrors, error) {
@@ -297,8 +279,8 @@ func assertMethodCountWithinPolicy(
 
 	distinct := map[string]bool{params.PaymentMethodId: true}
 	for _, payment := range existing {
-		// A failed or cancelled payment does not occupy a slot: the customer's card was declined,
-		// and refusing them a second method because of it would be perverse.
+		// A failed or cancelled payment does not occupy a slot: a declined card must not cost the
+		// customer a method.
 		status := stringOf(payment, models.SalesPaymentFieldStatus)
 		if status == string(models.SalesPaymentStatusFailed) ||
 			status == string(models.SalesPaymentStatusCancelled) {
@@ -319,11 +301,9 @@ func assertMethodCountWithinPolicy(
 	return vErrs, nil
 }
 
-// assertOverpaymentPermitted enforces BR 42.
-//
-// Disallowed by default. When allow_cash_change is set the excess is accepted and change is computed
-// - and the change is NOT counted as payment amount of the order, which is why ChangeDue is reported
-// separately rather than folded into the captured total.
+// assertOverpaymentPermitted disallows overpayment by default. When allow_cash_change is set the
+// excess is accepted and change computed, reported separately rather than folded into the captured
+// total, since change is not part of the order's payment amount.
 func assertOverpaymentPermitted(
 	ctx corectx.Context,
 	bill dmodel.DynamicFields,
@@ -372,7 +352,6 @@ func capturedTotalOf(ctx corectx.Context, billId string) (decimal.Decimal, error
 	return models.SumCapturedAmount(payments), nil
 }
 
-// findPaymentByTransactionId looks for a payment already recorded under a provider's id.
 func findPaymentByTransactionId(
 	ctx corectx.Context, billId, transactionId string,
 ) (dmodel.DynamicFields, error) {
@@ -407,7 +386,6 @@ func replayResult(
 	}, nil, nil
 }
 
-// writePayment inserts the payment row.
 func writePayment(
 	ctx corectx.Context, bill dmodel.DynamicFields, params RecordPaymentParams,
 ) (string, error) {
@@ -452,9 +430,8 @@ func writePayment(
 		return "", err
 	}
 
-	// ONLY a captured payment is announced. An authorization is a hold the provider may still
-	// release, and telling consumers money arrived when it has not is the same mistake as counting
-	// it toward settlement - which SumCapturedAmount already refuses to do.
+	// Only a captured payment is announced: an authorization is a hold the provider may still release,
+	// and telling consumers money arrived when it has not is the mistake SumCapturedAmount avoids.
 	if status == string(models.SalesPaymentStatusCaptured) {
 		if _, err := RecordEvent(ctx, RecordEventParams{
 			EventType:   models.EventSalesPaymentCaptured,

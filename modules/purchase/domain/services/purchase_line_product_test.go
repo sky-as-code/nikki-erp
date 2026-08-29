@@ -17,9 +17,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// Stubs for the two ports. They are hand-written rather than generated because each test needs to
-// say only what it is about — a product that is not purchasable, a unit that is archived — and a
-// generated mock would bury that in expectation setup.
+// Stubs for the two ports, hand-written so each test states only what it is about.
 
 type stubProducts struct {
 	found        bool
@@ -70,8 +68,7 @@ func (this *stubUoms) Convert(
 	_ corectx.Context, _ itExt.ConvertQuantityQuery,
 ) (*itExt.ConvertQuantityResult, error) {
 	if this.convertErr {
-		// What Essential returns when the two units are of different categories: a client error,
-		// not a Go error.
+		// Essential reports incompatible unit categories as a client error, not a Go error.
 		vErrs := ft.NewClientErrors()
 		vErrs.Append(*ft.NewBusinessViolation("uom_id", "uom.different_category",
 			"these units belong to different categories"))
@@ -103,56 +100,54 @@ func productLineFor(variantId, uomId, quantity string) dmodel.DynamicFields {
 	}
 }
 
-// BR-UOM-PUR-004, the central rule: the line keeps what the buyer typed. "10 boxes" and "120 units"
-// are the same goods but not the same request, and only one of them belongs on the purchase order.
+// The central rule: the line keeps what the buyer typed. "10 boxes" and "120 units" are the same
+// goods but not the same request.
 func TestTheOrderedQuantityAndUnitAreNeverOverwritten(t *testing.T) {
 	validator := NewProductLineValidator(usableProduct("01UOM_UNIT"), usableUom("120"))
 	line := productLineFor("01VARIANT", "01UOM_BOX", "10")
 	vErrs := ft.NewClientErrors()
 
-	require.NoError(t, validator.PrepareLine(nil, line, vErrs))
+	require.NoError(t, prepared(validator)(nil, line, vErrs))
 
 	require.Equal(t, 0, vErrs.Count())
 	assert.True(t, decimalOf(line, models.PurchaseOrderLineFieldQuantity).Equal(dec("10")),
 		"the ordered quantity must survive the conversion")
 	assert.Equal(t, "01UOM_BOX", line[models.PurchaseOrderLineFieldUomId],
 		"the ordered unit must survive the conversion")
-	// BR-UOM-PUR-003: the converted value lands here and nowhere else.
+	// The converted value lands here and nowhere else.
 	assert.True(t, decimalOf(line, models.PurchaseOrderLineFieldInventoryQuantity).Equal(dec("120")))
 }
 
-// When the line is already in the product's inventory unit there is nothing to convert, and the
-// port must not be called to answer a question that has no work in it.
+// A line already in the product's inventory unit needs no conversion, so the port is not called.
 func TestNoConversionWhenTheUnitsAlreadyMatch(t *testing.T) {
 	uoms := usableUom("999999") // would be obviously wrong if it were consulted
 	validator := NewProductLineValidator(usableProduct("01UOM_UNIT"), uoms)
 	line := productLineFor("01VARIANT", "01UOM_UNIT", "7")
 	vErrs := ft.NewClientErrors()
 
-	require.NoError(t, validator.PrepareLine(nil, line, vErrs))
+	require.NoError(t, prepared(validator)(nil, line, vErrs))
 
 	require.Equal(t, 0, vErrs.Count())
 	assert.True(t, decimalOf(line, models.PurchaseOrderLineFieldInventoryQuantity).Equal(dec("7")))
 }
 
-// BR-UOM-PUR-009: ordering in litres a product counted in kilograms is not a conversion anyone can
-// do, and storing the raw number would put a mass in a volume column.
+// Ordering in litres a product counted in kilograms is not a conversion anyone can do, and storing
+// the raw number would put a mass in a volume column.
 func TestACrossCategoryUnitIsRefused(t *testing.T) {
 	uoms := &stubUoms{found: true, convertErr: true}
 	validator := NewProductLineValidator(usableProduct("01UOM_KG"), uoms)
 	line := productLineFor("01VARIANT", "01UOM_LITRE", "5")
 	vErrs := ft.NewClientErrors()
 
-	require.NoError(t, validator.PrepareLine(nil, line, vErrs))
+	require.NoError(t, prepared(validator)(nil, line, vErrs))
 
 	require.Equal(t, 1, vErrs.Count())
-	// Essential's own reason is carried through rather than restated, so the caller sees which
-	// units disagreed instead of a generic refusal.
+	// Essential's own reason is carried through, so the caller sees which units disagreed.
 	assert.Equal(t, "uom.different_category", (*vErrs)[0].Key)
 }
 
 // The three product refusals are deliberately distinct: a bad id, a product the business does not
-// buy (D4), and one it used to buy. Collapsing them would leave a buyer guessing which they hit.
+// buy, and one it used to buy. Collapsing them would leave a buyer guessing which they hit.
 func TestProductRefusalsAreDistinct(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -180,7 +175,7 @@ func TestProductRefusalsAreDistinct(t *testing.T) {
 			validator := NewProductLineValidator(testCase.product, usableUom("1"))
 			vErrs := ft.NewClientErrors()
 
-			require.NoError(t, validator.PrepareLine(
+			require.NoError(t, prepared(validator)(
 				nil, productLineFor("01VARIANT", "01UOM", "1"), vErrs))
 
 			require.Equal(t, 1, vErrs.Count())
@@ -189,33 +184,31 @@ func TestProductRefusalsAreDistinct(t *testing.T) {
 	}
 }
 
-// BR-UOM-PUR-008: an archived unit is still resolvable so old lines read, but may not appear on
-// something new.
+// An archived unit is still resolvable so old lines read, but may not appear on something new.
 func TestAnArchivedUnitIsRefusedOnANewLine(t *testing.T) {
 	uoms := &stubUoms{found: true, archived: true, converted: "1"}
 	validator := NewProductLineValidator(usableProduct("01UOM_UNIT"), uoms)
 	vErrs := ft.NewClientErrors()
 
-	require.NoError(t, validator.PrepareLine(nil, productLineFor("01VARIANT", "01UOM_OLD", "1"), vErrs))
+	require.NoError(t, prepared(validator)(nil, productLineFor("01VARIANT", "01UOM_OLD", "1"), vErrs))
 
 	require.Equal(t, 1, vErrs.Count())
 	assert.Equal(t, "purchase_order_line.uom_archived", (*vErrs)[0].Key)
 }
 
-// An unknown unit is refused outright: a typo would otherwise produce a line whose quantity is
-// expressed in nothing.
+// An unknown unit is refused outright, or a typo would produce a quantity expressed in nothing.
 func TestAnUnknownUnitIsRefused(t *testing.T) {
 	validator := NewProductLineValidator(usableProduct("01UOM_UNIT"), &stubUoms{found: false})
 	vErrs := ft.NewClientErrors()
 
-	require.NoError(t, validator.PrepareLine(nil, productLineFor("01VARIANT", "01NOPE", "1"), vErrs))
+	require.NoError(t, prepared(validator)(nil, productLineFor("01VARIANT", "01NOPE", "1"), vErrs))
 
 	require.Equal(t, 1, vErrs.Count())
 	assert.Equal(t, "purchase_order_line.uom_not_found", (*vErrs)[0].Key)
 }
 
-// The states that are ordinary rather than erroneous. Each of these would be a false refusal if the
-// validator insisted on a complete product-and-unit pair.
+// Ordinary rather than erroneous states: each would be a false refusal if the validator insisted on
+// a complete product-and-unit pair.
 func TestTheLegitimateAbsences(t *testing.T) {
 	t.Run("a section buys nothing and needs no product", func(t *testing.T) {
 		validator := NewProductLineValidator(&stubProducts{found: false}, &stubUoms{found: false})
@@ -224,7 +217,7 @@ func TestTheLegitimateAbsences(t *testing.T) {
 		}
 		vErrs := ft.NewClientErrors()
 
-		require.NoError(t, validator.PrepareLine(nil, line, vErrs))
+		require.NoError(t, prepared(validator)(nil, line, vErrs))
 
 		assert.Equal(t, 0, vErrs.Count())
 		assert.True(t, decimalOf(line, models.PurchaseOrderLineFieldInventoryQuantity).IsZero())
@@ -235,7 +228,7 @@ func TestTheLegitimateAbsences(t *testing.T) {
 		line := productLineFor("", "", "3")
 		vErrs := ft.NewClientErrors()
 
-		require.NoError(t, validator.PrepareLine(nil, line, vErrs))
+		require.NoError(t, prepared(validator)(nil, line, vErrs))
 
 		assert.Equal(t, 0, vErrs.Count())
 		assert.True(t, decimalOf(line, models.PurchaseOrderLineFieldInventoryQuantity).Equal(dec("3")))
@@ -247,7 +240,7 @@ func TestTheLegitimateAbsences(t *testing.T) {
 		line := productLineFor("01VARIANT", "01UOM_HOUR", "8")
 		vErrs := ft.NewClientErrors()
 
-		require.NoError(t, validator.PrepareLine(nil, line, vErrs))
+		require.NoError(t, prepared(validator)(nil, line, vErrs))
 
 		assert.Equal(t, 0, vErrs.Count())
 		assert.True(t, decimalOf(line, models.PurchaseOrderLineFieldInventoryQuantity).Equal(dec("8")),
@@ -255,9 +248,8 @@ func TestTheLegitimateAbsences(t *testing.T) {
 	})
 }
 
-// inventory_quantity is required_for_create, so every path through the validator must leave one.
-// A path that did not would be refused by the schema with a message about a missing field rather
-// than about whatever actually went wrong.
+// inventory_quantity is required_for_create, so every path through the validator must leave one, or
+// the schema refuses with a message about a missing field rather than the real problem.
 func TestEveryAcceptedPathFillsInventoryQuantity(t *testing.T) {
 	for _, testCase := range []struct {
 		name string
@@ -272,7 +264,7 @@ func TestEveryAcceptedPathFillsInventoryQuantity(t *testing.T) {
 			validator := NewProductLineValidator(usableProduct("01UOM_UNIT"), usableUom("48"))
 			vErrs := ft.NewClientErrors()
 
-			require.NoError(t, validator.PrepareLine(nil, testCase.line, vErrs))
+			require.NoError(t, prepared(validator)(nil, testCase.line, vErrs))
 			require.Equal(t, 0, vErrs.Count())
 
 			value, present := testCase.line[models.PurchaseOrderLineFieldInventoryQuantity]
@@ -281,4 +273,48 @@ func TestEveryAcceptedPathFillsInventoryQuantity(t *testing.T) {
 			assert.True(t, isDecimal, "inventory_quantity must be a decimal, got %T", value)
 		})
 	}
+}
+
+// prepared adapts PrepareLine's two return values to the single one require.NoError takes. The
+// template id is asserted by its own test below rather than at every call site.
+func prepared(validator *ProductLineValidator) func(
+	corectx.Context, dmodel.DynamicFields, *ft.ClientErrors) error {
+	return func(ctx corectx.Context, line dmodel.DynamicFields, vErrs *ft.ClientErrors) error {
+		_, err := validator.PrepareLine(ctx, line, vErrs)
+		return err
+	}
+}
+
+// Pricing needs the template id, and PrepareLine already has it because Inventory answered for it
+// while checking purchasability. Returning it saves a second cross-module read inside the write
+// transaction.
+func TestPrepareLineReturnsTheTemplateIdForPricing(t *testing.T) {
+	validator := NewProductLineValidator(usableProduct("01UOM_UNIT"), usableUom("1"))
+	vErrs := ft.NewClientErrors()
+
+	templateId, err := validator.PrepareLine(
+		nil, productLineFor("01VARIANT", "01UOM_UNIT", "1"), vErrs)
+
+	require.NoError(t, err)
+	require.Equal(t, 0, vErrs.Count())
+	assert.Equal(t, "01TEMPLATE", templateId,
+		"the variant's template is what a vendor price is recorded against")
+}
+
+// A line with nothing to price against reports no template, so the caller skips resolution rather
+// than searching for quotes on an empty id.
+func TestPrepareLineReportsNoTemplateForALineWithNoProduct(t *testing.T) {
+	validator := NewProductLineValidator(usableProduct("01UOM_UNIT"), usableUom("1"))
+
+	freeText := productLineFor("", "01UOM_UNIT", "1")
+	templateId, err := validator.PrepareLine(nil, freeText, ft.NewClientErrors())
+	require.NoError(t, err)
+	assert.Empty(t, templateId, "a free-text charge has no product to price")
+
+	section := dmodel.DynamicFields{
+		models.PurchaseOrderLineFieldLineType: string(models.PurchaseOrderLineTypeSection),
+	}
+	templateId, err = validator.PrepareLine(nil, section, ft.NewClientErrors())
+	require.NoError(t, err)
+	assert.Empty(t, templateId, "a section line buys nothing")
 }

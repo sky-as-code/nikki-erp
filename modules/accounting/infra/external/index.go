@@ -11,6 +11,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	itExt "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/external"
+	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 )
@@ -26,6 +27,14 @@ func InitExternal() error {
 		}),
 		deps.Register(func(settingsSvc itSettings.TenantSettingsAppService) itExt.SettingsRegistrationExtService {
 			return settingsSvc
+		}),
+		deps.Register(func(settingsSvc itSettings.EffectiveSettingsAppService) itExt.EffectiveSettingsExtService {
+			return settingsSvc
+		}),
+		deps.Register(func(currencySvc itCurrency.CurrencyAppService) itExt.CurrencyExtService {
+			// A direct hand-over: the upstream service already has GetCurrency. The port stays
+			// narrower than the service it binds, so Accounting cannot start rounding through it.
+			return currencySvc
 		}),
 	)
 }

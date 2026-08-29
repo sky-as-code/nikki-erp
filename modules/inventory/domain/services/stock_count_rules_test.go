@@ -24,9 +24,8 @@ func TestSnapshotIsStaleOnlyWhenTheBalanceMoved(t *testing.T) {
 }
 
 func TestSnapshotStalenessCatchesTheWorkedExample(t *testing.T) {
-	// BR §4.2.7.4: system 100, counter finds 97, a delivery of 10 lands before apply. Applying the
-	// -3 variance against 90 would write 87 when the shelf actually holds 107. The check exists to
-	// refuse exactly this, so it is pinned with the requirement's own numbers.
+	// System 100, counter finds 97, a delivery of 10 lands before apply. Applying the -3 variance
+	// against 90 would write 87 when the shelf actually holds 107.
 	snapshot, afterDelivery := dec(t, "100"), dec(t, "110")
 
 	assert.True(t, IsCountSnapshotStale(snapshot, afterDelivery))
@@ -66,8 +65,7 @@ func TestCountEntryFieldsSnapshotTheBalanceAndSetTheFlag(t *testing.T) {
 }
 
 func TestCountEntryFieldsNeverTouchTheBalance(t *testing.T) {
-	// Entering a count must not change on-hand (AC-STOCK-014). The strongest way to hold that is
-	// for the field never to appear in the update at all.
+	// Entering a count must not change on-hand, held by the field never appearing in the update.
 	fields := CountEntryFields(dec(t, "97"), dec(t, "100"), "", "")
 
 	assert.NotContains(t, fields, models.StockQuantFieldOnHandQuantity)

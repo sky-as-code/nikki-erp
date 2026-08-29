@@ -1,8 +1,6 @@
-// Package external binds Purchase's local ports to the services other modules publish.
-//
-// This is the ONLY package in Purchase that may import another module. Everything else depends on
-// the interfaces in interfaces/external, so splitting a module into its own process changes this
-// file and nothing else — the bindings become REST or CQRS clients and every caller is unaffected.
+// Package external binds Purchase's local ports to the services other modules publish. It is the
+// only package in Purchase that may import another module; everything else depends on
+// interfaces/external, so a split into separate processes changes this file and nothing else.
 package external
 
 import (
@@ -29,14 +27,13 @@ import (
 // InitExternal binds every port Purchase consumes, and registers what Purchase offers back.
 func InitExternal() error {
 	// Purchase is the first module to hold UoM references, so this is what turns Essential's
-	// BR-UOM-ESS-020 guard from an assumption into an enforced rule.
+	// unit-in-use guard from an assumption into an enforced rule.
 	RegisterUomUsageProbe()
 
 	return stdErr.Join(
 		deps.Register(func(uomSvc itUom.UomConversionAppService) itExt.UomExtService {
-			// The upstream service already has exactly the two methods the port declares, so this
-			// is a direct hand-over rather than an adapter. It will become a client when this
-			// application is split into separate microservices.
+			// The upstream service already has exactly the two methods the port declares, so this is
+			// a hand-over rather than an adapter.
 			return uomSvc
 		}),
 		deps.Register(func(variantSvc itProduct.ProductVariantDomainService) itExt.ProductExtService {
@@ -51,11 +48,9 @@ func InitExternal() error {
 	)
 }
 
-// productAdapter narrows Inventory's variant service to the two questions a purchase line asks.
-//
-// It is a real adapter rather than a hand-over because no single Inventory service answers both:
-// purchasability comes from the variant's related template field, and the inventory unit comes from
-// stock_product_config, which has no external port of its own.
+// productAdapter narrows Inventory's variant service to the two questions a purchase line asks. It
+// is a real adapter because no single Inventory service answers both: purchasability comes from the
+// variant's template field, the inventory unit from stock_product_config, which has no port.
 type productAdapter struct {
 	variants itProduct.ProductVariantDomainService
 }
@@ -105,12 +100,9 @@ func (this *productAdapter) GetPurchasableProduct(
 	}, nil
 }
 
-// inventoryUomOf reads the unit a template's stock is counted in.
-//
-// It searches inventory_stock_product_config directly because that resource has no external port,
-// and this file is the one place allowed to reach across a module boundary. A template with no
-// configuration row returns "" — an ordinary state for a service or a non-stocked item, not an
-// error, and the caller treats it as "no inventory unit to reconcile against".
+// inventoryUomOf reads the unit a template's stock is counted in. It searches
+// inventory_stock_product_config directly because that resource has no external port. A template
+// with no configuration row returns "", meaning no inventory unit to reconcile against.
 func (this *productAdapter) inventoryUomOf(ctx corectx.Context, templateId string) (model.Id, error) {
 	if templateId == "" {
 		return "", nil
@@ -118,8 +110,7 @@ func (this *productAdapter) inventoryUomOf(ctx corectx.Context, templateId strin
 
 	engine, ok := engineFor(invModels.StockProductConfigSchemaName)
 	if !ok {
-		// A deployment without the stock feature is not an error: nothing can be reconciled, so
-		// nothing is claimed.
+		// A deployment without the stock feature is not an error: nothing can be reconciled.
 		return "", nil
 	}
 
@@ -142,10 +133,8 @@ func (this *productAdapter) inventoryUomOf(ctx corectx.Context, templateId strin
 		invModels.StockProductConfigFieldInventoryUomId)), nil
 }
 
-// engineFor resolves another module's resource engine from the shared registry.
-//
-// Reaching for an engine by schema name is how this file reads a resource that publishes no port of
-// its own. It is confined to this package for the same reason every other cross-module import is.
+// engineFor resolves another module's resource engine from the shared registry — how this file
+// reads a resource that publishes no port. Confined to this package, like every cross-module import.
 func engineFor(schemaName string) (drif.DynamicResourceEngine, bool) {
 	return dynamicresource.Registry().GetEngine(schemaName)
 }

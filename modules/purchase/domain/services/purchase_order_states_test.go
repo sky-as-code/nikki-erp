@@ -11,7 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// The order transition table, stated as the requirement states it (BR §11-§24).
+// The order transition table.
 func TestCanTransitionOrder(t *testing.T) {
 	testCases := []struct {
 		from, to models.PurchaseOrderStatus
@@ -32,7 +32,7 @@ func TestCanTransitionOrder(t *testing.T) {
 		// An order waiting on an approver cannot be pulled back into draft by its buyer.
 		{models.PurchaseOrderStatusToApprove, models.PurchaseOrderStatusRfq, false},
 
-		// A confirmed order can still be cancelled — a deal can fall through (BR 23).
+		// A confirmed order can still be cancelled — a deal can fall through.
 		{models.PurchaseOrderStatusPurchaseOrder, models.PurchaseOrderStatusCancelled, true},
 		{models.PurchaseOrderStatusPurchaseOrder, models.PurchaseOrderStatusToApprove, false},
 		{models.PurchaseOrderStatusPurchaseOrder, models.PurchaseOrderStatusRfq, false},
@@ -83,8 +83,8 @@ func TestCanTransitionAgreement(t *testing.T) {
 	}
 }
 
-// Every status a transition table names must be one the schema actually declares. A typo here is a
-// row nothing can ever reach, which no compiler catches.
+// Every status the table names must be one the schema declares; a typo is a row nothing can reach,
+// which no compiler catches.
 func TestTransitionTablesUseDeclaredStatuses(t *testing.T) {
 	orderStatuses := map[string]bool{
 		string(models.PurchaseOrderStatusRfq):           true,
@@ -117,8 +117,8 @@ func TestTransitionTablesUseDeclaredStatuses(t *testing.T) {
 	assert.Len(t, agreementTransitions, len(agreementStatuses))
 }
 
-// A refused transition must say something a user can act on, and the two most likely deliberate
-// mistakes get their own message.
+// A refused transition must say something a user can act on; the two most likely mistakes get their
+// own message.
 func TestAssertOrderTransitionNamesTheProblem(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -146,7 +146,7 @@ func TestAssertOrderTransitionNamesTheProblem(t *testing.T) {
 			AssertOrderTransition(string(testCase.from), string(testCase.to), vErrs)
 
 			assert.Equal(t, 1, vErrs.Count())
-			// The KEY is what a client branches on; the message is only for a human reader.
+			// The key is what a client branches on; the message is only for a human reader.
 			assert.Equal(t, testCase.wantKey, (*vErrs)[0].Key)
 		})
 	}
@@ -162,7 +162,7 @@ func TestAssertOrderTransitionIsSilentWhenLegal(t *testing.T) {
 	assert.Equal(t, 0, vErrs.Count())
 }
 
-// The approval decision (BR §47.1-2), which is what routes a confirm to one status or the other.
+// The approval decision, which routes a confirm to one status or the other.
 func TestRequiresApproval(t *testing.T) {
 	threshold := func(value string) *decimal.Decimal {
 		parsed := dec(value)
@@ -191,8 +191,7 @@ func TestRequiresApproval(t *testing.T) {
 			mode: models.ApprovalModeTwoStep, threshold: threshold("1000"), total: "1000.01", want: true,
 		},
 		{
-			// The most likely test case anyone runs by hand, and the reason the comparison is
-			// "at or above" rather than "above".
+			// The comparison is "at or above", not "above".
 			name: "two step exactly at the threshold",
 			mode: models.ApprovalModeTwoStep, threshold: threshold("1000"), total: "1000", want: true,
 		},
@@ -218,7 +217,7 @@ func TestRequiresApproval(t *testing.T) {
 	}
 }
 
-// An organization that never configured Purchase must still be able to buy things. Defaulting to
+// An organization that never configured Purchase must still be able to buy things; defaulting to
 // two-step would mean installing the module silently blocked every purchase.
 func TestTheDefaultConfigurationBlocksNothing(t *testing.T) {
 	config := DefaultPurchaseConfiguration()

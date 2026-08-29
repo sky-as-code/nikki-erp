@@ -24,6 +24,15 @@
 			}
 		},
 		{
+			"name": "sales_price_extra",
+			"label": "fields.sales_price_extra",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"default_value": "0",
+			"description": {
+				"en-US": "What choosing this value adds to the template's base sales price. Signed: XL may add 20,000 while a plain colour subtracts. Summed across a variant's chosen values to give its effective_base_sales_price (BR-PRICE-VARIANT-001).\n\nIt lives HERE, on Template × Attribute × Value, and not on the attribute value itself — which is why inventory_product_attribute_value.price_extra is no longer authoritative. The same value surcharges differently on different products: XL on a t-shirt is not XL on a tent. A single global number cannot express that, and BR-PRICE-VARIANT-002 forbids treating it as though it could.\n\nSales pricing only. It must never reach a cost calculation (BR-PRICE-VARIANT-008): a colour that sells for more does not thereby cost more, and adding it to cost would silently inflate every margin computed from it."
+			}
+		},
+		{
 			"name": "sequence",
 			"label": "fields.sequence",
 			"data_type": { "type": "int32", "min": 0, "max": 2147483647 }

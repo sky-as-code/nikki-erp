@@ -7,21 +7,13 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
-// The read-only port onto whether a product may be retired.
-//
-// Product Management decides whether a variant or template may be archived, but that decision
-// depends on facts only Stock holds: what is on the shelf, what is promised, and what is in
-// flight. Rather than have the product services read stock tables directly, they ask through this
-// contract — the same shape as LocationUsageReadService in location_usage.go, for the same reason.
-//
-// Two ports rather than one generic one: the queries differ (a variant id, not a location id) and
-// merging them would mean a parameter object with a mode flag, which reads worse at both call
-// sites. See CR §14 and §19.2.
+// The read-only port onto whether a product may be retired. Product Management owns the archive
+// decision but it depends on facts only Stock holds, so it asks through this contract rather than
+// reading stock tables. Kept separate from LocationUsageReadService because the queries differ by
+// key; merging them would need a mode flag.
 
-// ProductUsage is what Stock reports about one variant.
-//
-// The four values are exactly the ones the requirement names as archive blockers (CR §14, §14.1).
-// Reserved is part of OnHand rather than additional to it, so the two are not summed.
+// ProductUsage is what Stock reports about one variant: the four archive blockers. Reserved is
+// part of OnHand rather than additional to it, so the two are not summed.
 type ProductUsage struct {
 	OnHandQuantity    decimal.Decimal
 	ReservedQuantity  decimal.Decimal
@@ -29,11 +21,9 @@ type ProductUsage struct {
 	OpenTransferCount int
 }
 
-// IsEmpty reports whether the variant can be archived without stranding anything.
-//
-// Historical movement is deliberately not consulted. A variant referenced only by completed moves
-// archives fine — the records keep resolving it — so counting history would block a safe operation
-// forever (CR §14.2, AC-PROD-INT-031, TS-PROD-11).
+// IsEmpty reports whether the variant can be archived without stranding anything. Historical
+// movement is deliberately not consulted: a variant referenced only by completed moves archives
+// fine, so counting history would block a safe operation forever.
 func (this ProductUsage) IsEmpty() bool {
 	return this.OnHandQuantity.IsZero() &&
 		this.ReservedQuantity.IsZero() &&
@@ -53,14 +43,14 @@ type GetProductUsageResult = dyn.OpResult[GetProductUsageResultData]
 
 type GetProductUsageBatchQuery struct {
 	// VariantIds is the whole set to check. Archiving a template must clear every one of its
-	// variants before archiving any, so the guard reads them together rather than one per
-	// iteration of a loop that is already writing (CR §14.3, TS-PROD-12).
+	// variants before archiving any, so the guard reads them together rather than once per
+	// iteration of a loop that is already writing.
 	VariantIds []string
 }
 
 type GetProductUsageBatchResultData struct {
-	// Usages is keyed by variant id. A variant with no stock is present with a zero usage
-	// rather than absent.
+	// Usages is keyed by variant id. A variant with no stock is present with a zero usage rather
+	// than absent.
 	Usages map[string]ProductUsage
 }
 

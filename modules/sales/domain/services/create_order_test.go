@@ -9,8 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The pure validation of creating an order. CreateOrder itself reads and writes the repository and
-// is exercised live; the gates below are where a wrong answer would let a bad order through.
+// The pure validation of creating an order; CreateOrder itself is exercised live.
 
 func sellableChannel() dmodel.DynamicFields {
 	return dmodel.DynamicFields{
@@ -30,8 +29,7 @@ func sellablePoint() dmodel.DynamicFields {
 	}
 }
 
-// Both gates must hold, and they mean different things: archived is retired for good, suspended is
-// stopped for now. Either one must prevent a new sale.
+// Both gates mean different things: archived is retired for good, suspended is stopped for now.
 func TestSellingRequiresActiveAndUnarchived(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -64,8 +62,8 @@ func TestSellingRequiresActiveAndUnarchived(t *testing.T) {
 	}
 }
 
-// A record with no status cannot sell. The field is required, so a missing one means a row written
-// outside the sanctioned path — and defaulting it to active would let that row trade.
+// A record with no status cannot sell: the field is required, so a missing one means a row
+// written outside the sanctioned path, and defaulting it to active would let it trade.
 func TestARecordWithNoStatusCannotSell(t *testing.T) {
 	if canSell(dmodel.DynamicFields{}, models.SalesChannelFieldStatus,
 		string(models.SalesChannelStatusActive)) {
@@ -73,7 +71,7 @@ func TestARecordWithNoStatusCannotSell(t *testing.T) {
 	}
 }
 
-// A line ordering nothing is not a line (BR §55).
+// A line ordering nothing is not a line.
 func TestALineMustOrderMoreThanZero(t *testing.T) {
 	for _, quantity := range []string{"0", "-1"} {
 		vErrs := assertLinesRequestable([]CreateOrderLine{
@@ -91,7 +89,7 @@ func TestALineMustOrderMoreThanZero(t *testing.T) {
 }
 
 // A line naming no variant is refused. Without inventory's product port this is the only variant
-// check there is, which is why it must at least catch the empty case.
+// check there is.
 func TestALineMustNameAVariant(t *testing.T) {
 	vErrs := assertLinesRequestable([]CreateOrderLine{
 		{ProductVariantId: "", Quantity: dec("1")},
@@ -101,8 +99,7 @@ func TestALineMustNameAVariant(t *testing.T) {
 	}
 }
 
-// Every bad line is reported, not just the first. A till submitting five lines should be told about
-// all the broken ones in one round trip rather than discovering them one at a time.
+// Every bad line is reported, not just the first, so a till learns about all of them at once.
 func TestEveryBadLineIsReported(t *testing.T) {
 	vErrs := assertLinesRequestable([]CreateOrderLine{
 		{ProductVariantId: "V1", Quantity: dec("1")},
@@ -119,15 +116,14 @@ func TestEveryBadLineIsReported(t *testing.T) {
 	}
 }
 
-// An order with zero lines is a valid draft (BR §69). It is confirming one that is refused.
+// An order with zero lines is a valid draft. It is confirming one that is refused.
 func TestAnEmptyBasketIsAcceptable(t *testing.T) {
 	if vErrs := assertLinesRequestable(nil); vErrs != nil {
 		t.Errorf("an empty draft must be allowed, got %v", vErrs.ToError())
 	}
 }
 
-// The violation names the line it came from, so a form can point at the offending row rather than
-// saying only that something was wrong.
+// The violation names the line it came from, so a form can point at the offending row.
 func TestAViolationNamesItsLine(t *testing.T) {
 	vErrs := assertLinesRequestable([]CreateOrderLine{
 		{ProductVariantId: "V1", Quantity: dec("1")},

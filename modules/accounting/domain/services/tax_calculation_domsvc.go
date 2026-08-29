@@ -14,19 +14,15 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
 )
 
-// TaxCalculationDomainServiceImpl runs the determination and calculation pipeline.
-//
-// It is the only place that both reads configuration and drives the pure functions in
-// services/tax. Those functions stay free of I/O so they can be tested exhaustively without a
-// database; this type is what feeds them, and holds no state of its own between calls — a
-// calculation is a pure function of its request plus the configuration in force on its tax date
-// (AC-TAX-35).
+// TaxCalculationDomainServiceImpl runs the determination and calculation pipeline. It is the only
+// place that both reads configuration and drives the pure functions in services/tax, and holds no
+// state between calls: a calculation is a function of its request plus the configuration in force
+// on its tax date.
 type TaxCalculationDomainServiceImpl struct {
 	uomSvc itExt.UomExtService
 
-	// now supplies the calculated-at stamp. It is a field so a test can freeze it; production
-	// leaves it nil and the snapshot takes the real clock. Note this is NOT the tax date, which is
-	// always the caller's and never defaulted from the clock (BR-TAX-ESS-SUP-020).
+	// now supplies the calculated-at stamp; a field so a test can freeze it, nil in production. This
+	// is NOT the tax date, which is always the caller's and never defaulted from the clock.
 	now func() string
 }
 
@@ -57,11 +53,8 @@ func (this *TaxCalculationDomainServiceImpl) Simulate(
 	}, nil
 }
 
-// run is the pipeline both Calculate and Simulate execute.
-//
-// They differ only in whether the trace is assembled, and sharing the body is what guarantees the
-// simulator explains the same calculation the engine performs rather than a reimplementation of it
-// that could drift.
+// run is the pipeline both Calculate and Simulate execute, differing only in whether the trace is
+// assembled, so the simulator cannot drift from the engine it explains.
 func (this *TaxCalculationDomainServiceImpl) run(
 	ctx corectx.Context, request it.CalculationRequest, withTrace bool,
 ) (*it.CalculationResult, []it.TraceStep, error) {
@@ -84,9 +77,8 @@ func (this *TaxCalculationDomainServiceImpl) run(
 		return nil, nil, err
 	}
 	if policyProblem != "" {
-		// Without a policy the engine does not know how to round, and BR-TAX-ESS-044 forbids
-		// guessing a scale: two currencies round differently and picking one would be a silent
-		// pricing decision. The whole document is unresolved.
+		// Without a policy there is no rounding scale, and guessing one is a silent pricing
+		// decision since currencies round differently. The whole document is unresolved.
 		return unresolvedDocument(request, policyProblem), trace, nil
 	}
 	addTrace("rounding_policy", "resolved rounding policy", nil, nil)
@@ -111,11 +103,10 @@ func (this *TaxCalculationDomainServiceImpl) run(
 	appliedRules := map[string]bool{}
 	appliedMappings := map[string]bool{}
 
-	// allocation entries accumulate across lines so that a document-scoped policy can round the
-	// document as a whole. A line-scoped policy rounds each line as it goes and leaves this empty.
+	// allocations accumulate across lines so a document-scoped policy can round the document as a
+	// whole. A line-scoped policy rounds each line as it goes and leaves this empty.
 	var allocations []taxsvc.AllocationInput
-	// specByKey remembers which resolved configuration produced each amount, so the rounded figure
-	// can be attributed back to its version ids without resolving anything twice.
+	// specByKey attributes each rounded figure back to its version ids without resolving twice.
 	specByKey := map[string]ResolvedTax{}
 
 	for _, line := range request.Lines {
@@ -145,11 +136,9 @@ func (this *TaxCalculationDomainServiceImpl) run(
 	return &result, trace, nil
 }
 
-// calculateLine determines and computes one line.
-//
-// A line that cannot be resolved does not abort the document: it is returned unresolved with its
-// error code, and the document's own status is downgraded when the totals are assembled. One
-// misconfigured product must not deny an order its other twenty lines.
+// calculateLine determines then computes one line. A line that cannot be resolved does not abort
+// the document: it comes back unresolved with its error code, and the document status is downgraded
+// when the totals are assembled.
 func (this *TaxCalculationDomainServiceImpl) calculateLine(
 	ctx corectx.Context,
 	repos *TaxRepos,
@@ -198,9 +187,8 @@ func (this *TaxCalculationDomainServiceImpl) calculateLine(
 		TotalIncluded: line.CommercialBaseAmount,
 	}
 	if outcome.Status != models.DeterminationResolved {
-		// Unresolved and no_tax_applicable both stop here, but they mean different things: the
-		// first is a failure the caller must fix, the second is a lawful zero. The status carries
-		// that distinction; the amounts are the same either way.
+		// Unresolved and no_tax_applicable both stop here with the same amounts, but mean
+		// different things: a failure to fix versus a lawful zero. The status carries that.
 		return &base, trace, nil
 	}
 
@@ -234,8 +222,8 @@ func (this *TaxCalculationDomainServiceImpl) calculateLine(
 		specs = append(specs, ToComponentSpecs(resolved, quantities)...)
 		leaves = append(leaves, FlattenResolved(resolved)...)
 	}
-	// Sequence orders a compound chain and the chain is order-dependent, so this sort is what makes
-	// the answer reproducible rather than a function of the order taxes happened to be determined.
+	// A compound chain is order-dependent, so sorting by sequence here is what makes the answer
+	// reproducible rather than a function of determination order.
 	sort.SliceStable(specs, func(i, j int) bool { return specs[i].Sequence < specs[j].Sequence })
 
 	leafByTaxId := map[string]ResolvedTax{}
@@ -279,14 +267,14 @@ func (this *TaxCalculationDomainServiceImpl) calculateLine(
 
 		switch policy.Scope {
 		case models.RoundingScopeLine:
-			// A line-scoped policy rounds now, and the line's own total is the sum of its rounded
-			// components — not the rounded sum, which would differ by a cent an invoice cannot show.
+			// Round-per-line: round now, and the line total is the sum of the rounded components,
+			// not the rounded sum, which can differ by a cent the invoice cannot show.
 			component.TaxAmount = policy.Round(amount.Amount)
 			component.RoundingAdjustment = component.TaxAmount.Sub(amount.Amount)
 
 		default:
-			// A document-scoped policy cannot decide this component yet: its rounding depends on
-			// the other lines. The unrounded figure stands in until the allocation pass.
+			// Round-per-document: this component's rounding depends on the other lines, so the
+			// unrounded figure stands in until the allocation pass.
 			component.TaxAmount = amount.Amount
 			key := allocationKey(line.LineReference, amount.Sequence)
 			specByKey[key] = leaf
@@ -307,11 +295,9 @@ func (this *TaxCalculationDomainServiceImpl) calculateLine(
 	return &base, trace, nil
 }
 
-// convertQuantities turns the line quantity into each fixed tax's own unit.
-//
-// The conversion is Essential's and never reimplemented here (BR-TAX-ESS-SUP-014). A tax that is
-// not fixed needs no quantity at all, so the port is called only for the ones that do — a UoM
-// service outage must not stop a percentage VAT from being calculated.
+// convertQuantities turns the line quantity into each fixed tax's own unit, delegating the
+// conversion rather than reimplementing it. Only fixed taxes need a quantity, so the UoM port is
+// called only for those and an outage cannot stop a percentage VAT being calculated.
 func (this *TaxCalculationDomainServiceImpl) convertQuantities(
 	ctx corectx.Context, line it.CalculationLine, currencyCode string, resolvedTaxes []ResolvedTax,
 ) (map[string]decimal.Decimal, string, error) {
@@ -328,11 +314,8 @@ func (this *TaxCalculationDomainServiceImpl) convertQuantities(
 			return "", nil
 		}
 
-		// A fixed tax is a money amount, so it is only meaningful in the transaction's own
-		// currency. V1 has no FX capability, and BR-TAX-ESS-SUP-014's companion rule is explicit
-		// that the absence must fail loudly: converting at some implied rate would invent a number
-		// nobody chose, and charging 4,000 JPY as though it were 4,000 VND is worse still
-		// (AC-TAX-SUP-14).
+		// A fixed tax is a money amount, meaningful only in the transaction's currency. There is
+		// no FX capability, so a mismatch fails loudly rather than charging 4,000 JPY as 4,000 VND.
 		if resolved.RateCurrencyCode != "" && resolved.RateCurrencyCode != currencyCode {
 			return models.ErrCodeFixedTaxCurrency, nil
 		}
@@ -354,15 +337,14 @@ func (this *TaxCalculationDomainServiceImpl) convertQuantities(
 		if err != nil {
 			return "", err
 		}
-		// An impossible conversion — different dimensions, missing factor — is a business outcome
-		// for this line, not a failure of the request. The line is unresolved and the rest of the
-		// document still gets its answer.
+		// An impossible conversion (different dimensions, missing factor) is a per-line business
+		// outcome, not a request failure: this line is unresolved, the rest still answer.
 		if converted == nil || converted.ClientErrors.Count() > 0 || !converted.HasData {
 			return models.ErrCodeUomConversion, nil
 		}
-		// ExactQuantity rather than Quantity: the converted figure is an intermediate that the tax
-		// rate is about to multiply, and rounding it to the target unit's display precision first
-		// would shed fractions the single final rounding is supposed to account for.
+		// ExactQuantity, not Quantity: the tax rate is about to multiply this intermediate, and
+		// rounding to the unit's display precision first would shed fractions the single final
+		// rounding must account for.
 		quantities[resolved.TaxId] = converted.Data.ExactQuantity
 		return "", nil
 	}
@@ -376,7 +358,6 @@ func (this *TaxCalculationDomainServiceImpl) convertQuantities(
 	return quantities, "", nil
 }
 
-// resolveRoundingPolicy finds the policy in force, or says why it could not.
 func (this *TaxCalculationDomainServiceImpl) resolveRoundingPolicy(
 	ctx corectx.Context, repo models.TaxSearcher, request it.CalculationRequest,
 ) (taxsvc.RoundingPolicy, string, error) {
@@ -390,8 +371,8 @@ func (this *TaxCalculationDomainServiceImpl) resolveRoundingPolicy(
 		return taxsvc.RoundingPolicy{}, "", err
 	}
 	if count != 1 {
-		// Zero means nothing is in force on the date; more than one means the configuration is
-		// contradictory. Neither may be resolved by picking, for the same reason a rate may not be.
+		// Zero means nothing in force on the date, more than one means contradictory config.
+		// Neither may be resolved by picking one.
 		return taxsvc.RoundingPolicy{}, models.ErrCodeRoundingPolicyMissing, nil
 	}
 
@@ -402,7 +383,6 @@ func (this *TaxCalculationDomainServiceImpl) resolveRoundingPolicy(
 	}, "", nil
 }
 
-// applyDocumentRounding rounds the whole document at once and writes the results back.
 func applyDocumentRounding(
 	result *it.CalculationResult, allocations []taxsvc.AllocationInput, policy taxsvc.RoundingPolicy,
 ) {
@@ -431,11 +411,9 @@ func applyDocumentRounding(
 	}
 }
 
-// retotalLine recomputes a line's totals from its rounded components.
-//
-// The tax total is the sum of the rounded components rather than the rounding of the summed ones:
-// an invoice shows the components, and totals that do not add up to what is printed beside them
-// are the defect this ordering avoids.
+// retotalLine recomputes a line's totals as the sum of the rounded components, never the rounding
+// of the summed ones, so the printed components add up to the printed total. It must run after
+// rounding.
 func retotalLine(line *it.LineResult) {
 	total := decimal.Zero
 	for _, component := range line.Components {
@@ -458,18 +436,16 @@ func totalDocument(result *it.CalculationResult) {
 		for _, component := range line.Components {
 			result.RoundingAdjustment = result.RoundingAdjustment.Add(component.RoundingAdjustment)
 		}
-		// A document is only as resolved as its least resolved line. Reporting "resolved" while a
-		// line silently contributed no tax is how a caller stores a total that is quietly wrong.
+		// A document is only as resolved as its least resolved line; reporting "resolved" while a
+		// line contributed no tax stores a quietly wrong total.
 		if line.Status == models.DeterminationUnresolved {
 			result.Status = models.DeterminationUnresolved
 		}
 	}
 }
 
-// unresolvedDocument answers a request that could not be calculated at all.
-//
-// Every line is echoed back so the caller can still map results to its own document, each carrying
-// the same error code: the failure is the document's, not any one line's.
+// unresolvedDocument answers a request that could not be calculated at all. Every line is echoed
+// back carrying the same error code so the caller can still map results onto its own document.
 func unresolvedDocument(request it.CalculationRequest, errorCode string) *it.CalculationResult {
 	result := it.CalculationResult{
 		Status:        models.DeterminationUnresolved,
@@ -493,10 +469,8 @@ func unresolvedDocument(request it.CalculationRequest, errorCode string) *it.Cal
 	return &result
 }
 
-// buildContext assembles the whitelisted facts a rule condition may test.
-//
-// The whitelist is closed by BR-TAX-ESS-SUP-022: a rule may test these fifteen things and nothing
-// else, so that a condition cannot come to depend on a field another module is free to change.
+// buildContext assembles the facts a rule condition may test. The whitelist is closed, so a
+// condition cannot come to depend on a field another module is free to change.
 func buildContext(request it.CalculationRequest, line it.CalculationLine) map[string]string {
 	context := map[string]string{
 		models.CtxOperationType:            string(request.OperationType),
@@ -514,9 +488,8 @@ func buildContext(request it.CalculationRequest, line it.CalculationLine) map[st
 		models.CtxBusinessChannelCode:      request.BusinessChannelCode,
 		models.CtxProductReference:         line.ProductReference,
 	}
-	// A line may propose several candidates but a condition tests one value, so the first is what
-	// a rule sees. This matches the typical case exactly — a product carries one default tax — and
-	// a rule needing more should test the classification instead.
+	// A condition tests one value, so a rule only ever sees the first candidate; a rule needing
+	// more should test the classification instead.
 	if len(line.CandidateTaxIds) > 0 {
 		context[models.CtxCandidateTaxId] = line.CandidateTaxIds[0]
 	}
@@ -539,10 +512,8 @@ func boolText(value bool) string {
 	return "false"
 }
 
-// groupKeyOf is what a document-scoped rounding sums within.
-//
-// Tax, rate version, treatment and jurisdiction together: two components of different taxes must
-// never pool, because the per-tax document total is exactly what a VAT return reports.
+// groupKeyOf is the bucket document-scoped rounding sums within: tax, rate version, treatment and
+// jurisdiction. Different taxes must never pool — the per-tax total is what a VAT return reports.
 func groupKeyOf(leaf ResolvedTax) string {
 	return leaf.TaxId + "|" + leaf.RateVersionId + "|" + string(leaf.Treatment) + "|" + leaf.JurisdictionId
 }

@@ -9,14 +9,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// ProductSearcher is the slice of a resource repository the Products lookups need. Declaring it
-// here rather than importing the dynamicresource interface keeps the domain model free of a
-// dependency on the engine that happens to implement it.
+// ProductSearcher is declared here rather than imported from dynamicresource so the domain model
+// does not depend on the engine that implements it.
 type ProductSearcher interface {
 	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error)
 }
 
-// searchAll runs a graph search and unwraps the usual three-way result into a plain slice.
+// searchAll unwraps the three-way search result into a plain slice.
 func searchAll(
 	ctx corectx.Context, repo ProductSearcher, graph *dmodel.SearchGraph, limit int, what string,
 ) ([]dmodel.DynamicFields, error) {
@@ -37,12 +36,10 @@ func searchAll(
 	return found.Data.Items, nil
 }
 
-// FindVariantsByCombination returns up to limit variants of a template holding the given
-// combination key.
-//
-// It searches rather than fetching one: although {product_template_id, combination_key} is a
-// unique group, callers ask "does another variant already hold this?" and pass limit 2, so the
-// record being updated can be told apart from a genuine conflict. See BR-PROD-VAR-002.
+// FindVariantsByCombination returns up to limit variants of a template holding the combination
+// key. It searches rather than fetching one because callers pass limit 2 to distinguish the record
+// being updated from a genuine conflict, even though {product_template_id, combination_key} is
+// unique.
 func FindVariantsByCombination(
 	ctx corectx.Context, repo ProductSearcher, templateId string, combinationKey string, limit int,
 ) ([]dmodel.DynamicFields, error) {
@@ -65,11 +62,8 @@ func FindTemplateVariants(
 	return searchAll(ctx, repo, graph, limit, "FindTemplateVariants")
 }
 
-// FindActiveTemplateVariants returns up to limit non-archived variants of a template.
-//
-// "Active" here means not archived, which is what decides whether a template still has a
-// selectable product. A discontinued-but-unarchived variant still counts, because the business
-// deliberately keeps it visible. See BR-PROD-VAR-006.
+// FindActiveTemplateVariants returns up to limit non-archived variants. Active means not archived:
+// a discontinued but unarchived variant still counts, because it stays deliberately visible.
 func FindActiveTemplateVariants(
 	ctx corectx.Context, repo ProductSearcher, templateId string, limit int,
 ) ([]dmodel.DynamicFields, error) {
@@ -81,7 +75,6 @@ func FindActiveTemplateVariants(
 	return searchAll(ctx, repo, graph, limit, "FindActiveTemplateVariants")
 }
 
-// FindTemplateAttributes returns the attribute configuration rows of a template.
 func FindTemplateAttributes(
 	ctx corectx.Context, repo ProductSearcher, templateId string, limit int,
 ) ([]dmodel.DynamicFields, error) {
@@ -93,7 +86,6 @@ func FindTemplateAttributes(
 	return searchAll(ctx, repo, graph, limit, "FindTemplateAttributes")
 }
 
-// FindTemplateAttributeValues returns the allowed values of one template attribute.
 func FindTemplateAttributeValues(
 	ctx corectx.Context, repo ProductSearcher, templateAttributeId string, limit int,
 ) ([]dmodel.DynamicFields, error) {
@@ -105,8 +97,8 @@ func FindTemplateAttributeValues(
 	return searchAll(ctx, repo, graph, limit, "FindTemplateAttributeValues")
 }
 
-// FindChildCategories returns up to limit direct children of a category. Cycle detection walks
-// upwards from a proposed parent, so this is its downward counterpart for delete guards.
+// FindChildCategories returns up to limit direct children. Cycle detection walks upwards from a
+// proposed parent; this is the downward counterpart used by delete guards.
 func FindChildCategories(
 	ctx corectx.Context, repo ProductSearcher, categoryId string, limit int,
 ) ([]dmodel.DynamicFields, error) {
@@ -118,7 +110,6 @@ func FindChildCategories(
 	return searchAll(ctx, repo, graph, limit, "FindChildCategories")
 }
 
-// FindTemplatesByCategory returns up to limit templates classified under a category.
 func FindTemplatesByCategory(
 	ctx corectx.Context, repo ProductSearcher, categoryId string, limit int,
 ) ([]dmodel.DynamicFields, error) {

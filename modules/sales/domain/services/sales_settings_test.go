@@ -44,11 +44,9 @@ func key(name string) string {
 	return "sales." + name
 }
 
-// The whole contract of ResolveSalesPolicy: it never fails.
-//
-// A settings read is a call into another module, and pricing an order must not stop because that
-// module is slow, mid-restart or has no rows yet. Each of these is a way the read can go wrong, and
-// every one of them must produce the documented defaults rather than an error.
+// The whole contract of ResolveSalesPolicy: it never fails. A settings read is a call into another
+// module, and pricing an order must not stop because that module is slow, mid-restart or has no
+// rows yet, so each of these ways the read can go wrong must produce the documented defaults.
 func TestResolveSalesPolicyNeverFails(t *testing.T) {
 	ctx := corectx.NewRequestContext(t.Context())
 	want := DefaultSalesPolicy()
@@ -71,12 +69,10 @@ func TestResolveSalesPolicyNeverFails(t *testing.T) {
 	}
 }
 
-// Every default must be the SAFE reading, which is what makes falling back on failure acceptable.
-//
-// This is the assumption the never-fails behaviour rests on: if a default were the permissive
-// direction, a settings outage would silently grant something the organization had forbidden. It is
-// asserted rather than left as prose because a later edit changing one default would break the
-// reasoning without breaking anything else.
+// Every default must be the SAFE reading, which is what makes falling back on failure acceptable:
+// if a default were the permissive direction, a settings outage would silently grant something the
+// organization had forbidden. Asserted rather than left as prose because a later edit changing one
+// default would break the reasoning without breaking anything else.
 func TestEveryDefaultIsTheSafeReading(t *testing.T) {
 	policy := DefaultSalesPolicy()
 
@@ -89,8 +85,8 @@ func TestEveryDefaultIsTheSafeReading(t *testing.T) {
 			"guessing a code would tax a deployment that never asked to be")
 	}
 	if !policy.DefaultTaxRate.IsZero() {
-		// Deprecated and no longer read by pricing, but still resolved, so a caller reading it gets
-		// a defined answer rather than a nil decimal.
+		// Deprecated and no longer read by pricing, but still resolved, so a caller gets a defined
+		// answer rather than a nil decimal.
 		t.Error("the deprecated tax rate must still default to zero")
 	}
 	if policy.RoundingScale != 0 {
@@ -102,21 +98,18 @@ func TestEveryDefaultIsTheSafeReading(t *testing.T) {
 	if policy.ReturnWindowDays < 1 {
 		t.Error("a zero return window would refuse every return during a settings outage")
 	}
-	// allow_cash_change defaults to TRUE, which is the one permissive-looking default. It is safe
-	// in the direction that matters: the failure it prevents is a till that has taken cash and
-	// cannot give change back, which strands a customer's money. Refusing to give change is the
-	// harmful outcome here, not giving it.
+	// allow_cash_change defaults to TRUE, the one permissive-looking default. It is safe in the
+	// direction that matters: the failure it prevents is a till that has taken cash and cannot give
+	// change back, stranding a customer's money.
 	if !policy.AllowCashChange {
 		t.Error("cash change must default to ON: a till that takes cash and cannot give change " +
 			"back strands the customer's money")
 	}
 }
 
-// Configured values must actually be read, and read through the "{module}.{name}" key.
-//
-// Numbers arrive as float64 because they have been through a jsonb column: encoding/json has no
-// integer type. A reader that only accepted int32 would silently ignore every configured number and
-// keep using its default, which no test of the defaults alone would catch.
+// Configured values must actually be read, and read through the "{module}.{name}" key. Numbers
+// arrive as float64 because they have been through a jsonb column, so a reader that only accepted
+// int32 would silently ignore every configured number and keep using its default.
 func TestConfiguredValuesAreReadFromJsonShapes(t *testing.T) {
 	ctx := corectx.NewRequestContext(t.Context())
 
@@ -153,9 +146,8 @@ func TestConfiguredValuesAreReadFromJsonShapes(t *testing.T) {
 	}
 }
 
-// A decimal crosses JSON as a string so it does not lose precision on the way. Parsing it back is
-// the one step that can fail, and a malformed rate must fall back rather than become NaN — a tax
-// rate nobody can parse must not silently become a tax rate of something else.
+// A decimal crosses JSON as a string so it does not lose precision. Parsing it back is the one
+// step that can fail, and a malformed rate must fall back rather than become NaN.
 func TestMalformedDecimalFallsBack(t *testing.T) {
 	ctx := corectx.NewRequestContext(t.Context())
 
@@ -170,8 +162,8 @@ func TestMalformedDecimalFallsBack(t *testing.T) {
 	}
 }
 
-// A value of the wrong type is a configuration defect, and refusing to sell is a worse response to
-// it than selling under the documented default. Each reader must ignore what it cannot use.
+// A value of the wrong type is a configuration defect, and refusing to sell is a worse response
+// than selling under the documented default. Each reader must ignore what it cannot use.
 func TestWrongTypesFallBackPerSetting(t *testing.T) {
 	ctx := corectx.NewRequestContext(t.Context())
 	want := DefaultSalesPolicy()
@@ -194,8 +186,8 @@ func TestWrongTypesFallBackPerSetting(t *testing.T) {
 }
 
 // Another module's settings must not be mistaken for this module's. The key carries the module
-// prefix precisely so that two modules can both declare a setting called "rounding_scale" without
-// one reading the other's.
+// prefix so two modules can both declare a setting called "rounding_scale" without one reading the
+// other's.
 func TestOtherModulesSettingsAreIgnored(t *testing.T) {
 	ctx := corectx.NewRequestContext(t.Context())
 	want := DefaultSalesPolicy()

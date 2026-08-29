@@ -30,10 +30,9 @@ func TaxJurisdictionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(taxJurisdictionSchemaJson)
 }
 
-// TaxJurisdiction is a territory in which a taxing authority levies tax.
-//
-// Jurisdictions form a tree (country -> state -> city). The tree must stay acyclic, which the
-// dynamic engine enforces on write because a self-referencing foreign key cannot.
+// TaxJurisdiction is a territory in which a taxing authority levies tax. Jurisdictions form a tree
+// (country -> state -> city) that must stay acyclic, which the dynamic engine enforces on write
+// because a self-referencing foreign key cannot.
 type TaxJurisdiction struct {
 	basemodel.DynamicModelBase
 }

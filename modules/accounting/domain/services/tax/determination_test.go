@@ -24,7 +24,7 @@ func eq(fieldKey string, value string) RuleCondition {
 	return RuleCondition{FieldKey: fieldKey, Operator: models.OperatorEq, Value: value}
 }
 
-// AC-TAX-SUP-09: a candidate tax survives when no rule changes it.
+// A candidate tax survives when no rule changes it.
 func TestCandidateSurvivesWithoutRules(t *testing.T) {
 	outcome := Determine(DeterminationInput{
 		CandidateTaxIds: []string{"VAT10"},
@@ -35,11 +35,9 @@ func TestCandidateSurvivesWithoutRules(t *testing.T) {
 	assert.Equal(t, []string{"VAT10"}, outcome.TaxIds)
 }
 
-// AC-TAX-17 and AC-TAX-SUP-10: nothing determined is unresolved, never a silent 0%.
-//
-// This is the single most consequential behaviour in the module. A tax that quietly resolves to
-// zero produces an invoice that looks correct and under-collects, and nothing downstream can tell
-// it apart from a genuine zero-rating.
+// Nothing determined is unresolved, never a silent 0%. A tax that quietly resolves to zero produces
+// an invoice that looks correct, under-collects, and is indistinguishable downstream from a genuine
+// zero-rating.
 func TestEmptyCandidateWithNoRuleIsUnresolved(t *testing.T) {
 	outcome := Determine(DeterminationInput{
 		CandidateTaxIds: []string{},
@@ -51,7 +49,7 @@ func TestEmptyCandidateWithNoRuleIsUnresolved(t *testing.T) {
 	assert.Empty(t, outcome.TaxIds)
 }
 
-// AC-TAX-16 and AC-TAX-SUP-11: an explicit no_tax_applicable is a conclusion, not a failure.
+// An explicit no_tax_applicable is a conclusion, not a failure.
 func TestExplicitNoTaxApplicableIsNotUnresolved(t *testing.T) {
 	outcome := Determine(DeterminationInput{
 		CandidateTaxIds: []string{},
@@ -76,10 +74,8 @@ func TestExplicitNoTaxApplicableIsNotUnresolved(t *testing.T) {
 		"unresolved and no_tax_applicable are different answers")
 }
 
-// AC-TAX-19 and TAX-SUP-INV-07: evaluation order is priority then id, with no specificity heuristic.
-//
-// The lower-priority rule here has more conditions. Under the old specificity ordering it would
-// have won; under explicit priority the rule the author numbered first does.
+// Evaluation order is priority then id, with no specificity heuristic: the rule the author numbered
+// first wins even though the other has more conditions.
 func TestRulesEvaluateByPriorityNotSpecificity(t *testing.T) {
 	specific := addTaxRule("R_SPECIFIC", 50, "VAT_SPECIFIC",
 		eq(models.CtxProductTaxClassification, "STANDARD"),
@@ -114,9 +110,8 @@ func TestStopProcessingHaltsEvaluation(t *testing.T) {
 	assert.Equal(t, []string{"VAT_A"}, outcome.TaxIds)
 }
 
-// The Vietnam VAT reduction of BR-TAX-ESS-038: remove the standard rate, add the reduced one.
-//
-// Result sequence is load-bearing here — reversing it would remove the tax that was just added.
+// The Vietnam VAT reduction: remove the standard rate, add the reduced one. Result sequence is
+// load-bearing; reversing it would remove the tax that was just added.
 func TestVietnamVatReductionSubstitutesRate(t *testing.T) {
 	outcome := Determine(DeterminationInput{
 		CandidateTaxIds: []string{"VN_VAT_10"},
@@ -140,7 +135,7 @@ func TestVietnamVatReductionSubstitutesRate(t *testing.T) {
 	assert.Equal(t, []string{"VN_VAT_8"}, outcome.TaxIds)
 }
 
-// AC-TAX-18: a mapping substitutes a tax, and only when a rule result asks for it.
+// A mapping substitutes a tax, and only when a rule result asks for it.
 func TestMappingSubstitutesTax(t *testing.T) {
 	outcome := Determine(DeterminationInput{
 		CandidateTaxIds: []string{"VAT10"},
@@ -166,8 +161,8 @@ func TestMappingSubstitutesTax(t *testing.T) {
 	assert.Equal(t, "M_EXPORT", outcome.AppliedMappingId)
 }
 
-// AC-TAX-SUP: two different mappings in one determination scope are unresolvable rather than
-// resolved by whichever rule happened to run first.
+// Two different mappings in one determination scope are unresolvable rather than resolved by
+// whichever rule ran first.
 func TestTwoMappingsAreUnresolved(t *testing.T) {
 	outcome := Determine(DeterminationInput{
 		CandidateTaxIds: []string{"VAT10"},
@@ -199,8 +194,8 @@ func TestMappingLeavesUnmappedTaxesAlone(t *testing.T) {
 	assert.Equal(t, []string{"VAT0", "EXCISE"}, outcome.TaxIds)
 }
 
-// BR-TAX-ESS-SUP-023: an override replaces the determined set, and is applied last so that what
-// the user substitutes is the finished determination.
+// An override replaces the determined set and is applied last, so the user substitutes the finished
+// determination.
 func TestOverrideReplacesDeterminedSet(t *testing.T) {
 	outcome := Determine(DeterminationInput{
 		CandidateTaxIds: []string{"VAT10"},
@@ -211,7 +206,7 @@ func TestOverrideReplacesDeterminedSet(t *testing.T) {
 	assert.Equal(t, []string{"VAT_EXEMPT"}, outcome.TaxIds)
 }
 
-// BR-TAX-ESS-SUP-007: a money threshold in another currency does not match, and is not converted.
+// A money threshold in another currency does not match, and is not converted.
 func TestMoneyConditionDoesNotConvertCurrency(t *testing.T) {
 	rule := addTaxRule("R1", 10, "LUXURY", RuleCondition{
 		FieldKey:     models.CtxCommercialBaseAmount,
@@ -220,8 +215,8 @@ func TestMoneyConditionDoesNotConvertCurrency(t *testing.T) {
 		CurrencyCode: "VND",
 	})
 
-	// The threshold is in VND; the request is in USD. 5,000 USD is worth far more than 1,000,000
-	// VND, but converting it would need a rate nobody agreed on, so the rule does not fire.
+	// The threshold is VND and the request USD; converting would need a rate nobody agreed on, so
+	// the rule does not fire.
 	outcome := Determine(DeterminationInput{
 		CandidateTaxIds: []string{"VAT10"},
 		CurrencyCode:    "USD",
@@ -268,8 +263,8 @@ func TestConditionsAreAnded(t *testing.T) {
 	assert.Equal(t, []string{"BASE"}, outcome.TaxIds)
 }
 
-// TAX-INV-20: determination is deterministic. Feeding the rules in a different order must not
-// change the outcome, since evaluation sorts them itself.
+// Determination is deterministic: evaluation sorts the rules itself, so feeding them in a different
+// order must not change the outcome.
 func TestDeterminationIsOrderIndependent(t *testing.T) {
 	ruleA := addTaxRule("R_A", 20, "VAT_A")
 	ruleB := addTaxRule("R_B", 10, "VAT_B")

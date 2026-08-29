@@ -9,11 +9,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// The voucher pair: a code, and the ledger of its uses.
-//
-// They are one file for the same reason the six promotion schemas are: neither is meaningful without
-// the other. A code without redemptions has a usage counter nobody can audit, and a redemption
-// without a code refers to nothing. BR 82 is explicit that the counter alone is insufficient.
+// The voucher pair: a code, and the ledger of its uses. A usage counter alone is insufficient —
+// it cannot be audited, and cannot say which orders consumed a voucher.
 
 const (
 	SalesVoucherCodeSchemaName = "sales_voucher_code"
@@ -63,11 +60,8 @@ func SalesVoucherRedemptionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(salesVoucherRedemptionSchemaJson)
 }
 
-// SalesVoucherCode is a credential pointing at a promotion program.
-//
-// It carries no rules of its own (BR 25.1). Every condition, reward, compatibility rule and priority
-// lives on the program, which is why BR 27's long list of required voucher capabilities needs no
-// voucher-side fields - they are all program fields already.
+// SalesVoucherCode is a credential pointing at a promotion program. It carries no rules of its own:
+// every condition, reward, compatibility rule and priority lives on the program.
 type SalesVoucherCode struct {
 	basemodel.DynamicModelBase
 }
@@ -144,14 +138,10 @@ func (this SalesVoucherCode) GetIsArchived() *bool {
 	return this.GetFieldData().GetBool(SalesVoucherCodeFieldIsArchived)
 }
 
-// HasUsesRemaining reports whether the code has any use left.
-//
-// A null usage_limit means unlimited, which is why this is not a plain comparison: reading a nil
-// limit as zero would exhaust every unlimited voucher at its first use.
-//
-// This is the READ of the invariant, for showing a customer why a code was refused. It is NOT the
-// enforcement of it - that is the conditional UPDATE in the redemption path (D-31), because any
-// check performed before a separate write can be overtaken between the two.
+// HasUsesRemaining reports whether the code has any use left. A null usage_limit means unlimited,
+// so this is not a plain comparison. It is only the read of the invariant, for explaining a refusal;
+// enforcement is the conditional UPDATE in the redemption path, since a check before a separate
+// write can be overtaken.
 func (this SalesVoucherCode) HasUsesRemaining() bool {
 	limit := this.GetUsageLimit()
 	if limit == nil {
@@ -164,15 +154,10 @@ func (this SalesVoucherCode) HasUsesRemaining() bool {
 	return *count < *limit
 }
 
-// IsUsableAt reports whether the code may be applied at the given instant.
-//
-// Every gate except the ones that need other records: status, archival, the validity window and the
-// usage count. Program eligibility, channel and sales-point rules, and compatibility with vouchers
-// already on the order are the apply operation's business, because each needs a record this model
-// does not hold.
-//
-// The window is half-open - valid_from inclusive, valid_until EXCLUSIVE - matching every other
-// window in this module.
+// IsUsableAt reports whether the code may be applied at the given instant: status, archival,
+// validity window and usage count only. Program eligibility, channel rules and compatibility with
+// other vouchers need records this model does not hold, so they stay with the apply operation. The
+// window is half-open - valid_from inclusive, valid_until exclusive.
 func (this SalesVoucherCode) IsUsableAt(unixSeconds int64) bool {
 	if archived := this.GetIsArchived(); archived != nil && *archived {
 		return false
@@ -190,11 +175,8 @@ func (this SalesVoucherCode) IsUsableAt(unixSeconds int64) bool {
 	return this.HasUsesRemaining()
 }
 
-// SalesVoucherRedemption is one code's use on one order.
-//
-// The table exists because BR 82 says the usage counter alone is insufficient: a counter cannot say
-// WHICH orders consumed a voucher, cannot hold a use while an order is still a draft, and cannot be
-// audited when a customer disputes a discount.
+// SalesVoucherRedemption is one code's use on one order. The table exists because a counter cannot
+// say which orders consumed a voucher, nor hold a use while an order is still a draft.
 type SalesVoucherRedemption struct {
 	basemodel.DynamicModelBase
 }
@@ -267,10 +249,8 @@ func (this *SalesVoucherRedemption) SetReversedAt(at *model.ModelDateTime) {
 	this.GetFieldData().SetModelDateTime(SalesVoucherRedemptionFieldReversedAt, at)
 }
 
-// HoldsAUse reports whether this redemption is currently consuming one of the code's uses.
-//
-// A reservation counts. That is the whole point of reserving: a code sitting in someone's draft
-// basket is not available to the next customer, even though no sale has happened yet.
+// HoldsAUse reports whether this redemption is currently consuming one of the code's uses. A
+// reservation counts: a code in someone's draft basket is not available to the next customer.
 func (this SalesVoucherRedemption) HoldsAUse() bool {
 	status := this.GetStatus()
 	if status == nil {

@@ -34,9 +34,8 @@ func TestEngineSchemaNamesCoverEveryResource(t *testing.T) {
 }
 
 // Registration order is load-bearing: an edge resolves against the registry as it is registered, so
-// a schema must come after everything it points at. This is the same order as RegisterModels in the
-// module root, and the assertion exists so that reordering one without the other fails here rather
-// than at boot.
+// a schema must come after everything it points at. Same order as RegisterModels in the module
+// root; reordering one without the other fails here rather than at boot.
 func TestSchemasRegisterInDependencyOrder(t *testing.T) {
 	require.NoError(t, basemodel.RegisterJsonBaseSchemas())
 

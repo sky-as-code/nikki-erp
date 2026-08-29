@@ -1,9 +1,6 @@
-// Package warehouse is the contract for the Warehouse operations that span more than one
-// resource.
-//
-// Plain warehouse CRUD does not appear here: the resource engine serves it and the domain service
-// holds its rules. What is here are the operations that write a warehouse and its locations
-// together, and the flow reads the Stock movement engine plans against.
+// Package warehouse is the contract for Warehouse operations spanning more than one resource:
+// writes that touch a warehouse and its locations together, plus the flow reads the Stock
+// movement engine plans against. Plain warehouse CRUD is served by the resource engine instead.
 package warehouse
 
 import (
@@ -37,11 +34,9 @@ type ResolveFlowQuery struct {
 	WarehouseId string
 }
 
-// ResolvedLeg is one hop of a movement plan, with the location ids the engine will move between.
-//
-// A leg touching the outside world has an empty id on that side: which vendor or customer location
-// applies depends on the transaction, and choosing it is the movement engine's business rather
-// than the warehouse's.
+// ResolvedLeg is one hop of a movement plan. A leg touching the outside world has an empty id on
+// that side: which vendor or customer location applies depends on the transaction, and the
+// movement engine chooses it.
 type ResolvedLeg struct {
 	FromLocationId string
 	ToLocationId   string
@@ -55,10 +50,9 @@ type ResolveFlowResultData struct {
 
 type ResolveFlowResult = dyn.OpResult[ResolveFlowResultData]
 
-// WarehouseAppService orchestrates the warehouse operations that touch locations too.
-//
-// Every one of them is configuration. None creates a stock move, changes a quantity, or alters a
-// transfer already under way — a flow change applies to transactions made after it.
+// WarehouseAppService orchestrates the warehouse operations that touch locations too. All are
+// configuration: none creates a stock move, changes a quantity, or alters a transfer already
+// under way — a flow change applies only to later transactions.
 type WarehouseAppService interface {
 	CreateWarehouse(ctx corectx.Context, cmd CreateWarehouseCommand) (*CreateWarehouseResult, error)
 

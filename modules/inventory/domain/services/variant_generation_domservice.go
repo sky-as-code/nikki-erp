@@ -1,6 +1,6 @@
-// Package services holds the Products logic that is not CRUD over a single record, and so
-// cannot be expressed by the dynamic resource engine: building a variant's identity out of an
-// attribute combination, and resolving the effective product a consumer module sees.
+// Package services holds the Products logic that is not CRUD over a single record: building a
+// variant's identity out of an attribute combination, and resolving the effective product a
+// consumer module sees.
 package services
 
 import (
@@ -12,23 +12,20 @@ import (
 )
 
 // combinationSeparator joins the pairs of a combination key; combinationPairSeparator joins an
-// attribute to its value within one pair. Neither may appear in a ULID, so a key can always be
-// parsed back apart.
+// attribute to its value within a pair. Neither may appear in a ULID, so a key always parses back
+// apart.
 const (
 	combinationSeparator     = "|"
 	combinationPairSeparator = ":"
 )
 
 // BuildCombinationKey turns a set of attribute-value choices into the normalized string that
-// identifies a variant within its template.
+// identifies a variant within its template. The normalization is what makes it an identity: NEVER
+// attributes drop out, duplicates collapse to the last choice, and the rest sort by attribute id,
+// so the same values picked in a different order produce the same key.
 //
-// The normalization is what makes the key an identity rather than a rendering: NEVER-mode
-// attributes drop out, duplicates of the same attribute collapse to the last choice, and the
-// remainder sort by attribute id. Two requests that pick the same values in a different order
-// therefore produce the same key and resolve to the same variant. See BR §14.3 and §4.8.
-//
-// A template with no variant-generating attributes yields the empty key, which is a real key:
-// it identifies that template's single concrete variant. See BR §4.5 and AC-PROD-008.
+// A template with no variant-generating attributes yields the empty key, which is a real key
+// identifying that template's single concrete variant.
 func BuildCombinationKey(selections []itProduct.AttributeSelection) string {
 	byAttribute := map[string]string{}
 	for _, selection := range selections {
@@ -49,8 +46,8 @@ func BuildCombinationKey(selections []itProduct.AttributeSelection) string {
 	for attributeId := range byAttribute {
 		attributeIds = append(attributeIds, attributeId)
 	}
-	// Sorting by attribute id, not by the attribute's display sequence: reordering attributes
-	// in the UI must never change the identity of an existing variant.
+	// Sorted by attribute id, not display sequence: reordering attributes in the UI must never change
+	// the identity of an existing variant.
 	sort.Strings(attributeIds)
 
 	pairs := make([]string, 0, len(attributeIds))
@@ -60,8 +57,8 @@ func BuildCombinationKey(selections []itProduct.AttributeSelection) string {
 	return strings.Join(pairs, combinationSeparator)
 }
 
-// ParseCombinationKey splits a key back into its attribute-value pairs, in key order. The empty
-// key parses to no pairs rather than to an error.
+// ParseCombinationKey splits a key back into its attribute-value pairs, in key order. The empty key
+// parses to no pairs rather than to an error.
 func ParseCombinationKey(key string) []itProduct.AttributeSelection {
 	if key == models.EmptyCombinationKey {
 		return nil
@@ -83,12 +80,10 @@ func ParseCombinationKey(key string) []itProduct.AttributeSelection {
 }
 
 // BuildInstantCombinations returns every combination an INSTANT-mode configuration implies: the
-// cartesian product of the allowed values, one value per attribute.
-//
-// DYNAMIC and NEVER attributes are excluded. A DYNAMIC attribute deliberately has no combination
-// generated ahead of use; a NEVER attribute is not part of identity at all. A template whose
-// attributes are all excluded yields exactly one combination, the empty one, which is the
-// single-variant case rather than an absence of variants. See BR §4.7 and §8.2.
+// cartesian product of the allowed values, one value per attribute. DYNAMIC attributes get no
+// combination ahead of use and NEVER attributes are not part of identity, so a template whose
+// attributes are all excluded yields exactly one empty combination — the single-variant case, not
+// an absence of variants.
 func BuildInstantCombinations(attributes []itProduct.AttributeOptions) []string {
 	generating := make([]itProduct.AttributeOptions, 0, len(attributes))
 	for _, attribute := range attributes {
@@ -96,8 +91,8 @@ func BuildInstantCombinations(attributes []itProduct.AttributeOptions) []string 
 			continue
 		}
 		if attribute.AttributeId == "" || len(attribute.ValueIds) == 0 {
-			// An attribute with no allowed values would multiply the product by zero and
-			// wipe out every combination, which is not what an unconfigured attribute means.
+			// An attribute with no allowed values would multiply the product by zero and wipe out every
+			// combination, which is not what an unconfigured attribute means.
 			continue
 		}
 		generating = append(generating, attribute)

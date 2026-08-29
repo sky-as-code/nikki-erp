@@ -12,18 +12,16 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// buildVariantSchema registers the base schemas the variant extends, which CoreModule normally
-// does at start-up. Registering here rather than relying on another test having run first keeps
-// each test in this file independent of ordering.
+// buildVariantSchema registers the base schemas the variant extends, which CoreModule normally does
+// at start-up, so each test in this file is independent of ordering.
 func buildVariantSchema(t *testing.T) *dmodel.ModelSchema {
 	t.Helper()
 	_ = basemodel.RegisterJsonBaseSchemas()
 	return ProductVariantSchemaBuilder().Build()
 }
 
-// templateComputedFields is the test's own list of the template-owned fields the variant
-// exposes. Deliberately a literal rather than derived from the schema: a field accidentally
-// dropped from the JSON must fail here, not shrink the loop.
+// templateComputedFields is deliberately a literal rather than derived from the schema: a field
+// accidentally dropped from the JSON must fail here, not shrink the loop.
 func templateComputedFields() []string {
 	return []string{
 		ProductVariantFieldTemplateName,
@@ -39,8 +37,8 @@ func templateComputedFields() []string {
 	}
 }
 
-// The variant schema must load with every template_* field computed (and therefore virtual): one
-// of them declared as an ordinary field would silently add a column and demand a migration.
+// Every template_* field must be computed and therefore virtual; declaring one as an ordinary
+// field would silently add a column and demand a migration.
 func TestProductVariant_TemplateFieldsAreComputed(t *testing.T) {
 	schema := buildVariantSchema(t)
 
@@ -78,9 +76,8 @@ func TestProductVariant_TemplateFieldsHaveNoColumn(t *testing.T) {
 	assert.True(t, columns[ProductVariantFieldSku], "ordinary fields are unaffected")
 }
 
-// The two JSON files are edited independently, so a type on one side can drift from the other
-// and only surface as a conversion failure at read time. This pins each computed field's
-// declared type to the template leaf its definition names.
+// The two JSON files are edited independently, so a type can drift and only surface as a conversion
+// failure at read time. This pins each computed field's type to the template leaf it names.
 func TestProductVariant_TemplateFieldTypesMatchTemplate(t *testing.T) {
 	variantSchema := buildVariantSchema(t)
 	templateSchema := ProductTemplateSchemaBuilder().Build()
@@ -101,12 +98,8 @@ func TestProductVariant_TemplateFieldTypesMatchTemplate(t *testing.T) {
 	}
 }
 
-// A computed value must never survive into a write, whatever a client sends.
-//
-// The assertion is on the result map rather than on the error count: what matters is that
-// template_name is absent from what the repository would write. Whether the rest of this payload
-// is otherwise valid is a different concern, and asserting on it would make this test fail for
-// reasons that have nothing to do with computed fields.
+// A computed value must never survive into a write. The assertion is on the result map rather than
+// the error count: only template_name's absence from what the repository would write matters here.
 func TestProductVariant_TemplateFieldsDroppedByValidate(t *testing.T) {
 	schema := buildVariantSchema(t)
 
@@ -121,9 +114,9 @@ func TestProductVariant_TemplateFieldsDroppedByValidate(t *testing.T) {
 	assert.NotContains(t, result, ProductVariantFieldTemplateName)
 }
 
-// The same must hold on update, where a client typically PUTs back the whole object it just read.
-// Validate returns a nil map alongside any error, so the etag is supplied here to get a populated
-// result -- otherwise both assertions would pass vacuously against nil.
+// The same must hold on update, where a client PUTs back the whole object it just read. Validate
+// returns a nil map alongside any error, so the etag is supplied to get a populated result;
+// otherwise both assertions pass vacuously against nil.
 func TestProductVariant_TemplateFieldsDroppedByValidateOnEdit(t *testing.T) {
 	schema := buildVariantSchema(t)
 

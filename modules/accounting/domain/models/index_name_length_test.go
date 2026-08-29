@@ -10,22 +10,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// PostgreSQL truncates identifiers at 63 bytes, silently, at CREATE time. The DDL generator refuses
-// to emit an over-long name, so an overflow turns "make ent-migration" into a failure a long way
-// from the model file that caused it.
+// PostgreSQL silently truncates identifiers at 63 bytes, and the DDL generator refuses to emit an
+// over-long name, so an overflow fails "make ent-migration" far from the model file that caused it.
 //
-// The budget below is deliberately stricter than 63. Names here are measured in the nikkierp binary,
-// which has no tenant key; the coremart binary prepends one and produces the same names about ten
-// bytes longer. Checking against the raw limit would pass here and fail there, which is exactly the
-// trap docs/wiki/04 warns about — so the headroom is reserved up front.
+// The budget below is stricter than 63 on purpose: names are measured in the nikkierp binary, which
+// has no tenant key, while the coremart binary prepends one and adds about ten bytes. Checking
+// against the raw limit would pass here and fail there.
 const (
 	postgresIdentifierLimit = 63
 
 	// The longest suffix the query builder appends: a partial unique emits _ukey_notnull.
 	longestIndexSuffix = len("_ukey_notnull")
 
-	// Reserved for coremart's tenant key, which is absent from these schemas but present in the
-	// binary that generates the migration.
+	// Reserved for coremart's tenant key: absent from these schemas, present in the binary that
+	// generates the migration.
 	tenantKeyHeadroom = 12
 
 	maxIndexNameLength = postgresIdentifierLimit - longestIndexSuffix - tenantKeyHeadroom
@@ -63,11 +61,8 @@ func TestIndexNamesFitWithinIdentifierLimit(t *testing.T) {
 	}
 }
 
-// assertIndexNameFits also insists the name is stated explicitly.
-//
-// A derived name takes the table name and every column as its stem, which for a table like
-// accounting_tax_definition_versions is over budget before the suffix is appended. Requiring an
-// explicit name means the overflow is caught by a reader rather than by a migration run.
+// assertIndexNameFits also insists the name is stated explicitly: a derived name uses the table name
+// plus every column as its stem, which is over budget before the suffix is appended.
 func assertIndexNameFits(t *testing.T, schemaName string, indexName string) {
 	t.Helper()
 

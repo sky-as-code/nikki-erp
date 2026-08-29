@@ -22,9 +22,8 @@ func TestReturnableIsCompletedMinusAlreadyReturned(t *testing.T) {
 }
 
 func TestReturnableComesFromWhatShippedNotWhatWasDemanded(t *testing.T) {
-	// BR §4.2.10.3's own example: a transfer of 100 that shipped only 80 has 80 returnable, because
-	// the other 20 never left the building. Computing from demand_quantity would let a customer
-	// return goods they were never sent, which is the failure this pins.
+	// A transfer of 100 that shipped only 80 has 80 returnable, because the other 20 never left.
+	// Computing from demand_quantity would let a customer return goods they were never sent.
 	partialShipment := returnable(t, "80", "0")
 
 	assert.Equal(t, "80", partialShipment.Returnable().String())
@@ -87,8 +86,8 @@ func TestReverseOfAnInternalTransferIsStillInternal(t *testing.T) {
 }
 
 func TestDefaultFullReturnTakesBackEverythingRemaining(t *testing.T) {
-	// What the contextual action sends: no per-line payload, so the whole remaining quantity is
-	// proposed and the user trims the draft afterwards (F9).
+	// The contextual action sends no per-line payload, so the whole remaining quantity is proposed
+	// and the user trims the draft afterwards.
 	lines := []ReturnableLine{returnable(t, "80", "30"), returnable(t, "20", "0")}
 
 	resolved := defaultFullReturn(lines)
@@ -120,8 +119,8 @@ func TestRequestedReturnIsRefusedForAnUnknownMove(t *testing.T) {
 }
 
 func TestRequestedReturnIsCappedWithNoOverride(t *testing.T) {
-	// AC-STOCK-022. There is deliberately no waiver parameter to pass here — the cap can only be
-	// lifted by changing this code, not by anything a caller sends.
+	// There is deliberately no waiver parameter — the cap can only be lifted by changing this code,
+	// not by anything a caller sends.
 	lines := []ReturnableLine{returnable(t, "80", "30")}
 
 	_, vErrs := resolveRequestedReturns(lines, ReturnRequest{

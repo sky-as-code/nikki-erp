@@ -14,12 +14,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 )
 
-// Stock Operation Type is plain CRUD master data: everything it needs is already expressed by its
-// schema. Stock Quant is not — it is current state rather than a document, so its engine takes its
-// write actions away.
-//
-// Inventory Location used to live here too. It moved to inventory_location.go when it became the
-// module's shared location master rather than a stock-owned resource.
+// Stock Operation Type is plain CRUD master data. Stock Quant is not — it is current state rather
+// than a document, so its engine takes its write actions away.
 
 func stockOperationTypeEngineSpec() engineSpec {
 	return engineSpec{
@@ -34,15 +30,13 @@ func stockQuantEngineSpec() engineSpec {
 	}
 }
 
-// defineStockQuantActions closes the quant's write surface.
+// defineStockQuantActions closes the quant's write surface. A balance is the running total of
+// completed movements, not something a client sets: leaving create, update and delete open would
+// allow an on-hand quantity with no movement behind it, which no audit could trace. Corrections go
+// through an inventory adjustment, a transfer or a scrap.
 //
-// A balance is not something a client sets; it is the running total of the movements that have
-// completed against it. Leaving create, update and delete open would allow an on-hand quantity
-// with no movement behind it, which no report could explain and no audit could trace. Corrections
-// go through an inventory adjustment, a transfer or a scrap. See BR §3.3, §4.2.2.6, AC-STOCK-002.
-//
-// The actions are refused rather than removed so that a caller gets a 400 naming the reason,
-// instead of a 404 that reads as "wrong URL".
+// The actions are refused rather than removed so a caller gets a 400 naming the reason instead of
+// a 404 that reads as "wrong URL".
 func defineStockQuantActions(engine drif.DynamicResourceEngine) error {
 	for _, action := range []string{drif.ActionCreate, drif.ActionUpdate, drif.ActionDelete} {
 		err := engine.ModifyAction(drif.DynamicActionDelta{
@@ -57,16 +51,13 @@ func defineStockQuantActions(engine drif.DynamicResourceEngine) error {
 		return err
 	}
 	// The product-facing reads live here too: what they read is quants, and putting them on the
-	// product engines would have Product owning a stock query. See product_stock_actions.go.
+	// product engines would have Product owning a stock query.
 	return defineProductStockActions(engine)
 }
 
-// Permission codes for the counting operations.
-//
-// They are separate actions rather than folded into one, because they are different powers held by
-// different people: a warehouse hand enters what they counted, and a supervisor decides that the
-// count becomes the balance. Applying an adjustment writes stock that no trade movement explains,
-// which is the most sensitive thing this module lets anyone do.
+// Permission codes for the counting operations, kept separate because they are different powers
+// held by different people: a hand enters what they counted, a supervisor makes the count the
+// balance. Applying an adjustment writes stock that no trade movement explains.
 const (
 	PermissionEnterCount      = "enter_count"
 	PermissionResetCount      = "reset_count"
@@ -93,12 +84,10 @@ const (
 	paramAssignedUserId  = "count_assigned_user_id"
 )
 
-// defineStockCountActions adds physical inventory and cycle counting to the quant.
-//
-// These write to a resource whose create, update and delete are all refused just above, which
-// looks contradictory and is not: the guard exists to stop a client setting a balance with no
-// movement behind it, and none of these actions touches on_hand_quantity. Enter and Reset write
-// only count metadata; Apply changes the balance solely by generating a movement. See BR §4.2.7.
+// defineStockCountActions adds physical inventory and cycle counting to the quant. These write to
+// a resource whose create, update and delete are refused just above, which is not a contradiction:
+// none of them touches on_hand_quantity. Enter and Reset write only count metadata; Apply changes
+// the balance solely by generating a movement.
 func defineStockCountActions(engine drif.DynamicResourceEngine) error {
 	return stdErr.Join(
 		engine.DefineAction(drif.DynamicActionDefinition{
@@ -139,10 +128,8 @@ func defineStockCountActions(engine drif.DynamicResourceEngine) error {
 	)
 }
 
-// quantServiceOf reaches the derived service the module installed during Init.
-//
-// A failed assertion means Init did not install it, which is a wiring bug rather than a request
-// problem — the same reasoning as transferServiceOf.
+// quantServiceOf reaches the derived service installed during Init. A failed assertion is a wiring
+// bug rather than a request problem.
 func quantServiceOf(input drif.ProcessInput) (*services.StockQuantDomainServiceImpl, error) {
 	service, ok := input.ResourceService.(*services.StockQuantDomainServiceImpl)
 	if !ok {
@@ -211,11 +198,9 @@ func processAssignCounter(ctx corectx.Context, input drif.ProcessInput) (*drif.A
 	return toMutateActionResult(result, err)
 }
 
-// readDecimalField reads a quantity from the request body.
-//
-// Quantities travel as strings (BR §7.3) so that a float's rounding never reaches a balance, but a
-// JSON client may still send a bare number. Both are accepted and parsed through decimal, which is
-// the only representation the rest of the module works in.
+// readDecimalField reads a quantity from the request body. Quantities travel as strings so a
+// float's rounding never reaches a balance, but a JSON client may still send a bare number; both
+// are parsed through decimal, the only representation the rest of the module works in.
 func readDecimalField(params dmodel.DynamicFields, field string) (decimal.Decimal, *ft.ClientErrors) {
 	vErrs := ft.NewClientErrors()
 	value, ok := params[field]

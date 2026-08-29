@@ -10,8 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// BR §36's invariant and the allocator that makes it satisfiable. The repository-reading checks are
-// exercised live; what is pinned here is the arithmetic, which is where "exactly" is won or lost.
+// The allocation invariant and the arithmetic behind it; the repository reads are exercised live.
 
 func allocationRow(total string) dmodel.DynamicFields {
 	return dmodel.DynamicFields{
@@ -19,9 +18,8 @@ func allocationRow(total string) dmodel.DynamicFields {
 	}
 }
 
-// THE property. Three equal bills against 100 at whole-dong scale is 33.33 three times, which is
-// 99.99 — and a business whose bills sum to less than its sale has a hole in it. D-04 assigns the
-// residual instead of letting it vanish.
+// THE property. Three equal bills against 100 at whole-dong scale is 99.99, and a business whose
+// bills sum to less than its sale has a hole in it.
 func TestAllocationsSumToTheTotalExactly(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -59,9 +57,8 @@ func TestAllocationsSumToTheTotalExactly(t *testing.T) {
 	}
 }
 
-// Every bill gets an entry, including one whose share rounds to zero. A missing key would make the
-// caller write no allocation row for that bill, and the bill would then have a total nothing
-// accounts for.
+// Every bill gets an entry, including one whose share rounds to zero: a missing key would leave
+// the bill with a total nothing accounts for.
 func TestEveryBillGetsAShareEvenIfZero(t *testing.T) {
 	inputs := []AllocationInput{
 		{Key: "BIG", Reference: dec("1000"), Tiebreak: 1},
@@ -78,8 +75,8 @@ func TestEveryBillGetsAShareEvenIfZero(t *testing.T) {
 	}
 }
 
-// The sum helper must treat an absent amount as zero rather than panicking. Allocations arrive from
-// a repository and a partially written row is a real possibility.
+// An absent amount counts as zero: allocations arrive from a repository and a partially written
+// row is a real possibility.
 func TestSummingToleratesMissingAmounts(t *testing.T) {
 	sum := models.SumAllocatedTotal([]dmodel.DynamicFields{
 		allocationRow("100"),
@@ -98,8 +95,8 @@ func TestSummingNothingIsZero(t *testing.T) {
 	}
 }
 
-// The check reports the direction of the failure, because under- and over-allocation are different
-// bugs: one leaves money uncollected, the other bills a customer twice for the same goods.
+// Under- and over-allocation are different bugs: one leaves money uncollected, the other bills a
+// customer twice for the same goods.
 func TestTheCheckReportsWhichWayItIsWrong(t *testing.T) {
 	under := AllocationCheck{
 		OrderTotal: dec("100"), AllocatedTotal: dec("90"), Difference: dec("10"), BillCount: 1,
@@ -119,7 +116,7 @@ func TestTheCheckReportsWhichWayItIsWrong(t *testing.T) {
 	}
 }
 
-// A balanced order balances, and the zero-difference case must not be reported as a failure.
+// A balanced order must not be reported as a failure.
 func TestABalancedOrderPasses(t *testing.T) {
 	check := AllocationCheck{
 		OrderTotal: dec("48000"), AllocatedTotal: dec("48000"),
@@ -130,9 +127,8 @@ func TestABalancedOrderPasses(t *testing.T) {
 	}
 }
 
-// Splitting the same amount twice must give the same answer, whatever order the bills were listed
-// in. Otherwise re-running a split would move a dong between bills and the invariant would hold
-// while the individual bills changed underneath a customer.
+// Splitting twice must give the same answer whatever order the bills were listed in, or a
+// re-run would move a dong between bills underneath a customer.
 func TestAllocationIsStableAcrossInputOrder(t *testing.T) {
 	forward := []AllocationInput{
 		{Key: "A", Reference: dec("1"), Tiebreak: 1},
@@ -152,8 +148,7 @@ func TestAllocationIsStableAcrossInputOrder(t *testing.T) {
 	}
 }
 
-// A single bill takes the whole order. The degenerate case, worth pinning because it is what the
-// initial bill of an unsplit sale is.
+// A single bill takes the whole order: the initial bill of an unsplit sale.
 func TestOneBillTakesEverything(t *testing.T) {
 	shares := AllocateAcrossBills(dec("48000"),
 		[]AllocationInput{{Key: "ONLY", Reference: dec("1"), Tiebreak: 1}}, 0)

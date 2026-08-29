@@ -39,11 +39,9 @@ func TaxRoundingPolicySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(taxRoundingPolicySchemaJson)
 }
 
-// TaxRoundingPolicy decides how a computed tax amount is rounded, and at which scope.
-//
-// Effective-dated and versioned like every other tax configuration, because a rounding rule is
-// as much a legal choice as a rate: changing it retroactively would alter what past documents
-// should have charged.
+// TaxRoundingPolicy decides how a computed tax amount is rounded, and at which scope. It is
+// effective-dated and versioned because changing a rounding rule retroactively would alter what past
+// documents should have charged.
 type TaxRoundingPolicy struct {
 	basemodel.DynamicModelBase
 }

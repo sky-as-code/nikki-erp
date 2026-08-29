@@ -9,8 +9,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// These tests pin the schema declarations against the rules the requirement states, so that an
-// edit which quietly changes a constraint fails here rather than in production data.
+// These tests pin the schema declarations against the business rules, so an edit that quietly
+// changes a constraint fails here rather than in production data.
 
 // requireBaseSchemasRegistered registers the core.basemodel.* schemas the Sales models extend.
 // Normally done by CoreModule.RegisterModels during app start-up; without it ParseModelJson
@@ -38,13 +38,10 @@ func fieldOf(t *testing.T, schema *dmodel.ModelSchema, name string) *dmodel.Mode
 	return field
 }
 
-// TestSalesChannelCodeIsMandatoryAndUnique pins DEC-001.
-//
-// The requirement originally made code nullable and "unique when not NULL". That could not be
-// expressed: the partial_uniques builder scopes a required field by a nullable one, so a
-// single-column version would also emit a unique index over the remaining fields where code IS
-// NULL — capping the table at one NULL-code channel and contradicting the acceptance criterion
-// that many were allowed. Code is therefore required, immutable and plainly unique.
+// TestSalesChannelCodeIsMandatoryAndUnique. Code cannot be "unique when not NULL": the
+// partial_uniques builder scopes a required field by a nullable one, so a single-column version
+// would also emit a unique index over the remaining fields where code IS NULL, capping the table at
+// one NULL-code channel. Code is therefore required, immutable and plainly unique.
 func TestSalesChannelCodeIsMandatoryAndUnique(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -66,15 +63,10 @@ func TestSalesChannelCodeIsMandatoryAndUnique(t *testing.T) {
 	}
 }
 
-// TestSalesPointUniquesAreStrict guards against a bug this module already made once.
-//
-// A LOOSE group emits a PAIR of indexes: one over not_null_fields + nullable_field where the
-// nullable IS NOT NULL, and one over not_null_fields ALONE where it IS NULL. Declaring
-// {not_null: [sales_channel_id], nullable: external_reference_id} as loose therefore also creates
-// a unique index on sales_channel_id alone for rows with no external reference — allowing exactly
-// one manually-created sales point per channel. The same trap applies to code.
-//
-// Both rules must be STRICT, which emits only the IS NOT NULL half.
+// TestSalesPointUniquesAreStrict. A loose group emits a pair of indexes: one over
+// not_null_fields + nullable_field where the nullable IS NOT NULL, and one over not_null_fields
+// alone where it IS NULL — which here would cap a channel at one point with no external reference.
+// Both rules must be strict, which emits only the IS NOT NULL half.
 func TestSalesPointUniquesAreStrict(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -107,11 +99,9 @@ func TestSalesPointUniquesAreStrict(t *testing.T) {
 	}
 }
 
-// TestSalesPointExternalReferenceIsQualified pins the id/type pair.
-//
-// An external_reference_id alone is ambiguous: it is another module's ulid, and more than one
-// module may register points on the same channel, so nothing in the row says which resource to
-// resolve it against. The type carries that, as a readable "{module}.{resource}" pair.
+// TestSalesPointExternalReferenceIsQualified. An external_reference_id alone is ambiguous: it is
+// another module's ulid and several modules may register points on one channel, so the type carries
+// which resource to resolve it against, as a "{module}.{resource}" pair.
 func TestSalesPointExternalReferenceIsQualified(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -156,10 +146,9 @@ func TestSalesPointImmutableFields(t *testing.T) {
 
 }
 
-// TestSalesPointCodeIsOptionalAndMutable states the deliberate contrast with a channel code.
-//
-// A channel code is an integration identity, frozen once published. A sales point code is a
-// display reference nothing resolves by, so it can be corrected (CR 13).
+// TestSalesPointCodeIsOptionalAndMutable. Unlike a channel code (an integration identity frozen
+// once published), a sales point code is a display reference nothing resolves by, so it can be
+// corrected.
 func TestSalesPointCodeIsOptionalAndMutable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -178,10 +167,8 @@ func TestSalesPointCodeIsOptionalAndMutable(t *testing.T) {
 	}
 }
 
-// TestStatusValuesMatchConstants keeps the JSON enum and the Go constants from drifting.
-//
-// A drift here is invisible: a comparison against a constant that no longer appears in the enum is
-// simply never true, and no compiler or schema check catches it.
+// TestStatusValuesMatchConstants keeps the JSON enum and the Go constants from drifting. Drift is
+// invisible otherwise: a comparison against a constant absent from the enum is simply never true.
 func TestStatusValuesMatchConstants(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -287,8 +274,7 @@ func enumValuesOf(t *testing.T, field *dmodel.ModelField) []string {
 }
 
 // TestSchemaNamesMatchTablePrefix pins the assumption cmd/application.go's schemaPrefixesOf relies
-// on: every Sales schema starts with "sales_", so the module needs no explicit case there. A
-// schema that broke this would silently emit no migration.
+// on: every Sales schema starts with "sales_". A schema breaking this silently emits no migration.
 func TestSchemaNamesMatchTablePrefix(t *testing.T) {
 	for _, name := range []string{SalesChannelSchemaName, SalesPointSchemaName} {
 		if !strings.HasPrefix(name, "sales_") {
@@ -298,12 +284,9 @@ func TestSchemaNamesMatchTablePrefix(t *testing.T) {
 	}
 }
 
-// TestChannelPaymentRelIsUniquePerPair pins the constraint that makes enabling idempotent.
-//
-// Without it a lost response followed by a retry writes a second mapping row, and disabling then
-// removes only one of them — leaving a channel that still accepts a method an administrator
-// believes they turned off. The application service checks first, but the check and the insert are
-// not atomic; this constraint is what actually decides the race.
+// TestChannelPaymentRelIsUniquePerPair pins the constraint that makes enabling idempotent. Without
+// it a retry writes a second mapping row and disabling removes only one. The application service
+// checks first, but the check and the insert are not atomic; this constraint decides the race.
 func TestChannelPaymentRelIsUniquePerPair(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -325,12 +308,8 @@ func TestChannelPaymentRelIsUniquePerPair(t *testing.T) {
 	}
 }
 
-// TestChannelPaymentRelHasNoEnabledFlag pins CR 27: the row IS the state.
-//
-// A boolean would create a second way to say "not enabled" — a row set to false versus no row —
-// and every reader would then have to handle both with nothing making them agree. It would also
-// break the default-deny rule, since a reader finding no row would have to decide what the absence
-// meant.
+// TestChannelPaymentRelHasNoEnabledFlag: the row is the state. A boolean would create a second way
+// to say "not enabled" — a row set to false versus no row — and break default-deny.
 func TestChannelPaymentRelHasNoEnabledFlag(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -343,11 +322,8 @@ func TestChannelPaymentRelHasNoEnabledFlag(t *testing.T) {
 	}
 }
 
-// TestChannelPaymentRelKeysAreImmutable guards against a mapping being repointed by an update.
-//
-// Moving a mapping between channels or between methods is the same thing as disabling one and
-// enabling the other, and doing it as an update would skip the validation the enable path runs
-// against paymentinvoice.
+// TestChannelPaymentRelKeysAreImmutable. Repointing a mapping as an update would skip the
+// validation the enable path runs against paymentinvoice.
 func TestChannelPaymentRelKeysAreImmutable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -363,12 +339,9 @@ func TestChannelPaymentRelKeysAreImmutable(t *testing.T) {
 	}
 }
 
-// TestChannelPaymentRelHasNoEdgeToPaymentMethod pins CR 25.
-//
-// payment_method_id names a row in another module. A foreign key across that boundary would make
-// Sales unable to write a mapping while paymentinvoice was mid-migration, and would make retiring a
-// payment method fail on Sales data. The cost is that a mapping can outlive its method, which is
-// handled explicitly as the stale case rather than prevented.
+// TestChannelPaymentRelHasNoEdgeToPaymentMethod. payment_method_id names a row in another module; a
+// foreign key across that boundary would couple the two schemas' migrations. The cost is that a
+// mapping can outlive its method, handled explicitly as the stale case rather than prevented.
 func TestChannelPaymentRelHasNoEdgeToPaymentMethod(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 

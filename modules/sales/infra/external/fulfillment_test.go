@@ -17,13 +17,10 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
-// SALES-049's invariants, checked against a stub Inventory.
-//
-// The one worth the most is the refusal/fault split. Inventory answers "not enough stock" as
-// ClientErrors with a NIL Go error, and answers a genuine breakage as an error. Confusing the two
-// in either direction is expensive: a refusal reported as a fault turns an ordinary out-of-stock
-// into a 500 an operator cannot act on, while a fault reported as a refusal silently marks a
-// fulfilment rejected when the truth is that Inventory never got the message.
+// The invariant worth most here is the refusal/fault split: inventory answers "not enough stock" as
+// ClientErrors with a nil Go error, and a genuine breakage as an error. A refusal reported as a
+// fault turns an out-of-stock into an unactionable 500; a fault reported as a refusal marks a
+// fulfilment rejected when inventory never got the message.
 
 // stubTransfers records what it was asked and answers what the test told it to.
 type stubTransfers struct {
@@ -154,8 +151,8 @@ func oneLine() itExt.FulfillmentRequest {
 	}
 }
 
-// A reservation stops after Reserve. Validating would move the goods, and a confirmed sale that
-// has not shipped must leave them where they are.
+// A reservation stops after Reserve: validating would move goods a confirmed-but-unshipped sale
+// must leave where they are.
 func TestReservationHoldsStockWithoutMovingIt(t *testing.T) {
 	transfers := &stubTransfers{
 		createResult:  okCreate("01TRANSFER0000000000000"),
@@ -219,8 +216,8 @@ func TestInsufficientStockIsARefusalRatherThanAnError(t *testing.T) {
 	assert.Equal(t, "01TRANSFER0000000000000", response.InventoryReference)
 }
 
-// A genuine breakage stays a Go error. Reporting it as a refusal would mark the fulfilment
-// rejected when the truth is that Inventory never answered.
+// A genuine breakage stays a Go error; reporting it as a refusal would mark the fulfilment rejected
+// when inventory never answered.
 func TestATransportFailureStaysAnError(t *testing.T) {
 	transfers := &stubTransfers{
 		createResult:   okCreate("01TRANSFER0000000000000"),
@@ -236,8 +233,8 @@ func TestATransportFailureStaysAnError(t *testing.T) {
 	assert.Nil(t, response)
 }
 
-// With no operation type configured, the request is refused with a reason naming the gap — and
-// crucially, nothing is created. Guessing a type would move real goods out of the wrong place.
+// With no operation type configured the request is refused with a reason and nothing is created:
+// guessing a type would move real goods out of the wrong place.
 func TestAnUnconfiguredOperationTypeRefusesWithoutCreatingAnything(t *testing.T) {
 	transfers := &stubTransfers{createResult: okCreate("01TRANSFER0000000000000")}
 	adapter := &fulfillmentAdapter{
@@ -279,8 +276,8 @@ func TestTheOrderAndItsLinesReachInventory(t *testing.T) {
 	assert.True(t, decimal.NewFromInt(2).Equal(transfers.createdMoves[0].Quantity))
 }
 
-// A return is received as an incoming transfer, and is NOT reserved: an incoming draws from
-// outside the business, so there is no balance to claim.
+// A return is received as an incoming transfer and is not reserved: an incoming draws from outside
+// the business, so there is no balance to claim.
 func TestAReturnIsReceivedWithoutReserving(t *testing.T) {
 	transfers := &stubTransfers{
 		createResult:   okCreate("01RETURN000000000000000"),
@@ -308,8 +305,8 @@ func TestReleasingNothingSucceeds(t *testing.T) {
 	assert.Empty(t, transfers.calls, "there is nothing to ask Inventory to release")
 }
 
-// Releasing unreserves WITHOUT cancelling: the document should record that it existed and was
-// released, rather than vanishing.
+// Releasing unreserves without cancelling, so the document records that it existed and was
+// released.
 func TestReleasingUnreservesWithoutCancelling(t *testing.T) {
 	transfers := &stubTransfers{unreserveResult: okMutate()}
 

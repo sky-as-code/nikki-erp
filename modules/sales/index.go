@@ -1,17 +1,9 @@
-// Package sales owns the commercial transaction: the sales order and its lines, pricing and
-// promotion, billing, payment allocation, return and refund — per
-// docs/requirements/sales/00-business-requirement-md and the channel/sales-point change request in
-// docs/requirements/sales/01-sales-channel.md.
-//
-// It is deliberately channel-agnostic. A vending kiosk, a future POS and a future storefront all
-// create the same sales_order through the same pricing engine; nothing in this module branches on
-// which one is calling. What differs between them is data — a sales channel row and its sales
-// points — not code.
-//
-// It owns none of Product, UoM, Warehouse, Stock, Payment Method, VAT Invoice or Accounting. It
-// holds ids into those modules and reads them through ports, and it sends business intent rather
-// than instructions: a fulfilment request rather than a stock movement, a fiscal document request
-// rather than a call to a tax provider.
+// Package sales owns the commercial transaction: sales order and lines, pricing and promotion,
+// billing, payment allocation, return and refund. It is channel-agnostic — kiosk, POS and
+// storefront differ only by data (a sales channel row and its sales points), never by branching in
+// this module. It owns no Product, UoM, Warehouse, Stock, Payment Method, VAT Invoice or Accounting
+// data; it holds ids into those modules, reads them through ports, and sends business intent (a
+// fulfilment request, not a stock movement) rather than instructions.
 package sales
 
 import (
@@ -36,17 +28,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/transport/restful"
 )
 
-// ModuleSingleton is the exported symbol that will be looked up by the plugin loader.
-//
-// It is typed DynamicModule rather than InCodeModule so that dropping RegisterModels fails the
-// build. Under the wider interface the method is found by a type assertion instead, and a module
-// that has lost it still compiles, still loads, and silently registers no schemas at all.
+// ModuleSingleton is the symbol the plugin loader looks up. It is typed DynamicModule rather than
+// InCodeModule so that dropping RegisterModels fails the build instead of silently registering no
+// schemas.
 var ModuleSingleton modules.DynamicModule = &SalesModule{}
 
-// OnAppStarted is found by a type assertion rather than by the interface above, so a rename or a
-// changed signature would not fail the build — the module would simply load with its settings
-// schema never registered, and nothing would say so. This assertion is what turns that into a
-// compile error.
+// OnAppStarted is found by a runtime type assertion, so this assertion is what turns a rename or
+// signature change into a compile error rather than a silently unregistered settings schema.
 var _ modules.InCodeModuleAppStarted = &SalesModule{}
 
 type SalesModule struct{}
@@ -59,18 +47,8 @@ func (*SalesModule) Name() string {
 	return modconstants.SalesModuleName
 }
 
-// Deps names every module Sales reads through a port.
-//
-// dynamicresource hosts the resource engines. settings stores the commercial policy an organization
-// configures — the rounding scale, the return window, whether cash change is possible. inventory
-// supplies the product variant a line sells
-// and receives the fulfilment requests an order raises. essential supplies UoM conversion and
-// currency. contacts supplies the party a customer_reference points at. paymentinvoice owns
-// payment method master data and the invoice capability a fiscal request is delegated to.
-//
-// essential and core are injected automatically by buildDependencyGraph; essential is named anyway
-// because Sales consumes it directly, and a reader should not have to know the implicit rule to
-// see that.
+// Deps names every module Sales reads through a port. essential and core are injected automatically
+// by buildDependencyGraph; essential is named anyway because Sales consumes it directly.
 func (*SalesModule) Deps() []string {
 	return []string{
 		"dynamicresource",
@@ -80,10 +58,9 @@ func (*SalesModule) Deps() []string {
 		"contacts",
 		"paymentinvoice",
 
-		// Sales binds accounting's tax port in infra/external, and binds it EAGERLY - the reprice
-		// action resolves it at Init rather than at first request. So accounting must have run its
-		// own Init and registered the service before this module starts, which is what naming it
-		// here guarantees. Without it the loader is free to start Sales first, and does.
+		// The reprice action resolves accounting's tax port eagerly at Init, so accounting must
+		// have registered its service before Sales starts. Without naming it here the loader
+		// starts Sales first.
 		"accounting",
 	}
 }
@@ -96,13 +73,9 @@ func (*SalesModule) Version() semver.SemVer {
 	return *semver.MustParseSemVer("v1.0.0")
 }
 
-// Init implements DynamicModule.
-//
-// The order is load-bearing three times over, and is fixed now rather than when the first resource
-// arrives: the external ports bind first, because a derived service resolves its ports when it is
-// constructed; the engines are created before the derived services, because a derived service
-// wraps the engine's own; and the REST layer is registered last, because it registers the engines'
-// routes and so cannot run before they exist.
+// Init implements DynamicModule. The order is load-bearing: external ports bind first because a
+// derived service resolves its ports at construction; engines precede derived services because a
+// derived service wraps the engine's own; REST registers last because it registers engine routes.
 func (*SalesModule) Init() error {
 	if err := external.InitExternal(); err != nil {
 		return err
@@ -116,9 +89,8 @@ func (*SalesModule) Init() error {
 	if err := app.InitApplicationServices(); err != nil {
 		return err
 	}
-	// The payment mapping gate is one of Sales' own application services, so it can only be
-	// resolved once the step above has registered it - not with the external ports, which bind
-	// before anything in this module exists.
+	// The payment mapping gate is one of Sales' own application services, so it resolves only
+	// after the step above registers it — not with the external ports.
 	if err := deps.Invoke(func(channels itChannel.ChannelPaymentAppService) error {
 		dynamicengines.SetChannelPaymentService(channels)
 		return nil
@@ -128,14 +100,10 @@ func (*SalesModule) Init() error {
 	return restful.InitRestfulHandlers()
 }
 
-// OnAppStarted implements InCodeModuleAppStarted.
-//
-// The settings schema is registered here rather than in Init() because peer module init order is
-// nondeterministic: Init() cannot assume the settings module has built its engines yet, while
-// OnAppStarted runs after every module has initialized. Registration is idempotent, so it runs
-// unconditionally.
-// The outbox sweep registers here for a second reason on top of that one: a sweep that writes rows
-// must not tick against a half-built container, which is what registering it in Init() would risk.
+// OnAppStarted implements InCodeModuleAppStarted. The settings schema registers here, not in Init,
+// because peer module init order is nondeterministic and the settings module may not have built its
+// engines yet; registration is idempotent. The outbox sweep registers here too so it never ticks
+// against a half-built container.
 func (*SalesModule) OnAppStarted() error {
 	return deps.Invoke(func(
 		settingsSvc itExt.SettingsRegistrationExtService,
@@ -155,15 +123,9 @@ func (*SalesModule) OnAppStarted() error {
 	})
 }
 
-// RegisterModels implements DynamicModule.
-//
-// Registration order is load-bearing: an edge is resolved against the schema registry at
-// registration time, so a referenced schema must be registered before the one pointing at it —
-// the sales channel before its sales points, the order before its lines.
-//
-// The schemas are listed here rather than scattered across the packages that own them, so that
-// the order is visible in a single place and a missing registration is a gap in a list rather than
-// an absence nobody can see.
+// RegisterModels implements DynamicModule. Order is load-bearing: edges resolve against the schema
+// registry at registration time, so a referenced schema must be registered before the one pointing
+// at it. All schemas are listed here so that order is visible in one place.
 func (*SalesModule) RegisterModels() error {
 	return stdErr.Join(
 		dmodel.RegisterSchemaB(models.SalesChannelSchemaBuilder()),
@@ -184,8 +146,7 @@ func (*SalesModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.SalesPromotionConditionTargetSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesPromotionRewardSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesPromotionCompatibilitySchemaBuilder()),
-		// Vouchers register after the promotion program they point at: an edges_to must resolve
-		// against a schema that is already registered.
+		// Vouchers register after the promotion program they point at.
 		dmodel.RegisterSchemaB(models.SalesVoucherCodeSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesVoucherRedemptionSchemaBuilder()),
 		// Bills register after the order and its lines, which their edges point at.
@@ -205,9 +166,14 @@ func (*SalesModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.SalesQuotationSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesQuotationLineSchemaBuilder()),
 
-		// The outbox has no edges at all — an integration event must outlive the record it
-		// describes, and a cascade would delete exactly the history a consumer is replaying — so
-		// its position in this list is free.
+		// Returns register after the order and order line they reference; refund legs after the
+		// payment they give back.
+		dmodel.RegisterSchemaB(models.SalesReturnSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesReturnLineSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesRefundPaymentSchemaBuilder()),
+
+		// The outbox has no edges: an integration event must outlive the record it describes, so a
+		// cascade would delete history a consumer is replaying. Its position here is free.
 		dmodel.RegisterSchemaB(models.SalesIntegrationOutboxSchemaBuilder()),
 	)
 }

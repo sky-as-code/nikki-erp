@@ -8,18 +8,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// Pure functions, no database. The whole point of expressing the state machines as tables is that
-// they can be tested exhaustively for the price of a map lookup.
+// Pure functions, no database: the state machines are tables, so they can be tested exhaustively.
 
 func dec(value string) decimal.Decimal {
 	return decimal.RequireFromString(value)
 }
 
-// Every status the schema declares must appear in its transition table.
-//
-// A status missing from the table is unreachable AND inescapable: canTransition returns false for
-// an unknown `from`, so a record that somehow reached it could never move again. The schema and the
-// table are two lists of the same set, and this is what keeps them equal.
+// Every status the schema declares must appear in its transition table: canTransition returns false
+// for an unknown from, so a record reaching a missing status could never move again.
 func TestEveryStatusAppearsInItsTable(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -101,7 +97,6 @@ func TestEveryTransitionTargetIsAKnownStatus(t *testing.T) {
 	}
 }
 
-// D-14's table, spelled out.
 func TestOrderTransitions(t *testing.T) {
 	cases := []struct {
 		from, to string
@@ -113,7 +108,7 @@ func TestOrderTransitions(t *testing.T) {
 		{"draft", "processing", false},
 
 		{"confirmed", "processing", true},
-		// The D-14 edge case: an order needing no fulfilment goes straight to completed.
+		// An order needing no fulfilment goes straight to completed.
 		{"confirmed", "completed", true},
 		{"confirmed", "cancelled", true},
 		{"confirmed", "draft", false},
@@ -123,7 +118,7 @@ func TestOrderTransitions(t *testing.T) {
 		{"processing", "confirmed", false},
 		{"processing", "draft", false},
 
-		// Both terminal. A completed sale is corrected through a Return, not by reopening.
+		// Both terminal: a completed sale is corrected through a Return, not by reopening.
 		{"completed", "cancelled", false},
 		{"completed", "processing", false},
 		{"cancelled", "draft", false},
@@ -137,7 +132,7 @@ func TestOrderTransitions(t *testing.T) {
 	}
 }
 
-// D-16: there is no `failed` order status, and nothing may move to one.
+// There is no `failed` order status, and nothing may move to one.
 func TestNoFailedOrderStatus(t *testing.T) {
 	if _, exists := orderTransitions["failed"]; exists {
 		t.Error("D-16 rejects a `failed` order status: a captured-but-undispensed sale is " +
@@ -150,8 +145,7 @@ func TestNoFailedOrderStatus(t *testing.T) {
 	}
 }
 
-// A transition to the status already held is a no-op, not an error. Refusing it would make every
-// idempotent retry fail and drive callers to retry forever.
+// A transition to the status already held is a no-op, not an error, so idempotent retries pass.
 func TestSelfTransitionIsAlwaysAllowed(t *testing.T) {
 	for from := range orderTransitions {
 		if !CanTransitionOrderStatus(from, from) {
@@ -165,8 +159,8 @@ func TestSelfTransitionIsAlwaysAllowed(t *testing.T) {
 	}
 }
 
-// An unknown status refuses rather than panics: the value came from a database row, and a status
-// this build does not recognise is a reason to refuse, not to crash the request.
+// An unknown status refuses rather than panics: it came from a database row, and a status this build
+// does not recognise is a reason to refuse, not to crash.
 func TestUnknownStatusIsRefused(t *testing.T) {
 	if CanTransitionOrderStatus("who_knows", "confirmed") {
 		t.Error("an unrecognised source status must refuse every transition")
@@ -188,7 +182,7 @@ func TestPaymentTransitions(t *testing.T) {
 		{"unpaid", "partially_paid", true},
 		{"unpaid", "paid", true},
 		{"unpaid", "overpaid", true},
-		// Nothing has been captured, so there is nothing to refund.
+		// Nothing captured, so nothing to refund.
 		{"unpaid", "refunded", false},
 		{"unpaid", "partially_refunded", false},
 
@@ -197,13 +191,12 @@ func TestPaymentTransitions(t *testing.T) {
 		{"partially_paid", "paid", true},
 		{"partially_paid", "refunded", true},
 
-		// Once money is actually captured, the way back is a refund, not a return to unpaid.
+		// Once money is captured, the way back is a refund, not a return to unpaid.
 		{"paid", "unpaid", false},
 		{"paid", "refunded", true},
 		{"paid", "partially_refunded", true},
 		{"paid", "overpaid", true},
 
-		// The excess is given back as change or refunded.
 		{"overpaid", "paid", true},
 		{"overpaid", "refunded", true},
 
@@ -234,8 +227,7 @@ func TestFulfillmentTransitions(t *testing.T) {
 		// Nothing has moved, so nothing can come back.
 		{"pending", "returned", false},
 
-		// Whether an order owes goods is settled by its lines at confirmation. It cannot discover
-		// later that it never needed fulfilling.
+		// Whether an order owes goods is fixed by its lines at confirmation.
 		{"not_required", "fulfilled", false},
 		{"not_required", "pending", false},
 
@@ -257,7 +249,7 @@ func TestFulfillmentTransitions(t *testing.T) {
 	}
 }
 
-// Retrying is the whole point of recording a fiscal failure: a rejection is usually correctable.
+// A fiscal rejection is usually correctable, so it must be retryable.
 func TestInvoiceFailedCanBeRetried(t *testing.T) {
 	if !CanTransitionInvoiceStatus("failed", "requested") {
 		t.Error("a failed fiscal request must be retryable, or a correctable rejection would " +
@@ -274,8 +266,8 @@ func TestInvoiceFailedCanBeRetried(t *testing.T) {
 	}
 }
 
-// BR §42: paid iff captured == payable EXACTLY. A tolerance would let a sale be marked paid while a
-// fraction remained owed, and the fractions would accumulate across a day of trading.
+// paid means captured == payable exactly: a tolerance would leave fractions owed that accumulate
+// across a trading day.
 func TestDerivePaymentStatus(t *testing.T) {
 	cases := []struct {
 		name                        string
@@ -305,8 +297,7 @@ func TestDerivePaymentStatus(t *testing.T) {
 	}
 }
 
-// A refund in flight outranks the payment state: what matters once money has started coming back is
-// how much has, not that it was once fully paid.
+// A refund in flight outranks the payment state.
 func TestRefundOutranksPayment(t *testing.T) {
 	got := DerivePaymentStatus(dec("100"), dec("100"), dec("1"))
 	if got != "partially_refunded" {
@@ -338,16 +329,15 @@ func TestDeriveFulfillmentStatus(t *testing.T) {
 		{"part returned", []LineQuantities{stocked("3", "3", "1")}, "partially_returned"},
 		{"all returned", []LineQuantities{stocked("3", "3", "3")}, "returned"},
 
-		// D-14: an order of only services owes no goods, so it is not_required rather than pending
-		// forever — and D-15 accepts that as satisfying completion.
+		// An order of only services owes no goods, so it is not_required rather than pending forever,
+		// which satisfies completion.
 		{"only services", []LineQuantities{service("1"), service("2")}, "not_required"},
 		{"no lines at all", nil, "not_required"},
 
-		// A mixed order is judged on its stocked lines alone; the service line contributes nothing.
+		// A mixed order is judged on its stocked lines alone.
 		{"mixed, goods pending", []LineQuantities{stocked("3", "0", "0"), service("1")}, "pending"},
 		{"mixed, goods done", []LineQuantities{stocked("3", "3", "0"), service("1")}, "fulfilled"},
 
-		// Across lines: one line complete and another untouched is partial overall.
 		{"one line done, one not",
 			[]LineQuantities{stocked("2", "2", "0"), stocked("2", "0", "0")},
 			"partially_fulfilled"},
@@ -361,7 +351,7 @@ func TestDeriveFulfillmentStatus(t *testing.T) {
 	}
 }
 
-// D-15: completion needs payment AND fulfilment, and deliberately ignores the invoice.
+// Completion needs payment and fulfilment, and deliberately ignores the invoice.
 func TestDeriveOrderStatus(t *testing.T) {
 	cases := []struct {
 		name                          string
@@ -376,13 +366,12 @@ func TestDeriveOrderStatus(t *testing.T) {
 		{"paid but undelivered", "confirmed", "paid", "partially_fulfilled", "confirmed"},
 		{"paid but returned", "confirmed", "paid", "returned", "confirmed"},
 
-		// A draft is never completed by derivation, however its money and goods stand: confirming
-		// is an operator's act.
+		// A draft is never completed by derivation: confirming is an operator's act.
 		{"a draft is never derived to completed", "draft", "paid", "fulfilled", "draft"},
 		{"a cancelled order stays cancelled", "cancelled", "paid", "fulfilled", "cancelled"},
 		{"a completed order stays completed", "completed", "paid", "fulfilled", "completed"},
 
-		// Overpaid is not paid: the customer is owed change, so the sale is not settled.
+		// Overpaid is not paid: the customer is owed change.
 		{"overpaid is not complete", "confirmed", "overpaid", "fulfilled", "confirmed"},
 	}
 	for _, testCase := range cases {
@@ -395,20 +384,16 @@ func TestDeriveOrderStatus(t *testing.T) {
 	}
 }
 
-// The invoice dimension must not affect completion (D-15). An unissued or rejected VAT invoice
-// cannot hold a commercially finished transaction open.
+// An unissued or rejected VAT invoice cannot hold a commercially finished transaction open.
 func TestInvoiceStatusDoesNotAffectCompletion(t *testing.T) {
-	// DeriveOrderStatus does not even take an invoice status as an argument, which is the
-	// structural guarantee. This asserts the consequence: whatever the invoice is doing, a paid and
-	// fulfilled order completes.
+	// DeriveOrderStatus takes no invoice status at all; this asserts the consequence.
 	if got := DeriveOrderStatus("confirmed", "paid", "fulfilled"); got != "completed" {
 		t.Errorf("a paid, fulfilled order must complete regardless of its invoice, got %q", got)
 	}
 }
 
-// Every status DeriveOrderStatus can produce must be reachable in the transition table from the
-// status it was given. A derivation that proposed an illegal move would be refused by the writer
-// and the order would silently never progress.
+// Every status DeriveOrderStatus can produce must be reachable from the status it was given, or the
+// writer would refuse the move and the order would silently never progress.
 func TestDerivedOrderStatusIsAlwaysAReachableTransition(t *testing.T) {
 	statuses := []string{"draft", "confirmed", "processing", "completed", "cancelled"}
 	payments := []string{"unpaid", "partially_paid", "paid", "overpaid",

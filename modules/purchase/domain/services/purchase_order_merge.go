@@ -4,6 +4,7 @@ import (
 	"time"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -12,28 +13,17 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// Merging several draft requests for quotation into one (BR §26).
-//
-// The point is a real purchasing situation: three people each raised an RFQ for the same vendor,
-// and sending three separate documents would get three separate quotes and three deliveries. Merge
-// makes one document out of them.
-//
-// Only RFQ and RFQ_SENT may be merged. A confirmed order is a commitment the vendor is holding, and
-// folding it into another document would change what was agreed after the fact.
+// Merging several draft requests for quotation into one, so several RFQs to the same vendor become
+// one document. Only RFQ and RFQ_SENT may be merged: a confirmed order is a commitment the vendor
+// holds, and folding it in would change what was agreed after the fact.
 
-// arrivalWindow is how far apart two lines' expected arrival dates may be and still merge (§26.1).
-//
-// A day is the resolution a purchasing decision is actually made at: goods wanted "Tuesday" and
-// "Tuesday morning" are one delivery, and splitting them into two lines would ask the vendor for two
-// shipments of the same product. Beyond a day they are genuinely different requests.
+// arrivalWindow is how far apart two lines' expected arrival dates may be and still merge; a day is
+// the resolution purchasing decisions are made at.
 const arrivalWindow = 24 * time.Hour
 
-// MergeOrders folds several draft orders into one (BR §26).
-//
-// The TARGET is the oldest by order deadline, and keeps its own code: it is the document most
-// likely to have been quoted to the vendor already, and keeping the oldest reference means the
-// vendor's own paperwork still matches. The sources are CANCELLED rather than deleted, so the trail
-// of what was merged where survives.
+// MergeOrders folds several draft orders into one. The target is the oldest by order deadline and
+// keeps its own code, so the vendor's existing paperwork still matches. Sources are cancelled rather
+// than deleted, keeping the trail of what was merged where.
 func (this *PurchaseOrderDomainServiceImpl) MergeOrders(
 	ctx corectx.Context, orderIds []string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -71,8 +61,7 @@ func (this *PurchaseOrderDomainServiceImpl) MergeOrders(
 		}
 
 		result = mutateOk()
-		// One event on the target, listing what came into it. The sources each carry their own
-		// cancel event from mergeOneOrder, so the trail reads correctly from either end.
+		// One event on the target; each source carries its own cancel event from mergeOneOrder.
 		return WriteAuditEvent(tranxCtx, AuditEntry{
 			EntityType: models.PurchaseOrderSchemaName,
 			EntityId:   targetId,
@@ -90,12 +79,9 @@ func (this *PurchaseOrderDomainServiceImpl) MergeOrders(
 	return result, nil
 }
 
-// loadMergeableOrders reads the orders and refuses a set that cannot be merged.
-//
-// Compatibility is vendor, currency and agreement (§26). Those three are what a purchase order
-// commits to: merging across vendors would ask one supplier for another's goods, merging across
-// currencies would produce a document whose total is in no currency at all, and merging across
-// agreements would draw down a commitment the lines were never made under.
+// loadMergeableOrders reads the orders and refuses a set that cannot be merged. Vendor, currency
+// and agreement must all match: merging across currencies would give the document a total in no
+// currency, and across agreements would draw down a commitment the lines were never made under.
 func loadMergeableOrders(
 	ctx corectx.Context, orderIds []string,
 ) ([]dmodel.DynamicFields, *dyn.OpResult[dyn.MutateResultData], error) {
@@ -162,11 +148,8 @@ func assertCompatibleOrders(orders []dmodel.DynamicFields) *dyn.OpResult[dyn.Mut
 	return nil
 }
 
-// splitMergeTarget picks the oldest order as the target and returns the rest as sources.
-//
-// Oldest by order deadline, falling back to the code when a deadline is absent. The fallback is not
-// arbitrary: the code carries a ULID, which sorts by creation time, so "oldest" still means oldest
-// even for orders that never had a deadline set.
+// splitMergeTarget picks the oldest order as the target and returns the rest as sources. Oldest is
+// by order deadline, falling back to the code, which carries a ULID and so sorts by creation time.
 func splitMergeTarget(
 	orders []dmodel.DynamicFields,
 ) (dmodel.DynamicFields, []dmodel.DynamicFields) {
@@ -228,7 +211,7 @@ func (this *PurchaseOrderDomainServiceImpl) mergeOneOrder(
 	for _, sourceLine := range sourceLines {
 		match := findMergeableLine(targetLines, sourceLine)
 		if match == nil {
-			// No compatible line: the source line moves across as a line of its own (§26.1).
+			// No compatible line: the source line moves across as a line of its own.
 			if err := moveLineToOrder(ctx, lineEngine, sourceLine, targetId); err != nil {
 				return err
 			}
@@ -256,17 +239,14 @@ func (this *PurchaseOrderDomainServiceImpl) mergeOneOrder(
 	})
 }
 
-// findMergeableLine returns the target line the source may be added to, or nil.
-//
-// The rules are §26.1: same product, same unit, same discount, and expected arrival within a day.
-// Discount is included because two lines at different discounts are at different effective prices,
-// and summing them would produce a quantity at a price neither of them had.
+// findMergeableLine returns the target line the source may be added to, or nil: same product, same
+// unit, same discount percent, and expected arrival within a day. Discount must match because two
+// lines at different discounts are at different effective prices.
 func findMergeableLine(
 	targetLines []dmodel.DynamicFields, sourceLine dmodel.DynamicFields,
 ) dmodel.DynamicFields {
 	if !isMoneyBearingLine(sourceLine) {
-		// A section or a note is a piece of document structure, not a quantity. Merging two
-		// headings would silently drop one.
+		// A section or note is document structure, not a quantity; merging two would drop one.
 		return nil
 	}
 	for _, targetLine := range targetLines {
@@ -283,8 +263,8 @@ func linesAreMergeable(target, source dmodel.DynamicFields) bool {
 	}
 
 	targetProduct := stringOf(target, models.PurchaseOrderLineFieldProductVariantId)
-	// Two free-text lines are never merged: they have no product to compare, so "same product"
-	// would be vacuously true and two unrelated charges would be summed.
+	// Two free-text lines never merge: with no product to compare, "same product" would be
+	// vacuously true and two unrelated charges would be summed.
 	if targetProduct == "" ||
 		targetProduct != stringOf(source, models.PurchaseOrderLineFieldProductVariantId) {
 		return false
@@ -300,11 +280,8 @@ func linesAreMergeable(target, source dmodel.DynamicFields) bool {
 	return arrivalsAreClose(target, source)
 }
 
-// arrivalsAreClose reports whether two lines want their goods at about the same time.
-//
-// Two lines with NO stated arrival are close — neither has asked for a date, so there is nothing to
-// disagree about. One with a date and one without are not: the request that named a day is asking
-// for something the other is not.
+// arrivalsAreClose reports whether two lines want their goods at about the same time. Two lines
+// with no stated arrival count as close; one with a date and one without do not.
 func arrivalsAreClose(target, source dmodel.DynamicFields) bool {
 	targetArrival, targetHas := timeOf(target, models.PurchaseOrderLineFieldExpectedArrival)
 	sourceArrival, sourceHas := timeOf(source, models.PurchaseOrderLineFieldExpectedArrival)
@@ -330,8 +307,7 @@ func addQuantityToLine(
 ) error {
 	combined := decimalOf(target, models.PurchaseOrderLineFieldQuantity).Add(
 		decimalOf(source, models.PurchaseOrderLineFieldQuantity))
-	// The taxes are summed too: tax is an input per line (D9), so the merged line owes what the two
-	// lines owed between them.
+	// Taxes are summed too: tax is a per-line input, so the merged line owes both lines' tax.
 	combinedTax := decimalOf(target, models.PurchaseOrderLineFieldTaxAmount).Add(
 		decimalOf(source, models.PurchaseOrderLineFieldTaxAmount))
 
@@ -354,12 +330,12 @@ func addQuantityToLine(
 		return err
 	}
 	// The in-memory copy is updated too, so a second source line matching the same target sums onto
-	// the new quantity rather than the one it replaced.
+	// the new quantity, not the replaced one.
 	target[models.PurchaseOrderLineFieldQuantity] = combined
 	target[models.PurchaseOrderLineFieldTaxAmount] = combinedTax
 
-	// The source line is removed: it now lives inside the target's quantity, and leaving it on a
-	// cancelled order would double-count if anyone read both.
+	// The source line is removed: it now lives inside the target's quantity, and leaving it would
+	// double-count for anyone reading both orders.
 	_, err := lineEngine.ResourceRepository().DeleteOne(ctx, dmodel.DynamicFields{
 		models.PurchaseOrderLineFieldId: stringOf(source, models.PurchaseOrderLineFieldId),
 	})
@@ -379,16 +355,24 @@ func moveLineToOrder(
 	return err
 }
 
-// timeOf reads a time field, reporting whether one was there at all.
-//
-// The bool matters: "no arrival date" and "the zero time" mean different things to the merge rule,
-// and collapsing them would make every dateless line look like it wanted delivery in year one.
+// timeOf reads a time field, reporting whether one was there at all. The bool matters: "no date"
+// and "the zero time" differ to the merge rule and to windowCovers, where an unread bound would
+// read as open-ended and resurrect an expired quote. It handles model.ModelDateTime because that is
+// what SetModelDateTime stores, and DynamicFields.GetModelDateTime returns nil for the pointer form
+// instead of reporting that it could not read it.
 func timeOf(fields dmodel.DynamicFields, key string) (time.Time, bool) {
 	value, ok := fields[key]
 	if !ok || value == nil {
 		return time.Time{}, false
 	}
 	switch typed := value.(type) {
+	case model.ModelDateTime:
+		return typed.GoTime(), !typed.GoTime().IsZero()
+	case *model.ModelDateTime:
+		if typed == nil {
+			return time.Time{}, false
+		}
+		return typed.GoTime(), !typed.GoTime().IsZero()
 	case time.Time:
 		return typed, !typed.IsZero()
 	case *time.Time:

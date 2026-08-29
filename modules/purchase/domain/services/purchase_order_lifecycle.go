@@ -15,27 +15,16 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// Confirm, Approve and Cancel: the three operations that move an order through its lifecycle.
-//
-// Each of them runs in ONE transaction and writes EXACTLY ONE audit event (PUR-R6), and each
-// re-reads the order's status inside that transaction before acting on it. The re-read is what
-// makes two concurrent confirms safe: both may have passed a check against the same stale status
-// outside the transaction, and only the one that reads inside it can see what the other did.
+// Confirm, Approve and Cancel move an order through its lifecycle. Each runs in one transaction,
+// writes exactly one audit event, and re-reads the order's status inside that transaction before
+// acting: only the read inside the transaction can see what a concurrent operation did.
 
-// Confirm commits the order, routing it through approval when the organization's policy says so
-// (BR §16, §47).
-//
-// It ends in one of two statuses, which is why the audit event records the action rather than the
-// transition alone: `to_approve` when this org approves orders of this size, `purchase_order` when
-// it does not. The totals decide which, and the totals are the STORED ones — recomputed first, so
-// the decision is made against what the lines actually say rather than a header that has drifted.
-//
-// Confirming also snapshots the modification policy's effect: under auto_lock the order comes out
-// locked (BR §47.3). is_locked is a separate boolean and never a status (PUR-R2), so an order can
-// be both confirmed and locked without either fact hiding the other.
-//
-// alternativeChoice says what happens to the other alternatives in this order's sourcing group
-// (§31). Empty means the caller has not decided, which is what triggers the warning.
+// Confirm commits the order, ending in to_approve when the org's policy requires approval for an
+// order of this size and purchase_order when it does not. The decision reads the stored totals,
+// recomputed first so it is made against what the lines say rather than a drifted header. Under the
+// auto_lock modification policy the order also comes out locked; is_locked is a separate boolean and
+// never a status. alternativeChoice says what happens to the other alternatives in this order's
+// sourcing group, and an empty value means the caller has not decided, which triggers the warning.
 func (this *PurchaseOrderDomainServiceImpl) Confirm(
 	ctx corectx.Context, orderId string, alternativeChoice string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -58,8 +47,8 @@ func (this *PurchaseOrderDomainServiceImpl) Confirm(
 			return nil
 		}
 
-		// The totals are brought in step before the approval decision reads them: confirming
-		// against a stale total could route a large order past an approver.
+		// Totals must be current before the approval decision reads them, or a stale total could
+		// route a large order past an approver.
 		if err := RecomputeOrderTotals(tranxCtx, orderId); err != nil {
 			return err
 		}
@@ -77,11 +66,9 @@ func (this *PurchaseOrderDomainServiceImpl) Confirm(
 			return nil
 		}
 
-		// §31: confirming one alternative leaves the others quoting for a requirement that has
-		// just been met. The caller has to say what happens to them — the warning is a REFUSAL
-		// rather than a note, because defaulting either way makes a purchasing decision on their
-		// behalf: cancelling loses quotes they may still want, and keeping leaves live requests
-		// to vendors who will never be given the business.
+		// Confirming one alternative leaves the others quoting for a requirement already met, so
+		// the caller must say what happens to them. The warning is a refusal, not a note:
+		// defaulting either way would make a purchasing decision on their behalf.
 		openAlternatives, err := OpenAlternativesOf(tranxCtx, order)
 		if err != nil {
 			return err
@@ -121,8 +108,8 @@ func (this *PurchaseOrderDomainServiceImpl) Confirm(
 			models.PurchaseOrderFieldStatus:           next,
 			models.PurchaseOrderFieldApprovalRequired: needsApproval,
 		}
-		// confirmed_at marks the commitment, so it is stamped only when the order actually becomes
-		// one. An order sitting in to_approve has been submitted, not confirmed.
+		// confirmed_at marks the commitment, so it is stamped only on becoming one; an order in
+		// to_approve has been submitted, not confirmed.
 		if !needsApproval {
 			changes[models.PurchaseOrderFieldConfirmedAt] = time.Now()
 			if config.PoModificationPolicy == models.PoModificationPolicyAutoLock {
@@ -162,11 +149,8 @@ func (this *PurchaseOrderDomainServiceImpl) Confirm(
 	return result, nil
 }
 
-// assertConfirmable refuses an order that has nothing to commit to.
-//
-// An order with no priced line would be a commitment to buy nothing, and one whose lines are all
-// sections and notes is the same thing with headings. Both are far more likely to be a half-filled
-// form than a deliberate act, and confirming one produces a document a vendor cannot act on.
+// assertConfirmable refuses an order with no money-bearing line: it would commit to buying nothing
+// and produce a document a vendor cannot act on.
 func assertConfirmable(
 	ctx corectx.Context, order dmodel.DynamicFields,
 ) *dyn.OpResult[dyn.MutateResultData] {
@@ -190,15 +174,10 @@ func assertConfirmable(
 		"a purchase order with no product line cannot be confirmed")
 }
 
-// Approve moves an order out of to_approve (BR §17).
-//
-// It records who approved and when, which is the reason approval is its own operation rather than
-// a status edit: approved_by and approved_at are the evidence that spending control was applied,
-// and an update that could set the status without them would leave a committed order with no
-// approver named.
-//
-// The `rejected` state of §18 is deliberately not implemented (§11 scope). An approver who will not
-// approve cancels the order, which records the refusal in the trail with a reason.
+// Approve moves an order out of to_approve, recording approved_by and approved_at as the evidence
+// that spending control was applied — which is why it is its own operation and not a status edit.
+// There is deliberately no `rejected` state: an approver who will not approve cancels the order,
+// recording the refusal with a reason.
 func (this *PurchaseOrderDomainServiceImpl) Approve(
 	ctx corectx.Context, orderId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -261,15 +240,9 @@ func (this *PurchaseOrderDomainServiceImpl) Approve(
 	return result, nil
 }
 
-// Cancel calls the order off, from any status but cancelled (BR §23).
-//
-// Cancelling is available even after confirmation, because a deal both sides agreed to can still
-// fall through. What it does not do is remove anything: the order, its lines and its trail all
-// stay, which is the whole difference between cancel and delete — and why delete is refused
-// everywhere except from cancelled.
-//
-// The reason is optional. Requiring one would be defensible, but the requirement does not ask for
-// it and a mandatory free-text field mostly produces the word "cancelled".
+// Cancel calls the order off from any status but cancelled, including after confirmation. It
+// removes nothing — the order, its lines and its trail all stay, which is the difference between
+// cancel and delete, and why delete is refused except from cancelled. The reason is optional.
 func (this *PurchaseOrderDomainServiceImpl) Cancel(
 	ctx corectx.Context, orderId string, reason string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -289,8 +262,7 @@ func (this *PurchaseOrderDomainServiceImpl) Cancel(
 		next := string(models.PurchaseOrderStatusCancelled)
 
 		if status == next {
-			// Already cancelled: report success rather than a violation, so that a retried
-			// cancel after a lost response is not an error.
+			// Already cancelled: a retry after a lost response is not an error.
 			result = mutateOk()
 			return nil
 		}
@@ -326,11 +298,9 @@ func (this *PurchaseOrderDomainServiceImpl) Cancel(
 	return result, nil
 }
 
-// alternativesWarningResult asks the caller to decide what happens to the open alternatives.
-//
-// The open orders' codes are named rather than only counted, because the buyer's decision depends
-// on which vendors are still being asked — "cancel the other two" is a different call when one of
-// them is the incumbent supplier.
+// alternativesWarningResult asks the caller to decide what happens to the open alternatives. It
+// names their codes rather than counting them, because which vendors are still being asked changes
+// the buyer's decision.
 func alternativesWarningResult(open []dmodel.DynamicFields) *dyn.OpResult[dyn.MutateResultData] {
 	codes := make([]string, 0, len(open))
 	for _, alternative := range open {
@@ -369,11 +339,9 @@ func loadOrder(ctx corectx.Context, orderId string) (dmodel.DynamicFields, error
 	return found.Data, nil
 }
 
-// writeOrderChanges applies a status-bearing change set to an order.
-//
-// It goes through the repository rather than the resource service because most of these fields are
-// no_update: the client-facing rule is that a status cannot be edited, and the lifecycle operations
-// are precisely the exception. The etag is carried through so a concurrent edit still loses.
+// writeOrderChanges applies a status-bearing change set to an order. It goes through the repository
+// rather than the resource service because most of these fields are no_update and the lifecycle
+// operations are the exception to that. The etag is carried through so a concurrent edit still loses.
 func writeOrderChanges(
 	ctx corectx.Context, order dmodel.DynamicFields, changes dmodel.DynamicFields,
 ) error {

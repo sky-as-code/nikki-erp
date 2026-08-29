@@ -27,8 +27,8 @@ func TestValidRequestPasses(t *testing.T) {
 	}
 }
 
-// BR-TAX-ESS-SUP-020 deleted the server-clock fallback. A request without a date must be refused
-// rather than priced against whatever is effective at the moment it happens to be processed.
+// There is no server-clock fallback: a request without a date must be refused rather than priced
+// against whatever is effective at processing time.
 func TestTaxDateIsMandatory(t *testing.T) {
 	request := validRequest()
 	request.TaxDate = ""
@@ -40,8 +40,8 @@ func TestTaxDateIsMandatory(t *testing.T) {
 }
 
 func TestTaxDateMustBeWellFormed(t *testing.T) {
-	// Deliberately includes forms time.Parse would accept but that do not sort correctly against
-	// the stored YYYY-MM-DD bounds, which is what the effective-period lookup compares against.
+	// Includes forms time.Parse accepts but that do not sort correctly against the stored
+	// YYYY-MM-DD bounds the effective-period lookup compares.
 	for _, malformed := range []string{"2026-8-25", "25/08/2026", "2026-08-25T00:00:00Z", "not-a-date", "2026-13-01"} {
 		request := validRequest()
 		request.TaxDate = malformed
@@ -78,8 +78,8 @@ func TestAtLeastOneLineIsRequired(t *testing.T) {
 	}
 }
 
-// V1 defines sale semantics only. A purchase must be refused rather than silently treated as a
-// sale, which would apply output-VAT rules to an input-VAT transaction.
+// V1 is sale-only: treating a purchase as a sale would apply output-VAT rules to an input-VAT
+// transaction.
 func TestPurchaseOperationsAreRefused(t *testing.T) {
 	for _, operation := range []models.OperationType{models.OperationPurchase, models.OperationPurchaseRefund} {
 		request := validRequest()
@@ -120,8 +120,8 @@ func TestLineReferenceIsMandatory(t *testing.T) {
 	}
 }
 
-// Document-scoped rounding is allocated by line reference, so a duplicate would silently overwrite
-// another line's rounding rather than merely being confusing.
+// Document-scoped rounding is allocated by line reference, so a duplicate silently overwrites
+// another line's rounding.
 func TestDuplicateLineReferencesAreRefused(t *testing.T) {
 	request := validRequest()
 	request.Lines = append(request.Lines, it.CalculationLine{
@@ -134,8 +134,7 @@ func TestDuplicateLineReferencesAreRefused(t *testing.T) {
 	}
 }
 
-// The reason is mandatory whenever an override is used, and is checked before the entitlement so
-// that a caller who holds the permission still cannot override without justifying it.
+// The reason is checked before the entitlement, so holding the permission does not excuse it.
 func TestOverrideWithoutReasonIsRefused(t *testing.T) {
 	request := validRequest()
 	request.Lines[0].OverrideTaxIds = []string{"tax-1"}
@@ -146,12 +145,11 @@ func TestOverrideWithoutReasonIsRefused(t *testing.T) {
 	}
 }
 
-// A request that overrides nothing must not require the elevated entitlement, or every ordinary
-// calculation would demand a permission only a tax administrator holds.
+// A request that overrides nothing must not require the elevated entitlement.
 func TestNoOverrideSkipsTheEntitlementCheck(t *testing.T) {
 	svc := &TaxCalculationApplicationServiceImpl{}
-	// Passing a nil context is safe precisely because the entitlement check must not be reached.
-	// If this ever panics, the short-circuit has been lost.
+	// The nil context is safe only because the entitlement check must not be reached; a panic here
+	// means the short-circuit has been lost.
 	if cErrs := svc.assertOverrideAllowed(nil, validRequest()); cErrs != nil {
 		t.Fatalf("expected no override to skip the check, got %v", cErrs.ToError())
 	}

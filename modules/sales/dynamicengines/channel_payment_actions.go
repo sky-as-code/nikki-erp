@@ -13,13 +13,9 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
-// The payment-method configuration of a sales channel, served as actions on the channel resource
-// rather than as a resource of its own.
-//
-// That is the shape of the thing: a mapping row has no identity a client would name, so there is
-// nothing to CRUD. Serving them as channel actions also means the engine performs the permission
-// check before MainProcess runs, against the same codes 1007002_sales_iam.sql seeds — so these
-// callbacks authorize nothing themselves, exactly like the lifecycle ones beside them.
+// Payment-method configuration is served as actions on the channel resource, not a resource of its
+// own: a mapping row has no identity a client would name. The engine therefore runs the permission
+// check before MainProcess, so these callbacks authorize nothing themselves.
 
 const (
 	ActionPaymentMethods       = "payment_methods"
@@ -29,15 +25,11 @@ const (
 
 const paramPaymentMethodId = "payment_method_id"
 
-// paymentMethods is the port onto paymentinvoice, installed by Init.
-//
-// It is a package variable set through a setter rather than an import, for the layering rule: this
-// package may not import infra/, and infra/external is where the binding to the other module lives.
-// The interface it is typed as belongs to Sales, so naming it here crosses no boundary.
+// paymentMethods is the port onto paymentinvoice, set through a setter rather than imported: this
+// package may not import infra/, where the binding lives.
 var paymentMethods itExt.PaymentMethodExtService
 
-// SetPaymentMethodPort installs the port the payment actions read. Init calls it before any request
-// is served.
+// SetPaymentMethodPort must be called by Init before any request is served.
 func SetPaymentMethodPort(port itExt.PaymentMethodExtService) {
 	paymentMethods = port
 }
@@ -51,12 +43,9 @@ func paymentMethodPort() (itExt.PaymentMethodExtService, error) {
 	return paymentMethods, nil
 }
 
-// defineChannelPaymentActions adds the three payment-configuration actions to the channel engine.
-//
-// Listing reuses the read permission: it is a read of the channel's configuration, and a role able
-// to see a channel but not what it accepts would be looking at half a record. Enabling and
-// disabling each take their own code, because changing what a channel can be paid through is a
-// materially different power from editing its name.
+// Listing reuses the read permission, since it reads the channel's own configuration. Enabling and
+// disabling take their own codes: changing what a channel can be paid through is a materially
+// different power from editing its name.
 func defineChannelPaymentActions(engine drif.DynamicResourceEngine) error {
 	return stdErr.Join(
 		engine.DefineAction(drif.DynamicActionDefinition{
@@ -83,12 +72,8 @@ func defineChannelPaymentActions(engine drif.DynamicResourceEngine) error {
 	)
 }
 
-// processListPaymentMethods answers the merged view (CR §29).
-//
-// The merge happens here rather than in the browser because it needs both lists at once: a method
-// this channel has enabled that paymentinvoice no longer reports is stale, and only a reader
-// holding both can see that. A frontend calling two module APIs would have to reimplement the rule
-// and would get it wrong the first time either call failed.
+// processListPaymentMethods merges both lists server-side: only a reader holding both can see that
+// a method this channel enabled is one paymentinvoice no longer reports.
 func processListPaymentMethods(
 	ctx corectx.Context, input drif.ProcessInput,
 ) (*drif.ActionResult, error) {
@@ -107,9 +92,8 @@ func processListPaymentMethods(
 		return nil, err
 	}
 
-	// Upstream first, and a failure here fails the whole call (CR §35). Answering from the local
-	// mappings alone would present a filter as the master list: every enabled method present, every
-	// disabled one silently absent, and nothing to tell that apart from a correct answer.
+	// An upstream failure fails the whole call: the local mappings are a filter, and answering from
+	// them alone would present it as the master list.
 	upstream, err := port.ListPaymentMethods(ctx, itExt.ListPaymentMethodsQuery{})
 	if err != nil {
 		return nil, err
@@ -141,9 +125,8 @@ func processListPaymentMethods(
 			"is_stale":          false,
 		})
 	}
-	// The mappings upstream did not account for. Reported, never dropped (CR §34): dropping one
-	// would hide the only evidence that a channel is configured for something that cannot happen,
-	// and leave nothing for an administrator to act on.
+	// Mappings upstream no longer reports. Reported as stale, never dropped, so an administrator can
+	// see and undo a channel configured for something that cannot happen.
 	for methodId := range enabled {
 		if seen[methodId] {
 			continue
@@ -160,7 +143,6 @@ func processListPaymentMethods(
 	return &drif.ActionResult{HasData: true, Data: rows}, nil
 }
 
-// processEnablePaymentMethod validates upstream, then writes the mapping (CR §31).
 func processEnablePaymentMethod(
 	ctx corectx.Context, input drif.ProcessInput,
 ) (*drif.ActionResult, error) {
@@ -175,8 +157,8 @@ func processEnablePaymentMethod(
 	if err != nil {
 		return nil, err
 	}
-	// A suspended or archived channel is not reconfigured, for the same reason it takes no orders:
-	// the change would have no effect now and would be a surprise if the channel came back.
+	// A retired channel is not reconfigured: the change has no effect now and becomes a surprise if
+	// the channel comes back.
 	mutable, err := channelService.AssertMutable(ctx, channelId)
 	if err != nil {
 		return nil, err
@@ -189,8 +171,8 @@ func processEnablePaymentMethod(
 	if err != nil {
 		return nil, err
 	}
-	// No amount is passed: this decides whether the method may ever be offered on this channel, not
-	// whether one particular payment would pass its bounds.
+	// No amount is passed: this asks whether the method may ever be offered on this channel, not
+	// whether one payment is within its bounds.
 	usable, err := port.AssertUsable(ctx, itExt.AssertUsableQuery{PaymentMethodId: methodId})
 	if err != nil {
 		return nil, err
@@ -207,12 +189,9 @@ func processEnablePaymentMethod(
 	return toMutateActionResult(result, err)
 }
 
-// processDisablePaymentMethod removes the mapping (CR §32).
-//
-// Neither the channel's state nor the method's usability is checked, and both omissions are the
-// same rule: taking a payment method away is always safe, and the states where somebody most needs
-// to are exactly the ones a validating version would refuse — a stale mapping, or a channel
-// suspended because of it.
+// processDisablePaymentMethod deliberately checks neither the channel's state nor the method's
+// usability: removal is always safe, and the cases where it is most needed (a stale mapping, a
+// channel suspended because of it) are exactly what validation would refuse.
 func processDisablePaymentMethod(
 	ctx corectx.Context, input drif.ProcessInput,
 ) (*drif.ActionResult, error) {
@@ -232,16 +211,15 @@ func processDisablePaymentMethod(
 }
 
 // channelPaymentRefusal answers a malformed request with a violation rather than an error, so the
-// REST layer replies 400: the caller left something out and can put it back.
+// REST layer replies 400.
 func channelPaymentRefusal(key, message string) *drif.ActionResult {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName, key, message))
 	return &drif.ActionResult{ClientErrors: *vErrs}
 }
 
-// stringOf reads one string out of a record without a bare type assertion, for the same reason
-// readStringParam does: a repository round-trip can hand back a different concrete type, and a bare
-// assertion panics the request.
+// stringOf avoids a bare type assertion: a repository round-trip can hand back a different concrete
+// type, and a bare assertion panics the request.
 func stringOf(record map[string]any, field string) string {
 	if record == nil {
 		return ""

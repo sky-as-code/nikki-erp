@@ -12,12 +12,9 @@ import (
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
-// The engine asserts a permission by code, and the IAM migration seeds the codes that exist. A code
-// the engine demands but the seed never created denies EVERY request for that action, and nothing
-// in the response points at the seed as the cause — the caller is simply told they may not.
-//
-// This test reads the migration and checks the two agree. It is the one place the Go constants and
-// the SQL can be compared without a database.
+// A permission code the engine demands but the seed never created denies every request for that
+// action, with nothing in the response pointing at the seed. This reads the migration and checks
+// the Go constants and the SQL agree, which is the only comparison possible without a database.
 func TestOrderActionPermissionsAreSeeded(t *testing.T) {
 	seeded := seededActionCodes(t, "purchase_order")
 
@@ -32,18 +29,17 @@ func TestOrderActionPermissionsAreSeeded(t *testing.T) {
 		PermissionMerge,
 	} {
 		assert.Contains(t, seeded, permission,
-			"the engine demands the %q permission, which 1004002_purchase_iam.sql does not seed", permission)
+			"the engine demands the %q permission, which 1006002_purchase_iam.sql does not seed", permission)
 	}
 
-	// Duplicate reuses `create` rather than carrying a permission of its own, so the seed must NOT
-	// have grown one — an unused action row is a permission an administrator can grant that does
-	// nothing, which is worse than no row at all.
+	// Duplicate reuses `create`, so the seed must not have grown a row of its own: an unused action
+	// row is a permission an administrator can grant that does nothing.
 	assert.NotContains(t, seeded, "duplicate")
 	assert.NotContains(t, seeded, "print")
 }
 
-// The reverse direction: every lifecycle code the seed creates must be one the engine actually
-// demands, or it is a permission that grants nothing.
+// The reverse direction: every code the seed creates must be one the engine demands, or it grants
+// nothing.
 func TestSeededOrderActionsAreDemanded(t *testing.T) {
 	demanded := map[string]bool{
 		drif.PermissionCreate: true,
@@ -57,26 +53,22 @@ func TestSeededOrderActionsAreDemanded(t *testing.T) {
 		PermissionLock:        true,
 		PermissionUnlock:      true,
 		PermissionAcknowledge: true,
-		// Merge is seeded and reached in [PUR-020]; the constant exists so that the two cannot
-		// drift apart in the meantime.
+		// Merge is seeded but not yet reached; the constant exists so the two cannot drift apart.
 		PermissionMerge: true,
 	}
 
 	for _, code := range seededActionCodes(t, "purchase_order") {
 		assert.True(t, demanded[code],
-			"1004002_purchase_iam.sql seeds the %q action, which no engine action demands", code)
+			"1006002_purchase_iam.sql seeds the %q action, which no engine action demands", code)
 	}
 }
 
-// seededActionCodes reads the action codes the IAM migration creates for one resource.
-//
-// It parses the SQL rather than connecting to a database, because the point is to catch the
-// mismatch at `go test` time — by the time a database is involved, the mismatch shows up as a
-// permission denied with no explanation.
+// seededActionCodes parses the IAM migration SQL rather than connecting to a database, so a
+// mismatch is caught at `go test` time instead of as an unexplained permission denied.
 func seededActionCodes(t *testing.T, resourceCode string) []string {
 	t.Helper()
 
-	path := filepath.Join("..", "..", "..", "scripts", "migrations", "1004002_purchase_iam.sql")
+	path := filepath.Join("..", "..", "..", "scripts", "migrations", "1006002_purchase_iam.sql")
 	content, err := os.ReadFile(path)
 	require.NoError(t, err, "the purchase IAM migration must be readable from the test")
 
@@ -100,8 +92,7 @@ func seededActionCodes(t *testing.T, resourceCode string) []string {
 	return codes
 }
 
-// The same two-directional check for the agreement. Its action set is different from the order's —
-// it has set_archived and close, and no send or lock — so a shared test would prove neither.
+// The same two-directional check for the agreement, whose action set differs from the order's.
 func TestAgreementActionPermissionsAreSeeded(t *testing.T) {
 	seeded := seededActionCodes(t, "purchase_agreement")
 
@@ -112,12 +103,11 @@ func TestAgreementActionPermissionsAreSeeded(t *testing.T) {
 		drif.PermissionSetArchived,
 	} {
 		assert.Contains(t, seeded, permission,
-			"the engine demands the %q permission, which 1004002_purchase_iam.sql does not seed",
+			"the engine demands the %q permission, which 1006002_purchase_iam.sql does not seed",
 			permission)
 	}
 
-	// create_rfq carries the order's create permission rather than one of its own, so the seed must
-	// not have grown a row for it: an action row nobody demands is a permission that grants nothing.
+	// create_rfq carries the order's create permission, so the seed must not have grown a row for it.
 	assert.NotContains(t, seeded, "create_rfq")
 	// Archive and restore reuse set_archived, for the reason the seed's header gives.
 	assert.NotContains(t, seeded, "archive")
@@ -138,6 +128,6 @@ func TestSeededAgreementActionsAreDemanded(t *testing.T) {
 
 	for _, code := range seededActionCodes(t, "purchase_agreement") {
 		assert.True(t, demanded[code],
-			"1004002_purchase_iam.sql seeds the %q action, which no engine action demands", code)
+			"1006002_purchase_iam.sql seeds the %q action, which no engine action demands", code)
 	}
 }

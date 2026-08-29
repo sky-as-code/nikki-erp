@@ -172,6 +172,7 @@ CREATE TABLE "inventory_product_templates" (
   "sales_description" jsonb NULL,
   "purchase_description" jsonb NULL,
   "default_image_id" character varying NULL,
+  "base_sales_price" numeric NULL,
   "default_weight" numeric NULL,
   "default_length" numeric NULL,
   "default_width" numeric NULL,
@@ -186,48 +187,6 @@ CREATE TABLE "inventory_product_templates" (
   CONSTRAINT "inventory_product_templates_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "inventory_brands" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_product_templates_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_product_templates_product_type_id_fkey" FOREIGN KEY ("product_type_id") REFERENCES "inventory_product_types" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
-);
--- Create "inventory_product_variants" table
-CREATE TABLE "inventory_product_variants" (
-  "id" character varying NOT NULL,
-  "product_template_id" character varying NOT NULL,
-  "combination_key" character varying NOT NULL,
-  "sku" character varying NULL,
-  "primary_barcode" character varying NULL,
-  "is_materialized" boolean NULL,
-  "variant_image_id" character varying NULL,
-  "weight" numeric NULL,
-  "length" numeric NULL,
-  "width" numeric NULL,
-  "height" numeric NULL,
-  "status" character varying NOT NULL,
-  "archive_source" character varying NULL,
-  "org_id" character varying NOT NULL,
-  "is_archived" boolean NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "etag" character varying NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "invty_prod_variants_tid_ptpl_id_comb_key_ukey" UNIQUE ("product_template_id", "combination_key"),
-  CONSTRAINT "inventory_product_variants_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
-);
--- Create "inventory_product_prices" table
-CREATE TABLE "inventory_product_prices" (
-  "id" character varying NOT NULL,
-  "product_template_id" character varying NULL,
-  "product_variant_id" character varying NULL,
-  "price" numeric NOT NULL,
-  "effective_from" date NULL,
-  "effective_to" date NULL,
-  "status" character varying NOT NULL,
-  "org_id" character varying NOT NULL,
-  "is_archived" boolean NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "etag" character varying NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_product_prices_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "inventory_product_prices_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "inventory_product_template_attributes" table
 CREATE TABLE "inventory_product_template_attributes" (
@@ -248,6 +207,7 @@ CREATE TABLE "inventory_product_template_attribute_values" (
   "id" character varying NOT NULL,
   "template_attribute_id" character varying NOT NULL,
   "attribute_value_id" character varying NOT NULL,
+  "sales_price_extra" numeric NULL,
   "sequence" integer NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
@@ -257,11 +217,37 @@ CREATE TABLE "inventory_product_template_attribute_values" (
   CONSTRAINT "inventory_product_template_attribute_values_attribute_value_id_" FOREIGN KEY ("attribute_value_id") REFERENCES "inventory_product_attribute_values" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_product_template_attribute_values_template_attribute_" FOREIGN KEY ("template_attribute_id") REFERENCES "inventory_product_template_attributes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
+-- Create "inventory_product_variants" table
+CREATE TABLE "inventory_product_variants" (
+  "id" character varying NOT NULL,
+  "product_template_id" character varying NOT NULL,
+  "combination_key" character varying NOT NULL,
+  "sku" character varying NULL,
+  "primary_barcode" character varying NULL,
+  "is_materialized" boolean NULL,
+  "variant_image_id" character varying NULL,
+  "cost" numeric NULL,
+  "weight" numeric NULL,
+  "length" numeric NULL,
+  "width" numeric NULL,
+  "height" numeric NULL,
+  "status" character varying NOT NULL,
+  "archive_source" character varying NULL,
+  "org_id" character varying NOT NULL,
+  "is_archived" boolean NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "invty_prod_variants_tid_ptpl_id_comb_key_ukey" UNIQUE ("product_template_id", "combination_key"),
+  CONSTRAINT "inventory_product_variants_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
 -- Create "inventory_product_variant_attribute_values" table
 CREATE TABLE "inventory_product_variant_attribute_values" (
   "id" character varying NOT NULL,
   "product_variant_id" character varying NOT NULL,
   "template_attribute_value_id" character varying NOT NULL,
+  "sales_price_extra" numeric NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,

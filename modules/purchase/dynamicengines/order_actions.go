@@ -12,17 +12,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
 )
 
-// The purchase order's lifecycle operations, exposed as engine actions.
-//
-// They are engine actions rather than hand-written REST handlers, per docs/wiki/07 §6.7: the engine
-// already does the permission check, the param binding and the response shaping, and a handler
-// would have to restate all three. Each is a POST, because none of them is a CRUD verb — confirming
-// is not an update to an order, it is an event that happens to one.
-//
-// Each carries its OWN permission rather than reusing `update`, because they are materially
-// different powers. Confirming commits the business to a purchase and cannot be undone by an edit;
-// approving is the control that spending policy rests on. A role that may correct a typo in a
-// description should not thereby be able to do either. The IAM seed declares the same set.
+// The purchase order's lifecycle operations, exposed as engine actions so the engine does the
+// permission check, param binding and response shaping. Each carries its own permission rather than
+// reusing `update`, because confirming and approving are materially different powers from editing a
+// description.
 
 // Permission codes for the order operations. They match the action codes seeded in
 // 0007002_purchase_iam.sql — a code that drifts from its seed denies every request.
@@ -35,6 +28,10 @@ const (
 	PermissionUnlock      = "unlock"
 	PermissionAcknowledge = "acknowledge"
 	PermissionMerge       = "merge"
+
+	// PermissionReprice is its own power: repricing rewrites what the company will pay across a
+	// whole order, but it commits nothing, so it is neither `update` nor `confirm`.
+	PermissionReprice = "reprice"
 )
 
 // Action names, namespaced by resource in the same style as the built-ins.
@@ -47,6 +44,7 @@ const (
 	ActionUnlock      = "unlock"
 	ActionAcknowledge = "acknowledge"
 	ActionDuplicate   = "duplicate"
+	ActionReprice     = "reprice"
 
 	ActionMerge               = "merge"
 	ActionCreateAlternative   = "create_alternative"
@@ -57,13 +55,12 @@ const (
 const (
 	paramOrderId = "id"
 	paramReason  = "reason"
-	// paramAlternativeChoice carries the answer to the open-alternatives warning of §31.
+	// paramAlternativeChoice carries the answer to the open-alternatives warning.
 	paramAlternativeChoice = "alternative_choice"
 	paramAlternativeVendor = "vendor_id"
 	paramMergeOrderIds     = "order_ids"
 )
 
-// defineOrderActions adds the lifecycle operations alongside the delete guard.
 func defineOrderActions(engine drif.DynamicResourceEngine) error {
 	if err := defineOrderDeleteGuard(engine); err != nil {
 		return err
@@ -127,8 +124,7 @@ func defineOrderActions(engine drif.DynamicResourceEngine) error {
 			Permission:  PermissionMerge,
 			MainProcess: processOrderMerge,
 		}),
-		// Raising an alternative creates an order, so it carries create rather than a permission of
-		// its own — the power it grants is the power to create an order.
+		// Raising an alternative creates an order, so it carries the create permission.
 		engine.DefineAction(drif.DynamicActionDefinition{
 			ActionName:  ActionCreateAlternative,
 			ActionType:  drif.ActionTypeGeneric,
@@ -136,8 +132,7 @@ func defineOrderActions(engine drif.DynamicResourceEngine) error {
 			Permission:  drif.PermissionCreate,
 			MainProcess: processOrderCreateAlternative,
 		}),
-		// Comparing takes nothing and changes nothing: it answers a question about orders the
-		// caller can already read.
+		// Comparing changes nothing, so it needs only read.
 		engine.DefineAction(drif.DynamicActionDefinition{
 			ActionName:  ActionCompareAlternatives,
 			ActionType:  drif.ActionTypeGeneric,
@@ -145,9 +140,15 @@ func defineOrderActions(engine drif.DynamicResourceEngine) error {
 			Permission:  drif.PermissionRead,
 			MainProcess: processOrderCompareAlternatives,
 		}),
-		// Duplicating is a create, and carries the create permission rather than one of its own:
-		// it produces a new draft order from data the caller can already read, which is exactly
-		// what a role allowed to create orders may do by hand.
+		// Reprice takes only the order id: which prices apply is the resolver's answer, and letting a
+		// caller pass one in would make this an override with extra steps.
+		engine.DefineAction(drif.DynamicActionDefinition{
+			ActionName:  ActionReprice,
+			ActionType:  drif.ActionTypeGeneric,
+			RestPath:    ":id/reprice",
+			Permission:  PermissionReprice,
+			MainProcess: processOrderReprice,
+		}),
 		engine.DefineAction(drif.DynamicActionDefinition{
 			ActionName:  ActionDuplicate,
 			ActionType:  drif.ActionTypeGeneric,
@@ -204,9 +205,8 @@ func processOrderLock(ctx corectx.Context, input drif.ProcessInput) (*drif.Actio
 	return toMutateActionResult(result, err)
 }
 
-// The reason is validated in the service rather than through a ParamSchema, following the note
-// PAY-010 left: an action whose params mix resource fields with action-specific input is not
-// described by any single schema, and the check belongs where the rule is.
+// The reason is validated in the service rather than through a ParamSchema: an action whose params
+// mix resource fields with action-specific input is not described by any single schema.
 func processOrderUnlock(ctx corectx.Context, input drif.ProcessInput) (*drif.ActionResult, error) {
 	service, err := orderServiceOf(input)
 	if err != nil {
@@ -225,14 +225,33 @@ func processOrderAcknowledge(ctx corectx.Context, input drif.ProcessInput) (*dri
 	return toMutateActionResult(result, err)
 }
 
-// Duplicate returns the new order rather than an affected count, because the caller's next move is
-// to open it — and without the id in the response they would have to search for it.
+// Duplicate returns the new order rather than an affected count so the caller has its id.
 func processOrderDuplicate(ctx corectx.Context, input drif.ProcessInput) (*drif.ActionResult, error) {
 	service, err := orderServiceOf(input)
 	if err != nil {
 		return nil, err
 	}
 	result, err := service.Duplicate(ctx, readOrderId(input))
+	if err != nil {
+		return nil, err
+	}
+	out := &drif.ActionResult{
+		ClientErrors: result.ClientErrors,
+		HasData:      result.HasData,
+	}
+	if result.HasData {
+		out.Data = result.Data
+	}
+	return out, nil
+}
+
+// Reprice returns which lines moved rather than an affected count.
+func processOrderReprice(ctx corectx.Context, input drif.ProcessInput) (*drif.ActionResult, error) {
+	service, err := orderServiceOf(input)
+	if err != nil {
+		return nil, err
+	}
+	result, err := service.Reprice(ctx, readOrderId(input))
 	if err != nil {
 		return nil, err
 	}
@@ -280,10 +299,8 @@ func processOrderCompareAlternatives(ctx corectx.Context, input drif.ProcessInpu
 	return &drif.ActionResult{Data: comparison, HasData: true}, nil
 }
 
-// readStringList reads a list of ids from the request body.
-//
-// A malformed list is read as empty rather than guessed at, and the merge then refuses for needing
-// two orders — which names the real problem better than a partial list silently merged.
+// readStringList reads a list of ids from the request body. A malformed list reads as empty rather
+// than partially, so the merge refuses instead of silently merging a subset.
 func readStringList(params dmodel.DynamicFields, field string) []string {
 	raw, ok := params[field]
 	if !ok || raw == nil {
@@ -305,12 +322,9 @@ func readStringList(params dmodel.DynamicFields, field string) []string {
 	}
 }
 
-// orderServiceOf reaches the derived service the module installed during Init.
-//
-// The type assertion is what makes the lifecycle operations reachable: the engine hands the action
-// its service as the base interface, and only the derived type carries Confirm, Approve and Cancel.
-// A failed assertion means Init did not install it, which is a wiring bug rather than a request
-// problem.
+// orderServiceOf reaches the derived service installed during Init. The engine hands the action its
+// service as the base interface, and only the derived type carries Confirm, Approve and Cancel, so
+// a failed assertion is a wiring bug rather than a request problem.
 func orderServiceOf(input drif.ProcessInput) (*services.PurchaseOrderDomainServiceImpl, error) {
 	service, ok := input.ResourceService.(*services.PurchaseOrderDomainServiceImpl)
 	if !ok {
@@ -336,11 +350,9 @@ func readStringParam(params dmodel.DynamicFields, field string) string {
 	return ""
 }
 
-// toMutateActionResult widens a mutation result into the engine's generic action result.
-//
-// The engine's own toActionResult is package-private to modules/dynamicresource/engine, so this is
-// a local equivalent rather than an unnecessary duplicate: the ClientErrors must survive, because
-// a refused operation reports its reason through them and not through err.
+// toMutateActionResult widens a mutation result into the engine's generic action result. It
+// duplicates the engine's package-private toActionResult; ClientErrors must survive, because a
+// refused operation reports its reason through them and not through err.
 func toMutateActionResult(
 	result *dyn.OpResult[dyn.MutateResultData], err error,
 ) (*drif.ActionResult, error) {

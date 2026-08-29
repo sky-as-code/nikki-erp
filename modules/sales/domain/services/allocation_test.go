@@ -7,10 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// The allocation invariant is `Σ allocated == total`, EXACTLY, for every input. It is asserted in
-// nearly every test below rather than in one, because it is the property the whole algorithm exists
-// to guarantee: a combo whose components do not sum to its price makes the receipt and the stock
-// valuation disagree, and a split bill that does not sum to its order loses money.
+// The invariant is `Σ allocated == total`, EXACTLY, asserted by nearly every test below.
 
 func alloc(key string, reference string, tiebreak int32) AllocationInput {
 	return AllocationInput{
@@ -37,8 +34,7 @@ func assertSumsExactly(t *testing.T, results []AllocationResult, total string) {
 	}
 }
 
-// BR §18's worked example, spelled out: references 30/20/10, combo price 48,000, expected shares
-// 24,000/16,000/8,000. It divides evenly, so there is no residual and the proportions are visible.
+// References 30/20/10 over 48,000 divide evenly, so there is no residual.
 func TestAllocateWorkedExampleFromBR18(t *testing.T) {
 	results := Allocate(
 		decimal.RequireFromString("48000"),
@@ -59,8 +55,7 @@ func TestAllocateWorkedExampleFromBR18(t *testing.T) {
 	assertSumsExactly(t, results, "48000")
 }
 
-// The case the residual rule exists for: 100 across three equal shares at two places is 33.33 three
-// times, which is 99.99. The missing hundredth must land somewhere reproducible.
+// 100 across three equal shares at two places is 99.99; the hundredth must be placed.
 func TestResidualIsAssignedAndSumIsExact(t *testing.T) {
 	results := Allocate(
 		decimal.RequireFromString("100"),
@@ -77,7 +72,7 @@ func TestResidualIsAssignedAndSumIsExact(t *testing.T) {
 	}
 }
 
-// D-04: the residual goes to the LARGEST reference, not the last input and not the first.
+// The residual goes to the LARGEST reference, not the last input and not the first.
 func TestResidualGoesToLargestReference(t *testing.T) {
 	// 10 split by 1/1/1 at 0 places: each share is 3.33 -> 3, summing to 9, residual 1.
 	results := Allocate(
@@ -102,8 +97,7 @@ func TestResidualGoesToLargestReference(t *testing.T) {
 	}
 }
 
-// The order the caller happens to pass inputs in must not change the answer. Anything else would
-// make the same order priced twice produce different numbers.
+// Input order must not change the answer, or the same order priced twice yields different numbers.
 func TestAllocationIsIndependentOfInputOrder(t *testing.T) {
 	inputs := []AllocationInput{
 		alloc("a", "7", 1), alloc("b", "11", 2), alloc("c", "13", 3), alloc("d", "17", 4),
@@ -132,8 +126,7 @@ func TestAllocationIsIndependentOfInputOrder(t *testing.T) {
 	}
 }
 
-// A bundle of free items: every reference is zero, so proportions are undefined. The total must
-// still be allocated somewhere, or the sum invariant breaks and the money vanishes.
+// Every reference zero: the total must still be allocated somewhere, or the money vanishes.
 func TestAllZeroReferencesStillAllocatesTheTotal(t *testing.T) {
 	results := Allocate(
 		decimal.RequireFromString("500"),
@@ -148,8 +141,7 @@ func TestAllZeroReferencesStillAllocatesTheTotal(t *testing.T) {
 	}
 }
 
-// A component priced at zero inside a paid bundle takes no share — it is free, and giving it part
-// of the bundle price would misstate both its value and its neighbours'.
+// A zero-priced component in a paid bundle takes no share.
 func TestZeroReferenceTakesNoShare(t *testing.T) {
 	results := Allocate(
 		decimal.RequireFromString("100"),
@@ -166,8 +158,7 @@ func TestZeroReferenceTakesNoShare(t *testing.T) {
 	}
 }
 
-// A discount allocated across lines is negative. Proportions are unaffected by sign, and the
-// residual rule must still land the remainder deterministically.
+// A discount allocated across lines is negative; the residual rule must still be deterministic.
 func TestNegativeTotalAllocatesLikeAPositiveOne(t *testing.T) {
 	results := Allocate(
 		decimal.RequireFromString("-100"),
@@ -198,9 +189,7 @@ func TestAllocateSingleRecipientTakesEverything(t *testing.T) {
 	)
 	assertSumsExactly(t, results, "33.333333")
 
-	// Note what this asserts: the single share is the UNROUNDED total, because the residual is
-	// added back after rounding. That is correct — the invariant is exactness, not tidiness, and a
-	// caller wanting a rounded total rounds the total before allocating it.
+	// The single share is the UNROUNDED total, because the residual is added back after rounding.
 	if got := amountOf(results, "only"); !got.Equal(decimal.RequireFromString("33.333333")) {
 		t.Errorf("a single recipient takes the whole total exactly, got %s", got)
 	}
@@ -221,8 +210,7 @@ func TestAllocateZeroTotal(t *testing.T) {
 	}
 }
 
-// The exactness invariant across a wide range of awkward inputs. This is the test that would catch
-// a regression in the residual logic on a case nobody thought to write by hand.
+// The exactness invariant across a wide range of awkward inputs.
 func TestSumIsExactAcrossManyShapes(t *testing.T) {
 	totals := []string{"0.01", "1", "7", "99.99", "100", "1000.005", "48000", "123456.789"}
 	references := [][]string{

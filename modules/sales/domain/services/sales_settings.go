@@ -11,10 +11,9 @@ import (
 
 // SalesPolicy is one resolved snapshot of the settings that govern selling.
 //
-// It is a struct of plain values rather than a live accessor, and that is the point: a rule reads
-// the policy once at the start of an operation and uses the same numbers throughout. An accessor
-// re-read mid-calculation could return a different rounding scale between two lines of the same
-// order, producing totals that do not add up and that nobody could reproduce afterwards.
+// Plain values rather than a live accessor, so a rule reads the policy once and uses the same
+// numbers throughout: an accessor re-read mid-calculation could return a different rounding scale
+// between two lines of the same order, producing totals that do not add up.
 type SalesPolicy struct {
 	MaxPaymentMethodsPerBill int32
 	ReturnWindowDays         int32
@@ -23,29 +22,23 @@ type SalesPolicy struct {
 	DraftOrderExpiryHours    int32
 	RoundingScale            int32
 
-	// DefaultTaxRate is deprecated and no longer feeds pricing; see domain/settings. It is still
-	// resolved so that an administrator reading the policy sees what is stored.
+	// DefaultTaxRate is deprecated and no longer feeds pricing; see domain/settings. Still resolved
+	// so an administrator reading the policy sees what is stored.
 	DefaultTaxRate decimal.Decimal
 
 	// DefaultSalesTaxCode names the accounting tax applied to every sale line. Empty means untaxed.
 	DefaultSalesTaxCode string
 
-	// OutgoingOperationTypeId and IncomingOperationTypeId name the Inventory operation types a sale
-	// ships against and a return is received against (SALES-049).
-	//
-	// Empty means fulfilment is not configured, and a fulfilment request is refused rather than
-	// guessed. Unlike every other field here there is no safe default to fall back to: an operation
-	// type decides which warehouse the goods leave, and picking one on the organization's behalf
-	// would move real stock out of a place nobody chose.
+	// The Inventory operation types a sale ships against and a return is received against. Empty
+	// means fulfilment is not configured, and a fulfilment request is refused rather than guessed:
+	// unlike every other field here there is no safe default, because an operation type decides
+	// which warehouse the goods leave.
 	OutgoingOperationTypeId string
 	IncomingOperationTypeId string
 }
 
-// DefaultSalesPolicy is what applies when nothing has been configured.
-//
-// Every field is the documented default from domain/settings, so a deployment that has never
-// opened the settings screen still sells correctly. It is also what a failed settings read falls
-// back to — see ResolveSalesPolicy.
+// DefaultSalesPolicy is what applies when nothing has been configured, and what a failed settings
+// read falls back to. Every field is the documented default from domain/settings.
 func DefaultSalesPolicy() SalesPolicy {
 	return SalesPolicy{
 		MaxPaymentMethodsPerBill: salessettings.DefaultMaxPaymentMethodsPerBill,
@@ -60,19 +53,13 @@ func DefaultSalesPolicy() SalesPolicy {
 
 // ResolveSalesPolicy reads the settings that apply to the caller.
 //
-// **It never fails.** A settings read is a call into another module, and pricing an order must not
-// stop because that module is slow, mid-restart or has no rows yet. An unreadable setting falls
-// back to its default and the sale proceeds — which is the same answer a fresh deployment gets, so
-// nothing novel happens on that path. This mirrors essential/app/locale_resolver.go, which resolves
-// a locale the same way and for the same reason.
-//
-// The trade is deliberate and worth stating: a misconfigured settings module looks like a correctly
-// configured default one. That is acceptable here because every default is a safe reading —
-// overpayment off, the narrowest rounding, no tax code — so falling back never permits
-// something the organization had forbidden. Note what falling back to no tax code does NOT mean:
-// it makes the sale untaxed, which is a different thing from a tax Accounting could not determine.
-// That second case refuses the sale, in ResolveBasketTax, and never reaches a default. A setting whose default was the permissive direction
-// would need a different treatment.
+// It never fails: a settings read is a call into another module, and pricing an order must not stop
+// because that module is slow, mid-restart or has no rows yet, so an unreadable setting falls back
+// to its default and the sale proceeds. The trade is that a misconfigured settings module looks
+// like a correctly configured default one, which is acceptable only because every default is a safe
+// reading (overpayment off, narrowest rounding, no tax code). Falling back to no tax code makes the
+// sale untaxed, which is different from a tax Accounting could not determine: that case refuses the
+// sale in ResolveBasketTax and never reaches a default.
 func ResolveSalesPolicy(
 	ctx corectx.Context, settings itExt.EffectiveSettingsExtService,
 ) SalesPolicy {
@@ -119,12 +106,10 @@ func settingKey(name string) string {
 }
 
 // The readers below all take a fallback and never report failure, for the same reason
-// ResolveSalesPolicy does not: a value of the wrong shape is a configuration defect, and refusing
-// to sell is a worse response to it than selling under the documented default.
-//
-// They also never bare type-assert. A value that has been through a jsonb column and back arrives
-// as whatever the JSON decoder chose — a whole number is a float64, not an int — so each reader
-// accepts every shape its type can plausibly arrive in.
+// ResolveSalesPolicy does not: refusing to sell is a worse response to a configuration defect than
+// selling under the documented default. They also never bare type-assert, because a value that has
+// been through a jsonb column arrives as whatever the JSON decoder chose (a whole number is a
+// float64, not an int).
 
 func int32Setting(values map[string]any, name string, fallback int32) int32 {
 	value, ok := values[settingKey(name)]
@@ -192,9 +177,9 @@ func decimalSetting(
 			return *typed
 		}
 	case string:
-		// A decimal crosses JSON as a string precisely so it does not lose precision on the way.
-		// Parsing it back is the one place that could fail, and a malformed one falls back rather
-		// than propagating: a tax rate that will not parse must not become a tax rate of NaN.
+		// A decimal crosses JSON as a string so it does not lose precision. Parsing it back is the
+		// one place that could fail, and a malformed one falls back rather than propagating: a tax
+		// rate that will not parse must not become NaN.
 		if parsed, err := decimal.NewFromString(typed); err == nil {
 			return parsed
 		}

@@ -213,8 +213,7 @@ func ExpectedValueFieldForDataType(dataType AttributeDataType) string {
 	}
 }
 
-// GetValue returns the field name and concrete value of whichever value field is set.
-// Returns ("", nil) if no value field is set.
+// GetValue returns the field name and value of whichever value field is set, or ("", nil).
 func (this AttributeValue) GetValue() (string, any) {
 	if v := this.GetValueText(); v != nil {
 		return AttrValFieldValueText, *v
@@ -234,8 +233,7 @@ func (this AttributeValue) GetValue() (string, any) {
 	return "", nil
 }
 
-// SetValueFromRaw converts the raw input and sets the appropriate value field for the given data type.
-// Returns an error if the raw value cannot be converted to the expected Go type.
+// SetValueFromRaw converts the raw input and sets the value field matching the data type.
 func (this *AttributeValue) SetValueFromRaw(dataType AttributeDataType, value any) error {
 	switch dataType {
 	case AttributeDataTypeNumber:

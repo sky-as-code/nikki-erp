@@ -1,13 +1,7 @@
-// Package dynamicengines declares the resource engines the Sales module serves through the
-// dynamic resource engine, and creates them during the module's Init().
-//
-// Its imports point one way only: the domain, the module's own interfaces, and the dynamicresource
-// module — never app/, infra/ or transport/. That keeps the package importable by both sales
-// (which creates the engines) and sales/transport/restful (which registers their routes) without
-// a cycle.
-//
-// The package declares engines and adapts their callbacks; the rules those callbacks enforce live
-// in domain/services. See docs/wiki/07. ERP backend module.md §6.7.
+// Package dynamicengines declares the resource engines the Sales module serves, and creates them
+// during Init(). It may import only the domain, the module's own interfaces and dynamicresource —
+// never app/, infra/ or transport/ — so both sales and sales/transport/restful can import it without
+// a cycle. The rules its callbacks enforce live in domain/services.
 package dynamicengines
 
 import (
@@ -24,24 +18,16 @@ import (
 
 // engineSpec declares one resource engine the Sales module owns.
 type engineSpec struct {
-	// SchemaName is the dynamic-model schema the engine serves. It must be an XSchemaName
-	// constant, never a string derived from the resource path.
+	// SchemaName must be an XSchemaName constant, never a string derived from the resource path.
 	SchemaName string
 
-	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD
-	// ones. It is optional: a resource without custom behavior leaves it nil.
+	// DefineActions is optional; a resource without custom behavior leaves it nil.
 	DefineActions func(drif.DynamicResourceEngine) error
 }
 
-// engineSpecs lists the resources this module serves through the dynamic resource engine.
-//
-// The order matches RegisterModels: referenced before referencing. It does not have to — engines
-// are created after every schema is registered — but keeping the two lists in the same order makes
-// a missing entry obvious when reading them side by side.
-//
-// Junction tables never get an entry here. A _rel row is configured through its owner's
-// capabilities, so it has no route and no IAM resource row — see the 25-engines-for-27-schemas
-// split in vending_machine_new.
+// engineSpecs lists the resources this module serves. The order matches RegisterModels for
+// readability only; engines are created after every schema is registered. Junction tables never get
+// an entry: a _rel row is configured through its owner, so it has no route and no IAM resource row.
 var engineSpecs = []engineSpec{
 	salesChannelEngineSpec(),
 	salesPointEngineSpec(),
@@ -51,9 +37,7 @@ var engineSpecs = []engineSpec{
 	salesOrderAdjustmentEngineSpec(),
 	salesOrderEventEngineSpec(),
 
-	// Pricing master data. These ARE client-managed, unlike the three explanatory records above:
-	// an operator sets up pricelists and bundles through the UI, which is the whole point of
-	// having them as data rather than as code.
+	// Pricing master data, client-managed: an operator sets up pricelists and bundles through the UI.
 	salesPricelistEngineSpec(),
 	salesPricelistItemEngineSpec(),
 	salesComboEngineSpec(),
@@ -89,21 +73,21 @@ var engineSpecs = []engineSpec{
 	salesQuotationEngineSpec(),
 	salesQuotationLineEngineSpec(),
 
+	// Returns and the refunds that settle them.
+	salesReturnEngineSpec(),
+	salesReturnLineEngineSpec(),
+	salesRefundPaymentEngineSpec(),
+
 	// The integration event feed.
 	salesIntegrationOutboxEngineSpec(),
 }
 
-// junctionSchemas lists the association schemas that need an engine built but not served.
-//
-// The distinction from engineSpecs is the whole point: EngineSchemaNames drives route registration,
-// so a schema here gets a repository and nothing else — no route, no IAM resource row, no CRUD.
-//
-// They need an engine at all only because a repository cannot be built without one: the query
-// builder and database client the registry injects are private to it. vending_machine_new avoids
-// this for its own junctions by writing them through crud.ManageM2m on the owner's repository, but
-// that helper resolves the far side against a locally registered schema. sales_channel_payment_rel
-// points at a paymentinvoice payment method, which is not one, so its rows are written directly and
-// a repository of its own is what makes that possible.
+// junctionSchemas lists association schemas that need an engine built but not served: a schema here
+// gets a repository and nothing else — no route, no IAM resource row, no CRUD. They need an engine
+// only because a repository cannot be built without one (the query builder and database client are
+// private to the registry). crud.ManageM2m is not usable here because it resolves the far side
+// against a locally registered schema, and sales_channel_payment_rel points at a paymentinvoice
+// payment method.
 var junctionSchemas = []string{
 	models.SalesChannelPaymentRelSchemaName,
 }
@@ -112,10 +96,8 @@ func salesChannelEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.SalesChannelSchemaName,
 		DefineActions: func(engine drif.DynamicResourceEngine) error {
-			// The channel carries two families of action: its own lifecycle, and the payment-method
-			// configuration that belongs to it rather than to a resource of its own. They are
-			// declared separately because they answer to different permissions and are seeded as
-			// different rows, but they hang off the same engine because they act on the same record.
+			// Two families of action on the same record: lifecycle and payment-method configuration.
+			// Declared separately because they answer to different permissions and seed rows.
 			return stdErr.Join(
 				defineSalesChannelActions(engine),
 				defineChannelPaymentActions(engine),
@@ -124,14 +106,9 @@ func salesChannelEngineSpec() engineSpec {
 	}
 }
 
-// salesOrderEngineSpec serves the order over HTTP, with apply_voucher as its only custom action.
-//
-// The lifecycle actions - confirm, cancel - arrive with SALES-013 and SALES-014, which is also when
-// the state machines that make them safe exist. Declaring those routes now would expose transitions
-// nothing yet validates.
-//
-// apply_voucher is safe ahead of them because it does not move any status: it reserves a use and
-// reports what the basket should now be priced against, and a draft order is editable by definition.
+// salesOrderEngineSpec serves the order, with apply_voucher as its only custom action. The
+// lifecycle actions wait for the state machines that would validate them; apply_voucher is safe
+// ahead of those because it moves no status.
 func salesOrderEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName:    models.SalesOrderSchemaName,
@@ -139,24 +116,17 @@ func salesOrderEngineSpec() engineSpec {
 	}
 }
 
-// salesOrderLineEngineSpec serves the lines.
-//
-// A line is a resource in its own right rather than only a nested payload of its order, because
-// adding, changing and removing one line of a draft is the operation a POS screen performs on every
-// keystroke; making that a whole-order update would rewrite untouched lines and lose a concurrent
-// edit to them.
+// A line is its own resource rather than a nested payload, because a whole-order update would
+// rewrite untouched lines and lose concurrent edits to them.
 func salesOrderLineEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.SalesOrderLineSchemaName,
 	}
 }
 
-// The three records that explain an order rather than form it. All read-only over HTTP: each is
-// written by the operation that produces it - combo expansion, the pricing engine, the audit
-// service - and a client able to POST one could forge a price explanation or an audit trail.
-//
-// ReadOnly is not available on this module's engineSpec, so the write actions are simply not
-// exposed: their IAM seeds grant read alone, which is what the engine asserts against.
+// The three records that explain an order rather than form it, all read-only: a client able to POST
+// one could forge a price explanation or an audit trail. engineSpec has no ReadOnly flag, so the
+// read-onlyness comes from their IAM seeds granting `read` alone.
 func salesOrderLineComponentEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName: models.SalesOrderLineComponentSchemaName,
@@ -176,7 +146,10 @@ func salesOrderEventEngineSpec() engineSpec {
 }
 
 func salesPricelistEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesPricelistSchemaName}
+	return engineSpec{
+		SchemaName:    models.SalesPricelistSchemaName,
+		DefineActions: defineSalesPricelistActions,
+	}
 }
 
 func salesPricelistItemEngineSpec() engineSpec {
@@ -222,25 +195,20 @@ func salesBillLineEngineSpec() engineSpec {
 	return engineSpec{SchemaName: models.SalesBillLineSchemaName}
 }
 
-// salesBillRelationEngineSpec routes the lineage read-only.
-//
-// Its rows are written by split and merge and by nothing else. A client able to POST one could
-// fabricate a paper trail showing a payment settled a bill it never touched.
+// The lineage is read-only: its rows come from split and merge alone, and a writable one could
+// fabricate a trail showing a payment settled a bill it never touched.
 func salesBillRelationEngineSpec() engineSpec {
 	return engineSpec{SchemaName: models.SalesBillRelationSchemaName}
 }
 
-// salesPaymentEngineSpec routes payments read-only.
-//
-// Money is recorded through the record_payment operation and by nothing else: it applies six gates
-// that a plain POST would bypass, including the two that ask another module whether the method may
-// be used at all.
+// Payments are read-only: money is recorded through record_payment alone, which applies gates a
+// plain POST would bypass, including asking another module whether the method may be used.
 func salesPaymentEngineSpec() engineSpec {
 	return engineSpec{SchemaName: models.SalesPaymentSchemaName}
 }
 
-// The fulfilment tables are read-only over HTTP. Requests are raised by confirm and by the return
-// workflow, and a client able to write one could tell Inventory to move goods no sale asked for.
+// The fulfilment tables are read-only: a writable one could tell Inventory to move goods no sale
+// asked for.
 func salesFulfillmentRequestEngineSpec() engineSpec {
 	return engineSpec{SchemaName: models.SalesFulfillmentRequestSchemaName}
 }
@@ -249,12 +217,8 @@ func salesFulfillmentRequestLineEngineSpec() engineSpec {
 	return engineSpec{SchemaName: models.SalesFulfillmentRequestLineSchemaName}
 }
 
-// salesFiscalRequestEngineSpec routes the fiscal contract read-only.
-//
-// Requests are raised by the request_invoice operation and by nothing else. A client able to POST
-// one could ask a tax authority for a legal document against a sale that was never made; a client
-// able to PATCH one could mark an unissued request as issued, which is the state BR 77 exists to
-// keep honest.
+// The fiscal contract is read-only: a writable one could ask a tax authority for a document against
+// a sale that never happened, or mark an unissued request as issued.
 func salesFiscalRequestEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName:    models.SalesFiscalRequestSchemaName,
@@ -262,35 +226,44 @@ func salesFiscalRequestEngineSpec() engineSpec {
 	}
 }
 
-// salesIntegrationOutboxEngineSpec routes the outbox read-only.
-//
-// Rows are written by the domain services that produce the events, inside their own transactions,
-// and drained by the sweep in app/. A client able to POST one could announce a sale that never
-// happened to every downstream consumer; a client able to PATCH one could set published_at on an
-// event that never went, which deletes it from the queue as surely as a DELETE would.
-//
-// It is routed at all because an operator investigating a consumer that is behind needs to see what
-// Sales believes it published, and when.
+// A return is client-creatable, unlike a bill: raising one is how an agent starts the process. Its
+// status columns are no_update, so the lifecycle runs only through the actions below.
+func salesReturnEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName:    models.SalesReturnSchemaName,
+		DefineActions: defineSalesReturnActions,
+	}
+}
+
+// Return lines are read-only: create_return checks each quantity against what is still returnable
+// and prices it from historical amounts, so a writable line could return more than was delivered or
+// name its own refund amount.
+func salesReturnLineEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesReturnLineSchemaName}
+}
+
+// Refund legs are read-only: the return workflow caps each leg at what its original payment
+// captured, so a writable row could create an outflow with no matching inflow.
+func salesRefundPaymentEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesRefundPaymentSchemaName}
+}
+
+// The outbox is read-only: a writable row could announce a sale that never happened, or set
+// published_at on an event that never went, which drops it from the queue. It is routed at all so an
+// operator can see what Sales believes it published, and when.
 func salesIntegrationOutboxEngineSpec() engineSpec {
 	return engineSpec{SchemaName: models.SalesIntegrationOutboxSchemaName}
 }
 
-// salesManualDiscountEngineSpec routes the overrides read-only.
-//
-// Rows are written by the grant operation and by nothing else, because a plain POST would bypass
-// every gate that makes an override auditable: the mandatory reason, the draft-only check, and the
-// audit entry recording both prices. A client able to write one directly could change what a
-// customer pays with no stated cause and no trail.
+// Overrides are read-only: a plain POST would bypass the gates that make one auditable (mandatory
+// reason, draft-only check, audit entry recording both prices).
 func salesManualDiscountEngineSpec() engineSpec {
 	return engineSpec{SchemaName: models.SalesManualDiscountSchemaName}
 }
 
-// salesQuotationEngineSpec carries the convert and transition actions.
-//
-// Unlike the order, a quotation IS client-creatable through the built-in POST: it is a document an
-// operator writes, and nothing about creating one commits the business or moves money. What is gated
-// is the status - declared no_update, moved only through the actions below - because accepting one
-// creates an order and expiring one closes an offer.
+// A quotation is client-creatable through the built-in POST, since creating one commits nothing.
+// Its status is no_update and moves only through the actions below, because accepting one creates
+// an order.
 func salesQuotationEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName:    models.SalesQuotationSchemaName,
@@ -306,11 +279,8 @@ func salesVoucherCodeEngineSpec() engineSpec {
 	return engineSpec{SchemaName: models.SalesVoucherCodeSchemaName}
 }
 
-// salesVoucherRedemptionEngineSpec routes the redemption ledger read-only.
-//
-// It is registered like any other engine; its read-onlyness comes from the IAM seed granting `read`
-// alone. A client able to POST one could forge a discount's provenance, and a client able to PATCH
-// one could release a hold another order is relying on.
+// The redemption ledger is read-only through its IAM seed granting `read` alone: a writable row
+// could forge a discount's provenance or release a hold another order relies on.
 func salesVoucherRedemptionEngineSpec() engineSpec {
 	return engineSpec{SchemaName: models.SalesVoucherRedemptionSchemaName}
 }
@@ -326,16 +296,15 @@ func salesPointEngineSpec() engineSpec {
 	}
 }
 
-// EngineSchemaNames lists the schemas this module creates an engine for, so that route
-// registration and engine creation cannot drift apart.
+// EngineSchemaNames keeps route registration and engine creation from drifting apart.
 func EngineSchemaNames() []string {
 	return array.Map(engineSpecs, func(spec engineSpec) string {
 		return spec.SchemaName
 	})
 }
 
-// InitDynamicEngines creates the resource engines this module owns and publishes them into the
-// dependency container, so that other modules can inject them by name.
+// InitDynamicEngines creates this module's engines and publishes them into the dependency container
+// so other modules can inject them by name.
 func InitDynamicEngines() error {
 	for _, spec := range engineSpecs {
 		if err := initEngine(spec); err != nil {

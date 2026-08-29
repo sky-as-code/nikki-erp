@@ -75,6 +75,15 @@
 			}
 		},
 		{
+			"name": "base_sales_price",
+			"label": "fields.base_sales_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"default_value": "0",
+			"description": {
+				"en-US": "The product's public or reference selling price, before any commercial policy is applied. It is the basis Sales prices from, not the price anyone necessarily pays: a pricelist rule may discount it, mark it up, or replace it outright, and the price on an order is the snapshot taken when the line was added. Excludes tax, customer discount, promotion and quantity break, each of which belongs to the module that owns it.\n\nOn the template rather than the variant, and unlike cost. A variant does not store its own copy — it derives effective_base_sales_price from this plus the price extras of its attribute values, so raising this raises every variant's price at once with nothing to re-run (BR-PRICE-VARIANT-004).\n\nCarries no currency of its own. The amount is denominated in the organization's default currency, which Accounting owns as a setting (BR-PRICE-CUR-003); a currency column here would be a second answer to that question, free to disagree with it."
+			}
+		},
+		{
 			"name": "default_weight",
 			"label": "fields.default_weight",
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
@@ -128,6 +137,36 @@
 			},
 			"description": {
 				"en-US": "Number of active (unarchived) variants, computed as a correlated COUNT subquery when the field is explicitly requested. Archived variants are excluded by the framework's archive scoping; COUNT itself reads 0 for a variant-less template, so no default is needed."
+			}
+		},
+		{
+			"name": "min_variant_cost",
+			"label": "fields.min_variant_cost",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"computed": {
+				"kind": "aggregate",
+				"is_stored": false,
+				"source": "variants",
+				"function": "min",
+				"field": "cost"
+			},
+			"description": {
+				"en-US": "The lowest cost among this template's variants. Read model only, for a product list that wants to show a range; never a cost anything is valued at (BR-PRICE-VARIANT-014).\n\nNo default: a template with no variants reads NULL rather than 0, and the distinction matters. Zero is a cost somebody set; NULL is the absence of one, and showing 0 for a product nobody has costed would be a number a reader would believe."
+			}
+		},
+		{
+			"name": "max_variant_cost",
+			"label": "fields.max_variant_cost",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"computed": {
+				"kind": "aggregate",
+				"is_stored": false,
+				"source": "variants",
+				"function": "max",
+				"field": "cost"
+			},
+			"description": {
+				"en-US": "The highest cost among this template's variants — the other end of the range min_variant_cost opens. Equal to it exactly when every variant costs the same, which is what makes the pair a usable answer to \"does this product have one cost or several?\" without a second query.\n\nA template has NO authoritative cost of its own (BR-PRICE-VARIANT-006, PRICE-VARIANT-INV-006). Averaging these two, or taking either as the product's cost, is explicitly forbidden (BR-PRICE-VARIANT-014): cost is owned by the concrete variant, and a template with several variants genuinely has several costs. When the two differ, a reader should be shown that fact — not a number that hides it."
 			}
 		}
 	],

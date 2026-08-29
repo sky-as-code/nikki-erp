@@ -29,10 +29,8 @@ func TaxGroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(taxGroupSchemaJson)
 }
 
-// TaxGroup aggregates taxes for display and reporting.
-//
-// It never carries a calculation formula (TAX-INV-13): grouping VAT 8% and VAT 10% together
-// says how an invoice summarises them, not how either is computed.
+// TaxGroup aggregates taxes for display and reporting. It never carries a calculation formula:
+// grouping says how an invoice summarises taxes, not how any of them is computed.
 type TaxGroup struct {
 	basemodel.DynamicModelBase
 }

@@ -16,33 +16,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// Merging bills (BR 38 and 74, SALES-026).
+// Merging bills. Several settlement units become one - the inverse of a split, with the same two
+// invariants: the total does not change, and nothing is deleted.
 //
-// Several settlement units become one - a table that decided to pay together after all. The inverse
-// of a split, and it shares the same two invariants: the total does not change, and nothing is
-// deleted.
+// A merge whose conditions fail is REJECTED outright, never partially applied. Every gate runs
+// BEFORE anything is written and the write happens in one transaction, because a merge that got
+// halfway would leave some bills cancelled and their value on no live bill at all.
 //
-// # BR 74: REJECT, never partially merge
-//
-// The requirement is explicit that a merge whose conditions fail must be refused outright rather
-// than partially applied or silently adjusted. That is the rule this file is arranged around: every
-// gate runs BEFORE anything is written, and the write happens in one transaction. A merge that got
-// halfway would leave some bills cancelled and their value on no live bill at all, which is the one
-// outcome worse than refusing.
-//
-// # Why the gates are what they are
-//
-// Currency must match because Sales has no FX; converting would be a pricing decision nobody
-// authorised. Bills must belong to one ORDER, because BR 36's invariant is stated per order and a
-// cross-order merge would break it on both. All must be open, because a settled bill has money
-// against it and a cancelled one is already superseded.
+// The gates: currency must match, because Sales has no FX; bills must belong to one ORDER, because
+// the allocation invariant is stated per order; and all must be open.
 
-// MergeBillParams names the bills to combine.
 type MergeBillParams struct {
 	SourceBillIds []string
 }
 
-// MergeBillResult is what a merge produced.
 type MergeBillResult struct {
 	MergedBillId  string
 	SourceBillIds []string
@@ -50,14 +37,12 @@ type MergeBillResult struct {
 	TotalAfter    decimal.Decimal
 }
 
-// The refusal reasons merge can produce.
 const (
 	ReasonMergeNeedsTwoBills = "sales_bill.merge_needs_two_bills"
 	ReasonDifferentOrders    = "sales_bill.different_orders"
 	ReasonMergeTotalChanged  = "sales_bill.merge_total_changed"
 )
 
-// MergeBills combines several open bills of one order into a single bill.
 func MergeBills(
 	ctx corectx.Context, params MergeBillParams, dLock lock.DistributedLock,
 ) (*MergeBillResult, *ft.ClientErrors, error) {
@@ -130,8 +115,8 @@ func mergeUnderLock(
 			return err
 		}
 
-		// Each source is cancelled and points at the survivor. One relation row per source, all with
-		// the same target, which is what distinguishes a merge from a split in the lineage.
+		// Each source is cancelled and points at the survivor: one relation row per source, all with
+		// the same target, which distinguishes a merge from a split in the lineage.
 		for _, source := range sources {
 			if err := cancelSupersededBill(tranxCtx, source, []string{targetId},
 				string(models.SalesBillRelationMergedInto)); err != nil {
@@ -169,11 +154,8 @@ func mergeUnderLock(
 	}, nil, nil
 }
 
-// loadMergeableBills reads every source bill and applies BR 74's gates.
-//
-// All gates run before anything is written and EVERY failure is collected rather than stopping at
-// the first, because BR 74 requires the merge to be rejected as a whole - and an operator fixing one
-// problem only to meet the next is a worse experience than being told all of them at once.
+// loadMergeableBills runs every gate before anything is written and collects EVERY failure rather
+// than stopping at the first, because the merge is rejected as a whole.
 func loadMergeableBills(
 	ctx corectx.Context, billIds []string, orderId string,
 ) ([]dmodel.DynamicFields, *ft.ClientErrors, error) {
@@ -210,7 +192,7 @@ func loadMergeableBills(
 		}
 
 		if stringOf(record, models.SalesBillFieldSalesOrderId) != orderId {
-			// BR 36's invariant is stated per order, so a cross-order merge would break it on both.
+			// The allocation invariant is per order, so a cross-order merge would break it on both.
 			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ReasonDifferentOrders,
 				"bill '"+billId+"' belongs to a different sales order"))
 			continue
@@ -220,8 +202,8 @@ func loadMergeableBills(
 		if currency == "" {
 			currency = billCurrency
 		} else if billCurrency != currency {
-			// Refused rather than converted: Sales has no FX, and inventing a rate would be a
-			// pricing decision nobody authorised.
+			// Refused rather than converted: Sales has no FX, and inventing a rate would be a pricing
+			// decision nobody authorised.
 			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ReasonCurrencyMismatch,
 				"bill '"+billId+"' is in "+billCurrency+" but the others are in "+currency))
 			continue
@@ -236,11 +218,8 @@ func loadMergeableBills(
 	return sources, nil, nil
 }
 
-// writeMergedBill creates the survivor and moves every allocation onto it.
-//
-// Allocations of the same order line from different bills are COMBINED into one row, because the
-// unique on (sales_bill_id, sales_order_line_id) permits only one per line per bill - and because a
-// merged bill showing the same product on two lines would puzzle whoever reads it.
+// writeMergedBill combines allocations of the same order line from different bills into one row,
+// because the unique on (sales_bill_id, sales_order_line_id) permits only one per line per bill.
 func writeMergedBill(
 	ctx corectx.Context, targetId, orderId string, sources []dmodel.DynamicFields,
 ) (decimal.Decimal, error) {
@@ -299,11 +278,8 @@ func writeMergedBill(
 	return totals.total, nil
 }
 
-// mergedBillNumberOf names the survivor after the first source it consumed.
-//
-// Derived from a source rather than freshly generated so a customer holding one of the old bills can
-// be matched to the new one without a lookup - the same reasoning as a split's child numbering,
-// running the other way.
+// mergedBillNumberOf names the survivor after the first source it consumed, so a customer holding
+// one of the old bills can be matched to the new one without a lookup.
 func mergedBillNumberOf(sources []dmodel.DynamicFields) string {
 	return stringOf(sources[0], models.SalesBillFieldBillNumber) + "-M" +
 		decimal.NewFromInt(time.Now().UTC().Unix()).String()

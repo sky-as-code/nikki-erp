@@ -38,10 +38,8 @@ func pointActions(t *testing.T) []drif.DynamicActionDefinition {
 	return engine.defs
 }
 
-// TestActionsAreFullyDeclared pins the shape of every lifecycle action.
-//
-// ActionName and MainProcess are mandatory; a definition missing either is rejected at Init, which
-// means a broken build boots and then fails on the first request rather than at start-up.
+// ActionName and MainProcess are mandatory: a definition missing either is rejected at Init, so a
+// broken build boots and then fails on the first request.
 func TestActionsAreFullyDeclared(t *testing.T) {
 	actions := append(channelActions(t), pointActions(t)...)
 	actions = append(actions, orderActions(t)...)
@@ -70,12 +68,8 @@ func TestActionsAreFullyDeclared(t *testing.T) {
 	}
 }
 
-// TestRecordActionsAreScopedToAnId guards the difference between operating on one record and
-// operating on the collection.
-//
-// Every action that changes ONE record names it. Two are deliberately collection-level and are
-// listed explicitly rather than pattern-matched, so that adding a third is a decision somebody makes
-// on purpose: resolve looks a channel up by code, and create_order has no record yet to name.
+// Every action that changes one record must name it. The collection-level exceptions are listed
+// explicitly rather than pattern-matched, so adding another is a deliberate decision.
 func TestRecordActionsAreScopedToAnId(t *testing.T) {
 	actions := append(channelActions(t), pointActions(t)...)
 	actions = append(actions, orderActions(t)...)
@@ -88,7 +82,6 @@ func TestRecordActionsAreScopedToAnId(t *testing.T) {
 		ActionCreateOrder: true,
 		ActionMergeBill:   true,
 
-		// request_invoice creates the fiscal request, so there is no record to hang it off.
 		ActionRequestInvoice: true,
 	}
 
@@ -107,11 +100,8 @@ func TestRecordActionsAreScopedToAnId(t *testing.T) {
 	}
 }
 
-// TestActionPermissionsAreSeeded is the check that a permission code cannot drift from its seed.
-//
-// The engine asserts the permission string named here against the action rows in
-// 1007002_sales_iam.sql. A code with no matching row denies every request, and nothing in the 403
-// points at the seed as the cause — so the two are compared directly.
+// The engine asserts each permission string against the action rows in the IAM migration; a code
+// with no matching row denies every request with no hint in the 403.
 func TestActionPermissionsAreSeeded(t *testing.T) {
 	seeded := seededActionCodes(t)
 
@@ -133,16 +123,13 @@ func TestActionPermissionsAreSeeded(t *testing.T) {
 	}
 }
 
-// seededActionCodes reads the action codes out of the IAM migration.
-//
-// Parsing the SQL is cruder than querying a database, and deliberately so: the test then needs no
-// database, and it fails in CI the moment somebody adds an action without its seed.
+// seededActionCodes parses the SQL rather than querying a database, so the test needs no database
+// and fails in CI the moment an action is added without its seed.
 func seededActionCodes(t *testing.T) map[string]bool {
 	t.Helper()
 
-	// Every Sales IAM migration, not just the first. An action seeded in a later file is as real as
-	// one seeded in the original, and reading only 1007002 would let a new action pass this check
-	// while being unreachable in production.
+	// Every Sales IAM migration, not just the first: reading only 1007002 would let an action seeded
+	// later pass this check while being unreachable in production.
 	migrations := []string{
 		"1007002_sales_iam.sql",
 		"1007006_sales_voucher_iam.sql",
@@ -171,7 +158,6 @@ func seededActionCodes(t *testing.T) map[string]bool {
 	return codes
 }
 
-// collectActionCodes pulls the action codes out of one migration file into codes.
 func collectActionCodes(content string, codes map[string]bool) {
 	for _, line := range strings.Split(content, "\n") {
 		trimmed := strings.TrimSpace(line)
@@ -187,7 +173,6 @@ func collectActionCodes(content string, codes map[string]bool) {
 	}
 }
 
-// orderActions builds the sales order engine's custom actions, for the seed check.
 func orderActions(t *testing.T) []drif.DynamicActionDefinition {
 	t.Helper()
 	engine := &captureEngine{}
@@ -197,12 +182,8 @@ func orderActions(t *testing.T) []drif.DynamicActionDefinition {
 	return engine.defs
 }
 
-// TestSalesOrderEngineInstallsItsActions closes the gap between defining an action and the engine
-// actually getting it.
-//
-// The other guards check that each action is well-formed and that its permission is seeded. Neither
-// would notice if the engine spec stopped naming DefineActions — the actions would simply never be
-// installed, the routes would 404, and every test would still pass.
+// The other guards would not notice if the engine spec stopped naming DefineActions: the actions
+// would never be installed, the routes would 404, and every test would still pass.
 func TestSalesOrderEngineInstallsItsActions(t *testing.T) {
 	spec := salesOrderEngineSpec()
 
@@ -230,7 +211,6 @@ func TestSalesOrderEngineInstallsItsActions(t *testing.T) {
 	}
 }
 
-// quotationActions builds the quotation engine's custom actions, for the seed and shape checks.
 func quotationActions(t *testing.T) []drif.DynamicActionDefinition {
 	t.Helper()
 	engine := &captureEngine{}
@@ -240,7 +220,6 @@ func quotationActions(t *testing.T) []drif.DynamicActionDefinition {
 	return engine.defs
 }
 
-// fiscalActions builds the fiscal request engine's custom actions, for the seed and shape checks.
 func fiscalActions(t *testing.T) []drif.DynamicActionDefinition {
 	t.Helper()
 	engine := &captureEngine{}
@@ -250,10 +229,8 @@ func fiscalActions(t *testing.T) []drif.DynamicActionDefinition {
 	return engine.defs
 }
 
-// TestFiscalRequestEngineInstallsItsAction closes the same gap for the fiscal engine that
-// TestSalesOrderEngineInstallsItsActions closes for the order: an engine spec that stopped naming
-// DefineActions would leave request_invoice with no route, 404ing in production while every other
-// test still passed.
+// Same gap as for the order engine: a spec that stopped naming DefineActions would leave
+// request_invoice with no route, 404ing in production while every other test passed.
 func TestFiscalRequestEngineInstallsItsAction(t *testing.T) {
 	spec := salesFiscalRequestEngineSpec()
 
@@ -270,7 +247,6 @@ func TestFiscalRequestEngineInstallsItsAction(t *testing.T) {
 	}
 }
 
-// billActions builds the bill engine's custom actions, for the seed and shape checks.
 func billActions(t *testing.T) []drif.DynamicActionDefinition {
 	t.Helper()
 	engine := &captureEngine{}
@@ -280,24 +256,18 @@ func billActions(t *testing.T) []drif.DynamicActionDefinition {
 	return engine.defs
 }
 
-// TestTheInvoicingPortIsUnboundAndTheOperationToleratesIt pins a deliberate absence.
-//
-// No eInvoice provider adapter ships in this repository, so invoicingProvider is nil and
-// SetInvoicingPort is never called. That is the documented state, not an oversight — but an exported
-// setter nothing calls reads like dead code, and the next person could either delete it or "fix" the
-// nil by binding a stub that reports documents as issued when none were.
-//
-// So the absence is asserted rather than left implicit. When a real adapter lands, this test fails,
-// and its failure is the reminder to wire SetInvoicingPort in infra/external rather than to delete
-// the assertion.
+// No eInvoice adapter ships here, so invoicingProvider is nil and SetInvoicingPort is never called.
+// The absence is asserted so nobody deletes the setter as dead code or binds a stub that reports
+// documents as issued when none were. When a real adapter lands, this test fails as a reminder to
+// wire SetInvoicingPort in infra/external.
 func TestTheInvoicingPortIsUnboundAndTheOperationToleratesIt(t *testing.T) {
 	if invoicingProvider != nil {
 		t.Fatal("an invoicing provider is now bound; wire SetInvoicingPort from infra/external and " +
 			"update this test, rather than removing the assertion")
 	}
 
-	// The operation must treat that nil as a supported state. A guard here is cheap and the
-	// alternative is a nil dereference on the first customer who asks for a VAT invoice.
+	// Nil must stay a supported state; the alternative is a nil dereference on the first customer
+	// who asks for a VAT invoice.
 	spec := salesFiscalRequestEngineSpec()
 	if spec.DefineActions == nil {
 		t.Fatal("request_invoice must still be routed while the port is unbound: the request is " +

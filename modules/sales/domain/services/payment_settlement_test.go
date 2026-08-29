@@ -10,8 +10,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The payment arithmetic and the settlement rule. The gated operations read the repository and are
-// exercised live; what is pinned here is the money, where an error is expensive and silent.
+// The payment arithmetic and the settlement rule, where an error is expensive and silent. The gated
+// operations read the repository and are exercised live.
 
 func paymentRow(status, amount string) dmodel.DynamicFields {
 	return dmodel.DynamicFields{
@@ -20,8 +20,8 @@ func paymentRow(status, amount string) dmodel.DynamicFields {
 	}
 }
 
-// THE payment rule. Only captured money counts. An authorization is a hold the provider may still
-// release, and counting it would settle a bill against funds that never arrived.
+// Only captured money counts: an authorization is a hold the provider may still release, and counting
+// it would settle a bill against funds that never arrived.
 func TestOnlyCapturedPaymentsCount(t *testing.T) {
 	payments := []dmodel.DynamicFields{
 		paymentRow(string(models.SalesPaymentStatusCaptured), "100"),
@@ -61,8 +61,8 @@ func TestCapturedSumHandlesJsonShapes(t *testing.T) {
 	}
 }
 
-// BR §76's derivation, across the whole range. `paid` requires EXACT equality: a tolerance would let
-// a bill be marked paid while a fraction remained owed, and those fractions accumulate.
+// paid requires exact equality: a tolerance would mark a bill paid while a fraction remained owed,
+// and those fractions accumulate.
 func TestBillPaymentStatusDerivation(t *testing.T) {
 	cases := []struct {
 		payable  string
@@ -86,8 +86,7 @@ func TestBillPaymentStatusDerivation(t *testing.T) {
 	}
 }
 
-// A fraction short is NOT paid. The single most important case in the derivation: rounding this to
-// "paid" is how a business stops noticing it is owed money.
+// A fraction short is not paid; rounding it to paid is how a business stops noticing it is owed money.
 func TestAFractionShortIsNotPaid(t *testing.T) {
 	got := DeriveBillPaymentStatus(dec("48000"), dec("47999.9999"))
 	if got == string(models.SalesOrderPaymentStatusPaid) {
@@ -114,8 +113,8 @@ func TestChangeIsDueOnlyUnderTheCashPolicy(t *testing.T) {
 	}
 }
 
-// A payment must be for more than zero, and a negative one is a refund — a different resource with
-// its own lifecycle (SALES-035), not a negative payment.
+// A payment must be for more than zero; a negative one is a refund, a separate resource with its own
+// lifecycle.
 func TestAPaymentMustBePositive(t *testing.T) {
 	for _, amount := range []string{"0", "-100"} {
 		if dec(amount).IsPositive() {
@@ -124,8 +123,7 @@ func TestAPaymentMustBePositive(t *testing.T) {
 	}
 }
 
-// Overpaid still settles: the money owed is in, and the excess is change the till hands back rather
-// than a reason to keep the bill open.
+// Overpaid still settles: the excess is change the till hands back, not a reason to keep the bill open.
 func TestAnOverpaidBillStillSettles(t *testing.T) {
 	captured, billTotal := dec("110"), dec("100")
 
@@ -135,8 +133,8 @@ func TestAnOverpaidBillStillSettles(t *testing.T) {
 	}
 }
 
-// A bill of zero does not settle by having no money against it. Otherwise every freshly created bill
-// would be born settled, and the first payment would land on a closed bill.
+// A bill of zero must not settle itself, or every fresh bill would be born settled and the first
+// payment would land on a closed one.
 func TestAZeroBillDoesNotSettleItself(t *testing.T) {
 	captured, billTotal := decimal.Zero, decimal.Zero
 
@@ -146,8 +144,8 @@ func TestAZeroBillDoesNotSettleItself(t *testing.T) {
 	}
 }
 
-// The method-count limit counts DISTINCT methods, not payments: three taps on one card are one
-// method, and counting payments would refuse a legitimate two-card split while allowing five taps.
+// The method-count limit counts distinct methods, not payments: counting payments would refuse a
+// legitimate two-card split while allowing five taps on one card.
 func TestTheMethodLimitCountsDistinctMethods(t *testing.T) {
 	distinct := map[string]bool{}
 	for _, methodId := range []string{"CARD", "CARD", "CARD"} {

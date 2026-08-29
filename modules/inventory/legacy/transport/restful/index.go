@@ -49,8 +49,7 @@ func initProductV1() error {
 		routeV1.PUT("/products/:id", productRest.Update)
 		routeV1.PUT("/products/:id/thumbnail", productRest.UploadThumbnail)
 
-		// Register nested resource routes manually
-		// Attributes (nested under products)
+		// Nested resource routes, registered by hand.
 		routeV1.DELETE("/products/:product_id/attributes/:id", attributeRest.Delete)
 		routeV1.GET("/products/:product_id/attributes", attributeRest.Search)
 		routeV1.GET("/products/:product_id/attributes/:id", attributeRest.GetOne)
@@ -58,7 +57,6 @@ func initProductV1() error {
 		routeV1.POST("/products/:product_id/attributes", attributeRest.Create)
 		routeV1.PUT("/products/:product_id/attributes/:id", attributeRest.Update)
 
-		// Attribute Groups (nested under products)
 		routeV1.DELETE("/products/:product_id/attribute-groups/:id", attributeGroupRest.Delete)
 		routeV1.GET("/products/:product_id/attribute-groups/:id", attributeGroupRest.GetOne)
 		routeV1.GET("/products/:product_id/attribute-groups", attributeGroupRest.Search)
@@ -66,11 +64,9 @@ func initProductV1() error {
 		routeV1.POST("/products/:product_id/attribute-groups", attributeGroupRest.Create)
 		routeV1.PUT("/products/:product_id/attribute-groups/:id", attributeGroupRest.Update)
 
-		// Attribute Values (nested under products and attributes)
 		routeV1.DELETE("/products/:product_id/attributes/:attribute_id/values/:id", attributeValueRest.Delete)
 		routeV1.GET("/products/:product_id/attributes/:attribute_id/values", attributeValueRest.Search)
 
-		// Variants (nested under products, plus standalone search)
 		routeV1.DELETE("/products/:product_id/variants/:id", variantRest.Delete)
 		routeV1.GET("/products/:product_id/variants", variantRest.Search)
 		routeV1.GET("/products/:product_id/variants/:id", variantRest.GetOne)
@@ -79,7 +75,6 @@ func initProductV1() error {
 		routeV1.PUT("/products/:product_id/variants/:id", variantRest.Update)
 		routeV1.PUT("/products/:product_id/variants/:id/image", variantRest.UploadImage)
 
-		// Standalone variant search
 		routeV1.GET("/variants", variantRest.Search)
 
 		return nil

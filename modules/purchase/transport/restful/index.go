@@ -20,8 +20,7 @@ func initPurchaseV1() error {
 	})
 }
 
-// registerEngineRoutes exposes every Purchase resource engine over HTTP.
-// A missing engine is skipped, so that a build which drops one still starts.
+// A missing engine is skipped, so a build that drops one still starts.
 func registerEngineRoutes(routeV1 *echo.Group) {
 	for _, schemaName := range dynamicengines.EngineSchemaNames() {
 		engine, exists := dynamicresource.Registry().GetEngine(schemaName)

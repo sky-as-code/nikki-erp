@@ -13,16 +13,11 @@ import (
 
 // ChannelPaymentDomainService owns the sales_channel_payment_rel rows.
 //
-// It is a plain service rather than a derived resource service, because the junction has no engine
-// of its own: a mapping is not a resource a client creates, reads and edits — it is configuration of
-// its channel, reached only through the channel's own capabilities. That is the same split
-// vending_machine_new makes for vdmc_kiosk_payment_rel, and it is why there is no REST route, no
-// IAM resource row and no CRUD for these rows.
-//
-// The rows are written through the repository directly rather than through crud.ManageM2m. The
-// helper resolves the associated ids against a locally registered destination schema, and a payment
-// method is not one: it belongs to paymentinvoice. Validating the target is therefore this
-// service's job, and it does it through the port rather than by reading another module's table.
+// A plain service rather than a derived resource service, because a mapping is configuration of
+// its channel rather than a resource a client creates and edits: no REST route, no IAM resource
+// row, no CRUD. Rows are written through the repository rather than crud.ManageM2m, whose helper
+// resolves ids against a locally registered schema; a payment method belongs to paymentinvoice,
+// so this service validates the target through the port instead.
 type ChannelPaymentDomainServiceImpl struct {
 	repo drif.DynamicResourceRepository
 }
@@ -33,22 +28,16 @@ func NewChannelPaymentDomainService(
 	return &ChannelPaymentDomainServiceImpl{repo: repo}
 }
 
-// ListMappings answers which payment methods a channel is configured to accept.
-//
-// It returns only the local half. Merging it with what paymentinvoice reports is the application
-// service's job, because that is where the port lives — and merging is the whole point: the
-// frontend must never join across two modules (CR §29).
+// ListMappings returns only the local half. Merging it with what paymentinvoice reports is the
+// application service's job, where the port lives, and the frontend must never join two modules.
 func (this *ChannelPaymentDomainServiceImpl) ListMappings(
 	ctx corectx.Context, channelId string,
 ) ([]dmodel.DynamicFields, error) {
 	return models.FindPaymentMethodsOfChannel(ctx, this.repo, channelId)
 }
 
-// FindMapping resolves the one row mapping a channel to a method, or nil.
-//
-// This is what makes enabling idempotent and disabling repeatable: both operations ask first and
-// then act, so a caller that retries after a lost response gets the same answer as the call that
-// succeeded.
+// FindMapping is what makes enabling idempotent and disabling repeatable: both ask first and then
+// act, so a caller that retries after a lost response gets the same answer.
 func (this *ChannelPaymentDomainServiceImpl) FindMapping(
 	ctx corectx.Context, channelId string, paymentMethodId string,
 ) (dmodel.DynamicFields, error) {
@@ -61,8 +50,7 @@ func (this *ChannelPaymentDomainServiceImpl) FindMapping(
 	}
 	if len(found) > 1 {
 		// The composite unique makes this impossible. If it happens the constraint is gone, and
-		// carrying on with the first row would hide that while quietly disabling only half a
-		// mapping on the next call.
+		// carrying on with the first row would quietly disable only half a mapping next call.
 		return nil, errors.Errorf(
 			"sales_channel_payment_rel holds %d rows for channel '%s' and method '%s'; "+
 				"the (sales_channel_id, payment_method_id) unique constraint is missing",
@@ -71,16 +59,10 @@ func (this *ChannelPaymentDomainServiceImpl) FindMapping(
 	return found[0], nil
 }
 
-// Enable writes the mapping, and does nothing when it is already there (CR §31).
-//
-// It does NOT validate the payment method: that check needs the port, which lives in the
-// application layer, and a domain service never reaches across a module boundary. The caller
-// validates first and then calls this — see EnableChannelPaymentMethod.
-//
-// The existence check and the insert are not in one transaction, and do not need to be: the
-// composite unique is the real guard against a concurrent double-enable, and losing that race means
-// the insert fails on a constraint that says exactly what happened. A transaction here would only
-// move the same collision to commit time.
+// Enable does nothing when the mapping is already there. It does NOT validate the payment method:
+// that needs the port, which lives in the application layer, and a domain service never reaches
+// across a module boundary. The check and the insert need no transaction - the composite unique is
+// the real guard against a concurrent double-enable.
 func (this *ChannelPaymentDomainServiceImpl) Enable(
 	ctx corectx.Context, channelId string, paymentMethodId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -89,9 +71,8 @@ func (this *ChannelPaymentDomainServiceImpl) Enable(
 		return nil, err
 	}
 	if existing != nil {
-		// Already enabled. Reported as success, not as a violation: the caller asked for a state
-		// and that state holds. Refusing here would make a retry after a lost response look like a
-		// failure and drive a caller to keep retrying.
+		// Already enabled. Reported as success: the caller asked for a state and that state holds,
+		// and refusing would make a retry after a lost response look like a failure.
 		return mutateOk(), nil
 	}
 
@@ -113,15 +94,10 @@ func (this *ChannelPaymentDomainServiceImpl) Enable(
 	return mutateOk(), nil
 }
 
-// Disable removes the mapping, and does nothing when it is not there (CR §32).
-//
-// The row is deleted rather than flagged, because the row IS the state (CR §27). Deleting it does
-// not touch payments already taken through that method: a payment records which method it used, and
-// nothing about it reads back through this table.
-//
-// A method that paymentinvoice no longer reports can still be disabled through here, which is
-// deliberate — CR §34 requires that a stale mapping stay removable, since removing it is exactly
-// the fix an administrator is trying to apply.
+// Disable does nothing when the mapping is not there. The row is deleted rather than flagged,
+// because the row IS the state; payments already taken record which method they used and read
+// nothing back through this table. A method paymentinvoice no longer reports can still be
+// disabled here: removing a stale mapping is exactly the fix.
 func (this *ChannelPaymentDomainServiceImpl) Disable(
 	ctx corectx.Context, channelId string, paymentMethodId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -146,15 +122,9 @@ func (this *ChannelPaymentDomainServiceImpl) Disable(
 	return mutateOk(), nil
 }
 
-// IsEnabled answers whether a channel accepts one payment method.
-//
-// This is the query SALES-027 calls at payment time, and it is deliberately narrow: it reports
-// whether the mapping exists, not whether the method is usable. Those are two different questions
-// with two different owners — the mapping is Sales' configuration, usability is paymentinvoice's
-// judgement — and a caller taking a payment must ask both.
-//
-// Default-deny (CR §76): no mapping means no, never "all allowed". A channel that has never been
-// configured accepts nothing, which is the correct default for something that moves money.
+// IsEnabled reports whether the mapping exists, not whether the method is usable: the mapping is
+// Sales' configuration, usability is paymentinvoice's judgement, and a caller taking a payment
+// must ask both. Default-deny: no mapping means no, never "all allowed".
 func (this *ChannelPaymentDomainServiceImpl) IsEnabled(
 	ctx corectx.Context, channelId string, paymentMethodId string,
 ) (bool, error) {
@@ -168,12 +138,8 @@ func (this *ChannelPaymentDomainServiceImpl) IsEnabled(
 	return found != nil, nil
 }
 
-// DisableAllOfChannel removes every mapping a channel holds.
-//
-// Archiving a channel leaves its mappings behind on purpose, so this is not called from there: a
-// channel that is unarchived must come back configured as it was, and silently dropping its payment
-// configuration on archive would make that impossible to restore. It exists for the case where a
-// channel is being reconfigured wholesale.
+// DisableAllOfChannel removes every mapping a channel holds, for reconfiguring one wholesale. Not
+// called when archiving: an unarchived channel must come back configured as it was.
 func (this *ChannelPaymentDomainServiceImpl) DisableAllOfChannel(
 	ctx corectx.Context, channelId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {

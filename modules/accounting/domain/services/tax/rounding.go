@@ -1,8 +1,7 @@
-// Package tax implements determination, calculation, rounding and reversal.
+// Package tax implements determination, calculation, rounding and reversal, applied in that order.
 //
-// Everything here is pure arithmetic over values the caller supplies. Nothing in this package
-// reads a database, writes one, or knows that Sales exists — which is what makes a calculation
-// safely repeatable (BR-TAX-ESS-046) and what lets the whole engine be tested without one.
+// Everything here is pure arithmetic over caller-supplied values: no database, no Sales dependency,
+// so a calculation is repeatable and testable standalone.
 package tax
 
 import (
@@ -11,11 +10,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 )
 
-// RoundingPolicy is the subset of a stored policy the arithmetic needs.
-//
-// It is a plain value rather than the stored model so that the calculator can be exercised without
-// constructing a database row, and so that a caller holding a policy resolved for one currency
-// cannot accidentally apply it to another by passing the whole record around.
+// RoundingPolicy is the subset of a stored policy the arithmetic needs. A policy is resolved for
+// one currency; never apply it to another.
 type RoundingPolicy struct {
 	Scope     models.RoundingScope
 	Method    models.RoundingMethod
@@ -24,14 +20,11 @@ type RoundingPolicy struct {
 
 // Round applies the policy's method and increment to an amount.
 //
-// Rounding is expressed as a quantum rather than a number of decimal places because currencies
-// exist that round to something other than a power of ten — a 0.05 increment for cash settlement,
-// or 1 for VND. Dividing by the increment, rounding to a whole number and multiplying back handles
-// both without a special case (BR-TAX-ESS-SUP-017).
+// The scale is an increment (a quantum), not a decimal-place count, because some currencies round
+// to a non-power-of-ten: 0.05 for cash settlement, 1 for VND. Divide by the increment, round to a
+// whole number, multiply back.
 //
-// A non-positive increment would divide by zero or invert the sign, so it is treated as "do not
-// round" rather than allowed to produce nonsense. Configuration validation rejects such a policy at
-// write time; this is the belt to that braces.
+// A non-positive increment would divide by zero or invert the sign, so it means "do not round".
 func (this RoundingPolicy) Round(amount decimal.Decimal) decimal.Decimal {
 	if !this.Increment.IsPositive() {
 		return amount
@@ -42,9 +35,8 @@ func (this RoundingPolicy) Round(amount decimal.Decimal) decimal.Decimal {
 	var rounded decimal.Decimal
 	switch this.Method {
 	case models.RoundingHalfUp:
-		// decimal.Round rounds half away from zero, so -0.5 goes to -1 as 0.5 goes to 1. That
-		// symmetry matters for refunds: rounding a reversal towards zero while its sale rounded
-		// away would leave a residual the reversal could never clear.
+		// Half-up here is half away from zero: -0.5 goes to -1 as 0.5 goes to 1. Refunds depend
+		// on that symmetry, or a reversal leaves a residual it can never clear.
 		rounded = quotient.Round(0)
 	case models.RoundingHalfEven:
 		rounded = quotient.RoundBank(0)
@@ -61,15 +53,14 @@ func (this RoundingPolicy) Round(amount decimal.Decimal) decimal.Decimal {
 
 // AllocationInput is one line-component amount entering document-scope rounding.
 type AllocationInput struct {
-	// LineReference and ComponentSequence identify the component the caller wants the result
-	// attributed back to. They are opaque here: the engine never resolves a line reference against
-	// Sales, it only echoes it (BR-TAX-ESS-025).
+	// LineReference and ComponentSequence are opaque identifiers, echoed back and never resolved
+	// against Sales.
 	LineReference     string
 	ComponentSequence int32
 
-	// GroupKey is what the amount is summed within — tax, rate version, treatment and jurisdiction
-	// together. Two components of different taxes must never be pooled, because the document total
-	// per tax is what a VAT return reports.
+	// GroupKey is the summing bucket: tax, rate version, treatment and jurisdiction together.
+	// Different taxes must never be pooled — the per-tax document total is what a VAT return
+	// reports.
 	GroupKey string
 
 	// Unrounded is the exact computed tax for this component, before any rounding.
@@ -85,24 +76,19 @@ type AllocationResult struct {
 	// Rounded is the amount to store for this component.
 	Rounded decimal.Decimal
 
-	// Adjustment is what this component absorbed of the group's rounding delta, and is recorded in
-	// the snapshot so a later refund reverses the exact component that carried it rather than
-	// recomputing the whole document (BR-TAX-ESS-SUP-019).
+	// Adjustment is this component's share of the group's rounding delta. It is snapshotted so a
+	// later refund reverses the exact component that carried it instead of recomputing.
 	Adjustment decimal.Decimal
 }
 
-// AllocateDocumentRounding rounds each group's total once and distributes the difference.
+// AllocateDocumentRounding does round-per-document, not round-per-line: each group's unrounded
+// total is rounded once and is authoritative, then components are adjusted to sum to exactly that.
+// Rounding components independently and summing can miss the document total by a few increments,
+// and the document total is what the invoice and VAT return show.
 //
-// The naive alternative — round every component and add them up — produces a document total that
-// can differ from the correctly rounded one by a few units of the increment, and it is the document
-// total that appears on the invoice and the VAT return. So the group total is rounded first and
-// treated as authoritative; the components are then adjusted to sum to exactly that
-// (BR-TAX-ESS-022, AC-TAX-SUP-15).
-//
-// The delta is handed out one increment at a time, to the components with the largest fractional
-// remainder first. Ties break by line reference and then component sequence, so the same input
-// always yields the same allocation — a refund computed later must be able to reproduce which
-// component carried the adjustment (TAX-SUP-INV-12).
+// The delta goes out one increment at a time, largest fractional remainder first, ties broken by
+// line reference then component sequence, so identical input always yields the same allocation and
+// a later refund can reproduce which component carried the adjustment.
 func AllocateDocumentRounding(
 	inputs []AllocationInput, policy RoundingPolicy,
 ) []AllocationResult {
@@ -153,10 +139,8 @@ func AllocateDocumentRounding(
 	return results
 }
 
-// groupIndexes buckets input positions by GroupKey, preserving first-seen order.
-//
-// Insertion order rather than map order, because iterating a Go map is deliberately randomised and
-// an allocation that depended on it would differ between two runs on identical input.
+// groupIndexes buckets input positions by GroupKey in first-seen order. Map iteration order is
+// randomised, and an allocation depending on it would differ between runs on identical input.
 func groupIndexes(inputs []AllocationInput) [][]int {
 	order := []string{}
 	byKey := map[string][]int{}
@@ -174,11 +158,9 @@ func groupIndexes(inputs []AllocationInput) [][]int {
 	return groups
 }
 
-// allocationOrder sorts a group's positions by who most deserves the next increment.
-//
-// Largest absolute fractional remainder first: the component that lost the most to rounding gets
-// the adjustment back. Ties fall back to line reference and component sequence so the order is
-// total, never dependent on the caller's input order alone.
+// allocationOrder sorts a group's positions by largest absolute fractional remainder first, so the
+// component that lost most to rounding is repaid first. Ties fall back to line reference then
+// component sequence, keeping the order total and independent of caller input order.
 func allocationOrder(
 	inputs []AllocationInput, group []int, policy RoundingPolicy,
 ) []int {
@@ -189,8 +171,7 @@ func allocationOrder(
 		return inputs[index].Unrounded.Sub(policy.Round(inputs[index].Unrounded)).Abs()
 	}
 
-	// Insertion sort: a group is a handful of components, and this keeps the comparison rule in one
-	// readable place without pulling in a comparator closure over three fields.
+	// Insertion sort: a group is a handful of components.
 	for outer := 1; outer < len(ordered); outer++ {
 		current := ordered[outer]
 		inner := outer - 1

@@ -6,12 +6,9 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
 )
 
-// The reversal endpoints take the original snapshot from the caller rather than looking it up.
-//
-// Accounting stores no transaction and no reversal state of its own (BR-TAX-ESS-SUP-025): the
-// snapshot and the running totals of prior refunds belong to the module that made the sale. The
-// alternative would require Tax to track every downstream transaction, which is precisely the
-// dependency the module is arranged to avoid.
+// The reversal endpoints take the original snapshot from the caller rather than looking it up:
+// Accounting stores no transaction and no reversal state of its own, so the snapshot and the
+// running totals of prior refunds belong to the module that made the sale.
 
 type ReverseFullRequest struct {
 	OriginalSnapshot TaxSnapshotRequest `json:"original_snapshot"`
@@ -49,10 +46,8 @@ func (this ReversePartialRequest) ToCommand() it.PartialReversalRequest {
 	}
 }
 
-// TaxSnapshotRequest is the caller handing back the snapshot it stored at the time of sale.
-//
-// Only the fields a reversal actually reads are bound. The rest of the stored snapshot is the
-// caller's record and Tax has no use for it here.
+// TaxSnapshotRequest is the caller handing back the snapshot it stored at the time of sale. Only
+// the fields a reversal reads are bound.
 type TaxSnapshotRequest struct {
 	SchemaVersion string `json:"schema_version"`
 	CurrencyCode  string `json:"currency_code"`
@@ -76,11 +71,9 @@ func (this TaxSnapshotRequest) toSnapshot() it.Snapshot {
 	}
 }
 
-// ReversalComponentRequest is the caller's reversal state for one original component.
-//
-// The amounts are strings for the same reason every other money field is: a float64 cannot hold
-// them exactly, and a reversal that is off by a fraction will not close to zero against the
-// original charge.
+// ReversalComponentRequest is the caller's reversal state for one original component. The amounts
+// are strings because a float64 cannot hold them exactly, and a reversal off by a fraction will not
+// close to zero against the original charge.
 type ReversalComponentRequest struct {
 	OriginalComponentReference string `json:"original_component_reference"`
 	OriginalReversibleBasis    string `json:"original_reversible_basis"`
@@ -91,7 +84,7 @@ type ReversalComponentRequest struct {
 
 	// IsFinalReversal marks the last refund against this component. It absorbs any rounding
 	// residual, which is what makes a sequence of partial refunds sum to exactly the original
-	// charge rather than approximately (BR-TAX-ESS-033).
+	// charge.
 	IsFinalReversal bool `json:"is_final_reversal"`
 }
 
@@ -120,7 +113,7 @@ type ReverseTaxResponse struct {
 	Components []ReversalComponentResponse `json:"components"`
 
 	// Snapshot is the refund's own frozen record, referencing the original by the logical identity
-	// the caller supplied (BR-TAX-ESS-055).
+	// the caller supplied.
 	Snapshot TaxSnapshotResponse `json:"snapshot"`
 }
 

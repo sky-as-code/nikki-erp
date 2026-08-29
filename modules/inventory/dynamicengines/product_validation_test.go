@@ -13,12 +13,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// AC-PROD-019 and AC-PROD-020 hinge on which variants a template archive touches, and on
-// whether the last archive leaves the template selectable. Both decisions are pure functions of
-// the record's own state, so they are tested directly rather than through a live engine.
+// Which variants a template archive touches, and whether the last archive leaves the template
+// selectable, are pure functions of the record's own state, so they are tested directly rather
+// than through a live engine.
 
-// BR-PROD-VAR-002 and AC-PROD-012: a template must not hold two variants with the same
-// combination. The record being updated must not be mistaken for a conflict with itself.
+// A template must not hold two variants with the same combination. The record being updated must
+// not be mistaken for a conflict with itself.
 func TestAssertUniqueCombination(t *testing.T) {
 	const (
 		templateId = "01TEMPLATE0000000000000000"
@@ -61,9 +61,9 @@ func TestAssertUniqueCombination(t *testing.T) {
 	}
 }
 
-// BR §4.5 and AC-PROD-008: a template with no variant-generating attributes still gets one
-// variant, whose combination is the empty string. An empty key is a real key, so it must be
-// checked for uniqueness like any other rather than skipped as "missing".
+// A template with no variant-generating attributes still gets one variant, whose combination is
+// the empty string. An empty key is a real key, so it must be checked for uniqueness like any
+// other rather than skipped as "missing".
 func TestEmptyCombinationIsStillChecked(t *testing.T) {
 	repo := &fakeSearcher{items: []dmodel.DynamicFields{
 		{models.ProductVariantFieldId: "01OTHER00000000000000000000"},
@@ -96,8 +96,8 @@ func TestUniqueCombinationSkipsIncompleteRecord(t *testing.T) {
 	assert.Zero(t, repo.calls, "must not search without a combination key")
 }
 
-// AC-PROD-018: a discontinued variant is not archived, and an archived one is not discontinued.
-// Either state alone withdraws it from new business.
+// A discontinued variant is not archived, and an archived one is not discontinued. Either state
+// alone withdraws it from new business.
 func TestVariantSelectability(t *testing.T) {
 	testCases := []struct {
 		name     string

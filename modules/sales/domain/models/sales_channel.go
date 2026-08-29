@@ -24,18 +24,14 @@ const (
 	SalesChannelEdgeSalesPoints = "sales_points"
 )
 
-// VendingChannelCode is the published integration code of the vending machine channel.
-//
-// It is a contract, not a configuration value: CR §41 freezes it against renaming, case changes
-// and reuse. Vending code names the channel by this string and lets Sales resolve the id, so that
-// no database id ever appears in a kiosk's configuration (CR §42).
+// VendingChannelCode is the published integration code of the vending machine channel. It is a
+// contract, frozen against renaming, case changes and reuse: vending code names the channel by this
+// string so no database id appears in a kiosk's configuration.
 const VendingChannelCode = "vdmc"
 
-// BackOfficeChannelCode is the channel back-office sales are recorded against.
-//
-// It exists so that every order has a real sales point (D-19). A back-office sale has no physical
-// store, but modelling that as a null sales point would leak "unknown origin" into every
-// downstream query; a seeded logical point keeps the invariant true instead.
+// BackOfficeChannelCode is the channel back-office sales are recorded against, so that every order
+// has a real sales point. A null sales point would leak "unknown origin" into every downstream
+// query; a seeded logical point keeps the invariant true instead.
 const BackOfficeChannelCode = "bo"
 
 //go:embed sales_channel.json
@@ -117,11 +113,9 @@ func (this SalesChannel) GetIsArchived() *bool {
 	return this.GetFieldData().GetBool(basemodel.FieldIsArchived)
 }
 
-// IsActive reports whether the channel may take new business.
-//
-// Both gates are checked together because callers always need both, and a caller that remembered
-// only one would let a suspended channel keep selling or an archived one accept a new sales point.
-// A nil status counts as inactive: an absent value is not a licence to trade.
+// IsActive reports whether the channel may take new business. Status and archival are checked
+// together because a caller remembering only one would let a suspended channel keep selling. A nil
+// status counts as inactive.
 func (this SalesChannel) IsActive() bool {
 	status := this.GetStatus()
 	if status == nil || SalesChannelStatus(*status) != SalesChannelStatusActive {

@@ -101,15 +101,12 @@ func validateDefinitionVersionDelete(
 	return nil
 }
 
-// assertTreatmentMatchesCalculationType enforces the two pairings BR-TAX-ESS-SUP-015 fixes.
+// assertTreatmentMatchesCalculationType pairs the treatment with the calculation type.
 //
-// The "none" calculation type exists so that a tax can carry legal meaning without producing an
-// amount — an exemption still needs a code on the invoice. It is therefore valid only where the
-// treatment says no tax is due for a legal reason.
-//
-// Zero-rated is deliberately excluded from that set even though it also yields zero. A zero-rated
-// supply is taxed, at 0%, and the distinction is what lets the supplier reclaim input tax; modelling
-// it as "no calculation" would erase the fact that a rate was applied at all.
+// The "none" calculation type lets a tax carry legal meaning without producing an amount, so it is
+// valid only where the treatment says no tax is due for a legal reason. Zero-rated is excluded even
+// though it also yields zero: a zero-rated supply is taxed at 0%, and that distinction is what lets
+// the supplier reclaim input tax.
 func assertTreatmentMatchesCalculationType(
 	version *models.TaxDefinitionVersion, vErrs *ft.ClientErrors,
 ) {
@@ -142,10 +139,8 @@ func assertTreatmentMatchesCalculationType(
 }
 
 // assertNoPublishedOverlap rejects a published version whose period overlaps another published
-// version of the same tax.
-//
-// The check runs only for published rows, because two overlapping drafts are a work in progress
-// rather than an error — they become one the moment someone tries to publish the second.
+// version of the same tax. It runs only for published rows; two overlapping drafts are a work in
+// progress until the second is published.
 func assertNoPublishedOverlap(
 	ctx corectx.Context,
 	engine drif.DynamicResourceEngine,

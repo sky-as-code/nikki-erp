@@ -46,8 +46,8 @@ func StockMoveLineSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 // StockMoveLine is the execution detail of a move: the exact quantity taken from an exact quant
-// dimension. It has no status of its own — it is either a reservation or, once operation_at is
-// stamped, a recorded movement. See BR §4.2.5.
+// dimension. It has no status; it is a reservation until operation_at is stamped, a recorded
+// movement afterwards.
 type StockMoveLine struct {
 	basemodel.DynamicModelBase
 }

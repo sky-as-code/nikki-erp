@@ -10,14 +10,10 @@ import (
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/warehouse"
 )
 
-// The location side of the warehouse operations: creating the tree a warehouse needs, keeping it
-// in step with the flows, and resolving a plan's legs to real locations.
-
 // provisionSystemLocations creates the root of a warehouse's tree and the stops its flows need.
-//
-// The root carries the warehouse code, so a path reads 'MAIN/Stock'. Every location created here
-// is marked system-generated, which is what later protects it from being restructured or archived
-// while the warehouse still needs it.
+// The root carries the warehouse code, so a path reads 'MAIN/Stock'. Every location created here is
+// marked system-generated, which protects it from being restructured or archived while the
+// warehouse still needs it.
 func (this *WarehouseAppServiceImpl) provisionSystemLocations(
 	ctx corectx.Context, warehouse models.Warehouse,
 ) error {
@@ -30,8 +26,8 @@ func (this *WarehouseAppServiceImpl) provisionSystemLocations(
 		OrgId:       orgId,
 		Code:        code,
 		ParentId:    "",
-		// The root is an organisational node rather than somewhere goods sit: stock lives in the
-		// Stock location beneath it.
+		// The root is an organisational node, not somewhere goods sit: stock lives in the Stock
+		// location beneath it.
 		Usage:   models.InventoryLocationUsageVirtual,
 		Purpose: "",
 	})
@@ -57,11 +53,9 @@ func (this *WarehouseAppServiceImpl) provisionSystemLocations(
 	return nil
 }
 
-// ensureFlowLocations creates whatever a newly chosen flow needs and does not already have.
-//
-// A location the flow needs that exists but is suspended — because an earlier change retired it —
-// is resumed rather than duplicated, so switching a flow back and forth does not accumulate
-// copies.
+// ensureFlowLocations creates whatever a newly chosen flow needs and does not already have. An
+// existing but suspended location is resumed rather than duplicated, so switching a flow back and
+// forth does not accumulate copies.
 func (this *WarehouseAppServiceImpl) ensureFlowLocations(
 	ctx corectx.Context, warehouse models.Warehouse, flow string, outgoing bool,
 ) error {
@@ -105,11 +99,9 @@ func (this *WarehouseAppServiceImpl) ensureFlowLocations(
 	return nil
 }
 
-// suspendObsoleteLocations retires the stops a reduced flow no longer uses.
-//
-// Suspended, never deleted: the moves that once passed through those locations still name them,
-// and the history has to keep resolving. A location holding stock is suspended too — that is
-// allowed, and leaving the goods visible where they are beats pretending the place is gone.
+// suspendObsoleteLocations retires the stops a reduced flow no longer uses. Suspended, never
+// deleted: past moves still name those locations and the history has to keep resolving. A location
+// holding stock is suspended too, leaving the goods visible where they are.
 func (this *WarehouseAppServiceImpl) suspendObsoleteLocations(
 	ctx corectx.Context, warehouse models.Warehouse, previousFlow string, nextFlow string, outgoing bool,
 ) error {
@@ -131,10 +123,9 @@ func (this *WarehouseAppServiceImpl) suspendObsoleteLocations(
 	return nil
 }
 
-// resolveLegLocations turns a plan's location codes into ids.
-//
-// The endpoints outside the warehouse stay unresolved: which vendor or customer location applies
-// depends on the transaction, so the movement engine fills those in.
+// resolveLegLocations turns a plan's location codes into ids. Endpoints outside the warehouse stay
+// unresolved: which vendor or customer location applies depends on the transaction, so the movement
+// engine fills those in.
 func (this *WarehouseAppServiceImpl) resolveLegLocations(
 	ctx corectx.Context, warehouse models.Warehouse, legs []services.FlowLeg,
 ) ([]itWarehouse.ResolvedLeg, error) {
@@ -173,7 +164,7 @@ func (this *WarehouseAppServiceImpl) locationIdForCode(
 	return derefString((*string)(found.GetId())), nil
 }
 
-// findRootLocationId returns the warehouse's own root location, the one named after its code.
+// findRootLocationId returns the warehouse's root location, the one named after its code.
 func (this *WarehouseAppServiceImpl) findRootLocationId(
 	ctx corectx.Context, warehouse models.Warehouse,
 ) (string, error) {
@@ -197,11 +188,9 @@ type systemLocationRequest struct {
 	Purpose     string
 }
 
-// createSystemLocation writes one location the warehouse owns.
-//
-// It goes through the location domain service so the tree rules and the derived path apply, and
-// then sets is_system_generated directly — the service strips that flag from anything a caller
-// sends, which is exactly the protection being relied on here.
+// createSystemLocation writes one location the warehouse owns. It goes through the location domain
+// service so the tree rules and derived path apply, then sets is_system_generated directly, because
+// the service strips that flag from anything a caller sends.
 func (this *WarehouseAppServiceImpl) createSystemLocation(
 	ctx corectx.Context, request systemLocationRequest,
 ) (string, error) {
@@ -232,10 +221,8 @@ func (this *WarehouseAppServiceImpl) createSystemLocation(
 	return locationId, services.MarkLocationSystemGenerated(ctx, locationId)
 }
 
-// langJsonFor gives a system location a name in the shape the schema expects.
-//
-// The code doubles as the name: these are structural locations whose label is the same in every
-// language, and inventing translations for 'Input' would be worse than showing it as it is.
+// langJsonFor gives a system location a name in the shape the schema expects. The code doubles as
+// the name: these are structural locations whose label is the same in every language.
 func langJsonFor(code string) map[string]any {
 	return map[string]any{"en-US": code}
 }

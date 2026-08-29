@@ -11,12 +11,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
 )
 
-// The agreement's lifecycle operations (BR §38-§46).
-//
-// Archive and restore are deliberately absent: they go through the engine's built-in set_archived,
-// because restore is the same power applied in reverse and splitting them would let a role archive
-// agreements it could not bring back. The IAM seed matches, which is a correction to the plan's §4
-// table.
+// The agreement's lifecycle operations. Archive and restore are deliberately absent: they go
+// through the engine's built-in set_archived, because splitting them would let a role archive
+// agreements it could not bring back.
 
 const (
 	PermissionClose     = "close"
@@ -28,7 +25,6 @@ const (
 	ActionCreateRfq = "create_rfq"
 )
 
-// defineAgreementActions adds the lifecycle operations alongside the delete guard.
 func defineAgreementActions(engine drif.DynamicResourceEngine) error {
 	if err := defineAgreementDeleteGuard(engine); err != nil {
 		return err
@@ -55,9 +51,8 @@ func defineAgreementActions(engine drif.DynamicResourceEngine) error {
 			Permission:  PermissionCancel,
 			MainProcess: processAgreementCancel,
 		}),
-		// Raising an RFQ creates a purchase order, so it carries the ORDER's create permission
-		// rather than one of its own: the power it grants is the power to create an order, and a
-		// role that may not do that by hand must not be able to do it through an agreement.
+		// Raising an RFQ creates a purchase order, so it carries the order's create permission: a
+		// role that may not create one by hand must not do it through an agreement.
 		engine.DefineAction(drif.DynamicActionDefinition{
 			ActionName:  ActionCreateRfq,
 			ActionType:  drif.ActionTypeGeneric,
@@ -96,8 +91,8 @@ func processAgreementCancel(ctx corectx.Context, input drif.ProcessInput) (*drif
 	return toMutateActionResult(result, err)
 }
 
-// processAgreementCreateRfq returns the new order rather than an affected count, because the
-// caller's next move is to open it — and without the id they would have to search for it.
+// processAgreementCreateRfq returns the new order rather than an affected count so the caller has
+// its id.
 func processAgreementCreateRfq(ctx corectx.Context, input drif.ProcessInput) (*drif.ActionResult, error) {
 	service, err := agreementServiceOf(input)
 	if err != nil {
@@ -132,9 +127,9 @@ func agreementServiceOf(input drif.ProcessInput) (*services.PurchaseAgreementDom
 	return service, nil
 }
 
-// orderServiceFromRegistry reaches the order's derived service, which create_rfq needs in order to
-// create an order through the same rules a hand-made one goes through — the generated code, the
-// forced RFQ status, the vendor and currency checks.
+// orderServiceFromRegistry reaches the order's derived service, so create_rfq goes through the same
+// rules as a hand-made order: the generated code, the forced RFQ status, the vendor and currency
+// checks.
 func orderServiceFromRegistry() (*services.PurchaseOrderDomainServiceImpl, error) {
 	engine, err := services.EngineFor(models.PurchaseOrderSchemaName)
 	if err != nil {

@@ -10,10 +10,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// Every schema is built here because ParseModelJson PANICS on a malformed declaration rather than
-// returning an error — an unknown data type, a sized type missing its bounds, a bad index name. In
-// an application that panic happens at start-up, so without these tests the first sign of a typo is
-// a server that will not boot.
+// Every schema is built here because ParseModelJson panics on a malformed declaration rather than
+// returning an error, and that panic happens at start-up: without these tests the first sign of a
+// typo is a server that will not boot.
 func TestAllSchemasParse(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -41,9 +40,8 @@ func TestAllSchemasParse(t *testing.T) {
 	}
 }
 
-// PUR-R2. The order is the one resource here that must NOT be archivable: its lifecycle is its
-// status, and an archived-but-open order would be a document withdrawn from view while still
-// committing the business to a purchase.
+// The order is the one resource here that must not be archivable: its lifecycle is its status, and
+// an archived-but-open order would be withdrawn from view while still committing the business.
 func TestPurchaseOrderIsNotArchivable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -52,8 +50,8 @@ func TestPurchaseOrderIsNotArchivable(t *testing.T) {
 	assert.False(t, ok, "purchase_order must not extend the archivable mixin")
 }
 
-// The agreement, by contrast, is archivable, and status and is_archived are independent: a closed
-// agreement may be archived or not and both combinations are meaningful (BR 34).
+// The agreement is archivable, and status and is_archived are independent: both combinations of a
+// closed agreement are meaningful.
 func TestAgreementIsArchivable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -62,12 +60,9 @@ func TestAgreementIsArchivable(t *testing.T) {
 	assert.True(t, ok, "purchase_agreement must be archivable")
 }
 
-// PUR-R3: the lifecycle fields are writable only by their own actions. Expressing that as no_update
-// in the schema is what makes the engine reject them, so there is no hand-written guard to forget.
-//
-// This is the security property of the whole module: without it, a plain PATCH could approve an
-// order, mark it acknowledged by a vendor who never saw it, or move it to PURCHASE_ORDER without
-// ever passing the approval threshold.
+// The lifecycle fields are writable only by their own actions, expressed as no_update in the schema
+// so the engine rejects them with no hand-written guard to forget. Without it a plain PATCH could
+// approve an order or move it to purchase_order without passing the approval threshold.
 func TestPurchaseOrderLifecycleFieldsAreNoUpdate(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 	schema := PurchaseOrderSchemaBuilder().Build()
@@ -87,8 +82,8 @@ func TestPurchaseOrderLifecycleFieldsAreNoUpdate(t *testing.T) {
 	}
 }
 
-// PUR-R4: the header totals are server-computed. A client-supplied total is ignored, not trusted,
-// so that the figure can never disagree with the lines it claims to total.
+// The header totals are server-computed; a client-supplied total is ignored, not trusted, so the
+// figure can never disagree with the lines it claims to total.
 func TestPurchaseOrderTotalsAreNoUpdate(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 	schema := PurchaseOrderSchemaBuilder().Build()
@@ -105,8 +100,8 @@ func TestPurchaseOrderTotalsAreNoUpdate(t *testing.T) {
 }
 
 // The line's computed amounts are no_update for the same reason — except tax_amount, which is
-// deliberately an INPUT because there is no tax engine (D9). That exception is asserted rather than
-// left as an absence, so that adding a tax engine later is a visible change here.
+// deliberately an input because there is no tax engine. The exception is asserted rather than left
+// as an absence, so adding a tax engine later is a visible change here.
 func TestPurchaseOrderLineTaxIsAnInputAndTheRestAreNot(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 	schema := PurchaseOrderLineSchemaBuilder().Build()
@@ -127,8 +122,8 @@ func TestPurchaseOrderLineTaxIsAnInputAndTheRestAreNot(t *testing.T) {
 		"a line's tax is supplied by the client: there is no tax engine to compute it")
 }
 
-// BR-UOM-PUR-004: the quantity and unit the buyer chose are never overwritten by the conversion.
-// Only the derived inventory_quantity is computed, which is why these two must stay writable.
+// The quantity and unit the buyer chose are never overwritten by the conversion. Only the derived
+// inventory_quantity is computed, which is why these two must stay writable.
 func TestPurchaseOrderLineKeepsTheOriginalQuantityWritable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 	schema := PurchaseOrderLineSchemaBuilder().Build()
@@ -142,9 +137,8 @@ func TestPurchaseOrderLineKeepsTheOriginalQuantityWritable(t *testing.T) {
 	assert.False(t, uom.IsNoUpdate(), "the ordered unit is the buyer's, not derived")
 }
 
-// D5a: no foreign key crosses a module boundary. A vendor lives in Contacts, a product and a unit
-// in Inventory and Essential; an edge to any of them would make this module's schema depend on
-// another module's tables, which the migration tooling cannot even generate.
+// No foreign key crosses a module boundary: an edge to Contacts, Inventory or Essential would make
+// this schema depend on another module's tables, which the migration tooling cannot generate.
 func TestNoCrossModuleForeignKeys(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -171,8 +165,8 @@ func TestNoCrossModuleForeignKeys(t *testing.T) {
 	}
 }
 
-// The intra-module edges, which SHOULD exist: a line cannot outlive its parent, and an orphaned
-// line would keep contributing to a total nobody can read.
+// The intra-module edges, which should exist: an orphaned line would keep contributing to a total
+// nobody can read.
 func TestLinesCascadeFromTheirParents(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -194,8 +188,8 @@ func TestLinesCascadeFromTheirParents(t *testing.T) {
 	}
 }
 
-// D6: the order code is unique per organization, not globally. Two organizations in one deployment
-// each numbering their orders from the same series is normal, not a conflict.
+// The order code is unique per organization, not globally: two organizations numbering from the
+// same series is normal.
 func TestCodesAreUniquePerOrg(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -226,8 +220,8 @@ func TestConfigurationIsOnePerOrg(t *testing.T) {
 	assert.Equal(t, []string{basemodel.FieldOrgId}, composites[0].Fields)
 }
 
-// PUR-R6: an audit event is immutable. It extends the readonly auditable mixin, so it carries
-// created_at but no updated_at — there is no such thing as editing one.
+// An audit event is immutable: it extends the readonly auditable mixin, so it carries created_at
+// but no updated_at.
 func TestAuditEventIsImmutable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 	schema := AuditEventSchemaBuilder().Build()
@@ -243,7 +237,7 @@ func TestAuditEventIsImmutable(t *testing.T) {
 }
 
 // The audit event deliberately holds no foreign key to what it describes: it must outlive the
-// record, and a cascade would delete exactly the history someone is auditing.
+// record, and a cascade would delete the history someone is auditing.
 func TestAuditEventHasNoEdgeToItsSubject(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -251,8 +245,7 @@ func TestAuditEventHasNoEdgeToItsSubject(t *testing.T) {
 		"an audit event must survive the deletion of the record it describes")
 }
 
-// Status values are lower-case in the database (D7). The requirement writes them upper-case, which
-// is presentation; every enum in this codebase stores lower-case.
+// Status values are lower-case in the database; upper-case spellings elsewhere are presentation.
 func TestStatusValuesAreLowerCase(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -269,8 +262,8 @@ func TestStatusValuesAreLowerCase(t *testing.T) {
 		enumValuesOf(t, agreement))
 }
 
-// enumValuesOf reads the declared values of an enum field. They live in the data type's options
-// map rather than on the field itself, keyed "enumValues".
+// enumValuesOf reads an enum field's declared values, which live in the data type's options map
+// keyed "enumValues" rather than on the field itself.
 func enumValuesOf(t *testing.T, field *dmodel.ModelField) []string {
 	t.Helper()
 	raw, ok := field.DataType().Options()["enumValues"]

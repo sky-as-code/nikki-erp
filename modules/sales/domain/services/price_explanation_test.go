@@ -8,9 +8,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// Grouping and ordering the adjustment chain. ExplainOrderPrice itself reads the repository and is
-// exercised live; what is testable here is the part that decides what the chain LOOKS like, which is
-// where an ordering bug would hide.
+// Grouping and ordering the adjustment chain, which is where an ordering bug would hide.
+// ExplainOrderPrice itself reads the repository and is exercised live.
 
 func adjustment(sequence int32, lineId, adjustmentType, amount string) dmodel.DynamicFields {
 	record := dmodel.DynamicFields{
@@ -24,9 +23,8 @@ func adjustment(sequence int32, lineId, adjustmentType, amount string) dmodel.Dy
 	return record
 }
 
-// The chain must come back in sequence order whatever order the rows arrived in. Sequence is what
-// makes the calculation replayable — discounts do not commute, so a chain shown out of order
-// describes a different calculation than the one that ran.
+// The chain must come back in sequence order whatever order the rows arrived in: discounts do not
+// commute, so a chain shown out of order describes a different calculation than the one that ran.
 func TestStepsAreOrderedBySequenceNotByRowOrder(t *testing.T) {
 	records := []dmodel.DynamicFields{
 		adjustment(3, "L1", "voucher", "-500"),
@@ -47,8 +45,8 @@ func TestStepsAreOrderedBySequenceNotByRowOrder(t *testing.T) {
 	}
 }
 
-// An adjustment with no line belongs to the order, not to a line. Distributing those across the
-// lines would leave an operator asking "where did this 1,234 go" looking at six fragments of it.
+// An adjustment with no line belongs to the order; distributing those across the lines would show an
+// operator six fragments of one step.
 func TestOrderLevelStepsAreSeparatedFromLineSteps(t *testing.T) {
 	records := []dmodel.DynamicFields{
 		adjustment(1, "L1", "conditional_price", "-2000"),
@@ -83,8 +81,8 @@ func TestOrderLevelStepsAreAlsoOrdered(t *testing.T) {
 	}
 }
 
-// A sequence that arrived through jsonb is a float64. Read as anything else it becomes zero, and
-// every step would sort equal — silently destroying the ordering the whole explanation depends on.
+// A sequence arriving through jsonb is a float64; read as anything else it becomes zero and every
+// step sorts equal, destroying the ordering the explanation depends on.
 func TestSequenceIsReadFromEveryNumericShape(t *testing.T) {
 	for name, value := range map[string]any{
 		"int32":   int32(7),
@@ -104,8 +102,7 @@ func TestSequenceIsReadFromEveryNumericShape(t *testing.T) {
 	}
 }
 
-// A signed amount must survive as signed: a discount is negative, and reading it unsigned would turn
-// every discount into a surcharge.
+// Reading an amount unsigned would turn every discount into a surcharge.
 func TestStepAmountsKeepTheirSign(t *testing.T) {
 	byLine, _ := groupSteps([]dmodel.DynamicFields{
 		adjustment(1, "L1", "percentage_discount", "-2000"),
@@ -121,7 +118,7 @@ func TestStepAmountsKeepTheirSign(t *testing.T) {
 	}
 }
 
-// The reconciliation check is the point of the whole structure: base plus every step must equal net.
+// Base plus every step must equal net.
 func TestStepsReconcileWhenTheChainAddsUp(t *testing.T) {
 	line := LinePriceExplanation{
 		BaseAmount: dec("12000"),
@@ -136,9 +133,7 @@ func TestStepsReconcileWhenTheChainAddsUp(t *testing.T) {
 	}
 }
 
-// And it must FAIL when it does not add up. A missing adjustment or a line repriced without its
-// adjustments rewritten are both real bugs; an explanation that quietly did not add up would show a
-// customer a discount nobody can account for.
+// And it must fail when it does not add up, or a customer is shown a discount nobody can account for.
 func TestStepsDoNotReconcileWhenAStepIsMissing(t *testing.T) {
 	line := LinePriceExplanation{
 		BaseAmount: dec("12000"),
@@ -151,8 +146,7 @@ func TestStepsDoNotReconcileWhenAStepIsMissing(t *testing.T) {
 	}
 }
 
-// A line with no adjustments reconciles trivially — nothing happened to it, and its net is its base.
-// Worth pinning because the empty case is the one an off-by-one in the loop would break.
+// A line with no adjustments reconciles trivially: its net is its base.
 func TestALineWithNoStepsReconciles(t *testing.T) {
 	line := LinePriceExplanation{
 		BaseAmount: dec("5000"),
@@ -164,8 +158,7 @@ func TestALineWithNoStepsReconciles(t *testing.T) {
 	}
 }
 
-// BR 87.9's worked example, end to end through the grouping: Base 12,000 / Conditional −2,000 /
-// Final 10,000.
+// The worked example, end to end: Base 12,000 / Conditional −2,000 / Final 10,000.
 func TestTheWorkedExampleFromTheRequirement(t *testing.T) {
 	byLine, _ := groupSteps([]dmodel.DynamicFields{
 		adjustment(1, "L1", "conditional_price", "-2000"),

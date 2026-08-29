@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// StorageCategoryAllowNewItemPolicy says whether goods arriving may be mixed into a location that
+// StorageCategoryAllowNewItemPolicy says whether arriving goods may be mixed into a location that
 // already holds something.
 const (
 	StorageCategoryAllowNewItemPolicyAllow           = "allow"
@@ -17,10 +17,8 @@ const (
 	StorageCategoryAllowNewItemPolicyEmptyOnly       = "empty_only"
 )
 
-// Storage Category has no status field, only is_archived. Nothing about it has an operational
-// state independent of archiving: a category is either part of the master data available for new
-// assignments or it is not. Adding a status to mirror Warehouse would create two ways to express
-// one fact.
+// Storage Category has no status field, only is_archived: it is either available for new
+// assignments or not, and a status mirroring Warehouse would express one fact twice.
 const (
 	StorageCategorySchemaName = "inventory_storage_category"
 

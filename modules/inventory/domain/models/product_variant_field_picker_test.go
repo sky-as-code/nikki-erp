@@ -12,18 +12,15 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// finalizedVariantSchema registers the variant with the schemas it depends on and finalizes the
-// registry, mirroring InventoryModule.RegisterModels. Registration matters: foreign keys are
-// resolved in FinalizeRelations, so a schema that was only Built reports none — and the picker's
-// filter keys off exactly that flag. The real builders are used rather than stubs so the flags
-// asserted below are the ones production actually serves.
+// finalizedVariantSchema registers the variant with its dependencies and finalizes the registry.
+// Registration matters: foreign keys are resolved in FinalizeRelations, so a schema that was only
+// Built reports none, and the picker's filter keys off that flag.
 func finalizedVariantSchema(t *testing.T) *dmodel.ModelSchema {
 	t.Helper()
 	registry := dmodel.GetSchemaRegistry()
 	_ = basemodel.RegisterJsonBaseSchemas()
-	// Registration is skipped when a sibling test in this package already registered these
-	// schemas — the registry is a process-wide singleton. Finalize still has to run either way,
-	// because registering alone leaves foreign keys unresolved.
+	// Skipped when a sibling test already registered these: the registry is a process-wide
+	// singleton. Finalize still runs either way, since registering leaves foreign keys unresolved.
 	if registry.Get(ProductVariantSchemaName) == nil {
 		require.NoError(t, errors.Join(
 			// Master data first: the template points at all of it.
@@ -32,10 +29,9 @@ func finalizedVariantSchema(t *testing.T) *dmodel.ModelSchema {
 			dmodel.RegisterSchemaB(BrandSchemaBuilder()),
 			dmodel.RegisterSchemaB(ProductTemplateSchemaBuilder()),
 			dmodel.RegisterSchemaB(ProductVariantSchemaBuilder()),
-			// The variant's stock aggregates resolve through its `quants` inverse edge, so the
-			// quant must be present for FinalizeRelations to reach it — and finalize resolves
-			// every edge of every registered schema, not just the ones under test, so the
-			// quant's own peers (and the location's) come along too.
+			// The variant's stock aggregates resolve through its `quants` inverse edge, so the quant
+			// must be registered. Finalize resolves every edge of every registered schema, so the
+			// quant's peers (and the location's) must come along too.
 			dmodel.RegisterSchemaB(StorageCategorySchemaBuilder()),
 			dmodel.RegisterSchemaB(WarehouseSchemaBuilder()),
 			dmodel.RegisterSchemaB(InventoryLocationSchemaBuilder()),
@@ -46,8 +42,8 @@ func finalizedVariantSchema(t *testing.T) *dmodel.ModelSchema {
 	return registry.Get(ProductVariantSchemaName)
 }
 
-// simplizedFields marshals the schema exactly as meta/schema serves it, so these tests read the
-// same bytes a client does rather than the in-process predicates behind them.
+// simplizedFields marshals the schema as meta/schema serves it, so these tests read the same bytes
+// a client does rather than the in-process predicates behind them.
 func simplizedFields(t *testing.T, schema *dmodel.ModelSchema) map[string]map[string]any {
 	t.Helper()
 	raw, err := json.Marshal(schema.ToSimplized())
@@ -60,9 +56,9 @@ func simplizedFields(t *testing.T, schema *dmodel.ModelSchema) map[string]map[st
 	return dto.Fields
 }
 
-// selectableFieldNames mirrors the frontend's getSelectableSchemaFieldNames (DataTable.tsx): the
-// column picker offers every field that is neither server-owned nor a relation placeholder.
-// Kept in step with that filter deliberately — this is the behaviour the UI actually shows.
+// selectableFieldNames mirrors the frontend's getSelectableSchemaFieldNames (DataTable.tsx) and
+// must be kept in step with it: the picker offers every field that is neither server-owned nor a
+// relation placeholder.
 func selectableFieldNames(fields map[string]map[string]any) map[string]bool {
 	selectable := map[string]bool{}
 	for name, field := range fields {
@@ -75,9 +71,8 @@ func selectableFieldNames(fields map[string]map[string]any) map[string]bool {
 	return selectable
 }
 
-// The regression this whole change exists for. Every template_* field is computed, and folding
-// "computed" into is_system_field used to strip all of them from the column picker even though
-// meta/schema returned them correctly.
+// Every template_* field is computed; folding "computed" into is_system_field strips all of them
+// from the column picker even though meta/schema returns them correctly.
 func TestProductVariant_ComputedFieldsAreSelectableColumns(t *testing.T) {
 	fields := simplizedFields(t, finalizedVariantSchema(t))
 	selectable := selectableFieldNames(fields)
@@ -89,8 +84,8 @@ func TestProductVariant_ComputedFieldsAreSelectableColumns(t *testing.T) {
 	}
 }
 
-// The other half of the picker's filter: a field the server owns, or one standing for a relation
-// rather than a value, must stay out of the list.
+// The other half of the picker's filter: a server-owned field, or one standing for a relation
+// rather than a value, stays out of the list.
 func TestProductVariant_KeysAndEdgesAreNotSelectableColumns(t *testing.T) {
 	fields := simplizedFields(t, finalizedVariantSchema(t))
 	selectable := selectableFieldNames(fields)
@@ -105,8 +100,8 @@ func TestProductVariant_KeysAndEdgesAreNotSelectableColumns(t *testing.T) {
 		"an ordinary business column stays selectable")
 }
 
-// The flags a client reads must agree with each other: computed-and-unpersisted is what makes a
-// field virtual, and is_system_field must stay orthogonal to all three.
+// computed-and-unpersisted is what makes a field virtual, and is_system_field must stay orthogonal
+// to all three.
 func TestProductVariant_ServedFlagsAreConsistent(t *testing.T) {
 	fields := simplizedFields(t, finalizedVariantSchema(t))
 

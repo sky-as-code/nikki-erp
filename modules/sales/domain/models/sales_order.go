@@ -49,13 +49,9 @@ func SalesOrderSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(salesOrderSchemaJson)
 }
 
-// SalesOrder is one commercial transaction: what was sold, to whom, through which channel.
-//
-// It carries FOUR independent status fields and they are never collapsed into one (BR §9). That is
-// the single most important thing about this model. A confirmed order can be fully paid and not yet
-// delivered, or delivered and unpaid, or complete but with its VAT invoice rejected by the tax
-// authority — a single status would have to invent an ordering between those that the business does
-// not have, and every consumer would then have to guess which dimension a given value referred to.
+// SalesOrder is one commercial transaction: what was sold, to whom, through which channel. It
+// carries four independent status fields, never collapsed into one: an order can be fully paid and
+// undelivered, or delivered and unpaid, or complete with its VAT invoice rejected.
 type SalesOrder struct {
 	basemodel.DynamicModelBase
 }
@@ -172,12 +168,9 @@ func (this *SalesOrder) SetTaxTotal(amount *decimal.Decimal) {
 	this.GetFieldData().SetDecimal(SalesOrderFieldTaxTotal, amount)
 }
 
-// GetTaxSnapshot returns Accounting's frozen record of how this order was taxed.
-//
-// Typed as `any` rather than as the accounting Snapshot struct on purpose: domain/models must not
-// import another module, and a stored snapshot is read back as whatever the JSON decoder chose. A
-// caller that needs the structured shape unmarshals it; a caller that only stores and returns it —
-// which is most of them — passes it through untouched.
+// GetTaxSnapshot returns Accounting's frozen record of how this order was taxed. Typed as `any`
+// because domain/models must not import another module, and a stored snapshot reads back as whatever
+// the JSON decoder chose; a caller needing the structured shape unmarshals it.
 func (this SalesOrder) GetTaxSnapshot() any {
 	return this.GetFieldData().GetAny(SalesOrderFieldTaxSnapshot)
 }
@@ -238,11 +231,8 @@ func (this SalesOrder) GetIsArchived() *bool {
 	return this.GetFieldData().GetBool(basemodel.FieldIsArchived)
 }
 
-// IsConfirmed reports whether the sale has been committed to.
-//
-// This is the gate on the snapshot fields: before confirmation the document is a draft whose lines
-// may be repriced freely, after it the numbers are what the business promised the customer and are
-// immutable (BR §11). Every rule that edits a line has to ask this first.
+// IsConfirmed reports whether the sale has been committed to. This is the gate on the snapshot
+// fields: before confirmation lines may be repriced freely, after it they are immutable.
 func (this SalesOrder) IsConfirmed() bool {
 	status := this.GetStatus()
 	if status == nil {
@@ -255,11 +245,8 @@ func (this SalesOrder) IsConfirmed() bool {
 	return false
 }
 
-// IsEditable reports whether lines may still be added, changed or removed.
-//
-// Only a draft qualifies. A cancelled order is deliberately NOT editable even though it will never
-// be delivered: it is a record of something that was attempted, and rewriting it would destroy the
-// evidence of what was attempted.
+// IsEditable reports whether lines may still be added, changed or removed. Only a draft qualifies; a
+// cancelled order stays uneditable because it is evidence of what was attempted.
 func (this SalesOrder) IsEditable() bool {
 	status := this.GetStatus()
 	if status == nil {
@@ -272,12 +259,8 @@ func (this SalesOrder) IsEditable() bool {
 	return archived == nil || !*archived
 }
 
-// IsTerminal reports whether the order has reached a state it will never leave.
-//
-// Completed and cancelled are both terminal for the ORDER status specifically. The other three
-// dimensions can still move afterwards — a completed order can be refunded, returned, and have its
-// invoice issued or rejected long after the sale itself is over, which is precisely why the four
-// statuses are separate fields.
+// IsTerminal reports whether the order status will never move again. Terminal for that dimension
+// only: refunds, returns and invoicing still happen afterwards.
 func (this SalesOrder) IsTerminal() bool {
 	status := this.GetStatus()
 	if status == nil {
@@ -290,21 +273,16 @@ func (this SalesOrder) IsTerminal() bool {
 	return false
 }
 
-// GetExchangeOfReturnId returns the return this order replaces, or nil.
-//
-// AN EXCHANGE IS A RETURN PLUS A NEW SALE (BR 87.5), joined by this column and never by editing the
-// product variant on a historical order. The original sale really did sell what it sold; rewriting it
-// would restate a transaction the customer already paid for, invalidate any fiscal document issued
-// against it, and leave the returned goods unaccounted for.
+// GetExchangeOfReturnId returns the return this order replaces, or nil. An exchange is a return plus
+// a new sale joined by this column, never an edit to the product variant on a historical order:
+// rewriting one would invalidate any fiscal document issued against it.
 func (this SalesOrder) GetExchangeOfReturnId() *model.Id {
 	return this.GetFieldData().GetModelId(SalesOrderFieldExchangeOfReturnId)
 }
 
-// IsExchange reports whether this order is the outgoing half of an exchange.
-//
-// The question a fulfilment or refund decision turns on: an exchange's new order is paid for by the
-// return it replaces rather than by fresh money, so treating it as an ordinary sale would either
-// charge the customer twice or leave the return unrefunded.
+// IsExchange reports whether this order is the outgoing half of an exchange. Its new order is paid
+// for by the return it replaces rather than by fresh money, so treating it as an ordinary sale would
+// either charge the customer twice or leave the return unrefunded.
 func (this SalesOrder) IsExchange() bool {
 	return this.GetExchangeOfReturnId() != nil
 }

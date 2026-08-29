@@ -11,9 +11,8 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
 )
 
-// Money must survive the wire exactly. A JSON number would be parsed as a float64 by most clients,
-// and a float64 cannot hold a decimal fraction — which on a tax figure means an invoice total that
-// disagrees with the sum of its lines.
+// Money must survive the wire exactly: a JSON number is parsed as a float64 by most clients and
+// cannot hold a decimal fraction.
 func TestAmountsBindFromJsonStringsExactly(t *testing.T) {
 	body := `{
 		"operation_type": "sale",
@@ -50,8 +49,7 @@ func TestAmountsBindFromJsonStringsExactly(t *testing.T) {
 	}
 }
 
-// A value with more precision than float64 can represent must round-trip unchanged. If this ever
-// fails, a float has crept into the path.
+// A value beyond float64 precision must round-trip unchanged; a failure means a float crept in.
 func TestHighPrecisionAmountSurvivesBinding(t *testing.T) {
 	body := `{"lines":[{"line_reference":"L1","commercial_base_amount":"12345678901234.123456789"}]}`
 
@@ -123,8 +121,7 @@ func TestComponentResponseCarriesTheAuditTrail(t *testing.T) {
 
 	response := newTaxComponentResponse(component)
 
-	// "tax = 10%" is not enough to issue a VAT invoice or answer an auditor: the version that
-	// produced the number and the base it was computed on both have to travel with it.
+	// The version that produced the number and the base it was computed on must travel with it.
 	if response.TaxDefinitionVersionId != "dv-1" || response.TaxDefinitionVersionNo != 2 {
 		t.Error("expected the definition version in the response")
 	}
@@ -134,8 +131,8 @@ func TestComponentResponseCarriesTheAuditTrail(t *testing.T) {
 	if response.TaxableBase != "100" {
 		t.Errorf("taxable base = %q, want 100", response.TaxableBase)
 	}
-	// Both figures are carried: a refund reverses the rounded amount actually charged, while the
-	// difference between them is what the rounding adjustment accounts for.
+	// A refund reverses the rounded amount actually charged; the difference between the two is what
+	// the rounding adjustment accounts for.
 	if response.UnroundedTaxAmount != "10.004" || response.TaxAmount != "10" {
 		t.Errorf("expected both the unrounded and rounded amounts, got %q and %q",
 			response.UnroundedTaxAmount, response.TaxAmount)
@@ -179,8 +176,8 @@ func TestReversalRequestBindsAmountsAsStrings(t *testing.T) {
 	}
 }
 
-// A snapshot comes back from the caller's own storage, so its enum strings may have been written by
-// an older version or corrupted. An unrecognized value must not travel on as if it were meaningful.
+// A snapshot comes back from the caller's own storage, so an unrecognized enum string must not
+// travel on as if it were meaningful.
 func TestUnknownSnapshotEnumsCoerceToEmpty(t *testing.T) {
 	snapshot := TaxSnapshotRequest{
 		RoundingMethod: "banker's rounding, probably",

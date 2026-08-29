@@ -6,9 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// Calculate prices a basket. Pure: no I/O, no clock, no repository (D-13).
-//
-// The nine steps of BR §13, in this exact order:
+// Calculate prices a basket. Pure: no I/O, no clock, no repository. Nine steps in this exact order:
 //
 //  1. resolve product, quantity and unit
 //  2. resolve the base price, from a pricelist item or the catalogue
@@ -20,16 +18,10 @@ import (
 //  8. apply monetary rounding
 //  9. freeze the snapshot
 //
-// Steps 4 and 5 are one loop rather than two. The programs arrive already ordered by the caller's
-// conflict resolution, and BR §21–22 forbid separate engines for promotions and vouchers — running
-// them as two passes would be exactly the separate engines the requirement rules out, and the
-// second pass would silently take precedence over the first whatever the priorities said.
-//
-// A program is evaluated against the state BEFORE any program was applied, not against the running
-// total. BR §29 does not address this, so the choice is documented here: evaluating against the
-// running total would make a program's eligibility depend on which other programs happened to be
-// applied first, so the same basket could qualify for a discount or not depending on ordering that
-// the customer cannot see. The engine takes the stable reading.
+// Steps 4 and 5 are one loop, not two passes: the programs already arrive in the caller's resolved
+// order, and a second pass would silently take precedence whatever the priorities said. Every
+// program is evaluated against the state BEFORE any program applied, so eligibility does not depend
+// on which other program happened to run first.
 func Calculate(input Input) Result {
 	scale := InternalScale
 
@@ -39,8 +31,8 @@ func Calculate(input Input) Result {
 	sequence := int32(0)
 	adjustments := make([]Adjustment, 0, 8)
 
-	// Combo pricing is recorded as an adjustment so the difference between what the parts would
-	// have cost and what the bundle costs is explainable rather than merely absent.
+	// Combo pricing is recorded as an adjustment so the difference between the parts' cost and the
+	// bundle price is explainable rather than merely absent.
 	for index := range lines {
 		if lines[index].ComboId == "" {
 			continue
@@ -65,10 +57,8 @@ func Calculate(input Input) Result {
 	// Steps 4–5: apply the programs the caller resolved, in the order given.
 	lines, adjustments, sequence = applyPrograms(input, lines, adjustments, sequence, scale)
 
-	// Step 5b: manual overrides (BR 87.4). AFTER the programs, because a human decision is made in
-	// light of what the automatic pricing already produced - an operator granting goodwill on a
-	// basket has seen the discounted number, not the catalogue one. Before tax, because an override
-	// changes what is being taxed.
+	// Step 5b: manual overrides. After the programs, because the operator decided in light of the
+	// automatic pricing; before tax, because an override changes what is taxed.
 	lines, adjustments, sequence = applyManualDiscounts(input, lines, adjustments, sequence, scale)
 
 	// Step 6: allocate order-level adjustments down to the lines.
@@ -92,22 +82,16 @@ func Calculate(input Input) Result {
 		result.GrandTotal = rounded
 	}
 
-	// Step 9: freeze. The lines and adjustments are returned as they stand; the caller writes them
-	// and, after confirmation, they are immutable (BR §11).
+	// Step 9: freeze. The caller writes the lines and adjustments as they stand; after confirmation
+	// they are immutable.
 	result.Lines = lines
 	result.Adjustments = adjustments
 	return result
 }
 
-// applyManualDiscounts applies the operator overrides (BR 87.4).
-//
-// Each one becomes an adjustment and nothing else. The base price is untouched, which is what BR 87.4
-// requires and what keeps the price explanation readable: the chain still runs catalogue price →
-// pricelist → programs → override → tax, with every link visible.
-//
-// An override naming a line is applied to that line. One naming none is an order-level adjustment,
-// spread across the lines by step 6 like any other - so a goodwill discount on a basket lands
-// proportionally rather than arbitrarily on the first line.
+// applyManualDiscounts applies the operator overrides. Each becomes an adjustment and nothing else:
+// the base price is untouched, so the chain catalogue → pricelist → programs → override → tax stays
+// visible. An override naming no line is order-level and spreads proportionally across the lines.
 func applyManualDiscounts(
 	input Input,
 	lines []LineResult,
@@ -116,9 +100,8 @@ func applyManualDiscounts(
 	scale int32,
 ) ([]LineResult, []Adjustment, int32) {
 	for _, manual := range input.ManualDiscounts {
-		// A non-positive override is ignored rather than applied. Zero changes nothing, and a
-		// negative one is a surcharge, which BR 87.4 does not authorise - and silently adding money
-		// to a customer's bill is the worst available failure here.
+		// A non-positive override is ignored: a negative one would be an unauthorised surcharge,
+		// silently adding money to the customer's bill.
 		if !manual.Amount.IsPositive() {
 			continue
 		}
@@ -135,9 +118,8 @@ func applyManualDiscounts(
 			}
 		}
 
-		// Capped at what is actually owed. An override larger than the line cannot make the
-		// customer owe a negative amount - that is a refund, which has its own workflow and its own
-		// money movement, not a discount that ran past the end.
+		// Capped at what is owed: an override larger than the line would be a refund, which has its
+		// own workflow and money movement.
 		amount := manual.Amount
 		if amount.GreaterThan(base) {
 			amount = base
@@ -146,8 +128,8 @@ func applyManualDiscounts(
 			continue
 		}
 
-		// Signed NEGATIVE from here on, matching every other discount in this engine: the
-		// adjustment records a reduction, and applyDiscountToLines adds what it is given.
+		// Signed NEGATIVE from here on, like every other discount here: applyDiscountToLines adds what
+		// it is given.
 		signed := amount.Neg()
 
 		sequence++
@@ -162,21 +144,16 @@ func applyManualDiscounts(
 			Amount:      signed,
 		})
 
-		// The discount is spread onto the LINES in both cases, and that is not optional: step 6
-		// ignores the adjustment list and totalise() sums the lines alone, so an adjustment that
-		// touched no line would appear on the paperwork as a discount the customer never received.
+		// The discount must reach the LINES in both cases: totalise() sums the lines alone, so an
+		// adjustment touching no line would show as a discount the customer never received.
 		if manual.LineKey == "" {
-			// Order-level: proportional across every line, by the same allocator the promotions
-			// use, so a goodwill discount on a basket lands the way every other order-level
-			// discount does rather than arbitrarily on the first line.
+			// Order-level: proportional across every line, via the allocator the promotions use.
 			lines = applyDiscountToLines(lines, allIndices(lines), signed, scale)
 			continue
 		}
 
-		// A key naming no line would index -1 and panic. It cannot normally happen - the caller
-		// validates the line exists before storing the override - but the engine is pure and takes
-		// its input on trust, so it declines rather than crashing the whole calculation over one
-		// bad row.
+		// A key naming no line would index -1 and panic; the engine takes its input on trust, so it
+		// declines rather than crashing the calculation over one bad row.
 		if index := indexOfKey(lines, manual.LineKey); index >= 0 {
 			lines = applyDiscountToLines(lines, []int{index}, signed, scale)
 		}
@@ -227,11 +204,15 @@ func resolveLines(input Input, scale int32) []LineResult {
 			EffectiveUnitPrice:  line.CatalogueUnitPrice,
 		}
 
-		// Step 2: a matching pricelist item overrides the catalogue price.
-		if item, found := bestPricelistItem(input.PricelistItems, line); found {
-			result.BaseUnitPrice = item.UnitPrice
-			result.EffectiveUnitPrice = item.UnitPrice
-			result.PricingSource = "pricelist"
+		// Step 2: a matching pricelist rule overrides the catalogue price. A rule that matches but
+		// cannot compute leaves the catalogue price standing rather than refusing the line.
+		if item, found := bestRule(input.PricelistItems, line); found {
+			if price, computed := rulePrice(item, line, scale); computed {
+				result.BaseUnitPrice = price
+				result.EffectiveUnitPrice = price
+				result.PricingSource = "pricelist"
+				result.PricelistItemId = item.Id
+			}
 		}
 
 		// Step 3: a combo line is priced at the bundle price, not at its parts.
@@ -253,43 +234,9 @@ func resolveLines(input Input, scale int32) []LineResult {
 	return lines
 }
 
-// bestPricelistItem picks the item that applies to a line: matching variant and unit, a quantity
-// break the line reaches, then most specific, then highest priority, then highest break.
-//
-// Highest break last, and it matters: a list holding 1-at-full-price and 10-at-a-discount must give
-// a line of 12 the ten-break, not the one-break, and both are eligible.
-func bestPricelistItem(items []PricelistItem, line LineInput) (PricelistItem, bool) {
-	var best PricelistItem
-	found := false
-
-	for _, item := range items {
-		if item.ProductVariantId != line.ProductVariantId || item.UomId != line.UomId {
-			continue
-		}
-		if line.Quantity.LessThan(item.MinQuantity) {
-			continue
-		}
-		if !found || betterPricelistItem(item, best) {
-			best, found = item, true
-		}
-	}
-	return best, found
-}
-
-func betterPricelistItem(candidate, incumbent PricelistItem) bool {
-	if candidate.Specificity != incumbent.Specificity {
-		return candidate.Specificity > incumbent.Specificity
-	}
-	if candidate.Priority != incumbent.Priority {
-		return candidate.Priority > incumbent.Priority
-	}
-	return candidate.MinQuantity.GreaterThan(incumbent.MinQuantity)
-}
-
-// expandComponents allocates the combo price across its components (BR §18, D-04).
-//
-// The allocation is an OUTPUT — for VAT, partial return and reporting — never an input to the combo
-// price, which is independent by BR §15. Its sum equals the line's gross amount exactly.
+// expandComponents allocates the combo price across its components. The allocation is an OUTPUT for
+// VAT, partial return and reporting, never an input to the combo price; its sum equals the line's
+// gross amount exactly.
 func expandComponents(combo ComboDefinition, line LineInput) []ComponentResult {
 	if len(combo.Components) == 0 {
 		return nil
@@ -332,9 +279,8 @@ func referenceTotalOf(line LineResult) decimal.Decimal {
 	if total.IsZero() {
 		return decimal.Zero
 	}
-	// The allocated amounts already sum to the combo price, so they cannot serve as the reference.
-	// A combo line's reference is its gross amount, which makes the combo adjustment zero unless
-	// the caller supplied standalone prices — see the test for the worked example.
+	// The allocated amounts already sum to the combo price, so they cannot serve as the reference; the
+	// gross amount does, making the combo adjustment zero unless standalone prices were supplied.
 	return line.GrossAmount
 }
 
@@ -342,8 +288,7 @@ func referenceTotalOf(line LineResult) decimal.Decimal {
 func applyPrograms(
 	input Input, lines []LineResult, adjustments []Adjustment, sequence int32, scale int32,
 ) ([]LineResult, []Adjustment, int32) {
-	// The pre-application state every program is evaluated against. See Calculate's doc comment for
-	// why this is captured once rather than recomputed as programs apply.
+	// The pre-application state every program is evaluated against, captured once — see Calculate.
 	baseNet := netTotalOf(lines)
 
 	for _, program := range input.Programs {
@@ -392,8 +337,7 @@ func applyReward(
 	case "fixed_amount_discount":
 		targets := targetIndices(lines, reward)
 		base := netOfIndices(lines, targets)
-		// Never discount more than the target lines are worth: a fixed amount larger than the
-		// basket would otherwise produce a negative total and pay the customer to shop.
+		// Never discount more than the target lines are worth, or the total goes negative.
 		amount := reward.Value.Round(scale)
 		if amount.GreaterThan(base) {
 			amount = base
@@ -407,8 +351,7 @@ func applyReward(
 		})
 
 	case "fixed_product_price":
-		// BR §20's conditional bundle pricing: not a combo, but a program whose reward sets a
-		// per-unit price on particular lines.
+		// Conditional bundle pricing: not a combo, but a reward setting a per-unit price on lines.
 		targets := targetIndices(lines, reward)
 		base := netOfIndices(lines, targets)
 		for _, index := range targets {
@@ -427,8 +370,8 @@ func applyReward(
 		})
 
 	case "free_quantity":
-		// D-11: a free item is a REAL line at zero price, not an adjustment. Inventory must
-		// physically fulfil it, and its VAT treatment is a line-level question.
+		// A free item is a REAL line at zero price, not an adjustment: Inventory must fulfil it and its
+		// VAT treatment is a line-level question.
 		lines = append(lines, LineResult{
 			Key:                      reward.RewardId,
 			LineNumber:               nextLineNumber(lines),
@@ -468,8 +411,7 @@ func targetIndices(lines []LineResult, reward RewardInput) []int {
 		if len(wanted) > 0 && !wanted[line.Key] {
 			continue
 		}
-		// A giveaway line is never itself discounted: it is already free, and allocating a share of
-		// a discount to it would take that share away from a line the customer is actually paying
+		// A giveaway line is never discounted: its share would come off a line the customer is paying
 		// for.
 		if line.LineType == "promotion_reward" {
 			continue
@@ -480,11 +422,8 @@ func targetIndices(lines []LineResult, reward RewardInput) []int {
 }
 
 // applyDiscountToLines spreads a discount across the target lines proportionally to their CURRENT
-// net amounts (D-05).
-//
-// Post-discount net rather than gross, deliberately: it keeps Σ line net equal to the order net at
-// every step, and stops a line already discounted to near zero from absorbing more discount than it
-// is worth.
+// (post-discount) net amounts, which keeps the line nets summing to the order net at every step and
+// stops an already-discounted line absorbing more than it is worth.
 func applyDiscountToLines(
 	lines []LineResult, targets []int, amount decimal.Decimal, scale int32,
 ) []LineResult {
@@ -511,17 +450,16 @@ func applyDiscountToLines(
 	return lines
 }
 
-// allocateOrderAdjustments is step 6. The discounts have already been pushed down to the lines as
-// they were applied, so this step reconciles rather than re-allocates: it ensures each line's net is
-// its gross minus its accumulated discount, and never negative.
+// allocateOrderAdjustments is step 6. Discounts were already pushed down to the lines as applied, so
+// this reconciles rather than re-allocates: net is gross minus accumulated discount, never negative.
 func allocateOrderAdjustments(
 	lines []LineResult, _ []Adjustment, scale int32,
 ) []LineResult {
 	for index := range lines {
 		net := lines[index].GrossAmount.Sub(lines[index].DiscountAmount).Round(scale)
 		if net.IsNegative() {
-			// A discount cannot take a line below zero. The cap is applied here rather than at each
-			// reward so that a stack of rewards is capped once, on their combined effect.
+			// Capped here rather than per reward, so a stack of rewards is capped once on its combined
+			// effect.
 			lines[index].DiscountAmount = lines[index].GrossAmount
 			net = decimal.Zero
 		}
@@ -530,19 +468,9 @@ func allocateOrderAdjustments(
 	return lines
 }
 
-// applyTax is step 7. It copies in what Accounting decided; it does not compute tax.
-//
-// This function used to extract tax itself, as net × rate / (1 + rate). That arithmetic now lives in
-// accounting/domain/services/tax/calculation.go, which does exactly this for a tax-inclusive
-// percentage tax and also handles the cases this engine never did: compound taxes whose base
-// includes the tax before them, division-type taxes, fixed per-unit taxes, and document-scoped
-// rounding. Two implementations of the same law would eventually disagree, and the one embedded in
-// a pricing engine is the one that would be wrong.
-//
-// D-02 is settled by that delegation rather than decided here. Whether the price includes tax is
-// Accounting's price_inclusion_mode plus the request's price_mode; Sales no longer holds an opinion.
-//
-// A line with no entry in the map is taxed at zero — see the note on Context.TaxByLineKey.
+// applyTax is step 7: it copies in what Accounting decided and never computes tax itself — the
+// arithmetic, including compound and per-unit taxes and tax-inclusive pricing, belongs to
+// accounting/domain/services/tax. A line with no entry in the map is taxed at zero.
 func applyTax(lines []LineResult, taxByLineKey map[string]LineTax, scale int32) []LineResult {
 	for index := range lines {
 		tax, resolved := taxByLineKey[lines[index].Key]
@@ -561,26 +489,23 @@ func applyTax(lines []LineResult, taxByLineKey map[string]LineTax, scale int32) 
 			continue
 		}
 
-		// Accounting taxed the components individually, so its split is authoritative: it is the one
-		// that reconciles against the rounding policy actually applied.
+		// Accounting taxed the components individually, so its split is authoritative: it reconciles
+		// against the rounding policy actually applied.
 		if len(tax.ComponentAmounts) > 0 {
 			lines[index].Components = copyComponentTax(lines[index].Components, tax.ComponentAmounts)
 			continue
 		}
 
-		// Otherwise the line was taxed as a whole and the components share it in proportion to their
-		// allocated net. The allocator guarantees the shares sum to the line's tax exactly, so a VAT
-		// invoice itemising a combo still adds up to what was charged.
+		// Otherwise the line was taxed as a whole and components share it in proportion to allocated
+		// net; the shares sum to the line's tax exactly, so an itemised VAT invoice still adds up.
 		lines[index].Components = allocateComponentTax(
 			lines[index].Components, lines[index].TaxAmount, scale)
 	}
 	return lines
 }
 
-// copyComponentTax takes Accounting's per-component figures.
-//
-// A component Accounting did not report gets zero rather than a guessed share: inventing a number to
-// fill a gap is how a total stops reconciling with the tax that was actually charged.
+// copyComponentTax takes Accounting's per-component figures. An unreported component gets zero, not
+// a guessed share, so the total keeps reconciling with the tax actually charged.
 func copyComponentTax(
 	components []ComponentResult, amounts map[string]decimal.Decimal,
 ) []ComponentResult {
@@ -611,10 +536,8 @@ func allocateComponentTax(
 	return components
 }
 
-// totalise sums the lines into the order totals.
-//
-// FinalAmount is the line's net: with tax-inclusive pricing the tax is already inside it, so adding
-// tax again would charge it twice.
+// totalise sums the lines into the order totals. FinalAmount is the line's net: with tax-inclusive
+// pricing the tax is already inside it, so adding tax again would charge it twice.
 func totalise(lines []LineResult) Result {
 	result := Result{
 		Subtotal:      decimal.Zero,

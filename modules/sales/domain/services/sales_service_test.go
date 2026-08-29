@@ -4,10 +4,9 @@ import (
 	"testing"
 )
 
-// The code rules are pure functions, so they are tested without a database. They matter more than
-// their size suggests: a channel code is immutable once written, so a code that should have been
-// rejected is a permanent wrong entry, and a code normalised inconsistently resolves for one caller
-// and not another.
+// The code rules are pure functions, so they are tested without a database. A channel code is
+// immutable once written, so a code that should have been rejected is a permanent wrong entry, and
+// a code normalised inconsistently resolves for one caller and not another.
 
 func TestNormalizeChannelCode(t *testing.T) {
 	cases := []struct {
@@ -42,7 +41,7 @@ func TestIsValidChannelCode(t *testing.T) {
 	}
 
 	// Every one of these would otherwise end up in a URL or another module's configuration file,
-	// where it would need escaping or quoting that nobody would remember to apply.
+	// where it would need escaping nobody would remember to apply.
 	invalid := map[string]string{
 		"":       "empty",
 		"VDMC":   "uppercase — normalize before validating, never after",
@@ -63,7 +62,7 @@ func TestIsValidChannelCode(t *testing.T) {
 }
 
 // Normalising then validating is the order the create path uses, and the pair must agree: a code
-// the user typed in uppercase is valid, because it is lowered first.
+// typed in uppercase is valid, because it is lowered first.
 func TestNormalizeThenValidate(t *testing.T) {
 	cases := []struct {
 		input string

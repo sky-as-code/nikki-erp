@@ -1,9 +1,6 @@
-// Package channel is Sales' outward-facing contract for sales channels and sales points.
-//
-// Another module depends on this interface and never on the application service directly, so that
-// splitting Sales into its own process changes only the binding, not the callers. The vending
-// machine module is the first consumer: it registers its channel and creates a sales point per
-// kiosk through exactly these two operations.
+// Package channel is Sales' outward-facing contract for sales channels and sales points. Another
+// module depends on this interface and never on the application service directly, so splitting Sales
+// into its own process changes only the binding, not the callers.
 package channel
 
 import (
@@ -11,17 +8,12 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
-// SalesChannelAppService is the capability set another module needs from Sales.
-//
-// It is deliberately narrow. Listing, editing and archiving channels are administrative acts that
-// belong to a human at the REST surface, not to an integrating module, so they are absent here: a
-// module that could archive a channel could stop a business selling as a side effect of its own
-// deployment.
+// SalesChannelAppService is the capability set another module needs from Sales. Listing, editing
+// and archiving channels are absent deliberately: they belong to a human at the REST surface, and a
+// module that could archive a channel could stop a business selling as a deployment side effect.
 type SalesChannelAppService interface {
-	// RegisterSalesChannel claims a channel for the calling module, idempotently by code.
-	//
-	// Running it twice returns the same channel. A code already owned by a different module is
-	// refused rather than taken over.
+	// RegisterSalesChannel claims a channel for the calling module, idempotently by code. A code
+	// already owned by a different module is refused rather than taken over.
 	RegisterSalesChannel(
 		ctx corectx.Context, command RegisterSalesChannelCommand,
 	) (*RegisterSalesChannelResult, error)
@@ -36,11 +28,9 @@ type SalesChannelAppService interface {
 // SalesPointAppService is the sales point half of the same contract.
 type SalesPointAppService interface {
 	// CreateSalesPoint registers one selling place under a channel, idempotently by the pair
-	// (channel, external reference id).
-	//
-	// A caller retrying after a timeout is handed the point it created the first time. That is the
-	// mechanism that lets creating a kiosk and creating its sales point be two independent steps
-	// without a distributed transaction between them.
+	// (channel, external reference id). A caller retrying after a timeout is handed the point it
+	// created the first time, so creating a kiosk and its sales point need no distributed
+	// transaction.
 	CreateSalesPoint(
 		ctx corectx.Context, command CreateSalesPointCommand,
 	) (*CreateSalesPointResult, error)
@@ -95,8 +85,8 @@ type ResolvedSalesChannel struct {
 	Name            string `json:"name"`
 	ManagedByModule string `json:"managed_by_module"`
 	Status          string `json:"status"`
-	// IsUsable folds status and archive state into the one question a caller about to sell has.
-	// Both gates matter and a caller that checked only one would let a suspended channel trade.
+	// IsUsable folds status and archive state together: a caller checking only one would let a
+	// suspended channel trade.
 	IsUsable bool `json:"is_usable"`
 }
 

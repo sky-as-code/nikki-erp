@@ -25,8 +25,8 @@ const (
 	SalesOrderEventFieldMetadata     = "metadata"
 )
 
-// The actions BR 86 enumerates. They are constants rather than free strings at the call sites so
-// that a typo is a compile error instead of an event nobody can find by filtering.
+// The recorded actions. Constants rather than free strings at the call sites, so a typo is a compile
+// error instead of an event nobody can find by filtering.
 const (
 	SalesOrderActionCreate         = "create"
 	SalesOrderActionConfirm        = "confirm"
@@ -45,16 +45,13 @@ const (
 	SalesOrderActionRequestInvoice = "request_invoice"
 	SalesOrderActionFulfill        = "fulfill"
 
-	// SalesOrderActionConvertQuotation records that an order came from an accepted offer rather
-	// than being raised directly. Its own action, not 'create', because the two answer a different
-	// question for anybody investigating a price: a converted order was quoted first, and what it
-	// was quoted at is the next thing they will ask.
+	// SalesOrderActionConvertQuotation records that an order came from an accepted offer rather than
+	// being raised directly, so an investigator can find what it was quoted at.
 	SalesOrderActionConvertQuotation = "convert_quotation"
 
-	// SalesOrderActionExpire records a draft that went stale rather than one somebody withdrew.
-	// Its own action because the STATUS cannot carry the distinction - sales_orders has no
-	// 'expired' value and an expired draft is stored as cancelled - so this is what lets an
-	// operator tell the two apart afterwards.
+	// SalesOrderActionExpire records a draft that went stale rather than one somebody withdrew. Its
+	// own action because sales_orders has no 'expired' status: an expired draft is stored as
+	// cancelled, so only this tells the two apart afterwards.
 	SalesOrderActionExpire = "expire"
 )
 
@@ -65,17 +62,11 @@ func SalesOrderEventSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(salesOrderEventSchemaJson)
 }
 
-// SalesOrderEvent is one thing that happened to a sale.
-//
-// This is the DOCUMENT trail required by BR 86: status changes, manual overrides, split, merge,
-// cancellation, payment, refund, return, fiscal request. It is deliberately not the pricing trail —
-// that is sales_order_adjustment — because the two answer different questions and have different
-// lifetimes. An adjustment explains a number and is replaced when the order is repriced; an event
-// records that something occurred and is never replaced at all.
-//
-// The schema extends auditable_readonly_model and carries no archivable mixin, matching
-// purchase_audit_event: an audit row that could be edited or archived would be worthless as the
-// evidence it exists to be.
+// SalesOrderEvent is one thing that happened to a sale: the document trail, not the pricing trail
+// (sales_order_adjustment). An adjustment explains a number and is replaced when the order is
+// repriced; an event records that something occurred and is never replaced. The schema extends
+// auditable_readonly_model with no archivable mixin: an editable audit row would be worthless as
+// evidence.
 type SalesOrderEvent struct {
 	basemodel.DynamicModelBase
 }

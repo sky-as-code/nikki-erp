@@ -8,8 +8,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The state gates of confirm and cancel. Both operations read the repository and are exercised live;
-// what is pinned here is which states they let through, which is where a wrong answer costs money.
+// The state gates of confirm and cancel; both read the repository and are exercised live.
 
 func orderRecord(status, payment, fulfillment string) dmodel.DynamicFields {
 	return dmodel.DynamicFields{
@@ -23,10 +22,8 @@ func orderRecord(status, payment, fulfillment string) dmodel.DynamicFields {
 
 const orderTestId = "OR1"
 
-// THE test of cancel. A paid order must not be cancellable: doing so leaves the business holding
-// money against a sale that no longer exists. BR §43 requires a refund instead, and the refusal must
-// SAY so rather than reporting a generic failure — an operator left with a paid order and "cannot
-// cancel" has nowhere to go.
+// THE test of cancel. A paid order must not be cancellable: that leaves the business holding money
+// against a sale that no longer exists, and the refusal must name the refund workflow.
 func TestAPaidOrderCannotBeCancelled(t *testing.T) {
 	for _, paymentStatus := range []string{
 		string(models.SalesOrderPaymentStatusPaid),
@@ -67,8 +64,8 @@ func TestAFulfilledOrderCannotBeCancelled(t *testing.T) {
 	}
 }
 
-// Payment is checked before fulfilment, because an order that is both paid AND fulfilled is more
-// usefully described as needing a refund — that is the half involving money.
+// Payment is checked before fulfilment: an order both paid AND fulfilled is more usefully
+// described as needing a refund.
 func TestPaymentIsCheckedBeforeFulfilment(t *testing.T) {
 	vErrs := assertCancellable(orderRecord(
 		string(models.SalesOrderStatusConfirmed),
@@ -98,9 +95,8 @@ func TestUnpaidUnfulfilledOrdersCancel(t *testing.T) {
 	}
 }
 
-// Cancelling twice is refused rather than treated as a no-op. Unlike a plain status transition, a
-// cancel releases voucher reservations — a silent second success would give back a use the order was
-// no longer holding.
+// Cancelling twice is refused rather than a no-op: a cancel releases voucher reservations, so a
+// silent second success would give back a use the order no longer held.
 func TestCancellingTwiceIsRefused(t *testing.T) {
 	vErrs := assertCancellable(orderRecord(
 		string(models.SalesOrderStatusCancelled),
@@ -124,9 +120,8 @@ func TestACompletedOrderCannotBeCancelled(t *testing.T) {
 	}
 }
 
-// A draft cancel has nothing to undo, so its pending list is empty and the cancel really is
-// complete. A confirmed one holds stock and possibly a pending payment, and saying so is what stops
-// a caller assuming the stock came back.
+// A draft cancel has nothing to undo. A confirmed one holds stock and possibly a pending payment,
+// and saying so stops a caller assuming the stock came back.
 func TestOnlyAConfirmedCancelReportsPendingWork(t *testing.T) {
 	if pending := pendingCancelSteps(string(models.SalesOrderStatusDraft)); len(pending) != 0 {
 		t.Errorf("a draft cancel has nothing outstanding, got %v", pending)
@@ -136,9 +131,8 @@ func TestOnlyAConfirmedCancelReportsPendingWork(t *testing.T) {
 	}
 }
 
-// Confirm refuses anything that is not a draft. Re-confirming is refused rather than treated as
-// idempotent, because a confirm has side effects — it redeems vouchers — so a silent second success
-// would redeem twice.
+// Confirm refuses anything that is not a draft, and re-confirming is refused rather than
+// idempotent, because a confirm redeems vouchers and would redeem twice.
 func TestOnlyADraftCanBeConfirmed(t *testing.T) {
 	for _, status := range []string{
 		string(models.SalesOrderStatusConfirmed),
@@ -160,8 +154,8 @@ func TestOnlyADraftCanBeConfirmed(t *testing.T) {
 	}
 }
 
-// CR §18 demands the channel check even though D-19 made the column NOT NULL. It is cheap, and a
-// schema that changes underneath this code should fail loudly here rather than silently later.
+// The channel check stays even though the column is NOT NULL: a schema that changes underneath
+// this code should fail loudly here rather than silently later.
 func TestAnOrderWithNoChannelCannotBeConfirmed(t *testing.T) {
 	record := orderRecord(string(models.SalesOrderStatusDraft),
 		string(models.SalesOrderPaymentStatusUnpaid),
@@ -190,8 +184,8 @@ func TestTheLockKeyIsBuiltFromTheOrderId(t *testing.T) {
 	}
 }
 
-// Confirm and cancel must take the SAME lock, or one could run while the other holds it — releasing
-// a reservation the confirm had just redeemed.
+// Confirm and cancel must take the SAME lock, or one could release a reservation the other had
+// just redeemed.
 func TestConfirmAndCancelShareOneLock(t *testing.T) {
 	// Both call confirmLockKeyOf; this asserts that stays true by pinning the single key builder.
 	if confirmLockKeyOf(orderTestId) != "lock:sales_order:"+orderTestId {

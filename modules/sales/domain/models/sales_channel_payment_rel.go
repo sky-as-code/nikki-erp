@@ -25,15 +25,10 @@ func SalesChannelPaymentRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(salesChannelPaymentRelSchemaJson)
 }
 
-// SalesChannelPaymentRel records that one channel accepts one payment method.
-//
-// It carries no enabled flag on purpose (CR §27): the row IS the state. A boolean would create a
-// second way to express "not enabled" — a row set to false versus no row at all — and every reader
-// would then have to handle both, with nothing making them agree.
-//
-// The consequence is the default-deny rule (CR §76): a channel with no mappings accepts no payment
-// method, never all of them. A new method appearing in paymentinvoice is therefore off everywhere
-// until somebody enables it (CR §77), which is the correct default for something that moves money.
+// SalesChannelPaymentRel records that one channel accepts one payment method. It carries no enabled
+// flag on purpose: the row is the state, and a boolean would create a second way to say "not
+// enabled". The consequence is default-deny — a channel with no mappings accepts no payment method,
+// so a new method in paymentinvoice is off everywhere until somebody enables it.
 type SalesChannelPaymentRel struct {
 	basemodel.DynamicModelBase
 }

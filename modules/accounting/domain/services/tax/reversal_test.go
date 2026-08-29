@@ -9,9 +9,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 )
 
-// AC-TAX-29 and AC-TAX-SUP-16: a full refund reverses the original charge exactly.
-//
-// The sale was at 8%; the current rate is irrelevant, and is never consulted.
+// A full refund reverses the original charge exactly. The sale was at 8%; the current rate is never
+// consulted.
 func TestFullReversalNegatesOriginal(t *testing.T) {
 	results := ReverseFull([]ReversalComponentInput{{
 		OriginalComponentReference: "L1/VAT8",
@@ -53,11 +52,9 @@ func TestPartialReversalIsProportional(t *testing.T) {
 	assert.True(t, results[0].RemainingTaxAmount.Equal(dec("70")))
 }
 
-// AC-TAX-30 and AC-TAX-SUP-18: the final reversal absorbs the rounding residual, so the refunds
-// sum to exactly the original charge.
-//
-// Three refunds of a third of 10.00 round to 3.33 each and leave a cent stranded. The last one
-// takes what remains instead of its proportional share.
+// The final reversal absorbs the rounding residual so the refunds sum to exactly the original
+// charge: three thirds of 10.00 round to 3.33 each and strand a cent, which the last one takes
+// instead of its proportional share.
 func TestFinalPartialReversalAbsorbsResidual(t *testing.T) {
 	rounder := policy(models.RoundingHalfUp, "0.01")
 	original := dec("10.00")
@@ -86,10 +83,8 @@ func TestFinalPartialReversalAbsorbsResidual(t *testing.T) {
 		"total reversed = %s, want exactly %s", reversedSoFar, original)
 }
 
-// AC-TAX-SUP-17 and TAX-INV-11: no sequence of partial refunds may reverse more than was charged.
-//
-// Here the caller asks to reverse the whole basis twice over — a duplicated refund request, which
-// is the realistic way this happens.
+// No sequence of partial refunds may reverse more than was charged. Here the caller asks to reverse
+// the whole basis twice over, as a duplicated refund request would.
 func TestPartialReversalNeverExceedsOriginal(t *testing.T) {
 	rounder := policy(models.RoundingHalfUp, "0.01")
 
@@ -106,8 +101,8 @@ func TestPartialReversalNeverExceedsOriginal(t *testing.T) {
 	assert.True(t, results[0].RemainingTaxAmount.IsZero())
 }
 
-// A malformed input with no basis to prorate against reverses nothing, rather than assuming the
-// whole remainder and over-refunding on the strength of a bad request.
+// A malformed input with no basis to prorate against reverses nothing rather than assuming the
+// whole remainder and over-refunding.
 func TestPartialReversalWithoutBasisReversesNothing(t *testing.T) {
 	rounder := policy(models.RoundingHalfUp, "0.01")
 
@@ -122,8 +117,7 @@ func TestPartialReversalWithoutBasisReversesNothing(t *testing.T) {
 	assert.True(t, results[0].RemainingTaxAmount.Equal(dec("100")))
 }
 
-// A reversal is signed negative, so a caller summing charges and refunds gets the net without
-// having to know which is which.
+// A reversal is signed negative, so summing charges and refunds gives the net.
 func TestReversalsAreNegative(t *testing.T) {
 	full := ReverseFull([]ReversalComponentInput{{
 		OriginalComponentReference: "L1",

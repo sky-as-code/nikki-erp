@@ -44,9 +44,8 @@ func TestDerefHelpersPassValuesThrough(t *testing.T) {
 	}
 }
 
-// A condition operand is stored as `any` because it compares against whatever its field holds.
-// Determination compares everything as text, so every shape has to arrive as a parseable string —
-// a number that came back as "1.2e+06" would fail to parse on the comparison side.
+// A condition operand is stored as `any`. Determination compares everything as text, so every shape
+// must arrive as a parseable string; "1.2e+06" would fail to parse on the comparison side.
 func TestConditionValueFlattensScalars(t *testing.T) {
 	cases := []struct {
 		raw  any
@@ -74,9 +73,9 @@ func TestConditionValueFlattensScalars(t *testing.T) {
 	}
 }
 
-// A scalar operand is stored as a one-element array, because the column's jsonmap type accepts
-// only an object or an array — never a bare string. That element has to come back as the scalar as
-// well, or an "eq" condition reading the same column would compare against nothing.
+// A scalar operand is stored as a one-element array because the column's jsonmap type accepts only
+// an object or an array. That element must come back as the scalar too, or an "eq" condition
+// reading the same column compares against nothing.
 func TestSingleElementArrayIsAlsoAScalar(t *testing.T) {
 	scalar, list := conditionValue([]any{"VN_EXPORT"})
 
@@ -102,8 +101,8 @@ func TestConditionValueFlattensLists(t *testing.T) {
 	}
 }
 
-// A comma inside a stored JSON array element is data, not a separator — which is why a list that
-// arrives already split is never re-split.
+// A comma inside a stored JSON array element is data, not a separator, so a list that arrives
+// already split is never re-split.
 func TestConditionValueDoesNotResplitAList(t *testing.T) {
 	_, list := conditionValue([]any{"Hanoi, Vietnam", "Ho Chi Minh City"})
 

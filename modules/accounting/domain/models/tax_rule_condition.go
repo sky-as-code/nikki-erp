@@ -30,11 +30,9 @@ func TaxRuleConditionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(taxRuleConditionSchemaJson)
 }
 
-// TaxRuleCondition is one typed predicate on the tax context.
-//
-// Conditions within a rule are ANDed; OR is expressed by writing a second rule. Field keys come
-// from a whitelist and values are typed JSON, because the alternative - user-supplied SQL or
-// expressions - is forbidden outright.
+// TaxRuleCondition is one typed predicate on the tax context. Conditions within a rule are ANDed;
+// OR is expressed by writing a second rule. Field keys come from a whitelist and values are typed
+// JSON; user-supplied SQL or expressions are forbidden.
 type TaxRuleCondition struct {
 	basemodel.DynamicModelBase
 }

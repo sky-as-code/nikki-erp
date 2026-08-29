@@ -9,15 +9,12 @@ import (
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
-// rejectArchivedOnCreate refuses a create that carries is_archived.
+// rejectArchivedOnCreate refuses a create that carries is_archived, which is set through the
+// /archived action and never as a create field. The schema validator drops it silently, answering
+// 201 with a record whose visibility is not what the caller asked for, so it is reported instead.
 //
-// is_archived comes from core.basemodel.archivable_model and is set through the /archived action,
-// never as a create field. The schema validator drops it silently, which answers 201 with a record
-// whose visibility is not what the caller asked for; a caller creating an already-invisible record
-// is telling us the request is wrong, so it is reported rather than ignored.
-//
-// It wraps the action's existing ValidateExtra instead of replacing it, because ModifyAction
-// overwrites that field and every guard the specs installed must keep running.
+// It wraps the action's existing ValidateExtra rather than replacing it: ModifyAction overwrites
+// that field, and every guard the specs installed must keep running.
 func rejectArchivedOnCreate(engine drif.DynamicResourceEngine) error {
 	if _, ok := engine.Schema().Field(basemodel.FieldIsArchived); !ok {
 		return nil

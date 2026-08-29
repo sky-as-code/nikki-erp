@@ -35,11 +35,8 @@ func TaxRuleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(taxRuleSchemaJson)
 }
 
-// TaxRule decides which taxes apply to a transaction context.
-//
-// Rules evaluate in priority order and nothing else (BR-TAX-ESS-SUP-009). The old specificity
-// heuristic was removed because it silently reordered rules whenever an author added a
-// condition, which made precedence an emergent property rather than a decision.
+// TaxRule decides which taxes apply to a transaction context. Rules evaluate in priority order and
+// nothing else: precedence is an authored decision, never inferred from how specific a rule is.
 type TaxRule struct {
 	basemodel.DynamicModelBase
 }

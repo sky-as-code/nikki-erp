@@ -3,6 +3,13 @@
 	"label": "accounting.settings.orgSettings",
 	"fields": [
 		{
+			"name": "org_default_currency",
+			"label": "accounting.settings.orgDefaultCurrency",
+			"description": "settings_desc.org_default_currency",
+			"data_type": { "type": "string", "min": 0, "max": 26 },
+			"metadata": { "allow_override": true }
+		},
+		{
 			"name": "default_rounding_policy_code",
 			"label": "accounting.settings.defaultRoundingPolicyCode",
 			"description": "settings_desc.default_rounding_policy_code",

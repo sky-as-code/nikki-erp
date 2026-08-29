@@ -16,50 +16,26 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services/pricing"
 )
 
-// Applying a voucher to a draft order (BR 71).
-//
-// The operation is an orchestration rather than a rule: every rule it applies lives somewhere else
-// and is tested there. What this file owns is the ORDER the gates run in, and the decision of what
-// to do when one fails.
-//
-//	code exists, usable                -> voucher_redemption.go assertCodeUsable
-//	program exists, is a voucher program, in date
-//	channel and sales point eligible   -> eligibility conditions on the program
-//	compatible with vouchers already applied -> ResolvePromotions (BR 29)
-//	reserve the use                    -> voucher_redemption.go ReserveVoucher
-//
-// Re-pricing is deliberately NOT here. This returns the accepted program set and the caller re-runs
-// the pricing engine with it. Keeping the two apart is what lets a caller apply several vouchers and
-// price once, rather than pricing once per voucher and discarding all but the last answer.
+// Applying a voucher to a draft order. This file owns the ORDER the gates run in, not the rules,
+// which live and are tested elsewhere. Re-pricing is deliberately NOT here: this returns the
+// accepted program set so the caller can apply several vouchers and price once.
 
-// ApplyVoucherResult is what the caller needs to re-price and to answer the customer.
 type ApplyVoucherResult struct {
-	// Redemption is the reservation just taken. The caller stores nothing extra: the row IS the
-	// record that this order holds a use.
 	Redemption *models.SalesVoucherRedemption
 
-	// ProgramId is the program the code activated, which is what the pricing engine applies.
 	ProgramId string
 
-	// AcceptedProgramIds is every program that survives conflict resolution once this one joins,
-	// in application order. It can be SHORTER than what the order had before: an exclusive voucher
-	// displaces the programs it cannot combine with, and the caller must re-price against this list
-	// rather than appending to its own.
+	// AcceptedProgramIds can be SHORTER than what the order had, so the caller re-prices against this
+	// list rather than appending to its own.
 	AcceptedProgramIds []string
 
-	// DisplacedProgramIds names what this voucher pushed out, so the till can say so rather than
-	// silently dropping a discount the customer could already see.
+	// DisplacedProgramIds lets the till say what was pushed out rather than silently dropping a
+	// discount the customer could already see.
 	DisplacedProgramIds []string
 }
 
-// ApplyVoucher validates a code against an order and reserves its use.
-//
-// Returns ClientErrors for every refusal the customer could have caused, each carrying one of BR
-// 71's machine-readable reasons. A refusal is never an error return: the customer typed a code that
-// did not work, which is a 400 the till renders, not a fault.
-//
-// The gates run cheapest-first and stop at the first failure, so a customer is told the most specific
-// true thing about why the code was refused rather than a list.
+// ApplyVoucher validates a code against an order and reserves its use. A refusal is never an error
+// return: it comes back as ClientErrors carrying a machine-readable reason.
 func ApplyVoucher(
 	ctx corectx.Context, params ApplyVoucherParams,
 ) (*ApplyVoucherResult, *ft.ClientErrors, error) {
@@ -68,7 +44,6 @@ func ApplyVoucher(
 		return nil, vErrs, err
 	}
 
-	// The code's own gates: status, archival, window, uses left.
 	if vErrs := assertCodeUsable(code, params.NowUnix); vErrs != nil {
 		return nil, vErrs, nil
 	}
@@ -82,22 +57,20 @@ func ApplyVoucher(
 		return nil, vErrs, err
 	}
 
-	// Channel and sales point eligibility, plus every other condition the program declares. The
-	// evaluator is the same one the automatic promotions use, so a voucher and an automatic program
-	// cannot come to different conclusions about the same basket.
+	// Same evaluator as the automatic promotions, so a voucher and an automatic program cannot reach
+	// different conclusions about the same basket.
 	if vErrs := assertProgramEligible(ctx, programId, params); vErrs != nil {
 		return nil, vErrs, nil
 	}
 
-	// Compatibility with what is already on the order (BR 29). Checked BEFORE reserving, so a
-	// refused voucher leaves no row behind.
+	// Checked BEFORE reserving, so a refused voucher leaves no row behind.
 	accepted, displaced, vErrs, err := resolveWithVoucher(ctx, program, params.AppliedProgramIds)
 	if err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}
 
 	// Last, because it is the only step that writes. Its unique index is what actually stops a
-	// double-spend (D-43), so nothing may come between it and the discount being honoured.
+	// double-spend, so nothing may come between it and the discount being honoured.
 	redemption, vErrs, err := ReserveVoucher(
 		ctx, string(*code.GetId()), params.SalesOrderId, params.OrgId, params.NowUnix)
 	if err != nil || vErrs != nil {
@@ -112,10 +85,7 @@ func ApplyVoucher(
 	}, nil, nil
 }
 
-// ApplyVoucherParams is what applying a voucher needs to know.
 type ApplyVoucherParams struct {
-	// Code is what the customer typed, not an id. Resolving it here rather than in the caller is
-	// what keeps "no such code" a single answer.
 	Code string
 
 	SalesOrderId string
@@ -124,22 +94,18 @@ type ApplyVoucherParams struct {
 	SalesChannelId string
 	SalesPointId   string
 
-	// AppliedProgramIds is what the order already has, vouchers and automatic promotions alike.
-	// Both are passed because BR 29's compatibility rules do not distinguish them — a voucher can
-	// be incompatible with an automatic promotion just as easily.
+	// AppliedProgramIds holds vouchers and automatic promotions alike: the compatibility rules do not
+	// distinguish them.
 	AppliedProgramIds []string
 
-	// Facts describes the basket, for the program's conditions. Supplied by the caller because this
-	// service does not price: the facts come from the pricing result the caller already holds, via
-	// pricing.FactsFromLines.
+	// Facts come from the pricing result the caller already holds: this service does not price.
 	Facts pricing.BasketFacts
 
-	// NowUnix is the evaluation instant, passed in rather than read from a clock so that applying a
-	// voucher is reproducible and testable without freezing time globally.
+	// NowUnix is passed in rather than read from a clock, so applying a voucher is reproducible
+	// without freezing time globally.
 	NowUnix int64
 }
 
-// resolveCodeByString finds a code by the string a customer typed.
 func resolveCodeByString(
 	ctx corectx.Context, code string,
 ) (*models.SalesVoucherCode, *ft.ClientErrors, error) {
@@ -170,12 +136,9 @@ func resolveCodeByString(
 	return models.NewSalesVoucherCodeFrom(found.Data), nil, nil
 }
 
-// loadVoucherProgram fetches the program a code points at, and checks the two things about it that
-// are the program's business rather than the code's.
-//
-// A code pointing at an AUTOMATIC program is a configuration error, not a customer error, but it is
-// still reported as a refusal: the customer cannot be told "your code is fine but misconfigured",
-// and an operator finds it from the code, which the message names.
+// loadVoucherProgram checks the program half. A code pointing at an AUTOMATIC program is a
+// configuration error but is still reported as a customer refusal, with the code named so an
+// operator can find it.
 func loadVoucherProgram(
 	ctx corectx.Context, programId string, nowUnix int64,
 ) (dmodel.DynamicFields, *ft.ClientErrors, error) {
@@ -206,8 +169,8 @@ func loadVoucherProgram(
 			"this code points at a program that does not accept codes"), nil
 	}
 
-	// The PROGRAM's window, which is separate from the code's. A campaign can end while individual
-	// codes issued under it are still notionally in date, and the campaign is what governs.
+	// The PROGRAM's window, separate from the code's: a campaign can end while codes issued under it
+	// are still in date, and the campaign governs.
 	if from := dateTimeOf(record, models.SalesPromotionProgramFieldValidFrom); from != nil &&
 		nowUnix < from.GoTime().Unix() {
 		return nil, refuse(ReasonNotYetValid, "this promotion has not started"), nil
@@ -228,20 +191,15 @@ const (
 	ReasonIncompatible       = "sales_voucher.incompatible"
 )
 
-// assertProgramEligible runs the program's own conditions against the basket.
-//
-// Channel and sales point are conditions like any other rather than special-cased columns, which is
-// why SALES-018 gave them condition types. Special-casing them here would mean a program could be
-// restricted to a channel two different ways, and the two would eventually disagree.
+// Channel and sales point are conditions like any other rather than special-cased columns, so a
+// program cannot be restricted to a channel two ways that eventually disagree.
 func assertProgramEligible(
 	ctx corectx.Context, programId string, params ApplyVoucherParams,
 ) *ft.ClientErrors {
 	groups, err := loadConditionGroups(ctx, programId)
 	if err != nil {
-		// A condition that cannot be read is not a condition that passes. Refusing is the safe
-		// direction: honouring a discount whose restrictions nobody could evaluate is the expensive
-		// mistake, and the same fail-closed reading the evaluator itself takes for an unknown
-		// condition type.
+		// Fail closed: a condition that cannot be read is not a condition that passes, matching the
+		// evaluator's own reading of an unknown condition type.
 		vErrs := ft.NewClientErrors()
 		vErrs.Append(*ft.NewBusinessViolation("code", ReasonConditionsNotMet,
 			"this voucher's conditions could not be evaluated"))
@@ -257,22 +215,16 @@ func assertProgramEligible(
 		return nil
 	}
 
-	// One reason for every unmet condition rather than naming which. BR 71 lists
-	// CHANNEL_NOT_ELIGIBLE and MINIMUM_AMOUNT_NOT_MET separately, and distinguishing them means
-	// re-evaluating each group to find the first that failed — worth doing when a till needs it,
-	// and deliberately not done yet rather than guessed at.
+	// One reason for every unmet condition: distinguishing them means re-evaluating each group to
+	// find the first that failed, deliberately not done yet.
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation("code", ReasonConditionsNotMet,
 		"this voucher does not apply to this order"))
 	return vErrs
 }
 
-// resolveWithVoucher asks BR 29 whether the new program may join the ones already applied.
-//
-// Both directions matter and both are the resolver's job: the voucher may be refused because an
-// incumbent excludes it, or it may DISPLACE an incumbent because it has the better priority and
-// excludes that one. The second case is why this returns a full accepted list rather than a boolean —
-// the caller must re-price against what survived, not append to what it had.
+// resolveWithVoucher decides whether the new program may join the ones applied. The voucher may be
+// refused by an incumbent, or DISPLACE one it outranks, hence a full accepted list not a boolean.
 func resolveWithVoucher(
 	ctx corectx.Context, program dmodel.DynamicFields, appliedProgramIds []string,
 ) (accepted []string, displaced []string, vErrs *ft.ClientErrors, err error) {
@@ -291,8 +243,7 @@ func resolveWithVoucher(
 			return nil, nil, nil, loadErr
 		}
 		if record == nil {
-			// An applied program that no longer exists cannot constrain anything. Skipping it is
-			// right: it is already not being applied.
+			// An applied program that no longer exists cannot constrain anything.
 			continue
 		}
 		candidates = append(candidates, candidateFrom(record))
@@ -327,7 +278,6 @@ func resolveWithVoucher(
 	return acceptedIds, displaced, nil, nil
 }
 
-// candidateFrom reads the four fields conflict resolution sorts and compares on.
 func candidateFrom(record dmodel.DynamicFields) CandidateProgram {
 	return CandidateProgram{
 		Id:             stringOf(record, models.SalesPromotionProgramFieldId),
@@ -338,10 +288,8 @@ func candidateFrom(record dmodel.DynamicFields) CandidateProgram {
 	}
 }
 
-// loadCompatibilityRules fetches the explicit pairwise directives among the candidates.
-//
-// Every rule touching any candidate is loaded and the resolver filters, rather than querying per
-// pair: the candidate set is small, and one read is cheaper than N-squared.
+// loadCompatibilityRules loads every rule and filters here rather than querying per pair: the
+// candidate set is small, so one read beats N-squared.
 func loadCompatibilityRules(
 	ctx corectx.Context, candidates []CandidateProgram,
 ) ([]CompatibilityRule, error) {
@@ -381,8 +329,8 @@ func loadCompatibilityRules(
 		rules = append(rules, CompatibilityRule{
 			ProgramAId: a,
 			ProgramBId: b,
-			// The column is an enum, not a boolean: `denied` wins over everything (D-09), so
-			// anything that is not explicitly `allowed` must not be read as permission.
+			// The column is an enum, not a boolean: `denied` wins, so anything not explicitly
+			// `allowed` must not be read as permission.
 			Allowed: stringOf(item, models.SalesPromotionCompatibilityFieldCompatibility) ==
 				string(models.PromotionCompatibilityAllowed),
 		})
@@ -390,10 +338,8 @@ func loadCompatibilityRules(
 	return rules, nil
 }
 
-// SalesOrderForVoucher is the slice of an order the apply-voucher action needs.
-//
-// A narrow struct rather than the record, because the action is transport and should not be handed
-// a mutable row it might write back. Everything here is read-only input to a decision.
+// SalesOrderForVoucher is read-only and narrow, so transport is never handed a mutable row it
+// might write back.
 type SalesOrderForVoucher struct {
 	Id             string
 	OrgId          string
@@ -403,15 +349,11 @@ type SalesOrderForVoucher struct {
 	Subtotal      decimal.Decimal
 	TotalQuantity decimal.Decimal
 
-	// AppliedProgramIds is every program already on the order, derived from its reserved and
-	// redeemed voucher redemptions plus the automatic programs its adjustments name.
 	AppliedProgramIds []string
 }
 
-// LoadSalesOrderForVoucher reads what applying a voucher needs to know about an order.
-//
-// Returns nil when there is no such order, rather than an error: a caller naming a record that does
-// not exist has made a mistake it can correct, and that is a 400, not a 500.
+// LoadSalesOrderForVoucher returns nil, not an error, when there is no such order: naming a
+// missing record is a 400, not a 500.
 func LoadSalesOrderForVoucher(
 	ctx corectx.Context, orderId string,
 ) (*SalesOrderForVoucher, error) {
@@ -438,12 +380,9 @@ func LoadSalesOrderForVoucher(
 	return order, nil
 }
 
-// readOrderBasket sums the order's quantities and collects the programs already applied to it.
-//
-// The programs come from the REDEMPTIONS rather than from the adjustments, for vouchers: an
-// adjustment records what a program did to a number, and a voucher that was applied to a draft has
-// reserved a use without yet producing one. Reading the adjustments alone would let a customer apply
-// two mutually exclusive vouchers to the same draft, because neither had priced yet.
+// readOrderBasket's voucher programs come from the REDEMPTIONS, not the adjustments: a voucher
+// applied to a draft has reserved a use without yet producing an adjustment, so reading
+// adjustments alone would let two mutually exclusive vouchers onto the same draft.
 func readOrderBasket(
 	ctx corectx.Context, orderId string,
 ) (decimal.Decimal, []string, error) {
@@ -455,9 +394,8 @@ func readOrderBasket(
 		return total, nil, err
 	}
 	for _, line := range lines {
-		// A giveaway line is excluded: counting a free item toward a spend threshold would let one
-		// promotion qualify the basket for another it did not earn. Same rule as
-		// pricing.FactsFromLines, and it must stay the same rule.
+		// Giveaway lines are excluded: counting a free item toward a spend threshold would let one
+		// promotion qualify the basket for another. Must match pricing.FactsFromLines.
 		if stringOf(line, models.SalesOrderLineFieldLineType) ==
 			string(models.SalesOrderLineTypePromotionReward) {
 			continue
@@ -497,7 +435,6 @@ func readOrderBasket(
 	return total, programIds, nil
 }
 
-// OrderNotFoundErrors is the refusal for an order id that names nothing.
 func OrderNotFoundErrors(orderId string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation("id", "sales_order.not_found",
@@ -505,11 +442,8 @@ func OrderNotFoundErrors(orderId string) *ft.ClientErrors {
 	return vErrs
 }
 
-// NowUnix is the current instant, for a caller at the edge that has no better source.
-//
-// It exists so the clock is read in exactly one place per request and then passed inward as data.
-// Every rule beneath the transport layer takes the instant as a parameter, which is what makes them
-// testable without freezing time and what stops two gates in one request disagreeing about the hour.
+// NowUnix reads the clock once per request at the edge; every rule beneath transport takes the
+// instant as a parameter, so two gates in one request cannot disagree about the hour.
 func NowUnix() int64 {
 	return time.Now().Unix()
 }

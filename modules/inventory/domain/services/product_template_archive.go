@@ -12,16 +12,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// Archiving a product template withdraws its variants from new business along with it, which is
-// one operation over two resources. It lives here, on the service, because it writes: a
-// dynamicengines callback may adapt and validate, but the writes belong to the service layer.
-// See docs/wiki/07. ERP backend module.md §6.7.
+// Archiving a product template withdraws its variants from new business along with it: one
+// operation over two resources. It lives on the service because it writes; a dynamicengines
+// callback may only adapt and validate.
 
-// SetArchived archives or restores a template, then brings its variants with it.
-//
-// It overrides the promoted DynamicResourceService.SetArchived, which is all it takes to change
-// what POST /:id/archived does: the built-in set_archived action calls SetArchived on whatever
-// service the engine has installed, and Init installs this one. See AC-PROD-019 and BR §8.9.
+// SetArchived archives or restores a template, then brings its variants with it. It overrides the
+// promoted DynamicResourceService.SetArchived, which is what changes POST /:id/archived.
 //
 // The template write and the cascade share one transaction, so a failed variant write leaves the
 // template unarchived rather than half-cascaded.
@@ -30,8 +26,8 @@ func (this *ProductTemplateDomainServiceImpl) SetArchived(
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	archived, hasFlag := readArchivedFlag(params)
 	if !hasFlag {
-		// is_archived is RequiredAlways on the command schema, so the base call reports the
-		// missing flag as a client error. Delegating keeps that message in one place.
+		// is_archived is RequiredAlways on the command schema, so the base call reports the missing
+		// flag as a client error.
 		return this.DynamicResourceService.SetArchived(ctx, params)
 	}
 
@@ -40,12 +36,9 @@ func (this *ProductTemplateDomainServiceImpl) SetArchived(
 		return nil, err
 	}
 
-	// The stock guard runs first, over every variant, and outside the transaction that follows.
-	//
-	// Before, because archiving cascades: a check made while the cascade walks would leave the
-	// variants it had already reached archived when a later one turned out to hold stock. Over
-	// every variant, because the template is refused as a unit — one variant with stock blocks the
-	// whole line (CR §14.3, AC-PROD-INT-032, TS-PROD-12).
+	// The stock guard runs first, over every variant, and outside the transaction that follows: a
+	// check made while the cascade walks would leave the variants it had already reached archived
+	// when a later one turned out to hold stock. One variant with stock blocks the whole line.
 	templateId := readStringParam(params, models.ProductTemplateFieldId)
 	if guarded, err := this.guardStockUsage(ctx, templateId, archived); err != nil || guarded != nil {
 		return guarded, err
@@ -57,9 +50,8 @@ func (this *ProductTemplateDomainServiceImpl) SetArchived(
 	}
 	defer tranx.Rollback()
 
-	// The transaction goes on a scoped copy of the context, never on ctx itself: setting it on
-	// the caller's context would leave a committed transaction visible to whatever runs next.
-	// CloneRequestContext carries the caller's identity across, which the audit columns need.
+	// The transaction goes on a cloned context, never ctx itself, or a committed transaction stays
+	// visible to whatever runs next. CloneRequestContext carries the identity the audit columns need.
 	tranxCtx := corectx.CloneRequestContext(ctx)
 	tranxCtx.SetDbTranx(tranx)
 
@@ -78,14 +70,9 @@ func (this *ProductTemplateDomainServiceImpl) SetArchived(
 	return result, errors.Wrap(tranx.Commit(), "SetArchived")
 }
 
-// guardStockUsage refuses a template archive that would strand stock.
-//
-// It returns a non-nil result when the operation is refused, which the caller returns as-is; nil
-// means the archive may proceed. The refusal is shaped like any other client error, so a caller
-// cannot tell it apart from a validation failure and does not need to.
-//
-// Only archiving is guarded. Unarchiving strands nothing — it puts a product back into the working
-// set — and requiring it to be stockless would make a mistakenly archived line unrecoverable.
+// guardStockUsage refuses a template archive that would strand stock. A non-nil result is the
+// refusal, which the caller returns as-is; nil means proceed. Only archiving is guarded: guarding
+// unarchive would make a mistakenly archived line unrecoverable.
 func (this *ProductTemplateDomainServiceImpl) guardStockUsage(
 	ctx corectx.Context, templateId string, archiving bool,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -95,9 +82,8 @@ func (this *ProductTemplateDomainServiceImpl) guardStockUsage(
 
 	reader, err := stockUsageReader()
 	if err != nil {
-		// No reader means the stock side is not wired in this deployment. Product must keep
-		// working without it rather than becoming unusable, so the archive proceeds under the
-		// module's own rules (CR §25, AC-PROD-INT-036).
+		// No reader means the stock side is not wired in this deployment; the archive proceeds under
+		// the module's own rules rather than Product becoming unusable.
 		return nil, nil
 	}
 
@@ -111,11 +97,8 @@ func (this *ProductTemplateDomainServiceImpl) guardStockUsage(
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 }
 
-// cascadeArchiveToVariants applies a template's archive change to each of its variants.
-//
-// What to do with any one variant is ShouldSkipCascade and CascadeArchiveFields;
-// this walks and writes. The writes go through the variant engine's repository, since the rows
-// being updated are variants.
+// cascadeArchiveToVariants applies a template's archive change to each of its variants, deciding
+// per variant with ShouldSkipCascade and CascadeArchiveFields.
 func (this *ProductTemplateDomainServiceImpl) cascadeArchiveToVariants(
 	ctx corectx.Context, variantEngine drif.DynamicResourceEngine, templateId string, archive bool,
 ) error {
@@ -144,8 +127,8 @@ func (this *ProductTemplateDomainServiceImpl) cascadeArchiveToVariants(
 }
 
 // readArchivedFlag reads the archive direction out of the action params, reporting whether it was
-// present at all. Absent is not the same as false: it means the caller sent no flag, which the
-// command schema rejects, so the two cases must stay distinguishable here.
+// present. Absent is not the same as false — it means no flag was sent, which the command schema
+// rejects — so the two must stay distinguishable.
 func readArchivedFlag(params dmodel.DynamicFields) (bool, bool) {
 	val, ok := params[basemodel.FieldIsArchived]
 	if !ok || val == nil {

@@ -20,13 +20,9 @@ func NewSalesChannelApplicationServiceImpl() it.SalesChannelAppService {
 	return &SalesChannelApplicationServiceImpl{}
 }
 
-// RegisterSalesChannel is the entry point another module uses to claim a channel of its own.
-//
-// It is idempotent by code, and that is the whole point: a module runs it on every boot, so the
-// second run must return what the first created rather than fail or duplicate. The ownership check
-// is what keeps two modules from fighting over one code — a channel registered by
-// vending_machine_new stays that module's, and a different caller naming the same code is refused
-// rather than silently handed control of somebody else's integration.
+// RegisterSalesChannel lets another module claim a channel. It is idempotent by code, since modules
+// run it on every boot, and refuses a code already owned by a different module rather than handing
+// over somebody else's integration.
 func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 	ctx corectx.Context, command it.RegisterSalesChannelCommand,
 ) (*it.RegisterSalesChannelResult, error) {
@@ -60,8 +56,7 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 			return channelRejection("sales_channel.code_already_owned",
 				"the sales channel code '"+code+"' is registered by module '"+owner+"'"), nil
 		}
-		// Same owner, same code: hand back what is already there. This is the retry path, and it
-		// must look exactly like success or the caller will keep retrying forever.
+		// Same owner, same code: the retry path must look exactly like success.
 		return &it.RegisterSalesChannelResult{
 			HasData: true,
 			Data: it.SalesChannelData{
@@ -96,7 +91,6 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 	}, nil
 }
 
-// ResolveSalesChannelByCode answers the id an external module's stable code refers to.
 func (this *SalesChannelApplicationServiceImpl) ResolveSalesChannelByCode(
 	ctx corectx.Context, query it.ResolveSalesChannelQuery,
 ) (*it.ResolveSalesChannelResult, error) {

@@ -19,10 +19,9 @@ func initInventoryV1() error {
 	) error {
 		routeV1 := route.Group("/v1/inventory")
 
-		// Inventory has no hand-written REST layer at all. Every route — CRUD and the Products
-		// capabilities alike — is declared on an engine as an action and registered here, so
-		// that the permission check, validation pipeline and response envelope are the engine's
-		// for all of them. See dynamicengines/product_template.go and product_variant.go.
+		// Inventory has no hand-written REST layer. Every route is declared on an engine as an
+		// action and registered here, so permission check, validation and response envelope are
+		// the engine's for all of them.
 		registerEngineRoutes(routeV1)
 
 		return nil

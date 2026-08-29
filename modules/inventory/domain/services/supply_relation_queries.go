@@ -10,8 +10,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// The reads behind the supply relation rules. Every one of them ignores archived relations: an
-// archived route is out of the working set, so it neither blocks a new one nor extends the graph.
+// The reads behind the supply relation rules. All ignore archived relations: an archived route
+// neither blocks a new one nor extends the graph.
 
 func loadSupplyRelation(
 	ctx corectx.Context, relationId string,

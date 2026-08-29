@@ -46,7 +46,6 @@ func (this *ProductServiceImpl) CreateVariant(ctx corectx.Context, cmd it.Create
 		return result, err
 	}
 
-	// Link attribute values to the variant
 	if len(attrValueIds) > 0 {
 		variantId := result.Data.GetId()
 		if variantId != nil {
@@ -70,7 +69,7 @@ func (this *ProductServiceImpl) UpdateVariant(ctx corectx.Context, cmd it.Update
 		DbRepoGetter: this.variantRepo,
 		Data:         cmd,
 		BeforeValidation: func(ctx corectx.Context, v *domain.Variant, vErrs *ft.ClientErrors) (*domain.Variant, error) {
-			// Extract attributes before schema.Validate strips it (attributes is not a schema field)
+			// Must run before schema.Validate, which strips 'attributes' as a non-schema field.
 			attrs := extractAttributesFromFieldData(v)
 			if attrs != nil {
 				attributesProvided = true
@@ -79,7 +78,6 @@ func (this *ProductServiceImpl) UpdateVariant(ctx corectx.Context, cmd it.Update
 			return v, nil
 		},
 		ValidateExtra: func(ctx corectx.Context, v *domain.Variant, foundVariant *domain.Variant, vErrs *ft.ClientErrors) error {
-			// Check if product exists (if product ID is being changed)
 			if err := this.validateVariantProduct(ctx, v, vErrs); err != nil {
 				return err
 			}
@@ -88,10 +86,9 @@ func (this *ProductServiceImpl) UpdateVariant(ctx corectx.Context, cmd it.Update
 				return nil
 			}
 
-			// Get variant ID from foundVariant (reliable DB record)
+			// From foundVariant, not the request: the request may omit the id.
 			variantId = foundVariant.GetId()
 
-			// Use product_id from request body, or fall back to the DB record's product_id
 			productId := v.GetProductId()
 			if productId == nil {
 				productId = foundVariant.GetProductId()
@@ -113,7 +110,7 @@ func (this *ProductServiceImpl) UpdateVariant(ctx corectx.Context, cmd it.Update
 		return result, err
 	}
 
-	// Replace attribute values for the variant only when attributes were explicitly provided
+	// Only when attributes were explicitly provided: absent means unchanged, not empty.
 	if attributesProvided && variantId != nil {
 		if err := this.ReplaceAttributeValuesForVariant(ctx, *variantId, attrValueIds); err != nil {
 			return nil, err
@@ -141,7 +138,6 @@ func (this *ProductServiceImpl) GetVariant(ctx corectx.Context, query it.GetVari
 		return result, err
 	}
 
-	// Populate attributes field
 	if err := this.populateVariantAttributes(ctx, &result.Data); err != nil {
 		return nil, err
 	}
@@ -185,7 +181,6 @@ func (this *ProductServiceImpl) SearchVariants(ctx corectx.Context, query it.Sea
 		return result, err
 	}
 
-	// Populate attributes field for each variant
 	for i := range result.Data.Items {
 		if err := this.populateVariantAttributes(ctx, &result.Data.Items[i]); err != nil {
 			return nil, err
@@ -214,7 +209,6 @@ func (this *ProductServiceImpl) SearchAllVariants(ctx corectx.Context, query it.
 		return result, err
 	}
 
-	// Populate attributes field for each variant
 	for i := range result.Data.Items {
 		if err := this.populateVariantAttributes(ctx, &result.Data.Items[i]); err != nil {
 			return nil, err
@@ -235,7 +229,6 @@ func (this *ProductServiceImpl) VariantExists(ctx corectx.Context, query it.Vari
 	})
 }
 
-// validateVariantProduct validates that the product exists
 func (this *ProductServiceImpl) validateVariantProduct(ctx corectx.Context, variant *domain.Variant, vErrs *ft.ClientErrors) error {
 	productId := variant.GetProductId()
 	if productId == nil {
@@ -254,8 +247,7 @@ func (this *ProductServiceImpl) validateVariantProduct(ctx corectx.Context, vari
 	return nil
 }
 
-// findOrCreateAttributeValues finds or creates attribute values for the given attributes map
-// Returns a list of AttributeValue IDs that should be linked to the variant
+// findOrCreateAttributeValues returns the AttributeValue ids to link to the variant.
 func (this *ProductServiceImpl) findOrCreateAttributeValues(
 	ctx corectx.Context,
 	variant *domain.Variant,
@@ -273,9 +265,7 @@ func (this *ProductServiceImpl) findOrCreateAttributeValues(
 
 	var attrValueIds []model.Id
 
-	// Process each attribute in the map
 	for codeName, value := range attributes {
-		// Find the attribute by code name
 		attribute, err := this.findAttributeByCodeName(ctx, *productId, codeName)
 		if err != nil {
 			return nil, err
@@ -286,7 +276,6 @@ func (this *ProductServiceImpl) findOrCreateAttributeValues(
 			continue
 		}
 
-		// Find or create the attribute value
 		attrValueId, err := this.FindOrCreateAttributeValue(ctx, attribute, value, codeName, vErrs)
 		if err != nil {
 			return nil, err
@@ -300,7 +289,6 @@ func (this *ProductServiceImpl) findOrCreateAttributeValues(
 	return attrValueIds, nil
 }
 
-// LinkAttributeValuesToVariant links attribute values to a variant using Many-to-Many relationship (public method)
 func (this *ProductServiceImpl) LinkAttributeValuesToVariant(
 	ctx corectx.Context,
 	variantId model.Id,
@@ -312,7 +300,6 @@ func (this *ProductServiceImpl) LinkAttributeValuesToVariant(
 
 	repo := this.variantRepo.GetBaseRepo()
 
-	// Convert to Set
 	associatedIds := make(map[model.Id]struct{})
 	for _, id := range attrValueIds {
 		associatedIds[id] = struct{}{}
@@ -330,7 +317,6 @@ func (this *ProductServiceImpl) LinkAttributeValuesToVariant(
 	return err
 }
 
-// ReplaceAttributeValuesForVariant replaces all attribute values for a variant (public method)
 func (this *ProductServiceImpl) ReplaceAttributeValuesForVariant(
 	ctx corectx.Context,
 	variantId model.Id,
@@ -338,13 +324,11 @@ func (this *ProductServiceImpl) ReplaceAttributeValuesForVariant(
 ) error {
 	repo := this.variantRepo.GetBaseRepo()
 
-	// Get current attribute value IDs via the AttributeValue service
 	currentSlice, err := this.GetAttributeValueIdsByVariantId(ctx, variantId)
 	if err != nil {
 		return err
 	}
 
-	// Build sets
 	currentIds := make(map[model.Id]struct{}, len(currentSlice))
 	for _, id := range currentSlice {
 		currentIds[id] = struct{}{}
@@ -355,7 +339,6 @@ func (this *ProductServiceImpl) ReplaceAttributeValuesForVariant(
 		newIds[id] = struct{}{}
 	}
 
-	// Compute diff
 	associatedIds := make(map[model.Id]struct{})
 	for id := range newIds {
 		if _, exists := currentIds[id]; !exists {
@@ -386,7 +369,6 @@ func (this *ProductServiceImpl) ReplaceAttributeValuesForVariant(
 	return err
 }
 
-// findAttributeByCodeName finds an attribute by code name and product ID
 func (this *ProductServiceImpl) findAttributeByCodeName(ctx corectx.Context, productId model.Id, codeName string) (*domain.Attribute, error) {
 	graph := dmodel.NewSearchGraph().
 		NewCondition(domain.AttrFieldCodeName, dmodel.Equals, codeName)
@@ -424,7 +406,6 @@ func (this *ProductServiceImpl) populateVariantAttributes(ctx corectx.Context, v
 		return nil
 	}
 
-	// Get attribute value IDs via the AttributeValue service
 	attrValueIds, err := this.GetAttributeValueIdsByVariantId(ctx, *variantId)
 	if err != nil {
 		return err
@@ -450,7 +431,6 @@ func (this *ProductServiceImpl) populateVariantAttributes(ctx corectx.Context, v
 		return nil
 	}
 
-	// Collect attribute IDs and build value map
 	attributeIds := make([]model.Id, 0)
 	attrValueMap := make(map[model.Id]any) // attribute_id -> value
 
@@ -460,7 +440,6 @@ func (this *ProductServiceImpl) populateVariantAttributes(ctx corectx.Context, v
 			continue
 		}
 
-		// Get the actual value from the attribute value
 		_, value := attrVal.GetValue()
 		if value != nil {
 			attributeIds = append(attributeIds, *attrId)
@@ -473,7 +452,6 @@ func (this *ProductServiceImpl) populateVariantAttributes(ctx corectx.Context, v
 		return nil
 	}
 
-	// Query attributes to get code names
 	attrGraph := dmodel.NewSearchGraph().NewCondition(domain.AttrFieldId, dmodel.In, anySlice(attributeIds)...)
 	attrResult, err := this.attrRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph:  attrGraph,
@@ -490,7 +468,6 @@ func (this *ProductServiceImpl) populateVariantAttributes(ctx corectx.Context, v
 		return nil
 	}
 
-	// Build the final attributes map: code_name -> value
 	attributesMap := make(map[string]any)
 	for _, attr := range attrResult.Data.Items {
 		attrId := attr.GetId()
@@ -625,7 +602,6 @@ func (this *ProductServiceImpl) populateVariantsImageUrl(ctx corectx.Context, va
 	return nil
 }
 
-// anySlice converts a slice of model.Id to a slice of any
 func anySlice[T any](items []T) []any {
 	result := make([]any, len(items))
 	for i, item := range items {

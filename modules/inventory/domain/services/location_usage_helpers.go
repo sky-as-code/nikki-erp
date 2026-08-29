@@ -11,17 +11,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// usageScanPageSize is how many quants are read at a time when totalling a location.
-//
-// The scan pages to the end rather than stopping at the first page: a partial total would report
-// an empty location that is not, and the caller uses that answer to decide whether archiving is
-// safe.
+// usageScanPageSize is how many quants are read at a time. The scan pages to the end rather than
+// stopping at the first page: a partial total would report an empty location that is not, and the
+// caller decides whether archiving is safe from that answer.
 const usageScanPageSize = 200
 
-// closedMoveStatuses are the move states that are history rather than work in flight.
-//
-// A location referenced only by these can still be archived — the records keep resolving it — so
-// they are excluded from the open count rather than blocking the lifecycle change forever.
+// closedMoveStatuses are the move states that are history rather than work in flight. A location
+// referenced only by these can still be archived, so they are excluded from the open count.
 func closedMoveStatuses() []string {
 	return []string{models.StockMoveStatusDone, models.StockMoveStatusCancelled}
 }
@@ -31,10 +27,8 @@ func closedTransferStatuses() []string {
 	return []string{models.StockTransferStatusDone, models.StockTransferStatusCancelled}
 }
 
-// countMatching returns how many rows match, without fetching them.
-//
-// The repository reports Total alongside the page, so asking for a single row is enough to learn
-// the count of a set that may be large.
+// countMatching returns how many rows match, without fetching them: the repository reports Total
+// alongside the page, so one row is enough to learn the count of a large set.
 func countMatching(
 	ctx corectx.Context, engine drif.DynamicResourceEngine, graph *dmodel.SearchGraph,
 ) (int, error) {

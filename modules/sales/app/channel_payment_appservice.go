@@ -14,10 +14,8 @@ import (
 )
 
 // ChannelPaymentApplicationServiceImpl configures which payment methods a sales channel accepts.
-//
-// It holds the paymentinvoice port because every operation here needs the other module's view:
-// listing merges against it, enabling validates against it, and only disabling deliberately does
-// not.
+// It holds the paymentinvoice port because listing merges against it and enabling validates against
+// it; only disabling deliberately does not.
 type ChannelPaymentApplicationServiceImpl struct {
 	methods itExt.PaymentMethodExtService
 }
@@ -28,13 +26,9 @@ func NewChannelPaymentApplicationServiceImpl(
 	return &ChannelPaymentApplicationServiceImpl{methods: methods}
 }
 
-// ListChannelPaymentMethods answers the merged view of CR §29.
-//
-// The merge is the requirement: the frontend must never join across two modules. Three states come
-// out of it and all three are visible — a method offered upstream and enabled here, one offered and
-// not enabled, and one enabled here that upstream no longer reports at all. The third is the stale
-// case (CR §34) and it is the reason the mapping list is walked separately rather than being used
-// only to set a flag on the upstream rows.
+// ListChannelPaymentMethods merges upstream methods with this channel's mappings so the frontend
+// never joins across two modules. The mapping list is walked separately, not just used as a flag on
+// upstream rows, so that mappings upstream no longer reports still surface as stale.
 func (this *ChannelPaymentApplicationServiceImpl) ListChannelPaymentMethods(
 	ctx corectx.Context, query it.ListChannelPaymentMethodsQuery,
 ) (*it.ListChannelPaymentMethodsResult, error) {
@@ -51,11 +45,8 @@ func (this *ChannelPaymentApplicationServiceImpl) ListChannelPaymentMethods(
 		return &it.ListChannelPaymentMethodsResult{ClientErrors: *cErrs}, nil
 	}
 
-	// Upstream first, and its failure is fatal to the whole operation (CR §35). Falling back to the
-	// local mappings alone would present them as the master list, which they are not: they are a
-	// filter over it. A screen rendered from the filter alone would show a plausible, wrong answer
-	// — every enabled method present, every disabled one silently absent — and an administrator
-	// would have no way to tell it apart from a correct one.
+	// An upstream failure is fatal: the local mappings are a filter over the master list, not the
+	// list itself, so falling back to them would render a plausible but wrong screen.
 	upstream, err := this.methods.ListPaymentMethods(ctx, itExt.ListPaymentMethodsQuery{})
 	if err != nil {
 		return nil, err
@@ -96,11 +87,8 @@ func (this *ChannelPaymentApplicationServiceImpl) ListChannelPaymentMethods(
 		merged = append(merged, row)
 	}
 
-	// Now the mappings upstream did not account for. A row here names a method paymentinvoice has
-	// stopped reporting — deleted, or belonging to a feature this build no longer ships. It is
-	// reported rather than dropped, because dropping it would hide the only evidence that the
-	// channel is configured for something that cannot happen, and would leave the administrator
-	// with nothing to click to fix it.
+	// Mappings upstream no longer reports. Reported as stale rather than dropped, so the
+	// administrator can see and undo a channel configured for something that cannot happen.
 	for methodId := range enabled {
 		if seen[methodId] {
 			continue
@@ -117,11 +105,8 @@ func (this *ChannelPaymentApplicationServiceImpl) ListChannelPaymentMethods(
 	return &it.ListChannelPaymentMethodsResult{HasData: true, Data: merged}, nil
 }
 
-// EnableChannelPaymentMethod validates the method upstream and then writes the mapping (CR §31).
-//
-// The channel must be usable and the method must be usable. Both are checked before anything is
-// written, so a refusal leaves no trace — which matters because the caller will retry, and a
-// half-applied enable would make the retry look like a duplicate.
+// EnableChannelPaymentMethod validates the channel and the method upstream before writing the
+// mapping, so a refusal leaves no trace and a retry cannot look like a duplicate.
 func (this *ChannelPaymentApplicationServiceImpl) EnableChannelPaymentMethod(
 	ctx corectx.Context, command it.ChannelPaymentMethodCommand,
 ) (*it.ChannelPaymentMutationResult, error) {
@@ -142,18 +127,16 @@ func (this *ChannelPaymentApplicationServiceImpl) EnableChannelPaymentMethod(
 		return &it.ChannelPaymentMutationResult{ClientErrors: *cErrs}, nil
 	}
 
-	// A suspended or archived channel is not configured, for the same reason it takes no orders:
-	// changing what a retired channel accepts is a change with no effect that later becomes a
-	// surprise if it is ever brought back.
+	// A retired channel is not configured: the change has no effect now and becomes a surprise if
+	// the channel is ever brought back.
 	if !models.NewSalesChannelFrom(channel).IsActive() {
 		return paymentRejection("sales_channel.not_usable",
 			"a suspended or archived sales channel cannot have its payment methods changed"), nil
 	}
 
-	// The upstream check. Without it a channel could be configured for a method this deployment
-	// cannot serve, and the failure would surface at the checkout rather than at the configuration
-	// screen where somebody could act on it. No amount is passed: this decides whether the method
-	// may ever be offered, not whether one particular payment would pass its bounds.
+	// Without this check the failure would surface at checkout rather than at the configuration
+	// screen. No amount is passed: this asks whether the method may ever be offered, not whether one
+	// payment is within its bounds.
 	usable, err := this.methods.AssertUsable(ctx, itExt.AssertUsableQuery{
 		PaymentMethodId: command.PaymentMethodId,
 	})
@@ -179,12 +162,9 @@ func (this *ChannelPaymentApplicationServiceImpl) EnableChannelPaymentMethod(
 	return &it.ChannelPaymentMutationResult{HasData: true}, nil
 }
 
-// DisableChannelPaymentMethod removes the mapping (CR §32).
-//
-// It deliberately does not validate the method upstream, and does not require the channel to be
-// active. Both omissions are the same rule: taking a payment method away is always safe, and the
-// states in which somebody most needs to is exactly the set where a validating version would refuse
-// — a stale mapping, or a channel suspended because of it.
+// DisableChannelPaymentMethod removes the mapping. It deliberately skips the upstream check and
+// does not require an active channel: removal is always safe, and the cases where it is most needed
+// (a stale mapping, a channel suspended because of it) are exactly what validation would refuse.
 func (this *ChannelPaymentApplicationServiceImpl) DisableChannelPaymentMethod(
 	ctx corectx.Context, command it.ChannelPaymentMethodCommand,
 ) (*it.ChannelPaymentMutationResult, error) {
@@ -220,15 +200,9 @@ func (this *ChannelPaymentApplicationServiceImpl) DisableChannelPaymentMethod(
 	return &it.ChannelPaymentMutationResult{HasData: true}, nil
 }
 
-// IsPaymentMethodEnabledForChannel is the enforcement query SALES-027 will call.
-//
-// It answers the mapping alone. Usability is paymentinvoice's judgement and is asked separately,
-// because the two can disagree and the caller needs to know which one refused: a method not mapped
-// is a configuration problem for this channel, a method mapped but unusable is a problem with the
-// method everywhere.
-//
-// A channel that cannot be resolved answers false rather than erroring. Default-deny holds all the
-// way down (CR §76): the safe answer to "may this take money" is no.
+// IsPaymentMethodEnabledForChannel answers the mapping alone; usability is paymentinvoice's
+// separate judgement, so the caller can tell a per-channel configuration problem from a method
+// broken everywhere. An unresolvable channel answers false rather than erroring: default-deny.
 func (this *ChannelPaymentApplicationServiceImpl) IsPaymentMethodEnabledForChannel(
 	ctx corectx.Context, query it.IsPaymentMethodEnabledQuery,
 ) (*it.IsPaymentMethodEnabledResult, error) {
@@ -257,11 +231,8 @@ func (this *ChannelPaymentApplicationServiceImpl) IsPaymentMethodEnabledForChann
 	return &it.IsPaymentMethodEnabledResult{HasData: true, Data: isEnabled}, nil
 }
 
-// resolveChannel accepts either identifier and answers the row.
-//
-// Both are offered because the two kinds of caller hold different things: a REST client came from a
-// listing and has the id, an integrating module stores only the code. The id wins when both are
-// given, since it is the more specific of the two.
+// resolveChannel accepts either identifier, since REST callers hold the id and integrating modules
+// store only the code. The id wins when both are given.
 func (this *ChannelPaymentApplicationServiceImpl) resolveChannel(
 	ctx corectx.Context, channelId string, channelCode string,
 ) (dmodel.DynamicFields, *ft.ClientErrors, error) {

@@ -13,12 +13,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// Vendor and currency rules for an order (D3, D5, D5a).
-//
-// Both references are plain ulid fields with no edge. Validation is by port call, not by database
-// constraint: a foreign key across a module boundary would make Purchase's schema depend on another
-// module's tables, and the tooling enforces this — `-createsql -module=purchase` emits only
-// Purchase's tables, so the Atlas diff would fail on a constraint pointing outside them.
+// Vendor and currency rules for an order. Both references are plain ulid fields with no edge:
+// validation is by port call, not by foreign key, because the SQL tooling emits only Purchase's
+// own tables and an Atlas diff would fail on a constraint pointing outside them.
 
 // OrderReferenceValidator checks an order's vendor and currency, and defaults what it can.
 type OrderReferenceValidator struct {
@@ -33,11 +30,8 @@ func NewOrderReferenceValidator(
 }
 
 // PrepareOrder validates the vendor and currency on a create, defaulting the currency from the
-// vendor when the caller did not name one.
-//
-// Defaulting is a convenience with a real consequence, so it happens only when the field is absent:
-// a caller who named a currency gets the one they named, even if the vendor usually invoices in
-// another. Overriding an explicit choice would silently re-denominate an order.
+// vendor only when the caller named none; overriding an explicit choice would silently
+// re-denominate the order.
 func (this *OrderReferenceValidator) PrepareOrder(
 	ctx corectx.Context, params dmodel.DynamicFields, vErrs *ft.ClientErrors,
 ) error {
@@ -59,17 +53,13 @@ func (this *OrderReferenceValidator) PrepareOrder(
 		ctx, stringOf(params, models.PurchaseOrderFieldCurrencyId), vErrs)
 }
 
-// assertOrderableVendor refuses a vendor a new order may not name (D3).
-//
-// The refusal comes from Contacts rather than from a status comparison here, so that "may be
-// ordered from" has one definition. A caller comparing the status itself would have to be found and
-// changed the day a fifth status is added.
+// assertOrderableVendor refuses a vendor a new order may not name. The refusal comes from Contacts
+// rather than a status comparison here, so "may be ordered from" has one definition.
 func (this *OrderReferenceValidator) assertOrderableVendor(
 	ctx corectx.Context, vendorId, orgId, field string, vErrs *ft.ClientErrors,
 ) (*itExt.GetVendorResultData, error) {
 	if vendorId == "" {
-		// vendor_id is required_for_create, so the base call reports the omission. Restating it
-		// here would report the same problem twice in two different shapes.
+		// vendor_id is required_for_create, so the base call already reports the omission.
 		return nil, nil
 	}
 
@@ -99,11 +89,8 @@ func (this *OrderReferenceValidator) assertOrderableVendor(
 	return &found.Data, nil
 }
 
-// assertUsableCurrency refuses a currency a new order may not be denominated in.
-//
-// An empty currency is allowed: currency_id is optional on the schema, and an order for a vendor
-// with no stated terms genuinely has none yet. What that costs is rounding — totals fall back to
-// two places until a currency is set, which is why the fallback exists rather than being an error.
+// assertUsableCurrency refuses a currency a new order may not be denominated in. An empty currency
+// is allowed; totals then round to two places until one is set.
 func (this *OrderReferenceValidator) assertUsableCurrency(
 	ctx corectx.Context, currencyId string, vErrs *ft.ClientErrors,
 ) error {
@@ -124,17 +111,10 @@ func (this *OrderReferenceValidator) assertUsableCurrency(
 	return nil
 }
 
-// ScaleFor returns the number of decimal places an order's amounts are rounded to.
-//
-// This is what [PUR-014] left as a fixed 2 and what makes Purchase the first reader of
-// decimal_places. It matters because a currency has a real number of fractional digits — 0 for VND,
-// 2 for USD, 3 for KWD — and rounding to MORE places than a currency has produces a total nobody
-// can pay.
-//
-// It falls back to two places when there is no currency or the lookup fails, rather than erroring.
-// An order with no currency yet is an ordinary draft, and failing a totals recompute because a
-// currency could not be read would make the money unreadable over a problem that is not about
-// money.
+// ScaleFor returns the number of decimal places an order's amounts are rounded to, taken from the
+// currency: 0 for VND, 2 for USD, 3 for KWD. Rounding to more places than a currency has produces a
+// total nobody can pay. With no currency, or a failed lookup, it falls back to two places rather
+// than erroring, since an order with no currency yet is an ordinary draft.
 func (this *OrderReferenceValidator) ScaleFor(ctx corectx.Context, currencyId string) int32 {
 	if currencyId == "" {
 		return defaultScale
@@ -144,17 +124,14 @@ func (this *OrderReferenceValidator) ScaleFor(ctx corectx.Context, currencyId st
 	if err != nil || found == nil || !found.HasData {
 		return defaultScale
 	}
-	// An inactive or archived currency still rounds: amounts already recorded in it must keep
-	// reconciling, and that is a read, not a new selection.
+	// An inactive or archived currency still rounds, so amounts already recorded in it keep
+	// reconciling.
 	return found.Data.DecimalPlaces
 }
 
-// PrepareAgreement validates an agreement's vendor and currency.
-//
-// It differs from PrepareOrder in one way that matters: an agreement's vendor is OPTIONAL. A
-// purchase template is a reusable skeleton that may be drafted before anyone has chosen who to buy
-// from, so an absent vendor is a legitimate agreement rather than an incomplete one. When a vendor
-// IS named it must still be orderable, and its currency still defaults the agreement's.
+// PrepareAgreement validates an agreement's vendor and currency. Unlike an order, an agreement's
+// vendor is optional, since a template may be drafted before anyone has chosen a supplier; a named
+// vendor must still be orderable and still defaults the currency.
 func (this *OrderReferenceValidator) PrepareAgreement(
 	ctx corectx.Context, params dmodel.DynamicFields, vErrs *ft.ClientErrors,
 ) error {

@@ -22,8 +22,8 @@ func transferWith(status, idempotencyKey string) models.StockTransfer {
 }
 
 func TestReplayedValidateReturnsThePriorResult(t *testing.T) {
-	// BR §8.7. This is the retry-after-timeout case: the client never saw the response, sends the
-	// same request again, and must not ship the goods a second time.
+	// The retry-after-timeout case: the client never saw the response, sends the same request again,
+	// and must not ship the goods a second time.
 	transfer := transferWith(models.StockTransferStatusDone, "key-1")
 
 	result, err := replayedValidate(transfer, "key-1")

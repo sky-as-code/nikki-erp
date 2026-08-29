@@ -19,13 +19,11 @@ func productTemplateEngineSpec() engineSpec {
 	}
 }
 
-// defineProductTemplateActions adds the template's custom actions and validation.
-//
-// Archiving is absent on purpose: AC-PROD-019's cascade to the variants is a method of the
-// Products service (app.ProductAppServiceImpl.SetArchived), which overrides the built-in. It
-// writes, and a write belongs to the service layer. See docs/wiki/07. ERP backend module.md §6.7.
+// defineProductTemplateActions adds the template's custom actions and validation. Archiving is
+// absent on purpose: the cascade to the variants is a method of the Products service
+// (app.ProductAppServiceImpl.SetArchived), which overrides the built-in, because it writes.
 func defineProductTemplateActions(engine drif.DynamicResourceEngine) error {
-	// BR-PROD-TPL-005: a template with history must be archived, not deleted.
+	// A template with history must be archived, not deleted.
 	err := engine.ModifyAction(drif.DynamicActionDelta{
 		ActionName:    drif.ActionDelete,
 		KeysToFetch:   templateKeysToFetch,
@@ -35,7 +33,7 @@ func defineProductTemplateActions(engine drif.DynamicResourceEngine) error {
 		return errors.Wrap(err, "failed to attach product template delete guard")
 	}
 
-	// BR §8.2: bring the template's variants in step with its attribute configuration.
+	// Bring the template's variants in step with its attribute configuration.
 	err = engine.DefineAction(drif.DynamicActionDefinition{
 		ActionName:  "generate_variants",
 		ActionType:  drif.ActionTypeGeneric,
@@ -48,8 +46,8 @@ func defineProductTemplateActions(engine drif.DynamicResourceEngine) error {
 		return errors.Wrap(err, "failed to define generate_variants")
 	}
 
-	// BR §14.4: turn a template plus chosen attribute values into the concrete variant a
-	// transaction line must reference.
+	// Turn a template plus chosen attribute values into the concrete variant a transaction line
+	// must reference.
 	err = engine.DefineAction(drif.DynamicActionDefinition{
 		ActionName:  "resolve_selection",
 		ActionType:  drif.ActionTypeGeneric,
@@ -60,11 +58,8 @@ func defineProductTemplateActions(engine drif.DynamicResourceEngine) error {
 	return errors.Wrap(err, "failed to define resolve_selection")
 }
 
-// processGenerateVariants runs the generation capability through the derived resource service.
-//
-// The service is the one installed by SetResourceService during Init, so the assertion holds for
-// every request; a failure here means the wiring was skipped, which is a programming error
-// rather than something a caller can fix.
+// processGenerateVariants runs the generation capability through the derived resource service
+// installed by SetResourceService during Init. A failed assertion means the wiring was skipped.
 func processGenerateVariants(
 	ctx corectx.Context, input drif.ProcessInput,
 ) (*drif.ActionResult, error) {
@@ -73,8 +68,8 @@ func processGenerateVariants(
 		return nil, err
 	}
 
-	// The pipeline already fetched the template for KeysToFetch; its absence is a missing
-	// record, not a malformed request.
+	// The pipeline already fetched the template for KeysToFetch; its absence is a missing record,
+	// not a malformed request.
 	if input.FoundModel == nil {
 		return &drif.ActionResult{HasData: false}, nil
 	}
@@ -88,19 +83,18 @@ func processGenerateVariants(
 		return &drif.ActionResult{ClientErrors: result.ClientErrors}, nil
 	}
 
-	// HasData is always true: "nothing to generate" is a valid answer with a payload, and a
-	// false here would be reported to the caller as a 404.
+	// HasData is always true: "nothing to generate" is a valid answer with a payload, and false
+	// here would reach the caller as a 404.
 	return &drif.ActionResult{
 		Data:    itProduct.NewGenerateVariantsView(result.Data),
 		HasData: true,
 	}, nil
 }
 
-// processResolveSelection resolves a chosen attribute combination to a variant.
-//
-// It validates the payload itself rather than declaring a ParamSchema: the selections are a
-// nested array, and without validation a malformed body decodes to an empty selection list,
-// which would resolve to the empty combination — a different, existing variant — and answer 200.
+// processResolveSelection resolves a chosen attribute combination to a variant. It validates the
+// payload itself rather than declaring a ParamSchema: the selections are a nested array, and a
+// malformed body would otherwise decode to an empty selection list and resolve to the empty
+// combination — a different, existing variant — answered 200.
 func processResolveSelection(
 	ctx corectx.Context, input drif.ProcessInput,
 ) (*drif.ActionResult, error) {
@@ -123,8 +117,8 @@ func processResolveSelection(
 	}
 
 	// The service reports HasData=false when the template does not exist, which the REST layer
-	// turns into a missing record. Forcing it true here would answer 200 with the combination key
-	// of a product line that cannot be resolved against.
+	// turns into a missing record. Forcing it true would answer 200 with the combination key of a
+	// product line that cannot be resolved against.
 	if !result.HasData {
 		return &drif.ActionResult{HasData: false}, nil
 	}
@@ -139,11 +133,10 @@ func templateKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 	return dmodel.DynamicFields{models.ProductTemplateFieldId: params[models.ProductTemplateFieldId]}
 }
 
-// validateTemplateDelete adapts the engine's validation callback to the delete rule.
-//
-// The rule counts the template's variants, so it reads through the Product Variant engine's
-// repository rather than the template engine passed in here: product_template_id is a field of the
-// variant schema, and searching the template's own repository for it fails as undefined.
+// validateTemplateDelete adapts the engine's validation callback to the delete rule. It counts the
+// template's variants through the Product Variant engine's repository, not the template engine
+// passed in here: product_template_id is a field of the variant schema, and searching the
+// template's own repository for it fails as undefined.
 func validateTemplateDelete(_ drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
 		ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,

@@ -12,24 +12,19 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// The location tree: the rules that keep it acyclic and coherent, and the path maintenance that
-// follows from a change to it.
+// The location tree: the rules that keep it acyclic and coherent, and the path maintenance a change
+// to it implies.
 
 // locationPathSeparator is what complete_path joins codes with, giving 'MAIN/Stock/Zone A'.
 const locationPathSeparator = "/"
 
-// locationTreeScanLimit caps how far a tree walk will go before giving up.
-//
-// It is a guard against a cycle that somehow got persisted, not a real depth limit: a warehouse
-// nested a hundred levels deep is already a configuration problem, and looping forever inside a
-// transaction is worse than refusing.
+// locationTreeScanLimit caps how far a tree walk goes. It guards against a persisted cycle rather
+// than being a real depth limit: looping forever inside a transaction is worse than refusing.
 const locationTreeScanLimit = 100
 
 // assertPlacementValid checks where a location is being put: the warehouse, the parent, and that
-// the two agree.
-//
-// selfId is empty on create and the location's own id on update, which is what lets the cycle
-// check know whether "the parent is me" is possible.
+// the two agree. selfId is empty on create and the location's own id on update, which is what lets
+// the cycle check know whether "the parent is me" is possible.
 func (this *InventoryLocationDomainServiceImpl) assertPlacementValid(
 	ctx corectx.Context, params dmodel.DynamicFields, selfId string,
 ) (*ft.ClientErrors, error) {
@@ -60,8 +55,8 @@ func (this *InventoryLocationDomainServiceImpl) assertPlacementValid(
 		return vErrs, nil
 	}
 
-	// A location and its parent must sit in the same warehouse when both are in one. Crossing
-	// warehouses through the tree would make a path claim something the warehouses do not.
+	// A location and its parent must sit in the same warehouse when both are in one, or a path would
+	// claim something the warehouses do not.
 	warehouseId := readStringParam(params, models.InventoryLocationFieldWarehouseId)
 	parentWarehouseId := derefId(parent.GetWarehouseId())
 	if warehouseId != "" && parentWarehouseId != "" && warehouseId != parentWarehouseId {
@@ -72,10 +67,8 @@ func (this *InventoryLocationDomainServiceImpl) assertPlacementValid(
 }
 
 // assertMoveTargetValid checks a re-parent: the new parent exists, is usable, is in the same
-// warehouse, and is not inside the subtree being moved.
-//
-// The last rule is what stops a branch being grafted onto itself, which would detach it from the
-// tree entirely and leave it pointing in a circle.
+// warehouse, and is not inside the subtree being moved — the last stops a branch being grafted onto
+// itself, detaching it from the tree in a circle.
 func (this *InventoryLocationDomainServiceImpl) assertMoveTargetValid(
 	ctx corectx.Context, location models.InventoryLocation, newParentId string,
 ) (*ft.ClientErrors, error) {
@@ -123,10 +116,8 @@ func (this *InventoryLocationDomainServiceImpl) assertMoveTargetValid(
 	return vErrs, nil
 }
 
-// isDescendantOf walks up from candidateId to see whether ancestorId is above it.
-//
-// Walking up is bounded by the depth of the tree, where walking down would visit every location in
-// the subtree; for a check that only needs a yes or no, up is the cheaper direction.
+// isDescendantOf walks up from candidateId to see whether ancestorId is above it. Walking up is
+// bounded by tree depth, where walking down would visit the whole subtree.
 func (this *InventoryLocationDomainServiceImpl) isDescendantOf(
 	ctx corectx.Context, candidateId string, ancestorId string,
 ) (bool, error) {
@@ -149,9 +140,7 @@ func (this *InventoryLocationDomainServiceImpl) isDescendantOf(
 }
 
 // rewriteSubtreePaths recomputes complete_path and hierarchy_depth for a location and everything
-// beneath it.
-//
-// Called after a move, inside the same transaction as the re-parent, because the cached paths and
+// beneath it. It must run in the same transaction as the re-parent, because the cached paths and
 // the tree they describe have to change together.
 func (this *InventoryLocationDomainServiceImpl) rewriteSubtreePaths(
 	ctx corectx.Context, rootId string,
@@ -202,10 +191,8 @@ func (this *InventoryLocationDomainServiceImpl) rewritePathsFrom(
 	return nil
 }
 
-// listChildren returns the unarchived locations directly under one location.
-//
-// Archived children keep whatever path they had: they are out of the working set, and rewriting
-// them would be churn nobody reads.
+// listChildren returns the unarchived locations directly under one location. Archived children keep
+// whatever path they had, being out of the working set.
 func (this *InventoryLocationDomainServiceImpl) listChildren(
 	ctx corectx.Context, parentId string,
 ) ([]models.InventoryLocation, error) {
@@ -263,9 +250,8 @@ func (this *InventoryLocationDomainServiceImpl) countUnarchivedChildren(
 }
 
 // countOperationTypesUsing reports how many live operation types name this location as a default.
-//
-// Archiving a location an operation type still points at would leave the next transfer of that
-// type unable to resolve where it is meant to move goods.
+// Archiving one they still point at would leave the next transfer unable to resolve where to move
+// goods.
 func (this *InventoryLocationDomainServiceImpl) countOperationTypesUsing(
 	ctx corectx.Context, locationId string,
 ) (int, error) {
@@ -288,10 +274,8 @@ func (this *InventoryLocationDomainServiceImpl) countOperationTypesUsing(
 	return total, errors.Wrap(err, "countOperationTypesUsing")
 }
 
-// isOwningWarehouseUsable reports whether the location's warehouse is active and unarchived.
-//
-// A location with no warehouse — a vendor, customer or shared transit location — is never blocked
-// by this, because there is no warehouse to be unusable.
+// isOwningWarehouseUsable reports whether the location's warehouse is active and unarchived. A
+// location with no warehouse — vendor, customer or shared transit — is never blocked by this.
 func (this *InventoryLocationDomainServiceImpl) isOwningWarehouseUsable(
 	ctx corectx.Context, location models.InventoryLocation,
 ) (bool, error) {

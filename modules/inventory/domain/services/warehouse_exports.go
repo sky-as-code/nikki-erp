@@ -10,10 +10,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// What the application layer needs from the warehouse domain, exported deliberately narrowly.
-//
-// The app package orchestrates two domain services across one transaction; these are the pieces
-// that orchestration needs and nothing more. The rules themselves stay in this package.
+// What the application layer needs from the warehouse domain, exported narrowly: the app package
+// orchestrates two domain services across one transaction, and the rules stay in this package.
 
 // RequiredSystemLocations lists the locations a warehouse must have for its two flows.
 func RequiredSystemLocations(incomingFlow string, outgoingFlow string) []SystemLocationSpec {
@@ -31,7 +29,7 @@ func OutgoingFlowLocations(flow string) []SystemLocationSpec {
 }
 
 // ObsoleteSystemLocations lists the stops a flow change leaves unused, so the caller can suspend
-// them. They are never deleted: the movement history that passed through them still names them.
+// them. Never deleted: the movement history that passed through them still names them.
 func ObsoleteSystemLocations(previousFlow string, nextFlow string, outgoing bool) []SystemLocationSpec {
 	return toExportedSpecs(obsoleteSystemLocations(previousFlow, nextFlow, outgoing))
 }
@@ -62,10 +60,8 @@ func LoadWarehouse(
 	return loadWarehouseById(ctx, warehouseId)
 }
 
-// WriteWarehouseFlow stores a new flow setting.
-//
-// It writes the one field and nothing else: provisioning the locations the flow needs is the
-// caller's next step, inside the same transaction.
+// WriteWarehouseFlow stores a new flow setting and nothing else: provisioning the locations the
+// flow needs is the caller's next step, inside the same transaction.
 func WriteWarehouseFlow(
 	ctx corectx.Context, warehouseId string, field string, flow string,
 ) error {
@@ -80,21 +76,17 @@ func WriteLocationStatus(ctx corectx.Context, locationId string, status string) 
 	})
 }
 
-// MarkLocationSystemGenerated flags a location as one the warehouse created for itself.
-//
-// It is written here rather than passed through Create because the location service strips the
-// flag from anything a caller supplies — which is the protection that stops a client minting a
-// location that then refuses to be archived.
+// MarkLocationSystemGenerated flags a location as one the warehouse created for itself. Written
+// here rather than through Create, which strips the flag from anything a caller supplies to stop a
+// client minting a location that then refuses to be archived.
 func MarkLocationSystemGenerated(ctx corectx.Context, locationId string) error {
 	return writeLocationFieldsDirect(ctx, locationId, dmodel.DynamicFields{
 		models.InventoryLocationFieldIsSystemGenerated: true,
 	})
 }
 
-// FindWarehouseLocationByCode resolves one of a warehouse's own locations by its code.
-//
-// Codes are unique within an org, and a warehouse's system locations are created with the codes
-// the flow topology names, so this is how 'the Input location of MAIN' is found.
+// FindWarehouseLocationByCode resolves one of a warehouse's own locations by its code. Codes are
+// unique within an org and system locations carry the codes the flow topology names.
 func FindWarehouseLocationByCode(
 	ctx corectx.Context, warehouseId string, code string,
 ) (*models.InventoryLocation, error) {
@@ -125,11 +117,9 @@ func FindWarehouseLocationByCode(
 	return models.NewInventoryLocationFrom(found.Data.Items[0]), nil
 }
 
-// WithWarehouseTransaction runs body inside one transaction on a scoped copy of the context.
-//
-// Warehouse creation and flow reconfiguration each write a warehouse and its locations; half of
-// either result is useless, so both run in here. The transaction goes on a clone rather than on
-// the caller's context, per docs/wiki/02 §5.1.
+// WithWarehouseTransaction runs body inside one transaction on a cloned context. Warehouse creation
+// and flow reconfiguration each write a warehouse and its locations, and half of either result is
+// useless.
 func WithWarehouseTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
 	engine, err := engineFor(models.WarehouseSchemaName)
 	if err != nil {
@@ -152,7 +142,7 @@ func WithWarehouseTransaction(ctx corectx.Context, body func(tranxCtx corectx.Co
 }
 
 // writeLocationFieldsDirect writes location fields through the repository, bypassing the service
-// overrides. Used only where the caller has already validated the change.
+// overrides. Only for callers that have already validated the change.
 func writeLocationFieldsDirect(
 	ctx corectx.Context, locationId string, fields dmodel.DynamicFields,
 ) error {

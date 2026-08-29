@@ -3,19 +3,46 @@
 	"label": "sales_pricelist_item.label",
 	"table_name": "sales_pricelist_items",
 	"should_build_db": true,
-	"default_search_fields": ["product_variant_id"],
-	"composite_uniques": [
-		{
-			"index_name": "sales_pl_items_tid_list_variant_qty",
-			"fields": ["sales_pricelist_id", "product_variant_id", "min_quantity"]
-		}
+	"default_search_fields": [
+		"product_variant_id"
 	],
 	"search_indexes": [
-		{ "index_name": "sales_pl_items_tid_variant", "fields": ["product_variant_id"] },
-		{ "index_name": "sales_pl_items_tid_uom", "fields": ["uom_id"] }
+		{
+			"index_name": "sales_pl_items_tid_variant",
+			"fields": [
+				"product_variant_id"
+			]
+		},
+		{
+			"index_name": "sales_pl_items_tid_uom",
+			"fields": [
+				"uom_id"
+			]
+		},
+		{
+			"index_name": "sales_pl_items_tid_tmpl",
+			"fields": [
+				"product_template_id"
+			]
+		},
+		{
+			"index_name": "sales_pl_items_tid_cat",
+			"fields": [
+				"product_category_id"
+			]
+		},
+		{
+			"index_name": "sales_pl_items_tid_validity",
+			"fields": [
+				"valid_from",
+				"valid_to"
+			]
+		}
 	],
-	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
-
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
 	"fields": [
 		{
 			"name": "sales_pricelist_id",
@@ -31,56 +58,234 @@
 			"name": "product_variant_id",
 			"label": "fields.product_variant_id",
 			"data_type": "ulid",
-			"required_for_create": true,
 			"no_update": true,
 			"description": {
-				"en-US": "What is being priced. The variant, not the template: the variant is the transactable unit, and two variants of one template can legitimately cost different amounts. A plain ulid, since the product belongs to Inventory."
+				"en-US": "The single variant this rule prices, when applies_to is PRODUCT_VARIANT; NULL for every other target. The variant is the transactable unit, and two variants of one template can legitimately sell for different amounts. A plain ulid, since the product belongs to Inventory.\n\nOptional since targeting was widened: a rule may instead name a template or a category, or apply to everything. Exactly one target column is set, enforced by the domain service because the schema cannot express a requirement conditional on another field."
 			}
 		},
 		{
 			"name": "uom_id",
 			"label": "fields.uom_id",
 			"data_type": "ulid",
-			"required_for_create": true,
 			"no_update": true,
 			"description": {
-				"en-US": "The unit the price is PER. Required, because a price without its unit is not a price: 50,000 per case and 50,000 per bottle are different offers. A line priced in another unit is converted through Essential rather than assumed compatible."
+				"en-US": "The unit the price is PER. A price without its unit is not a price: 50,000 per case and 50,000 per bottle are different offers. A line priced in another unit is converted through Essential rather than assumed compatible.\n\nOptional only because a rule that quotes no fixed price does not need one: a DISCOUNT or FORMULA rule derives from a base whose unit is already settled. A FIXED_PRICE rule must carry it, which the domain service checks."
 			}
 		},
 		{
 			"name": "price",
 			"label": "fields.price",
-			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
-			"required_for_create": true,
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
 			"description": {
-				"en-US": "The price per unit of uom_id. Zero is permitted and meaningful: a giveaway line still needs a price to be recorded at, and forbidding zero would push those through a discount path where they do not belong."
+				"en-US": "The price per unit of uom_id, for a FIXED_PRICE rule. Zero is permitted and meaningful: a giveaway line still needs a price to be recorded at, and forbidding zero would push those through a discount path where they do not belong.\n\nNo longer required, because only a FIXED_PRICE rule quotes one — a DISCOUNT or FORMULA rule computes its price instead. The domain service requires it exactly when the method is FIXED_PRICE. The field keeps its name rather than becoming fixed_price so that every existing row, and every caller reading them, keeps working; the change request calls it fixed_price, and that is what it holds."
 			}
 		},
 		{
 			"name": "min_quantity",
 			"label": "fields.min_quantity",
-			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "1000000000000",
+				"scale": 6
+			},
 			"required_for_create": true,
 			"default_value": "0",
 			"description": {
 				"en-US": "The smallest quantity this price applies from, expressed in uom_id. Quantity breaks are rows rather than a nested structure, so a list can hold 1-at-full-price and 10-at-a-discount as two ordinary items. Required with a default of zero rather than nullable: the uniqueness key includes it, and a NULL in a unique key would let the same break be written twice (a NULL never equals a NULL)."
 			}
+		},
+		{
+			"name": "applies_to",
+			"label": "fields.applies_to",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"ALL_PRODUCTS",
+					"PRODUCT_CATEGORY",
+					"PRODUCT_TEMPLATE",
+					"PRODUCT_VARIANT"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "PRODUCT_VARIANT",
+			"description": {
+				"en-US": "What this rule prices. Exactly one of the three target columns must be set to match it, and none of them for ALL_PRODUCTS.\n\nResolution prefers the most specific match: variant, then template, then the nearest ancestor category, then everything (PRICE-INV-016, PRICE-INV-017). That ladder is what lets a list say \"10% off this category, except this one product\" without the two rules fighting."
+			}
+		},
+		{
+			"name": "product_template_id",
+			"label": "fields.product_template_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The template this rule prices, when applies_to is PRODUCT_TEMPLATE; NULL otherwise. Prices every variant of a product without naming each one, which is the ordinary case for a product whose variants differ only in something nobody charges extra for."
+			}
+		},
+		{
+			"name": "product_category_id",
+			"label": "fields.product_category_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The category this rule prices, when applies_to is PRODUCT_CATEGORY; NULL otherwise. Applies to descendant categories too, with the nearest ancestor winning: a rule on Beverages is overridden by one on its child Soft Drinks for a product that sits in both."
+			}
+		},
+		{
+			"name": "valid_from",
+			"label": "fields.valid_from",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this rule starts applying, or NULL for always. Distinct from the pricelist's own window: the list says when the policy is in force, the rule says when this particular price within it is. A seasonal discount is a dated rule on an undated list."
+			}
+		},
+		{
+			"name": "valid_to",
+			"label": "fields.valid_to",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this rule stops applying, or NULL for open-ended. Exclusive of the instant itself, matching every other window in this module, so one rule ending and the next beginning at the same moment leaves no gap and no overlap."
+			}
+		},
+		{
+			"name": "sequence",
+			"label": "fields.sequence",
+			"data_type": {
+				"type": "int32",
+				"min": 0,
+				"max": 100000
+			},
+			"required_for_create": true,
+			"default_value": 0,
+			"description": {
+				"en-US": "Breaks ties between rules that are equally specific and equally applicable, lowest winning (section 18 step 7). It does NOT override specificity or quantity: a variant rule beats a category rule whatever their sequences, or a low sequence on a broad rule would silently undo every narrow one.\n\nWith id as the final tie-break this is what makes resolution deterministic (PRICE-INV-020) — two otherwise indistinguishable rules still resolve the same way on every run, which is what makes the outcome testable at all."
+			}
+		},
+		{
+			"name": "calculation_method",
+			"label": "fields.calculation_method",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"FIXED_PRICE",
+					"DISCOUNT",
+					"FORMULA"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "FIXED_PRICE",
+			"description": {
+				"en-US": "How the price is arrived at. FIXED_PRICE quotes an amount outright; DISCOUNT takes a percentage off the base sales price; FORMULA resolves a base, adjusts it, rounds it and adds a surcharge (section 13).\n\nDefaults to FIXED_PRICE, which is what every row written before this change request meant: the existing price column is that rule's amount, so old data keeps its meaning without being rewritten."
+			}
+		},
+		{
+			"name": "discount_percent",
+			"label": "fields.discount_percent",
+			"data_type": {
+				"type": "decimal",
+				"min": "-100",
+				"max": "100",
+				"scale": 6
+			},
+			"description": {
+				"en-US": "The percentage taken off the base, for DISCOUNT and FORMULA. Signed, so a negative value is a markup — which is how a formula prices at cost plus 50% without needing a second field. Bounded at 100 because a discount beyond the whole price would invert the transaction."
+			}
+		},
+		{
+			"name": "base_price_source",
+			"label": "fields.base_price_source",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"BASE_SALES_PRICE",
+					"OTHER_PRICELIST",
+					"COST"
+				]
+			},
+			"description": {
+				"en-US": "What a FORMULA rule starts from (section 14). BASE_SALES_PRICE reads the variant's effective base price, COST reads the variant's cost, and OTHER_PRICELIST resolves against another list.\n\nCOST is a READ and nothing more. Sales never calculates or updates a product's cost (PRICE-INV-010): it consumes the number Inventory owns, and a formula that could write back would quietly make the pricing engine a costing engine."
+			}
+		},
+		{
+			"name": "base_pricelist_id",
+			"label": "fields.base_pricelist_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The list a FORMULA rule derives from, when base_price_source is OTHER_PRICELIST. A list may not reference itself and no cycle may form between lists (section 14). The domain service walks the chain before accepting the rule, because a cycle would otherwise surface only as a price resolution that never terminates."
+			}
+		},
+		{
+			"name": "surcharge_amount",
+			"label": "fields.surcharge_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "-999999999999",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"description": {
+				"en-US": "A flat amount added after rounding, for FORMULA. Signed, so it can take money off as well. Applied AFTER rounding deliberately: a surcharge that is meant to be exact, such as a 5,000 handling fee, would otherwise be rounded into something that is not it."
+			}
+		},
+		{
+			"name": "rounding_increment",
+			"label": "fields.rounding_increment",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"description": {
+				"en-US": "The step a FORMULA result is rounded to, or NULL for no rounding. 1000 rounds to the nearest thousand dong, 0.05 to the nearest five cents. Distinct from the currency's decimal places, which is a storage and display concern: this is a commercial choice about what a price should look like on a shelf."
+			}
+		},
+		{
+			"name": "minimum_margin",
+			"label": "fields.minimum_margin",
+			"data_type": {
+				"type": "decimal",
+				"min": "-100",
+				"max": "100",
+				"scale": 6
+			},
+			"description": {
+				"en-US": "A floor on the margin a FORMULA result may leave, as a percentage, or NULL for none. Applied last, after every other step. It exists because a formula chained off another list can drift below cost without anyone noticing until the month closes."
+			}
+		},
+		{
+			"name": "maximum_margin",
+			"label": "fields.maximum_margin",
+			"data_type": {
+				"type": "decimal",
+				"min": "-100",
+				"max": "100",
+				"scale": 6
+			},
+			"description": {
+				"en-US": "A ceiling on the margin, as a percentage, or NULL for none. The mirror of minimum_margin and used far less: it guards against a mispriced cost producing an absurd price, rather than against losing money."
+			}
 		}
 	],
-
 	"extend_after": [
 		"core.basemodel.archivable_model",
 		"core.basemodel.auditable_model",
 		"core.basemodel.versioned_model"
 	],
-
 	"edges_to": [
 		{
 			"edge": "sales_pricelist",
-			"label": { "en-US": "Pricelist" },
+			"label": {
+				"en-US": "Pricelist"
+			},
 			"type": "many:one",
 			"dest_schema": "sales_pricelist",
-			"key_map": { "sales_pricelist_id": "id" },
+			"key_map": {
+				"sales_pricelist_id": "id"
+			},
 			"on_delete": "CASCADE"
 		}
 	]

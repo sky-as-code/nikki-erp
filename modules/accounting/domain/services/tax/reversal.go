@@ -6,39 +6,35 @@ import (
 
 // Refund and return handling.
 //
-// The governing idea is that a refund reverses what was actually charged, not what would be charged
-// today (BR-TAX-ESS-032). A sale made at 8% while the rate is now 10% must refund 8%, and the only
-// way to know that is to read the frozen snapshot the sale left behind rather than re-running
-// determination against current configuration.
+// A refund reverses what was actually charged, not what would be charged today: a sale made at 8%
+// refunds 8% even if the rate is now 10%. That means reading the sale's frozen snapshot, never
+// re-running determination against current configuration.
 //
-// Tax stores none of this. The caller owns the transaction and its snapshot, and supplies both;
-// Tax owns the arithmetic. That is why nothing here touches a repository — and why
-// ReversalComponentInput carries how much has already been reversed rather than Tax remembering
-// (BR-TAX-ESS-SUP-025).
+// Tax keeps no reversal state; the caller owns the snapshot and the already-reversed running totals
+// and passes both in.
 
 // ReversalComponentInput is one original snapshot component being reversed against.
 type ReversalComponentInput struct {
-	// OriginalComponentReference identifies the component in the caller's own snapshot. It is
-	// opaque to Tax, which never resolves it against a sales order.
+	// OriginalComponentReference is opaque to Tax and never resolved against a sales order.
 	OriginalComponentReference string
 
-	// OriginalReversibleBasis is the quantity or amount the original tax was charged on, and the
-	// denominator of a proportional reversal.
+	// OriginalReversibleBasis is what the original tax was charged on, and the denominator of a
+	// proportional reversal.
 	OriginalReversibleBasis decimal.Decimal
 
 	// OriginalTaxAmount is what was charged, from the frozen snapshot.
 	OriginalTaxAmount decimal.Decimal
 
-	// AlreadyReversedBasis and AlreadyReversedTaxAmount are the running totals of prior partial
-	// refunds. The caller owns them; Tax deliberately keeps no reversal state of its own.
+	// AlreadyReversedBasis and AlreadyReversedTaxAmount are the caller-owned running totals of prior
+	// partial refunds; Tax keeps no state of its own.
 	AlreadyReversedBasis     decimal.Decimal
 	AlreadyReversedTaxAmount decimal.Decimal
 
 	// RequestedReversalBasis is how much of the original basis this refund covers.
 	RequestedReversalBasis decimal.Decimal
 
-	// IsFinalReversal marks the last refund against this component, which absorbs any rounding
-	// residual so the totals close exactly.
+	// IsFinalReversal marks the last refund against this component; it absorbs any rounding residual
+	// so the totals close exactly.
 	IsFinalReversal bool
 }
 
@@ -46,19 +42,17 @@ type ReversalComponentInput struct {
 type ReversalComponentResult struct {
 	OriginalComponentReference string
 
-	// ReversalTaxAmount is negative, expressing a reversal of a positive charge.
+	// ReversalTaxAmount is negative: a reversal of a positive charge.
 	ReversalTaxAmount decimal.Decimal
 
-	// RemainingTaxAmount is what would still be reversible afterwards, so a caller can tell whether
-	// a component is exhausted without recomputing it.
+	// RemainingTaxAmount is what stays reversible afterwards, so a caller can tell a component is
+	// exhausted without recomputing.
 	RemainingTaxAmount decimal.Decimal
 }
 
-// ReverseFull reverses an entire original charge.
-//
-// No redetermination, no current-rate lookup, no recalculation from a base — the original amount is
-// negated as it stands (BR-TAX-ESS-SUP-024). Recomputing would reintroduce exactly the dependency
-// on today's configuration that the snapshot exists to remove.
+// ReverseFull negates the original snapshot amount as it stands: no redetermination, no
+// current-rate lookup, no recalculation from a base, since recomputing would reintroduce the
+// dependency on today's configuration that the snapshot exists to remove.
 func ReverseFull(components []ReversalComponentInput) []ReversalComponentResult {
 	results := make([]ReversalComponentResult, 0, len(components))
 	for _, component := range components {
@@ -72,16 +66,13 @@ func ReverseFull(components []ReversalComponentInput) []ReversalComponentResult 
 	return results
 }
 
-// ReversePartial reverses part of an original charge, in proportion to the basis returned.
+// ReversePartial reverses part of an original charge in proportion to the basis returned, rounding
+// each share by the policy. The final reversal takes whatever remains instead of its proportional
+// share: independently rounded partials do not generally sum to the original (three thirds of 10.00
+// give 3.33 each, stranding a cent).
 //
-// The proportional rule is not applied to the final reversal. Several partial refunds each rounding
-// independently will not generally sum to the original: three refunds of a third of 10.00 give
-// 3.33 each, leaving a cent stranded. So the last refund takes whatever remains instead of its
-// proportional share, which is what makes the invariant in BR-TAX-ESS-033 hold exactly rather than
-// approximately.
-//
-// Every result is also clamped to what is left, so that a caller sending overlapping or duplicated
-// refunds cannot reverse more tax than was charged (TAX-INV-11).
+// Results are clamped to what is left, so overlapping or duplicated refunds cannot reverse more tax
+// than was charged. Returned amounts are negative.
 func ReversePartial(
 	components []ReversalComponentInput, policy RoundingPolicy,
 ) []ReversalComponentResult {
@@ -97,9 +88,8 @@ func ReversePartial(
 			reversal = remaining
 
 		case !component.OriginalReversibleBasis.IsPositive():
-			// Nothing to prorate against. Reversing the whole remainder would over-refund on the
-			// strength of a malformed input, so this reverses nothing and leaves the caller to
-			// notice.
+			// Nothing to prorate against; reversing the remainder would over-refund on malformed
+			// input, so reverse nothing and let the caller notice.
 			reversal = decimal.Zero
 
 		default:

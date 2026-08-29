@@ -40,18 +40,14 @@ func registerEngineRoutes(routeV1 *echo.Group) {
 	}
 }
 
-// initTaxCalculationV1 registers the endpoints the resource engines cannot express.
-//
-// They hang off "/tax/" rather than off the "accounting_tax" resource path, because they are not
-// operations on a tax record: calculate prices a document the caller owns and reads many resources
-// to do it. Putting them under the resource would suggest a sub-resource that does not exist, and
-// would collide with the engine's own ":id" route.
+// initTaxCalculationV1 registers the endpoints the resource engines cannot express. They hang off
+// "/tax/" rather than the "accounting_tax" resource path because they are not operations on a tax
+// record, and would collide with the engine's own ":id" route.
 func initTaxCalculationV1(routeV1 *echo.Group) error {
 	return deps.Invoke(func(taxRest *v1.TaxCalculationRest) error {
-		// SmokeAuthz is what loads the caller's identity and entitlements into the request context.
-		// Without it every one of these endpoints sees an empty permission set and denies the
-		// request — including for an owner, whose bypass depends on a flag the middleware is what
-		// puts there. The engine routes above take it for the same reason.
+		// SmokeAuthz loads the caller's identity and entitlements into the request context. Without
+		// it every endpoint here sees an empty permission set and denies the request, including an
+		// owner's, whose bypass depends on a flag this middleware sets.
 		//
 		// POST throughout, including for the two that only read: the request is a whole document of
 		// lines and party context, which does not fit a query string.

@@ -40,5 +40,4 @@ func TestIsArchivedWarehouse(t *testing.T) {
 }
 
 // The assertion that only Warehouse and Inventory Location carry a status lives in the models
-// package, where the base mixins a schema build needs are already registered. See
-// warehouse_schema_test.go.
+// package, where the base mixins a schema build needs are already registered.

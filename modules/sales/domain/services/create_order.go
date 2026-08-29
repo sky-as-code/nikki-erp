@@ -14,30 +14,18 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
-// Creating a sales order (BR 69, CR 21-22 and 56-57, SALES-012).
+// Creating a sales order. Two rules here are load-bearing and neither is obvious from the fields.
 //
-// Two rules here are load-bearing and neither is obvious from the field list.
+// The channel is DERIVED from the sales point, never accepted: otherwise a kiosk could claim the
+// `vdmc` channel while passing an eCommerce sales point id, booking itself into whichever channel
+// priced better. A supplied code that disagrees is rejected outright.
 //
-// # The channel is DERIVED, never accepted (D-20, CR 57)
-//
-// A request may name a channel code, and the sales point also names a channel. The stored channel is
-// always the SALES POINT's, and a supplied code that disagrees is rejected outright. This is the
-// anti-spoofing rule: a kiosk claiming the `vdmc` channel while passing an eCommerce sales point id
-// must fail, because otherwise it could book itself into whichever channel had the better prices or
-// the laxer payment rules. Deriving it makes CR 20's invariant true by construction rather than by a
-// check somebody could forget to run.
-//
-// # A duplicate idempotency key returns the ORIGINAL order, successfully (D-29)
-//
-// Not a conflict, not an error. BR 7.2's "a machine retry must not create two orders" is only true if
-// the retry gets a success back - a gateway or kiosk told "409" retries forever, and each retry is
-// another chance to create the duplicate the rule exists to prevent. The unique index is the
-// mechanism; returning the existing row is the contract.
+// A duplicate idempotency key returns the ORIGINAL order, successfully - not a conflict. A retry
+// must not create two orders, which is only true if the retry gets a success back: a gateway told
+// "409" retries forever.
 
-// CreateOrderParams is what creating an order needs.
 type CreateOrderParams struct {
 	// SalesChannelCode is optional and is only ever CHECKED, never used to decide the channel.
-	// See the anti-spoofing note above.
 	SalesChannelCode string
 
 	SalesPointId string
@@ -47,31 +35,27 @@ type CreateOrderParams struct {
 
 	Lines []CreateOrderLine
 
-	// ExternalReference is the caller's own identifier for this sale, unique per channel.
 	ExternalReference string
 
-	// IdempotencyKey makes a retry safe. Unique per channel when present; absent means the caller
-	// accepts that a retry creates a second order.
+	// IdempotencyKey is unique per channel when present; absent means the caller accepts that a retry
+	// creates a second order.
 	IdempotencyKey string
 
 	OrgId string
 }
 
-// CreateOrderLine is one requested line.
 type CreateOrderLine struct {
 	ProductVariantId string
 	UomId            string
 	Quantity         decimal.Decimal
 
-	// UnitPrice is the catalogue price the caller resolved. The engine uses it as the fallback when
-	// no pricelist item matches.
+	// UnitPrice is the fallback when no pricelist item matches.
 	UnitPrice decimal.Decimal
 
 	ProductCode string
 	ProductName string
 }
 
-// CreateOrderResult is the created order plus what it priced to.
 type CreateOrderResult struct {
 	SalesOrderId   string
 	OrderNumber    string
@@ -79,8 +63,8 @@ type CreateOrderResult struct {
 
 	Pricing *RepriceResult
 
-	// AlreadyExisted marks the idempotent replay path. The caller returns success either way; this
-	// says whether anything was actually written, which is what a log or a metric wants to know.
+	// AlreadyExisted marks the idempotent replay path: success is returned either way, this says
+	// whether anything was written.
 	AlreadyExisted bool
 }
 
@@ -94,12 +78,12 @@ const (
 	ReasonVariantMissing      = "sales_order.product_variant_missing"
 )
 
-// CreateOrder validates and writes a new draft order, then prices it.
 func CreateOrder(
 	ctx corectx.Context,
 	params CreateOrderParams,
 	taxSvc itExt.TaxCalculationExtService,
 	products itExt.ProductVariantExtService,
+	basisSvc itExt.ProductPricingBasisExtService,
 	policy SalesPolicy,
 ) (*CreateOrderResult, *ft.ClientErrors, error) {
 	point, channel, vErrs, err := resolveSellingPlace(ctx, params)
@@ -112,10 +96,8 @@ func CreateOrder(
 		return nil, vErrs, nil
 	}
 
-	// BR 69: nothing withdrawn from sale may be ordered. Checked BEFORE the idempotency replay and
-	// before any write, because an order naming an unsellable variant must not exist at all — one
-	// written and then rejected would still be a row a till could read and a customer could be
-	// charged against.
+	// Nothing withdrawn from sale may be ordered. Checked BEFORE the idempotency replay and any write:
+	// a row written and then rejected would still be one a till could read and charge against.
 	sellableErrs, err := assertVariantsSellable(ctx, params.Lines, products)
 	if err != nil {
 		return nil, nil, err
@@ -124,9 +106,8 @@ func CreateOrder(
 		return nil, sellableErrs, nil
 	}
 
-	// The idempotent replay, checked BEFORE writing anything. The unique index is what makes this
-	// safe under a race - two simultaneous retries cannot both pass this check, and the loser's
-	// insert fails on the index rather than creating a second order.
+	// The idempotent replay, checked BEFORE writing anything. The unique index makes it safe under a
+	// race: two simultaneous retries cannot both pass, and the loser's insert fails on the index.
 	if params.IdempotencyKey != "" {
 		existing, err := findOrderByIdempotencyKey(ctx, channelId, params.IdempotencyKey)
 		if err != nil {
@@ -144,8 +125,8 @@ func CreateOrder(
 
 	orderId, orderNumber, err := writeDraftOrder(ctx, params, point, channelId)
 	if err != nil {
-		// A collision on the idempotency index means a concurrent retry won the race. That is the
-		// success path, not a failure: re-read and return what the winner created (D-29).
+		// A collision on the idempotency index means a concurrent retry won the race: the success
+		// path, not a failure.
 		if isUniqueViolation(err) && params.IdempotencyKey != "" {
 			existing, lookupErr := findOrderByIdempotencyKey(ctx, channelId, params.IdempotencyKey)
 			if lookupErr != nil {
@@ -163,10 +144,8 @@ func CreateOrder(
 		return nil, nil, err
 	}
 
-	// Priced after the lines are stored, because the engine reads them back. BR 69 requires a total
-	// to have been computed before one is returned, so a create that could not price is a create
-	// that failed.
-	priced, vErrs, err := RepriceOrder(ctx, orderId, taxSvc, policy)
+	// A create that could not price is a create that failed.
+	priced, vErrs, err := RepriceOrder(ctx, orderId, taxSvc, policy, basisSvc)
 	if err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}
@@ -179,11 +158,8 @@ func CreateOrder(
 	}, nil, nil
 }
 
-// resolveSellingPlace loads the sales point, derives its channel, and checks both may sell.
-//
-// The order matters: the point is loaded first because it is what decides the channel. Loading the
-// channel from the request and then checking the point against it would be the same code with the
-// trust running the wrong way.
+// resolveSellingPlace loads the sales point first because it decides the channel; loading the
+// channel from the request and checking the point against it would run the trust the wrong way.
 func resolveSellingPlace(
 	ctx corectx.Context, params CreateOrderParams,
 ) (point dmodel.DynamicFields, channel dmodel.DynamicFields, vErrs *ft.ClientErrors, err error) {
@@ -211,13 +187,13 @@ func resolveSellingPlace(
 		return nil, nil, nil, err
 	}
 	if channel == nil {
-		// A point whose channel is gone cannot sell. Reported against the point, because that is
-		// the record the caller named and the one an administrator would go and fix.
+		// A point whose channel is gone cannot sell. Reported against the point, the record the
+		// caller named and the one an administrator would fix.
 		return nil, nil, refuse("sales_point_id", ReasonChannelNotSellable,
 			"this sales point references a sales channel that no longer exists"), nil
 	}
 
-	// A supplied code is CHECKED against the derived channel, never used instead of it (CR 57).
+	// A supplied code is CHECKED against the derived channel, never used instead of it.
 	if params.SalesChannelCode != "" &&
 		params.SalesChannelCode != stringOf(channel, models.SalesChannelFieldCode) {
 		return nil, nil, refuse("sales_channel_code", ReasonChannelMismatch,
@@ -237,10 +213,7 @@ func resolveSellingPlace(
 	return point, channel, nil, nil
 }
 
-// canSell reports whether a record is both active and unarchived.
-//
-// Both gates, because they mean different things: archived is retired for good, suspended is stopped
-// for now, and either one must prevent a new sale.
+// canSell requires both gates: archived is retired for good, suspended is stopped for now.
 func canSell(record dmodel.DynamicFields, statusField, activeStatus string) bool {
 	if boolOf(record, basemodel.FieldIsArchived) {
 		return false
@@ -248,12 +221,9 @@ func canSell(record dmodel.DynamicFields, statusField, activeStatus string) bool
 	return stringOf(record, statusField) == activeStatus
 }
 
-// assertLinesRequestable checks what can be checked without reading another module.
-//
-// Variant existence and sellability are NOT checked here. They need inventory's product port, which
-// Sales does not yet bind - see the SALES-012 note in 02-progress.md. A line naming a variant that
-// does not exist is therefore stored and will fail later, which is worse than refusing it now and is
-// recorded rather than hidden.
+// assertLinesRequestable checks what can be checked without reading another module. Variant
+// existence needs inventory's product port, which Sales does not yet bind, so a line naming a
+// nonexistent variant is stored and fails later.
 func assertLinesRequestable(lines []CreateOrderLine) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 
@@ -276,22 +246,12 @@ func assertLinesRequestable(lines []CreateOrderLine) *ft.ClientErrors {
 	return vErrs
 }
 
-// assertVariantsSellable refuses an order naming a variant Inventory has withdrawn (BR 69).
+// assertVariantsSellable refuses a variant Inventory has withdrawn. Separate from the pure
+// assertLinesRequestable, which would otherwise be untestable without a container.
 //
-// # Why this is a separate step from assertLinesRequestable
-//
-// That one is pure — it asks whether the request is well-formed, and needs nothing but the request.
-// This one asks another module a question, so folding them together would make the pure check
-// impossible to test without a container, and every caller pay for a round trip to learn that a
-// quantity was negative.
-//
-// # A nil port PERMITS rather than refuses
-//
-// The port is bound in every build that ships inventory, so nil means a deployment without it —
-// and in such a deployment there is no master to be withdrawn from. Refusing would make Sales
-// unusable there rather than safe. Note this is the opposite reading from the tax port, which fails
-// CLOSED: an unresolved tax silently undercharges the business, while an unchecked variant is a
-// question nobody in that deployment can answer.
+// A nil port PERMITS rather than refuses: it means a deployment with no master to be withdrawn
+// from. The opposite reading from the tax port, which fails CLOSED because an unresolved tax
+// silently undercharges the business.
 func assertVariantsSellable(
 	ctx corectx.Context, lines []CreateOrderLine, products itExt.ProductVariantExtService,
 ) (*ft.ClientErrors, error) {
@@ -319,9 +279,7 @@ func assertVariantsSellable(
 		return nil, nil
 	}
 
-	// Reported per LINE rather than per variant, because the caller sent lines and fixing the order
-	// means editing one. A refusal naming only the variant id would leave an operator scanning a
-	// twenty-line basket for it.
+	// Reported per LINE rather than per variant, because fixing the order means editing a line.
 	vErrs := ft.NewClientErrors()
 	for index, line := range lines {
 		reason, refused := result.NotSellable[line.ProductVariantId]
@@ -339,7 +297,6 @@ func assertVariantsSellable(
 	return vErrs, nil
 }
 
-// findOrderByIdempotencyKey looks for an order already created under this key.
 func findOrderByIdempotencyKey(
 	ctx corectx.Context, channelId, key string,
 ) (dmodel.DynamicFields, error) {
@@ -368,10 +325,8 @@ func findOrderByIdempotencyKey(
 	return found.Data.Items[0], nil
 }
 
-// writeDraftOrder inserts the order and its lines, in one transaction.
-//
-// Together, because an order whose lines failed to write is an empty order that looks deliberate -
-// and an empty draft is a legitimate state (BR 69), so nothing downstream would flag it.
+// writeDraftOrder uses one transaction because an order whose lines failed to write is an empty
+// order - a legitimate state, so nothing downstream would flag it.
 func writeDraftOrder(
 	ctx corectx.Context, params CreateOrderParams, point dmodel.DynamicFields, channelId string,
 ) (orderId string, orderNumber string, err error) {
@@ -405,8 +360,8 @@ func writeDraftOrder(
 			models.SalesOrderFieldFulfillmentStatus: string(models.SalesOrderFulfillmentStatusPending),
 			models.SalesOrderFieldInvoiceStatus:     string(models.SalesOrderInvoiceStatusNotRequested),
 
-			// Zeroed rather than omitted. The reprice that follows overwrites them, and a NOT NULL
-			// column with no value would fail the insert before it got there.
+			// Zeroed rather than omitted: the reprice overwrites them, and a NOT NULL column with no
+			// value would fail the insert.
 			models.SalesOrderFieldSubtotal:      decimal.Zero,
 			models.SalesOrderFieldDiscountTotal: decimal.Zero,
 			models.SalesOrderFieldTaxTotal:      decimal.Zero,
@@ -435,12 +390,11 @@ func writeDraftOrder(
 	return orderId, orderNumber, nil
 }
 
-// writeOrderLines inserts the requested lines, numbered from one.
 func writeOrderLines(
 	ctx corectx.Context, orderId, orgId string, lines []CreateOrderLine,
 ) error {
 	if len(lines) == 0 {
-		// An order with zero lines is a valid draft (BR 69). Confirming one is what is refused.
+		// An order with zero lines is a valid draft. Confirming one is what is refused.
 		return nil
 	}
 
@@ -463,8 +417,7 @@ func writeOrderLines(
 			models.SalesOrderLineFieldUomId:            line.UomId,
 			models.SalesOrderLineFieldOrderedQuantity:  line.Quantity,
 
-			// True until SALES-048's product port can say otherwise. See the column's own note on
-			// why the default leans this way.
+			// True until the product port can say otherwise. See the column's own note.
 			models.SalesOrderLineFieldRequiresFulfillment: true,
 
 			models.SalesOrderLineFieldFulfilledQuantity: decimal.Zero,
@@ -473,8 +426,7 @@ func writeOrderLines(
 			models.SalesOrderLineFieldBaseUnitPrice:      line.UnitPrice,
 			models.SalesOrderLineFieldEffectiveUnitPrice: line.UnitPrice,
 
-			// The money columns are placeholders until the reprice that immediately follows. They
-			// are written because the columns are NOT NULL, not because these are the answer.
+			// Placeholders until the reprice that follows, written because the columns are NOT NULL.
 			models.SalesOrderLineFieldGrossAmount:     decimal.Zero,
 			models.SalesOrderLineFieldDiscountAmount:  decimal.Zero,
 			models.SalesOrderLineFieldNetAmount:       decimal.Zero,

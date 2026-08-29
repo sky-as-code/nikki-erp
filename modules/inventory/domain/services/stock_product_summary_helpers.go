@@ -9,25 +9,19 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// Shared reads and small helpers behind the product stock summary.
-//
-// The location lookups here exist because a quant records where stock is but not what kind of
-// place that is: whether it counts as our own stock, whether it is in transit, and which warehouse
-// it belongs to are all facts on the location. They are read once per summary call and cached in a
+// Shared reads and small helpers behind the product stock summary. A quant records where stock is
+// but not what kind of place that is, so locations are read once per summary call and cached in a
 // map, never once per quant.
 
 // locationScanPageSize is how many locations are read at a time when classifying them.
 const locationScanPageSize = 500
 
-// maxLocationScanPages bounds the location scans. An org with more locations than this has an
-// unusual topology, and stopping is better than an unbounded read on a page render.
+// maxLocationScanPages bounds the location scans, so a page render cannot trigger an unbounded
+// read.
 const maxLocationScanPages = 20
 
-// internalLocationIds returns the locations that hold stock we own.
-//
-// Forecast direction depends on this: a move from a vendor into an internal location adds to what
-// we will have, while a move between two internal locations changes nothing. Without the
-// distinction, an internal transfer would be counted as both an arrival and a departure.
+// internalLocationIds returns the locations that hold stock we own. Forecast direction depends on
+// it: without the distinction an internal transfer would count as both an arrival and a departure.
 func (this *StockQuantDomainServiceImpl) internalLocationIds(
 	ctx corectx.Context,
 ) (map[string]bool, error) {
@@ -35,8 +29,8 @@ func (this *StockQuantDomainServiceImpl) internalLocationIds(
 }
 
 // transitLocationIds returns the locations representing stock that has left somewhere and not yet
-// arrived anywhere. In-transit quantity is derived from balances sitting at these (overlap CR
-// §15.2), never stored as a counter of its own.
+// arrived anywhere. In-transit quantity is derived from balances sitting at these, never stored as
+// a counter of its own.
 func (this *StockQuantDomainServiceImpl) transitLocationIds(
 	ctx corectx.Context,
 ) (map[string]bool, error) {
@@ -85,10 +79,9 @@ func (this *StockQuantDomainServiceImpl) locationIdsWithUsage(
 	return found, nil
 }
 
-// locationDetail is the display metadata a stock row needs about the place it sits in.
-//
-// Status is carried because a suspended location keeps its stock and keeps being shown; it is the
-// UI's job to badge it, and it can only do that if the status comes along (CR §9.4, TS-PROD-05).
+// locationDetail is the display metadata a stock row needs about the place it sits in. Status is
+// carried because a suspended location keeps its stock and keeps being shown, and the UI needs it
+// to badge the row.
 type locationDetail struct {
 	Id          string
 	Code        string
@@ -152,10 +145,9 @@ func (this *StockQuantDomainServiceImpl) loadLocationDetails(
 	return details, nil
 }
 
-// warehouseIdsOfLocations maps each location to the warehouse holding it, if any.
-//
-// An empty string means the location belongs to no warehouse, which is legitimate: vendor,
-// customer, transit and inventory-loss locations all sit outside one (overlap CR §8).
+// warehouseIdsOfLocations maps each location to the warehouse holding it. An empty string means no
+// warehouse, which is legitimate: vendor, customer, transit and inventory-loss locations sit
+// outside one.
 func (this *StockQuantDomainServiceImpl) warehouseIdsOfLocations(
 	ctx corectx.Context, locationIds []string,
 ) (map[string]string, error) {
@@ -225,18 +217,16 @@ func (this *StockQuantDomainServiceImpl) loadWarehouseDetails(
 	return details, nil
 }
 
-// forecastIgnoredMoveStatuses are the move states that contribute nothing to a forecast.
-//
-// Cancelled moves will never happen. Draft moves are not commitments — counting them would
-// forecast stock nobody has agreed to move (BR §4.2.13.3). Done moves are deliberately absent from
-// this list: they are read in the same pass to find the last movement date, and skipped for
-// forecast purposes at the point of use, since their effect is already inside on-hand.
+// forecastIgnoredMoveStatuses are the move states that contribute nothing to a forecast: cancelled
+// moves never happen, and drafts are not commitments. Done moves are deliberately absent — they are
+// read in the same pass for the last movement date and skipped for forecast at the point of use,
+// their effect already being inside on-hand.
 func forecastIgnoredMoveStatuses() []string {
 	return []string{models.StockMoveStatusDraft, models.StockMoveStatusCancelled}
 }
 
-// dedupeNonEmpty removes blanks and repeats while preserving order, so a caller passing the same
-// id twice does not have its stock counted twice.
+// dedupeNonEmpty removes blanks and repeats while preserving order, so a caller passing the same id
+// twice does not have its stock counted twice.
 func dedupeNonEmpty(values []string) []string {
 	seen := make(map[string]bool, len(values))
 	result := make([]string, 0, len(values))

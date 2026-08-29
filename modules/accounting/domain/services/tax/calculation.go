@@ -6,25 +6,18 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 )
 
-// workingScale is the precision intermediate results keep.
-//
-// Rounding happens once, where the policy says (BR-TAX-ESS-044). Everything before that keeps far
-// more precision than any currency needs, so that a division in a compound chain does not shed
-// fractions that the final rounding would otherwise have accounted for.
+// workingScale is the precision intermediate results keep. Rounding happens once, later, where the
+// policy says; until then keep far more precision than any currency needs so a division in a
+// compound chain does not shed fractions the final rounding would have accounted for.
 const workingScale = 24
 
-// hundred is the divisor turning a percentage into a fraction.
-//
-// Rates are stored as percentages — 8 means 8% — because that is how law and invoices state them
-// (BR-TAX-ESS-SUP-006). The division lives here rather than at the call sites so that no caller can
-// forget it and charge a customer 800%.
+// hundred converts a percentage to a fraction. Rates are stored as percentages (8 means 8%), as law
+// and invoices state them; this package is the single place that divides by 100, so no caller can
+// forget it and charge 800%.
 var hundred = decimal.NewFromInt(100)
 
-// ComponentSpec is one tax to compute against a line.
-//
-// It carries the resolved configuration rather than ids, because by the time the calculator runs,
-// determination has already chosen the definition version and rate version, and the calculator must
-// not be able to reach back and choose differently.
+// ComponentSpec is one tax to compute against a line. It carries configuration already resolved by
+// determination, which runs first; the calculator must not choose a different version.
 type ComponentSpec struct {
 	TaxId           string
 	TaxCode         string
@@ -33,14 +26,13 @@ type ComponentSpec struct {
 	Treatment       models.TaxTreatment
 	InclusionMode   models.PriceInclusionMode
 
-	// Rate is a percentage for percentage and division taxes; FixedAmount and Quantity are used by
-	// fixed ones. Which of them is populated follows from CalculationType, and configuration
-	// validation has already enforced that only the right ones are set.
+	// Rate is a percentage (not a fraction) for percentage and division taxes; fixed taxes use
+	// FixedAmount and Quantity instead. CalculationType decides which is populated.
 	Rate        decimal.Decimal
 	FixedAmount decimal.Decimal
 
-	// Quantity is already converted into the unit the fixed rate is quoted in. The conversion is
-	// Essential's (BR-TAX-ESS-SUP-014); by this point it has happened or the line was rejected.
+	// Quantity is already converted into the unit the fixed rate is quoted in; by this point the
+	// conversion has happened or the line was rejected.
 	Quantity decimal.Decimal
 
 	// AffectSubsequentBase adds this tax's amount into the base of later components.
@@ -56,9 +48,8 @@ type ComponentAmount struct {
 	Sequence  int32
 	Treatment models.TaxTreatment
 
-	// TaxableBase is the base this component was actually computed on, after any compound
-	// adjustment. It is reported rather than recomputed downstream because a compound chain makes
-	// it genuinely different per component, and an invoice has to be able to show its working.
+	// TaxableBase is the base this component was computed on, after any compound adjustment. It is
+	// reported rather than recomputed downstream: a compound chain makes it differ per component.
 	TaxableBase decimal.Decimal
 
 	// Amount is unrounded. Rounding is a separate, policy-driven step.
@@ -69,12 +60,12 @@ type ComponentAmount struct {
 type LineInput struct {
 	LineReference string
 
-	// CommercialBase is the line's pre-tax amount as Sales computed it, already net of discount.
-	// Tax takes it as given: discounts and promotions are Sales' business, and Tax deciding them
-	// too is how two modules end up disagreeing about a total (BR-TAX-ESS-026, TAX-INV-17).
+	// CommercialBase is the line's pre-tax amount from Sales, already net of discount. Tax takes it
+	// as given; recomputing discounts here would let the two modules disagree on a total.
 	CommercialBase decimal.Decimal
 
-	// PriceMode is the document's default, used by any component whose inclusion mode is "inherit".
+	// PriceMode is the document's default tax-inclusive/exclusive mode, used by any component whose
+	// inclusion mode is "inherit".
 	PriceMode models.PriceInclusionMode
 
 	Components []ComponentSpec
@@ -90,17 +81,14 @@ type LineAmounts struct {
 }
 
 // CalculateLine computes every component of one line, honouring compounding and price inclusion.
-//
-// Components run in the order given, which determination has already sorted by sequence. The order
-// is load-bearing whenever a component affects a later one's base, which is exactly what a compound
-// tax is (BR-TAX-ESS-019).
+// Components run in the given order, which determination has already sorted by sequence; that order
+// is load-bearing whenever one component feeds a later one's base. Results are unrounded.
 func CalculateLine(line LineInput) LineAmounts {
 	base := effectiveExcludedBase(line)
 
-	// compounded accumulates the amounts of components flagged to feed later bases. It is separate
-	// from the running total because a component only picks it up when its own
-	// BaseAffectedByPrevious says so — the two flags are independent, so a tax can feed others
-	// without being fed itself.
+	// compounded accumulates amounts of components flagged to feed later bases. It is separate from
+	// the running total because the two flags are independent: a tax can feed others without being
+	// fed itself.
 	compounded := decimal.Zero
 	totalTax := decimal.Zero
 	amounts := make([]ComponentAmount, 0, len(line.Components))
@@ -137,12 +125,9 @@ func CalculateLine(line LineInput) LineAmounts {
 	}
 }
 
-// effectiveExcludedBase turns the line's commercial base into a tax-excluded one.
-//
-// When the price the customer sees already contains tax, the pre-tax base has to be extracted
-// before anything can be computed on it — charging tax on a tax-inclusive price would tax the tax
-// (BR-TAX-ESS-016). Extraction uses the combined rate of every component that participates in the
-// inclusive price, because with two inclusive taxes the gross contains both.
+// effectiveExcludedBase turns the line's commercial base into a tax-excluded one. When the price
+// already contains tax, the pre-tax base must be extracted first, or the tax is taxed. Extraction
+// uses the combined rate of every inclusive component, since the gross contains all of them.
 func effectiveExcludedBase(line LineInput) decimal.Decimal {
 	inclusiveRate := decimal.Zero
 	for _, spec := range line.Components {
@@ -174,11 +159,9 @@ func effectiveExcludedBase(line LineInput) decimal.Decimal {
 	return base.DivRound(divisor, workingScale)
 }
 
-// isIncluded resolves a component's price inclusion against the document default.
-//
-// A tax that states included or excluded wins; one saying inherit defers to the request. That is
-// what lets a single VAT definition serve tax-inclusive retail and tax-exclusive wholesale without
-// duplicating it (BR-TAX-ESS-017).
+// isIncluded resolves a component's price inclusion against the document default: an explicit
+// included or excluded wins, inherit defers to the document mode. This lets one VAT definition serve
+// both tax-inclusive retail and tax-exclusive wholesale.
 func isIncluded(spec ComponentSpec, documentMode models.PriceInclusionMode) bool {
 	switch spec.InclusionMode {
 	case models.PriceInclusionIncluded:
@@ -198,11 +181,10 @@ func computeComponent(spec ComponentSpec, base decimal.Decimal) decimal.Decimal 
 		return base.Mul(spec.Rate).DivRound(hundred, workingScale)
 
 	case models.CalculationDivision:
-		// The rate expresses tax as a share of the tax-INCLUSIVE total rather than of the base, so
-		// the total is recovered first and the tax is the difference (BR-TAX-ESS-SUP-013):
+		// Here the rate is a share of the tax-INCLUSIVE total, not of the base, so recover the total
+		// first and take the difference:
 		//   total = base / (1 - rate/100);  tax = total - base
-		// A rate of 100% would divide by zero — a tax that is the entire price is not expressible
-		// this way, and returning zero keeps the arithmetic total rather than panicking mid-order.
+		// A rate of 100% would divide by zero, so return zero rather than panic mid-order.
 		divisor := decimal.NewFromInt(1).Sub(spec.Rate.DivRound(hundred, workingScale))
 		if !divisor.IsPositive() {
 			return decimal.Zero
@@ -214,13 +196,11 @@ func computeComponent(spec ComponentSpec, base decimal.Decimal) decimal.Decimal 
 		return spec.Quantity.Mul(spec.FixedAmount)
 
 	case models.CalculationGroup:
-		// A group has no arithmetic of its own; its components are expanded into the line before
-		// this point, so it contributes nothing directly.
+		// A group's components are expanded into the line earlier, so it contributes nothing here.
 		return decimal.Zero
 
 	case models.CalculationNone:
-		// Legal semantics only — an exemption still needs a code on the invoice, but produces no
-		// amount (BR-TAX-ESS-SUP-015).
+		// Legal semantics only: an exemption needs a code on the invoice but produces no amount.
 		return decimal.Zero
 	}
 	return decimal.Zero

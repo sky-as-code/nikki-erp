@@ -9,21 +9,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// StockProductConfiguration is the stock-owned settings of a product line.
-//
-// Today it holds one thing: which unit the product's stock is counted in. It exists as its own
-// resource rather than as a column on the product template because the answer belongs to Stock —
-// it decides what a balance means — while the template is Product master data. Putting it on the
-// template would make Product the owner of a stock concept, which the requirement forbids
-// (CR §11.3, §11.4, PROD-INT-INV-009).
-//
-// One row per template. Variants inherit it and cannot override it: a variant with its own
-// inventory unit would make a template's stock unsummable, and the requirement defers that to a
-// change request of its own (CR §11.5, PROD-INT-INV-011, PROD-INT-INV-012).
-//
-// There is no is_archived. The configuration is not a thing a user retires on its own — it lives
-// and dies with the template it configures, and an archived template's configuration must stay
-// readable so historical balances keep resolving the unit they were recorded in.
+// StockProductConfiguration holds the stock-owned settings of a product line, currently the unit
+// its stock is counted in. It is a separate resource rather than a column on the product template
+// so Product does not own a stock concept. One row per template; variants inherit it and cannot
+// override it, because a variant with its own inventory unit makes a template's stock unsummable.
+// There is no is_archived: it lives and dies with its template, and an archived template's
+// configuration must stay readable so historical balances still resolve their recorded unit.
 const (
 	StockProductConfigSchemaName = "inventory_stock_product_config"
 

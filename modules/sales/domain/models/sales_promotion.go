@@ -11,9 +11,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// The promotion schemas. One engine serves automatic promotions, conditional bundle pricing (BR §20)
-// and vouchers (BR §25) — BR §21–22 forbid three separate engines, and the difference between them is
-// data rather than code: an automatic program and a voucher program differ only in activation_type.
+// The promotion schemas. One engine serves automatic promotions, conditional bundle pricing and
+// vouchers: the difference between them is data, not code — an automatic program and a voucher
+// program differ only in activation_type.
 
 const (
 	SalesPromotionProgramSchemaName = "sales_promotion_program"
@@ -95,8 +95,8 @@ const (
 	PromotionActivationVoucherCode = PromotionActivationType("voucher_code")
 )
 
-// PromotionStackPolicy is how a program combines with others when no explicit compatibility row
-// decides (D-08). It is the FALLBACK in the D-09 resolution order, never the first word.
+// PromotionStackPolicy is how a program combines with others. It is the fallback used only when no
+// explicit compatibility row decides.
 type PromotionStackPolicy string
 
 const (
@@ -107,7 +107,7 @@ const (
 	PromotionStackExclusiveWithinGroup = PromotionStackPolicy("exclusive_within_group")
 )
 
-// PromotionCompatibility is an explicit pairwise directive (D-09).
+// PromotionCompatibility is an explicit pairwise directive, which outranks the stack policy.
 type PromotionCompatibility string
 
 const (
@@ -116,32 +116,30 @@ const (
 	PromotionCompatibilityDenied = PromotionCompatibility("denied")
 )
 
-// PromotionRewardType is what the customer gets (BR §24).
+// PromotionRewardType is what the customer gets.
 type PromotionRewardType string
 
 const (
 	PromotionRewardPercentageDiscount  = PromotionRewardType("percentage_discount")
 	PromotionRewardFixedAmountDiscount = PromotionRewardType("fixed_amount_discount")
 	PromotionRewardFixedProductPrice   = PromotionRewardType("fixed_product_price")
-	// PromotionRewardFreeQuantity becomes a separate order line at zero price (D-11), because
-	// Inventory must physically fulfil the free item.
+	// PromotionRewardFreeQuantity becomes a separate order line at zero price, because Inventory
+	// must physically fulfil the free item.
 	PromotionRewardFreeQuantity = PromotionRewardType("free_quantity")
 )
 
-// PromotionReturnBehavior is what happens to a discount when part of the order comes back (BR §31).
+// PromotionReturnBehavior is what happens to a discount when part of the order comes back.
 type PromotionReturnBehavior string
 
 const (
 	PromotionReturnPreserveOriginal = PromotionReturnBehavior("preserve_original_discount")
 	// PromotionReturnRevalidate re-runs the engine over the remaining basket and reclaims the
-	// difference as a clawback adjustment (D-12).
+	// difference as a clawback adjustment.
 	PromotionReturnRevalidate = PromotionReturnBehavior("revalidate_and_clawback")
 )
 
-// PromotionConditionType is what a condition tests (BR §23).
-//
-// Customer and customer group are deliberately absent: BR §23 marks them future, and an enum value
-// nothing evaluates reads as a supported feature that silently never matches.
+// PromotionConditionType is what a condition tests. Customer and customer group are deliberately
+// absent: an enum value nothing evaluates reads as a supported feature that silently never matches.
 type PromotionConditionType string
 
 const (
@@ -158,7 +156,7 @@ const (
 	PromotionConditionSalesPoint      = PromotionConditionType("sales_point")
 )
 
-// PromotionOperator is how a condition compares (D-07).
+// PromotionOperator is how a condition compares.
 type PromotionOperator string
 
 const (

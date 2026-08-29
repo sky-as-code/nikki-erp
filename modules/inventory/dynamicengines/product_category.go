@@ -31,9 +31,8 @@ func productCategoryEngineSpec() engineSpec {
 	}
 }
 
-// defineProductCategoryActions attaches the category-tree invariant to create and update. The
-// CRUD processing itself is entirely the engine's; only the rule the schema cannot express
-// belongs here.
+// defineProductCategoryActions attaches the category-tree invariant to create and update. The CRUD
+// processing is the engine's; only the rule the schema cannot express belongs here.
 func defineProductCategoryActions(engine drif.DynamicResourceEngine) error {
 	err := engine.ModifyAction(drif.DynamicActionDelta{
 		ActionName:    drif.ActionCreate,
@@ -68,7 +67,7 @@ func validateCategoryCreate(engine drif.DynamicResourceEngine) drif.ActionValida
 }
 
 // validateCategoryUpdate additionally rejects re-parenting a category under one of its own
-// descendants, which is the way a cycle is normally introduced. See BR §6.4.3.
+// descendants, which is how a cycle is normally introduced.
 func validateCategoryUpdate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
 		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,

@@ -11,12 +11,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 )
 
-// The variant's stock figures (INV-PI-012, CR §8.1/§8.2). Product owns no quantity: these are two
-// correlated SUM subqueries over the "quants" inverse edge plus a derived difference, so a product
-// list can show stock without Product storing any (CR §4.4).
-//
-// They are pinned against the REAL schema builders — a schema edit that changed the query shape,
-// the correlation or the opt-in projection breaks these first.
+// Product owns no quantity: the variant's stock figures are two correlated SUM subqueries over the
+// "quants" inverse edge plus a derived difference. Pinned against the real schema builders, so a
+// schema edit changing the query shape, correlation or opt-in projection breaks these first.
 
 func TestVariantStock_ResolveAsAggregatePlans(t *testing.T) {
 	finalizedVariantSchema(t)
@@ -33,13 +30,13 @@ func TestVariantStock_ResolveAsAggregatePlans(t *testing.T) {
 		require.NotNil(t, fieldPlan.SqlSource, name)
 		assert.Equal(t, "quants", fieldPlan.SqlSource.Edge, name)
 		assert.Equal(t, StockQuantSchemaName, fieldPlan.SqlSource.SourceSchemaName, name)
-		// one:many, correlated by the quant's FK — not a junction table.
+		// one:many, correlated by the quant's FK, not a junction table.
 		assert.False(t, fieldPlan.SqlSource.Many, name)
 	}
 }
 
-// available_quantity is an expression over the two aggregates rather than a third subquery, so the
-// identity available = on_hand - reserved holds by construction and cannot drift from its operands.
+// available_quantity is an expression over the two aggregates, not a third subquery, so
+// available = on_hand - reserved holds by construction and cannot drift from its operands.
 func TestVariantStock_AvailableIsDerivedFromTheAggregates(t *testing.T) {
 	finalizedVariantSchema(t)
 
@@ -74,13 +71,13 @@ func TestVariantStock_EmittedSubqueryShape(t *testing.T) {
 	assert.Contains(t, sql, `"inventory_stock_quants"`)
 	assert.Contains(t, sql, `"product_variant_id" = t0."id"`,
 		"the subquery must correlate on the quant's variant FK")
-	// SUM over zero rows is NULL; the declared default is what makes a variant with no stock
-	// answer 0 rather than nothing (AC-PROD-INT-004).
+	// SUM over zero rows is NULL; the declared default makes a variant with no stock answer 0
+	// rather than nothing.
 	assert.Contains(t, sql, "COALESCE")
 	assert.NotContains(t, sql, "GROUP BY")
 
-	// The quant is not archivable — a balance is zeroed or deleted, never archived — so unlike
-	// variant_count there is no is_archived scope to apply, and every quant row counts.
+	// The quant is not archivable (a balance is zeroed or deleted), so unlike variant_count there is
+	// no is_archived scope and every quant row counts.
 	assert.NotContains(t, sql, "is_archived")
 }
 
@@ -97,8 +94,8 @@ func TestVariantStock_ProjectsOnlyWhenRequested(t *testing.T) {
 	require.Nil(t, cErrs)
 	assert.Contains(t, *withFields, `AS "on_hand_quantity"`)
 
-	// A product list that does not ask for stock must not pay for the subqueries. This is what
-	// makes the columns optional in the CR's sense (§8.1) rather than a cost on every read.
+	// A product list that does not ask for stock must not pay for the subqueries; that is what makes
+	// these columns optional rather than a cost on every read.
 	wildcard, cErrs, err := builder.SqlSelectGraph(variant, registry, nil, orm.SqlSelectGraphOpts{})
 	require.NoError(t, err)
 	require.Nil(t, cErrs)
@@ -106,10 +103,9 @@ func TestVariantStock_ProjectsOnlyWhenRequested(t *testing.T) {
 		"the default projection must not pay for the stock subqueries")
 }
 
-// available_quantity is an expression, so it is filled in Go after the read rather than projected
-// as SQL — it legitimately does not appear in the SELECT. What must happen is that asking for it
-// alone still drags both aggregate operands into the projection, or it would evaluate against
-// absent operands and quietly read as 0 - 0 for a variant that does hold stock.
+// available_quantity is filled in Go after the read, so it legitimately never appears in the
+// SELECT. Asking for it alone must still drag both aggregate operands into the projection, or it
+// evaluates against absent operands and quietly reads 0 - 0 for a variant that holds stock.
 func TestVariantStock_AvailableAlonePullsInItsOperands(t *testing.T) {
 	finalizedVariantSchema(t)
 
@@ -125,10 +121,9 @@ func TestVariantStock_AvailableAlonePullsInItsOperands(t *testing.T) {
 		"the reserved subquery must be added to the projection")
 }
 
-// The point of INV-PI-012: the stock figures reach the product list as ordinary selectable
-// columns, offered by the same picker that offers the template_* fields. They are deliberately NOT
-// in the engine's DefaultFields — a user opts each one in, and only then does the request pay for
-// the subquery (CR §8.1, "optional" columns).
+// The stock figures reach the product list as ordinary selectable columns from the same picker as
+// the template_* fields. They are deliberately not in DefaultFields: a user opts each one in, and
+// only then does the request pay for the subquery.
 func TestVariantStock_AreOfferedAsSelectableColumns(t *testing.T) {
 	fields := simplizedFields(t, finalizedVariantSchema(t))
 	selectable := selectableFieldNames(fields)
@@ -140,13 +135,13 @@ func TestVariantStock_AreOfferedAsSelectableColumns(t *testing.T) {
 	}
 }
 
-// The fields are readable and writable-never. A client that echoes a stock figure back in a PUT is
-// told so, rather than having it silently dropped — and no column exists for it to reach anyway.
+// The fields are readable and never writable. A client echoing a stock figure back in a PUT is
+// told so rather than having it silently dropped; no column exists for it to reach anyway.
 func TestVariantStock_AreVirtualAndNotWritable(t *testing.T) {
 	schema := finalizedVariantSchema(t)
 
-	// Columns() is the PHYSICAL list — note that Column(name) singular is just an alias for
-	// Field(name) and answers for virtual fields too, so it cannot decide this.
+	// Columns() is the physical list. Column(name) singular is an alias for Field(name) and answers
+	// for virtual fields too, so it cannot decide this.
 	physical := map[string]bool{}
 	for _, col := range schema.Columns() {
 		physical[col.Name()] = true
@@ -166,8 +161,8 @@ func TestVariantStock_AreVirtualAndNotWritable(t *testing.T) {
 		assert.False(t, field.IsEdgeModel(), "%s: a client may render it as a column", name)
 
 		assert.False(t, physical[name], "%s must not occupy a database column", name)
-		// Virtual but still selectable: this is what lets the frontend offer it as a list column
-		// without any viewkit change.
+		// Virtual but still selectable, which lets the frontend offer it as a list column with no
+		// viewkit change.
 		assert.True(t, readable[name], "%s must stay selectable by a client", name)
 	}
 }

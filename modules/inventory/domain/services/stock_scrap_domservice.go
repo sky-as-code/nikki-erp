@@ -16,31 +16,24 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// NewStockScrapDomainService derives the scrap service from the engine's default one.
-//
-// base is the Stock Scrap engine's own resource service, which this type embeds: built-in CRUD
-// keeps running through the default implementation, and the document rules are layered on top.
+// NewStockScrapDomainService derives the scrap service from the engine's default one, which it
+// embeds so built-in CRUD keeps running unchanged.
 func NewStockScrapDomainService(base drif.DynamicResourceService) *StockScrapDomainServiceImpl {
 	return &StockScrapDomainServiceImpl{DynamicResourceService: base}
 }
 
-// StockScrapDomainServiceImpl adds the scrap document's own rules to the resource.
-//
-// A scrap is a document, unlike a quant: while it is draft it changes nothing, and completing it
-// generates the movement that removes the goods from usable stock. That asymmetry is why create,
-// update and delete stay open here and are merely constrained, where the quant refuses them
-// outright.
+// StockScrapDomainServiceImpl adds the scrap document's own rules. A scrap is a document, not a
+// balance: while draft it changes nothing, and completing it generates the movement. That is why
+// create, update and delete stay open here, merely constrained, where the quant refuses them.
 type StockScrapDomainServiceImpl struct {
 	drif.DynamicResourceService
 }
 
 var _ drif.DynamicResourceService = (*StockScrapDomainServiceImpl)(nil)
 
-// Create stamps the scrap number and forces the status to draft (BR §4.2.9.3).
-//
-// A client-chosen number could collide with another document's or impersonate its reference, and a
-// scrap created `done` would be a completed movement with nothing behind it — the same hole the
-// transfer's create path closes.
+// Create stamps the scrap number and forces the status to draft. A client-chosen number could
+// collide with or impersonate another document's, and a scrap created `done` would be a completed
+// movement with nothing behind it.
 func (this *StockScrapDomainServiceImpl) Create(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
@@ -59,8 +52,8 @@ func (this *StockScrapDomainServiceImpl) Create(
 	}
 	prepared[models.StockScrapFieldScrapNumber] = scrapNumber
 	prepared[models.StockScrapFieldStatus] = models.StockScrapStatusDraft
-	// Set by Do Scrap and by nothing else, so that a client cannot present an unexecuted document
-	// as an executed one.
+	// Set by Do Scrap and nothing else, so a client cannot present an unexecuted document as
+	// executed.
 	delete(prepared, models.StockScrapFieldMoveId)
 	delete(prepared, models.StockScrapFieldCompletedAt)
 	applyEmptyStringDefault(prepared, models.StockScrapFieldLotRef)
@@ -70,10 +63,8 @@ func (this *StockScrapDomainServiceImpl) Create(
 	return this.DynamicResourceService.Create(ctx, prepared)
 }
 
-// Update refuses to change a scrap that is already done (BR §4.2.9.4).
-//
-// Editing a completed scrap would rewrite the description of a movement that has already happened,
-// leaving the document and the stock disagreeing with no way to tell which is right.
+// Update refuses to change a scrap that is already done: editing it would rewrite the description
+// of a movement that already happened, leaving document and stock disagreeing.
 func (this *StockScrapDomainServiceImpl) Update(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -94,8 +85,8 @@ func (this *StockScrapDomainServiceImpl) Update(
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
 
-	// The execution fields belong to Do Scrap, and an update that could set them would let a client
-	// mark a document done without any stock moving.
+	// The execution fields belong to Do Scrap; an update that could set them would let a client mark
+	// a document done without any stock moving.
 	prepared := dmodel.DynamicFields{}
 	for key, value := range params {
 		prepared[key] = value
@@ -108,11 +99,9 @@ func (this *StockScrapDomainServiceImpl) Update(
 	return this.DynamicResourceService.Update(ctx, prepared)
 }
 
-// Delete refuses to remove a scrap that is already done (BR §4.2.9.6, AC-STOCK-020).
-//
-// The movement it generated is real and permanent. Deleting the document would leave that movement
-// unexplained, which is worse than an unwanted record: a scrap made in error is corrected by a
-// reverse movement, not by making its history disappear.
+// Delete refuses to remove a scrap that is already done: the movement it generated is permanent,
+// and deleting the document would leave it unexplained. A scrap made in error is corrected by a
+// reverse movement.
 func (this *StockScrapDomainServiceImpl) Delete(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -164,10 +153,8 @@ func (this *StockScrapDomainServiceImpl) loadScrap(
 	return models.NewStockScrapFrom(found.Data), vErrs, nil
 }
 
-// assertScrapQuantityPositive enforces the rule the schema's storage floor cannot express.
-//
-// The column allows zero because a decimal minimum is about storage, not intent; a scrap of
-// nothing is a document that claims a movement happened when none did.
+// assertScrapQuantityPositive rejects a zero quantity, which the column allows: a scrap of nothing
+// claims a movement happened when none did.
 func assertScrapQuantityPositive(params dmodel.DynamicFields) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	raw, present := params[models.StockScrapFieldQuantity]
@@ -212,11 +199,9 @@ func decimalFromAny(value any) (decimal.Decimal, error) {
 	}
 }
 
-// applyEmptyStringDefault keeps the dimension fields as ” rather than NULL.
-//
-// The quant and the move line use the same convention, and they must agree: a scrap whose lot_ref
-// is NULL would not line up with the balance it draws from. Revisit all three together if real
-// Lot/Package master data lands ([INV-STK-P08]).
+// applyEmptyStringDefault keeps the dimension fields as "" rather than NULL. The quant and the move
+// line use the same convention and must agree: a scrap whose lot_ref is NULL would not line up with
+// the balance it draws from. Revisit all three together if real Lot/Package master data lands.
 func applyEmptyStringDefault(params dmodel.DynamicFields, field string) {
 	if value, ok := params[field]; !ok || value == nil {
 		params[field] = ""
@@ -229,11 +214,9 @@ func scrapViolation(key, message string) *ft.ClientErrors {
 	return vErrs
 }
 
-// generateScrapNumber builds the document number a scrap is known by.
-//
-// Same reasoning as generateTransferNumber: a ULID rather than a counter, because a counter needs
-// its own sequence table and a lock that would serialise every create in an org. Uniqueness is
-// enforced by the composite unique on (scrap_number, org_id).
+// generateScrapNumber builds the document number from a ULID rather than a counter, which would
+// need its own sequence table and serialise every create in an org. Uniqueness is enforced by the
+// composite unique on (scrap_number, org_id).
 func generateScrapNumber() (string, error) {
 	id, err := model.NewId()
 	if err != nil {

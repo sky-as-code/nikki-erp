@@ -56,8 +56,7 @@ BEGIN
 		('01M0A1P4QGGABP6SVFCTD6MF8K', 'Product Category', 'inventory_product_category', 'Hierarchical classification of product templates', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QMJTAEFCJY5WRTNHWZ', 'Product Attribute', 'inventory_product_attribute', 'Attributes whose values form product variants', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QAH9DQW7VXG9K87HWP', 'Product Attribute Value', 'inventory_product_attribute_value', 'Allowed values of a product attribute', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QDXYWAJ8D4ZAD50VW7', 'Brand', 'inventory_brand', 'Product brands', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QQXHTYNB8NHSJR2HNM', 'Product Price', 'inventory_product_price', 'Price rules for a product template or variant', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0A1P4QDXYWAJ8D4ZAD50VW7', 'Brand', 'inventory_brand', 'Product brands', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -115,15 +114,8 @@ BEGIN
 		('01M0A1P4QXRE54C2AJPY554FD9', 'Update', 'update', NULL, '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QCM2KQ3VNHZVHGV45P', 'Delete', 'delete', NULL, '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QRS1VZA44V25595WBX', 'Read', 'read', NULL, '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q67457GP4WXDW09M6F', 'Set archived status', 'set_archived', 'Archive a brand', '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q67457GP4WXDW09M6F', 'Set archived status', 'set_archived', 'Archive a brand', '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 
-		-- Product Price. Pricing is a distinct capability from editing a product: whoever may
-		-- rename a template is not automatically allowed to change what it sells for.
-		('01M0A1P4QRG8CXBS5852G6V44T', 'Create', 'create', NULL, '01M0A1P4QQXHTYNB8NHSJR2HNM', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QR867VDMXAWZQZQHS4', 'Update', 'update', NULL, '01M0A1P4QQXHTYNB8NHSJR2HNM', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QGZ83S9M07NMPJGHCG', 'Delete', 'delete', NULL, '01M0A1P4QQXHTYNB8NHSJR2HNM', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QVP42ATZ1JRF74BJF1', 'Read', 'read', NULL, '01M0A1P4QQXHTYNB8NHSJR2HNM', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QE5Z9PSY7TFX77RGVJ', 'Set archived status', 'set_archived', 'Archive a price rule so it stops applying to new transactions', '01M0A1P4QQXHTYNB8NHSJR2HNM', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

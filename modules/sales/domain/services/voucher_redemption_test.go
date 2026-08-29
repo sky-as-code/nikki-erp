@@ -9,9 +9,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The transition rules and the code-usability gates. Both are pure, so they are tested exhaustively
-// here; the concurrency requirement of BR 30 needs a real database and lives in
-// voucher_concurrency_test.go.
+// The transition rules and the code-usability gates, both pure and so tested exhaustively here;
+// the concurrency requirement needs a real database and lives in voucher_concurrency_test.go.
 
 func TestReservationSettlesTwoWaysOnly(t *testing.T) {
 	reserved := string(models.VoucherRedemptionStatusReserved)
@@ -72,9 +71,9 @@ func TestUnknownRedemptionStatusRefusesEveryMove(t *testing.T) {
 	}
 }
 
-// wasHolding is what decides whether settling gives a use back, so its answer for each status is
-// worth pinning: a reservation holds one even though no sale has happened, which is the entire
-// reason the reserve step exists.
+// wasHolding decides whether settling gives a use back, so its answer for each status is worth
+// pinning: a reservation holds one even though no sale has happened, which is the entire reason the
+// reserve step exists.
 func TestOnlyReservedAndRedeemedHoldAUse(t *testing.T) {
 	cases := map[string]bool{
 		string(models.VoucherRedemptionStatusReserved): true,
@@ -107,7 +106,7 @@ func TestAnActiveUnlimitedCodeIsUsable(t *testing.T) {
 }
 
 // A null usage_limit means unlimited. Reading a nil limit as zero would exhaust every unlimited
-// voucher at its first use — the single most likely way to break every campaign at once.
+// voucher at its first use.
 func TestNilUsageLimitMeansUnlimited(t *testing.T) {
 	fields := activeCode()
 	fields[models.SalesVoucherCodeFieldUsageCount] = int32(9999)
@@ -130,8 +129,8 @@ func TestUsesRunOutAtTheLimit(t *testing.T) {
 	}
 }
 
-// Each refusal names its own reason, because BR 71 requires the till to be told WHICH thing was
-// wrong — an expired code and an exhausted one call for different responses.
+// Each refusal names its own reason, because the till must be told WHICH thing was wrong: an
+// expired code and an exhausted one call for different responses.
 func TestEachRefusalNamesItsOwnReason(t *testing.T) {
 	now := time.Now()
 	past := model.ModelDateTime(now.Add(-time.Hour))
@@ -178,8 +177,8 @@ func TestEachRefusalNamesItsOwnReason(t *testing.T) {
 			if vErrs == nil {
 				t.Fatalf("%s must be refused", testCase.name)
 			}
-			// Assert on the Key rather than the message: the Key is what a till branches on and
-			// what a translation layer renders, so it is the part of the contract that matters.
+			// Assert on the Key rather than the message: the Key is what a till branches on and what a
+			// translation layer renders.
 			if !hasReasonKey(vErrs, testCase.reason) {
 				t.Errorf("refusal must carry key %q, got %v", testCase.reason, vErrs.ToError())
 			}

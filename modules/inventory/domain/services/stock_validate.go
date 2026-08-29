@@ -15,27 +15,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// Validate: the one operation in the whole module that changes an on-hand quantity.
-//
-// Everything else — confirm, reserve, unreserve, cancel — moves documents and claims around. This
-// records that goods physically moved, which is why it is the only place a quant's on-hand figure
-// is written, and why the whole thing is one transaction: a source decremented without its
-// destination incremented is stock that has ceased to exist (AC-STOCK-006, AC-STOCK-035).
+// Validate is the only operation that changes an on-hand quantity, and it runs as one transaction:
+// a source decremented without its destination incremented is stock that has ceased to exist.
 
 // Validate executes a transfer: it consumes the reservations, moves the stock and closes the
-// transfer.
-//
-// The sequence, all inside one transaction (BR §4.2.3.10, §8.4):
-//
-//  1. Re-read the transfer and refuse it if it is already closed.
-//  2. If it carries the caller's idempotency key and is done, return the earlier result untouched.
-//  3. For each open move: lock its source balances, re-validate the quantities inside the lock,
-//     decrement the source, increment the destination, stamp the lines and close the move.
-//  4. Handle whatever was not processed, per the snapshot backorder policy.
-//  5. Close the transfer and stamp completed_at.
-//
-// Every quantity is re-read inside the lock. A figure fetched before it is stale by definition,
-// however few milliseconds ago it was read.
+// transfer, all in one transaction. Every quantity is re-read inside the source lock, because a
+// figure fetched before the lock is stale by definition.
 func (this *StockTransferDomainServiceImpl) Validate(
 	ctx corectx.Context, transferId string, idempotencyKey string, createBackorder *bool,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -86,15 +71,9 @@ func (this *StockTransferDomainServiceImpl) Validate(
 	return result, nil
 }
 
-// replayedValidate detects a retry of a validate that already succeeded.
-//
-// This is BR §8.7, and it guards the one failure that cannot be repaired afterwards: a client whose
-// request timed out retries, and the goods ship twice. An edit can fix a wrong number in a record;
-// nothing can un-ship a second delivery.
-//
-// It matches only a transfer that is already `done`. A key on a transfer still in flight means the
-// earlier attempt did not complete, so the retry should proceed rather than report a success that
-// never happened.
+// replayedValidate detects a retry of a validate that already succeeded, so a timed-out client
+// retrying does not ship the goods twice. It matches only a transfer already `done`: the same key
+// on an in-flight transfer means the earlier attempt did not complete, so the retry must proceed.
 func replayedValidate(
 	transfer models.StockTransfer, idempotencyKey string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -144,12 +123,9 @@ func executeMoves(ctx corectx.Context, operation *transferOperationContext) ([]m
 	return outcomes, nil
 }
 
-// executeOneMove moves the stock one move's lines have reserved.
-//
-// A move with no lines processes nothing. That is not an error: it is a move whose stock was never
-// available, and the backorder policy decides what happens to it.
-//
-// The exception is an incoming move, which is handled by ensureIncomingLine below.
+// executeOneMove moves the stock one move's lines have reserved. A move with no lines processes
+// nothing, which is not an error: its stock was never available and the backorder policy decides
+// what happens to it. Incoming moves are the exception, handled by ensureIncomingLine.
 func executeOneMove(
 	ctx corectx.Context, operation *transferOperationContext, move models.StockMove,
 ) (*moveOutcome, error) {
@@ -166,8 +142,8 @@ func executeOneMove(
 		return nil, err
 	}
 
-	// The source balances are locked before any of them is read or written, so that the whole move
-	// sees one consistent picture and no other request can interleave with it.
+	// Lock the source balances before any is read or written, so the whole move sees one consistent
+	// picture and no other request can interleave.
 	if _, err := LockQuantsForUpdate(
 		ctx, operation.QuantEngine.ResourceRepository().GetBaseRepo(), QuantLockKey{
 			OrgId:            derefString(move.GetOrgId()),
@@ -192,8 +168,7 @@ func executeOneMove(
 
 	next := models.StockMoveStatusDone
 	if processed.IsZero() {
-		// Nothing moved, so there is no movement to record. Cancelling rather than marking it done
-		// keeps "done" meaning "this stock moved" (STOCK-INV-020).
+		// Nothing moved, so cancel rather than mark done: "done" must mean "this stock moved".
 		next = models.StockMoveStatusCancelled
 	}
 	if err := updateMoveStatus(ctx, operation.MoveEngine, move, next); err != nil {
@@ -203,18 +178,12 @@ func executeOneMove(
 	return &moveOutcome{MoveId: moveId, Demand: demand, Processed: processed}, nil
 }
 
-// ensureIncomingLine gives an incoming move the line that reservation could never have made.
-//
-// Reservation claims stock that is already on hand somewhere. An incoming move draws from a
-// supplier — a virtual location that holds no balance and never will — so there is nothing to
-// reserve and no line gets created. Without this an incoming transfer would validate to zero and
-// no receipt could ever bring stock in, which would leave the whole module unable to acquire
-// anything (BR §4.2.1.2, and §4.2.3.10's "actual quantity" precondition).
-//
-// The line it writes carries the full outstanding demand, because an incoming quantity is what the
-// document says arrived rather than what a balance could spare. shipOneLine then applies it to both
-// ends as usual: the supplier location goes negative, which is exactly how a virtual counterparty
-// records what it has supplied.
+// ensureIncomingLine gives an incoming move the line reservation could never make: an incoming move
+// draws from a supplier, a virtual location that holds no balance, so nothing is reserved and
+// without this the transfer would validate to zero. The line carries the full outstanding demand,
+// because an incoming quantity is what the document says arrived rather than what a balance can
+// spare; the supplier location then goes negative, which is how a virtual counterparty records what
+// it supplied.
 func ensureIncomingLine(
 	ctx corectx.Context, operation *transferOperationContext, move models.StockMove,
 ) error {
@@ -232,8 +201,8 @@ func ensureIncomingLine(
 		return nil
 	}
 
-	// The source balance has to exist before shipOneLine can decrement it, and for a supplier
-	// location it will not: nothing has ever been counted there.
+	// The source balance must exist before shipOneLine can decrement it, and a supplier location has
+	// never been counted.
 	if _, err := ensureQuantForDimension(ctx, operation, models.QuantDimension{
 		OrgId:            derefString(move.GetOrgId()),
 		ProductVariantId: derefString(move.GetProductVariantId()),
@@ -260,11 +229,9 @@ func ensureIncomingLine(
 	return errors.Wrap(err, "ensureIncomingLine")
 }
 
-// shipOneLine moves one line's quantity from the source balance to the destination balance.
-//
-// Both sides happen here, adjacent and in the same transaction, because they are one fact about
-// the world: the stock left one place and arrived at another. Splitting them across functions or
-// transactions is what allows a partial commit in which stock evaporates.
+// shipOneLine moves one line's quantity from the source balance to the destination balance. Both
+// sides must stay in the same transaction; splitting them allows a partial commit in which stock
+// evaporates.
 func shipOneLine(
 	ctx corectx.Context,
 	operation *transferOperationContext,
@@ -288,8 +255,8 @@ func shipOneLine(
 		return err
 	}
 
-	// Destination: the goods arrive, unreserved. It usually does not exist yet, so it is created
-	// rather than updated — assuming an update here would silently move stock into nowhere.
+	// Destination: the goods arrive unreserved. The balance usually does not exist yet, so it is
+	// created; assuming an update here would silently move stock into nowhere.
 	destinationId, err := ensureDestinationQuant(ctx, operation, move, line, orgId)
 	if err != nil {
 		return err
@@ -309,7 +276,7 @@ func ensureDestinationQuant(
 	line models.StockMoveLine,
 	orgId string,
 ) (model.Id, error) {
-	// The goods keep their lot and owner across the move; the package may change when the operation
+	// Goods keep their lot and owner across the move; the package may change when the operation
 	// repacks them, which is what result_package_ref records.
 	dimension := models.QuantDimension{
 		OrgId:            orgId,
@@ -324,11 +291,8 @@ func ensureDestinationQuant(
 }
 
 // ensureQuantForDimension returns the balance at an exact dimension, creating an empty one if none
-// exists yet.
-//
-// Creating rather than assuming an update is what makes a first receipt into a fresh location work
-// at all: the destination balance usually does not exist, and neither does a supplier's. The row
-// starts at zero and the caller's delta moves it, so the arithmetic is the same either way.
+// exists. The new row starts at zero and the caller's delta moves it, so the arithmetic is the same
+// either way.
 func ensureQuantForDimension(
 	ctx corectx.Context, operation *transferOperationContext, dimension models.QuantDimension,
 ) (model.Id, error) {
@@ -366,11 +330,9 @@ func ensureQuantForDimension(
 	return derefString(models.NewStockQuantFrom(found[0]).GetId()), nil
 }
 
-// applyQuantDelta adds to a balance's on-hand and reserved figures in one write.
-//
-// It is the only function that writes on_hand_quantity, and it is reachable only from validate.
-// The caller holds a row lock on the balance, so the read below cannot be overtaken between the
-// read and the write.
+// applyQuantDelta adds to a balance's on-hand and reserved figures in one write. It is the only
+// writer of on_hand_quantity, and callers must already hold the row lock on the balance so the
+// read below cannot be overtaken before the write.
 func applyQuantDelta(
 	ctx corectx.Context,
 	operation *transferOperationContext,
@@ -393,8 +355,8 @@ func applyQuantDelta(
 	nextReserved := orZero(quant.GetReservedQuantity()).Add(reservedDelta)
 
 	if nextReserved.LessThan(decimal.Zero) {
-		// STOCK-INV-002. Reaching here means a line claimed more than the balance had reserved,
-		// which is a bug in the reservation bookkeeping rather than a client mistake.
+		// Reserved quantity must never go negative. Reaching here means a line claimed more than the
+		// balance had reserved, which is a bug in the reservation bookkeeping, not a client mistake.
 		return errors.Errorf(
 			"validating would drive stock quant '%s' to a negative reserved quantity", quantId)
 	}
@@ -447,10 +409,9 @@ func finishValidate(
 	return mutateOk(), nil
 }
 
-// closeTransfer marks the transfer done, stamping the completion time and the idempotency key.
-//
-// The key is written in the same transaction as the movements it guards. Written afterwards it
-// would leave a window in which the stock has moved but a retry cannot tell.
+// closeTransfer marks the transfer done, stamping the completion time and the idempotency key. The
+// key must be written in the same transaction as the movements it guards, or a retry cannot tell
+// that the stock already moved.
 func closeTransfer(
 	ctx corectx.Context, operation *transferOperationContext, idempotencyKey string,
 ) error {

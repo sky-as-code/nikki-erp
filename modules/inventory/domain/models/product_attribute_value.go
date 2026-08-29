@@ -76,8 +76,7 @@ func (this *ProductAttributeValue) SetSequence(v *int32) {
 	this.GetFieldData().SetInt32(ProductAttributeValueFieldSequence, v)
 }
 
-// GetPriceExtra returns the surcharge applied when a variant carries this value. It is signed,
-// because a value may also discount.
+// GetPriceExtra is the surcharge for a variant carrying this value. Signed: it may also discount.
 func (this ProductAttributeValue) GetPriceExtra() *decimal.Decimal {
 	return this.GetFieldData().GetDecimal(ProductAttributeValueFieldPriceExtra)
 }

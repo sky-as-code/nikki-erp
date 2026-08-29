@@ -13,20 +13,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// Product and unit-of-measure rules for a purchase line (PUR-R8, BR-UOM-PUR-001..009).
-//
-// The central rule is that a line KEEPS what the buyer typed. The quantity and unit they entered
-// are what the vendor is being asked for, and overwriting them with a converted value would change
-// the order's meaning: "10 boxes" and "120 units" are the same amount of goods but not the same
-// request, and only one of them is what the purchase order should say (004).
-//
-// The conversion lands in inventory_quantity instead, which is no_update and exists so that stock
-// has a number in its own unit without the order having to lie about what was ordered (003).
+// Product and unit-of-measure rules for a purchase line. A line keeps the quantity and unit the
+// buyer typed, since that is what the vendor is being asked for; the converted value goes to
+// inventory_quantity (no_update) so stock has a number in its own unit.
 
 // ProductLineValidator applies the product and unit rules to a line.
-//
-// It holds its two ports rather than resolving them per call: they are resolved once at Init, and a
-// validator that could not find them would be a wiring fault rather than a request problem.
 type ProductLineValidator struct {
 	products itExt.ProductExtService
 	uoms     itExt.UomExtService
@@ -38,20 +29,19 @@ func NewProductLineValidator(
 	return &ProductLineValidator{products: products, uoms: uoms}
 }
 
-// PrepareLine validates a line's product and unit and computes its inventory_quantity.
-//
-// It returns the value to store, or a refusal. Both the product and the unit are optional on a
-// line — a note or a section has neither, and a product line for a one-off service may name a
-// product with no stock configuration — so absence is not itself an error. What is an error is a
-// combination that cannot be made sense of.
+// PrepareLine validates a line's product and unit and computes its inventory_quantity. Product and
+// unit are both optional, so absence is not an error; only a combination that makes no sense is.
+// The returned string is the product's TEMPLATE id, which pricing needs immediately after this call
+// to avoid a second cross-module read in the same write transaction. Empty means nothing to price
+// against: a section line, a free-text charge, or a refused product.
 func (this *ProductLineValidator) PrepareLine(
 	ctx corectx.Context, line dmodel.DynamicFields, vErrs *ft.ClientErrors,
-) error {
+) (string, error) {
 	if !isMoneyBearingLine(line) {
-		// A section or a note buys nothing, so it has no product to check and no quantity to
-		// convert. Validating one would refuse a heading for not naming a product.
+		// A section or note buys nothing; validating one would refuse a heading for naming no
+		// product.
 		line[models.PurchaseOrderLineFieldInventoryQuantity] = decimal.Zero
-		return nil
+		return "", nil
 	}
 
 	variantId := stringOf(line, models.PurchaseOrderLineFieldProductVariantId)
@@ -59,45 +49,41 @@ func (this *ProductLineValidator) PrepareLine(
 	lineUomId := stringOf(line, models.PurchaseOrderLineFieldUomId)
 
 	if variantId == "" {
-		// A priced line with no product is a free-text charge — freight, a one-off fee. It is
-		// legitimate, and there is nothing to convert against, so the inventory quantity is the
-		// ordered quantity unchanged.
+		// A priced line with no product is a legitimate free-text charge (freight, a one-off fee)
+		// with nothing to convert against, so the inventory quantity is the ordered one.
 		line[models.PurchaseOrderLineFieldInventoryQuantity] = quantity
-		return nil
+		return "", nil
 	}
 
 	product, err := this.loadPurchasableProduct(ctx, variantId, vErrs)
 	if err != nil || product == nil {
-		return err
+		return "", err
 	}
+	templateId := string(product.TemplateId)
 
 	if err := this.assertUomUsable(ctx, lineUomId, vErrs); err != nil {
-		return err
+		return templateId, err
 	}
 	if vErrs.Count() > 0 {
-		return nil
+		return templateId, nil
 	}
 
 	inventoryQuantity, err := this.toInventoryQuantity(
 		ctx, quantity, lineUomId, string(product.InventoryUomId), vErrs)
 	if err != nil {
-		return err
+		return templateId, err
 	}
 	if vErrs.Count() > 0 {
-		return nil
+		return templateId, nil
 	}
 
-	// The ordered quantity and unit are left exactly as the buyer typed them (004).
+	// The ordered quantity and unit are left exactly as the buyer typed them.
 	line[models.PurchaseOrderLineFieldInventoryQuantity] = inventoryQuantity
-	return nil
+	return templateId, nil
 }
 
-// loadPurchasableProduct resolves the variant and refuses one that cannot be bought.
-//
-// The three refusals are deliberately distinct. "No such product" is a bad id; "not purchasable" is
-// a real product the business has decided not to buy (D4); "archived" is a product that was bought
-// before and is not bought now. Collapsing them into one message would leave a buyer guessing which
-// of the three they hit.
+// loadPurchasableProduct resolves the variant and refuses one that cannot be bought. The three
+// refusals stay distinct — bad id, not purchasable, archived — so a buyer knows which they hit.
 func (this *ProductLineValidator) loadPurchasableProduct(
 	ctx corectx.Context, variantId string, vErrs *ft.ClientErrors,
 ) (*itExt.GetPurchasableProductResultData, error) {
@@ -120,8 +106,8 @@ func (this *ProductLineValidator) loadPurchasableProduct(
 			"this product is not marked as purchasable and cannot be ordered")
 		return nil, nil
 	}
-	// An archived product cannot start new business, but an order that already names one must
-	// still read (008) — which is why this check is here, at write time, and not on the read path.
+	// Checked at write time, not on the read path: an archived product cannot start new business,
+	// but an order that already names one must still read.
 	if found.Data.Archived {
 		appendLineViolation(vErrs, models.PurchaseOrderLineFieldProductVariantId,
 			"purchase_order_line.product_archived",
@@ -131,11 +117,9 @@ func (this *ProductLineValidator) loadPurchasableProduct(
 	return &found.Data, nil
 }
 
-// assertUomUsable refuses an archived unit on a new line (008).
-//
-// A unit that has been archived is still resolvable, so historical lines keep reading; what it may
-// not do is appear on something new. An unknown unit is refused outright: a typo would otherwise
-// produce a line whose quantity is expressed in nothing.
+// assertUomUsable refuses an archived unit on a new line. An archived unit still resolves so
+// historical lines keep reading; an unknown one is refused outright, since a typo would leave a
+// quantity expressed in nothing.
 func (this *ProductLineValidator) assertUomUsable(
 	ctx corectx.Context, uomId string, vErrs *ft.ClientErrors,
 ) error {
@@ -161,21 +145,16 @@ func (this *ProductLineValidator) assertUomUsable(
 	return nil
 }
 
-// toInventoryQuantity converts the ordered quantity into the product's inventory unit (003, 009).
-//
-// The conversion itself is Essential's, never reimplemented here: reading factors and dividing them
-// would give a second answer to the same question, and the one Purchase stored would be the one
-// nobody could reproduce (BR-UOM-ESS-023).
-//
-// The cross-category refusal is the point of 009. Ordering in litres a product whose stock is
-// counted in kilograms is not a conversion Essential can do, and storing the raw number would put a
-// mass in a volume column.
+// toInventoryQuantity converts the ordered quantity into the product's inventory unit. The
+// conversion is Essential's and is never reimplemented here, or Purchase would store a number
+// nobody else can reproduce. Units of different categories are refused rather than copied through:
+// storing a litre quantity raw would put a volume in a mass column.
 func (this *ProductLineValidator) toInventoryQuantity(
 	ctx corectx.Context, quantity decimal.Decimal, lineUomId, inventoryUomId string,
 	vErrs *ft.ClientErrors,
 ) (decimal.Decimal, error) {
-	// No inventory unit configured, or the line is already in it: nothing to convert. A product
-	// with no stock configuration is an ordinary service or non-stocked item.
+	// Nothing to convert. A product with no inventory unit is an ordinary service or non-stocked
+	// item, not an error.
 	if inventoryUomId == "" || lineUomId == "" || lineUomId == inventoryUomId {
 		return quantity, nil
 	}
@@ -189,9 +168,7 @@ func (this *ProductLineValidator) toInventoryQuantity(
 		return decimal.Zero, errors.Wrap(err, "toInventoryQuantity")
 	}
 	if converted != nil && converted.ClientErrors.Count() > 0 {
-		// Essential refused, which for two units of different categories is exactly what it should
-		// do. Its reasons are carried through rather than restated, so the caller sees which units
-		// disagreed instead of a generic refusal.
+		// Essential's own refusal is carried through so the caller sees which units disagreed.
 		vErrs.ConcatPtr(&converted.ClientErrors)
 		return decimal.Zero, nil
 	}

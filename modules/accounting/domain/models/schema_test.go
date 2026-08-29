@@ -7,8 +7,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// allSchemas builds every tax schema once, so an invariant that must hold across the module is
-// asserted against the whole set rather than against whichever resource a test remembered.
+// allSchemas builds every tax schema once, so a module-wide invariant is asserted against the whole
+// set rather than whichever resource a test remembered.
 func allSchemas(t *testing.T) map[string]*dmodel.ModelSchema {
 	t.Helper()
 
@@ -28,8 +28,8 @@ func allSchemas(t *testing.T) map[string]*dmodel.ModelSchema {
 		TaxRuleResultSchemaName:            TaxRuleResultSchemaBuilder(),
 	}
 
-	// Build panics on a malformed schema rather than returning an error, which is what makes
-	// TestEverySchemaBuilds meaningful: a bad data_type fails here instead of at application boot.
+	// Build panics on a malformed schema rather than returning an error, so a bad data_type fails
+	// here instead of at application boot.
 	schemas := make(map[string]*dmodel.ModelSchema, len(builders))
 	for name, builder := range builders {
 		schemas[name] = builder.Build()
@@ -37,19 +37,17 @@ func allSchemas(t *testing.T) map[string]*dmodel.ModelSchema {
 	return schemas
 }
 
-// Every schema's JSON parses and builds. This is the assertion that catches a data_type spelled
-// with its canonical Go name rather than its JSON one — a mistake that otherwise panics at boot,
-// long after the change that caused it.
+// Every schema's JSON parses and builds. Catches a data_type spelled with its canonical Go name
+// rather than its JSON one, which otherwise panics at boot.
 func TestEverySchemaBuilds(t *testing.T) {
 	if schemas := allSchemas(t); len(schemas) != 13 {
 		t.Fatalf("expected 13 tax schemas, got %d", len(schemas))
 	}
 }
 
-// AC-TAX-SUP-19: tax configuration belongs to an organization, and a resource from another org must
-// never be resolved. The enforcement is the org_base_model mixin, which injects org_id and is what
-// the engine scopes every query by — so a schema that lost the mixin would silently serve another
-// organization's rates, with nothing in the code that reads it looking wrong.
+// Tax configuration belongs to an organization. The org_base_model mixin injects the org_id the
+// engine scopes every query by, so a schema that lost it would silently serve another
+// organization's rates.
 func TestEverySchemaIsOrgScoped(t *testing.T) {
 	for name, schema := range allSchemas(t) {
 		if _, present := schema.Fields()[basemodel.FieldOrgId]; !present {
@@ -59,9 +57,8 @@ func TestEverySchemaIsOrgScoped(t *testing.T) {
 	}
 }
 
-// The schema name is the resource code the engine asserts permissions against and the path segment
-// its routes hang off, so a name that drifts from the "accounting_" prefix breaks the IAM seed and
-// the URL at once, in a way that reads as a permission problem rather than a naming one.
+// The schema name is both the IAM resource code and the route path segment, so drifting from the
+// "accounting_" prefix breaks the IAM seed and the URL at once.
 func TestSchemaNamesCarryTheModulePrefix(t *testing.T) {
 	for name, schema := range allSchemas(t) {
 		if schema.Name() != name {
@@ -73,8 +70,8 @@ func TestSchemaNamesCarryTheModulePrefix(t *testing.T) {
 	}
 }
 
-// Every resource carries the audit trail the base model provides. A snapshot proves what was
-// charged; these prove who changed the configuration behind it and when.
+// Every resource carries the base model's audit trail, proving who changed the configuration behind
+// a charge and when.
 func TestEverySchemaHasTheBaseAuditFields(t *testing.T) {
 	for name, schema := range allSchemas(t) {
 		fields := schema.Fields()
@@ -86,9 +83,8 @@ func TestEverySchemaHasTheBaseAuditFields(t *testing.T) {
 	}
 }
 
-// The five versioned resources are the ones the engine's lifecycle rules govern. A lifecycle field
-// missing here would leave a resource publishable in name only — its material fields never freezing,
-// because the rules key off exactly this field.
+// The five versioned resources are those the lifecycle rules govern. A missing lifecycle field
+// leaves a resource publishable in name only, its material fields never freezing.
 func TestVersionedResourcesCarryALifecycleStatus(t *testing.T) {
 	lifecycleSchemas := map[string]string{
 		TaxDefinitionVersionSchemaName: TaxDefinitionVersionFieldLifecycleStatus,
@@ -106,8 +102,8 @@ func TestVersionedResourcesCarryALifecycleStatus(t *testing.T) {
 	}
 }
 
-// Effective dating is what makes a rate change not reinterpret a historical sale, so every
-// versioned resource has to be able to say when it applies from.
+// Effective dating is what stops a rate change reinterpreting a historical sale, so every versioned
+// resource must say when it applies from.
 func TestVersionedResourcesCarryAnEffectiveFrom(t *testing.T) {
 	effectiveFrom := map[string]string{
 		TaxDefinitionVersionSchemaName: TaxDefinitionVersionFieldEffectiveFrom,
@@ -125,9 +121,8 @@ func TestVersionedResourcesCarryAnEffectiveFrom(t *testing.T) {
 	}
 }
 
-// Money and rates must never be float-typed. A float64 cannot hold a decimal fraction exactly, and
-// a rate stored as one would make every amount computed from it subtly wrong — the kind of defect
-// that shows up as a one-cent discrepancy an auditor finds years later.
+// Money and rates must never be float-typed: a float64 cannot hold a decimal fraction exactly, so
+// every amount computed from such a rate is subtly wrong.
 func TestMonetaryFieldsAreDecimal(t *testing.T) {
 	schemas := allSchemas(t)
 

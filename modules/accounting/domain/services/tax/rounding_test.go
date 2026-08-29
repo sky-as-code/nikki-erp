@@ -41,9 +41,8 @@ func TestRoundUpAndDown(t *testing.T) {
 	assert.True(t, down.Round(dec("1.009")).Equal(dec("1.00")))
 }
 
-// A rounding quantum is not always a power of ten: VND rounds to whole units, and cash settlement
-// to the nearest five. This is why BR-TAX-ESS-SUP-017 made the increment authoritative rather than
-// a decimal-place count, which cannot express either.
+// A rounding quantum is not always a power of ten: VND rounds to whole units and cash settlement to
+// the nearest five, which is why the increment is authoritative rather than a decimal-place count.
 func TestRoundToNonDecimalIncrement(t *testing.T) {
 	toWholeDong := policy(models.RoundingHalfUp, "1")
 	assert.True(t, toWholeDong.Round(dec("10499.5")).Equal(dec("10500")))
@@ -59,11 +58,9 @@ func TestRoundWithoutIncrementIsIdentity(t *testing.T) {
 	assert.True(t, policy(models.RoundingHalfUp, "0").Round(dec("1.2345")).Equal(dec("1.2345")))
 }
 
-// AC-TAX-SUP-15: the components of a group must sum to exactly the rounded group total.
-//
-// Three lines of 33.335 sum to 100.005, which rounds to 100.01. Rounding each line first gives
-// 33.34 x 3 = 100.02, so the allocation has to claw back one increment — and it is the document
-// total that appears on the invoice and the VAT return.
+// The components of a group must sum to exactly the rounded group total. Three lines of 33.335 sum
+// to 100.005, rounding to 100.01, while rounding each first gives 100.02, so the allocation claws
+// back one increment. The document total is what the invoice and the VAT return show.
 func TestDocumentAllocationSumsToRoundedTotal(t *testing.T) {
 	rounder := policy(models.RoundingHalfUp, "0.01")
 	inputs := []AllocationInput{
@@ -87,8 +84,7 @@ func TestDocumentAllocationSumsToRoundedTotal(t *testing.T) {
 	assert.True(t, adjustments.Equal(dec("-0.01")), "adjustments = %s", adjustments)
 }
 
-// Groups are rounded independently: two taxes on one document each get their own rounded total,
-// because a VAT return reports per tax rather than per document.
+// Groups are rounded independently, because a VAT return reports per tax rather than per document.
 func TestDocumentAllocationKeepsGroupsSeparate(t *testing.T) {
 	rounder := policy(models.RoundingHalfUp, "0.01")
 	inputs := []AllocationInput{
@@ -108,8 +104,8 @@ func TestDocumentAllocationKeepsGroupsSeparate(t *testing.T) {
 	assert.True(t, byGroup["EXCISE"].Equal(dec("20")), "EXCISE = %s", byGroup["EXCISE"])
 }
 
-// TAX-SUP-INV-12: the allocation must be deterministic, so a later refund can reproduce which
-// component absorbed the adjustment. Running the same input repeatedly must not move it.
+// The allocation must be deterministic, so a later refund can reproduce which component absorbed
+// the adjustment.
 func TestDocumentAllocationIsDeterministic(t *testing.T) {
 	rounder := policy(models.RoundingHalfUp, "0.01")
 	inputs := []AllocationInput{
@@ -130,8 +126,8 @@ func TestDocumentAllocationIsDeterministic(t *testing.T) {
 	}
 }
 
-// When every component rounds cleanly there is nothing to allocate, and no component should be
-// nudged. An adjustment appearing here would show up in a snapshot as an unexplained correction.
+// When every component rounds cleanly nothing is allocated; an adjustment here would show up in a
+// snapshot as an unexplained correction.
 func TestDocumentAllocationLeavesExactAmountsAlone(t *testing.T) {
 	rounder := policy(models.RoundingHalfUp, "0.01")
 	inputs := []AllocationInput{
@@ -144,8 +140,8 @@ func TestDocumentAllocationLeavesExactAmountsAlone(t *testing.T) {
 	}
 }
 
-// The component that lost the most to rounding is the one that gets the increment back. Here L2's
-// remainder is the largest, so it absorbs the delta rather than an arbitrary first row.
+// The component that lost the most to rounding gets the increment back: L2's remainder is largest,
+// so it absorbs the delta rather than an arbitrary first row.
 func TestDocumentAllocationFavoursLargestRemainder(t *testing.T) {
 	rounder := policy(models.RoundingHalfUp, "1")
 	inputs := []AllocationInput{

@@ -11,11 +11,8 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
-// The strongly-typed read port other modules bind to.
-//
-// These wrap the same overrides the engine actions use, so a consumer calling
-// SearchProductVariants gets the batched template_* fill for free rather than a second
-// implementation of it.
+// The strongly-typed read port other modules bind to. These wrap the same overrides the engine
+// actions use, so a consumer gets the batched template_* fill rather than a second implementation.
 
 var (
 	_ itProduct.ProductVariantDomainService = (*ProductVariantDomainServiceImpl)(nil)
@@ -26,8 +23,8 @@ var (
 func (this *ProductVariantDomainServiceImpl) SearchProductVariants(
 	ctx corectx.Context, query itProduct.SearchProductVariantsQuery,
 ) (*itProduct.SearchProductVariantsResult, error) {
-	// Routed through this service's own Search so the template_* rewrite and the batched fill
-	// apply, rather than going straight to the repository.
+	// Routed through this service's own Search so the template_* rewrite and the batched fill apply,
+	// rather than going straight to the repository.
 	result, err := this.Search(ctx, searchQueryToParams(query))
 	if err != nil {
 		return nil, errors.Wrap(err, "SearchProductVariants")
@@ -127,8 +124,8 @@ func (this *ProductVariantDomainServiceImpl) SearchCategories(
 	return pagedResult(rows, query, models.NewProductCategoryFrom), nil
 }
 
-// searchQueryToParams converts the typed query into the params the resource service expects, so
-// the typed port and the REST surface run through exactly the same code.
+// searchQueryToParams converts the typed query into the params the resource service expects, so the
+// typed port and the REST surface run through the same code.
 func searchQueryToParams(query dyn.SearchQuery) dmodel.DynamicFields {
 	params := dmodel.DynamicFields{
 		"page": query.Page,
@@ -155,9 +152,9 @@ func searchRows(
 		return nil, err
 	}
 
-	// This path goes straight to the repository rather than through crud.Search, so it has to
-	// default the locale itself -- otherwise a variant list would sort its LangJson columns by the
-	// raw jsonb while every other list in the product sorted by the reader's language.
+	// This path goes straight to the repository rather than through crud.Search, so it must default
+	// the locale itself, or a variant list sorts its LangJson columns by raw jsonb while every other
+	// list sorts by the reader's language.
 	language := query.Language
 	if language == nil {
 		language = dyn.ResolveLocale(ctx)
@@ -182,8 +179,8 @@ func searchRows(
 	return &found.Data, nil
 }
 
-// emptyPage is still a page: the caller reads Total and Items either way, so this is HasData
-// rather than a missing result.
+// emptyPage is still a page: the caller reads Total and Items either way, so this is HasData rather
+// than a missing result.
 func emptyPage[TModel any](query dyn.SearchQuery) *dyn.OpResult[dyn.PagedResultData[TModel]] {
 	return &dyn.OpResult[dyn.PagedResultData[TModel]]{
 		Data: dyn.PagedResultData[TModel]{
@@ -220,11 +217,9 @@ func pagedResult[TModel any](
 	}
 }
 
-// existsResultData splits the requested ids into those that exist and those that do not.
-//
-// The repository answers with the key maps it matched, not with ids, so the ids are read back out
-// of them. Rebuilding the split from `requested` rather than trusting the order keeps the result
-// aligned with what the caller asked about.
+// existsResultData splits the requested ids into those that exist and those that do not. The
+// repository answers with key maps rather than ids, and the split is rebuilt from `requested`
+// rather than trusting the order, so the result stays aligned with what the caller asked about.
 func existsResultData(requested []model.Id, found dyn.RepoExistsResult) dyn.ExistsResultData {
 	existingIds := make(map[model.Id]bool, len(found.Existing))
 	for _, keys := range found.Existing {

@@ -10,11 +10,8 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
 )
 
-// TaxCalculationApplicationServiceImpl authorizes a calculation and delegates it.
-//
-// It adds exactly two things to the domain service: the permission check, and the request
-// validation that has to happen before any configuration is read. Everything else is the domain's,
-// which is what lets the engine be tested exhaustively without a caller identity.
+// TaxCalculationApplicationServiceImpl adds two things to the domain service: the permission check,
+// and the request validation that must happen before any configuration is read.
 type TaxCalculationApplicationServiceImpl struct {
 	calculationSvc it.TaxCalculationDomainService
 }
@@ -35,9 +32,8 @@ func (this *TaxCalculationApplicationServiceImpl) Calculate(
 	if cErrs := validateCalculationRequest(request); cErrs != nil {
 		return &it.CalculateResult{ClientErrors: *cErrs}, nil
 	}
-	// An override substitutes the tax on a live transaction, which is a materially different power
-	// from being allowed to price one. It is checked separately and only when actually used, so
-	// that the ordinary path does not require the elevated entitlement (BR-TAX-ESS-053).
+	// An override is a different power from pricing a transaction, so it is checked separately and
+	// only when used, keeping the ordinary path free of the elevated entitlement.
 	if cErrs := this.assertOverrideAllowed(ctx, request); cErrs != nil {
 		return &it.CalculateResult{ClientErrors: *cErrs}, nil
 	}
@@ -48,9 +44,8 @@ func (this *TaxCalculationApplicationServiceImpl) Calculate(
 func (this *TaxCalculationApplicationServiceImpl) Simulate(
 	ctx corectx.Context, request it.CalculationRequest,
 ) (*it.SimulateResult, error) {
-	// The simulator has its own entitlement rather than reusing read: it explains the whole rule
-	// base, including rules the caller's own transactions never hit, and that is a broader
-	// disclosure than pricing one order.
+	// The simulator has its own entitlement rather than reusing read: it discloses the whole rule
+	// base, not just the rules one order hits.
 	if cErrs := assertPermission(ctx, c.ActionSimulate,
 		models.TaxSchemaName, c.ResourceScopeOrg); cErrs != nil {
 		return &it.SimulateResult{ClientErrors: *cErrs}, nil
@@ -93,11 +88,8 @@ func (this *TaxCalculationApplicationServiceImpl) ReversePartial(
 	return this.calculationSvc.ReversePartial(ctx, request)
 }
 
-// assertOverrideAllowed gates a manual tax substitution.
-//
-// Two conditions, both required by BR-TAX-ESS-SUP-023: the dedicated entitlement, and a written
-// reason. The reason is mandatory because an override that nobody has to justify is indistinguishable
-// from a mistake when an auditor reads it three years later.
+// assertOverrideAllowed gates a manual tax substitution on two conditions: the dedicated
+// entitlement and a written reason, so an audit can tell an override from a mistake.
 func (this *TaxCalculationApplicationServiceImpl) assertOverrideAllowed(
 	ctx corectx.Context, request it.CalculationRequest,
 ) *ft.ClientErrors {
@@ -117,16 +109,12 @@ func (this *TaxCalculationApplicationServiceImpl) assertOverrideAllowed(
 	return assertPermission(ctx, c.ActionOverride, models.TaxSchemaName, c.ResourceScopeOrg)
 }
 
-// validateCalculationRequest refuses a request the engine could not answer meaningfully.
-//
-// These are the checks that must happen before any configuration is read, because each of them
-// would otherwise produce a confidently wrong answer rather than an error.
+// validateCalculationRequest refuses a request the engine could not answer meaningfully. These
+// checks must run before any configuration is read, or each yields a confidently wrong answer.
 func validateCalculationRequest(request it.CalculationRequest) *ft.ClientErrors {
-	// The tax date is never defaulted from the server clock. BR-TAX-ESS-SUP-020 deleted that
-	// fallback: a request that forgot the date would otherwise be priced against whatever was
-	// effective at the moment it happened to be processed, rather than the date the sale legally
-	// occurred — a difference that only shows up around a rate change, which is exactly when it
-	// matters most.
+	// The tax date is never defaulted from the server clock: a missing date would otherwise price
+	// against whatever is effective at processing time rather than the date of the sale, which
+	// diverges exactly around a rate change.
 	if request.TaxDate == "" {
 		return rejection(models.TaxSchemaName, "tax.tax_date_required",
 			"a tax calculation requires the tax date; it is never taken from the server clock")
@@ -144,9 +132,9 @@ func validateCalculationRequest(request it.CalculationRequest) *ft.ClientErrors 
 			"a tax calculation requires at least one line")
 	}
 
-	// V1 defines sale semantics only. The purchase values exist in the enum as a reserved contract
-	// and are refused here rather than silently treated as sales, which would apply output-VAT
-	// rules to an input-VAT transaction.
+	// V1 defines sale semantics only. The purchase enum values are a reserved contract and are
+	// refused here; treating them as sales would apply output-VAT rules to an input-VAT
+	// transaction.
 	if !models.IsImplementedOperation(request.OperationType) {
 		return rejection(models.TaxSchemaName, "tax.operation_type_unsupported",
 			"only 'sale' and 'sale_refund' are supported in this version")
@@ -158,8 +146,8 @@ func validateCalculationRequest(request it.CalculationRequest) *ft.ClientErrors 
 			return rejection(models.TaxSchemaName, "tax.line_reference_required",
 				"every line requires a reference so its result can be matched back")
 		}
-		// Results are keyed by line reference, and document-scoped rounding is allocated against
-		// that key. A duplicate would silently overwrite another line's rounding.
+		// Document-scoped rounding is allocated by line reference, so a duplicate would silently
+		// overwrite another line's rounding.
 		if seen[line.LineReference] {
 			return rejection(models.TaxSchemaName, "tax.line_reference_duplicated",
 				"line reference '"+line.LineReference+"' appears more than once")

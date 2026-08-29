@@ -7,15 +7,16 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/services"
 )
 
-// InitApplicationServices registers Accounting's application services.
-//
-// The thirteen tax resources are served entirely by the dynamic resource engine and need no
-// application service of their own. What is registered here is what the engine cannot express:
-// calculate, simulate and reverse, which read configuration across several resources and drive the
-// arithmetic in domain/services.
+// InitApplicationServices registers what the dynamic resource engine cannot express: calculate,
+// simulate and reverse. The thirteen tax resources are served by the engine itself.
 func InitApplicationServices() error {
 	return stdErr.Join(
 		deps.Register(services.NewTaxCalculationDomainServiceImpl),
 		deps.Register(NewTaxCalculationApplicationServiceImpl),
+
+		// The org currency reader has no application service because it needs no authorization
+		// check of its own: the settings module already gates the setting it reads, and a second
+		// permission could refuse a caller entitled to read those settings.
+		deps.Register(services.NewOrgCurrencyDomainServiceImpl),
 	)
 }

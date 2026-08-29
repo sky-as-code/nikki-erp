@@ -9,10 +9,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// SalesChannelDomainServiceImpl adds the channel lifecycle to the engine's default service.
-//
-// It wraps rather than replaces: ordinary create, read, update and delete keep running through the
-// engine's own implementation underneath, and only the operations that carry a rule are added here.
+// SalesChannelDomainServiceImpl adds the channel lifecycle to the engine's default service. It
+// wraps rather than replaces: ordinary CRUD still runs through the engine's implementation.
 type SalesChannelDomainServiceImpl struct {
 	drif.DynamicResourceService
 }
@@ -21,11 +19,9 @@ func NewSalesChannelDomainService(base drif.DynamicResourceService) *SalesChanne
 	return &SalesChannelDomainServiceImpl{DynamicResourceService: base}
 }
 
-// ResolveByCode answers the id and metadata of the channel an external module names by code.
-//
-// This is the operation that keeps database ids out of other modules' configuration: vending holds
-// the string "vdmc" and asks Sales what it means. A suspended or archived channel resolves but is
-// reported as such, because the caller may legitimately be reading history rather than selling.
+// ResolveByCode answers the id and metadata of the channel an external module names by code, which
+// keeps database ids out of other modules' configuration. A suspended or archived channel resolves
+// but is reported as such, because the caller may be reading history rather than selling.
 func (this *SalesChannelDomainServiceImpl) ResolveByCode(
 	ctx corectx.Context, code string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -55,9 +51,8 @@ func (this *SalesChannelDomainServiceImpl) ResolveByCode(
 // Suspend stops a channel taking new business.
 //
 // History, returns, refunds and fiscal adjustments of existing transactions keep working: the
-// status says "not selling now", not "gone". That is why it is separate from is_archived, and why
-// a system channel may be suspended even though it may not be archived — pausing the vending
-// estate is an operational act, retiring it is not.
+// status says the channel is not selling now, not that it is gone. Hence it is separate from
+// is_archived, and a system channel may be suspended even though it may not be archived.
 func (this *SalesChannelDomainServiceImpl) Suspend(
 	ctx corectx.Context, channelId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -113,12 +108,9 @@ func (this *SalesChannelDomainServiceImpl) setStatus(
 // Archive retires a channel.
 //
 // It refuses while any sales point under it is still unarchived, because archiving the parent would
-// strand them: a point whose channel is gone can neither sell nor be found in the channel's list,
-// and nothing in the resulting error would point at the channel as the cause. Archive the points
-// first, then the channel.
-//
-// A system channel is never archivable. Archiving "vdmc" would stop every kiosk selling with no
-// change to any kiosk, which is exactly the kind of silent breakage is_system exists to prevent.
+// strand them: such a point can neither sell nor be found in the channel's list. Archive the points
+// first. A system channel is never archivable: archiving the vending channel would stop every kiosk
+// selling with no change to any kiosk.
 func (this *SalesChannelDomainServiceImpl) Archive(
 	ctx corectx.Context, channelId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -180,12 +172,9 @@ func (this *SalesChannelDomainServiceImpl) activeSalesPointsOf(
 		ctx, engine.ResourceRepository(), channelId, models.MaxSalesPointsPerChannel)
 }
 
-// AssertMutable refuses a change to a channel the API may not alter.
-//
-// Called by the write guards on plain update and delete. A system channel's name, code and owning
-// module are fixed at seed time: they are what other modules resolve against, and letting an
-// administrator edit them through the ordinary resource form would break those callers with no
-// indication that a seeded record was involved.
+// AssertMutable refuses a change to a channel the API may not alter, and is called by the write
+// guards on plain update and delete. A system channel's name, code and owning module are fixed at
+// seed time because other modules resolve against them.
 func (this *SalesChannelDomainServiceImpl) AssertMutable(
 	ctx corectx.Context, channelId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {

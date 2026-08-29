@@ -99,6 +99,7 @@ BEGIN
 		('01M2PVRCH00000000000000012', 'Acknowledge', 'acknowledge', 'Record that the vendor confirmed receipt of the order', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M2PVRCH00000000000000013', 'Cancel', 'cancel', 'Cancel the document, leaving it and its audit trail in place', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M2PVRCH00000000000000014', 'Merge', 'merge', 'Merge several draft orders for the same vendor into one', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000020', 'Reprice', 'reprice', 'Re-resolve a draft order''s line prices from the vendor''s current price list', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Purchase Order Line
 		('01M2PVRCH00000000000000015', 'Create', 'create', NULL, '01M2PVRCH00000000000000006', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M2PVRCH00000000000000016', 'Update', 'update', NULL, '01M2PVRCH00000000000000006', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
@@ -106,6 +107,89 @@ BEGIN
 		('01M2PVRCH00000000000000018', 'Read', 'read', NULL, '01M2PVRCH00000000000000006', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Purchase Audit Event
 		('01M2PVRCH00000000000000019', 'Read', 'read', NULL, '01M2PVRCH00000000000000007', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;
+
+
+-- The vendor price resource and its authorization, added by the product-pricing change request.
+--
+-- The resource had no IAM row at all: it is new, and the dynamic resource engine derives the code
+-- it asserts against from the schema name, so `purchase_vendor_product_price` must appear here
+-- byte-identically or every request to it is denied with nothing in the 403 pointing at this file.
+--
+-- Two roles, for the same reason the sales pricing roles are two: reading what a supplier charges
+-- and recording it are different powers. A buyer comparing quotes needs the first; only whoever
+-- maintains supplier terms needs the second.
+--
+-- The resource has no custom action, so the five built-in codes are its whole surface. `delete` is
+-- included in the manager role because a vendor price has no dependents -- a purchase order line
+-- records the price it resolved rather than a reference that would dangle -- so a row created by
+-- mistake should be removable, while `set_archived` is the ordinary way to retire a real one.
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_resources'
+	) THEN
+		INSERT INTO "iam_resources" (
+			"id", "name", "code", "description", "owner_type", "max_scope",
+			"min_scope", "created_at", "etag"
+		) VALUES
+		('01M2PVRCH00000000000000100', 'Vendor Product Price', 'purchase_vendor_product_price', 'What a vendor currently offers a product at, by quantity, unit and validity', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_actions'
+	) THEN
+		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
+		('01M2PVRCH00000000000000101', 'Create', 'create', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000102', 'Update', 'update', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000103', 'Delete', 'delete', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000104', 'Read', 'read', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000105', 'Set archived status', 'set_archived', 'Retire a vendor price from new resolution while keeping it readable for existing orders', '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_roles'
+	) THEN
+		INSERT INTO "iam_roles" (
+			"id", "name", "description", "is_private", "owner_user_id", "is_requestable",
+			"is_required_attachment", "is_required_comment", "is_archived", "created_at", "etag"
+		) VALUES
+		('01M3ROLE0000000000PRICING3', 'Purchase Vendor Price Readonly', 'Read what vendors are offering, without being able to change a recorded quote', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ROLE0000000000PRICING4', 'Purchase Vendor Price Manager', 'Record and maintain vendor price quotes', false, '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_entitlements'
+	) THEN
+		INSERT INTO "iam_entitlements" (
+			"id", "name", "description", "expression", "action_id", "resource_id",
+			"role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
+		) VALUES
+		('01M3ENT00000000000VNDPR001', 'Read vendor price quotes', 'Read vendor price quotes', 'read:purchase_vendor_product_price:org', '01M2PVRCH00000000000000104', '01M2PVRCH00000000000000100', '01M3ROLE0000000000PRICING3', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000VNDPR002', 'Create vendor price quotes', 'Create vendor price quotes', 'create:purchase_vendor_product_price:org', '01M2PVRCH00000000000000101', '01M2PVRCH00000000000000100', '01M3ROLE0000000000PRICING4', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000VNDPR003', 'Update vendor price quotes', 'Update vendor price quotes', 'update:purchase_vendor_product_price:org', '01M2PVRCH00000000000000102', '01M2PVRCH00000000000000100', '01M3ROLE0000000000PRICING4', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000VNDPR004', 'Delete vendor price quotes', 'Delete vendor price quotes', 'delete:purchase_vendor_product_price:org', '01M2PVRCH00000000000000103', '01M2PVRCH00000000000000100', '01M3ROLE0000000000PRICING4', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000VNDPR005', 'Read vendor price quotes', 'Read vendor price quotes', 'read:purchase_vendor_product_price:org', '01M2PVRCH00000000000000104', '01M2PVRCH00000000000000100', '01M3ROLE0000000000PRICING4', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3ENT00000000000VNDPR006', 'Set archived vendor price quotes', 'Set archived vendor price quotes', 'set_archived:purchase_vendor_product_price:org', '01M2PVRCH00000000000000105', '01M2PVRCH00000000000000100', '01M3ROLE0000000000PRICING4', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

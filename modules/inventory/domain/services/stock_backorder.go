@@ -12,13 +12,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// Backorder: what happens to the part of a demand a validate did not deliver (BR §4.2.3.11).
+// Backorder: what happens to the part of a demand a validate did not deliver.
 //
-// The rule that shapes all of this is STOCK-INV-020: the original transfer's demand is never
-// rewritten to what was actually processed. A transfer that asked for 100 and shipped 70 remains a
-// transfer that asked for 100 and shipped 70; the outstanding 30 becomes a new document. Rewriting
-// the demand would erase the fact that 30 were promised and not delivered, which is exactly the
-// question a backorder exists to answer.
+// The original transfer's demand is NEVER rewritten to what was processed. A transfer that asked
+// for 100 and shipped 70 stays that way, and the outstanding 30 becomes a new document; rewriting
+// the demand would erase the fact that 30 were promised and not delivered.
 
 // BackorderDecision is what to do with an unprocessed remainder.
 type BackorderDecision string
@@ -34,12 +32,9 @@ const (
 	BackorderDrop BackorderDecision = "drop"
 )
 
-// DecideBackorder applies the transfer's snapshot policy to what the moves actually processed.
-//
-// The `ask` policy genuinely requires an answer: it exists because some operations should not
-// silently decide whether an undelivered remainder is still owed to the customer. Defaulting it
-// either way would make the setting meaningless, so a missing decision is a client error rather
-// than a guess (BR §4.2.3.11).
+// DecideBackorder applies the transfer's snapshot policy to what the moves actually processed. The
+// `ask` policy requires an answer: defaulting it either way would make the setting meaningless, so
+// a missing decision is a client error.
 func DecideBackorder(
 	policy string, outcomes []moveOutcome, createBackorder *bool,
 ) (BackorderDecision, *ft.ClientErrors) {
@@ -69,8 +64,8 @@ func DecideBackorder(
 		}
 		return BackorderDrop, vErrs
 	default:
-		// An unknown policy is a data problem, not a client one, but refusing is safer than
-		// guessing: dropping a remainder that should have been backordered loses a commitment.
+		// An unknown policy is a data problem, but refusing beats guessing: dropping a remainder that
+		// should have been backordered loses a commitment.
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.StockTransferSchemaName,
 			"stock_transfer.unknown_backorder_policy",
@@ -89,11 +84,9 @@ func hasShortfall(outcomes []moveOutcome) bool {
 	return false
 }
 
-// createBackorderTransfer raises a new draft transfer carrying the undelivered quantities.
-//
-// It is a new document rather than a reopened one: the original is done and stays done, and the
-// backorder points back at it through backorder_of_id so the chain is traceable in both directions
-// (STOCK-INV-010).
+// createBackorderTransfer raises a new draft transfer carrying the undelivered quantities. A new
+// document, not a reopened one: the original stays done, and backorder_of_id makes the chain
+// traceable in both directions.
 func createBackorderTransfer(
 	ctx corectx.Context, operation *transferOperationContext, outcomes []moveOutcome,
 ) error {
@@ -112,8 +105,8 @@ func createBackorderTransfer(
 		models.StockTransferFieldSourceLocationId:      derefString(original.GetSourceLocationId()),
 		models.StockTransferFieldDestinationLocationId: derefString(original.GetDestinationLocationId()),
 		models.StockTransferFieldStatus:                models.StockTransferStatusDraft,
-		// The policies are copied from the original rather than re-read from the operation type,
-		// so that the backorder behaves the way its parent did even if the type has since changed.
+		// Policies are copied from the original rather than re-read from the operation type, so the
+		// backorder behaves as its parent did even if the type has since changed.
 		models.StockTransferFieldReservationMethod: derefString(original.GetReservationMethod()),
 		models.StockTransferFieldBackorderPolicy:   derefString(original.GetBackorderPolicy()),
 		models.StockTransferFieldShippingPolicy:    derefString(original.GetShippingPolicy()),
@@ -180,8 +173,8 @@ func copyShortfallMoves(
 			models.StockMoveFieldSourceLocationId:      derefString(source.GetSourceLocationId()),
 			models.StockMoveFieldDestinationLocationId: derefString(source.GetDestinationLocationId()),
 			models.StockMoveFieldStatus:                models.StockMoveStatusDraft,
-			// The backorder's move points at the move it carries the remainder of, so a reader can
-			// follow a split demand back to the one the business originally raised (BR §4.2.4.9).
+			// The backorder's move points at the move it carries the remainder of, so a split demand
+			// can be followed back to the one originally raised.
 			models.StockMoveFieldOriginMoveId: outcome.MoveId,
 			models.StockMoveFieldOrgId:        derefString(source.GetOrgId()),
 		})

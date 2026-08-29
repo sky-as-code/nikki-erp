@@ -11,8 +11,8 @@ import (
 )
 
 func TestScrapQuantityMustBePositive(t *testing.T) {
-	// The column's minimum is zero because a decimal bound is about storage, not intent. A scrap of
-	// nothing is a document asserting a movement that never happened, so the rule lives here.
+	// The column allows zero, but a scrap of nothing asserts a movement that never happened, so the
+	// rule lives here.
 	for _, quantity := range []string{"0", "-1"} {
 		vErrs := assertScrapQuantityPositive(dmodel.DynamicFields{
 			models.StockScrapFieldQuantity: quantity,

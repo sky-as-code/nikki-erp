@@ -11,33 +11,29 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
-// maxTemplateVariants bounds the variant set one call will read or generate. A template beyond
-// this is past what a synchronous request should carry.
+// maxTemplateVariants bounds the variant set one call will read or generate, past what a
+// synchronous request should carry.
 const maxTemplateVariants = 1000
 
-// NewProductTemplateDomainService derives the Products service from the engine's default one.
-//
-// base is the Product Template engine's own resource service, which this type embeds: every
-// built-in CRUD action keeps running through the default implementation, and the capabilities
-// below are added on top. The result is installed with Engine.SetResourceService.
+// NewProductTemplateDomainService derives the Products service from the engine's default one, which
+// it embeds so built-in CRUD keeps running unchanged. Installed with Engine.SetResourceService.
 func NewProductTemplateDomainService(base drif.DynamicResourceService) itProduct.ProductService {
 	return &ProductTemplateDomainServiceImpl{DynamicResourceService: base}
 }
 
-// ProductTemplateDomainServiceImpl serves the Products capabilities the dynamic resource engine cannot
-// express: flattening a template and variant into one effective product, and turning an
-// attribute selection into a concrete variant.
+// ProductTemplateDomainServiceImpl serves the Products capabilities the resource engine cannot
+// express: flattening a template and variant into one effective product, and turning an attribute
+// selection into a concrete variant.
 //
-// It resolves other resources' engines at call time rather than holding them, because a
-// capability spanning several schemas needs engines the embedded service does not carry, and
-// engine creation and this service's construction both happen during Init.
+// It resolves other resources' engines at call time rather than holding them, because engine
+// creation and this service's construction both happen during Init.
 type ProductTemplateDomainServiceImpl struct {
 	drif.DynamicResourceService
 }
 
-// The derived service must satisfy both contracts: the engine installs it as its resource
-// service, and custom actions type-assert it back to the Products capability. Losing either
-// would only show up as a failed assertion at request time.
+// The derived service must satisfy both contracts — the engine installs it as its resource service,
+// and custom actions type-assert it back to the Products capability — since losing either would
+// only show up as a failed assertion at request time.
 var (
 	_ drif.DynamicResourceService = (*ProductTemplateDomainServiceImpl)(nil)
 	_ itProduct.ProductService    = (*ProductTemplateDomainServiceImpl)(nil)
@@ -86,7 +82,7 @@ func (this *ProductTemplateDomainServiceImpl) GetEffectiveProducts(
 }
 
 // ResolveProductSelection turns the values a configurator picked into the variant a transaction
-// line must reference. See BR §8.3 and §14.4.
+// line must reference.
 func (this *ProductTemplateDomainServiceImpl) flatten(
 	ctx corectx.Context, variant *models.ProductVariant,
 ) (*itProduct.EffectiveProduct, error) {
@@ -104,8 +100,8 @@ func (this *ProductTemplateDomainServiceImpl) flatten(
 	return &effective, nil
 }
 
-// valueLabels resolves the display labels of a variant's attribute values, which is what turns
-// the template name into "Classic T-Shirt / Black / M".
+// valueLabels resolves the display labels of a variant's attribute values, which turns the template
+// name into "Classic T-Shirt / Black / M".
 func (this *ProductTemplateDomainServiceImpl) valueLabels(
 	ctx corectx.Context, variant *models.ProductVariant,
 ) ([]string, error) {
@@ -206,10 +202,9 @@ func (this *ProductTemplateDomainServiceImpl) fetchTemplate(
 	return models.NewProductTemplateFrom(found.Data), nil
 }
 
-// engineFor resolves another resource's engine from the registry.
-//
-// It is a variable rather than a plain function so that a test can supply its own engines: the
-// registry is a package singleton populated during Init, which a unit test has no way to build.
+// engineFor resolves another resource's engine from the registry. It is a variable so a test can
+// substitute its own engines: the registry is a package singleton populated during Init, which a
+// unit test cannot build.
 
 func ptrOf[T any](v T) *T {
 	return &v

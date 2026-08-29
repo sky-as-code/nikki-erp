@@ -6,11 +6,8 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
-// What the fiscal request schema must guarantee, and why each one is worth a test.
-
 // The idempotency key is the only thing standing between a timeout and a duplicate VAT invoice, so
-// it is unique and it cannot be edited. Editable, it would let a caller rewrite the key of a request
-// already sent to a provider and then legitimately issue a second document for one sale.
+// it is unique and immutable: editing it would let one sale be invoiced twice.
 func TestFiscalRequestIdempotencyKeyIsUniqueAndImmutable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -38,9 +35,8 @@ func TestFiscalRequestIdempotencyKeyIsUniqueAndImmutable(t *testing.T) {
 	}
 }
 
-// The bill and the intent are immutable. A request that could be re-pointed would leave an issued
-// legal document describing a sale it was never issued for; one that could change its intent would
-// leave the document it already caused unexplained.
+// The bill and the intent are immutable. Re-pointing a request would leave an issued legal document
+// describing a sale it was never issued for.
 func TestFiscalRequestBillAndIntentAreImmutable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -60,11 +56,9 @@ func TestFiscalRequestBillAndIntentAreImmutable(t *testing.T) {
 	}
 }
 
-// The intent enum carries BUSINESS INTENT and nothing else (BR 48, 49).
-//
-// The assertion that matters is the ABSENCE: no value here names a document type, because deciding
-// between an invoice, a credit note and an adjustment declaration is invoice law, and BR 46 and
-// BR 94.26 put it on the provider's side of the port.
+// The intent enum carries business intent and nothing else. The assertion that matters is the
+// absence: no value names a document type, because choosing between an invoice, a credit note and an
+// adjustment declaration is the provider's side of the port.
 func TestFiscalIntentCarriesBusinessIntentNotDocumentTypes(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -95,9 +89,8 @@ func TestFiscalIntentCarriesBusinessIntentNotDocumentTypes(t *testing.T) {
 	}
 }
 
-// PENDING IS NOT ISSUED (BR 77). Both must exist as distinct states, because a request in flight and
-// a confirmed document are the two things a customer must never see conflated: one of them can be
-// deducted and the other does not exist.
+// Pending is not issued: a request in flight and a confirmed document must stay distinct, because
+// one of them can be deducted and the other does not exist.
 func TestFiscalStatusSeparatesPendingFromIssued(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -122,9 +115,9 @@ func TestFiscalStatusSeparatesPendingFromIssued(t *testing.T) {
 	}
 }
 
-// provider_reference is nullable, and that is the assertion. Required, it would have to be invented
-// at creation time — before any provider has issued anything — and an invented reference to a legal
-// document is worse than none: it points at nothing while looking like it points somewhere.
+// provider_reference is nullable. Required, it would have to be invented before any provider had
+// issued anything, and an invented reference points at nothing while looking like it points
+// somewhere.
 func TestProviderReferenceIsNullUntilIssued(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -137,9 +130,9 @@ func TestProviderReferenceIsNullUntilIssued(t *testing.T) {
 	}
 }
 
-// The adjustment link is nullable and self-referential (BR 58): null on an original, set on every
+// The adjustment link is nullable and self-referential: null on an original, set on every
 // adjustment. Held here rather than as a flag on the original, so one invoice can be adjusted more
-// than once — which is exactly what a sale returned in two parts produces.
+// than once, as a sale returned in two parts produces.
 func TestAdjustmentLinkIsOptionalAndSelfReferential(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -151,10 +144,8 @@ func TestAdjustmentLinkIsOptionalAndSelfReferential(t *testing.T) {
 	}
 }
 
-// enumSetOf reads the permitted values of an enum field as a set, for membership assertions.
-//
-// A thin wrapper over the package's enumValuesOf, which returns a slice: these tests assert
-// presence and absence rather than order, and a set says that plainly.
+// enumSetOf reads the permitted values of an enum field as a set, since these tests assert presence
+// and absence rather than order.
 func enumSetOf(t *testing.T, schema *dmodel.ModelSchema, name string) map[string]bool {
 	t.Helper()
 
@@ -168,9 +159,8 @@ func enumSetOf(t *testing.T, schema *dmodel.ModelSchema, name string) map[string
 	return values
 }
 
-// The outbox's event id is unique and immutable, because it is what consumers deduplicate on. An
-// event that could change its identity could be processed twice under two names, which defeats the
-// only mechanism making at-least-once delivery safe (acceptance 94.34).
+// The outbox's event id is unique and immutable, because it is what consumers deduplicate on: an
+// event that changed identity could be processed twice under two names.
 func TestOutboxEventIdIsUniqueAndImmutable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -217,8 +207,8 @@ func TestPublishedAtIsNullableBecauseItIsTheQueue(t *testing.T) {
 	}
 }
 
-// The payload is immutable. An event is a statement about a moment; editing one rewrites history
-// that consumers have already acted on, and the ones that already consumed it never find out.
+// The payload is immutable: editing an event rewrites history consumers have already acted on, and
+// they never find out.
 func TestTheOutboxPayloadIsImmutable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -236,9 +226,8 @@ func TestTheOutboxPayloadIsImmutable(t *testing.T) {
 	}
 }
 
-// A quotation's number is its own, unique and immutable, and NOT derived from the order sequence.
-// Deriving it would either leave holes in that sequence when a quotation lapses, or reuse numbers —
-// and fiscal systems read the order sequence, so the holes are not cosmetic.
+// A quotation's number is its own, not derived from the order sequence: deriving it would leave
+// holes in a sequence fiscal systems read, or reuse numbers.
 func TestQuotationNumberIsIndependentOfTheOrderSequence(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -291,9 +280,8 @@ func TestQuotationLinesCarryNoFulfilmentColumns(t *testing.T) {
 	}
 }
 
-// converted_sales_order_id is nullable and carries NO foreign key. Nullable because most quotations
-// never convert; no FK so that an order removed by a retention sweep does not take its quotation's
-// history with it.
+// converted_sales_order_id is nullable and carries no foreign key, so an order removed by a
+// retention sweep does not take its quotation's history with it.
 func TestTheConversionLinkIsOptional(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 

@@ -2,15 +2,9 @@ package models
 
 // The tax context: the facts a determination rule is allowed to test.
 //
-// This is a closed list on purpose (BR-TAX-ESS-SUP-007). A rule condition names a field key, an
-// operator and a value, and nothing else — no SQL, no expression to evaluate, no path into an
-// arbitrary object graph. Keeping the vocabulary finite is what makes rule evaluation something the
-// engine can reason about and validate ahead of time, rather than something it discovers at
-// calculation time on a customer's order.
-//
-// The keys mirror the request contract of BR-TAX-ESS-007 and BR-TAX-ESS-025/026. Adding one means
-// the engine can actually supply it; a key that nothing populates would match nothing and read as
-// a rule that mysteriously never fires.
+// The list is closed on purpose. A rule condition names a field key, an operator and a value, and
+// nothing else: no SQL, no expression, no path into an object graph, so rules can be validated ahead
+// of calculation. Only add a key the engine actually supplies, or rules on it silently never fire.
 
 const (
 	CtxOperationType            = "operation_type"
@@ -30,11 +24,8 @@ const (
 	CtxProductReference         = "product_reference"
 )
 
-// ContextFieldType is the datatype the engine knows a context field to hold.
-//
-// It exists so that condition validation can reject an ordering comparison against something that
-// has no ordering — "greater than" applied to a jurisdiction id is meaningless, and catching it at
-// configuration time is cheaper than discovering it produced no match on an invoice.
+// ContextFieldType is the datatype the engine knows a context field to hold, so validation can
+// reject an ordering comparison against a field that has no ordering.
 type ContextFieldType string
 
 const (
@@ -84,10 +75,8 @@ func IsOrderableContextField(fieldKey string) bool {
 	return fieldType == ContextTypeMoney || fieldType == ContextTypeDate
 }
 
-// IsMoneyContextField reports whether a condition on this field must carry a currency.
-//
-// A money threshold without one is not comparable: "over 1,000,000" means something different in
-// VND and in USD, and V1 does not convert between them (BR-TAX-ESS-SUP-007).
+// IsMoneyContextField reports whether a condition on this field must carry a currency. A money
+// threshold without one is not comparable, and the engine does not convert between currencies.
 func IsMoneyContextField(fieldKey string) bool {
 	fieldType, known := contextFieldTypes[fieldKey]
 	return known && fieldType == ContextTypeMoney

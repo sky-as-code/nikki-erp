@@ -13,36 +13,27 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// The Stock side of the Product integration contract, implemented on the quant service because
-// that is where the balances already live — the same placement, and for the same reason, as
-// GetLocationUsage in location_usage_read_service.go.
+// The Stock side of the Product integration contract, on the quant service because that is where
+// the balances live. Everything here reads and nothing writes a quantity.
 //
-// Everything here reads. Product displays these numbers and stores none of them, so no method
-// writes and none returns anything a caller could use to change a quantity (CR §4.1, §6.2).
-//
-// The rollups are done in Go, in one pass over one bounded search. That is not a preference: the
-// dynamic-model layer has no aggregation — SearchGraph filters and pages, and there is no
-// group-by — so a database-side GROUP BY is not available to us. Batching is what keeps this from
-// becoming the N+1 the requirement forbids (CR §8.4, AC-PROD-INT-035): one search covers a whole
-// page of variants, and the grouping happens in memory afterwards.
+// Rollups happen in Go over one bounded search because the dynamic-model layer has no aggregation:
+// SearchGraph filters and pages, with no group-by. Batching one search per page of variants is what
+// keeps this from becoming an N+1.
 
 var _ itStock.StockProductSummaryReader = (*StockQuantDomainServiceImpl)(nil)
 
-// summaryScanPageSize is how many quants are read at a time when summarising variants.
-//
-// It matches usageScanPageSize's reasoning: page to the end rather than stopping at the first
-// page, because a partial total reported as a whole one is a wrong number presented as right.
+// summaryScanPageSize is how many quants are read at a time. The scan pages to the end rather than
+// stopping at the first page: a partial total reported as a whole one is a wrong number.
 const summaryScanPageSize = 200
 
 // maxSummaryQuantPages bounds the scan so a pathological variant cannot turn one page render into
-// an unbounded read. Hitting it sets Truncated rather than failing: a flagged partial is more
-// useful than an error, and the caller is told not to trust the total.
+// an unbounded read. Hitting it sets Truncated rather than failing, telling the caller not to trust
+// the total.
 const maxSummaryQuantPages = 50
 
-// GetVariantSummaries resolves a batch of variants in a single pass.
-//
-// Every requested id appears in the result, zero-valued when the variant holds no stock, so a
-// caller never has to tell "no stock" apart from "not returned".
+// GetVariantSummaries resolves a batch of variants in a single pass. Every requested id appears in
+// the result, zero-valued when the variant holds no stock, so a caller never has to tell "no stock"
+// apart from "not returned".
 func (this *StockQuantDomainServiceImpl) GetVariantSummaries(
 	ctx corectx.Context, query itStock.GetVariantSummariesQuery,
 ) (*itStock.GetVariantSummariesResult, error) {
@@ -81,11 +72,9 @@ func (this *StockQuantDomainServiceImpl) GetVariantSummaries(
 	}, nil
 }
 
-// accumulateQuants folds every quant of the requested variants into their summaries.
-//
-// One search for the whole batch, grouped in memory. The location and warehouse counts are built
-// from distinct sets rather than a row count, since one variant commonly has several quants in the
-// same location — different lots, packages or owners — and each must count once.
+// accumulateQuants folds every quant of the requested variants into their summaries, in one search
+// grouped in memory. Location and warehouse counts come from distinct sets, not a row count: one
+// variant commonly has several quants in the same location for different lots, packages or owners.
 func (this *StockQuantDomainServiceImpl) accumulateQuants(
 	ctx corectx.Context, variantIds []string, summaries map[string]itStock.VariantStockSummary,
 ) error {
@@ -142,9 +131,8 @@ func (this *StockQuantDomainServiceImpl) accumulateQuants(
 				summary.InTransit = summary.InTransit.Add(onHand)
 			}
 
-			// A location counts as holding the variant only when something is actually
-			// there. A zeroed quant is a place it used to be, which is not what
-			// "Number of Locations" means to someone reading the product page.
+			// A location counts only when something is actually there; a zeroed quant is a place the
+			// variant used to be.
 			if !onHand.IsZero() && locationId != "" {
 				if locationsSeen[variantId] == nil {
 					locationsSeen[variantId] = map[string]bool{}
@@ -152,8 +140,8 @@ func (this *StockQuantDomainServiceImpl) accumulateQuants(
 				locationsSeen[variantId][locationId] = true
 			}
 
-			// Read off the field data: base_uom_id is declared on the quant schema but has
-			// no generated accessor, since nothing inside Stock had needed it until now.
+			// Read off the field data: base_uom_id is declared on the quant schema but has no
+			// generated accessor.
 			if summary.BaseUomId == nil {
 				summary.BaseUomId = quant.GetFieldData().GetModelId(models.StockQuantFieldBaseUomId)
 			}
@@ -168,11 +156,9 @@ func (this *StockQuantDomainServiceImpl) accumulateQuants(
 	return this.fillLocationCounts(ctx, summaries, locationsSeen, truncated)
 }
 
-// fillLocationCounts turns the per-variant location sets into counts, and derives how many
-// distinct warehouses those locations belong to.
-//
-// The warehouse count needs the locations' warehouse ids, which the quant does not carry, so the
-// locations are read once for the whole batch rather than once per variant.
+// fillLocationCounts turns the per-variant location sets into counts and derives how many distinct
+// warehouses those locations belong to. The quant does not carry a warehouse id, so the locations
+// are read once for the whole batch rather than once per variant.
 func (this *StockQuantDomainServiceImpl) fillLocationCounts(
 	ctx corectx.Context,
 	summaries map[string]itStock.VariantStockSummary,
@@ -197,8 +183,8 @@ func (this *StockQuantDomainServiceImpl) fillLocationCounts(
 
 		warehouses := map[string]bool{}
 		for locationId := range locations {
-			// A location outside any warehouse — vendor, customer, transit, loss — has no
-			// warehouse to count, and must not be folded into a single empty-string bucket.
+			// A location outside any warehouse — vendor, customer, transit, loss — has no warehouse to
+			// count, and must not be folded into a single empty-string bucket.
 			if warehouseId := warehouseOf[locationId]; warehouseId != "" {
 				warehouses[warehouseId] = true
 			}
@@ -216,17 +202,14 @@ func (this *StockQuantDomainServiceImpl) fillLocationCounts(
 	return nil
 }
 
-// accumulateMoves folds movement into the forecast, and records the last time stock for each
-// variant actually moved.
+// accumulateMoves folds movement into the forecast and records each variant's last movement.
 //
-// Forecast is current on-hand plus confirmed incoming minus confirmed outgoing (BR §4.2.13.3).
-// Draft moves are excluded: they are not commitments, and counting them would forecast stock
-// nobody has agreed to move. The on-hand part is added by the caller, once, after this returns.
+// Forecast is on-hand plus confirmed incoming minus confirmed outgoing; drafts are excluded because
+// they are not commitments. The on-hand part is added by the caller, once, after this returns.
 //
-// Done moves are read in the same pass rather than a separate one. They contribute nothing to the
-// forecast — they are already in on-hand — but they are what "Last Movement" means, and a second
-// query per variant to find each one would be the N+1 this whole reader exists to avoid. The
-// repository offers no sorting, so the latest is found by comparing as the rows go past.
+// Done moves are read in the same pass: they contribute nothing to the forecast, being already in
+// on-hand, but they are what "Last Movement" means, and a second query per variant would be an
+// N+1. The repository offers no sorting, so the latest is found by comparing rows as they go past.
 func (this *StockQuantDomainServiceImpl) accumulateMoves(
 	ctx corectx.Context, variantIds []string, summaries map[string]itStock.VariantStockSummary,
 ) error {
@@ -279,9 +262,9 @@ func (this *StockQuantDomainServiceImpl) accumulateMoves(
 			source := derefId(move.GetSourceLocationId())
 			destination := derefId(move.GetDestinationLocationId())
 
-			// Direction is judged by which end is stock we hold. A move from a vendor into
-			// our own location is incoming; the reverse is outgoing. A move between two of
-			// our own locations changes no total and is deliberately neither.
+			// Direction is judged by which end is stock we hold: vendor into our own location is
+			// incoming, the reverse outgoing, and a move between two of our own locations is neither
+			// because it changes no total.
 			inbound := internalLocations[destination] && !internalLocations[source]
 			outbound := internalLocations[source] && !internalLocations[destination]
 			switch {
@@ -301,12 +284,10 @@ func (this *StockQuantDomainServiceImpl) accumulateMoves(
 	return nil
 }
 
-// GetTemplateSummary aggregates a template's variants into one summary, and reports the rows it
-// was built from.
-//
-// The total is the sum of the variants and nothing else. A template has no quants of its own and
-// must never acquire any: the aggregate exists for display, search and reporting, and may not be
-// used to execute a stock operation (CR §5.2, §7, PROD-INT-INV-002/003, TS-PROD-02).
+// GetTemplateSummary aggregates a template's variants into one summary and reports the rows it was
+// built from. The total is the sum of the variants and nothing else: a template has no quants of
+// its own and must never acquire any, and the aggregate may not be used to execute a stock
+// operation.
 func (this *StockQuantDomainServiceImpl) GetTemplateSummary(
 	ctx corectx.Context, query itStock.GetTemplateSummaryQuery,
 ) (*itStock.GetTemplateSummaryResult, error) {
@@ -373,9 +354,8 @@ func (this *StockQuantDomainServiceImpl) GetTemplateSummary(
 		})
 	}
 
-	// Location and warehouse counts are deliberately not summed: two variants in the same
-	// aisle would count that aisle twice. They are left zero on the aggregate, where they have
-	// no meaning, and remain accurate on each variant row.
+	// Location and warehouse counts are deliberately not summed: two variants in the same aisle would
+	// count it twice. Left zero on the aggregate, accurate on each variant row.
 
 	return &itStock.GetTemplateSummaryResult{
 		HasData: true,
@@ -386,8 +366,8 @@ func (this *StockQuantDomainServiceImpl) GetTemplateSummary(
 	}, nil
 }
 
-// laterOf keeps whichever of the two timestamps is more recent, treating a nil candidate as no
-// information rather than as the zero time.
+// laterOf keeps whichever timestamp is more recent, treating nil as no information rather than as
+// the zero time.
 func laterOf(current *time.Time, candidate *model.ModelDateTime) *time.Time {
 	if candidate == nil {
 		return current

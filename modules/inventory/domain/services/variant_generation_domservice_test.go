@@ -9,9 +9,8 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
-// BR §14.3: the combination key is an identity, not a rendering. Everything below pins a
-// property that identity depends on — get any of them wrong and two requests for the same
-// product resolve to two different variants.
+// The combination key is an identity, not a rendering. Everything below pins a property identity
+// depends on: get one wrong and two requests for the same product resolve to different variants.
 
 // The order values arrive in must not change the key: a sales configurator picking Size then
 // Color must reach the same variant as one picking Color then Size.
@@ -24,8 +23,8 @@ func TestCombinationKeyIsOrderIndependent(t *testing.T) {
 		BuildCombinationKey([]itProduct.AttributeSelection{sizeM, colorBlack}))
 }
 
-// BR §6.5.3 and §14.3 step 2: a NEVER attribute carries information but is not part of what
-// makes a variant distinct, so it must not enter the key.
+// A NEVER attribute carries information but is not part of what makes a variant distinct, so it
+// must not enter the key.
 func TestCombinationKeyExcludesNeverAttributes(t *testing.T) {
 	generating := itProduct.AttributeSelection{AttributeId: "01ATTRCOLOR", ValueId: "01VALBLACK", Mode: models.VariantCreationModeInstant}
 	never := itProduct.AttributeSelection{AttributeId: "01ATTRNOTE", ValueId: "01VALGIFT", Mode: models.VariantCreationModeNever}
@@ -45,8 +44,8 @@ func TestCombinationKeyIncludesDynamicAttributes(t *testing.T) {
 	assert.Contains(t, BuildCombinationKey([]itProduct.AttributeSelection{dynamic}), "01ATTRSIZE")
 }
 
-// BR §4.5 and AC-PROD-008: a template with no variant-generating attributes still has one
-// concrete variant. Its key is the empty string, which is a key rather than a missing value.
+// A template with no variant-generating attributes still has one concrete variant. Its key is the
+// empty string, which is a key rather than a missing value.
 func TestCombinationKeyIsEmptyWithoutGeneratingAttributes(t *testing.T) {
 	assert.Equal(t, models.EmptyCombinationKey, BuildCombinationKey(nil))
 	assert.Equal(t, models.EmptyCombinationKey, BuildCombinationKey([]itProduct.AttributeSelection{
@@ -83,7 +82,7 @@ func TestParseEmptyCombinationKey(t *testing.T) {
 	assert.Empty(t, ParseCombinationKey(models.EmptyCombinationKey))
 }
 
-// BR §8.2: Color {Black, White} x Size {M, L} produces exactly four variants.
+// Color {Black, White} x Size {M, L} produces exactly four variants.
 func TestBuildInstantCombinationsCartesianProduct(t *testing.T) {
 	combinations := BuildInstantCombinations([]itProduct.AttributeOptions{
 		{AttributeId: "01ATTRCOLOR", Mode: models.VariantCreationModeInstant, ValueIds: []string{"01VALBLACK", "01VALWHITE"}},
@@ -98,8 +97,7 @@ func TestBuildInstantCombinationsCartesianProduct(t *testing.T) {
 	}, combinations)
 }
 
-// BR §4.7: DYNAMIC combinations are materialized on use, so instant generation must not
-// pre-create them.
+// DYNAMIC combinations are materialized on use, so instant generation must not pre-create them.
 func TestBuildInstantCombinationsIgnoresDynamicAndNever(t *testing.T) {
 	combinations := BuildInstantCombinations([]itProduct.AttributeOptions{
 		{AttributeId: "01ATTRCOLOR", Mode: models.VariantCreationModeInstant, ValueIds: []string{"01VALBLACK"}},
@@ -127,9 +125,8 @@ func TestBuildInstantCombinationsSkipsValuelessAttribute(t *testing.T) {
 	assert.Equal(t, []string{"01ATTRCOLOR:01VALBLACK"}, combinations)
 }
 
-// BR §8.5 and AC-PROD-030: synchronization reports what changed and leaves the decision to the
-// caller, because archiving a used variant and deleting an unused one are different operations
-// and only the caller knows which applies.
+// Synchronization reports what changed and leaves the decision to the caller: archiving a used
+// variant and deleting an unused one are different operations, and only the caller knows which.
 func TestPlanVariantSync(t *testing.T) {
 	plan := PlanVariantSync(
 		[]string{"a", "b", "c"},

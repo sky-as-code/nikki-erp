@@ -10,11 +10,9 @@ import (
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
-// maxComponentDepth bounds the transitive walk through group taxes.
-//
-// Real compositions are shallow — a total tax made of an excise and a VAT is two levels — so eight
-// is generous. As with jurisdictions the bound is a termination guarantee rather than a business
-// rule: a cycle written directly into the database must stop the walk rather than hang the request.
+// maxComponentDepth bounds the transitive walk through group taxes. It is a termination guarantee
+// rather than a business rule: a cycle written straight into the database must stop the walk rather
+// than hang the request.
 const maxComponentDepth = 8
 
 func taxComponentEngineSpec() engineSpec {
@@ -74,12 +72,9 @@ func validateComponentUpdate(engine drif.DynamicResourceEngine) drif.ActionValid
 	}
 }
 
-// assertParentVersionEditable refuses to change a component of a published definition version.
-//
-// A component has no lifecycle of its own — BR-TAX-ESS-SUP-005 is explicit that it inherits the
-// parent's. Without this check the immutability of a published version would be trivially
-// bypassable: the version's own fields would stay frozen while the set of taxes it is composed of
-// changed underneath them, which alters the computed total just as effectively as editing a rate.
+// assertParentVersionEditable refuses to change a component of a published definition version. A
+// component has no lifecycle of its own and inherits the parent's; without this, a published
+// version's fields would stay frozen while its composition changed underneath them.
 func assertParentVersionEditable(
 	ctx corectx.Context,
 	engine drif.DynamicResourceEngine,
@@ -114,12 +109,9 @@ func assertParentVersionEditable(
 }
 
 // assertComponentAcyclic rejects a composition in which a tax contains itself, directly or through
-// any chain of group taxes.
-//
-// The walk is over taxes rather than components: a component names a child tax, and that tax's own
-// published definition version may itself be a group with components of its own. Following only
-// the direct children would catch "A contains A" and miss "A contains B contains A", which is the
-// case that actually reaches production, because nobody writes the first one by hand.
+// a chain of group taxes. The walk is over taxes rather than components, because a child tax's own
+// published definition version may itself be a group; following only direct children would miss
+// "A contains B contains A".
 func assertComponentAcyclic(
 	ctx corectx.Context,
 	engine drif.DynamicResourceEngine,

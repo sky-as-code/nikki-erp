@@ -9,11 +9,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 )
 
-// The module contract this package must keep, checked here rather than discovered at boot.
-
 // A DynamicModule assignment that stops compiling is the point of the declared type: under the
-// wider InCodeModule the method set is found by a type assertion instead, so a module that lost
-// RegisterModels would still build, still load, and silently register no schemas at all.
+// wider InCodeModule the method set is found by a type assertion, so a module that lost
+// RegisterModels would still build and silently register no schemas.
 var _ modules.DynamicModule = ModuleSingleton
 
 func TestModuleIdentity(t *testing.T) {
@@ -29,12 +27,8 @@ func TestModuleIdentity(t *testing.T) {
 }
 
 // TestSchemaPrefixIsDerivable pins the assumption that lets cmd/application.go's schemaPrefixesOf
-// fall through to its default.
-//
-// That function maps a module to the prefixes its schemas are named with, and returns
-// moduleName+"_" unless the module has an explicit case. Sales names every schema "sales_", so it
-// needs no case — but a module whose prefix stops matching its name emits an empty migration
-// rather than an error, so the assumption is worth stating where a rename would break it.
+// fall through to its moduleName+"_" default. A module whose prefix stops matching its name emits
+// an empty migration rather than an error.
 func TestSchemaPrefixIsDerivable(t *testing.T) {
 	const wantPrefix = "sales_"
 	if got := ModuleSingleton.Name() + "_"; got != wantPrefix {
@@ -58,15 +52,9 @@ func TestDepsAreDeclaredOnce(t *testing.T) {
 	}
 }
 
-// TestEveryConsumedModuleIsDeclaredAsADependency guards the init-ordering bug that only shows up at
-// boot.
-//
-// infra/external binds a port for each module Sales consumes, and binds them EAGERLY: deps.Invoke
-// resolves them at Init rather than at first request. A module whose service is not registered yet
-// therefore panics the whole application at start-up rather than failing one later request.
-//
-// This caught a real failure: the accounting tax port was bound without "accounting" in Deps(), and
-// the loader started Sales first. Every unit test passed; the app did not boot.
+// TestEveryConsumedModuleIsDeclaredAsADependency guards an init-ordering bug that only shows up at
+// boot: infra/external binds each consumed module's port eagerly at Init, so a module whose service
+// is not registered yet panics the whole application at start-up.
 func TestEveryConsumedModuleIsDeclaredAsADependency(t *testing.T) {
 	declared := map[string]bool{}
 	for _, dep := range (&SalesModule{}).Deps() {
@@ -89,16 +77,10 @@ func TestEveryConsumedModuleIsDeclaredAsADependency(t *testing.T) {
 	}
 }
 
-// TestOwnAppServicesAreNotBoundAsExternalPorts guards the init-ordering cycle that only shows up at
-// boot.
-//
-// infra/external binds ports EAGERLY and runs FIRST in Init, because a derived service resolves its
-// ports when constructed. Sales' own application services are registered several steps later, so
-// resolving one of them in InitExternal is a same-module cycle — the boot fails with
-// "missing type: channel.ChannelPaymentAppService" and every unit test still passes.
-//
-// This caught exactly that: the payment mapping gate was first wired alongside the external ports.
-// It now resolves after InitApplicationServices, via SetChannelPaymentService.
+// TestOwnAppServicesAreNotBoundAsExternalPorts guards an init-ordering cycle that only shows up at
+// boot: infra/external binds ports eagerly and runs first in Init, while Sales' own application
+// services register several steps later, so resolving one of them in InitExternal fails the boot
+// while every unit test still passes.
 func TestOwnAppServicesAreNotBoundAsExternalPorts(t *testing.T) {
 	source, err := os.ReadFile(filepath.Join("infra", "external", "index.go"))
 	if err != nil {

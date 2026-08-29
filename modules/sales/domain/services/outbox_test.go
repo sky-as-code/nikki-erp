@@ -11,9 +11,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
-// The outbox rules that can be pinned without a repository. What is pinned here is the envelope and
-// the ordering, where being wrong means a consumer either cannot deduplicate or rebuilds a sale's
-// history in the wrong order.
+// The outbox envelope and ordering, pinned without a repository: being wrong here means a consumer
+// cannot deduplicate, or rebuilds a sale's history in the wrong order.
 
 func outboxRow(eventId, eventType string, occurredAt time.Time) dmodel.DynamicFields {
 	return dmodel.DynamicFields{
@@ -28,9 +27,8 @@ func outboxRow(eventId, eventType string, occurredAt time.Time) dmodel.DynamicFi
 	}
 }
 
-// The row id and the event id are DIFFERENT things and must not be conflated. The event id is the
-// public contract a consumer deduplicates on; the row id is Sales storage. Tying them would make a
-// change of storage a change of the contract.
+// The event id is the public contract consumers deduplicate on; the row id is Sales storage. Tying
+// them would make a change of storage a change of the contract.
 func TestTheRowIdAndTheEventIdAreSeparate(t *testing.T) {
 	row := outboxRow("EVT-1", models.EventSalesOrderConfirmed, time.Now())
 
@@ -47,9 +45,8 @@ func TestTheRowIdAndTheEventIdAreSeparate(t *testing.T) {
 	}
 }
 
-// The envelope carries everything a consumer needs to route and version-check WITHOUT decoding the
-// payload. A consumer that had to parse the payload to learn whether it could parse the payload
-// would be unable to refuse a version it does not understand.
+// The envelope carries everything a consumer needs to route and version-check without decoding the
+// payload, so it can refuse a version it does not understand.
 func TestTheEnvelopeIsReadableWithoutThePayload(t *testing.T) {
 	row := outboxRow("EVT-2", models.EventSalesPaymentCaptured, time.Now())
 
@@ -68,9 +65,8 @@ func TestTheEnvelopeIsReadableWithoutThePayload(t *testing.T) {
 	}
 }
 
-// A malformed row degrades to empty fields rather than panicking. The sweep processes a page of
-// rows, and a panic on one would strand every event behind it — including on the next run, which
-// would meet the same row first.
+// A malformed row degrades to empty fields rather than panicking: a panic on one row would strand
+// every event behind it, on this sweep and every later one.
 func TestAMalformedRowDoesNotPanicTheSweep(t *testing.T) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
@@ -95,9 +91,8 @@ func TestAMalformedRowDoesNotPanicTheSweep(t *testing.T) {
 	}
 }
 
-// An empty payload is legitimate and must not fail the write. The column is required, so a nil map
-// would turn "this event carried no extra facts" into a failure of the business transaction that
-// produced it.
+// An empty payload is legitimate; the column is required, so a nil map would fail the business
+// transaction that produced the event.
 func TestAnEmptyPayloadIsStoredAsAnEmptyMap(t *testing.T) {
 	if got := payloadOrEmpty(nil); got == nil {
 		t.Fatal("a nil payload must become an empty map, not stay nil")
@@ -112,9 +107,8 @@ func TestAnEmptyPayloadIsStoredAsAnEmptyMap(t *testing.T) {
 	}
 }
 
-// Events sort oldest-first by BUSINESS time. Publishing newest-first would deliver a cancellation
-// before the confirmation it cancels, and a consumer rebuilding state from the stream would end up
-// with the sale still open.
+// Events sort oldest-first by business time, or a cancellation would be delivered before the
+// confirmation it cancels.
 func TestEventsSortByBusinessTimeOldestFirst(t *testing.T) {
 	base := time.Date(2026, 8, 27, 10, 0, 0, 0, time.UTC)
 
@@ -127,14 +121,12 @@ func TestEventsSortByBusinessTimeOldestFirst(t *testing.T) {
 		t.Fatal("the fixture is wrong: the cancellation must be the later event")
 	}
 
-	// The sort the sweep applies, asserted through the same comparison it uses.
 	if occurredAtOf(rows[1]) >= occurredAtOf(rows[0]) {
 		t.Error("the confirmation must sort before the cancellation that follows it")
 	}
 }
 
-// A row with no timestamp sorts FIRST rather than last. Sending it earliest is the reading that
-// cannot reorder correctly-stamped events around it.
+// A row with no timestamp sorts first: sending it earliest cannot reorder stamped events around it.
 func TestAnUnstampedEventSortsFirst(t *testing.T) {
 	stamped := outboxRow("EVT-1", models.EventSalesOrderConfirmed, time.Now())
 	unstamped := dmodel.DynamicFields{models.SalesOutboxFieldEventId: "EVT-0"}
@@ -144,9 +136,8 @@ func TestAnUnstampedEventSortsFirst(t *testing.T) {
 	}
 }
 
-// BR §80's minimum event set. Asserted against the exported list rather than trusting that somebody
-// remembered, because an event type published but absent from the list is one no consumer was told
-// to expect.
+// The minimum event set, asserted against the exported list: an event type published but absent from
+// the list is one no consumer was told to expect.
 func TestTheMinimumEventSetIsDeclared(t *testing.T) {
 	declared := map[string]bool{}
 	for _, eventType := range models.SalesEventTypes() {
@@ -166,9 +157,8 @@ func TestTheMinimumEventSetIsDeclared(t *testing.T) {
 	}
 }
 
-// Event types are named after what HAPPENED, never after what a consumer should do. An imperative
-// name would be Sales instructing another module, which is precisely the coupling an outbox exists
-// to avoid — so the naming rule is asserted rather than left to review.
+// Event types are named after what happened, never after what a consumer should do: an imperative
+// name would be Sales instructing another module, the coupling an outbox exists to avoid.
 func TestEventNamesArePastTenseNotImperative(t *testing.T) {
 	for _, eventType := range models.SalesEventTypes() {
 		for _, imperative := range []string{

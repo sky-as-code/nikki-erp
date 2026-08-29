@@ -19,7 +19,7 @@ func date(t *testing.T, value string) *model.ModelDate {
 	return &result
 }
 
-// AC-TAX-05: the engine picks the rate whose period contains tax_date.
+// The engine picks the rate whose period contains tax_date.
 func TestPeriodContains(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -49,14 +49,14 @@ func TestPeriodContains(t *testing.T) {
 	}
 }
 
-// A malformed row must not behave as though it applies to every date. Treating a missing lower
-// bound as "since forever" would make a half-entered rate apply to historical transactions.
+// A malformed row must not apply to every date: treating a missing lower bound as "since forever"
+// would make a half-entered rate apply to historical transactions.
 func TestPeriodContainsRejectsMissingBounds(t *testing.T) {
 	assert.False(t, PeriodContains(nil, nil, "2025-09-15"))
 	assert.False(t, PeriodContains(date(t, "2025-07-01"), nil, ""))
 }
 
-// AC-TAX-SUP-04: two published versions may not overlap, so that a tax date resolves to one rate.
+// Two published versions may not overlap, so a tax date resolves to one rate.
 func TestPeriodsOverlap(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -89,8 +89,8 @@ func TestPeriodsOverlap(t *testing.T) {
 			assert.Equal(t, testCase.want, PeriodsOverlap(
 				date(t, testCase.fromA), toA, date(t, testCase.fromB), toB))
 
-			// Overlap is symmetric, and a rule that held only in the order the caller happened to
-			// pass its arguments would let one of the two orderings through.
+			// Overlap is symmetric; a rule holding only in the caller's argument order would let
+			// one of the two orderings through.
 			assert.Equal(t, testCase.want, PeriodsOverlap(
 				date(t, testCase.fromB), toB, date(t, testCase.fromA), toA))
 		})
@@ -105,10 +105,7 @@ func TestPeriodIsWellFormed(t *testing.T) {
 	assert.False(t, PeriodIsWellFormed(nil, date(t, "2025-12-31")))
 }
 
-// AC-TAX-33: Vietnam's 2% VAT reduction must stop applying after 2026-12-31 with no deployment.
-//
-// This is the effective-dating behaviour the requirement singles out, so it gets a test of its own
-// rather than being left implied by the table above.
+// Vietnam's 2% VAT reduction must stop applying after 2026-12-31 with no deployment.
 func TestVietnamVatReductionExpiresOnItsOwn(t *testing.T) {
 	from, to := date(t, "2025-07-01"), date(t, "2026-12-31")
 

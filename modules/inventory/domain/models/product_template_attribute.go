@@ -3,17 +3,17 @@ package models
 import (
 	_ "embed"
 
+	"github.com/shopspring/decimal"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// The two template-attribute junctions exist so that a template can narrow a global attribute to
-// a subset of its values: Color may be Black and White on one template and Red and Blue on
-// another. A variant references the template-scoped value, which is what makes "every value in a
-// combination is allowed by the template" checkable rather than merely conventional.
-// See BR §6.7 and BR-PROD-VAR-009.
+// The two template-attribute junctions let a template narrow a global attribute to a subset of its
+// values. A variant references the template-scoped value, which makes "every value in a
+// combination is allowed by the template" checkable rather than conventional.
 
 const (
 	ProductTemplateAttributeSchemaName = "inventory_product_template_attribute"
@@ -77,6 +77,7 @@ const (
 	ProductTemplateAttributeValueFieldTemplateAttributeId = "template_attribute_id"
 	ProductTemplateAttributeValueFieldAttributeValueId    = "attribute_value_id"
 	ProductTemplateAttributeValueFieldSequence            = "sequence"
+	ProductTemplateAttributeValueFieldSalesPriceExtra     = "sales_price_extra"
 
 	ProductTemplateAttributeValueEdgeTemplateAttribute = "template_attribute"
 	ProductTemplateAttributeValueEdgeAttributeValue    = "attribute_value"
@@ -115,6 +116,14 @@ func (this ProductTemplateAttributeValue) GetAttributeValueId() *model.Id {
 
 func (this *ProductTemplateAttributeValue) SetAttributeValueId(v *model.Id) {
 	this.GetFieldData().SetModelId(ProductTemplateAttributeValueFieldAttributeValueId, v)
+}
+
+func (this ProductTemplateAttributeValue) GetSalesPriceExtra() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(ProductTemplateAttributeValueFieldSalesPriceExtra)
+}
+
+func (this *ProductTemplateAttributeValue) SetSalesPriceExtra(v *decimal.Decimal) {
+	this.GetFieldData().SetDecimal(ProductTemplateAttributeValueFieldSalesPriceExtra, v)
 }
 
 func (this ProductTemplateAttributeValue) GetSequence() *int32 {

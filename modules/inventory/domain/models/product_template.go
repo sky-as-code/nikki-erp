@@ -11,9 +11,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// ProductTemplateStatus is the business lifecycle of a product line. It is deliberately separate
-// from is_archived, which is system visibility: a discontinued product may stay unarchived so it
-// still appears in discontinued-product listings. See BR §2.3 and AC-PROD-018.
+// ProductTemplateStatus is the business lifecycle, separate from is_archived, which is system
+// visibility: a discontinued product may stay unarchived so it still appears in listings.
 type ProductTemplateStatus string
 
 const (
@@ -46,12 +45,18 @@ const (
 	ProductTemplateFieldSalesDescription    = "sales_description"
 	ProductTemplateFieldPurchaseDescription = "purchase_description"
 	ProductTemplateFieldDefaultImageId      = "default_image_id"
+	ProductTemplateFieldBaseSalesPrice      = "base_sales_price"
 	ProductTemplateFieldDefaultWeight       = "default_weight"
 	ProductTemplateFieldDefaultLength       = "default_length"
 	ProductTemplateFieldDefaultWidth        = "default_width"
 	ProductTemplateFieldDefaultHeight       = "default_height"
 	ProductTemplateFieldStatus              = "status"
 	ProductTemplateFieldOrgId               = "org_id"
+
+	// Cost read model. A template has no cost of its own; these expose the range across its
+	// variants and must never be treated as the product's cost.
+	ProductTemplateFieldMinVariantCost = "min_variant_cost"
+	ProductTemplateFieldMaxVariantCost = "max_variant_cost"
 
 	ProductTemplateEdgeProductType = "product_type"
 	ProductTemplateEdgeCategory    = "category"
@@ -164,6 +169,14 @@ func (this ProductTemplate) GetDefaultImageId() *model.Id {
 
 func (this *ProductTemplate) SetDefaultImageId(v *model.Id) {
 	this.GetFieldData().SetModelId(ProductTemplateFieldDefaultImageId, v)
+}
+
+func (this ProductTemplate) GetBaseSalesPrice() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(ProductTemplateFieldBaseSalesPrice)
+}
+
+func (this *ProductTemplate) SetBaseSalesPrice(v *decimal.Decimal) {
+	this.GetFieldData().SetDecimal(ProductTemplateFieldBaseSalesPrice, v)
 }
 
 func (this ProductTemplate) GetDefaultWeight() *decimal.Decimal {

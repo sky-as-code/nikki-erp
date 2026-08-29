@@ -108,10 +108,8 @@ func mappingLineKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 	}
 }
 
-// validateMappingLineCreate rejects a line that maps a tax onto itself.
-//
-// Substituting a tax for itself is a no-op that reads as a configured rule, so an author debugging
-// why an export order still carries domestic VAT would find a mapping that appears to handle it.
+// validateMappingLineCreate rejects a line that maps a tax onto itself: a no-op that reads as a
+// configured rule.
 func validateMappingLineCreate(
 	_ corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
@@ -149,11 +147,9 @@ func assertMappingLineSubstitutes(line *models.TaxMappingLine, vErrs *ft.ClientE
 	}
 }
 
-// assertParentMappingEditable refuses to change a line of a published mapping.
-//
-// Same reasoning as tax components: a line has no lifecycle of its own, so without this the
-// mapping's own immutability would be bypassable by editing what it substitutes rather than the
-// mapping row itself (BR-TAX-ESS-SUP-031).
+// assertParentMappingEditable refuses to change a line of a published mapping. As with tax
+// components, a line has no lifecycle of its own, so without this the mapping's immutability would
+// be bypassable by editing what it substitutes.
 func assertParentMappingEditable(
 	ctx corectx.Context,
 	engine drif.DynamicResourceEngine,
@@ -266,11 +262,9 @@ func validateRoundingPolicyDelete(
 	return nil
 }
 
-// assertRoundingIncrementPositive rejects a zero rounding quantum.
-//
-// The schema's minimum is zero because a decimal bound cannot express "greater than", but rounding
-// to the nearest zero has no meaning and would divide by it. Zero is the value a partly-filled form
-// produces, so it is worth a message that says what is wrong rather than a later arithmetic error.
+// assertRoundingIncrementPositive rejects a zero rounding quantum. The schema's minimum is zero
+// because a decimal bound cannot express "greater than", but rounding to the nearest zero would
+// divide by zero.
 func assertRoundingIncrementPositive(
 	policy *models.TaxRoundingPolicy, vErrs *ft.ClientErrors,
 ) {

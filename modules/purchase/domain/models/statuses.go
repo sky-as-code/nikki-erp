@@ -1,29 +1,21 @@
 package models
 
-// The status values of the two lifecycle-bearing resources, and the enums that go with them.
-//
-// They are declared here rather than inline at their use sites so that the schema JSON and the code
-// reading it cannot drift: a typo in a comparison would otherwise be a condition that is silently
-// never true, which no compiler catches.
-//
-// Stored lower-case. The requirement writes them upper-case, which is presentation — every enum in
-// this codebase stores lower-case, and the JSON schemas declare these exact strings.
+// Status values for the lifecycle-bearing resources. Declared here, not inline, so a typo cannot
+// silently make a comparison never true. Stored lower-case, matching the JSON schemas exactly;
+// upper-case spellings elsewhere are presentation only.
 
 type PurchaseOrderStatus string
 
 const (
-	// PurchaseOrderStatusRfq is a draft request for quotation, not yet sent to anyone.
-	PurchaseOrderStatusRfq = PurchaseOrderStatus("rfq")
-	// PurchaseOrderStatusRfqSent means the vendor has been asked to quote.
+	// PurchaseOrderStatusRfq is a draft request for quotation, not yet sent.
+	PurchaseOrderStatusRfq     = PurchaseOrderStatus("rfq")
 	PurchaseOrderStatusRfqSent = PurchaseOrderStatus("rfq_sent")
-	// PurchaseOrderStatusToApprove means confirmation is waiting on an approver, which happens
-	// only when the organization's policy requires it for this order's total.
+	// PurchaseOrderStatusToApprove is reached only when the org's policy requires approval for this
+	// order's total.
 	PurchaseOrderStatusToApprove = PurchaseOrderStatus("to_approve")
-	// PurchaseOrderStatusPurchaseOrder is a committed order. The same record as the RFQ it began
-	// as: confirming changes the status and nothing about its identity.
+	// PurchaseOrderStatusPurchaseOrder is a committed order — the same record as the RFQ it began as.
 	PurchaseOrderStatusPurchaseOrder = PurchaseOrderStatus("purchase_order")
-	// PurchaseOrderStatusCancelled is terminal, and the only status a purchase order may be
-	// deleted from.
+	// PurchaseOrderStatusCancelled is terminal, and the only status an order may be deleted from.
 	PurchaseOrderStatusCancelled = PurchaseOrderStatus("cancelled")
 )
 
@@ -39,8 +31,7 @@ const (
 type AgreementType string
 
 const (
-	// AgreementTypeBlanketOrder commits to quantities at agreed prices, and tracks what has been
-	// drawn down against it.
+	// AgreementTypeBlanketOrder commits to quantities at agreed prices and tracks drawdown.
 	AgreementTypeBlanketOrder = AgreementType("blanket_order")
 	// AgreementTypePurchaseTemplate is a reusable skeleton with no commitment attached.
 	AgreementTypePurchaseTemplate = AgreementType("purchase_template")
@@ -49,8 +40,7 @@ const (
 type PurchaseOrderLineType string
 
 const (
-	// PurchaseOrderLineTypeProduct is the only line type that buys anything and the only one that
-	// contributes to the totals.
+	// PurchaseOrderLineTypeProduct is the only line type contributing to the totals.
 	PurchaseOrderLineTypeProduct = PurchaseOrderLineType("product")
 	// The remaining three organize the printed document and carry no quantity or price.
 	PurchaseOrderLineTypeSection    = PurchaseOrderLineType("section")
@@ -68,16 +58,15 @@ const (
 type ApprovalMode string
 
 const (
-	// ApprovalModeOneStep sends a confirmed order straight to PURCHASE_ORDER.
+	// ApprovalModeOneStep sends a confirmed order straight to purchase_order.
 	ApprovalModeOneStep = ApprovalMode("one_step")
-	// ApprovalModeTwoStep routes it through TO_APPROVE when it reaches the threshold.
+	// ApprovalModeTwoStep routes it through to_approve when it reaches the threshold.
 	ApprovalModeTwoStep = ApprovalMode("two_step")
 )
 
 type PoModificationPolicy string
 
 const (
-	// PoModificationPolicyAllowEdit leaves a confirmed order editable.
 	PoModificationPolicyAllowEdit = PoModificationPolicy("allow_edit")
 	// PoModificationPolicyAutoLock sets is_locked at confirmation.
 	PoModificationPolicyAutoLock = PoModificationPolicy("auto_lock")

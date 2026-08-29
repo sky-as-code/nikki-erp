@@ -55,13 +55,10 @@ func (*InventoryModule) Version() semver.SemVer {
 
 // Init implements NikkiModule.
 //
-// The steps are ordered, and each depends on the one before it, so they run in sequence rather
-// than being joined: the engines must exist before a service can be derived from one, the
-// derived service must be installed before the actions that type-assert it are reachable, and
-// the REST layer registers the engines' routes last.
+// The steps must run in this order: engines exist before a service is derived from one, a derived
+// service is installed before the actions that type-assert it, and REST registers routes last.
 //
-// The superseded Products implementation under ./product is deliberately not initialized: it is
-// kept as a historical folder pending manual deletion. See ./product/README.md.
+// The superseded ./product implementation is deliberately not initialized; see ./product/README.md.
 func (*InventoryModule) Init() error {
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
@@ -78,8 +75,7 @@ func (*InventoryModule) Init() error {
 	if err := initStockScrapService(); err != nil {
 		return err
 	}
-	// After the quant service, which is what answers the location lifecycle guards, and before the
-	// application layer, which composes both of the services created here.
+	// Must follow the quant service, which answers the location lifecycle guards.
 	if err := initWarehouseServices(); err != nil {
 		return err
 	}
@@ -88,9 +84,8 @@ func (*InventoryModule) Init() error {
 
 // initWarehouseServices installs the warehouse and location services and the layer above them.
 //
-// The order inside is load-bearing twice over: the location service needs the quant service's
-// usage port, published by initStockQuantService above, and the application service composes both
-// of the services created here.
+// Order is load-bearing: the location service needs the quant service's usage port, and the
+// application service composes both services created here.
 func initWarehouseServices() error {
 	warehouseEngine, ok := dynamicresource.Registry().GetEngine(models.WarehouseSchemaName)
 	if !ok {
@@ -128,11 +123,9 @@ func initWarehouseServices() error {
 	return app.InitApplicationServices(warehouseSvc, locationSvc)
 }
 
-// installDerivedService replaces one engine's resource service with a derived one.
-//
-// The warehouse and location services are built by hand above because the layer over them needs
-// the concrete types; these two are only ever reached through their engine, so the wiring is the
-// same three lines each and is written once.
+// installDerivedService replaces one engine's resource service with a derived one. The warehouse
+// and location services are built by hand above instead, because the layer over them needs the
+// concrete types.
 func installDerivedService(
 	schemaName string, derive func(drif.DynamicResourceService) drif.DynamicResourceService,
 ) error {
@@ -145,10 +138,8 @@ func installDerivedService(
 }
 
 // initStockTransferService installs the derived transfer service on the Stock Transfer engine.
-//
-// The six movement actions type-assert the engine's service to the derived type, so without this
-// every one of them fails at the assertion rather than at a request: confirm, reserve, validate
-// and the rest live on that type and nowhere else.
+// The movement actions (confirm, reserve, validate, ...) type-assert the engine's service to the
+// derived type, so without this each one fails at the assertion.
 func initStockTransferService() error {
 	transferEngine, ok := dynamicresource.Registry().GetEngine(models.StockTransferSchemaName)
 	if !ok {
@@ -158,21 +149,15 @@ func initStockTransferService() error {
 	derived := services.NewStockTransferDomainService(transferEngine.ResourceService())
 	transferEngine.SetResourceService(derived)
 
-	// Published for consumers that must sequence a movement outside an engine action (SALES-049).
-	//
-	// Selling modules raise a document, confirm it, reserve against it and validate it — all from
-	// their own transaction boundaries, not from a Stock request. Before this was registered they
-	// could only record that they owed a customer goods; nothing could ask for the goods to move.
-	//
-	// The narrowed interface is what is published, never the struct: see its doc for why handing
-	// over the embedded CRUD would make the lifecycle rules optional.
+	// Published for consumers that sequence a movement outside an engine action, from their own
+	// transaction boundaries. The narrowed interface is published, never the struct: handing over
+	// the embedded CRUD would make the lifecycle rules optional.
 	return deps.Register(func() itStock.StockTransferMovementService { return derived })
 }
 
-// initStockQuantService installs the derived quant service on the Stock Quant engine.
-//
-// It is what fills available_quantity on a read: the field has no database column, so without
-// this the engine would advertise it in meta/schema and serve it as permanently null.
+// initStockQuantService installs the derived quant service on the Stock Quant engine. It fills
+// available_quantity on a read: the field has no database column, so without this the engine
+// advertises it in meta/schema and serves it as permanently null.
 func initStockQuantService() error {
 	quantEngine, ok := dynamicresource.Registry().GetEngine(models.StockQuantSchemaName)
 	if !ok {
@@ -182,18 +167,15 @@ func initStockQuantService() error {
 	derived := services.NewStockQuantDomainService(quantEngine.ResourceService())
 	quantEngine.SetResourceService(derived)
 
-	// The same instance also answers what Stock holds at a location, which is what Warehouse
-	// Management consults before suspending or archiving one. Publishing it as a port keeps the
-	// dependency one-way: the warehouse services read this contract and never a stock table.
+	// The same instance answers what Stock holds at a location, consulted before a location is
+	// suspended or archived. Publishing it as a port keeps the dependency one-way: the warehouse
+	// services read this contract and never a stock table.
 	return deps.Register(func() itStock.LocationUsageReadService { return derived })
 }
 
-// initStockScrapService installs the derived scrap service on the Stock Scrap engine.
-//
-// Two things depend on it: Do Scrap type-asserts to the derived type, and the create/update/delete
-// overrides are what stop a done scrap being edited or deleted. Without this the document rules
-// would silently not apply — the CRUD would still work, which is what makes the omission easy to
-// miss.
+// initStockScrapService installs the derived scrap service on the Stock Scrap engine. Do Scrap
+// type-asserts to the derived type, and the create/update/delete overrides stop a done scrap being
+// edited or deleted. Without this the CRUD still works but the document rules silently do not apply.
 func initStockScrapService() error {
 	scrapEngine, ok := dynamicresource.Registry().GetEngine(models.StockScrapSchemaName)
 	if !ok {
@@ -204,14 +186,12 @@ func initStockScrapService() error {
 	return nil
 }
 
-// initProductService installs the derived Products service on the Product Template engine.
+// initProductService installs the derived Products service on the Product Template engine. The
+// replacement embeds the default service, so built-in CRUD is untouched while custom actions reach
+// the extra methods through ProcessInput.ResourceService.
 //
-// The engine is created with the default resource service; this replaces it with one that embeds
-// the default and adds the Products capabilities, so that built-in CRUD is untouched while a
-// custom action can reach the extra methods through ProcessInput.ResourceService.
-//
-// SetResourceService is a plain field assignment with no locking, so it is safe here — during
-// Init, before any request is served — and nowhere else.
+// SetResourceService is an unlocked field assignment, so it is safe only during Init, before any
+// request is served.
 func initProductService() error {
 	templateEngine, ok := dynamicresource.Registry().GetEngine(models.ProductTemplateSchemaName)
 	if !ok {
@@ -229,10 +209,9 @@ func initProductService() error {
 	return deps.Register(func() itProduct.ProductService { return derived })
 }
 
-// initProductVariantService installs the derived variant service on the Product Variant engine.
-//
-// It is what fills the template_* virtual fields on a read: they have no database column, so
-// without this the engine would serve them as permanently absent.
+// initProductVariantService installs the derived variant service on the Product Variant engine. It
+// fills the template_* virtual fields on a read: they have no database column, so without this the
+// engine serves them as permanently absent.
 func initProductVariantService() error {
 	variantEngine, ok := dynamicresource.Registry().GetEngine(models.ProductVariantSchemaName)
 	if !ok {
@@ -242,26 +221,27 @@ func initProductVariantService() error {
 	derived := services.NewProductVariantDomainService(variantEngine.ResourceService())
 	variantEngine.SetResourceService(derived)
 
-	// Published for consumers that reach these reads outside an engine action. The same instance
-	// serves all three ports, so a consumer gets the batched template_* fill whichever it injects.
+	// One instance serves all four ports, so a consumer gets the batched template_* fill whichever
+	// it injects. The pricing-basis port stays separate because it grants strictly less: a price
+	// calculator gets the pricing inputs without a general product reader.
 	return errors.Join(
 		deps.Register(func() itProduct.ProductVariantDomainService { return derived }),
 		deps.Register(func() itProduct.ProductTemplateReadService { return derived }),
 		deps.Register(func() itProduct.ProductCategoryReadService { return derived }),
+		deps.Register(func() itProduct.ProductPricingBasisService { return derived }),
 	)
 }
 
 // RegisterModels implements DynamicModule.
 //
-// Schemas must be registered referenced-before-referencing, because an edge is resolved against
-// the schema registry at registration time.
+// Schemas must be registered referenced-before-referencing: an edge is resolved against the schema
+// registry at registration time.
 func (*InventoryModule) RegisterModels() error {
 	return errors.Join(
 		// Master data: referenced by the template, so registered first.
 		dmodel.RegisterSchemaB(models.ProductTypeSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.ProductCategorySchemaBuilder()),
 		dmodel.RegisterSchemaB(models.BrandSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.ProductPriceSchemaBuilder()),
 
 		// Attributes: the value points at the attribute, so the attribute comes first.
 		dmodel.RegisterSchemaB(models.ProductAttributeSchemaBuilder()),
@@ -277,15 +257,12 @@ func (*InventoryModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.ProductVariantSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.ProductVariantAttributeValueSchemaBuilder()),
 
-		// Warehouse topology. The warehouse and the storage category are both referenced by a
-		// location, so they precede it; the supply relation and the putaway rule reference the
-		// warehouse and locations, so they follow further below.
+		// Warehouse topology. Both are referenced by a location, so they precede it.
 		dmodel.RegisterSchemaB(models.WarehouseSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.StorageCategorySchemaBuilder()),
 
-		// The shared location master, owned by neither Warehouse nor Stock. It comes before the
-		// stock schemas because both of the two below reference it, and the quant also references
-		// the variant registered above, so this order is the only one that resolves.
+		// The shared location master, owned by neither Warehouse nor Stock. Both stock schemas below
+		// reference it, and the quant also references the variant registered above.
 		dmodel.RegisterSchemaB(models.InventoryLocationSchemaBuilder()),
 
 		// Warehouse configuration that points at both a warehouse and a location, so it comes
@@ -298,20 +275,17 @@ func (*InventoryModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.StockQuantSchemaBuilder()),
 
 		// Movement. The transfer references the operation type and locations above; the move
-		// references the transfer, and the line and the dependency both reference the move, so
-		// this order is the only one that resolves.
+		// references the transfer; the line and the dependency reference the move.
 		dmodel.RegisterSchemaB(models.StockTransferSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.StockMoveSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.StockMoveLineSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.StockMoveDependencySchemaBuilder()),
 
-		// Corrections. The scrap references the transfer, the variant and two locations, all
-		// registered above, so it comes last.
+		// Corrections. The scrap references the transfer, the variant and two locations above.
 		dmodel.RegisterSchemaB(models.StockScrapSchemaBuilder()),
 
-		// Stock's settings for a product line, currently its inventory unit. It references the
-		// product template, so it comes after it. The UoM it names lives in Essential and is held
-		// as a plain id, which is why nothing from that module has to be registered first.
+		// Stock's per-product settings; references the product template. The UoM it names lives in
+		// Essential and is held as a plain id, so nothing from that module must be registered first.
 		dmodel.RegisterSchemaB(models.StockProductConfigSchemaBuilder()),
 	)
 }

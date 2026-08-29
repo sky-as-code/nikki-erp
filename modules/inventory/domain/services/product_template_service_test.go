@@ -20,9 +20,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// The archive cascade, from the service side. Which variants it touches is decided by
-// ShouldSkipCascade and tested there; what follows covers the wiring the override adds:
-// the transaction, the scoped context, and the fact that the writes address variant rows.
+// The archive cascade from the service side: the transaction, the scoped context, and that the
+// writes address variant rows. Which variants it touches is ShouldSkipCascade's test.
 
 const (
 	testTemplateId = "01TEMPLATE0000000000000000"
@@ -30,8 +29,7 @@ const (
 )
 
 // stubVariantRepository stands in for the variant engine's repository. Only the three methods the
-// cascade uses are implemented; the embedded interface covers the rest so this stays a partial
-// double rather than a full reimplementation.
+// cascade uses are implemented; the embedded interface covers the rest.
 type stubVariantRepository struct {
 	drif.DynamicResourceRepository
 
@@ -155,11 +153,10 @@ func runCascadeRaw(
 	original := engineFor
 	t.Cleanup(func() { engineFor = original })
 	engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
-		// Two schemas are legitimately reached. The cascade writes variant rows, so its writes
-		// must go through the variant engine. The stock guard that runs first asks the quant
-		// engine what the variants hold — and is answered here with an error, which the guard
-		// treats as "stock is not wired in this deployment" and lets the archive proceed. That
-		// keeps these tests about the cascade; the guard has its own.
+		// Two schemas are legitimately reached: the cascade writes variant rows, and the stock guard
+		// asks the quant engine what the variants hold. The quant engine is answered with an error,
+		// which the guard reads as "stock is not wired" and lets the archive proceed, keeping these
+		// tests about the cascade.
 		switch schemaName {
 		case models.ProductVariantSchemaName:
 			return &stubEngine{repo: repo}, nil
@@ -188,8 +185,8 @@ func runCascade(
 	return repo.updates
 }
 
-// Without an is_archived flag there is no direction to cascade in. The override must hand the
-// request to the base service, which reports the missing required field, rather than guessing.
+// Without an is_archived flag there is no direction to cascade in, so the override hands the
+// request to the base service rather than guessing.
 func TestSetArchivedWithoutFlagDelegatesToTheBase(t *testing.T) {
 	base := &stubBaseService{}
 	service := &ProductTemplateDomainServiceImpl{DynamicResourceService: base}
@@ -203,8 +200,8 @@ func TestSetArchivedWithoutFlagDelegatesToTheBase(t *testing.T) {
 	assert.Equal(t, 1, base.calls, "the base service must still decide the missing-flag error")
 }
 
-// The cascade must reach the variants that need it and leave the rest alone. The skip rule itself
-// is ShouldSkipCascade; this asserts the loop honours it and writes variant ids.
+// The cascade must reach the variants that need it and leave the rest alone: this asserts the loop
+// honours ShouldSkipCascade and writes variant ids.
 func TestSetArchivedCascadesToVariantsNeedingIt(t *testing.T) {
 	cascadeSource := models.ArchiveSourceTemplateCascade
 	repo := &stubVariantRepository{variants: []dmodel.DynamicFields{
@@ -222,8 +219,7 @@ func TestSetArchivedCascadesToVariantsNeedingIt(t *testing.T) {
 }
 
 // The write path stamps updated_by from the context, so the scoped transaction context must carry
-// the caller across. Losing it writes a null audit column and reports nothing, which is why this
-// is asserted rather than assumed.
+// the caller across; losing it writes a null audit column and reports nothing.
 func TestCascadeWritesCarryTheCallerIdentity(t *testing.T) {
 	repo := &stubVariantRepository{variants: []dmodel.DynamicFields{
 		archivedVariant("01VARIANTACTIVE00000000000", false, nil),

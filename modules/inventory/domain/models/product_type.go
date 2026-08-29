@@ -9,9 +9,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// Product Type determines how the system processes a product, as opposed to how the business
-// classifies it. Taxonomy such as Raw Material or Finished Goods belongs on Product Category,
-// not here. See BR §6.3.1.
+// Product Type determines how the system processes a product, not how the business classifies it.
+// Taxonomy such as Raw Material or Finished Goods belongs on Product Category.
 const (
 	ProductTypeCodeGoods   = "GOODS"
 	ProductTypeCodeService = "SERVICE"

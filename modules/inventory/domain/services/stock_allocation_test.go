@@ -106,7 +106,7 @@ func TestAllocateFromQuantsHandlesNoStockAtAll(t *testing.T) {
 }
 
 func TestAllocateFromQuantsKeepsDecimalPrecision(t *testing.T) {
-	// BR §7.3 forbids floating point for stock quantities: in float64, 0.1+0.2 != 0.3.
+	// Stock quantities must not use floating point: in float64, 0.1+0.2 != 0.3.
 	quants := []LockedQuant{
 		lockedQuant("q1", "0.1", "0"),
 		lockedQuant("q2", "0.2", "0"),
@@ -120,7 +120,7 @@ func TestAllocateFromQuantsKeepsDecimalPrecision(t *testing.T) {
 }
 
 func TestReleaseQuantityClampsAtZero(t *testing.T) {
-	// STOCK-INV-002: reserved must never go negative.
+	// Reserved must never go negative.
 	result, clamped := ReleaseQuantity(decimal.RequireFromString("10"), decimal.RequireFromString("25"))
 
 	assert.True(t, result.IsZero())

@@ -9,22 +9,12 @@ import (
 	"testing"
 )
 
-// SALES-046's invariants, checked against the migration files themselves.
-//
 // Every Sales table is written twice — once here, once in coremart with a tenant_id on every table
-// and every unique constraint. The two trees drift silently: a table added to one and forgotten in
-// the other breaks only a fresh install of the tree that missed it, which is the environment nobody
-// runs day to day. These parse both trees and compare them.
-//
-// The coremart tree is reached by a relative path. When it is absent — somebody building nikkierp
-// alone — the cross-tree checks skip rather than fail, because the invariant genuinely does not apply
-// to a checkout that has only one tree.
+// and unique constraint. The trees drift silently, so these tests parse and compare both. The
+// coremart tree is reached by a relative path; when it is absent the cross-tree checks skip.
 
-// postgresIdentifierLimit is where Postgres truncates a name, SILENTLY.
-//
-// Not an error, not a warning: the constraint is created under a shortened name, so the DDL applies
-// and every later DROP CONSTRAINT by the declared name fails instead. Two names in this module were
-// over the limit and had been applying truncated for weeks.
+// postgresIdentifierLimit is where Postgres truncates a name silently: the constraint is created
+// under a shortened name, so every later DROP CONSTRAINT by the declared name fails instead.
 const postgresIdentifierLimit = 63
 
 func TestMigrationIdentifiersFitPostgres(t *testing.T) {
@@ -46,8 +36,8 @@ func TestMigrationIdentifiersFitPostgres(t *testing.T) {
 	}
 }
 
-// The two trees carry the same migration files. A table added to one and forgotten in the other
-// breaks a fresh install of the tree that missed it — and only that, so it does not show up locally.
+// A table added to one tree and forgotten in the other breaks only a fresh install of the tree that
+// missed it, so it does not show up locally.
 func TestBothTreesCarryTheSameSalesMigrations(t *testing.T) {
 	trees := migrationTrees(t)
 	if len(trees) < 2 {
@@ -63,11 +53,9 @@ func TestBothTreesCarryTheSameSalesMigrations(t *testing.T) {
 	}
 }
 
-// Every coremart Sales table carries tenant_id, and every unique constraint is tenant-prefixed.
-//
-// A unique that is NOT prefixed is the dangerous half: it would make a value globally unique across
-// tenants, so one tenant creating order number "SO-1" would stop every other tenant from doing the
-// same. That reads as a mysterious duplicate-key error in an unrelated tenant.
+// Every coremart Sales table carries tenant_id, and every unique constraint is tenant-prefixed: an
+// unprefixed unique makes a value globally unique across tenants, so one tenant's "SO-1" blocks
+// every other tenant's.
 func TestCoremartTablesAreTenantScoped(t *testing.T) {
 	trees := migrationTrees(t)
 	if len(trees) < 2 {
@@ -106,11 +94,9 @@ func TestCoremartTablesAreTenantScoped(t *testing.T) {
 	}
 }
 
-// The Sales migrations own their numeric block exclusively.
-//
-// Another module numbering into it would interleave on a fresh install, and a Sales table could then
-// be created before something it references. Existing installs are unaffected, so this is the class
-// of mistake that does not show up until somebody provisions a new environment.
+// The Sales migrations own their numeric block exclusively: another module numbering into it would
+// interleave on a fresh install, creating a Sales table before something it references. Existing
+// installs are unaffected, so it only shows up when provisioning a new environment.
 func TestTheSalesMigrationBlockIsExclusivelySales(t *testing.T) {
 	for _, tree := range migrationTrees(t) {
 		entries, err := os.ReadDir(tree)

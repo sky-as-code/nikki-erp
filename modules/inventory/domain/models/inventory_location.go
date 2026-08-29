@@ -9,17 +9,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// InventoryLocationUsage is the general logistics behaviour of a location, which decides whether
-// stock sitting in it is company-owned. Only Internal holds real inventory; the rest are the
-// counterparties and virtual locations that give every movement an opposite side, so that a
-// receipt, a delivery, an adjustment and a scrap are all the same operation with different
-// endpoints. See BR §4.2 and the change request §8.3.
-//
-// Scrap is kept distinct from InventoryLoss even though the change request's canonical list names
-// only the latter: the list is a minimum ("tối thiểu") and explicitly extensible, and the two are
-// different destinations here. An adjustment balances against inventory loss while a write-off
-// moves to scrap, and the scrap lifecycle rejects a location of the wrong usage precisely so that
-// scrapping cannot silently move usable stock somewhere it will be counted again.
+// InventoryLocationUsage is a location's logistics behaviour and decides whether stock in it is
+// company-owned. Only Internal holds real inventory; the rest are counterparties and virtual
+// locations giving every movement an opposite side. Scrap and InventoryLoss are distinct
+// destinations: adjustments balance against inventory loss, write-offs move to scrap, and the
+// scrap lifecycle rejects a location of the wrong usage so usable stock is not counted twice.
 const (
 	InventoryLocationUsageInternal      = "internal"
 	InventoryLocationUsageCustomer      = "customer"
@@ -30,11 +24,8 @@ const (
 	InventoryLocationUsageVirtual       = "virtual"
 )
 
-// InventoryLocationPurpose is what a location is used for inside its warehouse, and is orthogonal
-// to usage: WH/Input is Internal by usage and Receiving by purpose. It is null for a location
-// outside any warehouse.
-//
-// These values are why Zone, Dock, Receiving Area and Picking Area are not separate resources.
+// InventoryLocationPurpose is orthogonal to usage: WH/Input is Internal by usage and Receiving by
+// purpose. Null for a location outside any warehouse.
 const (
 	InventoryLocationPurposeStorage   = "storage"
 	InventoryLocationPurposeReceiving = "receiving"
@@ -45,8 +36,8 @@ const (
 	InventoryLocationPurposeOther     = "other"
 )
 
-// InventoryLocationRemovalStrategy is the order goods should be taken from a location's subtree.
-// It is configuration: the Stock reservation engine applies it, Warehouse only records it.
+// InventoryLocationRemovalStrategy is the order goods are taken from a location's subtree. The
+// Stock reservation engine applies it; Warehouse only records it.
 const (
 	InventoryLocationRemovalStrategyFifo          = "fifo"
 	InventoryLocationRemovalStrategyLifo          = "lifo"
@@ -55,11 +46,8 @@ const (
 	InventoryLocationRemovalStrategyLeastPackages = "least_packages"
 )
 
-// InventoryLocationStatus is the operational state, separate from is_archived.
-//
-// Suspended is allowed while the location still holds stock — locking a location that holds goods
-// is exactly what it is for — whereas archiving one that does is refused. Do not copy the guard
-// from one into the other.
+// InventoryLocationStatus is the operational state, separate from is_archived. Suspending a
+// location holding stock is allowed; archiving one is refused. Do not share the guard.
 const (
 	InventoryLocationStatusActive    = "active"
 	InventoryLocationStatusSuspended = "suspended"
@@ -142,8 +130,8 @@ func (this *InventoryLocation) SetPurpose(v *string) {
 	this.GetFieldData().SetString(InventoryLocationFieldPurpose, v)
 }
 
-// GetWarehouseId returns the owning warehouse, or nil when the location belongs to none — which is
-// normal for vendor, customer, inventory-loss and shared transit locations.
+// GetWarehouseId returns nil when the location belongs to no warehouse, normal for vendor,
+// customer, inventory-loss and shared transit locations.
 func (this InventoryLocation) GetWarehouseId() *model.Id {
 	return this.GetFieldData().GetModelId(InventoryLocationFieldWarehouseId)
 }
@@ -193,8 +181,8 @@ func (this *InventoryLocation) SetParentLocationId(v *model.Id) {
 	this.GetFieldData().SetModelId(InventoryLocationFieldParentLocationId, v)
 }
 
-// GetHierarchyDepth returns how deep the location sits, 0 for a root. Derived alongside
-// complete_path; the tree itself is the source of truth.
+// GetHierarchyDepth is 0 for a root. Derived alongside complete_path; the tree is the source of
+// truth.
 func (this InventoryLocation) GetHierarchyDepth() *int32 {
 	return this.GetFieldData().GetInt32(InventoryLocationFieldHierarchyDepth)
 }
@@ -203,8 +191,8 @@ func (this *InventoryLocation) SetHierarchyDepth(v *int32) {
 	this.GetFieldData()[InventoryLocationFieldHierarchyDepth] = v
 }
 
-// GetIsSystemGenerated reports whether the warehouse created this location for itself. Such a
-// location is protected from being restructured or archived while its warehouse still needs it.
+// GetIsSystemGenerated reports a location the warehouse created for itself; it cannot be
+// restructured or archived while its warehouse still needs it.
 func (this InventoryLocation) GetIsSystemGenerated() *bool {
 	return this.GetFieldData().GetBool(InventoryLocationFieldIsSystemGenerated)
 }

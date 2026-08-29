@@ -10,11 +10,8 @@ import (
 	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
-// maxJurisdictionDepth bounds the parent walk.
-//
-// A real hierarchy is country -> state -> county -> city, so four levels; ten is generous. The
-// bound exists so that a cycle already present in the database — written before this check, or by
-// a direct SQL edit — terminates the walk instead of hanging the request.
+// maxJurisdictionDepth bounds the parent walk so that a cycle already present in the database
+// terminates the walk instead of hanging the request. A real hierarchy is four levels deep.
 const maxJurisdictionDepth = 10
 
 func taxJurisdictionEngineSpec() engineSpec {
@@ -47,11 +44,9 @@ func jurisdictionKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
 	}
 }
 
-// validateJurisdictionCreate rejects a jurisdiction whose parent chain already forms a cycle.
-//
-// On create the new row has no id yet, so it cannot be part of a cycle itself; what it can do is
-// point at a parent whose own chain is already broken, and inheriting that would make every later
-// walk through this row non-terminating.
+// validateJurisdictionCreate rejects a jurisdiction whose parent chain already forms a cycle. The
+// new row has no id yet so cannot be in a cycle itself, but inheriting a broken parent chain would
+// make every later walk through it non-terminating.
 func validateJurisdictionCreate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
 	return func(
 		ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
@@ -84,11 +79,9 @@ func validateJurisdictionUpdate(engine drif.DynamicResourceEngine) drif.ActionVa
 }
 
 // assertJurisdictionAcyclic walks from parentId up to the root, failing if it meets selfId or
-// exceeds the depth bound.
-//
-// It walks one row at a time because the depth is not known in advance and the search graph cannot
-// express "follow parent_id until it is null". The chains are short and the check runs only when a
-// parent is actually submitted, so the extra round trips are bounded and rare.
+// exceeds the depth bound. It walks one row at a time because the search graph cannot express
+// "follow parent_id until null"; the chains are short and the check runs only when a parent is
+// submitted.
 func assertJurisdictionAcyclic(
 	ctx corectx.Context,
 	engine drif.DynamicResourceEngine,
@@ -100,8 +93,8 @@ func assertJurisdictionAcyclic(
 		return nil
 	}
 
-	// A record that is its own parent is the one-step cycle, and worth its own check because the
-	// walk below would otherwise report it as a generic ancestry violation.
+	// The one-step cycle gets its own check; the walk below would report it as a generic ancestry
+	// violation.
 	if selfId != nil && *parentId == *selfId {
 		vErrs.Append(*ft.NewBusinessViolation(models.TaxJurisdictionFieldParentId,
 			"tax.jurisdiction_self_parent",
@@ -130,8 +123,7 @@ func assertJurisdictionAcyclic(
 		if err != nil {
 			return errors.Wrap(err, "assertJurisdictionAcyclic")
 		}
-		// A parent that does not exist is left to the engine's own reference checking; this
-		// function answers only the question about cycles.
+		// A missing parent is left to the engine's reference checking; this answers only cycles.
 		if parent == nil {
 			return nil
 		}

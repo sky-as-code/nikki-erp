@@ -32,10 +32,8 @@ func TaxMappingSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(taxMappingSchemaJson)
 }
 
-// TaxMapping substitutes one tax for another in a given context - Odoo's Fiscal Position.
-//
-// It is never an independent determination engine (TAX-SUP-INV-08): a mapping applies only when
-// a rule result explicitly says apply_mapping.
+// TaxMapping substitutes one tax for another in a given context. It is never an independent
+// determination engine: a mapping applies only when a rule result says apply_mapping.
 type TaxMapping struct {
 	basemodel.DynamicModelBase
 }

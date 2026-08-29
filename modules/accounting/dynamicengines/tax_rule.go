@@ -121,12 +121,9 @@ func validateRuleConditionUpdate(
 	return validateRuleConditionWrite(ctx, drif.NewDynamicEntityFrom(mergeFields(found, params)), foundModel, vErrs)
 }
 
-// validateRuleConditionWrite enforces the typed-condition contract of BR-TAX-ESS-SUP-007.
-//
-// Two things are checked here that the schema cannot state: that the field key is one the engine
-// actually knows how to read from the tax context, and that the operator and the value agree about
-// arity. The whitelist matters most — it is what keeps a condition a declarative comparison rather
-// than an expression language, which the requirement forbids outright.
+// validateRuleConditionWrite enforces the typed-condition contract: the field key must be one the
+// engine can read from the tax context, and the operator and value must agree about arity. The
+// whitelist is what keeps a condition a declarative comparison rather than an expression language.
 func validateRuleConditionWrite(
 	_ corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
@@ -211,12 +208,9 @@ func validateRuleResultUpdate(
 	return validateRuleResultWrite(ctx, drif.NewDynamicEntityFrom(mergeFields(found, params)), foundModel, vErrs)
 }
 
-// validateRuleResultWrite enforces the per-action required fields of BR-TAX-ESS-SUP-008.
-//
-// Each action needs a different companion field and JSON cannot express a conditional requirement,
-// so all three are nullable in the schema and the pairing is checked here. A result missing its
-// field is not a harmless no-op: an add_tax with no tax silently contributes nothing, and the rule
-// appears to have matched while changing nothing at all.
+// validateRuleResultWrite enforces the per-action required fields. JSON cannot express a
+// conditional requirement, so all three companion fields are nullable in the schema and the pairing
+// is checked here: an add_tax with no tax would appear to match while contributing nothing.
 func validateRuleResultWrite(
 	_ corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {

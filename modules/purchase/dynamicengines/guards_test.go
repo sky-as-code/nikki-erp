@@ -14,22 +14,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// TestMain registers the base mixins once for the whole package.
-//
-// Building any schema here parses its JSON, and ParseModelJson panics when a named mixin is not in
-// the registry — normally CoreModule.RegisterModels does this during start-up.
+// TestMain registers the base mixins once for the whole package: ParseModelJson panics when a named
+// mixin is missing, and CoreModule.RegisterModels normally does this at start-up.
 func TestMain(m *testing.M) {
 	_ = basemodel.RegisterJsonBaseSchemas()
 	os.Exit(m.Run())
 }
 
 // Every schema this module registers must have an engine, and vice versa. The two lists are
-// maintained by hand in different files, so a resource added to one and forgotten in the other
-// would be a resource with no HTTP surface — or an engine for a schema that does not exist, which
-// fails at boot.
+// maintained by hand in different files; a mismatch is either a resource with no HTTP surface or an
+// engine for a schema that does not exist, which fails at boot.
 func TestEveryResourceHasAnEngine(t *testing.T) {
 	assert.ElementsMatch(t, []string{
 		models.ConfigurationSchemaName,
+		models.VendorProductPriceSchemaName,
 		models.SourcingGroupSchemaName,
 		models.AgreementSchemaName,
 		models.AgreementLineSchemaName,
@@ -39,17 +37,18 @@ func TestEveryResourceHasAnEngine(t *testing.T) {
 	}, EngineSchemaNames())
 }
 
-// A default field set that names a field the schema does not have produces an engine that fails on
-// every listing request. Cheap to check here, expensive to discover through the API.
+// A default field set naming a field the schema lacks produces an engine that fails every listing
+// request.
 func TestDefaultSearchFieldsExistOnTheirSchemas(t *testing.T) {
 	builders := map[string]func() *dmodel.ModelSchemaBuilder{
-		models.ConfigurationSchemaName:     models.ConfigurationSchemaBuilder,
-		models.SourcingGroupSchemaName:     models.SourcingGroupSchemaBuilder,
-		models.AgreementSchemaName:         models.AgreementSchemaBuilder,
-		models.AgreementLineSchemaName:     models.AgreementLineSchemaBuilder,
-		models.PurchaseOrderSchemaName:     models.PurchaseOrderSchemaBuilder,
-		models.PurchaseOrderLineSchemaName: models.PurchaseOrderLineSchemaBuilder,
-		models.AuditEventSchemaName:        models.AuditEventSchemaBuilder,
+		models.ConfigurationSchemaName:      models.ConfigurationSchemaBuilder,
+		models.VendorProductPriceSchemaName: models.VendorProductPriceSchemaBuilder,
+		models.SourcingGroupSchemaName:      models.SourcingGroupSchemaBuilder,
+		models.AgreementSchemaName:          models.AgreementSchemaBuilder,
+		models.AgreementLineSchemaName:      models.AgreementLineSchemaBuilder,
+		models.PurchaseOrderSchemaName:      models.PurchaseOrderSchemaBuilder,
+		models.PurchaseOrderLineSchemaName:  models.PurchaseOrderLineSchemaBuilder,
+		models.AuditEventSchemaName:         models.AuditEventSchemaBuilder,
 	}
 
 	for _, spec := range engineSpecs {
@@ -68,9 +67,8 @@ func TestDefaultSearchFieldsExistOnTheirSchemas(t *testing.T) {
 	}
 }
 
-// PUR-R6: the audit trail is written by the system alone. A client-written event would sit in the
-// same table as the real ones with no way to tell them apart, which destroys the value of the trail
-// rather than adding to it.
+// The audit trail is written by the system alone: a client-written event would sit in the same
+// table as the real ones with no way to tell them apart.
 func TestAuditEventWritesAreRefused(t *testing.T) {
 	vErrs := &ft.ClientErrors{}
 
@@ -91,8 +89,8 @@ func TestSourcingGroupWritesAreRefused(t *testing.T) {
 	assert.Equal(t, 1, vErrs.Count())
 }
 
-// BR 24: only a cancelled order may be deleted. Deleting a confirmed one would remove the evidence
-// that the business committed to a purchase; cancelling records that it did and then stopped.
+// Only a cancelled order may be deleted: deleting a confirmed one would remove the evidence that
+// the business committed to a purchase, where cancelling records that it did and then stopped.
 func TestOrderDeleteIsRefusedUnlessCancelled(t *testing.T) {
 	testCases := []struct {
 		status  models.PurchaseOrderStatus
@@ -124,8 +122,8 @@ func TestOrderDeleteIsRefusedUnlessCancelled(t *testing.T) {
 	}
 }
 
-// BR 46: a draft agreement is deletable where a draft order is not, because an agreement's code is
-// not quoted to a vendor until it is confirmed.
+// A draft agreement is deletable where a draft order is not, because an agreement's code is not
+// quoted to a vendor until it is confirmed.
 func TestAgreementDeleteIsRefusedUnlessDraftOrCancelled(t *testing.T) {
 	testCases := []struct {
 		status  models.AgreementStatus
@@ -156,8 +154,8 @@ func TestAgreementDeleteIsRefusedUnlessDraftOrCancelled(t *testing.T) {
 	}
 }
 
-// The guard must fail CLOSED. An unreadable status means something is wrong with the record or the
-// fetch, and defaulting to "delete it" there is the one failure mode a guard must not have.
+// The guard must fail closed: defaulting to "delete it" on an unreadable status is the one failure
+// mode a guard must not have.
 func TestDeleteGuardsRefuseAnUnreadableStatus(t *testing.T) {
 	for _, guard := range []struct {
 		name string
@@ -181,8 +179,8 @@ func TestDeleteGuardsRefuseAnUnreadableStatus(t *testing.T) {
 	}
 }
 
-// The status strings the guards compare against must be the ones the schema actually declares. A
-// typo here is a condition that is silently never true, which no compiler catches.
+// The status strings the guards compare against must be the ones the schema declares; a typo is a
+// condition silently never true, which no compiler catches.
 func TestGuardStatusesAreDeclaredByTheSchemas(t *testing.T) {
 	orderStatuses := enumValues(t, models.PurchaseOrderSchemaBuilder(), models.PurchaseOrderFieldStatus)
 	for status := range deletableOrderStatuses {

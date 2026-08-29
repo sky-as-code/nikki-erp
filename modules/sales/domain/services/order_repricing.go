@@ -17,17 +17,10 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
-// Repricing a draft order (BR 70, SALES-011).
-//
-// **The whole engine re-runs after every single line change.** There is no incremental path, and BR
-// 70 is explicit about why: adding or removing one line can trigger a conditional price, make a
-// voucher newly eligible or newly not, change which combo applies, or cross a minimum-bill
-// threshold. A cheaper update that adjusted only the changed line would get all four of those wrong,
-// and would get them wrong silently.
-//
-// So the adjustment set is replaced WHOLESALE rather than amended. That is also what keeps the
-// price explanation (SALES-021) honest: the stored chain is always the chain that produced the
-// stored numbers, never a chain plus some leftovers from a previous basket.
+// Repricing a draft order. The whole engine re-runs on every line change and the adjustment set is
+// replaced wholesale rather than amended: one added line can change conditional prices, voucher
+// eligibility, combo choice or a minimum-bill threshold, and the stored chain must always be the
+// chain that produced the stored numbers.
 
 // RepriceResult is what a reprice concluded.
 type RepriceResult struct {
@@ -36,21 +29,19 @@ type RepriceResult struct {
 	TaxTotal      decimal.Decimal
 	GrandTotal    decimal.Decimal
 
-	// LineCount is how many lines were priced, so a caller can tell an empty draft from a failure.
+	// LineCount lets a caller tell an empty draft from a failure.
 	LineCount int
 }
 
 // RepriceOrder recomputes an order from its stored lines and writes the result back.
 //
-// Every write happens in one transaction: the lines, the adjustments and the order totals move
-// together or not at all. A partial reprice would leave an order whose totals disagree with its own
-// lines, which is worse than one that was never repriced — the second is visibly stale, the first is
-// invisibly wrong.
-//
-// Refuses a non-draft order. Confirmation is the line: after it the numbers are what the business
-// promised the customer (BR 11).
+// Lines, adjustments and totals move in one transaction, since a partial reprice leaves totals that
+// disagree with the lines — invisibly wrong rather than visibly stale. Refuses a non-draft order,
+// because after confirmation the numbers are what was promised the customer. basisSvc may be nil;
+// see buildPricingInput.
 func RepriceOrder(
 	ctx corectx.Context, orderId string, taxSvc itExt.TaxCalculationExtService, policy SalesPolicy,
+	basisSvc itExt.ProductPricingBasisExtService,
 ) (*RepriceResult, *ft.ClientErrors, error) {
 	orderRecord, err := loadRecord(ctx,
 		models.SalesOrderSchemaName, models.SalesOrderFieldId, orderId)
@@ -70,14 +61,14 @@ func RepriceOrder(
 		return nil, vErrs, nil
 	}
 
-	input, err := buildPricingInput(ctx, orderRecord, policy)
+	input, err := buildPricingInput(ctx, orderRecord, policy, basisSvc)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Tax is resolved BEFORE the engine runs and handed in, because the engine is pure (D-13) and
-	// must not reach into Accounting. A tax that cannot be determined refuses the reprice rather
-	// than being read as zero — see D-41.
+	// Tax is resolved before the engine runs and handed in, because the engine is pure and must not
+	// reach into Accounting. A tax that cannot be determined refuses the reprice rather than reading
+	// as zero.
 	basketTax, vErrs, err := resolveTaxForInput(ctx, taxSvc, orderRecord, input, policy)
 	if err != nil || vErrs != nil {
 		return nil, vErrs, err
@@ -101,11 +92,13 @@ func RepriceOrder(
 
 // buildPricingInput reads the order's stored lines into the engine's input.
 //
-// The stored line is the source of truth for what is in the basket. Prices are NOT taken from it:
-// base_unit_price is re-read from the pricelist and the catalogue on every reprice, because a draft
-// left open across a price change must reflect the new price, not the one it was created under.
+// The stored line says what is in the basket but not at what price: the base price is re-read from
+// the product via basisSvc on every reprice, so a draft left open across a price change reflects the
+// new price. A nil or failing basisSvc falls back to the stored line's price rather than refusing to
+// reprice, so another module's availability cannot block a till.
 func buildPricingInput(
 	ctx corectx.Context, orderRecord dmodel.DynamicFields, policy SalesPolicy,
+	basisSvc itExt.ProductPricingBasisExtService,
 ) (pricing.Input, error) {
 	orderId := stringOf(orderRecord, models.SalesOrderFieldId)
 
@@ -117,8 +110,8 @@ func buildPricingInput(
 
 	lines := make([]pricing.LineInput, 0, len(lineRecords))
 	for _, record := range lineRecords {
-		// A giveaway line is an OUTPUT of pricing, not an input to it. Feeding one back in would
-		// make the engine give away a second free item on every reprice, compounding each time.
+		// A giveaway line is an output of pricing; feeding one back in would give away another free
+		// item on every reprice, compounding each time.
 		if stringOf(record, models.SalesOrderLineFieldLineType) ==
 			string(models.SalesOrderLineTypePromotionReward) {
 			continue
@@ -137,17 +130,18 @@ func buildPricingInput(
 		})
 	}
 
-	// Line-number order, so a reprice of an unchanged basket produces an identical chain. The
-	// allocator breaks residual ties on line number (D-04), so shuffled input would move sub-unit
-	// amounts between lines and BR 13's "same input, same output" would fail on a reread.
+	// One batch read after the loop, so a twenty-line order costs one round trip instead of twenty.
+	applyPricingBasis(ctx, lines, basisSvc)
+
+	// Line-number order, so an unchanged basket reprices to an identical chain. The allocator breaks
+	// residual ties on line number, so shuffled input would move sub-unit amounts between lines.
 	sort.SliceStable(lines, func(i, j int) bool {
 		return lines[i].LineNumber < lines[j].LineNumber
 	})
 
-	// The operator overrides are loaded as ENGINE INPUT, not left as adjustments to preserve.
-	// replaceAdjustments below deletes the whole chain and rewrites it from engine output, so an
-	// override that was not fed back in would be erased by this very function - and confirm reprices
-	// unconditionally, so it would be erased before the sale completed (BR 87.4, SALES-039).
+	// Operator overrides are engine input, not adjustments to preserve: replaceAdjustments rewrites
+	// the whole chain from engine output, so an override not fed back in would be erased — and
+	// confirm reprices unconditionally, so it would be erased before the sale completed.
 	manual, err := loadManualDiscounts(ctx, orderId)
 	if err != nil {
 		return pricing.Input{}, err
@@ -162,11 +156,9 @@ func buildPricingInput(
 	}, nil
 }
 
-// loadManualDiscounts reads the order's stored overrides in a stable order.
-//
-// Sorted by id, for the same reason the lines are sorted by line number: the engine applies them in
+// loadManualDiscounts reads the order's stored overrides sorted by id. The engine applies them in
 // the order given, each capped against what the previous ones left, so a shuffled read would move
-// money between overrides and break BR 13's "same input, same output" on a mere reread.
+// money between overrides.
 func loadManualDiscounts(
 	ctx corectx.Context, orderId string,
 ) ([]pricing.ManualDiscountInput, error) {
@@ -211,7 +203,6 @@ func writeRepricedOrder(
 	})
 }
 
-// writeLineResults pushes the computed figures back onto each line.
 func writeLineResults(ctx corectx.Context, lines []pricing.LineResult) error {
 	engine, err := engineFor(models.SalesOrderLineSchemaName)
 	if err != nil {
@@ -237,11 +228,9 @@ func writeLineResults(ctx corectx.Context, lines []pricing.LineResult) error {
 	return nil
 }
 
-// replaceAdjustments deletes the order's adjustment chain and writes the new one.
-//
-// Replaced rather than amended, because sequence is unique per order and the new chain renumbers
-// from one. Amending would either collide on the unique index or leave a chain that no longer
-// replays to the stored totals — and the price explanation reads exactly this table.
+// replaceAdjustments deletes the order's adjustment chain and writes the new one. Replaced rather
+// than amended, because sequence is unique per order and the new chain renumbers from one; the price
+// explanation replays exactly this table.
 func replaceAdjustments(
 	ctx corectx.Context, orderId string, adjustments []pricing.Adjustment,
 ) error {
@@ -306,7 +295,6 @@ func replaceAdjustments(
 	return nil
 }
 
-// writeOrderTotals stamps the recomputed totals and the tax snapshot onto the order.
 func writeOrderTotals(
 	ctx corectx.Context,
 	orderId string,
@@ -327,9 +315,8 @@ func writeOrderTotals(
 		models.SalesOrderFieldGrandTotal:    result.GrandTotal,
 	}
 
-	// The snapshot is stored only when Accounting actually produced one. Writing an empty snapshot
-	// over a real one would destroy the only surviving record of how a sale was taxed
-	// (BR-TAX-ESS-030).
+	// Only stored when Accounting produced one: an empty snapshot written over a real one destroys
+	// the only surviving record of how a sale was taxed.
 	if basketTax != nil && basketTax.Snapshot.SchemaVersion != "" {
 		update[models.SalesOrderFieldTaxSnapshot] = basketTax.Snapshot
 	}
@@ -338,18 +325,10 @@ func writeOrderTotals(
 	return err
 }
 
-// resolveTaxForInput asks Accounting for the tax on the basket about to be priced.
-//
-// It runs on the PRE-pricing line amounts rather than the post-pricing ones, and that is a real
-// approximation worth naming: the taxable base should be each line's net after discounts, but the
-// discounts are what the engine is about to compute. Resolving tax first is nonetheless correct for
-// the tax-INCLUSIVE case this module sells under (D-41): with an inclusive price the tax is already
-// inside the number, so the rate is what matters and the base moves with the discount automatically.
-//
-// It would be wrong under tax-exclusive pricing, where tax is added on top of a base the discount
-// changes. Accounting decides which applies from its own price_inclusion_mode, so if a deployment
-// ever configures an exclusive tax this needs a second pass: price, then tax, then re-total. Flagged
-// rather than guessed at, because today every seeded tax is `inherit` against an included price mode.
+// resolveTaxForInput asks Accounting for the tax on the basket about to be priced, using pre-pricing
+// line amounts because the discounts are what the engine is about to compute. That holds only under
+// tax-inclusive pricing, where the tax sits inside the number and the base moves with the discount;
+// a deployment configuring exclusive tax needs a second pass: price, then tax, then re-total.
 func resolveTaxForInput(
 	ctx corectx.Context,
 	taxSvc itExt.TaxCalculationExtService,
@@ -357,7 +336,6 @@ func resolveTaxForInput(
 	input pricing.Input,
 	policy SalesPolicy,
 ) (*BasketTax, *ft.ClientErrors, error) {
-	// The lines the tax service sees carry their pre-discount amounts, since the engine has not run.
 	lines := make([]pricing.LineResult, 0, len(input.Lines))
 	for _, line := range input.Lines {
 		gross := line.CatalogueUnitPrice.Mul(line.Quantity)
@@ -383,14 +361,76 @@ func resolveTaxForInput(
 	}, lines)
 }
 
-// taxDateOf is the date the sale legally occurred, formatted YYYY-MM-DD.
-//
-// A confirmed order is taxed as of its confirmation; a draft as of today, because it has not legally
-// happened yet. BR-TAX-ESS-SUP-020 forbids Accounting from defaulting this from its own clock, so the
-// caller must always supply one — which is why this never returns empty.
+// taxDateOf is the date the sale legally occurred, formatted YYYY-MM-DD: a confirmed order is taxed
+// as of its confirmation, a draft as of today. Accounting may not default this from its own clock,
+// so this never returns empty.
 func taxDateOf(orderRecord dmodel.DynamicFields) string {
 	if confirmed := dateTimeOf(orderRecord, models.SalesOrderFieldConfirmedAt); confirmed != nil {
 		return confirmed.GoTime().Format("2006-01-02")
 	}
 	return time.Now().UTC().Format("2006-01-02")
+}
+
+// applyPricingBasis fills each line's product-derived pricing inputs, in place.
+//
+// It reports nothing on purpose: every failure, including a variant missing from the answer, leaves
+// the line's stored base price standing so the order still totals. Erroring would turn a slow read
+// in another module into a refused sale.
+func applyPricingBasis(
+	ctx corectx.Context, lines []pricing.LineInput, basisSvc itExt.ProductPricingBasisExtService,
+) {
+	if basisSvc == nil || len(lines) == 0 {
+		return
+	}
+
+	variantIds := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if line.ProductVariantId != "" {
+			variantIds = append(variantIds, line.ProductVariantId)
+		}
+	}
+	if len(variantIds) == 0 {
+		return
+	}
+
+	result, err := basisSvc.GetPricingBasis(ctx, itExt.GetPricingBasisQuery{
+		ProductVariantIds: variantIds,
+	})
+	if err != nil || result == nil || !result.HasData || result.ClientErrors.Count() > 0 {
+		return
+	}
+
+	for index := range lines {
+		basis, found := result.Data.Bases[lines[index].ProductVariantId]
+		if !found {
+			continue
+		}
+		lines[index].ProductTemplateId = basis.ProductTemplateId
+		lines[index].CategoryPath = basis.CategoryPath
+
+		// An absent or unparseable price leaves the stored one standing: zero is a real price — a
+		// giveaway — so it must not come out of a failed parse.
+		if price, ok := parseDecimal(basis.EffectiveBaseSalesPrice); ok {
+			lines[index].CatalogueUnitPrice = price
+		}
+		if basis.HasCost {
+			if cost, ok := parseDecimal(basis.Cost); ok {
+				lines[index].UnitCost, lines[index].HasCost = cost, true
+			}
+		}
+	}
+}
+
+// parseDecimal reads a decimal that crossed a module boundary as a string (float64 would lose the
+// precision that must not be lost). The bool distinguishes absent or malformed from a legitimate
+// zero.
+func parseDecimal(text string) (decimal.Decimal, bool) {
+	if text == "" {
+		return decimal.Zero, false
+	}
+	value, err := decimal.NewFromString(text)
+	if err != nil {
+		return decimal.Zero, false
+	}
+	return value, true
 }

@@ -37,11 +37,9 @@ func TaxRateVersionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(taxRateVersionSchemaJson)
 }
 
-// TaxRateVersion is the rate or fixed amount of a tax over one effective period.
-//
-// Two published versions of the same tax may never overlap, so that a tax_date resolves to
-// exactly one rate. Zero matches and two matches are both errors that surface as unresolved;
-// neither may be papered over by taking the newest row.
+// TaxRateVersion is the rate or fixed amount of a tax over one effective period. Two published
+// versions of the same tax may never overlap, so a tax date resolves to exactly one rate; zero and
+// two matches both surface as unresolved rather than being settled by taking the newest row.
 type TaxRateVersion struct {
 	basemodel.DynamicModelBase
 }

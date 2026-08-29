@@ -14,16 +14,12 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// Where one variant's stock physically sits, by warehouse and by location.
+// Where one variant's stock physically sits, by warehouse and by location — the same quants, with
+// by-warehouse rolled up one level.
 //
-// Both are groupings of the same quants: by-warehouse is by-location rolled up one level. They are
-// two methods because the Product UI shows a warehouse total first and drills into the locations
-// underneath (CR §9.1, §9.2), and doing the rollup here keeps the caller from re-deriving it.
-//
-// Suspended warehouses and locations appear in both. Suspension governs whether something may be
-// chosen for a *new* operation, not whether the stock already there exists — hiding it would make
-// the product page disagree with the shelf (CR §9.4, §9.5, AC-PROD-INT-017/018, TS-PROD-05). The
-// status travels with each row so the UI can badge it.
+// Suspended warehouses and locations appear in both: suspension governs whether something may be
+// chosen for a NEW operation, not whether the stock already there exists, and hiding it would make
+// the product page disagree with the shelf. The status travels with each row so the UI can badge it.
 
 // quantPlacement is one variant's balance at one location, before it is grouped.
 type quantPlacement struct {
@@ -54,8 +50,8 @@ func (this *StockQuantDomainServiceImpl) GetStockByWarehouse(
 		return nil, err
 	}
 
-	// Grouped by warehouse id, with "" its own group: stock at a vendor, customer, transit or
-	// loss location belongs to no warehouse and must not be attributed to one.
+	// Grouped by warehouse id, with "" its own group: stock at a vendor, customer, transit or loss
+	// location belongs to no warehouse and must not be attributed to one.
 	grouped := map[string]*itStock.WarehouseStockRow{}
 	for locationId, placement := range placements {
 		warehouseId := locations[locationId].WarehouseId
@@ -154,14 +150,9 @@ func (this *StockQuantDomainServiceImpl) GetStockByLocation(
 	}, nil
 }
 
-// readVariantPlacements totals one variant's quants per location.
-//
-// Several quants commonly share a location — one per lot, package and owner combination — so they
-// are summed rather than listed: a product page shows how much is in a place, not how many rows
-// the database uses to record it.
-//
-// Locations holding nothing are dropped. A zeroed quant marks somewhere stock used to be, and
-// listing it would pad the page with empty rows.
+// readVariantPlacements totals one variant's quants per location. Several quants commonly share a
+// location — one per lot, package and owner combination — so they are summed rather than listed.
+// Locations holding nothing are dropped: a zeroed quant marks somewhere stock used to be.
 func (this *StockQuantDomainServiceImpl) readVariantPlacements(
 	ctx corectx.Context, variantId string,
 ) (map[string]quantPlacement, error) {
@@ -217,11 +208,9 @@ func (this *StockQuantDomainServiceImpl) readVariantPlacements(
 	return placements, nil
 }
 
-// sortWarehouseRows orders by descending on-hand, then by code.
-//
-// Map iteration is random in Go, so without this the same product would list its warehouses in a
-// different order on every page load. Largest holding first is what a reader wants; the code
-// breaks ties so the order is stable.
+// sortWarehouseRows orders by descending on-hand, then by code. Go's map iteration is random, so
+// without this the same product lists its warehouses differently on every page load; the code
+// breaks ties to keep the order stable.
 func sortWarehouseRows(rows []itStock.WarehouseStockRow) {
 	sort.SliceStable(rows, func(i, j int) bool {
 		if cmp := rows[j].OnHand.Cmp(rows[i].OnHand); cmp != 0 {

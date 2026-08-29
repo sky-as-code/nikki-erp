@@ -11,14 +11,11 @@ import (
 )
 
 // The Stock side of the Product lifecycle contract: what would be stranded if a variant were
-// archived now.
+// archived now. It reports and never decides; whether the numbers block an archive is Product's
+// rule in product_archive_guard.go.
 //
-// It reports and never decides. Whether the numbers block an archive is Product's rule, expressed
-// in product_archive_guard.go — the same split as the location guard, where Stock says what is
-// there and Warehouse decides what that means.
-//
-// Archiving must never tidy up on the way through: no unreserving, no cancelling, no zeroing, no
-// scrap (CR §14.4, PROD-INT-INV-013). That is why this is a reader with no write path at all.
+// Archiving must never tidy up on the way through — no unreserving, cancelling, zeroing or scrap —
+// which is why this is a reader with no write path at all.
 
 var _ itStock.StockProductUsageReader = (*StockQuantDomainServiceImpl)(nil)
 
@@ -44,12 +41,10 @@ func (this *StockQuantDomainServiceImpl) GetProductUsage(
 	}, nil
 }
 
-// GetProductUsageBatch reports a whole set of variants together.
-//
-// Archiving a template has to clear every one of its variants before archiving any of them, so the
-// guard needs the whole set in hand before it writes anything. Reading them one at a time inside
-// the cascade loop is what leaves half a template archived when the last variant turns out to hold
-// stock (CR §14.3, TS-PROD-12).
+// GetProductUsageBatch reports a whole set of variants together. Archiving a template must clear
+// every variant before archiving any, so the guard needs the whole set before it writes; reading
+// them one at a time inside the cascade loop leaves half a template archived when the last variant
+// turns out to hold stock.
 func (this *StockQuantDomainServiceImpl) GetProductUsageBatch(
 	ctx corectx.Context, query itStock.GetProductUsageBatchQuery,
 ) (*itStock.GetProductUsageBatchResult, error) {
@@ -126,15 +121,12 @@ func (this *StockQuantDomainServiceImpl) accumulateUsageQuantities(
 	return nil
 }
 
-// accumulateOpenWork counts the moves and transfers still in flight for each variant.
+// accumulateOpenWork counts the moves and transfers still in flight for each variant. Done and
+// cancelled are excluded: a variant referenced only by completed movement archives fine, so
+// counting it would block a safe archive forever.
 //
-// Done and cancelled are excluded deliberately. A variant referenced only by completed movement
-// archives fine — the history keeps resolving it — so counting it would block a safe archive
-// forever (CR §14.2, AC-PROD-INT-031, TS-PROD-11).
-//
-// Transfers are counted through their moves: a transfer has no product of its own, and its moves
-// are what name the variant. Distinct transfer ids are collected so a transfer carrying three
-// lines of the same product counts once.
+// Transfers are counted through their moves, since a transfer names no product itself. Distinct
+// transfer ids are collected so a transfer carrying three lines of the same product counts once.
 func (this *StockQuantDomainServiceImpl) accumulateOpenWork(
 	ctx corectx.Context, variantIds []string, usages map[string]itStock.ProductUsage,
 ) error {

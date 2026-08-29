@@ -12,8 +12,7 @@ import (
 )
 
 // Turning an attribute selection into a concrete variant, and bringing a template's variants in
-// step with its attribute configuration. Split from the service core purely for file size; these
-// are methods on the same type.
+// step with its attribute configuration. Methods on the same type as the service core.
 
 func (this *ProductTemplateDomainServiceImpl) ResolveProductSelection(
 	ctx corectx.Context, query itProduct.ResolveProductSelectionQuery,
@@ -22,8 +21,8 @@ func (this *ProductTemplateDomainServiceImpl) ResolveProductSelection(
 		return &itProduct.ResolveProductSelectionResult{}, nil
 	}
 
-	// The template is read first so that resolving against one that does not exist is a missing
-	// record rather than a 200 carrying the combination key of nothing.
+	// The template is read first, so resolving against one that does not exist is a missing record
+	// rather than a 200 carrying the combination key of nothing.
 	template, err := this.fetchTemplate(ctx, query.TemplateId)
 	if err != nil {
 		return nil, err
@@ -32,9 +31,8 @@ func (this *ProductTemplateDomainServiceImpl) ResolveProductSelection(
 		return &itProduct.ResolveProductSelectionResult{}, nil
 	}
 
-	// HasData means the template resolved, not that a variant already exists for the combination:
-	// "this combination has no variant yet" is a real answer carrying the combination key, and
-	// reporting it as a missing record would turn it into a 404.
+	// HasData means the template resolved, not that a variant exists for the combination: "no variant
+	// yet" is a real answer carrying the combination key, and reporting it as missing would be a 404.
 	combinationKey := ResolveProductSelection(query.Selections)
 	result := &itProduct.ResolveProductSelectionResult{
 		Data:    itProduct.ResolveProductSelectionResultData{CombinationKey: combinationKey},
@@ -61,9 +59,8 @@ func (this *ProductTemplateDomainServiceImpl) ResolveProductSelection(
 		return result, nil
 	}
 
-	// The composite unique on (product_template_id, combination_key) is what makes this safe
-	// under concurrency: two requests racing to materialize the same combination cannot both
-	// win, and the loser sees the constraint rather than creating a duplicate.
+	// The composite unique on (product_template_id, combination_key) makes this safe under
+	// concurrency: the loser of a race sees the constraint rather than creating a duplicate.
 	variantId, err := this.materializeVariant(ctx, variantEngine, query.TemplateId, combinationKey)
 	if err != nil {
 		return nil, err
@@ -73,8 +70,7 @@ func (this *ProductTemplateDomainServiceImpl) ResolveProductSelection(
 	return result, nil
 }
 
-// GenerateVariants brings a template's variants in step with its INSTANT attribute
-// configuration. See BR §8.2 and §8.5.
+// GenerateVariants brings a template's variants in step with its INSTANT attribute configuration.
 func (this *ProductTemplateDomainServiceImpl) GenerateVariants(
 	ctx corectx.Context, query itProduct.GenerateVariantsQuery,
 ) (*itProduct.GenerateVariantsResult, error) {
@@ -178,8 +174,8 @@ func (this *ProductTemplateDomainServiceImpl) wantedCombinations(
 		valueIds := make([]string, 0, len(valueRows))
 		for _, valueRow := range valueRows {
 			value := models.NewProductTemplateAttributeValueFrom(valueRow)
-			// The variant references the template-scoped value, so that is the id the
-			// combination key must carry. See BR §6.7.
+			// The variant references the template-scoped value, so that is the id the combination key
+			// must carry.
 			if id := derefString(value.GetId()); id != "" {
 				valueIds = append(valueIds, id)
 			}
@@ -235,10 +231,9 @@ func (this *ProductTemplateDomainServiceImpl) materializeVariant(
 		variant.SetOrgId(orgId)
 	}
 
-	// Created through the engine's resource service rather than its repository: the schema
-	// defaults (id, created_at, etag, is_archived) and the service-injected audit fields are
-	// applied by the create pipeline, and a raw Insert would skip all of them — the row would
-	// reach the database with a null primary key.
+	// Created through the engine's resource service, not its repository: the create pipeline applies
+	// the schema defaults (id, created_at, etag, is_archived) and the audit fields, and a raw Insert
+	// would reach the database with a null primary key.
 	created, err := variantEngine.ResourceService().Create(ctx, variant.GetFieldData())
 	if err != nil {
 		return "", errors.Wrap(err, "materializeVariant")
