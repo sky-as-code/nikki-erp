@@ -39,6 +39,7 @@ func TestOrgSettingsSchema_DeclaresEverySetting(t *testing.T) {
 		OrgSettingAllowOverpayment,
 		OrgSettingAllowCashChange,
 		OrgSettingDraftOrderExpiryHours,
+		OrgSettingInvoiceIssueDelayMinutes,
 		OrgSettingRoundingScale,
 		OrgSettingDefaultTaxRate,
 		OrgSettingDefaultSalesTaxCode,
@@ -48,7 +49,7 @@ func TestOrgSettingsSchema_DeclaresEverySetting(t *testing.T) {
 		_, ok := schema.Field(name)
 		assert.Truef(t, ok, "the schema declares no %q field, so nothing can ever configure it", name)
 	}
-	assert.Len(t, schema.Fields(), 10, "a field added without a constant is unreachable by name")
+	assert.Len(t, schema.Fields(), 11, "a field added without a constant is unreachable by name")
 }
 
 // The settings that change what money MEANS must not be overridable. Absent metadata reads as
@@ -109,6 +110,7 @@ func TestDefaultsAgreeWithSchema(t *testing.T) {
 		OrgSettingAllowOverpayment:         DefaultAllowOverpayment,
 		OrgSettingAllowCashChange:          DefaultAllowCashChange,
 		OrgSettingDraftOrderExpiryHours:    float64(DefaultDraftOrderExpiryHours),
+		OrgSettingInvoiceIssueDelayMinutes: float64(DefaultInvoiceIssueDelayMinutes),
 	}
 	for name, want := range cases {
 		field, ok := schema.Field(name)

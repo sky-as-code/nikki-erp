@@ -1,0 +1,105 @@
+{
+	"name": "sales_billing_issuance_attempt",
+	"label": "sales_billing_issuance_attempt.label",
+	"table_name": "sales_billing_issuance_attempts",
+	"should_build_db": true,
+	"default_search_fields": ["status", "provider_request_id", "provider_invoice_reference"],
+	"search_indexes": [
+		{ "index_name": "sales_billing_attempts_tid_instr", "fields": ["billing_instruction_id"] },
+		{ "index_name": "sales_billing_attempts_tid_status", "fields": ["status"] },
+		{ "index_name": "sales_billing_attempts_tid_provreq", "fields": ["provider_request_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "billing_instruction_id",
+			"label": "fields.billing_instruction_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The instruction this attempt was made for. One instruction accumulates several attempts - a failure, a correction, a retry - and reading them in order is how anyone reconstructs why a document exists or does not."
+			}
+		},
+		{
+			"name": "attempt_no",
+			"label": "fields.attempt_no",
+			"data_type": { "type": "int32", "min": 1, "max": 1000000 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Which try this was, counting from one. Stored rather than derived from created_at because attempts are what a duplicate-issuance investigation counts, and two rows written in the same millisecond must still be orderable."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["processing", "succeeded", "failed", "unknown"]
+			},
+			"required_for_create": true,
+			"default_value": "processing",
+			"description": {
+				"en-US": "How this attempt ended. 'unknown' IS NOT A FAILURE and is the reason this resource exists: the request reached the provider and the reply did not come back, so nobody can say whether a document was created. It must be reconciled against the provider before any retry - retrying an unknown is how one sale acquires two legal invoices."
+			}
+		},
+		{
+			"name": "started_at",
+			"label": "fields.started_at",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "When the attempt began. Immutable: an audit record that can be back-dated is not evidence."
+			}
+		},
+		{
+			"name": "completed_at",
+			"label": "fields.completed_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the attempt finished. Null while it is still processing, and also on an attempt that ended 'unknown' before this could be written - which is itself a signal worth reading."
+			}
+		},
+		{
+			"name": "provider_request_id",
+			"label": "fields.provider_request_id",
+			"data_type": { "type": "string", "min": 0, "max": 200 },
+			"no_update": true,
+			"description": {
+				"en-US": "The idempotency key sent to the provider for this attempt. IT IS WHAT MAKES AN UNKNOWN RESOLVABLE: reconciliation asks the provider what became of this key, and without it a lost reply could never be turned into an answer."
+			}
+		},
+		{
+			"name": "provider_invoice_reference",
+			"label": "fields.provider_invoice_reference",
+			"data_type": { "type": "string", "min": 0, "max": 200 },
+			"description": {
+				"en-US": "The document reference the provider returned, on a successful attempt. Copied onto the instruction as well, so the instruction answers 'which document' without a join, while this keeps which attempt produced it."
+			}
+		},
+		{
+			"name": "error_code",
+			"label": "fields.error_code",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The provider's code for this attempt's failure."
+			}
+		},
+		{
+			"name": "error_message",
+			"label": "fields.error_message",
+			"data_type": { "type": "string", "min": 0, "max": 2000 },
+			"description": {
+				"en-US": "This attempt's failure in the provider's words."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

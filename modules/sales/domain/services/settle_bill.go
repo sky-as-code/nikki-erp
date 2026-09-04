@@ -167,7 +167,46 @@ func DeriveOrderPaymentStatusFromBills(
 		}
 		captured = captured.Add(billCaptured)
 	}
-	return DeriveBillPaymentStatus(payable, captured), captured, nil
+
+	// Refunds are read here rather than left out, which is what makes `partially_refunded` and
+	// `refunded` reachable at all. DeriveBillPaymentStatus knows only payable and captured, so an
+	// order settled through it stayed `paid` however much had been given back — the enum values
+	// existed and nothing could ever produce them.
+	refunded, err := completedRefundsOfOrder(ctx, orderId)
+	if err != nil {
+		return "", decimal.Zero, err
+	}
+	return DerivePaymentStatus(payable, captured, refunded), captured, nil
+}
+
+// completedRefundsOfOrder sums the money actually returned against an order.
+//
+// Only completed legs count, mirroring capturedTotalOf on the way in: a pending refund treated as
+// done would report a customer repaid who is still waiting.
+func completedRefundsOfOrder(
+	ctx corectx.Context, orderId string,
+) (decimal.Decimal, error) {
+	returns, err := searchBy(ctx,
+		models.SalesReturnSchemaName, models.SalesReturnFieldSalesOrderId, orderId)
+	if err != nil {
+		return decimal.Zero, err
+	}
+
+	total := decimal.Zero
+	for _, salesReturn := range returns {
+		if stringOf(salesReturn, models.SalesReturnFieldStatus) ==
+			string(models.SalesReturnStatusCancelled) {
+			continue
+		}
+		legs, err := searchBy(ctx, models.SalesRefundPaymentSchemaName,
+			models.SalesRefundPaymentFieldSalesReturnId,
+			stringOf(salesReturn, models.SalesReturnFieldId))
+		if err != nil {
+			return decimal.Zero, err
+		}
+		total = total.Add(models.SumCompletedRefunds(legs))
+	}
+	return total, nil
 }
 
 // SyncOrderPaymentStatus recomputes an order's payment status from its bills and stores it, so the

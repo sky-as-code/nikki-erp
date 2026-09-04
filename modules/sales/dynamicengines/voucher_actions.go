@@ -95,6 +95,7 @@ func defineSalesBillActions(engine drif.DynamicResourceEngine) error {
 			Permission:  PermissionSettleBill,
 			MainProcess: processSettleBill,
 		}),
+		defineGatewayPaymentActions(engine),
 		engine.DefineAction(drif.DynamicActionDefinition{
 			ActionName: ActionMergeBill,
 			ActionType: drif.ActionTypeGeneric,

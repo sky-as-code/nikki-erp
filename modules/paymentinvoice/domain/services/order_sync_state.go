@@ -3,6 +3,7 @@ package services
 import (
 	"time"
 
+	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -200,6 +201,58 @@ func (this *OrderDomainService) SyncFactsFor(
 	}
 
 	facts.PaymentMethod = derefString(models.NewPaymentMethodFrom(found.Data).GetCode())
+	return facts, nil
+}
+
+// SettlementFacts is what the in-process announcement carries beyond the verdict itself.
+//
+// It is a separate read from SyncFacts, not an extension of it, because the two boundaries want
+// incompatible things. The HTTP sync sends a whole-number amount, which is what the ordering system
+// has always been given; an announcement inside the same process must carry the exact decimal, and
+// truncating money to satisfy a legacy wire format would be a bug rather than a compatibility
+// choice. The metadata is likewise the caller's own correlation, which the HTTP payload is frozen
+// without.
+type SettlementFacts struct {
+	OrgId string
+
+	// Amount is the exact decimal, rendered as a string by the caller so it never passes through a
+	// float on its way to a subscriber.
+	Amount decimal.Decimal
+
+	// Metadata is what the opening caller attached, echoed back untouched. This module neither reads
+	// nor interprets it — it is how a subscriber matches a verdict to what it is holding.
+	Metadata map[string]any
+
+	// RefTransactionId is the gateway's identifier for the completed payment, empty until one exists.
+	RefTransactionId string
+}
+
+// SettlementFactsFor reads the facts an announcement carries.
+func (this *OrderDomainService) SettlementFactsFor(
+	ctx corectx.Context, orderId string,
+) (*SettlementFacts, error) {
+	order, err := findOrderByBusinessId(ctx, orderId)
+	if err != nil {
+		return nil, err
+	}
+	if order == nil {
+		return nil, errors.Errorf("SettlementFactsFor: no order with id '%s'", orderId)
+	}
+
+	facts := &SettlementFacts{
+		OrgId:    derefString((*string)(order.GetOrgId())),
+		Amount:   derefDecimal(order.GetAmount()),
+		Metadata: order.GetMetadata(),
+	}
+
+	// Best-effort: an order settled as failed or expired never had a transaction, and an
+	// announcement is still worth making without one.
+	refTransactionId, err := findPaymentRefTransactionId(ctx, derefString(order.GetId()))
+	if err != nil {
+		return nil, err
+	}
+	facts.RefTransactionId = refTransactionId
+
 	return facts, nil
 }
 

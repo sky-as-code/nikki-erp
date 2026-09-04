@@ -52,16 +52,25 @@ type ProcessReturnResult struct {
 	// FiscalRetryRequired is surfaced rather than inferred from the status: a return can be complete
 	// and still need somebody in Accounting to act.
 	FiscalRetryRequired bool
+
+	// AdjustmentOrderId names the order restating what the customer kept, when a partial return
+	// produced one. Empty for a full return, where nothing was kept, and for a return that has not
+	// completed.
+	AdjustmentOrderId string
 }
 
-// ProcessReturn takes the order's lock, not the return's: it writes the order's lines and possibly
-// the order's own statuses, so locking the return would let a concurrent confirm or cancel interleave.
+// ProcessReturn takes the order's lock, not the return's.
+//
+// It writes the order's lines — returned_quantity, once the return completes — and re-derives the
+// order's payment status from the refunds it settles, so locking the return would let a concurrent
+// confirm or cancel interleave with those writes.
 func ProcessReturn(
 	ctx corectx.Context,
 	params ProcessReturnParams,
 	dLock lock.DistributedLock,
 	fulfillment itExt.FulfillmentExtService,
 	invoicing itInvoicing.InvoicingExtService,
+	paymentOrders itExt.PaymentOrderExtService,
 ) (*ProcessReturnResult, *ft.ClientErrors, error) {
 	if dLock == nil {
 		return nil, nil, errors.New(
@@ -100,7 +109,7 @@ func ProcessReturn(
 			"no such return"), nil
 	}
 
-	return processReturnUnderLock(ctx, salesReturn, fulfillment, invoicing)
+	return processReturnUnderLock(ctx, salesReturn, fulfillment, invoicing, paymentOrders)
 }
 
 func processReturnUnderLock(
@@ -108,6 +117,7 @@ func processReturnUnderLock(
 	salesReturn dmodel.DynamicFields,
 	fulfillment itExt.FulfillmentExtService,
 	invoicing itInvoicing.InvoicingExtService,
+	paymentOrders itExt.PaymentOrderExtService,
 ) (*ProcessReturnResult, *ft.ClientErrors, error) {
 	current := stringOf(salesReturn, models.SalesReturnFieldStatus)
 	if current == string(models.SalesReturnStatusCompleted) {
@@ -134,7 +144,7 @@ func processReturnUnderLock(
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := runRefundStep(ctx, salesReturn, result); err != nil {
+	if err := runRefundStep(ctx, salesReturn, result, paymentOrders); err != nil {
 		return nil, nil, err
 	}
 
@@ -152,6 +162,28 @@ func processReturnUnderLock(
 
 	if err := writeReturnOutcome(ctx, salesReturn, result, inventoryReference); err != nil {
 		return nil, nil, err
+	}
+
+	// The order is told what the refunds did to it. Without this the money is back with the customer
+	// and the order still reads `paid`, because payment status is derived on demand and nothing was
+	// asking after a return.
+	if _, err := SyncOrderPaymentStatus(ctx,
+		stringOf(salesReturn, models.SalesReturnFieldSalesOrderId)); err != nil {
+		return nil, nil, err
+	}
+
+	// What the customer kept is restated as its own order, once everything else has settled. It runs
+	// last because it reads returned_quantity, which writeReturnOutcome has only just written — and
+	// only on completion, since a return that failed at the inventory step has not taken anything
+	// back yet.
+	if result.Status == string(models.SalesReturnStatusCompleted) {
+		adjustment, err := CreateAdjustmentOrder(ctx, salesReturn)
+		if err != nil {
+			return nil, nil, err
+		}
+		if adjustment.Created {
+			result.AdjustmentOrderId = adjustment.AdjustmentOrderId
+		}
 	}
 	return result, nil, nil
 }
@@ -243,6 +275,7 @@ func runRefundStep(
 	ctx corectx.Context,
 	salesReturn dmodel.DynamicFields,
 	result *ProcessReturnResult,
+	paymentOrders itExt.PaymentOrderExtService,
 ) error {
 	if result.RefundStatus == string(models.SalesReturnStepNotRequired) ||
 		result.RefundStatus == string(models.SalesReturnStepCompleted) {
@@ -261,13 +294,13 @@ func runRefundStep(
 		return err
 	}
 	if len(existing) > 0 {
-		// The legs are already written; this is a retry. Writing a second set would refund twice.
-		if models.SumCompletedRefunds(existing).GreaterThanOrEqual(refundTotal) {
-			result.RefundStatus = string(models.SalesReturnStepCompleted)
-		} else {
-			result.RefundStatus = string(models.SalesReturnStepProcessing)
+		// The legs are already written; this is a retry. Writing a second set would refund twice —
+		// but the legs written last time may still be pending, so settlement is attempted again
+		// before the step's status is decided.
+		if _, err := SettleRefundLegs(ctx, salesReturn, paymentOrders); err != nil {
+			return err
 		}
-		return nil
+		return refreshRefundStepStatus(ctx, salesReturn, result, refundTotal)
 	}
 
 	payments, err := capturedPaymentsOfOrder(ctx, stringOf(salesReturn, models.SalesReturnFieldSalesOrderId))
@@ -285,7 +318,39 @@ func runRefundStep(
 	if err := writeRefundLegs(ctx, salesReturn, legs); err != nil {
 		return err
 	}
-	result.RefundStatus = string(models.SalesReturnStepProcessing)
+
+	// Written and then settled, rather than written as already settled: the legs are the record that
+	// a refund was authorised, and they must exist before any money moves so that a failure halfway
+	// through leaves evidence of what was owed.
+	if _, err := SettleRefundLegs(ctx, salesReturn, paymentOrders); err != nil {
+		return err
+	}
+	return refreshRefundStepStatus(ctx, salesReturn, result, refundTotal)
+}
+
+// refreshRefundStepStatus re-reads the legs and decides where the refund step stands.
+//
+// Completed only when the money actually back equals what was owed. A leg still pending or failed
+// leaves the step `processing`, which is what brings the return round again rather than declaring a
+// customer repaid who is still waiting.
+func refreshRefundStepStatus(
+	ctx corectx.Context,
+	salesReturn dmodel.DynamicFields,
+	result *ProcessReturnResult,
+	refundTotal decimal.Decimal,
+) error {
+	legs, err := searchBy(ctx, models.SalesRefundPaymentSchemaName,
+		models.SalesRefundPaymentFieldSalesReturnId,
+		stringOf(salesReturn, models.SalesReturnFieldId))
+	if err != nil {
+		return err
+	}
+
+	if models.SumCompletedRefunds(legs).GreaterThanOrEqual(refundTotal) {
+		result.RefundStatus = string(models.SalesReturnStepCompleted)
+	} else {
+		result.RefundStatus = string(models.SalesReturnStepProcessing)
+	}
 	return nil
 }
 
@@ -405,8 +470,65 @@ func writeReturnOutcome(
 		if result.Status == string(models.SalesReturnStatusCompleted) {
 			changes[models.SalesReturnFieldCompletedAt] = model.ModelDateTime(time.Now().UTC())
 		}
-		return writeChanges(tranxCtx, models.SalesReturnSchemaName, salesReturn, changes)
+		if err := writeChanges(
+			tranxCtx, models.SalesReturnSchemaName, salesReturn, changes); err != nil {
+			return err
+		}
+
+		// The order's lines are told what came back, in the same transaction as the return's own
+		// outcome. Without this the order says it still holds goods the customer has handed back:
+		// returned_quantity was written once at order creation and never again, so
+		// DeriveFulfillmentStatus could never reach partially_returned however much came back.
+		//
+		// It does NOT replace the returnable-quantity guard, which counts non-cancelled return lines
+		// and stays the authority — this is the order reflecting reality, not a new source of truth.
+		return applyReturnedQuantities(tranxCtx, salesReturn, result.Status)
 	})
+}
+
+// applyReturnedQuantities adds this return's lines to the order lines they came from.
+//
+// Only once the return is complete. A return still being processed may yet fail at the inventory
+// step, and an order line that had already counted the goods back would understate what the customer
+// still holds.
+func applyReturnedQuantities(
+	ctx corectx.Context, salesReturn dmodel.DynamicFields, status string,
+) error {
+	if status != string(models.SalesReturnStatusCompleted) {
+		return nil
+	}
+
+	lines, err := returnLinesOf(ctx, stringOf(salesReturn, models.SalesReturnFieldId))
+	if err != nil {
+		return err
+	}
+
+	for _, line := range lines {
+		orderLineId := stringOf(line, models.SalesReturnLineFieldSalesOrderLineId)
+		if orderLineId == "" {
+			continue
+		}
+
+		orderLine, err := loadRecord(ctx, models.SalesOrderLineSchemaName,
+			models.SalesOrderLineFieldId, orderLineId)
+		if err != nil {
+			return err
+		}
+		if orderLine == nil {
+			continue
+		}
+
+		returned := decimalOf(orderLine, models.SalesOrderLineFieldReturnedQuantity).
+			Add(decimalOf(line, models.SalesReturnLineFieldQuantity))
+
+		if err := writeChanges(ctx, models.SalesOrderLineSchemaName, orderLine,
+			dmodel.DynamicFields{
+				models.SalesOrderLineFieldReturnedQuantity: returned,
+			}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func returnLinesOf(ctx corectx.Context, returnId string) ([]dmodel.DynamicFields, error) {

@@ -7,14 +7,20 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	itAccCurrency "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/currency"
 	itTax "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
+	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
+	itJob "github.com/sky-as-code/nikki-erp/modules/jobscheduler/interfaces/job"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
+	itInvoice "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/invoice"
+	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
 	itMethod "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/paymentmethod"
 	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
+	salesInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/infra/external/invoicing"
 	salesMessage "github.com/sky-as-code/nikki-erp/modules/sales/infra/external/message"
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
 	itMessage "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/message"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 )
@@ -81,6 +87,37 @@ func InitExternal() error {
 			// Direct hand-over: the upstream service has exactly the two methods the port declares.
 			return methods
 		},
+		func(parties itParty.PartyAppService) itExt.PartyExtService {
+			// An adapter, not a hand-over: the upstream answer is an OpResult carrying its own
+			// violations, and Sales wants the violations alone so a refusal joins the ones its own
+			// gates raise. The APPLICATION service, because assigning a party happens on a request
+			// whose user's entitlements are the ones that should decide.
+			return &partyAdapter{parties: parties}
+		},
+		func(jobs itJob.JobDomainService) itExt.SchedulerExtService {
+			// An adapter, not a hand-over: the upstream command embeds a dynamic model, so passing it
+			// through would put the scheduler's own field names and enum values into Sales' domain.
+			// The DOMAIN service rather than the application one — registration happens at boot,
+			// where there is no user whose entitlements could be asserted.
+			return &schedulerAdapter{jobs: jobs}
+		},
+		func(invoices itInvoice.InvoiceDomainService) itInvoicing.InvoicingExtService {
+			// An adapter necessarily: the port names nothing on the far side, so that pointing Sales
+			// at a real e-invoice provider later is a change to one file. It also carries the two
+			// conversions this boundary needs — the tax rate from a fraction to a percentage, and
+			// the check that the issued document totals what the sale actually came to.
+			return salesInvoicing.NewAdapter(invoices)
+		},
+		func(orders itOrder.OrderDomainService) itExt.PaymentOrderExtService {
+			// An adapter, not a hand-over: the conventions this integration runs on — the source tag,
+			// the metadata a settlement is matched back on, and passing no return_url because the
+			// verdict arrives in-process — belong in one place, and paymentinvoice's order states are
+			// mapped here so its state machine does not get duplicated inside Sales.
+			//
+			// The DOMAIN service, per the port's own note: authorization was established by the
+			// request that started this, so there is no application-service counterpart to call.
+			return &paymentOrderAdapter{orders: orders}
+		},
 	); err != nil {
 		return err
 	}
@@ -89,14 +126,24 @@ func InitExternal() error {
 	// container, because an action callback is handed only its own engine.
 	return deps.Invoke(func(
 		methods itExt.PaymentMethodExtService,
+		orders itExt.PaymentOrderExtService,
+		invoicing itInvoicing.InvoicingExtService,
 		tax itExt.TaxCalculationExtService,
 		settings itExt.EffectiveSettingsExtService,
 		dLock lock.DistributedLock,
 		products itExt.ProductVariantExtService,
 		fulfillment itExt.FulfillmentExtService,
 		basis itExt.ProductPricingBasisExtService,
+		parties itExt.PartyExtService,
 	) error {
 		dynamicengines.SetPaymentMethodPort(methods)
+		dynamicengines.SetPaymentOrderPort(orders)
+		// Without this a sale could name any party at all, including one belonging to another
+		// organization: the port is the only thing that checks.
+		dynamicengines.SetPartyPort(parties)
+		// Binding this is what turns a fiscal request from a row that stays `pending` into a
+		// document that actually gets issued.
+		dynamicengines.SetInvoicingPort(invoicing)
 		// Reprice needs tax and settings; confirm and cancel additionally need the lock, because
 		// neither is a single-row update and the etag cannot guard them.
 		dynamicengines.SetPricingPorts(tax, settings, dLock, products, fulfillment, basis)

@@ -66,6 +66,10 @@ var engineSpecs = []engineSpec{
 	// The fiscal contract: what Sales asked an eInvoice provider for, and what came back.
 	salesFiscalRequestEngineSpec(),
 
+	// Billing instructions: who a sale is to be invoiced to, and the record of each try at issuing.
+	salesBillingInstructionEngineSpec(),
+	salesBillingIssuanceAttemptEngineSpec(),
+
 	// Operator price overrides.
 	salesManualDiscountEngineSpec(),
 
@@ -106,13 +110,20 @@ func salesChannelEngineSpec() engineSpec {
 	}
 }
 
-// salesOrderEngineSpec serves the order, with apply_voucher as its only custom action. The
-// lifecycle actions wait for the state machines that would validate them; apply_voucher is safe
-// ahead of those because it moves no status.
+// salesOrderEngineSpec serves the order. The lifecycle actions wait for the state machines that
+// would validate them; apply_voucher is safe ahead of those because it moves no status, and party
+// assignment because it names who is party to a sale rather than moving the sale itself.
 func salesOrderEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName:    models.SalesOrderSchemaName,
-		DefineActions: defineSalesOrderVoucherActions,
+		SchemaName: models.SalesOrderSchemaName,
+		DefineActions: func(engine drif.DynamicResourceEngine) error {
+			// Two families of action on the same record: pricing and the parties to the sale.
+			// Declared separately because they answer to different permissions and seed rows.
+			return stdErr.Join(
+				defineSalesOrderVoucherActions(engine),
+				defineSalesOrderPartyActions(engine),
+			)
+		},
 	}
 }
 
@@ -224,6 +235,24 @@ func salesFiscalRequestEngineSpec() engineSpec {
 		SchemaName:    models.SalesFiscalRequestSchemaName,
 		DefineActions: defineSalesFiscalRequestActions,
 	}
+}
+
+// A billing instruction is client-creatable: recording that a buyer wants an invoice is how the
+// process starts, at a till or through back office. Its status is no_update, so the lifecycle runs
+// only through the actions below — a client that could write `ready` directly would be able to
+// release a document for issuance without the completeness check.
+func salesBillingInstructionEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName:    models.SalesBillingInstructionSchemaName,
+		DefineActions: defineSalesBillingInstructionActions,
+	}
+}
+
+// Issuance attempts are read-only: they are the evidence of whether a document was created,
+// including the indeterminate case where nobody knows. A writable attempt could fabricate a record
+// showing an invoice was issued, or erase the trace of one that may exist.
+func salesBillingIssuanceAttemptEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesBillingIssuanceAttemptSchemaName}
 }
 
 // A return is client-creatable, unlike a bill: raising one is how an agent starts the process. Its

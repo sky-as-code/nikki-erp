@@ -6,7 +6,9 @@ import (
 
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/event"
 )
 
 // NotifyTarget is the order a notification is about, reduced to what sending one needs.
@@ -32,6 +34,7 @@ type NotifyTarget struct {
 // worth being able to exercise directly.
 type orderSyncStore interface {
 	SyncFactsFor(ctx corectx.Context, orderId string) (*services.SyncFacts, error)
+	SettlementFactsFor(ctx corectx.Context, orderId string) (*services.SettlementFacts, error)
 	RecordSyncOutcome(ctx corectx.Context, orderPk string, outcome services.SyncOutcome) error
 }
 
@@ -45,6 +48,14 @@ type ResultNotifier struct {
 	client *ResultSyncClient
 	logger logging.LoggerService
 
+	// events announces the verdict in-process, to whoever in this build subscribed. It hangs here
+	// rather than at the two settle sites for the reason this type exists at all: both of them
+	// already come through here, so one of them cannot forget to announce.
+	//
+	// Nil is tolerated — a build with no bus configured still settles orders — so every use goes
+	// through announce().
+	events itEvent.PaymentSettledEventPublisher
+
 	// now is injected so a test can pin the timestamp written into the sync log.
 	now func() time.Time
 }
@@ -54,11 +65,13 @@ type ResultNotifier struct {
 func NewResultNotifier(
 	orders *services.OrderDomainService,
 	client *ResultSyncClient,
+	events itEvent.PaymentSettledEventPublisher,
 	logger logging.LoggerService,
 ) *ResultNotifier {
 	return &ResultNotifier{
 		orders: orders,
 		client: client,
+		events: events,
 		logger: logger,
 		now:    time.Now,
 	}
@@ -73,6 +86,11 @@ func NewResultNotifier(
 // the sweep has already moved on to the next order — so a failure is logged and left for the
 // retry to pick up off the order's own state.
 func (this *ResultNotifier) Notify(ctx corectx.Context, target NotifyTarget, status string) {
+	// Announced before the HTTP sync is attempted, not after. The sync can block for as long as the
+	// ordering system takes to answer, and a subscriber in this process should not wait on a remote
+	// party that has nothing to do with it.
+	this.announce(ctx, target, status)
+
 	facts, err := this.orders.SyncFactsFor(ctx, target.OrderId)
 	if err != nil {
 		this.logger.Warnf("paymentinvoice: order '%s' could not be read for notification: %s",
@@ -97,6 +115,60 @@ func (this *ResultNotifier) Notify(ctx corectx.Context, target NotifyTarget, sta
 		this.logger.Warnf("paymentinvoice: order '%s' could not be reported to its caller: %s",
 			target.OrderId, outcome.Detail)
 	}
+}
+
+// announce publishes the verdict to whoever in this build subscribed.
+//
+// Best-effort by design: a build with no publisher wired still settles orders, and a status this
+// module gained without teaching it here is not announced rather than being guessed into the wrong
+// event. A subscriber that must not miss a settlement reconciles against the order itself.
+func (this *ResultNotifier) announce(ctx corectx.Context, target NotifyTarget, status string) {
+	if this.events == nil {
+		return
+	}
+
+	eventType, known := settledTypeOf(status)
+	if !known {
+		return
+	}
+
+	facts, err := this.orders.SettlementFactsFor(ctx, target.OrderId)
+	if err != nil {
+		// Logged, not fatal: the HTTP sync below is a separate path to the same news, and the
+		// subscriber's own reconciliation is the backstop for both.
+		this.logger.Warnf("paymentinvoice: order '%s' could not be read for announcement: %s",
+			target.OrderId, err.Error())
+		return
+	}
+
+	this.events.PublishAsync(ctx, itEvent.PaymentSettledEvent{
+		Type:             eventType,
+		OrgId:            facts.OrgId,
+		OrderId:          target.OrderId,
+		OrderPk:          target.Pk,
+		RefTransactionId: facts.RefTransactionId,
+		// A string, so the exact decimal reaches a subscriber without passing through a float.
+		Amount:   facts.Amount.String(),
+		Metadata: facts.Metadata,
+	})
+}
+
+// settledTypeOf maps an order status onto what a subscriber is told.
+//
+// Only the terminal ones are announced. pending and processing are not verdicts, and announcing
+// them would wake every subscriber for an order still being paid.
+func settledTypeOf(status string) (itEvent.PaymentSettledType, bool) {
+	switch status {
+	case models.OrderStatusPaymentSuccess:
+		return itEvent.PaymentSettledPaid, true
+	case models.OrderStatusPaymentFailed:
+		return itEvent.PaymentSettledFailed, true
+	case models.OrderStatusExpired:
+		return itEvent.PaymentSettledExpired, true
+	case models.OrderStatusCanceled:
+		return itEvent.PaymentSettledCanceled, true
+	}
+	return "", false
 }
 
 // NotifyDetached sends the notification on its own goroutine, off the caller's request.

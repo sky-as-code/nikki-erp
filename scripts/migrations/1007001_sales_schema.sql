@@ -1,18 +1,88 @@
--- Create "sales_promotion_compatibilities" table
-CREATE TABLE "sales_promotion_compatibilities" (
+-- Create "sales_channels" table
+CREATE TABLE "sales_channels" (
   "id" character varying NOT NULL,
   "org_id" character varying NOT NULL,
-  "program_a_id" character varying NOT NULL,
-  "program_b_id" character varying NOT NULL,
-  "compatibility" character varying NOT NULL,
+  "code" character varying NOT NULL,
+  "name" character varying NOT NULL,
+  "description" character varying NULL,
+  "managed_by_module" character varying NULL,
+  "status" character varying NOT NULL,
+  "is_system" boolean NOT NULL,
+  "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_promo_compat_tid_pair_ukey" UNIQUE ("program_a_id", "program_b_id")
+  CONSTRAINT "sales_channels_code_ukey" UNIQUE ("code")
 );
--- Create index "sales_promo_compat_tid_b_idx" to table: "sales_promotion_compatibilities"
-CREATE INDEX "sales_promo_compat_tid_b_idx" ON "sales_promotion_compatibilities" ("program_b_id");
+-- Create "sales_billing_instructions" table
+CREATE TABLE "sales_billing_instructions" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "sales_order_id" character varying NOT NULL,
+  "bill_to_party_id" character varying NULL,
+  "tax_id" character varying NULL,
+  "legal_name" character varying NULL,
+  "billing_address" character varying NULL,
+  "billing_email" character varying NULL,
+  "status" character varying NOT NULL,
+  "source" character varying NOT NULL,
+  "fetch_latest_party_details" boolean NULL,
+  "snapshot_at" timestamptz NULL,
+  "locked_at" timestamptz NULL,
+  "submitted_at" timestamptz NULL,
+  "issued_at" timestamptz NULL,
+  "einvoice_reference" character varying NULL,
+  "last_error_code" character varying NULL,
+  "last_error_message" character varying NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "sales_billing_instrs_tid_billto_idx" to table: "sales_billing_instructions"
+CREATE INDEX "sales_billing_instrs_tid_billto_idx" ON "sales_billing_instructions" ("bill_to_party_id");
+-- Create index "sales_billing_instrs_tid_einvref_idx" to table: "sales_billing_instructions"
+CREATE INDEX "sales_billing_instrs_tid_einvref_idx" ON "sales_billing_instructions" ("einvoice_reference");
+-- Create index "sales_billing_instrs_tid_order_idx" to table: "sales_billing_instructions"
+CREATE INDEX "sales_billing_instrs_tid_order_idx" ON "sales_billing_instructions" ("sales_order_id");
+-- Create index "sales_billing_instrs_tid_status_idx" to table: "sales_billing_instructions"
+CREATE INDEX "sales_billing_instrs_tid_status_idx" ON "sales_billing_instructions" ("status");
+-- Create "sales_billing_issuance_attempts" table
+CREATE TABLE "sales_billing_issuance_attempts" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "billing_instruction_id" character varying NOT NULL,
+  "attempt_no" integer NOT NULL,
+  "status" character varying NOT NULL,
+  "started_at" timestamptz NOT NULL,
+  "completed_at" timestamptz NULL,
+  "provider_request_id" character varying NULL,
+  "provider_invoice_reference" character varying NULL,
+  "error_code" character varying NULL,
+  "error_message" character varying NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "sales_billing_attempts_tid_instr_idx" to table: "sales_billing_issuance_attempts"
+CREATE INDEX "sales_billing_attempts_tid_instr_idx" ON "sales_billing_issuance_attempts" ("billing_instruction_id");
+-- Create index "sales_billing_attempts_tid_provreq_idx" to table: "sales_billing_issuance_attempts"
+CREATE INDEX "sales_billing_attempts_tid_provreq_idx" ON "sales_billing_issuance_attempts" ("provider_request_id");
+-- Create index "sales_billing_attempts_tid_status_idx" to table: "sales_billing_issuance_attempts"
+CREATE INDEX "sales_billing_attempts_tid_status_idx" ON "sales_billing_issuance_attempts" ("status");
+-- Create "sales_channel_payment_rel" table
+CREATE TABLE "sales_channel_payment_rel" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "sales_channel_id" character varying NOT NULL,
+  "payment_method_id" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_channel_payment_rel_tid_chan_method_ukey" UNIQUE ("sales_channel_id", "payment_method_id")
+);
 -- Create "sales_integration_outbox" table
 CREATE TABLE "sales_integration_outbox" (
   "id" character varying NOT NULL,
@@ -40,6 +110,21 @@ CREATE INDEX "sales_outbox_tid_occurred_idx" ON "sales_integration_outbox" ("occ
 CREATE INDEX "sales_outbox_tid_published_idx" ON "sales_integration_outbox" ("published_at");
 -- Create index "sales_outbox_tid_type_idx" to table: "sales_integration_outbox"
 CREATE INDEX "sales_outbox_tid_type_idx" ON "sales_integration_outbox" ("event_type");
+-- Create "sales_promotion_compatibilities" table
+CREATE TABLE "sales_promotion_compatibilities" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "program_a_id" character varying NOT NULL,
+  "program_b_id" character varying NOT NULL,
+  "compatibility" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_promo_compat_tid_pair_ukey" UNIQUE ("program_a_id", "program_b_id")
+);
+-- Create index "sales_promo_compat_tid_b_idx" to table: "sales_promotion_compatibilities"
+CREATE INDEX "sales_promo_compat_tid_b_idx" ON "sales_promotion_compatibilities" ("program_b_id");
 -- Create "sales_order_events" table
 CREATE TABLE "sales_order_events" (
   "id" character varying NOT NULL,
@@ -62,34 +147,6 @@ CREATE INDEX "sales_order_evts_tid_actor_idx" ON "sales_order_events" ("actor_id
 CREATE INDEX "sales_order_evts_tid_entity_idx" ON "sales_order_events" ("entity_type", "entity_id");
 -- Create index "sales_order_evts_tid_order_idx" to table: "sales_order_events"
 CREATE INDEX "sales_order_evts_tid_order_idx" ON "sales_order_events" ("sales_order_id");
--- Create "sales_channel_payment_rel" table
-CREATE TABLE "sales_channel_payment_rel" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NOT NULL,
-  "sales_channel_id" character varying NOT NULL,
-  "payment_method_id" character varying NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_channel_payment_rel_tid_chan_method_ukey" UNIQUE ("sales_channel_id", "payment_method_id")
-);
--- Create "sales_channels" table
-CREATE TABLE "sales_channels" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NOT NULL,
-  "code" character varying NOT NULL,
-  "name" character varying NOT NULL,
-  "description" character varying NULL,
-  "managed_by_module" character varying NULL,
-  "status" character varying NOT NULL,
-  "is_system" boolean NOT NULL,
-  "is_archived" boolean NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "etag" character varying NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_channels_code_ukey" UNIQUE ("code")
-);
 -- Create "sales_points" table
 CREATE TABLE "sales_points" (
   "id" character varying NOT NULL,
@@ -121,6 +178,11 @@ CREATE TABLE "sales_orders" (
   "sales_channel_id" character varying NOT NULL,
   "sales_point_id" character varying NOT NULL,
   "customer_reference" character varying NULL,
+  "adjusted_by_order_id" character varying NULL,
+  "adjusts_order_id" character varying NULL,
+  "sold_to_party_id" character varying NULL,
+  "bill_to_party_id" character varying NULL,
+  "payer_party_id" character varying NULL,
   "crm_opportunity_reference" character varying NULL,
   "currency_code" character varying NOT NULL,
   "status" character varying NOT NULL,
@@ -147,6 +209,8 @@ CREATE TABLE "sales_orders" (
   CONSTRAINT "sales_orders_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "sales_orders_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+-- Create index "sales_orders_tid_billto_idx" to table: "sales_orders"
+CREATE INDEX "sales_orders_tid_billto_idx" ON "sales_orders" ("bill_to_party_id");
 -- Create index "sales_orders_tid_channel_extref_ukey" to table: "sales_orders"
 CREATE UNIQUE INDEX "sales_orders_tid_channel_extref_ukey" ON "sales_orders" ("sales_channel_id", "external_reference") WHERE (external_reference IS NOT NULL);
 -- Create index "sales_orders_tid_channel_idem_ukey" to table: "sales_orders"
@@ -461,6 +525,7 @@ CREATE TABLE "sales_payments" (
   "status" character varying NOT NULL,
   "external_transaction_id" character varying NULL,
   "provider_reference" character varying NULL,
+  "payment_order_id" character varying NULL,
   "paid_at" timestamptz NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
@@ -474,6 +539,8 @@ CREATE UNIQUE INDEX "sales_payments_tid_bill_extxn_ukey" ON "sales_payments" ("s
 CREATE INDEX "sales_payments_tid_bill_idx" ON "sales_payments" ("sales_bill_id");
 -- Create index "sales_payments_tid_method_idx" to table: "sales_payments"
 CREATE INDEX "sales_payments_tid_method_idx" ON "sales_payments" ("payment_method_id");
+-- Create index "sales_payments_tid_pmtorder_idx" to table: "sales_payments"
+CREATE INDEX "sales_payments_tid_pmtorder_idx" ON "sales_payments" ("payment_order_id");
 -- Create index "sales_payments_tid_status_idx" to table: "sales_payments"
 CREATE INDEX "sales_payments_tid_status_idx" ON "sales_payments" ("status");
 -- Create "sales_pricelists" table
@@ -702,6 +769,75 @@ CREATE TABLE "sales_quotation_lines" (
 );
 -- Create index "sales_quotation_lines_tid_variant_idx" to table: "sales_quotation_lines"
 CREATE INDEX "sales_quotation_lines_tid_variant_idx" ON "sales_quotation_lines" ("product_variant_id");
+-- Create "sales_returns" table
+CREATE TABLE "sales_returns" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "return_number" character varying NOT NULL,
+  "sales_order_id" character varying NOT NULL,
+  "status" character varying NOT NULL,
+  "inventory_return_status" character varying NOT NULL,
+  "refund_status" character varying NOT NULL,
+  "fiscal_adjustment_status" character varying NOT NULL,
+  "reason" character varying NOT NULL,
+  "inventory_disposition" character varying NULL,
+  "refund_total" numeric NOT NULL,
+  "inventory_reference" character varying NULL,
+  "failure_reason" character varying NULL,
+  "requested_at" timestamptz NULL,
+  "completed_at" timestamptz NULL,
+  "cancelled_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_returns_return_number_ukey" UNIQUE ("return_number"),
+  CONSTRAINT "sales_returns_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- Create index "sales_returns_tid_fiscal_idx" to table: "sales_returns"
+CREATE INDEX "sales_returns_tid_fiscal_idx" ON "sales_returns" ("fiscal_adjustment_status");
+-- Create index "sales_returns_tid_order_idx" to table: "sales_returns"
+CREATE INDEX "sales_returns_tid_order_idx" ON "sales_returns" ("sales_order_id");
+-- Create index "sales_returns_tid_status_idx" to table: "sales_returns"
+CREATE INDEX "sales_returns_tid_status_idx" ON "sales_returns" ("status");
+-- Create "sales_refund_payments" table
+CREATE TABLE "sales_refund_payments" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "sales_return_id" character varying NOT NULL,
+  "original_sales_payment_id" character varying NOT NULL,
+  "amount" numeric NOT NULL,
+  "currency_code" character varying NOT NULL,
+  "status" character varying NOT NULL,
+  "provider_reference" character varying NULL,
+  "failure_reason" character varying NULL,
+  "completed_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_refund_payments_original_sales_payment_id_fkey" FOREIGN KEY ("original_sales_payment_id") REFERENCES "sales_payments" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "sales_refund_payments_sales_return_id_fkey" FOREIGN KEY ("sales_return_id") REFERENCES "sales_returns" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- Create index "sales_refund_pays_tid_orig_idx" to table: "sales_refund_payments"
+CREATE INDEX "sales_refund_pays_tid_orig_idx" ON "sales_refund_payments" ("original_sales_payment_id");
+-- Create index "sales_refund_pays_tid_return_idx" to table: "sales_refund_payments"
+CREATE INDEX "sales_refund_pays_tid_return_idx" ON "sales_refund_payments" ("sales_return_id");
+-- Create index "sales_refund_pays_tid_status_idx" to table: "sales_refund_payments"
+CREATE INDEX "sales_refund_pays_tid_status_idx" ON "sales_refund_payments" ("status");
+-- Create "sales_return_lines" table
+CREATE TABLE "sales_return_lines" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "sales_return_id" character varying NOT NULL,
+  "sales_order_line_id" character varying NOT NULL,
+  "quantity" numeric NOT NULL,
+  "refund_amount" numeric NOT NULL,
+  "refund_tax_amount" numeric NOT NULL,
+  "requires_inventory_return" boolean NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_return_lines_tid_uniq_ukey" UNIQUE ("sales_return_id", "sales_order_line_id"),
+  CONSTRAINT "sales_return_lines_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "sales_return_lines_sales_return_id_fkey" FOREIGN KEY ("sales_return_id") REFERENCES "sales_returns" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- Create index "sales_return_lines_tid_ordline_idx" to table: "sales_return_lines"
+CREATE INDEX "sales_return_lines_tid_ordline_idx" ON "sales_return_lines" ("sales_order_line_id");
+-- Create index "sales_return_lines_tid_return_idx" to table: "sales_return_lines"
+CREATE INDEX "sales_return_lines_tid_return_idx" ON "sales_return_lines" ("sales_return_id");
 -- Create "sales_voucher_codes" table
 CREATE TABLE "sales_voucher_codes" (
   "id" character varying NOT NULL,

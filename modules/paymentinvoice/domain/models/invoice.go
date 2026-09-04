@@ -15,6 +15,8 @@ const (
 	InvoiceSchemaName = "paymentinvoice_invoice"
 
 	InvoiceFieldId             = basemodel.FieldId
+	InvoiceFieldSourceType     = "source_type"
+	InvoiceFieldSourceId       = "source_id"
 	InvoiceFieldNumber         = "number"
 	InvoiceFieldStatus         = "status"
 	InvoiceFieldOrderId        = "order_id"

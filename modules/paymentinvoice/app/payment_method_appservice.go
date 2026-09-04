@@ -132,11 +132,16 @@ func (this *PaymentMethodApplicationServiceImpl) judge(
 	isActive := active != nil && *active
 
 	data := it.PaymentMethodData{
-		Id:        derefString(method.GetId()),
-		Code:      derefString(method.GetCode()),
-		IsActive:  isActive,
-		MinAmount: method.GetMinAmount(),
-		MaxAmount: method.GetMaxAmount(),
+		Id:       derefString(method.GetId()),
+		Code:     derefString(method.GetCode()),
+		IsActive: isActive,
+		// Whether the row names an adapter at all, not whether this build ships it: that second
+		// question is IsUsable's, and a caller choosing between its cash flow and its gateway flow
+		// must get the same answer on a deployment where the gateway is missing — otherwise a
+		// misconfigured build would silently turn a card tender into cash taken at the counter.
+		HasGateway: derefString(method.GetAdapterCode()) != "",
+		MinAmount:  method.GetMinAmount(),
+		MaxAmount:  method.GetMaxAmount(),
 	}
 	if name := method.GetName(); name != nil {
 		data.Name = *name

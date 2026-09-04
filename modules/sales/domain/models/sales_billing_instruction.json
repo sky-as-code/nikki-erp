@@ -1,0 +1,165 @@
+{
+	"name": "sales_billing_instruction",
+	"label": "sales_billing_instruction.label",
+	"table_name": "sales_billing_instructions",
+	"should_build_db": true,
+	"default_search_fields": ["status", "tax_id", "legal_name", "einvoice_reference"],
+	"search_indexes": [
+		{ "index_name": "sales_billing_instrs_tid_order", "fields": ["sales_order_id"] },
+		{ "index_name": "sales_billing_instrs_tid_status", "fields": ["status"] },
+		{ "index_name": "sales_billing_instrs_tid_billto", "fields": ["bill_to_party_id"] },
+		{ "index_name": "sales_billing_instrs_tid_einvref", "fields": ["einvoice_reference"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_order_id",
+			"label": "fields.sales_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The sale this document is to be raised for. AN ORDER, not a bill, unlike sales_fiscal_request: the buyer's fiscal identity is agreed once for the sale, whatever it was settled in. Immutable, because re-pointing it would leave a snapshot the buyer confirmed attached to a sale they never saw. AT MOST ONE ACTIVE INSTRUCTION PER ORDER - cancelled ones are kept for audit, which is why the uniqueness is a partial index in the migration rather than a plain unique here."
+			}
+		},
+		{
+			"name": "bill_to_party_id",
+			"label": "fields.bill_to_party_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The business partner the snapshot below was taken from. FOR TRACEABILITY ONLY: issuance reads the snapshot fields, never this reference, so a partner whose details changed after the buyer confirmed cannot silently alter what the document says. Nullable because an instruction may be filled in by hand before any partner is resolved."
+			}
+		},
+		{
+			"name": "tax_id",
+			"label": "fields.tax_id",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"description": {
+				"en-US": "The buyer's tax code AS CONFIRMED, not as the partner record holds it now. This is the field that makes the invoice deductible for a business buyer, and a document must say what the buyer agreed to at the time - a later correction to the partner is a new instruction, never a rewrite of this one."
+			}
+		},
+		{
+			"name": "legal_name",
+			"label": "fields.legal_name",
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": {
+				"en-US": "The buyer's registered name as confirmed. Snapshotted for the same reason as tax_id: a company that renames itself does not thereby change the name on invoices it was already issued."
+			}
+		},
+		{
+			"name": "billing_address",
+			"label": "fields.billing_address",
+			"data_type": { "type": "string", "min": 0, "max": 1000 },
+			"description": {
+				"en-US": "The address the document is made out to, as confirmed."
+			}
+		},
+		{
+			"name": "billing_email",
+			"label": "fields.billing_email",
+			"data_type": { "type": "string", "min": 0, "max": 320 },
+			"description": {
+				"en-US": "Where the issued document is sent. Unlike the other three this is often the buyer's own input rather than a copy of the partner record - the person at the till gives an address to receive it at, which need not be the company's registered one."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["draft", "ready", "processing", "issued", "failed", "cancelled"]
+			},
+			"required_for_create": true,
+			"default_value": "draft",
+			"no_update": true,
+			"description": {
+				"en-US": "Where this instruction stands. Only 'ready' is picked up by the issuance job, so marking ready is the buyer's consent to be billed - an instruction still being filled in must never be issued from. 'processing' means a worker has claimed it and the snapshot is frozen. Declared no_update so a client cannot move it: every transition is an action that checks what it requires first."
+			}
+		},
+		{
+			"name": "source",
+			"label": "fields.source",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["back_office", "public", "import"]
+			},
+			"required_for_create": true,
+			"default_value": "back_office",
+			"no_update": true,
+			"description": {
+				"en-US": "Who created this instruction. Kept because the three carry different levels of assurance about the buyer's identity - a public self-service submission is the buyer's own claim, a back-office one was entered by staff - and a dispute over a wrong tax code turns on which it was."
+			}
+		},
+		{
+			"name": "fetch_latest_party_details",
+			"label": "fields.fetch_latest_party_details",
+			"data_type": "boolean",
+			"default_value": false,
+			"description": {
+				"en-US": "Whether issuance should re-read the buyer from their party record instead of using the snapshot already captured. Set when the instruction is marked ready. It only matters on a second attempt: the first capture has nothing to reuse, whereas an instruction that came back from a failed issuance already holds a snapshot somebody reviewed, and refreshing it silently would change what is billed without anyone asking."
+			}
+		},
+		{
+			"name": "snapshot_at",
+			"label": "fields.snapshot_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the buyer's details were frozen onto this instruction, which happens once, immediately before it is locked for issuance. Empty until then: an unlocked instruction names a party rather than copying one."
+			}
+		},
+		{
+			"name": "locked_at",
+			"label": "fields.locked_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When a worker claimed this instruction for issuance. Set as part of the same conditional write that moves it to 'processing', so claiming is atomic - two workers cannot both believe they own it, which is what would produce two documents for one sale."
+			}
+		},
+		{
+			"name": "submitted_at",
+			"label": "fields.submitted_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the buyer confirmed the information. Set on marking ready, and left alone by a later revert to draft: it records that consent was given, not that it is currently in force."
+			}
+		},
+		{
+			"name": "issued_at",
+			"label": "fields.issued_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the document came into existence, as reported by whoever issued it. Their date, not ours - a document bears the date its issuer gave it."
+			}
+		},
+		{
+			"name": "einvoice_reference",
+			"label": "fields.einvoice_reference",
+			"data_type": { "type": "string", "min": 0, "max": 200 },
+			"description": {
+				"en-US": "The issuer's own identifier for the document, and the only durable link to it. Written on confirmation and never regenerated: it is what a support enquiry or a reconciliation is traced through."
+			}
+		},
+		{
+			"name": "last_error_code",
+			"label": "fields.last_error_code",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The issuer's code for the most recent failure, kept so an operator can tell a retryable outage from a rejection that needs the buyer's details corrected."
+			}
+		},
+		{
+			"name": "last_error_message",
+			"label": "fields.last_error_message",
+			"data_type": { "type": "string", "min": 0, "max": 2000 },
+			"description": {
+				"en-US": "The most recent failure in the issuer's words. Only the latest is kept here; the full history is the attempt records."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

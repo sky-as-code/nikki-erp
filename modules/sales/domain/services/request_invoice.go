@@ -72,6 +72,9 @@ const (
 	ReasonOriginalRequestRequired   = "sales_fiscal_request.original_request_required"
 	ReasonOriginalRequestNotIssued  = "sales_fiscal_request.original_request_not_issued"
 	ReasonUnknownFiscalIntent       = "sales_fiscal_request.unknown_intent"
+
+	// ReasonOriginalIssuanceSuperseded refuses the one intent the Billing Instruction took over.
+	ReasonOriginalIssuanceSuperseded = "sales_fiscal_request.original_issuance_superseded"
 )
 
 // RequestInvoice asks the eInvoice provider for a fiscal document.
@@ -196,6 +199,20 @@ func assertInvoiceRequestable(
 	if !isKnownFiscalIntent(intent) {
 		vErrs.Append(*ft.NewBusinessViolation("intent", ReasonUnknownFiscalIntent,
 			"unrecognised fiscal intent '"+intent+"'"))
+		return vErrs
+	}
+
+	// ISSUE_ORIGINAL no longer belongs here. A Billing Instruction is what asks for an original VAT
+	// invoice now, and the scheduled issuance job is the only thing that raises one — so a request
+	// written through this path would sit `pending` for ever, invisible to the job that would have
+	// issued it, while the buyer believes an invoice was asked for.
+	//
+	// The adjustment intents are unaffected: correcting an already-issued document is still this
+	// function's job, and the return workflow reaches it through exactly this call.
+	if intent == string(models.SalesFiscalIntentIssueOriginal) {
+		vErrs.Append(*ft.NewBusinessViolation("intent", ReasonOriginalIssuanceSuperseded,
+			"an original invoice is requested by creating a billing instruction on the order, "+
+				"which the scheduled issuance job acts on; this path only adjusts an issued document"))
 		return vErrs
 	}
 
@@ -472,6 +489,7 @@ func buildIssueRequest(
 		Intent:                    itInvoicing.FiscalIntent(intent),
 		SalesFiscalRequestId:      requestId,
 		SalesBillId:               billId,
+		OrgId:                     stringOf(bill, basemodel.FieldOrgId),
 		OriginalProviderReference: originalReference,
 		Buyer:                     params.Buyer,
 		CurrencyCode:              stringOf(bill, models.SalesBillFieldCurrencyCode),

@@ -7,7 +7,6 @@
 package services
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -162,10 +161,6 @@ func (this *OrderDomainService) collect(
 		},
 		OrderCode: orderCode,
 	}
-
-	fmt.Println("")
-	fmt.Println(req)
-	fmt.Println("")
 
 	created, gatewayErr := adapter.CreatePayment(ctx, req)
 

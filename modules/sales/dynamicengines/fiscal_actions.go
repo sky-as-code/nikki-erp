@@ -13,6 +13,11 @@ import (
 // The request-invoice action hangs off the fiscal request, not the bill: asking for a VAT invoice
 // is the power to create a legal document, not a power to split, merge or settle the bill. The bill
 // travels in the body, and the action is collection-level because it creates the request.
+//
+// It ADJUSTS an issued document; it no longer raises the original. An original VAT invoice is asked
+// for by putting a billing instruction on the order, and only the scheduled issuance job raises one
+// — so an ISSUE_ORIGINAL sent here is refused rather than written, because a request this path
+// wrote would sit `pending` for ever, unread by the job that now does the issuing.
 
 const (
 	PermissionRequestInvoice = "create"

@@ -352,3 +352,63 @@ const (
 	SalesRefundPaymentStatusCompleted  = SalesRefundPaymentStatus("completed")
 	SalesRefundPaymentStatusFailed     = SalesRefundPaymentStatus("failed")
 )
+
+// SalesBillingInstructionStatus is where a sale's billing arrangement stands.
+//
+// The line that matters is between `ready` and everything before it: only `ready` is picked up by
+// the issuance job, so marking ready is the buyer's consent to be billed. An instruction still being
+// filled in must never produce a document, and one already claimed must not change under the worker
+// building from it.
+type SalesBillingInstructionStatus string
+
+const (
+	// SalesBillingInstructionStatusDraft: being filled in. Not yet anyone's consent to anything.
+	SalesBillingInstructionStatusDraft = SalesBillingInstructionStatus("draft")
+
+	// SalesBillingInstructionStatusReady: the buyer confirmed these details. The only status the
+	// issuance job will claim.
+	SalesBillingInstructionStatusReady = SalesBillingInstructionStatus("ready")
+
+	// SalesBillingInstructionStatusProcessing: a worker holds it and the snapshot is frozen. An
+	// instruction stuck here after a lost reply is the case reconciliation exists for - it is NOT
+	// swept back to ready, because the document may already exist.
+	SalesBillingInstructionStatusProcessing = SalesBillingInstructionStatus("processing")
+
+	// SalesBillingInstructionStatusIssued: the document exists. Terminal, and frozen: correcting an
+	// issued document is the provider's own regulated workflow, never an edit here.
+	SalesBillingInstructionStatusIssued = SalesBillingInstructionStatus("issued")
+
+	// SalesBillingInstructionStatusFailed: the provider definitely did not issue. Editable, so the
+	// details can be corrected and marked ready again. Reached only when the answer was a refusal -
+	// a lost reply leaves the instruction `processing` instead.
+	SalesBillingInstructionStatusFailed = SalesBillingInstructionStatus("failed")
+
+	// SalesBillingInstructionStatusCancelled: withdrawn before issuance. Terminal and kept for
+	// audit; a buyer who changes their mind gets a new instruction, never this one reopened.
+	SalesBillingInstructionStatusCancelled = SalesBillingInstructionStatus("cancelled")
+)
+
+// SalesBillingInstructionSource is who created the instruction. Kept because the three carry
+// different assurance about the buyer's identity, which is what a dispute over a wrong tax code
+// turns on.
+type SalesBillingInstructionSource string
+
+const (
+	SalesBillingInstructionSourceBackOffice = SalesBillingInstructionSource("back_office")
+	SalesBillingInstructionSourcePublic     = SalesBillingInstructionSource("public")
+	SalesBillingInstructionSourceImport     = SalesBillingInstructionSource("import")
+)
+
+// SalesBillingAttemptStatus is how one issuance attempt ended.
+//
+// `unknown` is the whole reason attempts are recorded separately from the instruction: the request
+// reached the provider and the reply did not come back, so nobody can say whether a document was
+// created. It is not a failure and must not be retried as one.
+type SalesBillingAttemptStatus string
+
+const (
+	SalesBillingAttemptStatusProcessing = SalesBillingAttemptStatus("processing")
+	SalesBillingAttemptStatusSucceeded  = SalesBillingAttemptStatus("succeeded")
+	SalesBillingAttemptStatusFailed     = SalesBillingAttemptStatus("failed")
+	SalesBillingAttemptStatusUnknown    = SalesBillingAttemptStatus("unknown")
+)

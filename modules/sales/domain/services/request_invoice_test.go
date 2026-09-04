@@ -136,6 +136,46 @@ func TestOnlyBusinessIntentsAreAccepted(t *testing.T) {
 	}
 }
 
+// ISSUE_ORIGINAL is refused here even though it remains a valid intent elsewhere: the Billing
+// Instruction and its scheduled job took over raising an original, and a request written through
+// this path would sit `pending` for ever because that job does not read these rows.
+//
+// The refusal is checked before anything touches a repository, so this exercises the real gate.
+func TestRequestingAnOriginalInvoiceIsRefusedHere(t *testing.T) {
+	// A bill and buyer that would otherwise pass every gate, so only the intent can be what refuses.
+	bill := dmodel.DynamicFields{
+		models.SalesBillFieldId:     "01BILL000000000000000000",
+		models.SalesBillFieldStatus: string(models.SalesBillStatusSettled),
+	}
+	params := RequestInvoiceParams{
+		SalesBillId: "01BILL000000000000000000",
+		Buyer:       itInvoicing.BuyerInfo{TaxCode: "0101234567", LegalName: "Acme Co"},
+	}
+
+	vErrs := assertInvoiceRequestable(nil, bill, string(models.SalesFiscalIntentIssueOriginal), params)
+	if vErrs == nil || vErrs.Count() == 0 {
+		t.Fatal("requesting an original invoice through the fiscal-request path must be refused: " +
+			"it would write a row the issuance job never reads")
+	}
+}
+
+// The adjustment intents still reach the later gates. Refusing the original must not have closed
+// the path a return depends on to correct a document that was already issued.
+func TestAdjustmentIntentsAreNotRefusedByTheOriginalGate(t *testing.T) {
+	for _, intent := range []string{
+		string(models.SalesFiscalIntentAdjustForFullReturn),
+		string(models.SalesFiscalIntentAdjustForPartialReturn),
+		string(models.SalesFiscalIntentAdjustPrice),
+	} {
+		if !isKnownFiscalIntent(intent) {
+			t.Errorf("%q must remain a valid intent: returns correct issued documents through it", intent)
+		}
+		if intent == string(models.SalesFiscalIntentIssueOriginal) {
+			t.Errorf("%q must not be treated as an adjustment", intent)
+		}
+	}
+}
+
 // The Sales intent constants and the port's must agree exactly. They are declared separately (the
 // model must not import the port and vice versa), so only this test stops them drifting.
 func TestModelAndPortIntentsAgree(t *testing.T) {

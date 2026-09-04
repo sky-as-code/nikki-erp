@@ -8,7 +8,8 @@
 	"search_indexes": [
 		{ "index_name": "sales_orders_tid_channel_status", "fields": ["sales_channel_id", "status"] },
 		{ "index_name": "sales_orders_tid_point_status", "fields": ["sales_point_id", "status"] },
-		{ "index_name": "sales_orders_tid_customer", "fields": ["customer_reference"] }
+		{ "index_name": "sales_orders_tid_customer", "fields": ["customer_reference"] },
+		{ "index_name": "sales_orders_tid_billto", "fields": ["bill_to_party_id"] }
 	],
 	"partial_uniques_strict": [
 		{
@@ -62,6 +63,48 @@
 			"data_type": "ulid",
 			"description": {
 				"en-US": "The contacts party this sale is for, when there is one. Nullable because anonymous sale is the DEFAULT, not the exception (BR 87.6) — a vending kiosk never knows who is buying. A plain ulid with no edge: the party belongs to Contacts, and a foreign key across that boundary would couple the two modules' migrations (D-37)."
+			}
+		},
+		{
+			"name": "adjusted_by_order_id",
+			"label": "fields.adjusted_by_order_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The adjustment order that supersedes this one after a partial return, when there is one. Its presence IS the mark that this order no longer describes what the customer kept - there is no separate flag, because two ways of saying the same thing drift apart. The original is never edited: it really did sell what it sold, and rewriting it would restate a transaction already paid for and reported on a VAT invoice."
+			}
+		},
+		{
+			"name": "adjusts_order_id",
+			"label": "fields.adjusts_order_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The order this one supersedes, set only on an adjustment order. The inverse of adjusted_by_order_id, and written in the same transaction so the pair cannot half-exist. Distinct from exchange_of_return_id, which points at a RETURN and means the opposite thing: that order sells replacement goods, this one restates what was kept."
+			}
+		},
+		{
+			"name": "sold_to_party_id",
+			"label": "fields.sold_to_party_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The business partner buying. One of three INDEPENDENT roles on a sale - the buyer, whoever the invoice is made out to, and whoever pays - which a business regularly splits: a subsidiary buys, its head office is invoiced, a finance company settles. All three are nullable because an anonymous sale is the default, and none implies either of the others. Distinct from customer_reference, which is Sales' own customer account rather than the partner in this transaction."
+			}
+		},
+		{
+			"name": "bill_to_party_id",
+			"label": "fields.bill_to_party_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The business partner the invoice is to be made out to. It is the SOURCE of the billing snapshot, never what issuance reads: the fiscal identity is copied onto the billing instruction when the buyer confirms it, so a partner edited afterwards cannot change what a document says."
+			}
+		},
+		{
+			"name": "payer_party_id",
+			"label": "fields.payer_party_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The business partner responsible for paying. It does NOT replace the payment records: what was actually paid, by which method and when, is sales_payments. This says who was on the hook, which is a different question and can be true of someone who never pays."
 			}
 		},
 		{

@@ -63,6 +63,12 @@ type IssueRequest struct {
 	SalesFiscalRequestId string
 	SalesBillId          string
 
+	// OrgId is the organization whose sale this is, read off the bill rather than the request
+	// context: a user may act for several organizations, and a document filed against the wrong one
+	// is a document in the wrong set of books. Carried explicitly because an adapter has no way to
+	// recover it — the context does not hold one.
+	OrgId string
+
 	// OriginalProviderReference names the document being adjusted, empty only on
 	// IntentIssueOriginal. An adjustment without it is a credit note that credits nothing.
 	OriginalProviderReference string

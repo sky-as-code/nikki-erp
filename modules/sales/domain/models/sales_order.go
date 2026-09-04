@@ -20,6 +20,11 @@ const (
 	SalesOrderFieldSalesChannelId          = "sales_channel_id"
 	SalesOrderFieldSalesPointId            = "sales_point_id"
 	SalesOrderFieldCustomerReference       = "customer_reference"
+	SalesOrderFieldAdjustedByOrderId       = "adjusted_by_order_id"
+	SalesOrderFieldAdjustsOrderId          = "adjusts_order_id"
+	SalesOrderFieldSoldToPartyId           = "sold_to_party_id"
+	SalesOrderFieldBillToPartyId           = "bill_to_party_id"
+	SalesOrderFieldPayerPartyId            = "payer_party_id"
 	SalesOrderFieldCrmOpportunityReference = "crm_opportunity_reference"
 	SalesOrderFieldCurrencyCode            = "currency_code"
 	SalesOrderFieldStatus                  = "status"
@@ -102,6 +107,55 @@ func (this SalesOrder) GetCustomerReference() *model.Id {
 
 func (this *SalesOrder) SetCustomerReference(id *model.Id) {
 	this.GetFieldData().SetModelId(SalesOrderFieldCustomerReference, id)
+}
+
+// The supersession pair. An order carrying adjusted_by_order_id has been superseded by the order
+// that link names; that order carries adjusts_order_id back. Neither is ever an edit of the other.
+
+func (this SalesOrder) GetAdjustedByOrderId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesOrderFieldAdjustedByOrderId)
+}
+
+func (this SalesOrder) GetAdjustsOrderId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesOrderFieldAdjustsOrderId)
+}
+
+// IsSuperseded reports whether an adjustment order has taken over from this one. Presence of the
+// link is the whole test — there is no separate flag to fall out of step with it.
+func (this SalesOrder) IsSuperseded() bool {
+	return this.GetAdjustedByOrderId() != nil
+}
+
+// IsAdjustment reports whether this order restates what a customer kept after a partial return.
+func (this SalesOrder) IsAdjustment() bool {
+	return this.GetAdjustsOrderId() != nil
+}
+
+// The three party roles. Independent by design — a business regularly splits them, so nothing here
+// derives one from another or defaults one to the value of another.
+
+func (this SalesOrder) GetSoldToPartyId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesOrderFieldSoldToPartyId)
+}
+
+func (this *SalesOrder) SetSoldToPartyId(id *model.Id) {
+	this.GetFieldData().SetModelId(SalesOrderFieldSoldToPartyId, id)
+}
+
+func (this SalesOrder) GetBillToPartyId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesOrderFieldBillToPartyId)
+}
+
+func (this *SalesOrder) SetBillToPartyId(id *model.Id) {
+	this.GetFieldData().SetModelId(SalesOrderFieldBillToPartyId, id)
+}
+
+func (this SalesOrder) GetPayerPartyId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesOrderFieldPayerPartyId)
+}
+
+func (this *SalesOrder) SetPayerPartyId(id *model.Id) {
+	this.GetFieldData().SetModelId(SalesOrderFieldPayerPartyId, id)
 }
 
 func (this SalesOrder) GetCurrencyCode() *string {

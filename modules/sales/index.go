@@ -21,10 +21,14 @@ import (
 	modconstants "github.com/sky-as-code/nikki-erp/modules/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
+	eventhandlers "github.com/sky-as-code/nikki-erp/modules/sales/event_handlers"
 	"github.com/sky-as-code/nikki-erp/modules/sales/infra/external"
 	itChannel "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
 	itMessage "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/message"
+	salescqrs "github.com/sky-as-code/nikki-erp/modules/sales/transport/cqrs"
+	eventtransport "github.com/sky-as-code/nikki-erp/modules/sales/transport/event"
 	"github.com/sky-as-code/nikki-erp/modules/sales/transport/restful"
 )
 
@@ -57,6 +61,10 @@ func (*SalesModule) Deps() []string {
 		"inventory",
 		"contacts",
 		"paymentinvoice",
+
+		// The electronic-invoice job is registered with the scheduler at boot, so the scheduler must
+		// have built its engines before Sales starts.
+		"jobscheduler",
 
 		// The reprice action resolves accounting's tax port eagerly at Init, so accounting must
 		// have registered its service before Sales starts. Without naming it here the loader
@@ -97,6 +105,19 @@ func (*SalesModule) Init() error {
 	}); err != nil {
 		return err
 	}
+	// Event handlers before subscribers: a subscriber resolves its handler registry at construction,
+	// so wiring them the other way round leaves it with nothing to dispatch to.
+	if err := eventhandlers.InitHandlers(); err != nil {
+		return err
+	}
+	if err := eventtransport.InitEventSubscribers(); err != nil {
+		return err
+	}
+	// Before OnAppStarted registers the job that dispatches to it: the scheduler refuses to register
+	// a job whose command name is not a known request type.
+	if err := salescqrs.InitCqrsHandlers(); err != nil {
+		return err
+	}
 	return restful.InitRestfulHandlers()
 }
 
@@ -109,6 +130,9 @@ func (*SalesModule) OnAppStarted() error {
 		settingsSvc itExt.SettingsRegistrationExtService,
 		publisher itMessage.IntegrationEventPublisher,
 		effective itExt.EffectiveSettingsExtService,
+		orders itExt.PaymentOrderExtService,
+		invoicing itInvoicing.InvoicingExtService,
+		scheduler itExt.SchedulerExtService,
 		cronjobs job.CronjobRegistry,
 		logger logging.LoggerService,
 	) error {
@@ -119,7 +143,19 @@ func (*SalesModule) OnAppStarted() error {
 		if err := app.NewOutboxJobs(publisher, logger).RegisterJobs(cronjobs); err != nil {
 			return err
 		}
-		return app.NewExpiryJobs(effective, logger).RegisterJobs(cronjobs)
+		// The backstop for a settlement announcement that was lost: the event bus acknowledges
+		// before it dispatches, so without this a paid bill could stay open forever.
+		if err := app.NewPaymentReconJobs(orders, invoicing, logger).RegisterJobs(cronjobs); err != nil {
+			return err
+		}
+		if err := app.NewExpiryJobs(effective, logger).RegisterJobs(cronjobs); err != nil {
+			return err
+		}
+		// Registered with the scheduler rather than the in-process cron, unlike the sweeps above:
+		// issuing produces a legal document through a third party, so a run that failed has to be
+		// visibly failed and retried on a policy someone can see, which a cron loop does not offer.
+		return registerEinvoiceJob(
+			corectx.NewRequestContext(context.Background()), scheduler, logger)
 	})
 }
 
@@ -158,6 +194,10 @@ func (*SalesModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.SalesFulfillmentRequestLineSchemaBuilder()),
 		// The fiscal request registers after the bill it points at.
 		dmodel.RegisterSchemaB(models.SalesFiscalRequestSchemaBuilder()),
+
+		// Billing instructions register after the order they bill, and their attempts after them.
+		dmodel.RegisterSchemaB(models.SalesBillingInstructionSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesBillingIssuanceAttemptSchemaBuilder()),
 
 		// Manual overrides register after the order they discount.
 		dmodel.RegisterSchemaB(models.SalesManualDiscountSchemaBuilder()),

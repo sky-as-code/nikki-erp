@@ -24,8 +24,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/dynamicengines"
+	pievent "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/infra/external/event"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/infra/gateway"
 	itGateway "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/gateway"
+	itInvoice "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/invoice"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/transport/restful"
 )
@@ -117,6 +119,11 @@ func initDomainServices() error {
 				cfg.GetInt(modconstants.SyncMaxRetries, defaultSyncMaxRetries),
 			)
 		},
+		// The in-process announcement of a settled order, alongside the HTTP sync above. Registered
+		// here rather than in infra/external's own Init because the notifier — the one place both
+		// settle paths meet — is constructed from this container and needs it.
+		pievent.NewPaymentSettledEventPublisher,
+
 		app.NewResultNotifier,
 
 		// The order service under its public interface, so another module can inject the port
@@ -124,6 +131,12 @@ func initDomainServices() error {
 		// instance — dig caches a constructor's result, so both names resolve to one service and
 		// there is no second set of sweeps or gateway connections.
 		func(orders *services.OrderDomainService) itOrder.OrderDomainService { return orders },
+
+		// The invoice service under its public interface, for the same reason and on the same
+		// cached instance: a module raising a document injects the port, not this module's type.
+		func(invoices *services.InvoiceDomainService) itInvoice.InvoiceDomainService {
+			return invoices
+		},
 	)
 	if err != nil {
 		return err

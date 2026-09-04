@@ -73,6 +73,8 @@ CREATE INDEX "payinv_orders_sync_status_idx" ON "paymentinvoice_orders" ("last_s
 -- Create "paymentinvoice_invoices" table
 CREATE TABLE "paymentinvoice_invoices" (
   "id" character varying NOT NULL,
+  "source_type" character varying NULL,
+  "source_id" character varying NULL,
   "number" character varying NULL,
   "status" character varying NOT NULL,
   "order_id" character varying NULL,
@@ -98,6 +100,8 @@ CREATE TABLE "paymentinvoice_invoices" (
 CREATE INDEX "payinv_invoices_issued_at_idx" ON "paymentinvoice_invoices" ("issued_at");
 -- Create index "payinv_invoices_order_id_idx" to table: "paymentinvoice_invoices"
 CREATE INDEX "payinv_invoices_order_id_idx" ON "paymentinvoice_invoices" ("order_id");
+-- Create index "payinv_invoices_source_idx" to table: "paymentinvoice_invoices"
+CREATE INDEX "payinv_invoices_source_idx" ON "paymentinvoice_invoices" ("source_type", "source_id");
 -- Create index "payinv_invoices_status_idx" to table: "paymentinvoice_invoices"
 CREATE INDEX "payinv_invoices_status_idx" ON "paymentinvoice_invoices" ("status");
 -- Create "paymentinvoice_invoice_lines" table
@@ -105,7 +109,7 @@ CREATE TABLE "paymentinvoice_invoice_lines" (
   "id" character varying NOT NULL,
   "invoice_id" character varying NOT NULL,
   "description" character varying NOT NULL,
-  "quantity" integer NOT NULL,
+  "quantity" numeric NOT NULL,
   "unit_price" numeric NOT NULL,
   "tax_rate_percent" numeric NOT NULL,
   "amount" numeric NOT NULL,
@@ -145,4 +149,3 @@ CREATE INDEX "payinv_trans_order_biz_id_idx" ON "paymentinvoice_transactions" ("
 CREATE INDEX "payinv_trans_order_id_idx" ON "paymentinvoice_transactions" ("order_id");
 -- Create index "payinv_trans_ref_tran_id_idx" to table: "paymentinvoice_transactions"
 CREATE INDEX "payinv_trans_ref_tran_id_idx" ON "paymentinvoice_transactions" ("ref_transaction_id");
-

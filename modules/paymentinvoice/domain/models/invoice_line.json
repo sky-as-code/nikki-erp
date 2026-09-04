@@ -24,11 +24,11 @@
 		{
 			"name": "quantity",
 			"label": "fields.quantity",
-			"data_type": { "type": "int32", "min": 1, "max": 1000000 },
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000", "scale": 6 },
 			"required_for_create": true,
-			"default_value": 1,
+			"default_value": "1",
 			"description": {
-				"en-US": "How many units are charged. int32 because the bound is a million: a wider column would represent quantities no line can hold and would suggest the bound had not been chosen."
+				"en-US": "How many units are charged. Decimal, not a whole number: goods are sold by weight and by length as well as by the piece, and a caller raising an invoice for 1.5 kg had no way to state it. The bound stays at a million, which is what makes the width a choice rather than an accident."
 			}
 		},
 		{

@@ -18,6 +18,14 @@ const (
 	// OrgSettingReturnWindowDays is how long after a sale a return may be raised.
 	OrgSettingReturnWindowDays = "return_window_days"
 
+	// OrgSettingInvoiceIssueDelayMinutes is how long after a sale is settled the automatic issuance
+	// job waits before raising its electronic invoice.
+	//
+	// A delay rather than issuing on payment, because the minutes after a sale are when it is most
+	// likely to be corrected or reversed at the counter — and an issued VAT invoice cannot simply be
+	// deleted afterwards. Waiting turns a would-be credit note into a sale that was never invoiced.
+	OrgSettingInvoiceIssueDelayMinutes = "invoice_issue_delay_minutes"
+
 	// OrgSettingAllowOverpayment permits taking more money than the bill is for.
 	OrgSettingAllowOverpayment = "allow_overpayment"
 
@@ -57,6 +65,10 @@ const (
 	DefaultAllowOverpayment         = false
 	DefaultAllowCashChange          = true
 	DefaultDraftOrderExpiryHours    = int32(24)
+
+	// Two hours: long enough that same-visit corrections and reversals happen before a document
+	// exists, short enough that a buyer who asked for an invoice is not left waiting for it.
+	DefaultInvoiceIssueDelayMinutes = int32(120)
 )
 
 // DefaultRoundingScale is 0: VND has no minor unit, so a total is rounded to whole dong. It cannot

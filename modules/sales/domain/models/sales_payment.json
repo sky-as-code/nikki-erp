@@ -7,7 +7,8 @@
 	"search_indexes": [
 		{ "index_name": "sales_payments_tid_bill", "fields": ["sales_bill_id"] },
 		{ "index_name": "sales_payments_tid_status", "fields": ["status"] },
-		{ "index_name": "sales_payments_tid_method", "fields": ["payment_method_id"] }
+		{ "index_name": "sales_payments_tid_method", "fields": ["payment_method_id"] },
+		{ "index_name": "sales_payments_tid_pmtorder", "fields": ["payment_order_id"] }
 	],
 	"partial_uniques_strict": [
 		{
@@ -94,6 +95,15 @@
 			"data_type": { "type": "string", "min": 0, "max": 200 },
 			"description": {
 				"en-US": "Whatever else the provider returned that identifies this payment on their side - an authorization code, a terminal reference. Kept for reconciliation and dispute handling; unlike external_transaction_id it is not required to be unique and carries no rule."
+			}
+		},
+		{
+			"name": "payment_order_id",
+			"label": "fields.payment_order_id",
+			"data_type": { "type": "string", "min": 0, "max": 200 },
+			"no_update": true,
+			"description": {
+				"en-US": "The paymentinvoice order this payment is being collected through, for a gateway tender. A plain string with no edge, like payment_method_id: the order belongs to another module, and a foreign key across that boundary would make the two modules undeployable apart. Null for cash, which no gateway ever saw. It is the correlation key a settlement arrives on, so it is written when the order is opened and never changed."
 			}
 		},
 		{
