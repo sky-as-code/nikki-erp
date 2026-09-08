@@ -11,6 +11,7 @@ import (
 	coreconstants "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
+	"github.com/sky-as-code/nikki-erp/modules/core/database/tranx"
 	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
@@ -82,6 +83,7 @@ func (*CoreModule) Init() error {
 		deps.Invoke(authtoken.InitSubModule),
 		deps.Invoke(event.InitSubModule),
 		deps.Invoke(db.InitSubModule),
+		deps.Invoke(tranx.InitSubModule),
 		deps.Invoke(coredyn.InitSubModule),
 		deps.Invoke(http.InitSubModule),
 		deps.Invoke(httpclient.InitSubModule),
