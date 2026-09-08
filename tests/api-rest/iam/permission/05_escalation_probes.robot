@@ -57,7 +57,7 @@ A Plain User Cannot Assign Themselves A Role
     ${resp}=    POST On Session    attacker    /v1/iam/users/${ATTACKER_ID}/roles
     ...    json=${{ {'add': [$ESC_ROLE_ID]} }}    expected_status=any
     Request Should Be Refused    ${resp}    Self-assigning a role
-    Permission Should Be Denied    attacker    read:iam_role:domain
+    Permission Should Be Denied    attacker    read:iam_role:tenant
 
 A Plain User Cannot Assign A Role Through The Engine Route
     [Documentation]    The generic engine routes serve the same records as the hand-written
@@ -66,7 +66,7 @@ A Plain User Cannot Assign A Role Through The Engine Route
     ${resp}=    POST On Session    attacker    ${USER_API}/${ATTACKER_ID}/roles
     ...    json=${{ {'add': [$ESC_ROLE_ID]} }}    expected_status=any
     Request Should Be Refused    ${resp}    Self-assigning a role via the engine route
-    Permission Should Be Denied    attacker    read:iam_role:domain
+    Permission Should Be Denied    attacker    read:iam_role:tenant
 
 A Plain User Cannot Add Themselves To A Group
     ${gname}=    Unique Display Name    Perm Escalation Group
@@ -126,15 +126,15 @@ Another User's Grants Never Appear In The Caller's Answer
     ...    self-only by construction — there is no parameter naming a subject — so this
     ...    checks that the implementation actually honours the caller's identity rather
     ...    than, say, matching on the expression alone.
-    Permission Should Be Granted    victim    read:iam_role:domain
-    Permission Should Be Denied    attacker    read:iam_role:domain
+    Permission Should Be Granted    victim    read:iam_role:tenant
+    Permission Should Be Denied    attacker    read:iam_role:tenant
 
 A Refusal Reveals Nothing About What Exists
     [Documentation]    A denial for a resource that exists and one for a resource that does
     ...    not must be indistinguishable. Otherwise the probe becomes a way to enumerate
     ...    the system's resources without holding any permission at all.
-    ${real}=    Probe Permission    attacker    read:iam_role:domain
-    ${fake}=    Probe Permission    attacker    read:no_such_resource_here:domain
+    ${real}=    Probe Permission    attacker    read:iam_role:tenant
+    ${fake}=    Probe Permission    attacker    read:no_such_resource_here:tenant
     Should Be Equal    ${real}    ${fake}
     ...    msg=A refusal distinguishes a real resource from an invented one
 
@@ -147,7 +147,7 @@ An Archived Role Stops Granting Its Holder
     ...    json=${{ {'etag': $etag, 'is_archived': True} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    200
 
-    Permission Should Be Denied    victim    read:iam_role:domain
+    Permission Should Be Denied    victim    read:iam_role:tenant
     ${resp}=    Read Roles As    victim
     Response Should Be Permission Refusal    ${resp}    Reading roles under an archived grant
 

@@ -70,7 +70,7 @@ func ResourceSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().Name(ResourceFieldMaxScope).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(c.ResourceScopeDomain), string(c.ResourceScopeOrg),
+					string(c.ResourceScopeTenant), string(c.ResourceScopeOrg),
 					string(c.ResourceScopeOrgUnit), string(c.ResourceScopePrivate),
 				})).
 				RequiredForCreate().
@@ -81,7 +81,7 @@ func ResourceSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().Name(ResourceFieldMinScope).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(c.ResourceScopeDomain), string(c.ResourceScopeOrg),
+					string(c.ResourceScopeTenant), string(c.ResourceScopeOrg),
 					string(c.ResourceScopeOrgUnit), string(c.ResourceScopePrivate),
 				})).
 				RequiredForCreate().
@@ -108,7 +108,7 @@ func DefineResourceFieldCode(fieldName string) *dmodel.FieldBuilder {
 func DefineResourceFieldScope(fieldName string) *dmodel.FieldBuilder {
 	return dmodel.DefineField().Name(fieldName).
 		DataType(dmodel.FieldDataTypeEnumString([]string{
-			string(c.ResourceScopeDomain), string(c.ResourceScopeOrg),
+			string(c.ResourceScopeTenant), string(c.ResourceScopeOrg),
 			string(c.ResourceScopeOrgUnit), string(c.ResourceScopePrivate),
 		}))
 }

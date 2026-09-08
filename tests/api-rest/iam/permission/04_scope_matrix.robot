@@ -2,7 +2,7 @@
 Documentation     Scope semantics over the wire.
 ...
 ...               The rules under test: a wider grant satisfies a narrower requirement
-...               (domain covers org, org covers the units inside it), a grant naming one
+...               (tenant covers org, org covers the units inside it), a grant naming one
 ...               org or unit never answers for a different one, a bare org grant answers
 ...               only for a caller who is actually a member, and a grant on a parent unit
 ...               does NOT reach its children.
@@ -79,16 +79,16 @@ Skip Unless Unit Scope Is Grantable
 
 
 *** Test Cases ***
-A Domain Grant Satisfies An Org Scoped Question
-    [Documentation]    Widening: domain is the widest scope, so it answers a question
+A Tenant Grant Satisfies An Org Scoped Question
+    [Documentation]    Widening: tenant is the widest scope, so it answers a question
     ...    asked about any particular org.
-    ${role_id}=    Grant Scoped Role    Perm Scope Domain    domain
+    ${role_id}=    Grant Scoped Role    Perm Scope Tenant    tenant
     Permission Should Be Granted    scope_user    read:iam_user:org/${ORG_A}
     Permission Should Be Granted    scope_user    read:iam_user:org/${ORG_B}
     [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
-A Domain Grant Satisfies A Unit Scoped Question
-    ${role_id}=    Grant Scoped Role    Perm Scope Domain Unit    domain
+A Tenant Grant Satisfies A Unit Scoped Question
+    ${role_id}=    Grant Scoped Role    Perm Scope Tenant Unit    tenant
     Permission Should Be Granted    scope_user    read:iam_user:orgunit/${UNIT_CHILD}
     [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
@@ -125,11 +125,11 @@ A Parent Unit Grant Does Not Reach A Child Unit
     Permission Should Be Denied    scope_user    read:iam_user:orgunit/${UNIT_CHILD}
     [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
-A Narrow Grant Does Not Satisfy A Domain Question
+A Narrow Grant Does Not Satisfy A Tenant Question
     [Documentation]    Widening runs one way only. Holding a permission over one org says
     ...    nothing about holding it everywhere.
     ${role_id}=    Grant Scoped Role    Perm Scope Narrow    org    org_id    ${ORG_A}
-    Permission Should Be Denied    scope_user    read:iam_user:domain
+    Permission Should Be Denied    scope_user    read:iam_user:tenant
     [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
 An Expired Grant Stops Answering Without Any Rebuild

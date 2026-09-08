@@ -26,7 +26,7 @@ type Perm struct {
 
 // PermFor starts a Perm for the given action on the given resource. Use the
 // InOrg / InOrgUnit / OwnedByCaller builders to attach the record's context - an
-// org- or unit-scoped check without it can only ever match an exact or domain
+// org- or unit-scoped check without it can only ever match an exact or tenant
 // grant, which is how org-scoped checks silently degraded before.
 func PermFor(actionCode string, resourceCode string, scope ResourceScope) Perm {
 	return Perm{ActionCode: actionCode, ResourceCode: resourceCode, Scope: scope}
@@ -65,6 +65,19 @@ type PermissionContext struct {
 // the three of them from drifting into disagreeing about the same question.
 func AssertPermission(ctx corectx.Context, requiredPerm Perm) *ft.ClientErrors {
 	userPerm := ctx.GetPermissions()
+
+	// Fail closed on an unauthenticated execution. Without this the check still denies - an empty
+	// entitlement set matches no candidate - but it reports "you lack this entitlement", which
+	// sends an administrator hunting for a grant to add when the real fault is that nothing
+	// authenticated the caller. A job or consumer that reaches here with no principal is a wiring
+	// bug, and it should read as one.
+	//
+	// Deliberately no `principal.Kind == service -> allow` branch: a service authorizes on the
+	// entitlements it was granted, exactly like a user.
+	if userPerm.Principal.IsZero() {
+		return unauthenticated()
+	}
+
 	if userPerm.IsOwner {
 		return nil
 	}
@@ -93,6 +106,13 @@ func EvalContextFrom(userPerm corectx.ContextPermissions) EvalContext {
 		OrgUnitId:    userPerm.OrgUnitId,
 		OrgUnitOrgId: userPerm.OrgUnitOrgId,
 	}
+}
+
+// unauthenticated reports that nothing established a principal for this execution.
+func unauthenticated() *ft.ClientErrors {
+	cErrs := ft.NewClientErrors()
+	cErrs.Append(*ft.NewUnauthenticatedError())
+	return cErrs
 }
 
 // insufficient names the exact expression the caller was missing, which is the

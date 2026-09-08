@@ -37,10 +37,10 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M1C0N7ACTS00000000000001', 'Party', 'contacts_party', 'People and organizations the business deals with', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1C0N7ACTS00000000000002', 'Communication Channel', 'contacts_comm_channel', 'Ways of reaching a party: phone, email, postal address', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1C0N7ACTS00000000000003', 'Party Relationship', 'contacts_relationship', 'Directed links between two parties', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1C0N7ACTS0000000000000K', 'Vendor Profile', 'contacts_vendor_profile', 'Supplier-specific terms of a party: status, payment terms, lead time', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M1C0N7ACTS00000000000001', 'Party', 'contacts_party', 'People and organizations the business deals with', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1C0N7ACTS00000000000002', 'Communication Channel', 'contacts_comm_channel', 'Ways of reaching a party: phone, email, postal address', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1C0N7ACTS00000000000003', 'Party Relationship', 'contacts_relationship', 'Directed links between two parties', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1C0N7ACTS0000000000000K', 'Vendor Profile', 'contacts_vendor_profile', 'Supplier-specific terms of a party: status, payment terms, lead time', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

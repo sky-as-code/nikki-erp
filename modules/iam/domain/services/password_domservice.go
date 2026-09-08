@@ -281,7 +281,7 @@ func (this *PasswordDomainServiceImpl) CreatePasswordTemp(ctx corectx.Context, c
 // signs in with.
 func (this *PasswordDomainServiceImpl) canReadTempPassword(ctx corectx.Context) bool {
 	return reguard.AssertPermission(ctx, reguard.PermFor(
-		c.ActionManageCredentials, models.UserSchemaName, reguard.ResourceScopeDomain,
+		c.ActionManageCredentials, models.UserSchemaName, reguard.ResourceScopeTenant,
 	)) == nil
 }
 

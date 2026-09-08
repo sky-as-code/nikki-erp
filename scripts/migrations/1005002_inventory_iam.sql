@@ -50,13 +50,13 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0A1P4QM3P0Y3T60T7RH2KZC', 'Product Template', 'inventory_product_template', 'Catalog-level definition of a product line', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QJ0MFYJY0EQH0NVJ2R', 'Product Variant', 'inventory_product_variant', 'Concrete, transactable product of a template', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q8S7V5FR3KKY1V5ZMF', 'Product Type', 'inventory_product_type', 'How the system processes a product: goods, service, combo', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QGGABP6SVFCTD6MF8K', 'Product Category', 'inventory_product_category', 'Hierarchical classification of product templates', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QMJTAEFCJY5WRTNHWZ', 'Product Attribute', 'inventory_product_attribute', 'Attributes whose values form product variants', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QAH9DQW7VXG9K87HWP', 'Product Attribute Value', 'inventory_product_attribute_value', 'Allowed values of a product attribute', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QDXYWAJ8D4ZAD50VW7', 'Brand', 'inventory_brand', 'Product brands', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0A1P4QM3P0Y3T60T7RH2KZC', 'Product Template', 'inventory_product_template', 'Catalog-level definition of a product line', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QJ0MFYJY0EQH0NVJ2R', 'Product Variant', 'inventory_product_variant', 'Concrete, transactable product of a template', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q8S7V5FR3KKY1V5ZMF', 'Product Type', 'inventory_product_type', 'How the system processes a product: goods, service, combo', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QGGABP6SVFCTD6MF8K', 'Product Category', 'inventory_product_category', 'Hierarchical classification of product templates', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QMJTAEFCJY5WRTNHWZ', 'Product Attribute', 'inventory_product_attribute', 'Attributes whose values form product variants', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QAH9DQW7VXG9K87HWP', 'Product Attribute Value', 'inventory_product_attribute_value', 'Allowed values of a product attribute', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QDXYWAJ8D4ZAD50VW7', 'Brand', 'inventory_brand', 'Product brands', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -129,9 +129,9 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0B2Q5R34KTKF2YBXPBBC2JH', 'Stock Location', 'inventory_stock_location', 'Where stock is held, and the counterparties movements run against', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5R9XBX4YENXT9PN8J70', 'Stock Operation Type', 'inventory_stock_operation_type', 'Policy applied when processing a stock transfer', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5R3BQX4QWMQCNPQV5H6', 'Stock Quant', 'inventory_stock_quant', 'Current stock balance at one product, location, lot, package and owner', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0B2Q5R34KTKF2YBXPBBC2JH', 'Stock Location', 'inventory_stock_location', 'Where stock is held, and the counterparties movements run against', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5R9XBX4YENXT9PN8J70', 'Stock Operation Type', 'inventory_stock_operation_type', 'Policy applied when processing a stock transfer', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5R3BQX4QWMQCNPQV5H6', 'Stock Quant', 'inventory_stock_quant', 'Current stock balance at one product, location, lot, package and owner', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -170,10 +170,10 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0B434KTKF2YBXPBBC2JH9XB', 'Stock Transfer', 'inventory_stock_transfer', 'The header of a stock transaction: what moves, between which locations, in what state', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4X4YENXT9PN8J703BQX4Q', 'Stock Move', 'inventory_stock_move', 'One line of demand within a transfer: this much of this variant, from here to there', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4WMQCNPQV5H6VRPCQHTGP', 'Stock Move Line', 'inventory_stock_move_line', 'The execution detail of a move: what was actually taken, and from which balance', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4JBZWQZ6PBAYTGAPKWX3G', 'Stock Move Dependency', 'inventory_stock_move_dependency', 'Ordering between the steps of a multi-step flow', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0B434KTKF2YBXPBBC2JH9XB', 'Stock Transfer', 'inventory_stock_transfer', 'The header of a stock transaction: what moves, between which locations, in what state', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4X4YENXT9PN8J703BQX4Q', 'Stock Move', 'inventory_stock_move', 'One line of demand within a transfer: this much of this variant, from here to there', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4WMQCNPQV5H6VRPCQHTGP', 'Stock Move Line', 'inventory_stock_move_line', 'The execution detail of a move: what was actually taken, and from which balance', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4JBZWQZ6PBAYTGAPKWX3G', 'Stock Move Dependency', 'inventory_stock_move_dependency', 'Ordering between the steps of a multi-step flow', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -224,7 +224,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0C3SQRTAAAAAAAAAAAAAAAB', 'Stock Scrap', 'inventory_stock_scrap', 'A document that removes goods from usable stock by moving them to a scrap location', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0C3SQRTAAAAAAAAAAAAAAAB', 'Stock Scrap', 'inventory_stock_scrap', 'A document that removes goods from usable stock by moving them to a scrap location', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -262,10 +262,10 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_resources'
 	) THEN
 		INSERT INTO "iam_resources" ("id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag") VALUES
-		('01M1N2Q3V769G2C81EBDXR3QH8', 'Warehouse', 'inventory_warehouse', 'A site that can receive, hold and dispatch goods', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M14PV5Q32776611SWMJMG04X', 'Storage Category', 'inventory_storage_category', 'Capacity and mixing policy a location may carry', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1E4451SXVZ5KBSM1HEPQWAZ', 'Warehouse Supply Relation', 'inventory_warehouse_supply_relation', 'Which warehouse may resupply which', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1E4XEPDJ24JDTC2R8H18X78', 'Putaway Rule', 'inventory_putaway_rule', 'Where arriving goods should be put', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M1N2Q3V769G2C81EBDXR3QH8', 'Warehouse', 'inventory_warehouse', 'A site that can receive, hold and dispatch goods', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M14PV5Q32776611SWMJMG04X', 'Storage Category', 'inventory_storage_category', 'Capacity and mixing policy a location may carry', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1E4451SXVZ5KBSM1HEPQWAZ', 'Warehouse Supply Relation', 'inventory_warehouse_supply_relation', 'Which warehouse may resupply which', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1E4XEPDJ24JDTC2R8H18X78', 'Putaway Rule', 'inventory_putaway_rule', 'Where arriving goods should be put', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

@@ -81,6 +81,71 @@ func TestExecuteActionAcceptsTheCallersOwnOrg(t *testing.T) {
 	assert.Equal(t, "org_mine", seen[basemodel.FieldOrgId])
 }
 
+// serviceContext is a service principal minted for one org. It holds no org membership, which is
+// the whole reason org scope cannot be resolved from UserOrgIds alone.
+func serviceContext(orgId model.Id) corectx.Context {
+	ctx := corectx.NewRequestContext(context.Background())
+	ctx.SetPermissions(corectx.ContextPermissions{
+		IsOwner: true,
+		Principal: corectx.Principal{
+			Kind:  corectx.PrincipalKindService,
+			Id:    model.Id("svc_test"),
+			OrgId: &orgId,
+		},
+	})
+	return ctx
+}
+
+// Without the service branch this fails: a service has an empty UserOrgIds, so membership alone
+// would refuse every org-scoped action it ever attempts.
+func TestExecuteActionAcceptsAServicesOwnOrg(t *testing.T) {
+	var seen dmodel.DynamicFields
+	engine := orgScopedEngineWithAction(t, "custom", &seen)
+
+	result, err := engine.ExecuteAction(serviceContext("org_mine"), "custom", dmodel.DynamicFields{
+		basemodel.FieldOrgId: "org_mine",
+	})
+
+	require.NoError(t, err)
+	assert.Zero(t, result.ClientErrors.Count())
+	assert.Equal(t, "org_mine", seen[basemodel.FieldOrgId])
+}
+
+// Isolation still holds: being a service widens nothing beyond the org it was minted for.
+func TestExecuteActionRejectsAnOrgTheServiceWasNotMintedFor(t *testing.T) {
+	var seen dmodel.DynamicFields
+	engine := orgScopedEngineWithAction(t, "custom", &seen)
+
+	result, err := engine.ExecuteAction(serviceContext("org_mine"), "custom", dmodel.DynamicFields{
+		basemodel.FieldOrgId: "org_someone_else",
+	})
+
+	require.NoError(t, err)
+	assert.Positive(t, result.ClientErrors.Count())
+	assert.Nil(t, seen, "a service must not reach outside the org it was minted for")
+}
+
+// A service with no org named on its principal reaches no org-scoped resource at all, rather than
+// falling through to some default.
+func TestExecuteActionRejectsAServiceWithNoOrg(t *testing.T) {
+	var seen dmodel.DynamicFields
+	engine := orgScopedEngineWithAction(t, "custom", &seen)
+
+	ctx := corectx.NewRequestContext(context.Background())
+	ctx.SetPermissions(corectx.ContextPermissions{
+		IsOwner:   true,
+		Principal: corectx.Principal{Kind: corectx.PrincipalKindService, Id: model.Id("svc_test")},
+	})
+
+	result, err := engine.ExecuteAction(ctx, "custom", dmodel.DynamicFields{
+		basemodel.FieldOrgId: "org_mine",
+	})
+
+	require.NoError(t, err)
+	assert.Positive(t, result.ClientErrors.Count())
+	assert.Nil(t, seen)
+}
+
 func TestExecuteActionSkipsScopingForAWithdrawnAction(t *testing.T) {
 	var seen dmodel.DynamicFields
 	engine := newOrgScopedTestEngine()

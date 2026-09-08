@@ -38,6 +38,6 @@ func assertPermission(
 	return reguard.AssertPermission(ctx, reguard.Perm{
 		ActionCode:   actionCode,
 		ResourceCode: resourceCode,
-		Scope:        reguard.ResourceScopeDomain,
+		Scope:        reguard.ResourceScopeTenant,
 	})
 }

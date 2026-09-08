@@ -81,9 +81,9 @@ Settings Seeds Grant Read And Never Update
         ${action}=      Get From Dictionary    ${item}    action_name      ${EMPTY}
         IF    "${resource}" in ("settings_schema", "settings_record")
             Should Not Be Equal    ${action}    update
-            ...    msg=A domain-wide entitlement grants update on ${resource}; settings seeds must grant read only.
+            ...    msg=A tenant-wide entitlement grants update on ${resource}; settings seeds must grant read only.
             Should Not Be Equal    ${action}    delete
-            ...    msg=A domain-wide entitlement grants delete on ${resource}; settings seeds must grant read only.
+            ...    msg=A tenant-wide entitlement grants delete on ${resource}; settings seeds must grant read only.
         END
     END
 
@@ -103,9 +103,9 @@ One User Does Not Read Another User's Preferences
     ${mine}=    Get Settings At Level    ${SETTINGS_USER_API}
     Setting Item Should Be    ${mine}    ${SETTING_THEME_MODE}    light
 
-A Domain Administrator Reaches Every Level
-    [Documentation]    The seeded test account holds the Domain Administrator role, whose
-    ...    entitlement is `*:*:domain` — all actions on all resources. Every level must therefore
+A Tenant Administrator Reaches Every Level
+    [Documentation]    The seeded test account holds the Tenain Administrator role, whose
+    ...    entitlement is `*:*:tenant` — all actions on all resources. Every level must therefore
     ...    be readable by it.
     ...
     ...    This is asserted because the fan-out suite skips when no tenant-level schema is
@@ -114,7 +114,7 @@ A Domain Administrator Reaches Every Level
     FOR    ${api}    IN    ${SETTINGS_TENANT_API}    ${SETTINGS_ORG_API}    ${SETTINGS_USER_API}
         ${resp}=    Get Settings At Level    ${api}    expected_status=any
         Should Be Equal As Integers    ${resp.status_code}    200
-        ...    msg=A Domain Administrator was refused a read at ${api} (status ${resp.status_code}).
+        ...    msg=A Tenant Administrator was refused a read at ${api} (status ${resp.status_code}).
     END
 
 Writing A Level No Module Declares Is A Caller Error

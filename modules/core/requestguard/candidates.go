@@ -42,7 +42,7 @@ func (this EvalContext) belongsToOrgUnit(orgUnitId *model.Id) bool {
 // system whose "can I?" and "may I?" answers differ is a security defect, not an
 // inconsistency.
 //
-// Scope widening runs domain > org > orgunit: a wider grant satisfies a narrower
+// Scope widening runs tenant > org > orgunit: a wider grant satisfies a narrower
 // requirement. There is deliberately NO inheritance between org units - a grant on
 // a parent unit does not reach its children, which is the documented entitlement
 // semantics and what makes a unit grant auditable.
@@ -55,12 +55,12 @@ func CandidateExpressions(required Perm, evalCtx EvalContext) []string {
 	// Rank 0: the omnipotent grant answers every question.
 	add(OmnipotentExpression())
 
-	// Rank 1: domain grants answer every scope.
-	add(scopeVariants(required, ResourceScopeDomain, nil)...)
+	// Rank 1: tenant grants answer every scope.
+	add(scopeVariants(required, ResourceScopeTenant, nil)...)
 
 	switch required.Scope {
-	case ResourceScopeDomain:
-		// Already covered by the domain variants above.
+	case ResourceScopeTenant:
+		// Already covered by the tenant variants above.
 
 	case ResourceScopeOrg:
 		add(orgCandidates(required, evalCtx, required.OrgId)...)

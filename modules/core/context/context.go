@@ -32,10 +32,51 @@ type Context interface {
 	WithValue(key, val any)
 }
 
+// PrincipalKind says what sort of actor is executing, so that a job or a consumer is
+// distinguishable from an unauthenticated caller rather than looking identical to one.
+//
+// This is not IAM's PrincipalType (`nikkiuser` | `custom`), which describes where a login
+// credential came from - a different axis, and in a module core cannot import.
+type PrincipalKind string
+
+const (
+	// PrincipalKindUser is a person acting through a client.
+	PrincipalKindUser = PrincipalKind("user")
+	// PrincipalKindService is a workload acting on the system's behalf: a scheduled job, a
+	// message consumer, a device. It authorizes exactly like a user, on entitlements it was
+	// granted - never by virtue of being internal.
+	PrincipalKindService = PrincipalKind("service")
+	// PrincipalKindSystem is reserved for future platform-level operations. It deliberately
+	// carries NO bypass behaviour; treat it as unauthorized until that is designed.
+	PrincipalKindSystem = PrincipalKind("system")
+)
+
+// Principal is the authenticated actor behind the current execution.
+//
+// A zero Principal means "nobody was authenticated". Authorization must fail closed on it rather
+// than reading absence as permission - see requestguard.AssertPermission.
+type Principal struct {
+	Kind PrincipalKind `json:"kind"`
+	Id   model.Id      `json:"id"`
+	// OrgId is the single org a service principal acts within. A service holds no org
+	// membership, so this is what org-scoped work is checked against; nil for a user, whose
+	// reach comes from UserOrgIds instead.
+	OrgId *model.Id `json:"org_id"`
+	// DisplayName is for audit and logs only. Never make a security decision from it.
+	DisplayName string `json:"display_name"`
+}
+
+// IsZero reports whether no principal was established.
+func (this Principal) IsZero() bool {
+	return this.Kind == "" && this.Id == ""
+}
+
 type ContextPermissions struct {
 	IsOwner      bool
 	Entitlements ds.Set[string]
 	UserId       model.Id `json:"user_id"`
+	// The actor executing this request: a user, or a service acting for the system.
+	Principal Principal `json:"principal"`
 	// The orgs that user belongs to (if any)
 	UserOrgIds ds.Set[model.Id] `json:"user_org_ids"`
 	// The org unit that user belongs to (if any)
@@ -57,12 +98,17 @@ func NewRequestContextM(ctx context.Context, moduleName string) Context {
 	}
 }
 
+// NewRequestContextF builds an empty context carrying domain constraints.
+//
+// The constraints go through SetDomainConstraints rather than a struct field: GetDomainConstraints
+// reads them back off the inner context's values, so a field set here would never be read.
 func NewRequestContextF(ctx context.Context, moduleName string, domainConstraints dmodel.DynamicFields) Context {
-	return &RequestContext{
-		Context:           ctx,
-		domainConstraints: domainConstraints,
-		moduleName:        moduleName,
+	out := &RequestContext{
+		Context:    ctx,
+		moduleName: moduleName,
 	}
+	out.SetDomainConstraints(domainConstraints)
+	return out
 }
 
 // CloneRequestContext returns a copy of ctx that can be given a different transaction without
@@ -107,12 +153,10 @@ type RequestContext struct {
 	logger logging.LoggerService
 
 	// The transaction object that Repository Layer can use to perform atomic database operations.
-	repoTrx           db.DbTransaction
-	domainConstraints dmodel.DynamicFields
-	moduleName        string
-	permissions       ContextPermissions
-	userId            model.Id
-	user              dmodel.DynamicFields
+	repoTrx     db.DbTransaction
+	moduleName  string
+	permissions ContextPermissions
+	user        dmodel.DynamicFields
 }
 
 func (this RequestContext) InnerContext() context.Context {

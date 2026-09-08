@@ -41,12 +41,12 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0PAY1SMY4Q2E7VC4DDZAPWF', 'Payment Order', 'paymentinvoice_order', 'A request to collect money through a payment gateway', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1V59JZP88YNHA9FEC4F', 'Payment Transaction', 'paymentinvoice_transaction', 'One payment or refund attempt recorded against an order', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY16EZ1JQ1TS64Q21TPE7', 'Invoice', 'paymentinvoice_invoice', 'An accounting document issued for a sale', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY13K1F11EGR7EET7DHAM', 'Invoice Line', 'paymentinvoice_invoice_line', 'One charged item of an invoice', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1PRF7Z8QK3M2N4T5V6W', 'Payment Profile', 'paymentinvoice_payment_profile', 'One merchant account at a gateway: the credentials a payment settles into', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0PAY1GEVS6GFS22NP6V3ZRW', 'Payment Method', 'paymentinvoice_payment_method', 'A configured way the business can be paid, naming the adapter that carries it out', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0PAY1SMY4Q2E7VC4DDZAPWF', 'Payment Order', 'paymentinvoice_order', 'A request to collect money through a payment gateway', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1V59JZP88YNHA9FEC4F', 'Payment Transaction', 'paymentinvoice_transaction', 'One payment or refund attempt recorded against an order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY16EZ1JQ1TS64Q21TPE7', 'Invoice', 'paymentinvoice_invoice', 'An accounting document issued for a sale', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY13K1F11EGR7EET7DHAM', 'Invoice Line', 'paymentinvoice_invoice_line', 'One charged item of an invoice', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1PRF7Z8QK3M2N4T5V6W', 'Payment Profile', 'paymentinvoice_payment_profile', 'One merchant account at a gateway: the credentials a payment settles into', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0PAY1GEVS6GFS22NP6V3ZRW', 'Payment Method', 'paymentinvoice_payment_method', 'A configured way the business can be paid, naming the adapter that carries it out', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

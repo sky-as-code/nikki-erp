@@ -135,6 +135,14 @@ func SmokeAuthorizeMiddleware() echo.MiddlewareFunc {
 				IsOwner:      resUser.Data.IsOwner,
 				Entitlements: ents,
 				UserId:       resUser.Data.UserId,
+				// This middleware authenticates a person through a JWT, so the actor is always a
+				// user. A service reaches the application by another route and sets its own
+				// principal there.
+				Principal: corectx.Principal{
+					Kind:        corectx.PrincipalKindUser,
+					Id:          resUser.Data.UserId,
+					DisplayName: userEmail,
+				},
 				UserOrgIds:   orgIds,
 				OrgUnitId:    resUser.Data.OrgUnitId,
 				OrgUnitOrgId: resUser.Data.OrgUnitOrgId,

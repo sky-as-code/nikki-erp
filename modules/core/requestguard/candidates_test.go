@@ -27,11 +27,11 @@ func TestCandidateExpressions_Matrix(t *testing.T) {
 		mustNotHave []string
 	}{
 		{
-			name:     "domain scope accepts only omnipotent and domain grants",
-			required: permFor(ResourceScopeDomain),
+			name:     "tenant scope accepts only omnipotent and tenant grants",
+			required: permFor(ResourceScopeTenant),
 			mustContain: []string{
 				"*:*:*",
-				"create:iam_user:domain", "*:iam_user:domain", "create:*:domain", "*:*:domain",
+				"create:iam_user:tenant", "*:iam_user:tenant", "create:*:tenant", "*:*:tenant",
 			},
 			mustNotHave: []string{"create:iam_user:org", "create:iam_user:orgunit"},
 		},
@@ -40,7 +40,7 @@ func TestCandidateExpressions_Matrix(t *testing.T) {
 			required: Perm{ActionCode: "create", ResourceCode: "iam_user", Scope: ResourceScopeOrg, OrgId: &orgId},
 			mustContain: []string{
 				"*:*:*",
-				"create:iam_user:domain",
+				"create:iam_user:tenant",
 				"create:iam_user:org/ORG1", "*:iam_user:org/ORG1", "create:*:org/ORG1", "*:*:org/ORG1",
 			},
 			// A bare org grant must NOT answer for a caller who is not in that org.
@@ -56,9 +56,9 @@ func TestCandidateExpressions_Matrix(t *testing.T) {
 			},
 		},
 		{
-			name:     "org scope, membership in a different org does not help",
-			required: Perm{ActionCode: "create", ResourceCode: "iam_user", Scope: ResourceScopeOrg, OrgId: &orgId},
-			evalCtx:  EvalContext{UserOrgIds: []model.Id{otherOrgId}},
+			name:        "org scope, membership in a different org does not help",
+			required:    Perm{ActionCode: "create", ResourceCode: "iam_user", Scope: ResourceScopeOrg, OrgId: &orgId},
+			evalCtx:     EvalContext{UserOrgIds: []model.Id{otherOrgId}},
 			mustContain: []string{"create:iam_user:org/ORG1"},
 			mustNotHave: []string{"create:iam_user:org", "create:iam_user:org/ORG2"},
 		},
@@ -72,7 +72,7 @@ func TestCandidateExpressions_Matrix(t *testing.T) {
 			mustContain: []string{
 				"create:iam_user:orgunit/OU1", "*:*:orgunit/OU1",
 				"create:iam_user:orgunit", // bare unit grant, caller is in the unit
-				"create:iam_user:domain",
+				"create:iam_user:tenant",
 				"create:iam_user:org/ORG1", // fallback to the unit's org
 				"create:iam_user:org",      // caller is a member of that org
 			},
@@ -90,7 +90,7 @@ func TestCandidateExpressions_Matrix(t *testing.T) {
 		{
 			name:        "private scope",
 			required:    permFor(ResourceScopePrivate),
-			mustContain: []string{"*:*:*", "create:iam_user:domain", "create:iam_user:private", "*:*:private"},
+			mustContain: []string{"*:*:*", "create:iam_user:tenant", "create:iam_user:private", "*:*:private"},
 			mustNotHave: []string{"create:iam_user:org", "create:iam_user:orgunit"},
 		},
 	}
@@ -144,7 +144,7 @@ func TestCandidateExpressions_NoDuplicates(t *testing.T) {
 func TestCandidateExpressions_AllParseable(t *testing.T) {
 	orgId := model.Id("ORG1")
 	unitId := model.Id("OU1")
-	scopes := []ResourceScope{ResourceScopeDomain, ResourceScopeOrg, ResourceScopeOrgUnit, ResourceScopePrivate}
+	scopes := []ResourceScope{ResourceScopeTenant, ResourceScopeOrg, ResourceScopeOrgUnit, ResourceScopePrivate}
 
 	for _, scope := range scopes {
 		required := Perm{

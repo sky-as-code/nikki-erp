@@ -16,28 +16,28 @@ func NewActionApplicationService(resourceSvc itRes.ResourceAppService) itAct.Act
 }
 
 func (this *ResourceApplicationServiceImpl) CreateAction(ctx corectx.Context, cmd itAct.CreateActionCommand) (*itAct.CreateActionResult, error) {
-	if cErr := assertPermission(ctx, "manage_actions", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "manage_actions", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itAct.CreateActionResult{ClientErrors: *cErr}, nil
 	}
 	return this.actionSvc.CreateAction(ctx, cmd)
 }
 
 func (this *ResourceApplicationServiceImpl) DeleteAction(ctx corectx.Context, cmd itAct.DeleteActionCommand) (*itAct.DeleteActionResult, error) {
-	if cErr := assertPermission(ctx, "manage_actions", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "manage_actions", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itAct.DeleteActionResult{ClientErrors: *cErr}, nil
 	}
 	return this.actionSvc.DeleteAction(ctx, cmd)
 }
 
 func (this *ResourceApplicationServiceImpl) ActionExists(ctx corectx.Context, query itAct.ActionExistsQuery) (*itAct.ActionExistsResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itAct.ActionExistsResult{ClientErrors: *cErr}, nil
 	}
 	return this.actionSvc.ActionExists(ctx, query)
 }
 
 func (this *ResourceApplicationServiceImpl) GetAction(ctx corectx.Context, query itAct.GetActionQuery) (*itAct.GetActionResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itAct.GetActionResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[domain.Action, *domain.Action]{
@@ -50,13 +50,16 @@ func (this *ResourceApplicationServiceImpl) GetAction(ctx corectx.Context, query
 }
 
 func (this *ResourceApplicationServiceImpl) SearchActions(ctx corectx.Context, query itAct.SearchActionsQuery) (*itAct.SearchActionsResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itAct.SearchActionsResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Action, *domain.Action]{
 		Action:        "search actions",
 		Schema:        this.actionRepo.GetBaseRepo().Schema(),
-		DefaultFields: []string{models.ActionFieldName, models.ActionFieldDescription},
+		// Code is in the default projection because it is the identifier, not a label: an
+		// entitlement expression is built from it (`{action}:{resource}:{scope}`), so a client
+		// listing actions cannot name a permission without it.
+		DefaultFields: []string{models.ActionFieldCode, models.ActionFieldName, models.ActionFieldDescription},
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.Action]], error) {
 			return this.actionSvc.SearchActions(ctx, query, corecrud.ServiceSearchOptions{
 				AfterValidationSuccess: fn,
@@ -66,7 +69,7 @@ func (this *ResourceApplicationServiceImpl) SearchActions(ctx corectx.Context, q
 }
 
 func (this *ResourceApplicationServiceImpl) UpdateAction(ctx corectx.Context, cmd itAct.UpdateActionCommand) (*itAct.UpdateActionResult, error) {
-	if cErr := assertPermission(ctx, "manage_actions", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "manage_actions", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itAct.UpdateActionResult{ClientErrors: *cErr}, nil
 	}
 	return this.actionSvc.UpdateAction(ctx, cmd)

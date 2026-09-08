@@ -127,6 +127,14 @@ func (this UserRest) GetUserContext(echoCtx *echo.Context) (err error) {
 		DisplayName:  user.MustGetDisplayName(),
 		Email:        user.MustGetEmail(),
 		Entitlements: userPerm.Entitlements.ToSlice(),
+
+		IsOwner: userPerm.IsOwner,
+		UserOrgIds: array.Map(userPerm.UserOrgIds.ToSlice(), func(id model.Id) string {
+			return string(id)
+		}),
+		OrgUnitId:    idToStringPtr(userPerm.OrgUnitId),
+		OrgUnitOrgId: idToStringPtr(userPerm.OrgUnitOrgId),
+
 		Orgs: array.Map(user.GetOrgs(), func(org models.Organization) dmodel.DynamicFields {
 			return org.GetFieldData()
 		}),
@@ -136,6 +144,16 @@ func (this UserRest) GetUserContext(echoCtx *echo.Context) (err error) {
 		},
 	})
 	return nil
+}
+
+// idToStringPtr carries an optional id across to the wire, keeping absence as null rather than
+// collapsing it to an empty string: the frontend's evaluator treats "no org unit" and "an org
+// unit whose id is blank" differently.
+func idToStringPtr(id *model.Id) *string {
+	if id == nil {
+		return nil
+	}
+	return util.ToPtr(string(*id))
 }
 
 // accountSettings reports the acting user's own preferences to the frontend.

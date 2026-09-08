@@ -281,7 +281,7 @@ Create Probe Role
     [Documentation]    Creates a role carrying one entitlement, built from the action and
     ...    resource codes so the stored expression is the one the guard looks for.
     ...    Returns the role id.
-    [Arguments]    ${label}    ${action_id}    ${resource_id}    ${scope}=domain    ${scope_field}=${EMPTY}    ${scope_id}=${EMPTY}
+    [Arguments]    ${label}    ${action_id}    ${resource_id}    ${scope}=tenant    ${scope_field}=${EMPTY}    ${scope_id}=${EMPTY}
     ${rname}=    Unique Display Name    ${label}
     ${resp}=    POST On Session    api    ${ROLE_API}
     ...    json=${{ {'name': $rname, 'description': 'Robot permission suite role', 'is_requestable': False} }}

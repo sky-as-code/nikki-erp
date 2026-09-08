@@ -78,7 +78,7 @@ func EntitlementSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().Name(EntitlementFieldScope).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(c.ResourceScopeDomain), string(c.ResourceScopeOrg),
+					string(c.ResourceScopeTenant), string(c.ResourceScopeOrg),
 					string(c.ResourceScopeOrgUnit), string(c.ResourceScopePrivate),
 				})).
 				RequiredForCreate().

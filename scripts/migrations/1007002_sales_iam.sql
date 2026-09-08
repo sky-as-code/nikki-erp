@@ -42,23 +42,23 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES00000000000000001', 'Sales Channel', 'sales_channel', 'Classification of where a sale happens, and the payment methods it accepts', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000002', 'Sales Point', 'sales_point', 'A concrete selling place within a channel: a kiosk, a store, a storefront', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000000K', 'Sales Order', 'sales_order', 'One commercial transaction: what was sold, to whom, through which channel', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000000M', 'Sales Order Line', 'sales_order_line', 'One thing sold on one order, with its quantities and its price at the moment of sale', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000000Z', 'Sales Order Line Component', 'sales_order_line_component', 'One real product inside a combo line, which is what Inventory actually fulfils', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000010', 'Sales Order Adjustment', 'sales_order_adjustment', 'One step of the pricing calculation, kept so a price can be explained and replayed', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000011', 'Sales Order Event', 'sales_order_event', 'One thing that happened to a sale: the document audit trail', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000015', 'Sales Pricelist', 'sales_pricelist', 'A set of prices that applies to a channel or a selling place for a period', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000016', 'Sales Pricelist Item', 'sales_pricelist_item', 'One price, for one product variant, in one unit, from one quantity upward', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000017', 'Sales Combo', 'sales_combo', 'A bundle sold at a price of its own, independent of what its parts cost apart', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000018', 'Sales Combo Component', 'sales_combo_component', 'One product inside a bundle definition', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000034', 'Sales Promotion Program', 'sales_promotion_program', 'One campaign: what has to be true, and what the customer then gets', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000035', 'Sales Promotion Condition Group', 'sales_promotion_condition_group', 'A set of conditions ANDed together; groups are ORed with each other', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000036', 'Sales Promotion Condition', 'sales_promotion_condition', 'One test a promotion applies to decide whether it is eligible', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000037', 'Sales Promotion Condition Target', 'sales_promotion_condition_target', 'One member of a set-valued condition, such as an eligible product variant', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000038', 'Sales Promotion Reward', 'sales_promotion_reward', 'One thing a promotion gives: a discount, a fixed price, a free item', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000039', 'Sales Promotion Compatibility', 'sales_promotion_compatibility', 'Whether two promotions may apply to the same order', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000001', 'Sales Channel', 'sales_channel', 'Classification of where a sale happens, and the payment methods it accepts', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000002', 'Sales Point', 'sales_point', 'A concrete selling place within a channel: a kiosk, a store, a storefront', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000000K', 'Sales Order', 'sales_order', 'One commercial transaction: what was sold, to whom, through which channel', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000000M', 'Sales Order Line', 'sales_order_line', 'One thing sold on one order, with its quantities and its price at the moment of sale', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000000Z', 'Sales Order Line Component', 'sales_order_line_component', 'One real product inside a combo line, which is what Inventory actually fulfils', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000010', 'Sales Order Adjustment', 'sales_order_adjustment', 'One step of the pricing calculation, kept so a price can be explained and replayed', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000011', 'Sales Order Event', 'sales_order_event', 'One thing that happened to a sale: the document audit trail', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000015', 'Sales Pricelist', 'sales_pricelist', 'A set of prices that applies to a channel or a selling place for a period', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000016', 'Sales Pricelist Item', 'sales_pricelist_item', 'One price, for one product variant, in one unit, from one quantity upward', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000017', 'Sales Combo', 'sales_combo', 'A bundle sold at a price of its own, independent of what its parts cost apart', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000018', 'Sales Combo Component', 'sales_combo_component', 'One product inside a bundle definition', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000034', 'Sales Promotion Program', 'sales_promotion_program', 'One campaign: what has to be true, and what the customer then gets', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000035', 'Sales Promotion Condition Group', 'sales_promotion_condition_group', 'A set of conditions ANDed together; groups are ORed with each other', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000036', 'Sales Promotion Condition', 'sales_promotion_condition', 'One test a promotion applies to decide whether it is eligible', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000037', 'Sales Promotion Condition Target', 'sales_promotion_condition_target', 'One member of a set-valued condition, such as an eligible product variant', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000038', 'Sales Promotion Reward', 'sales_promotion_reward', 'One thing a promotion gives: a discount, a fixed price, a free item', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000039', 'Sales Promotion Compatibility', 'sales_promotion_compatibility', 'Whether two promotions may apply to the same order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -257,8 +257,8 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES00000000000000048', 'Sales Voucher Code', 'sales_voucher_code', 'A credential a customer presents to activate a promotion program', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000049', 'Sales Voucher Redemption', 'sales_voucher_redemption', 'The ledger of which orders consumed which voucher codes', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000048', 'Sales Voucher Code', 'sales_voucher_code', 'A credential a customer presents to activate a promotion program', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000049', 'Sales Voucher Redemption', 'sales_voucher_redemption', 'The ledger of which orders consumed which voucher codes', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -341,9 +341,9 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES0000000000000004K', 'Sales Bill', 'sales_bill', 'A settlement unit of a sale - never a VAT invoice (BR 33)', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000004M', 'Sales Bill Line', 'sales_bill_line', 'One order line''s allocated share of one bill', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000004N', 'Sales Bill Relation', 'sales_bill_relation', 'The lineage left behind by a bill split or merge', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES0000000000000004K', 'Sales Bill', 'sales_bill', 'A settlement unit of a sale - never a VAT invoice (BR 33)', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000004M', 'Sales Bill Line', 'sales_bill_line', 'One order line''s allocated share of one bill', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000004N', 'Sales Bill Relation', 'sales_bill_relation', 'The lineage left behind by a bill split or merge', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -399,7 +399,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES0000000000000004Z', 'Sales Payment', 'sales_payment', 'One movement of money against a bill', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES0000000000000004Z', 'Sales Payment', 'sales_payment', 'One movement of money against a bill', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -429,8 +429,8 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000053', 'Sales Fulfilment Request', 'sales_fulfillment_request', 'One thing Sales asked Inventory to do for a sale', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000054', 'Sales Fulfilment Request Line', 'sales_fulfillment_request_line', 'One order line covered by a fulfilment request', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000053', 'Sales Fulfilment Request', 'sales_fulfillment_request', 'One thing Sales asked Inventory to do for a sale', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000054', 'Sales Fulfilment Request Line', 'sales_fulfillment_request_line', 'One order line covered by a fulfilment request', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -463,7 +463,7 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000057', 'Sales Fiscal Request', 'sales_fiscal_request', 'What Sales asked an eInvoice provider for, and what came back', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000057', 'Sales Fiscal Request', 'sales_fiscal_request', 'What Sales asked an eInvoice provider for, and what came back', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -496,7 +496,7 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000060', 'Sales Integration Outbox', 'sales_integration_outbox', 'Integration events Sales has published, or is waiting to publish', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000060', 'Sales Integration Outbox', 'sales_integration_outbox', 'Integration events Sales has published, or is waiting to publish', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -529,8 +529,8 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000062', 'Sales Quotation', 'sales_quotation', 'An offer made to a customer, which may become a sales order', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000063', 'Sales Quotation Line', 'sales_quotation_line', 'One line of an offer', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000062', 'Sales Quotation', 'sales_quotation', 'An offer made to a customer, which may become a sales order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000063', 'Sales Quotation Line', 'sales_quotation_line', 'One line of an offer', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -571,7 +571,7 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000073', 'Sales Manual Discount', 'sales_manual_discount', 'An operator override of a sale price, with the reason it was granted', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000073', 'Sales Manual Discount', 'sales_manual_discount', 'An operator override of a sale price, with the reason it was granted', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -609,9 +609,9 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000076', 'Sales Return', 'sales_return', 'A customer sending goods back, and the refund that settles it', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000080', 'Sales Return Line', 'sales_return_line', 'One order line coming back, in whole or in part', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000082', 'Sales Refund Payment', 'sales_refund_payment', 'One leg of a refund, against one original payment', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000076', 'Sales Return', 'sales_return', 'A customer sending goods back, and the refund that settles it', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000080', 'Sales Return Line', 'sales_return_line', 'One order line coming back, in whole or in part', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000082', 'Sales Refund Payment', 'sales_refund_payment', 'One leg of a refund, against one original payment', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -655,8 +655,8 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000090', 'Sales Billing Instruction', 'sales_billing_instruction', 'Who a sale is to be invoiced to, under which legal identity', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000091', 'Sales Billing Issuance Attempt', 'sales_billing_issuance_attempt', 'One try at issuing an electronic invoice, kept as evidence', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000090', 'Sales Billing Instruction', 'sales_billing_instruction', 'Who a sale is to be invoiced to, under which legal identity', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000091', 'Sales Billing Issuance Attempt', 'sales_billing_issuance_attempt', 'One try at issuing an electronic invoice, kept as evidence', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

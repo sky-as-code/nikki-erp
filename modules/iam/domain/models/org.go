@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	OrgAuthScope = "domain"
+	OrgAuthScope = "tenant"
 
 	OrgActionCreate      = "create"
 	OrgActionDelete      = "delete"

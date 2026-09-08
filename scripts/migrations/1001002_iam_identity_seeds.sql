@@ -173,8 +173,8 @@ BEGIN
 			"subject_source_ref"
 		) VALUES
 		-- Domain-level settings (bound to system subject for consistency)
-		('01K0AUTH000000000000000101', 'password', 1, 5, 1800, 'domain', '01JWNMZ36QHC7CQQ748H9NQ6J6', 'system'),
-		('01K0AUTH000000000000000102', 'captcha', 2, 3, 900,  'domain', '01JWNMZ36QHC7CQQ748H9NQ6J6', 'system'),
-		('01K0AUTH000000000000000103', 'otpCode',  3, 3, 1800, 'domain', '01JWNMZ36QHC7CQQ748H9NQ6J6', 'system');
+		('01K0AUTH000000000000000101', 'password', 1, 5, 1800, 'tenant', '01JWNMZ36QHC7CQQ748H9NQ6J6', 'system'),
+		('01K0AUTH000000000000000102', 'captcha', 2, 3, 900,  'tenant', '01JWNMZ36QHC7CQQ748H9NQ6J6', 'system'),
+		('01K0AUTH000000000000000103', 'otpCode',  3, 3, 1800, 'tenant', '01JWNMZ36QHC7CQQ748H9NQ6J6', 'system');
 	END IF;
 END $$;

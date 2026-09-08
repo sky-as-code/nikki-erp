@@ -46,8 +46,8 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M68990HNE4Z1PR28N6G1R1M2', 'Setting Schema', 'settings_schema', 'What a module declares it can be configured with, per level', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01MACPJ8N53VVRCDGNB7APWHPG', 'Setting Record', 'settings_record', 'One setting value held by one tenant, organization or user', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M68990HNE4Z1PR28N6G1R1M2', 'Setting Schema', 'settings_schema', 'What a module declares it can be configured with, per level', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01MACPJ8N53VVRCDGNB7APWHPG', 'Setting Record', 'settings_record', 'One setting value held by one tenant, organization or user', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -74,8 +74,8 @@ BEGIN
 		INSERT INTO "iam_entitlements" (
 			"id", "name", "description", "expression", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
 		) VALUES
-		('01MCJZ6P0ETGP6BE4TPQM20NEZ', 'User - Read Setting Schemas', 'Read the setting declarations needed to render the settings page', 'read:settings_schema:domain', '01MVHMAN7HPNTT9HY8QZ0JDX7G', '01M68990HNE4Z1PR28N6G1R1M2', '01KZJ5XRJDXSXZY0DKNNE6S086', 'domain', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01MNJ1KF88AN0A9QWXXQWTY5ZN', 'User - Read Setting Records', 'Read own settings; the service resolves the owner from the request', 'read:settings_record:domain', '01MFS8N4WX55Z4G0AXKB41SG81', '01MACPJ8N53VVRCDGNB7APWHPG', '01KZJ5XRJDXSXZY0DKNNE6S086', 'domain', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01MCJZ6P0ETGP6BE4TPQM20NEZ', 'User - Read Setting Schemas', 'Read the setting declarations needed to render the settings page', 'read:settings_schema:tenant', '01MVHMAN7HPNTT9HY8QZ0JDX7G', '01M68990HNE4Z1PR28N6G1R1M2', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01MNJ1KF88AN0A9QWXXQWTY5ZN', 'User - Read Setting Records', 'Read own settings; the service resolves the owner from the request', 'read:settings_record:tenant', '01MFS8N4WX55Z4G0AXKB41SG81', '01MACPJ8N53VVRCDGNB7APWHPG', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

@@ -12,8 +12,8 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01KZJ8Q3ZK7XN4WVBM2PDHR5T0', 'Unit of Measure', 'essential_uom', 'Units of measure and their conversion factors', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', 'UoM Category', 'essential_uomcat', 'Categories that bound unit-of-measure conversion', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
+		('01KZJ8Q3ZK7XN4WVBM2PDHR5T0', 'Unit of Measure', 'essential_uom', 'Units of measure and their conversion factors', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', 'UoM Category', 'essential_uomcat', 'Categories that bound unit-of-measure conversion', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
 	END IF;
 
 	IF EXISTS (
@@ -43,7 +43,7 @@ BEGIN
 		INSERT INTO "iam_entitlements" (
 			"id", "name", "description", "expression", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
 		) VALUES
-		('01KZJ8Q3ZKN1A7G2W5CXL3N8H2', 'User - Read Units of Measure', 'Read units of measure', 'read:essential_uom:domain', '01KZJ8Q3ZKF9T5A1NX3PDVG8B6', '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', '01KZJ5XRJDXSXZY0DKNNE6S086', 'domain', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKP3B9H4X7DYM5P0J3', 'User - Read UoM Categories', 'Read unit-of-measure categories', 'read:essential_uomcat:domain', '01KZJ8Q3ZKM9Z5F0V3BWK1M6G1', '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', '01KZJ5XRJDXSXZY0DKNNE6S086', 'domain', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
+		('01KZJ8Q3ZKN1A7G2W5CXL3N8H2', 'User - Read Units of Measure', 'Read units of measure', 'read:essential_uom:tenant', '01KZJ8Q3ZKF9T5A1NX3PDVG8B6', '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKP3B9H4X7DYM5P0J3', 'User - Read UoM Categories', 'Read unit-of-measure categories', 'read:essential_uomcat:tenant', '01KZJ8Q3ZKM9Z5F0V3BWK1M6G1', '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
 	END IF;
 END $$;

@@ -22,7 +22,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M2A7QK3P5NXCW9VBDT4RGZH2', 'Stock Product Configuration', 'inventory_stock_product_config', 'Stock settings of a product line, currently the unit its balances are counted in', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2A7QK3P5NXCW9VBDT4RGZH2', 'Stock Product Configuration', 'inventory_stock_product_config', 'Stock settings of a product line, currently the unit its balances are counted in', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

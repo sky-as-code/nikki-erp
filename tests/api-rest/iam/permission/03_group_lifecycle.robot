@@ -14,7 +14,7 @@ Suite Setup       Set Up Group Lifecycle Fixtures
 
 
 *** Variables ***
-${PROBE_EXPRESSION}     read:iam_group:domain
+${PROBE_EXPRESSION}     read:iam_group:tenant
 
 
 *** Keywords ***

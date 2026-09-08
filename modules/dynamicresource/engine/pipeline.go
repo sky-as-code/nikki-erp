@@ -159,7 +159,7 @@ func (this *DynamicResourceEngineImpl) resolveOrgScope(
 	// A caller may only act inside an org they belong to. Answering "not found" instead would
 	// hide the caller's own mistake behind the same response an empty org produces.
 	orgId := model.Id(rawOrgId)
-	if !ctx.GetPermissions().UserOrgIds.Contains(orgId) {
+	if !mayActInOrg(ctx.GetPermissions(), orgId) {
 		cErrs := ft.ClientErrors{}
 		cErrs.Append(*ft.NewValidationError(
 			basemodel.FieldOrgId,
@@ -173,6 +173,18 @@ func (this *DynamicResourceEngineImpl) resolveOrgScope(
 	// single-row key set, the create payload - reads one authoritative value.
 	params[basemodel.FieldOrgId] = rawOrgId
 	return &orgId, nil
+}
+
+// mayActInOrg reports whether the caller is permitted to act inside orgId.
+//
+// A user's reach is their org membership. A service principal holds none - it is minted for one
+// org and may act only there - so it is checked against the org on the principal instead. Both
+// are still subject to the entitlement check; this answers only "which org", never "may they".
+func mayActInOrg(perms corectx.ContextPermissions, orgId model.Id) bool {
+	if perms.Principal.Kind == corectx.PrincipalKindService {
+		return perms.Principal.OrgId != nil && *perms.Principal.OrgId == orgId
+	}
+	return perms.UserOrgIds.Contains(orgId)
 }
 
 // schemaHasOrgId reports whether this engine's resource declares an org column.

@@ -3,6 +3,7 @@ package fault
 import (
 	stdErr "errors"
 	"fmt"
+	"strings"
 
 	"go.bryk.io/pkg/errors"
 
@@ -120,6 +121,46 @@ func NewAuthorizationError(key string, message string, vars ...map[string]any) *
 
 func IsAuthorizationError(cErr ClientErrorItem) bool {
 	return (cErr.Type == ClientErrorTypeAuthorization)
+}
+
+// unauthenticatedKeys are the refusals that mean "nothing established who you are", as opposed to
+// "we know who you are and you may not".
+//
+// Both are typed ClientErrorTypeAuthorization, so the key is what separates them. Keys arrive
+// namespaced (`common:err_unauthenticated`), hence the suffix comparison.
+var unauthenticatedKeys = []string{
+	"err_unauthenticated",
+	"err_invalid_access_token",
+	"err_malformed_access_token",
+}
+
+// IsUnauthenticatedError reports whether the caller was never authenticated.
+//
+// The distinction is what lets the transport answer 401 rather than 403: a client that has not
+// signed in should be sent to sign in, while one that is signed in and merely lacks a grant should
+// be told so and left where it is. Conflating them logs a user out for opening a page containing
+// one action they cannot perform.
+func IsUnauthenticatedError(cErr ClientErrorItem) bool {
+	if !IsAuthorizationError(cErr) {
+		return false
+	}
+	for _, key := range unauthenticatedKeys {
+		if cErr.Key == key || strings.HasSuffix(cErr.Key, ":"+key) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasUnauthenticatedError reports whether any item in the collection is an unauthenticated
+// refusal, which the transport layer answers with 401.
+func (this ClientErrors) HasUnauthenticatedError() bool {
+	for _, item := range this {
+		if IsUnauthenticatedError(item) {
+			return true
+		}
+	}
+	return false
 }
 
 // HasAuthorizationError reports whether any item in the collection is an authorization

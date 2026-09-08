@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	OrgUnitAuthScope = "domain"
+	OrgUnitAuthScope = "tenant"
 
 	OrgUnitActionCreate      = "create"
 	OrgUnitActionDelete      = "delete"

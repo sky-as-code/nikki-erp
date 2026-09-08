@@ -83,6 +83,19 @@ func TestCloneTransactionDoesNotLeakToTheOriginal(t *testing.T) {
 		"the caller's context must keep the transaction it had")
 }
 
+// Constraints passed to the F constructor must be readable back. They are stored on the inner
+// context's values, so setting a struct field instead would leave GetDomainConstraints returning
+// nil while the caller believed the context was scoped.
+func TestNewRequestContextFStoresReadableConstraints(t *testing.T) {
+	constraints := dmodel.DynamicFields{"tenant_id": "01JQZ0X0000000000000000003"}
+
+	ctx := NewRequestContextF(context.Background(), "inventory", constraints)
+
+	assert.Equal(t, constraints, ctx.GetDomainConstraints(),
+		"constraints given to the constructor must be readable, not written to an unread field")
+	assert.Equal(t, "inventory", ctx.GetModuleName())
+}
+
 // A context with nothing set clones to a context with nothing set, rather than panicking on a
 // nil logger or an empty permission set.
 func TestCloneOfAnEmptyContext(t *testing.T) {
