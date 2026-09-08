@@ -37,6 +37,7 @@ const (
 	StockMoveFieldRemainingQuantity     = "remaining_quantity"
 	StockMoveFieldRemainingValue        = "remaining_value"
 	StockMoveFieldCurrencyId            = "currency_id"
+	StockMoveFieldSourceItemId          = "source_item_id"
 	StockMoveFieldOrgId                 = "org_id"
 
 	StockMoveEdgeTransfer            = "transfer"
@@ -149,6 +150,14 @@ func (this StockMove) GetOriginMoveId() *model.Id {
 
 func (this *StockMove) SetOriginMoveId(v *model.Id) {
 	this.GetFieldData().SetModelId(StockMoveFieldOriginMoveId, v)
+}
+
+func (this StockMove) GetSourceItemId() *model.Id {
+	return this.GetFieldData().GetModelId(StockMoveFieldSourceItemId)
+}
+
+func (this *StockMove) SetSourceItemId(v *model.Id) {
+	this.GetFieldData().SetModelId(StockMoveFieldSourceItemId, v)
 }
 
 func (this StockMove) GetOrgId() *model.Id {

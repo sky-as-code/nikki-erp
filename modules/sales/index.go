@@ -164,9 +164,13 @@ func (*SalesModule) OnAppStarted() error {
 // at it. All schemas are listed here so that order is visible in one place.
 func (*SalesModule) RegisterModels() error {
 	return stdErr.Join(
+		// The fulfillment method registers before the channel and point, whose default_*_id
+		// columns and allowed-method mapping point at it.
+		dmodel.RegisterSchemaB(models.SalesFulfillmentMethodSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesChannelSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesPointSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesChannelPaymentRelSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesChannelFulfillmentMethodSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesOrderSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesOrderLineSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesOrderLineComponentSchemaBuilder()),

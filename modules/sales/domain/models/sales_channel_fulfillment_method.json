@@ -1,0 +1,55 @@
+{
+	"name": "sales_channel_fulfillment_method",
+	"label": "sales_channel_fulfillment_method.label",
+	"table_name": "sales_channel_fulfillment_methods",
+	"should_build_db": true,
+	"composite_uniques": [
+		{
+			"index_name": "sales_chan_fulfil_methods_tid_ch_me",
+			"fields": ["sales_channel_id", "fulfillment_method_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_channel_id",
+			"label": "fields.sales_channel_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The channel this mapping permits a fulfillment method for. Immutable: moving a mapping between channels is disallowing it on one and allowing it on the other, and doing that as an update would skip the check that a channel's default method stays inside its own allowed set."
+			}
+		},
+		{
+			"name": "fulfillment_method_id",
+			"label": "fields.fulfillment_method_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The method this channel may use. Unlike the payment-method mapping next door this one names a row in Sales itself, so it carries a real edge: the constraint costs nothing across a module boundary and stops a mapping pointing at a method that never existed."
+			}
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model"],
+
+	"edges_to": [
+		{
+			"edge": "sales_channel",
+			"label": { "en-US": "Sales channel" },
+			"type": "many:one",
+			"dest_schema": "sales_channel",
+			"key_map": { "sales_channel_id": "id" }
+		},
+		{
+			"edge": "fulfillment_method",
+			"label": { "en-US": "Fulfillment method" },
+			"type": "many:one",
+			"dest_schema": "sales_fulfillment_method",
+			"key_map": { "fulfillment_method_id": "id" }
+		}
+	]
+}

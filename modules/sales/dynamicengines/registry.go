@@ -29,6 +29,9 @@ type engineSpec struct {
 // readability only; engines are created after every schema is registered. Junction tables never get
 // an entry: a _rel row is configured through its owner, so it has no route and no IAM resource row.
 var engineSpecs = []engineSpec{
+	// The fulfillment policy catalogue, which channels and points name a default from.
+	salesFulfillmentMethodEngineSpec(),
+
 	salesChannelEngineSpec(),
 	salesPointEngineSpec(),
 	salesOrderEngineSpec(),
@@ -94,6 +97,18 @@ var engineSpecs = []engineSpec{
 // payment method.
 var junctionSchemas = []string{
 	models.SalesChannelPaymentRelSchemaName,
+	models.SalesChannelFulfillmentMethodSchemaName,
+}
+
+// The method catalogue is operator-managed master data, like a pricelist: an administrator creates
+// the policies their organization sells under. Its lifecycle is archive and unarchive alone — there
+// is no suspend, because a method is either offered to new orders or it is not, and the fulfillments
+// that already snapshotted it keep running either way.
+func salesFulfillmentMethodEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName:    models.SalesFulfillmentMethodSchemaName,
+		DefineActions: defineSalesFulfillmentMethodActions,
+	}
 }
 
 func salesChannelEngineSpec() engineSpec {

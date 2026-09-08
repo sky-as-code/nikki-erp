@@ -110,10 +110,18 @@ func resolveStockEngines() (*transferOperationContext, error) {
 // must go on a clone, never on ctx itself, or a committed transaction stays visible to whatever
 // runs next; CloneRequestContext carries the caller's identity across for the audit columns.
 //
-// There is no join-an-existing branch: BeginTx returns ErrTxNested, so nesting is a bug.
+// A caller that already holds a transaction runs body directly on its context instead of opening a
+// second one: BeginTx returns ErrTxNested, so nesting is a bug. Joining rather than refusing is what
+// lets composite operations — reallocation claims stock at one location and releases it at another —
+// sequence several of these under one commit, which is the only way that pair can be atomic. The
+// outer caller owns the commit and the rollback; body must not assume it decides either.
 func withTransferTransaction(
 	ctx corectx.Context, body func(tranxCtx corectx.Context) error,
 ) error {
+	if ctx != nil && ctx.GetDbTranx() != nil {
+		return body(ctx)
+	}
+
 	engine, err := engineFor(models.StockTransferSchemaName)
 	if err != nil {
 		return err

@@ -12,14 +12,17 @@ import (
 const (
 	SalesPointSchemaName = "sales_point"
 
-	SalesPointFieldId                    = "id"
-	SalesPointFieldOrgId                 = "org_id"
-	SalesPointFieldSalesChannelId        = "sales_channel_id"
-	SalesPointFieldName                  = "name"
-	SalesPointFieldCode                  = "code"
-	SalesPointFieldExternalReferenceId   = "external_reference_id"
-	SalesPointFieldExternalReferenceType = "external_reference_type"
-	SalesPointFieldStatus                = "status"
+	SalesPointFieldId                         = "id"
+	SalesPointFieldOrgId                      = "org_id"
+	SalesPointFieldSalesChannelId             = "sales_channel_id"
+	SalesPointFieldName                       = "name"
+	SalesPointFieldCode                       = "code"
+	SalesPointFieldExternalReferenceId        = "external_reference_id"
+	SalesPointFieldExternalReferenceType      = "external_reference_type"
+	SalesPointFieldStatus                     = "status"
+	SalesPointFieldDefaultFulfillmentMethodId = "default_fulfillment_method_id"
+	SalesPointFieldFulfillmentEnabled         = "fulfillment_enabled"
+	SalesPointFieldInventoryLocationId        = "inventory_location_id"
 
 	SalesPointEdgeSalesChannel = "sales_channel"
 )
@@ -118,4 +121,43 @@ func (this SalesPoint) IsActive() bool {
 	}
 	archived := this.GetIsArchived()
 	return archived == nil || !*archived
+}
+
+func (this SalesPoint) GetDefaultFulfillmentMethodId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesPointFieldDefaultFulfillmentMethodId)
+}
+
+func (this *SalesPoint) SetDefaultFulfillmentMethodId(id *model.Id) {
+	this.GetFieldData().SetModelId(SalesPointFieldDefaultFulfillmentMethodId, id)
+}
+
+func (this SalesPoint) GetFulfillmentEnabled() *bool {
+	return this.GetFieldData().GetBool(SalesPointFieldFulfillmentEnabled)
+}
+
+func (this *SalesPoint) SetFulfillmentEnabled(enabled *bool) {
+	this.GetFieldData().SetBool(SalesPointFieldFulfillmentEnabled, enabled)
+}
+
+func (this SalesPoint) GetInventoryLocationId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesPointFieldInventoryLocationId)
+}
+
+func (this *SalesPoint) SetInventoryLocationId(id *model.Id) {
+	this.GetFieldData().SetModelId(SalesPointFieldInventoryLocationId, id)
+}
+
+// CanFulfill reports whether this point may be chosen as a fulfillment target. It asks three
+// questions together because a caller remembering only one would offer the customer a kiosk that
+// cannot serve them: the point must be sellable at all, flagged as a fulfillment location, and
+// backed by an Inventory location — a target with no location has no stock to reserve against.
+func (this SalesPoint) CanFulfill() bool {
+	if !this.IsActive() {
+		return false
+	}
+	enabled := this.GetFulfillmentEnabled()
+	if enabled == nil || !*enabled {
+		return false
+	}
+	return this.GetInventoryLocationId() != nil
 }

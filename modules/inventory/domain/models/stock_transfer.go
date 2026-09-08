@@ -32,6 +32,9 @@ const (
 	StockTransferFieldChainGroupId          = "chain_group_id"
 	StockTransferFieldIdempotencyKey        = "idempotency_key"
 	StockTransferFieldNote                  = "note"
+	StockTransferFieldSourceType            = "source_type"
+	StockTransferFieldSourceId              = "source_id"
+	StockTransferFieldExpiresAt             = "expires_at"
 	StockTransferFieldOrgId                 = "org_id"
 
 	StockTransferEdgeOperationType       = "operation_type"
@@ -163,6 +166,30 @@ func (this StockTransfer) GetIdempotencyKey() *string {
 
 func (this *StockTransfer) SetIdempotencyKey(v *string) {
 	this.GetFieldData().SetString(StockTransferFieldIdempotencyKey, v)
+}
+
+func (this StockTransfer) GetSourceType() *string {
+	return this.GetFieldData().GetString(StockTransferFieldSourceType)
+}
+
+func (this *StockTransfer) SetSourceType(v *string) {
+	this.GetFieldData().SetString(StockTransferFieldSourceType, v)
+}
+
+func (this StockTransfer) GetSourceId() *model.Id {
+	return this.GetFieldData().GetModelId(StockTransferFieldSourceId)
+}
+
+func (this *StockTransfer) SetSourceId(v *model.Id) {
+	this.GetFieldData().SetModelId(StockTransferFieldSourceId, v)
+}
+
+func (this StockTransfer) GetExpiresAt() *model.ModelDateTime {
+	return this.GetFieldData().GetModelDateTime(StockTransferFieldExpiresAt)
+}
+
+func (this *StockTransfer) SetExpiresAt(v *model.ModelDateTime) {
+	this.GetFieldData().SetModelDateTime(StockTransferFieldExpiresAt, v)
 }
 
 func (this StockTransfer) GetOrgId() *model.Id {

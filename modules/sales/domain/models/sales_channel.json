@@ -66,6 +66,14 @@
 			"description": {
 				"en-US": "Whether this channel is seeded and owned by the system rather than by a user. A system channel may be suspended and have its payment methods configured, but may not be archived, deleted or renamed through the API (D-23): archiving 'vdmc' would silently stop every kiosk selling. Set by seed migrations alone."
 			}
+		},
+		{
+			"name": "default_fulfillment_method_id",
+			"label": "fields.default_fulfillment_method_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The fulfillment method orders on this channel use when neither the order nor its sales point names one. Null means the channel has no default, which makes an order that names none of the three a refusal rather than a guess. Must be one of the channel's allowed methods (sales_channel_fulfillment_methods) and not archived: a default outside the allowed set would refuse every order the channel took."
+			}
 		}
 	],
 

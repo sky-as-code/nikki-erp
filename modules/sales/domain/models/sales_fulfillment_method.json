@@ -1,0 +1,141 @@
+{
+	"name": "sales_fulfillment_method",
+	"label": "sales_fulfillment_method.label",
+	"table_name": "sales_fulfillment_methods",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["name", "code"],
+	"search_indexes": [
+		{
+			"index_name": "sales_fulfil_methods_tid_type_arch",
+			"fields": ["fulfillment_type", "is_archived"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"unique": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The method's stable identity, such as 'KIOSK_DIRECT_AUTO_REFUND'. Immutable and unique, because seeds, channel configuration and integration callers name a method by this string rather than by a database id, and a renamed code would repoint every one of them at nothing. Plainly unique on a required column rather than a partial unique: the partial builder scopes a required field by a nullable one, and a single-column partial would also cap the table at one NULL-code row (the same reasoning recorded for sales_channel.code)."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The operator-facing display name, e.g. 'Kiosk Direct - Auto Refund'. Mutable: it labels the policy, it does not identify it."
+			}
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 1000 },
+			"description": {
+				"en-US": "Free text explaining when an operator should pick this method."
+			}
+		},
+		{
+			"name": "fulfillment_type",
+			"label": "fields.fulfillment_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"kiosk_dispense",
+					"carrier_shipping",
+					"internal_delivery",
+					"store_pickup",
+					"external_fulfillment"
+				]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "How the goods reach the customer, and the one field that decides which execution workflow runs. Only 'kiosk_dispense' carries a workflow today; the other four are declared so the enum does not have to be migrated when they arrive, and every code path that executes a fulfillment refuses them outright rather than half-running. Immutable: the type chooses the workflow, and changing it under a live fulfillment would reinterpret its snapshots against rules they were never taken for."
+			}
+		},
+		{
+			"name": "initial_target_selection",
+			"label": "fields.initial_target_selection",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["current_sales_outlet", "customer_selected_outlet"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "How the first fulfillment target is decided. 'current_sales_outlet' resolves it to the sales point the order was raised at — a kiosk selling to the customer standing in front of it. 'customer_selected_outlet' requires the client to name a point before the order can be confirmed, which is what a mobile order picking a pickup kiosk needs. This is a selection STRATEGY, never a target: the target itself lives on the fulfillment and moves when the customer changes kiosk, while the method stays the same."
+			}
+		},
+		{
+			"name": "max_attempts",
+			"label": "fields.max_attempts",
+			"data_type": { "type": "int32", "min": 1, "max": 100 },
+			"description": {
+				"en-US": "How many times one fulfillment item may be attempted before its outstanding quantity is treated as terminally failed. Null means no counter limit, which is what a customer-controlled method wants: the customer decides when to stop, not a counter. The minimum is 1, not 0 — a method allowing zero attempts could never deliver anything, which is what not offering the method expresses."
+			}
+		},
+		{
+			"name": "failure_action",
+			"label": "fields.failure_action",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["auto_refund", "customer_action_required", "manual_resolution"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "What happens once an item's remaining quantity is terminally failed. 'auto_refund' raises a refund for exactly that quantity with no human involved, which an anonymous kiosk sale needs because there is nobody to ask. 'customer_action_required' refunds nothing and waits: the customer keeps the entitlement and may pick another kiosk or ask for their money back. 'manual_resolution' parks it for an operator. Note this decides the policy only; it is never itself a status, and a refund it raises has its own lifecycle."
+			}
+		},
+		{
+			"name": "allow_target_change",
+			"label": "fields.allow_target_change",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"description": {
+				"en-US": "Whether the fulfillment target may be reassigned after the order is confirmed. False for a sale made at the kiosk the customer is standing at: there is no second kiosk they were promised. Reassignment is a business operation that moves the inventory reservation with it, never a plain field update."
+			}
+		},
+		{
+			"name": "allow_partial_fulfillment",
+			"label": "fields.allow_partial_fulfillment",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"description": {
+				"en-US": "Whether some items may be handed over while others are still outstanding. True for every kiosk method: a machine that dispensed two of three products has delivered those two, and treating the whole order as failed would take back goods the customer is holding."
+			}
+		},
+		{
+			"name": "requires_authenticated_customer",
+			"label": "fields.requires_authenticated_customer",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"description": {
+				"en-US": "Whether the method may be used only when the buyer's identity was verified server-side. It gates the policies that need somebody to come back to later — keeping an entitlement open, changing kiosk, requesting a refund — none of which work for a walk-up sale nobody can identify. Checked against the order's own customer_identity_mode snapshot, which the server calculates: a client that could assert its own authentication would be choosing its own refund policy."
+			}
+		},
+		{
+			"name": "reservation_ttl_minutes",
+			"label": "fields.reservation_ttl_minutes",
+			"data_type": { "type": "int32", "min": 1, "max": 525600 },
+			"description": {
+				"en-US": "How long stock stays reserved for a fulfillment before the reservation lapses and the goods return to the sellable pool. Null means the reservation does not expire on a timer, which suits a sale dispensed seconds after payment. A customer-controlled pickup needs a value, because otherwise one unclaimed order holds a kiosk slot forever. Expiry releases the stock and stops the fulfillment; it never refunds by itself — the customer may still reselect a kiosk or ask for the money back."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

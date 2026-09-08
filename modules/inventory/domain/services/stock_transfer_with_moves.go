@@ -106,6 +106,9 @@ func (this *StockTransferDomainServiceImpl) writeTransferMoves(
 		if move.UomId != "" {
 			fields[models.StockMoveFieldUomId] = move.UomId
 		}
+		if move.SourceItemId != "" {
+			fields[models.StockMoveFieldSourceItemId] = move.SourceItemId
+		}
 
 		if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
 			return errors.Wrapf(err, "creating move %d of transfer '%s'", index+1, transferId)

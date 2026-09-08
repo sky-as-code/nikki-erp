@@ -241,6 +241,58 @@ const (
 	SalesFulfillmentStatusCancelled = SalesFulfillmentRequestStatus("cancelled")
 )
 
+// FulfillmentType is how goods reach the customer, and the field that chooses which execution
+// workflow runs. Only kiosk dispense is implemented; the rest are declared so that adding one later
+// is code rather than a schema migration, and every execution path checks rather than assumes.
+type FulfillmentType string
+
+const (
+	// FulfillmentTypeKioskDispense is a vending machine handing the goods over itself. The only
+	// type with a workflow in this module.
+	FulfillmentTypeKioskDispense = FulfillmentType("kiosk_dispense")
+
+	// The four below reserve their names and nothing else. A method carrying one may be configured
+	// and read, but no fulfillment of that type can be executed yet.
+	FulfillmentTypeCarrierShipping     = FulfillmentType("carrier_shipping")
+	FulfillmentTypeInternalDelivery    = FulfillmentType("internal_delivery")
+	FulfillmentTypeStorePickup         = FulfillmentType("store_pickup")
+	FulfillmentTypeExternalFulfillment = FulfillmentType("external_fulfillment")
+)
+
+// InitialTargetSelection decides where the FIRST fulfillment attempt is aimed. It is a strategy for
+// picking a target, never a target itself: "this kiosk" is how the target is chosen once, after
+// which the target lives on the fulfillment and may move, while the method stays the same.
+type InitialTargetSelection string
+
+const (
+	// InitialTargetSelectionCurrentSalesOutlet aims at the sales point the order was raised at —
+	// the machine the customer is standing in front of.
+	InitialTargetSelectionCurrentSalesOutlet = InitialTargetSelection("current_sales_outlet")
+
+	// InitialTargetSelectionCustomerSelectedOutlet requires the client to name a point before the
+	// order may be confirmed. An order without one is refused rather than defaulted: guessing which
+	// kiosk a customer meant to collect from would send the goods to the wrong town.
+	InitialTargetSelectionCustomerSelectedOutlet = InitialTargetSelection("customer_selected_outlet")
+)
+
+// FulfillmentFailureAction is what happens to a quantity that is terminally undeliverable. It
+// selects a policy, and is never itself a status: the refund it may raise has its own lifecycle,
+// which succeeds or fails independently of the fulfillment that asked for it.
+type FulfillmentFailureAction string
+
+const (
+	// FulfillmentFailureActionAutoRefund refunds exactly the failed quantity with nobody asked.
+	// What an anonymous walk-up sale needs, because there is no customer to come back to.
+	FulfillmentFailureActionAutoRefund = FulfillmentFailureAction("auto_refund")
+
+	// FulfillmentFailureActionCustomerActionRequired refunds nothing and waits. The customer keeps
+	// the entitlement and chooses: another kiosk, another attempt, or their money back.
+	FulfillmentFailureActionCustomerActionRequired = FulfillmentFailureAction("customer_action_required")
+
+	// FulfillmentFailureActionManualResolution parks it for an operator to decide.
+	FulfillmentFailureActionManualResolution = FulfillmentFailureAction("manual_resolution")
+)
+
 // SalesFiscalIntent is what commercially happened, never what document to produce. Sales reports the
 // event; the provider decides whether it needs an invoice, a credit note or an adjustment
 // declaration. The absence of a document type in this enum is the point of it.

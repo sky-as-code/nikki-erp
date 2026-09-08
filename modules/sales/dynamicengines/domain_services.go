@@ -13,6 +13,14 @@ import (
 // (mostly lifecycle transition rules). Each wraps the engine's own service rather than replacing it,
 // so ordinary CRUD still runs underneath. Must run after InitDynamicEngines.
 func InitDomainServices() error {
+	// The method service carries the archive guard: a method still named as a channel or point
+	// default cannot be withdrawn, because the configuration left behind would refuse every order.
+	if err := installDerivedService(models.SalesFulfillmentMethodSchemaName,
+		func(base drif.DynamicResourceService) drif.DynamicResourceService {
+			return services.NewSalesFulfillmentMethodDomainService(base)
+		}); err != nil {
+		return err
+	}
 	if err := installDerivedService(models.SalesChannelSchemaName,
 		func(base drif.DynamicResourceService) drif.DynamicResourceService {
 			return services.NewSalesChannelDomainService(base)
