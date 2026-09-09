@@ -19,6 +19,11 @@ func (*DynamicResourceModule) Name() string {
 	return ModuleName
 }
 
+// ModelPrefix implements DynamicModule.
+func (*DynamicResourceModule) ModelPrefix() string {
+	return ModuleName
+}
+
 // LabelKey implements InCodeModule.
 func (*DynamicResourceModule) LabelKey() string {
 	return "dynamicresource.moduleLabel"

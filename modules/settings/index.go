@@ -50,6 +50,11 @@ func (*SettingsModule) Name() string {
 	return modconstants.SettingsModuleName
 }
 
+// ModelPrefix implements NikkiModule.
+func (*SettingsModule) ModelPrefix() string {
+	return modconstants.SettingsModuleName
+}
+
 // Deps implements NikkiModule.
 //
 // core and essential are implicit and must not be listed. iam is deliberately absent and must stay

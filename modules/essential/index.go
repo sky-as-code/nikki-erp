@@ -40,6 +40,11 @@ func (*EssentialModule) Name() string {
 	return modconstants.EssentialModuleName
 }
 
+// ModelPrefix implements DynamicModule.
+func (*EssentialModule) ModelPrefix() string {
+	return modconstants.EssentialModuleName
+}
+
 // Deps implements NikkiModule.
 func (*EssentialModule) Deps() []string {
 	return []string{

@@ -41,6 +41,11 @@ func (*InventoryModule) Name() string {
 	return modconstants.InventoryModuleName
 }
 
+// ModelPrefix implements DynamicModule.
+func (*InventoryModule) ModelPrefix() string {
+	return modconstants.InventoryModuleName
+}
+
 // Deps implements NikkiModule.
 func (*InventoryModule) Deps() []string {
 	return []string{

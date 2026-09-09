@@ -30,6 +30,11 @@ func (*AppTraitModule) Name() string {
 	return c.AppTraitModuleName
 }
 
+// ModelPrefix implements DynamicModule.
+func (*AppTraitModule) ModelPrefix() string {
+	return c.AppTraitModuleName
+}
+
 // Deps implements NikkiModule.
 func (*AppTraitModule) Deps() []string {
 	return []string{}

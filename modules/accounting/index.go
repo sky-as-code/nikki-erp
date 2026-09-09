@@ -43,6 +43,10 @@ func (*AccountingModule) Name() string {
 	return modconstants.AccountingModuleName
 }
 
+func (*AccountingModule) ModelPrefix() string {
+	return modconstants.AccountingModuleName
+}
+
 // Deps names every module Accounting reads through a port. essential supplies the UoM conversion a
 // fixed tax needs to reach the unit its rate is quoted in; Accounting must not implement that
 // itself. Sales is absent and must stay so.

@@ -32,6 +32,10 @@ func (*PurchaseModule) Name() string {
 	return modconstants.PurchaseModuleName
 }
 
+func (*PurchaseModule) ModelPrefix() string {
+	return modconstants.PurchaseModuleName
+}
+
 // Deps names every module Purchase reads through a port: dynamicresource hosts the resource
 // engines, essential supplies UoM conversion and currency, inventory the product variant and its
 // purchase_ok flag, contacts the vendor party and its vendor profile.

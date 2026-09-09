@@ -49,6 +49,10 @@ func (*PaymentInvoiceModule) Name() string {
 	return modconstants.PaymentInvoiceModuleName
 }
 
+func (*PaymentInvoiceModule) ModelPrefix() string {
+	return modconstants.PaymentInvoiceModuleName
+}
+
 func (*PaymentInvoiceModule) Deps() []string {
 	return []string{
 		"dynamicresource",
