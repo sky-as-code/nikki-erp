@@ -95,6 +95,7 @@ func defineSalesBillActions(engine drif.DynamicResourceEngine) error {
 			Permission:  PermissionSettleBill,
 			MainProcess: processSettleBill,
 		}),
+		defineGatewayPaymentActions(engine),
 		engine.DefineAction(drif.DynamicActionDefinition{
 			ActionName: ActionMergeBill,
 			ActionType: drif.ActionTypeGeneric,
@@ -420,7 +421,19 @@ var (
 	// channelPayments answers "does this channel accept this method"; the second gate, "is the method
 	// usable at all", is paymentMethods.
 	channelPayments itChannel.ChannelPaymentAppService
+
+	// fulfillmentReservations holds and moves stock for a kiosk sale. Nil is the ordinary case for a
+	// deployment that sells nothing from a machine, and the confirm path then behaves exactly as it
+	// did before fulfillment existed.
+	fulfillmentReservations itExt.FulfillmentReservationExtService
 )
+
+// SetFulfillmentReservationPort must be called by Init before any request. It is separate from
+// SetPricingPorts because it serves one flow rather than pricing, and because a deployment may bind
+// every pricing port and none of this one.
+func SetFulfillmentReservationPort(reservations itExt.FulfillmentReservationExtService) {
+	fulfillmentReservations = reservations
+}
 
 // SetPricingPorts must be called by Init before any request.
 func SetPricingPorts(
@@ -576,7 +589,8 @@ func processConfirmOrder(ctx corectx.Context, input drif.ProcessInput) (*drif.Ac
 	policy := services.ResolveSalesPolicy(ctx, effectiveSettings)
 
 	result, vErrs, err := services.ConfirmOrder(ctx,
-		readStringParam(input.Params, paramId), orderLock, taxCalculation, orderFulfillment, pricingBasis, policy)
+		readStringParam(input.Params, paramId), orderLock, taxCalculation, orderFulfillment, pricingBasis,
+		policy, FulfillmentMethodService(), fulfillmentReservations)
 	if err != nil {
 		return nil, err
 	}
@@ -605,7 +619,7 @@ func processCancelOrder(ctx corectx.Context, input drif.ProcessInput) (*drif.Act
 	result, vErrs, err := services.CancelOrder(ctx,
 		readStringParam(input.Params, paramId),
 		readStringParam(input.Params, "reason"),
-		orderLock)
+		orderLock, fulfillmentReservations)
 	if err != nil {
 		return nil, err
 	}
@@ -616,11 +630,12 @@ func processCancelOrder(ctx corectx.Context, input drif.ProcessInput) (*drif.Act
 	return &drif.ActionResult{
 		HasData: true,
 		Data: map[string]any{
-			"sales_order_id":       result.SalesOrderId,
-			"status":               result.Status,
-			"cancelled_at":         result.CancelledAt,
-			"released_voucher_ids": result.ReleasedVoucherIds,
-			"pending":              result.Pending,
+			"sales_order_id":           result.SalesOrderId,
+			"status":                   result.Status,
+			"cancelled_at":             result.CancelledAt,
+			"released_voucher_ids":     result.ReleasedVoucherIds,
+			"released_fulfillment_ids": result.ReleasedFulfillmentIds,
+			"pending":                  result.Pending,
 		},
 	}, nil
 }

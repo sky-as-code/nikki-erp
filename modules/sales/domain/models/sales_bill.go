@@ -275,6 +275,7 @@ const (
 	SalesPaymentFieldStatus                = "status"
 	SalesPaymentFieldExternalTransactionId = "external_transaction_id"
 	SalesPaymentFieldProviderReference     = "provider_reference"
+	SalesPaymentFieldPaymentOrderId        = "payment_order_id"
 	SalesPaymentFieldPaidAt                = "paid_at"
 
 	SalesPaymentEdgeSalesBill = "sales_bill"
@@ -326,6 +327,34 @@ func (this *SalesPayment) SetStatus(status *string) {
 
 func (this SalesPayment) GetExternalTransactionId() *string {
 	return this.GetFieldData().GetString(SalesPaymentFieldExternalTransactionId)
+}
+
+func (this SalesPayment) GetPaymentOrderId() *string {
+	return this.GetFieldData().GetString(SalesPaymentFieldPaymentOrderId)
+}
+
+// IsPending reports whether this payment is still waiting on its provider. A gateway tender sits here
+// between opening the order and the settlement arriving, which is the window the reconciliation sweep
+// looks at.
+func (this SalesPayment) IsPending() bool {
+	status := this.GetStatus()
+	return status != nil && *status == string(SalesPaymentStatusPending)
+}
+
+// IsTerminal reports whether this payment can still change. Settlement is applied at least once — the
+// event bus acks before dispatch and a sweep re-checks anyway — so applying one asks this first.
+func (this SalesPayment) IsTerminal() bool {
+	status := this.GetStatus()
+	if status == nil {
+		return false
+	}
+	switch *status {
+	case string(SalesPaymentStatusCaptured),
+		string(SalesPaymentStatusFailed),
+		string(SalesPaymentStatusCancelled):
+		return true
+	}
+	return false
 }
 
 // IsCaptured reports whether this payment's money is actually in. An authorization does not count:

@@ -81,7 +81,9 @@ func stockMoveDependencyEngineSpec() engineSpec {
 // defineStockMoveLineActions closes the move line's write surface. A move line is an allocation
 // the reservation engine creates and validate stamps; a client-written line would be a claim on a
 // balance the balance does not know about, leaving the two irreconcilable. Editing an allocation
-// by hand needs the release-and-re-reserve flow, which is not in this phase.
+// by hand needs the release-and-re-reserve flow, which the transfer's own reserve and unreserve
+// actions provide; moving a whole demand's allocation to another location is
+// reallocate_reservation, which does that pair atomically so the claim is never briefly dropped.
 //
 // The actions are refused rather than removed, so a caller gets a 400 naming the reason instead of
 // a 404 that reads as a wrong URL.
@@ -166,6 +168,10 @@ func defineStockTransferActions(engine drif.DynamicResourceEngine) error {
 			Permission:  PermissionCreateReturn,
 			MainProcess: processCreateReturn,
 		}),
+
+		// The demand-addressed operations, for a caller holding its own reference rather than a
+		// transfer id. Declared here so one engine serves both ways of naming the same document.
+		defineStockReservationSourceActions(engine),
 	)
 }
 

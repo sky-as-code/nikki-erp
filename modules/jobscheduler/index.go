@@ -43,6 +43,11 @@ func (*JobSchedulerModule) Name() string {
 	return constants.JobSchedulerModuleName
 }
 
+// ModelPrefix implements NikkiModule.
+func (*JobSchedulerModule) ModelPrefix() string {
+	return constants.JobSchedulerModuleName
+}
+
 // Deps implements NikkiModule.
 //
 // core and apptrait are implicit and must not be listed. The scheduler deliberately depends

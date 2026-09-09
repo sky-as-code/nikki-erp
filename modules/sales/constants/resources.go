@@ -9,4 +9,5 @@ import "github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 const (
 	SalesChannelResource = models.SalesChannelSchemaName
 	SalesPointResource   = models.SalesPointSchemaName
+	SalesOrderResource   = models.SalesOrderSchemaName
 )

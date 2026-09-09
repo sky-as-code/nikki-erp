@@ -10,7 +10,7 @@ const AccountingModuleName = "accounting"
 type ResourceScope = reguard.ResourceScope
 
 const (
-	ResourceScopeDomain  = reguard.ResourceScopeDomain
+	ResourceScopeTenant  = reguard.ResourceScopeTenant
 	ResourceScopeOrg     = reguard.ResourceScopeOrg
 	ResourceScopeOrgUnit = reguard.ResourceScopeOrgUnit
 )

@@ -16,7 +16,7 @@ Suite Setup       Set Up Role Lifecycle Fixtures
 
 
 *** Variables ***
-${PROBE_EXPRESSION}     read:iam_role:domain
+${PROBE_EXPRESSION}     read:iam_role:tenant
 
 
 *** Keywords ***

@@ -190,6 +190,32 @@
 			"data_type": { "type": "string", "min": 0, "max": 2000 }
 		},
 		{
+			"name": "source_type",
+			"label": "fields.source_type",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"no_update": true,
+			"description": {
+				"en-US": "What kind of demand this transfer serves, as a '{module}_{concept}' string such as 'sales_fulfillment'. Together with source_id and a move's source_item_id it is the structured counterpart of origin_reference, which is free text naming an upstream document for a human to read. This triple is machine-resolvable instead: it is what lets a caller release or reallocate exactly the hold it created without having remembered the transfer id. Immutable, since repointing it would strand the reservation it names. Null for transfers raised inside Inventory, which serve no external demand."
+			}
+		},
+		{
+			"name": "source_id",
+			"label": "fields.source_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The id of the demand named by source_type — for 'sales_fulfillment', the Sales fulfillment id. A plain identifier with no edge: the row belongs to another module and a foreign key across that boundary would couple the two schemas' migrations. Immutable alongside the type that qualifies it."
+			}
+		},
+		{
+			"name": "expires_at",
+			"label": "fields.expires_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When this reservation stops holding its stock, in UTC. Null means it does not lapse on a timer, which is the ordinary case: a transfer that is about to be validated needs no expiry. A value is what a customer-controlled hold needs, because otherwise one unclaimed order keeps a kiosk slot out of the sellable pool forever. The sweep that acts on this releases the stock and nothing more — expiring a hold is not cancelling the demand behind it, and never refunds anybody."
+			}
+		},
+		{
 			"name": "org_id",
 			"label": "fields.org_id",
 			"data_type": "ulid",
@@ -203,7 +229,9 @@
 		{ "index_name": "invty_stock_trfs_org_id_idem_key", "fields": ["org_id", "idempotency_key"] },
 		{ "index_name": "invty_stock_trfs_op_type_id_status", "fields": ["operation_type_id", "status"] },
 		{ "index_name": "invty_stock_trfs_backorder_of_id", "fields": ["backorder_of_id"] },
-		{ "index_name": "invty_stock_trfs_chain_group_id", "fields": ["chain_group_id"] }
+		{ "index_name": "invty_stock_trfs_chain_group_id", "fields": ["chain_group_id"] },
+		{ "index_name": "invty_stock_trfs_source", "fields": ["source_type", "source_id"] },
+		{ "index_name": "invty_stock_trfs_expires_at", "fields": ["expires_at"] }
 	],
 
 	"extend_after": [

@@ -108,14 +108,16 @@
 					"pending",
 					"processing",
 					"completed",
-					"failed"
+					"partially_succeeded",
+					"failed",
+					"cancelled"
 				]
 			},
 			"required_for_create": true,
 			"default_value": "pending",
 			"no_update": true,
 			"description": {
-				"en-US": "Whether the customer has been paid back. 'not_required' covers a return against an order that was never paid — there is nothing to give back. The other half that decides 'completed'."
+				"en-US": "Where the money stands, and deliberately NOT part of any fulfillment status: a refund succeeds or fails on its own timeline, and folding the two together would make a failed refund silently reopen a delivery that was never going to happen again. 'partially_succeeded' is real rather than theoretical here because a refund is allocated proportionally across the payment legs that paid for the order, and one leg's provider can fail while another settles. 'cancelled' is a refund called off before any money moved."
 			}
 		},
 		{
@@ -149,6 +151,40 @@
 			"required_for_create": true,
 			"description": {
 				"en-US": "Why the goods are coming back. Mandatory: a return moves money out of the business, and one with no stated reason cannot be audited or disputed later."
+			}
+		},
+		{
+			"name": "refund_reason",
+			"label": "fields.refund_reason",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"customer_requested",
+					"fulfillment_failure"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "customer_requested",
+			"no_update": true,
+			"description": {
+				"en-US": "WHY the money is going back, as a category the system acts on. Kept separate from the free-text `reason` beside it, which is what a person typed and what reaches the fiscal adjustment: overwriting that with an enum would destroy the operator's own words and change what Accounting receives. The distinction earns its place because the two categories behave differently — a fulfillment_failure refund is raised automatically for goods a machine could not hand over, and is the only kind that may exist without anybody asking for it."
+			}
+		},
+		{
+			"name": "return_type",
+			"label": "fields.return_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"goods_return",
+					"refund_only"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "goods_return",
+			"no_update": true,
+			"description": {
+				"en-US": "Whether goods are coming back with the money. 'refund_only' skips the inventory-return step entirely, which is what a failed dispense needs: the goods never reached the customer, so there is nothing for them to return, and asking Inventory to receive them would book stock that never moved. Immutable, because the inventory step either ran or did not and a later edit cannot change that."
 			}
 		},
 		{

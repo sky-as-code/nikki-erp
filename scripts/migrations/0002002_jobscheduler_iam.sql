@@ -7,10 +7,10 @@
 -- "jobscheduler_attempt" schema names. A code that drifts from its schema denies every request,
 -- with nothing in the response pointing at the seed as the cause.
 --
--- Scope is "domain" for both max and min, unlike most modules which allow an org-level minimum.
+-- Scope is "tenant" for both max and min, unlike most modules which allow an org-level minimum.
 -- A scheduled job is infrastructure owned by a module rather than by an organization: the tables
 -- carry no tenant_id and no org_id, so an org-scoped grant would have nothing to narrow against
--- and would silently behave as a domain-wide one. Saying "domain" is the honest description of
+-- and would silently behave as a tenant-wide one. Saying "tenant" is the honest description of
 -- what a grant here actually confers.
 --
 -- Deliberate omissions, each of which would otherwise look like something forgotten:
@@ -43,9 +43,9 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M2JBSCH00000000000000001', 'Scheduled Job', 'jobscheduler_job', 'Recurring job registered by a module, with its cron schedule and action', 'nikkierp', 'domain', 'domain', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2JBSCH00000000000000002', 'Job Execution', 'jobscheduler_execution', 'One occurrence of a scheduled job, with the configuration it ran under', 'nikkierp', 'domain', 'domain', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2JBSCH00000000000000003', 'Job Attempt', 'jobscheduler_attempt', 'One actual run of an execution, including its outcome and lease', 'nikkierp', 'domain', 'domain', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2JBSCH00000000000000001', 'Scheduled Job', 'jobscheduler_job', 'Recurring job registered by a module, with its cron schedule and action', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2JBSCH00000000000000002', 'Job Execution', 'jobscheduler_execution', 'One occurrence of a scheduled job, with the configuration it ran under', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2JBSCH00000000000000003', 'Job Attempt', 'jobscheduler_attempt', 'One actual run of an execution, including its outcome and lease', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

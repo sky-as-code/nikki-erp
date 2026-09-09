@@ -36,6 +36,11 @@ func (*IamModule) Name() string {
 	return c.IamModuleName
 }
 
+// ModelPrefix implements DynamicModule.
+func (*IamModule) ModelPrefix() string {
+	return c.IamModuleName
+}
+
 // Deps implements InCodeModule.
 func (*IamModule) Deps() []string {
 	return []string{

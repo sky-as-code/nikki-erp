@@ -33,7 +33,7 @@ type GetUserEntitlementsResult = dyn.OpResult[GetUserEntitlementsResultData]
 type ResourceScope string
 
 const (
-	ResourceScopeDomain  = ResourceScope("domain")
+	ResourceScopeTenant  = ResourceScope("tenant")
 	ResourceScopeOrg     = ResourceScope("org")
 	ResourceScopeOrgUnit = ResourceScope("orgunit")
 	ResourceScopePrivate = ResourceScope("private")

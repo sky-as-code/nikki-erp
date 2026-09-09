@@ -186,6 +186,15 @@
 			}
 		},
 		{
+			"name": "source_item_id",
+			"label": "fields.source_item_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The line of the demand this move serves — for a sales fulfillment, the fulfillment item id. It exists because the transfer's source_id names the whole demand and a partial dispense has to be attributed line by line: without it, releasing the hold on one product would mean guessing which move belonged to it. A plain identifier with no edge, for the same cross-module reason as the transfer's source_id."
+			}
+		},
+		{
 			"name": "org_id",
 			"label": "fields.org_id",
 			"data_type": "ulid",

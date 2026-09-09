@@ -64,6 +64,11 @@ type ConfirmOrderResult struct {
 	// are coming reads this rather than assuming a reservation exists.
 	Fulfillment *RaiseFulfillmentResult
 
+	// KioskFulfillment is the delivery half of a kiosk sale: the fulfillment created and the stock
+	// held for it, before any money moved. Nil for every other kind of order, which is how a caller
+	// tells "this sale dispenses from a machine" from "this sale ships".
+	KioskFulfillment *CreateFulfillmentResult
+
 	// Pending names the steps this confirm did not complete.
 	Pending []string
 }
@@ -87,6 +92,8 @@ func ConfirmOrder(
 	fulfillment itExt.FulfillmentExtService,
 	basisSvc itExt.ProductPricingBasisExtService,
 	policy SalesPolicy,
+	methods *SalesFulfillmentMethodDomainServiceImpl,
+	reservations itExt.FulfillmentReservationExtService,
 ) (*ConfirmOrderResult, *ft.ClientErrors, error) {
 	if dLock == nil {
 		// Confirming without the lock would lose the only protection against a double redemption.
@@ -113,7 +120,7 @@ func ConfirmOrder(
 
 	// Read AFTER acquiring the lock: a record read while queuing describes the world as it was
 	// before the other holder finished.
-	return confirmUnderLock(ctx, orderId, taxSvc, fulfillment, basisSvc, policy)
+	return confirmUnderLock(ctx, orderId, taxSvc, fulfillment, basisSvc, policy, methods, reservations)
 }
 
 // confirmLockKeyOf builds the key from the id rather than the order number, which is a
@@ -129,6 +136,8 @@ func confirmUnderLock(
 	fulfillment itExt.FulfillmentExtService,
 	basisSvc itExt.ProductPricingBasisExtService,
 	policy SalesPolicy,
+	methods *SalesFulfillmentMethodDomainServiceImpl,
+	reservations itExt.FulfillmentReservationExtService,
 ) (*ConfirmOrderResult, *ft.ClientErrors, error) {
 	record, err := loadRecord(ctx, models.SalesOrderSchemaName, models.SalesOrderFieldId, orderId)
 	if err != nil {
@@ -155,6 +164,16 @@ func confirmUnderLock(
 		return nil, vErrs, err
 	}
 
+	// Step 3b: for a kiosk sale ONLY, create the fulfillment and hold its stock BEFORE the order is
+	// frozen. This inverts the ordering of step 5 below, and does so deliberately: a customer
+	// standing at a machine has no way to work through an unfulfillable order afterwards, so a
+	// reservation that cannot be met must refuse here, with the order still a draft and nothing
+	// charged. Every other kind of order skips this entirely and keeps the original sequence.
+	kioskFulfillment, vErrs, err := CreateKioskFulfillment(ctx, record, methods, reservations)
+	if err != nil || vErrs != nil {
+		return nil, vErrs, err
+	}
+
 	// Step 4: freeze. The snapshot columns become immutable the moment the status is `confirmed`,
 	// enforced by assertSnapshotsUnchanged on every later write.
 	confirmedAt := time.Now().UTC()
@@ -166,10 +185,16 @@ func confirmUnderLock(
 	// transaction, since the two cannot be atomic. A confirmed order with no reservation is
 	// recoverable, whereas a reservation against an order that failed to confirm holds stock nothing
 	// will claim. A refusal does NOT fail the confirm.
-	fulfilment, vErrs, err := RaiseFulfillmentRequest(
-		ctx, orderId, string(models.SalesFulfillmentTypeReservation), fulfillment)
-	if err != nil {
-		return nil, nil, err
+	// Skipped for a kiosk sale: its goods were already claimed at step 3b, and raising the intent
+	// request as well would hold the same stock twice — once against the fulfillment and once
+	// against a second transfer nothing will ever release.
+	var fulfilment *RaiseFulfillmentResult
+	if kioskFulfillment == nil {
+		fulfilment, vErrs, err = RaiseFulfillmentRequest(
+			ctx, orderId, string(models.SalesFulfillmentTypeReservation), fulfillment)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	return &ConfirmOrderResult{
@@ -179,14 +204,28 @@ func confirmUnderLock(
 		Pricing:            priced,
 		RedeemedVoucherIds: redeemed,
 		Fulfillment:        fulfilment,
-		Pending:            pendingConfirmSteps(fulfilment, vErrs),
+		KioskFulfillment:   kioskFulfillment,
+		Pending:            pendingConfirmSteps(fulfilment, vErrs, kioskFulfillment),
 	}, nil, nil
 }
 
 // pendingConfirmSteps is returned to the caller rather than logged, because a kiosk that believes
 // a confirm was complete will happily dispense goods against an order with no bill.
-func pendingConfirmSteps(result *RaiseFulfillmentResult, vErrs *ft.ClientErrors) []string {
+func pendingConfirmSteps(
+	result *RaiseFulfillmentResult, vErrs *ft.ClientErrors, kiosk *CreateFulfillmentResult,
+) []string {
 	pending := make([]string, 0, 2)
+
+	// A kiosk sale reports on its own reservation instead: it took one at step 3b and raised no
+	// intent request, so describing the absent request as pending would name a step that was never
+	// going to run.
+	if kiosk != nil {
+		if kiosk.Status != string(models.FulfillmentStatusReserved) {
+			pending = append(pending, "fulfillment_reservation (the stock is not held)")
+		}
+		pending = append(pending, "initial_bill (confirm does not raise a bill)")
+		return pending
+	}
 
 	switch {
 	case vErrs != nil:

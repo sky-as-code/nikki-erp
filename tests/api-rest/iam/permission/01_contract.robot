@@ -16,14 +16,14 @@ Probe Refuses An Unauthenticated Caller
     ...    caller. Without a token there is nothing to answer about.
     Create Anonymous API Session    alias=anon_probe
     ${resp}=    POST On Session    anon_probe    ${TEST_PERM_API}
-    ...    json=${{ {'expression': 'read:iam_user:domain'} }}    expected_status=any
+    ...    json=${{ {'expression': 'read:iam_user:tenant'} }}    expected_status=any
     Should Be True    ${resp.status_code} in (401, 403)
     ...    msg=Anonymous probe returned ${resp.status_code}, expected 401/403
 
 Probe Answers A Well Formed Question
     [Documentation]    The shape of a successful answer: a boolean and a list, with the
     ...    list always present so a client needs no null check.
-    ${body}=    Probe Permission    api    read:iam_user:domain
+    ${body}=    Probe Permission    api    read:iam_user:tenant
     Dictionary Should Contain Key    ${body}    is_granted
     Dictionary Should Contain Key    ${body}    matches
     ${type}=    Evaluate    type($body['matches']).__name__
@@ -33,7 +33,7 @@ Probe Reports Provenance When Granted
     [Documentation]    A granted answer must name the grant path. The administrator
     ...    session used by the whole test run holds broad user permissions, so this
     ...    question is granted and every match must carry a usable source.
-    ${body}=    Probe Permission    api    read:iam_user:domain
+    ${body}=    Probe Permission    api    read:iam_user:tenant
     Should Be True    ${body}[is_granted]
     Should Not Be Empty    ${body}[matches]
     FOR    ${match}    IN    @{body}[matches]
@@ -51,12 +51,12 @@ Probe Rejects Malformed Expressions Without Failing
     ...    ${EMPTY}
     ...    read
     ...    read:iam_user
-    ...    read:iam_user:domain:extra
+    ...    read:iam_user:tenant:extra
     ...    read:iam_user:galaxy
-    ...    read:iam_user:domain/ORG1
+    ...    read:iam_user:tenant/ORG1
     ...    ::
-    ...    :iam_user:domain
-    ...    read::domain
+    ...    :iam_user:tenant
+    ...    read::tenant
     FOR    ${expression}    IN    @{malformed}
         ${resp}=    Probe Permission Raw    api    ${expression}
         Should Be True    ${resp.status_code} >= 400 and ${resp.status_code} < 500
@@ -69,18 +69,18 @@ Probe Rejects Injection Shaped And Oversized Input
     ...    never allowed to exhaust anything.
     ${long}=    Evaluate    'a' * 5000
     @{hostile}=    Create List
-    ...    read:iam_user:domain' OR '1'='1
-    ...    read:iam_user:domain; DROP TABLE iam_user_permissions
-    ...    read:iam_user:domain\n\nread:iam_role:domain
+    ...    read:iam_user:tenant' OR '1'='1
+    ...    read:iam_user:tenant; DROP TABLE iam_user_permissions
+    ...    read:iam_user:tenant\n\nread:iam_role:tenant
     ...    ${long}
-    ...    read:${long}:domain
+    ...    read:${long}:tenant
     FOR    ${expression}    IN    @{hostile}
         ${resp}=    Probe Permission Raw    api    ${expression}
         Should Be True    ${resp.status_code} >= 400 and ${resp.status_code} < 500
         ...    msg=Hostile input returned ${resp.status_code}, expected a 4xx
     END
     # The table must still be there afterwards.
-    ${body}=    Probe Permission    api    read:iam_user:domain
+    ${body}=    Probe Permission    api    read:iam_user:tenant
     Dictionary Should Contain Key    ${body}    is_granted
 
 Probe Refuses Wildcard Questions
@@ -89,9 +89,9 @@ Probe Refuses Wildcard Questions
     ...    let any signed-in user enumerate the shape of their own grants and, worse,
     ...    probe for the existence of resources by pattern.
     @{wildcards}=    Create List
-    ...    *:iam_user:domain
-    ...    read:*:domain
-    ...    *:*:domain
+    ...    *:iam_user:tenant
+    ...    read:*:tenant
+    ...    *:*:tenant
     ...    *:*:*
     FOR    ${expression}    IN    @{wildcards}
         ${resp}=    Probe Permission Raw    api    ${expression}
@@ -103,9 +103,9 @@ Probe Ignores Any Attempt To Name Another Subject
     [Documentation]    There is no user_id parameter by design. Sending one must not
     ...    change the subject: the answer must stay the caller's own, whatever extra
     ...    fields the body carries.
-    ${honest}=    Probe Permission    api    read:iam_user:domain
+    ${honest}=    Probe Permission    api    read:iam_user:tenant
     ${resp}=    POST On Session    api    ${TEST_PERM_API}
-    ...    json=${{ {'expression': 'read:iam_user:domain', 'user_id': '01JWNXT3EY7FG47VDJTEPTDC98'} }}
+    ...    json=${{ {'expression': 'read:iam_user:tenant', 'user_id': '01JWNXT3EY7FG47VDJTEPTDC98'} }}
     ...    expected_status=any
     IF    ${resp.status_code} == 200
         Should Be Equal    ${resp.json()}[is_granted]    ${honest}[is_granted]

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/event"
 )
 
 // Notifying is the step that turns a settled payment into goods the customer can take, and the
@@ -24,10 +26,12 @@ import (
 
 // fakeOrderStore stands in for the order service, which otherwise needs a database.
 type fakeOrderStore struct {
-	orgId  string
-	amount int64
-	method string
-	err    error
+	orgId            string
+	amount           int64
+	method           string
+	refTransactionId string
+	metadata         map[string]any
+	err              error
 
 	// gate, when set, holds the notification at its first step until the test releases it. It is
 	// what lets a test be sure the send happens after the request that spawned it has ended.
@@ -52,6 +56,20 @@ func (this *fakeOrderStore) SyncFactsFor(_ corectx.Context, _ string) (*services
 	}, nil
 }
 
+func (this *fakeOrderStore) SettlementFactsFor(
+	_ corectx.Context, _ string,
+) (*services.SettlementFacts, error) {
+	if this.err != nil {
+		return nil, this.err
+	}
+	return &services.SettlementFacts{
+		OrgId:            this.orgId,
+		Amount:           decimal.NewFromInt(this.amount),
+		RefTransactionId: this.refTransactionId,
+		Metadata:         this.metadata,
+	}, nil
+}
+
 func (this *fakeOrderStore) RecordSyncOutcome(
 	_ corectx.Context, orderPk string, outcome services.SyncOutcome,
 ) error {
@@ -68,8 +86,39 @@ func (this *fakeOrderStore) outcomes() []services.SyncOutcome {
 	return append([]services.SyncOutcome(nil), this.recorded...)
 }
 
+// fakeSettledPublisher records what was announced, so a test can assert on the in-process half of
+// a settlement as well as the HTTP half.
+type fakeSettledPublisher struct {
+	mutex     sync.Mutex
+	published []itEvent.PaymentSettledEvent
+}
+
+func (this *fakeSettledPublisher) PublishAsync(
+	_ corectx.Context, event itEvent.PaymentSettledEvent,
+) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+	this.published = append(this.published, event)
+}
+
+func (this *fakeSettledPublisher) events() []itEvent.PaymentSettledEvent {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+	return append([]itEvent.PaymentSettledEvent(nil), this.published...)
+}
+
 func newTestNotifier(store orderSyncStore, retries int) *ResultNotifier {
-	notifier := NewResultNotifier(nil, NewResultSyncClient(2*time.Second, retries), logging.NewLogger())
+	notifier := NewResultNotifier(
+		nil, NewResultSyncClient(2*time.Second, retries), nil, logging.NewLogger())
+	notifier.orders = store
+	return notifier
+}
+
+func newAnnouncingNotifier(
+	store orderSyncStore, publisher itEvent.PaymentSettledEventPublisher,
+) *ResultNotifier {
+	notifier := NewResultNotifier(
+		nil, NewResultSyncClient(2*time.Second, 0), publisher, logging.NewLogger())
 	notifier.orders = store
 	return notifier
 }
@@ -205,4 +254,109 @@ func TestNotifyDetachedSurvivesTheRequestEnding(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("the notification was canceled along with the request that spawned it")
 	}
+}
+
+// Announcing a settled order.
+//
+// The in-process announcement and the HTTP sync are two paths to the same news, and these pin the
+// half that other modules in this build listen to.
+
+// A settled order reaches subscribers with the facts they correlate on: the exact amount, the
+// gateway's reference, and whatever the opening caller attached.
+func TestNotifyAnnouncesASettledOrder(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	publisher := &fakeSettledPublisher{}
+	store := &fakeOrderStore{
+		orgId:            "org-1",
+		amount:           1500,
+		method:           "momo",
+		refTransactionId: "gw-txn-9",
+		metadata:         map[string]any{"sales_payment_id": "pay-1"},
+	}
+
+	newAnnouncingNotifier(store, publisher).Notify(testContext(), NotifyTarget{
+		Pk:        "order-pk",
+		OrderId:   "SALEMOM0Q8HABCDEFGH",
+		ReturnUrl: server.URL,
+	}, models.OrderStatusPaymentSuccess)
+
+	events := publisher.events()
+	require.Len(t, events, 1, "a settled order must be announced exactly once")
+
+	announced := events[0]
+	assert.Equal(t, itEvent.PaymentSettledPaid, announced.Type)
+	assert.Equal(t, "SALEMOM0Q8HABCDEFGH", announced.OrderId)
+	assert.Equal(t, "order-pk", announced.OrderPk)
+	assert.Equal(t, "org-1", announced.OrgId)
+	assert.Equal(t, "gw-txn-9", announced.RefTransactionId)
+
+	// A string, not a number: money that has been through a float is no longer the money taken.
+	assert.Equal(t, "1500", announced.Amount)
+
+	// The caller's own correlation, echoed back untouched.
+	assert.Equal(t, "pay-1", announced.Metadata["sales_payment_id"])
+}
+
+// Every terminal verdict is announced, each as its own type: a subscriber has to tell a customer
+// who paid from one who never did.
+func TestNotifyAnnouncesEveryTerminalVerdict(t *testing.T) {
+	cases := []struct {
+		status string
+		want   itEvent.PaymentSettledType
+	}{
+		{models.OrderStatusPaymentSuccess, itEvent.PaymentSettledPaid},
+		{models.OrderStatusPaymentFailed, itEvent.PaymentSettledFailed},
+		{models.OrderStatusExpired, itEvent.PaymentSettledExpired},
+		{models.OrderStatusCanceled, itEvent.PaymentSettledCanceled},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.status, func(t *testing.T) {
+			publisher := &fakeSettledPublisher{}
+			store := &fakeOrderStore{orgId: "org-1", amount: 100}
+
+			// No ReturnUrl: nothing asked for an HTTP callback, and the announcement must happen
+			// anyway — the two are independent.
+			newAnnouncingNotifier(store, publisher).Notify(testContext(), NotifyTarget{
+				Pk: "order-pk", OrderId: "SALEMOM0Q8HABCDEFGH",
+			}, testCase.status)
+
+			events := publisher.events()
+			require.Len(t, events, 1)
+			assert.Equal(t, testCase.want, events[0].Type)
+		})
+	}
+}
+
+// A status that is not a verdict wakes nobody. Announcing "processing" would rouse every subscriber
+// for an order the customer is still in the middle of paying.
+func TestNotifyDoesNotAnnounceANonVerdict(t *testing.T) {
+	publisher := &fakeSettledPublisher{}
+	store := &fakeOrderStore{orgId: "org-1", amount: 100}
+
+	newAnnouncingNotifier(store, publisher).Notify(testContext(), NotifyTarget{
+		Pk: "order-pk", OrderId: "SALEMOM0Q8HABCDEFGH",
+	}, models.OrderStatusProcessing)
+
+	assert.Empty(t, publisher.events(), "only a terminal verdict is announced")
+}
+
+// A build with no publisher wired still settles orders. The announcement is an optimization over
+// the order row, never a requirement for the money to be recorded.
+func TestNotifyWithoutAPublisherStillRecordsTheOutcome(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	store := &fakeOrderStore{orgId: "org-1", amount: 100}
+	newTestNotifier(store, 1).Notify(testContext(), NotifyTarget{
+		Pk: "order-pk", OrderId: "SALEMOM0Q8HABCDEFGH", ReturnUrl: server.URL,
+	}, models.OrderStatusPaymentSuccess)
+
+	assert.Len(t, store.outcomes(), 1, "the sync outcome is recorded with or without a publisher")
 }

@@ -17,4 +17,15 @@ import (
 type OrderDomainService interface {
 	CreatePayment(ctx corectx.Context, cmd CreatePaymentCommand) (*CreatePaymentResult, error)
 	Refund(ctx corectx.Context, cmd RefundCommand) (*RefundResult, error)
+
+	// GetOrderStatus reads back where an order stands, for a caller reconciling its own record of a
+	// payment against this module's.
+	//
+	// It exists because settlement is announced, not returned: an order goes out to a gateway and
+	// comes back through a callback or the watchdog, and any announcement can be missed. A caller
+	// holding a payment that has been pending too long asks here rather than waiting forever.
+	//
+	// Read-only, and deliberately not a way to fetch the order row: a caller has no business with
+	// the merchant profile or the sync logs, so this answers only what reconciliation needs.
+	GetOrderStatus(ctx corectx.Context, query GetOrderStatusQuery) (*GetOrderStatusResult, error)
 }

@@ -81,7 +81,7 @@ func processProcessReturn(
 ) (*drif.ActionResult, error) {
 	result, vErrs, err := services.ProcessReturn(ctx, services.ProcessReturnParams{
 		SalesReturnId: readStringParam(input.Params, paramId),
-	}, orderLock, orderFulfillment, invoicingProvider)
+	}, orderLock, orderFulfillment, invoicingProvider, paymentOrders)
 	if err != nil {
 		return nil, err
 	}

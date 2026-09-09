@@ -12,14 +12,15 @@ import (
 const (
 	SalesChannelSchemaName = "sales_channel"
 
-	SalesChannelFieldId              = "id"
-	SalesChannelFieldOrgId           = "org_id"
-	SalesChannelFieldCode            = "code"
-	SalesChannelFieldName            = "name"
-	SalesChannelFieldDescription     = "description"
-	SalesChannelFieldManagedByModule = "managed_by_module"
-	SalesChannelFieldStatus          = "status"
-	SalesChannelFieldIsSystem        = "is_system"
+	SalesChannelFieldId                         = "id"
+	SalesChannelFieldOrgId                      = "org_id"
+	SalesChannelFieldCode                       = "code"
+	SalesChannelFieldName                       = "name"
+	SalesChannelFieldDescription                = "description"
+	SalesChannelFieldManagedByModule            = "managed_by_module"
+	SalesChannelFieldStatus                     = "status"
+	SalesChannelFieldIsSystem                   = "is_system"
+	SalesChannelFieldDefaultFulfillmentMethodId = "default_fulfillment_method_id"
 
 	SalesChannelEdgeSalesPoints = "sales_points"
 )
@@ -123,4 +124,12 @@ func (this SalesChannel) IsActive() bool {
 	}
 	archived := this.GetIsArchived()
 	return archived == nil || !*archived
+}
+
+func (this SalesChannel) GetDefaultFulfillmentMethodId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesChannelFieldDefaultFulfillmentMethodId)
+}
+
+func (this *SalesChannel) SetDefaultFulfillmentMethodId(id *model.Id) {
+	this.GetFieldData().SetModelId(SalesChannelFieldDefaultFulfillmentMethodId, id)
 }

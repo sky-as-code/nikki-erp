@@ -94,14 +94,20 @@ func TestMoneyAndPercentageFieldsAreDecimal(t *testing.T) {
 	}
 }
 
-// An integer field's width is chosen from the largest value it can legitimately hold. A line
-// quantity is bounded at a million, so int64 would reserve eight bytes a row to represent values
-// no line can carry, and would tell the next reader the bound had not been considered.
-func TestBoundedCountersAreInt32(t *testing.T) {
+// A line quantity is a decimal, not a count.
+//
+// It was int32 while every invoice this module raised was for whole units. That was wrong as soon as
+// another module could raise one: goods are sold by weight and by length too, and an integer column
+// gives a caller invoicing 1.5 kg no way to say so — it would have to round the quantity and hide
+// the difference in the unit price, and the line would no longer state what was actually sold.
+//
+// The bound stays at a million. That is what keeps the width a decision rather than an accident,
+// which is what the old int32 was really protecting.
+func TestLineQuantityIsDecimal(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
 	quantity := requireField(t, InvoiceLineSchemaBuilder().Build(), InvoiceLineFieldQuantity)
-	assert.Equal(t, dmodel.FieldDataTypeNameInt32, quantity.DataType().String())
+	assert.Equal(t, dmodel.FieldDataTypeNameDecimal, quantity.DataType().String())
 }
 
 // The order carries no column per gateway. What one gateway needs at create time — a terminal id

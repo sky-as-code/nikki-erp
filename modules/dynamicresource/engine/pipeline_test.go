@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	it "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
@@ -14,9 +15,14 @@ import (
 
 // ownerContext passes every permission check, so that tests that are not about
 // permissions do not have to build entitlements.
+// ownerContext is an authenticated owner. The principal is not decoration: an owner still had to
+// be authenticated by something, and AssertPermission fails closed without one.
 func ownerContext() corectx.Context {
 	ctx := corectx.NewRequestContext(context.Background())
-	ctx.SetPermissions(corectx.ContextPermissions{IsOwner: true})
+	ctx.SetPermissions(corectx.ContextPermissions{
+		IsOwner:   true,
+		Principal: corectx.Principal{Kind: corectx.PrincipalKindUser, Id: model.Id("owner_test")},
+	})
 	return ctx
 }
 

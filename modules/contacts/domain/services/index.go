@@ -12,5 +12,7 @@ func InitDomainServices() error {
 	return deps.Register(
 		NewVendorDomainServiceImpl,
 		NewVendorApplicationServiceImpl,
+		NewPartyDomainServiceImpl,
+		NewPartyApplicationServiceImpl,
 	)
 }

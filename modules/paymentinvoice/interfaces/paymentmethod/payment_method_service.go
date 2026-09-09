@@ -77,6 +77,14 @@ type PaymentMethodData struct {
 	// UnusableReason is empty when IsUsable, and otherwise names which gate closed, so that a
 	// consumer can tell an administrator what to fix rather than only that something is wrong.
 	UnusableReason string `json:"unusable_reason,omitempty"`
+
+	// HasGateway says whether taking this payment means opening an order with a provider and waiting
+	// for it to settle, or whether the money is simply in — cash across a counter.
+	//
+	// It is a capability, NOT the adapter's name, and the distinction is the whole point: a consumer
+	// has to know which of its two flows to run, but naming momo or vietqr here would let it branch
+	// on a payment integration it does not own, which is what this shape otherwise refuses to allow.
+	HasGateway bool `json:"has_gateway"`
 }
 
 type ListPaymentMethodsResult struct {

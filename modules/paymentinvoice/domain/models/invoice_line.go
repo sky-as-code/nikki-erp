@@ -70,12 +70,12 @@ func (this *InvoiceLine) SetDescription(v *string) {
 	this.GetFieldData().SetString(InvoiceLineFieldDescription, v)
 }
 
-func (this InvoiceLine) GetQuantity() *int32 {
-	return this.GetFieldData().GetInt32(InvoiceLineFieldQuantity)
+func (this InvoiceLine) GetQuantity() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(InvoiceLineFieldQuantity)
 }
 
-func (this *InvoiceLine) SetQuantity(v *int32) {
-	this.GetFieldData().SetInt32(InvoiceLineFieldQuantity, v)
+func (this *InvoiceLine) SetQuantity(v *decimal.Decimal) {
+	this.GetFieldData().SetDecimal(InvoiceLineFieldQuantity, v)
 }
 
 func (this InvoiceLine) GetUnitPrice() *decimal.Decimal {

@@ -3,11 +3,11 @@ package models
 import c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 
 // AuthzScopeWidth maps authorization scope strings to a numeric width where a larger value is a
-// broader grant (domain widest, private narrowest). Used to compare resource min/max bounds with
+// broader grant (tenant widest, private narrowest). Used to compare resource min/max bounds with
 // entitlement scope without duplicating ordering rules.
 func AuthzScopeWidth(scope c.ResourceScope) int {
 	switch scope {
-	case c.ResourceScopeDomain:
+	case c.ResourceScopeTenant:
 		return 4
 	case c.ResourceScopeOrg:
 		return 3

@@ -22,6 +22,10 @@ type SalesPolicy struct {
 	DraftOrderExpiryHours    int32
 	RoundingScale            int32
 
+	// InvoiceIssueDelayMinutes is how long after settlement the automatic issuance job waits before
+	// raising an electronic invoice. See domain/settings for why the wait exists.
+	InvoiceIssueDelayMinutes int32
+
 	// DefaultTaxRate is deprecated and no longer feeds pricing; see domain/settings. Still resolved
 	// so an administrator reading the policy sees what is stored.
 	DefaultTaxRate decimal.Decimal
@@ -47,6 +51,7 @@ func DefaultSalesPolicy() SalesPolicy {
 		AllowCashChange:          salessettings.DefaultAllowCashChange,
 		DraftOrderExpiryHours:    salessettings.DefaultDraftOrderExpiryHours,
 		RoundingScale:            salessettings.DefaultRoundingScale,
+		InvoiceIssueDelayMinutes: salessettings.DefaultInvoiceIssueDelayMinutes,
 		DefaultTaxRate:           salessettings.DefaultTaxRate,
 	}
 }
@@ -88,6 +93,8 @@ func ResolveSalesPolicy(
 		salessettings.OrgSettingDraftOrderExpiryHours, policy.DraftOrderExpiryHours)
 	policy.RoundingScale = int32Setting(values,
 		salessettings.OrgSettingRoundingScale, policy.RoundingScale)
+	policy.InvoiceIssueDelayMinutes = int32Setting(values,
+		salessettings.OrgSettingInvoiceIssueDelayMinutes, policy.InvoiceIssueDelayMinutes)
 	policy.DefaultTaxRate = decimalSetting(values,
 		salessettings.OrgSettingDefaultTaxRate, policy.DefaultTaxRate)
 	policy.DefaultSalesTaxCode = stringSetting(values,

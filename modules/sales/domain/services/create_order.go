@@ -41,7 +41,26 @@ type CreateOrderParams struct {
 	// creates a second order.
 	IdempotencyKey string
 
+	// Fulfillment is what the client asked for about delivery. Both parts are optional and neither
+	// is trusted: they are recorded as a request and settled at confirm, where the policy is
+	// resolved and validated. A client can never send the policy snapshot fields themselves — those
+	// are copied from the resolved method, and accepting them would let a caller choose its own
+	// refund rules.
+	Fulfillment CreateOrderFulfillment
+
 	OrgId string
+}
+
+// CreateOrderFulfillment is the client's delivery request. Empty means "use the defaults", which
+// is what an ordinary sale sends.
+type CreateOrderFulfillment struct {
+	// FulfillmentMethodId names a method outright, overriding the point and channel defaults.
+	FulfillmentMethodId string
+
+	// TargetOutletId names where to collect. Required before confirm only for a method whose
+	// strategy is customer_selected_outlet; supplying it for any other method is harmless and
+	// simply takes precedence over the derived target.
+	TargetOutletId string
 }
 
 type CreateOrderLine struct {
@@ -360,6 +379,10 @@ func writeDraftOrder(
 			models.SalesOrderFieldFulfillmentStatus: string(models.SalesOrderFulfillmentStatusPending),
 			models.SalesOrderFieldInvoiceStatus:     string(models.SalesOrderInvoiceStatusNotRequested),
 
+			// Calculated from the request's own authentication, never from params: a client able to
+			// assert it was choosing its own refund policy. See DeriveCustomerIdentityMode.
+			models.SalesOrderFieldCustomerIdentityMode: string(DeriveCustomerIdentityMode(ctx)),
+
 			// Zeroed rather than omitted: the reprice overwrites them, and a NOT NULL column with no
 			// value would fail the insert.
 			models.SalesOrderFieldSubtotal:      decimal.Zero,
@@ -377,6 +400,14 @@ func writeDraftOrder(
 		}
 		if params.IdempotencyKey != "" {
 			fields[models.SalesOrderFieldIdempotencyKey] = params.IdempotencyKey
+		}
+		// Recorded as asked for, not validated here: the method is resolved at confirm, where the
+		// channel, the target's readiness and the customer's identity are all known together.
+		if params.Fulfillment.FulfillmentMethodId != "" {
+			fields[models.SalesOrderFieldRequestedFulfillmentMethodId] = params.Fulfillment.FulfillmentMethodId
+		}
+		if params.Fulfillment.TargetOutletId != "" {
+			fields[models.SalesOrderFieldRequestedTargetOutletId] = params.Fulfillment.TargetOutletId
 		}
 
 		if _, err := orderEngine.ResourceRepository().Insert(tranxCtx, fields); err != nil {

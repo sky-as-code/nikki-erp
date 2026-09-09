@@ -9,6 +9,24 @@
 
 	"fields": [
 		{
+			"name": "source_type",
+			"label": "fields.source_type",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"no_update": true,
+			"description": {
+				"en-US": "What kind of document this invoice was raised for - 'sales_billing_instruction' and so on. A generic pair with source_id rather than a column per caller, so a new caller is a new value and not a schema change. Null for an invoice raised directly, which owes its existence to nothing else."
+			}
+		},
+		{
+			"name": "source_id",
+			"label": "fields.source_id",
+			"data_type": { "type": "string", "min": 0, "max": 200 },
+			"no_update": true,
+			"description": {
+				"en-US": "The identifier of the document this invoice was raised for, in the calling module's own terms. Unique together with source_type, and THAT INDEX IS THE REPLAY GUARD: a caller retrying after a timeout gets the invoice its first call created rather than a second document for one sale. The index is declared in the migration rather than here, because partial_uniques_strict requires its not-null field to be requiredForCreate and an invoice raised directly has no source at all. Never resolved or dereferenced here - it means nothing to this module beyond being a key."
+			}
+		},
+		{
 			"name": "number",
 			"label": "fields.number",
 			"data_type": { "type": "string", "min": 0, "max": 50 },
@@ -121,7 +139,8 @@
 	"search_indexes": [
 		{ "index_name": "payinv_invoices_status", "fields": ["status"] },
 		{ "index_name": "payinv_invoices_order_id", "fields": ["order_id"] },
-		{ "index_name": "payinv_invoices_issued_at", "fields": ["issued_at"] }
+		{ "index_name": "payinv_invoices_issued_at", "fields": ["issued_at"] },
+		{ "index_name": "payinv_invoices_source", "fields": ["source_type", "source_id"] }
 	],
 
 	"extend_after": [

@@ -72,7 +72,7 @@ func TestModifyActionOverridesOnlyProvidedFields(t *testing.T) {
 		MainProcess: noopProcess,
 	}))
 
-	scope := requestguard.ResourceScopeDomain
+	scope := requestguard.ResourceScopeTenant
 	assert.NoError(t, engine.ModifyAction(it.DynamicActionDelta{
 		ActionName:      "update_thing",
 		PermissionScope: &scope,
@@ -81,7 +81,7 @@ func TestModifyActionOverridesOnlyProvidedFields(t *testing.T) {
 	definition, _ := engine.Action("update_thing")
 	assert.Equal(t, it.PermissionUpdate, definition.Permission, "untouched field is kept")
 	assert.NotNil(t, definition.KeysToFetch, "untouched field is kept")
-	assert.Equal(t, requestguard.ResourceScopeDomain, *definition.PermissionScope)
+	assert.Equal(t, requestguard.ResourceScopeTenant, *definition.PermissionScope)
 }
 
 // The Permission field is a pointer in the delta precisely so that overriding it back to

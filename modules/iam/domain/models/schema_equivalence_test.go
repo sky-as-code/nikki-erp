@@ -89,7 +89,7 @@ func roleSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		Field(
 			basemodel.DefineFieldId(RoleFieldOrgId).
 				Description(model.LangJson{"en-US": "If specified, the role only accepts entitlements whose org_unit_id belongs to this organization. " +
-					"Otherwise, the role only accepts entitlements with domain scope (org_unit_id is nil)",
+					"Otherwise, the role only accepts entitlements with tenant scope (org_unit_id is nil)",
 				}),
 		).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).

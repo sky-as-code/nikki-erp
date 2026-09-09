@@ -29,6 +29,9 @@ type engineSpec struct {
 // readability only; engines are created after every schema is registered. Junction tables never get
 // an entry: a _rel row is configured through its owner, so it has no route and no IAM resource row.
 var engineSpecs = []engineSpec{
+	// The fulfillment policy catalogue, which channels and points name a default from.
+	salesFulfillmentMethodEngineSpec(),
+
 	salesChannelEngineSpec(),
 	salesPointEngineSpec(),
 	salesOrderEngineSpec(),
@@ -63,8 +66,23 @@ var engineSpecs = []engineSpec{
 	salesFulfillmentRequestEngineSpec(),
 	salesFulfillmentRequestLineEngineSpec(),
 
+	// Order fulfillments and their items: what a kiosk owes a customer, and how much of it is left.
+	salesOrderFulfillmentEngineSpec(),
+	salesOrderFulfillmentItemEngineSpec(),
+
+	// The evidence of what a machine was asked to do and what it actually did.
+	salesFulfillmentAttemptEngineSpec(),
+	salesFulfillmentAttemptItemEngineSpec(),
+
+	// The record of where a delivery has been promised from, and who moved it.
+	salesFulfillmentTargetChangeEngineSpec(),
+
 	// The fiscal contract: what Sales asked an eInvoice provider for, and what came back.
 	salesFiscalRequestEngineSpec(),
+
+	// Billing instructions: who a sale is to be invoiced to, and the record of each try at issuing.
+	salesBillingInstructionEngineSpec(),
+	salesBillingIssuanceAttemptEngineSpec(),
 
 	// Operator price overrides.
 	salesManualDiscountEngineSpec(),
@@ -90,6 +108,18 @@ var engineSpecs = []engineSpec{
 // payment method.
 var junctionSchemas = []string{
 	models.SalesChannelPaymentRelSchemaName,
+	models.SalesChannelFulfillmentMethodSchemaName,
+}
+
+// The method catalogue is operator-managed master data, like a pricelist: an administrator creates
+// the policies their organization sells under. Its lifecycle is archive and unarchive alone — there
+// is no suspend, because a method is either offered to new orders or it is not, and the fulfillments
+// that already snapshotted it keep running either way.
+func salesFulfillmentMethodEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName:    models.SalesFulfillmentMethodSchemaName,
+		DefineActions: defineSalesFulfillmentMethodActions,
+	}
 }
 
 func salesChannelEngineSpec() engineSpec {
@@ -106,13 +136,27 @@ func salesChannelEngineSpec() engineSpec {
 	}
 }
 
-// salesOrderEngineSpec serves the order, with apply_voucher as its only custom action. The
-// lifecycle actions wait for the state machines that would validate them; apply_voucher is safe
-// ahead of those because it moves no status.
+// salesOrderEngineSpec serves the order. The lifecycle actions wait for the state machines that
+// would validate them; apply_voucher is safe ahead of those because it moves no status, and party
+// assignment because it names who is party to a sale rather than moving the sale itself.
 func salesOrderEngineSpec() engineSpec {
 	return engineSpec{
-		SchemaName:    models.SalesOrderSchemaName,
-		DefineActions: defineSalesOrderVoucherActions,
+		SchemaName: models.SalesOrderSchemaName,
+		DefineActions: func(engine drif.DynamicResourceEngine) error {
+			// Two families of action on the same record: pricing and the parties to the sale.
+			// Declared separately because they answer to different permissions and seed rows.
+			return stdErr.Join(
+				defineSalesOrderVoucherActions(engine),
+				defineSalesOrderPartyActions(engine),
+				// Both read-only, and hung off the order rather than the fulfillment because both
+				// questions are asked about an order: a caller must be able to find out whether any
+				// fulfillment exists without already knowing its id.
+				defineSalesOrderFulfillmentViewActions(engine),
+				// Refunds are raised against the order too: a customer asking for their money back
+				// knows what they bought, not which delivery it became.
+				defineSalesOrderRefundActions(engine),
+			)
+		},
 	}
 }
 
@@ -219,11 +263,68 @@ func salesFulfillmentRequestLineEngineSpec() engineSpec {
 
 // The fiscal contract is read-only: a writable one could ask a tax authority for a document against
 // a sale that never happened, or mark an unissued request as issued.
+// A fulfillment is READ-ONLY to clients. It is created by confirming an order and moved only by the
+// fulfillment services, because every one of its columns is either a policy snapshot the customer
+// bought under or a status that must not move without the stock moving with it. A client able to
+// write fulfillment_status could declare goods delivered that never left a machine.
+func salesOrderFulfillmentEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName: models.SalesOrderFulfillmentSchemaName,
+
+		// The two write operations of the dispense loop hang here rather than on the attempt
+		// resource: both are about one DELIVERY, and a caller commanding a machine knows which
+		// delivery it means before any attempt exists to name.
+		DefineActions: defineSalesFulfillmentAttemptActions,
+	}
+}
+
+// Its items likewise: the quantities are recomputed from attempts and settled refunds, so a client
+// write would be overwritten at best and would credit a customer for undelivered goods at worst.
+func salesOrderFulfillmentItemEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesOrderFulfillmentItemSchemaName}
+}
+
+// An attempt is READ-ONLY to clients and written only by the attempt services. It is evidence about
+// a physical event: a client able to write one could claim a machine dispensed goods it never did,
+// which is the one lie the whole feature is built to make impossible.
+func salesFulfillmentAttemptEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesFulfillmentAttemptSchemaName}
+}
+
+func salesFulfillmentAttemptItemEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesFulfillmentAttemptItemSchemaName}
+}
+
+// A target change is an audit trail and therefore READ-only: it records something that already
+// happened, and a row a client could write or edit would be evidence of nothing. Rows are created
+// only by the reassignment operation, in the same transaction that moves the target.
+func salesFulfillmentTargetChangeEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesFulfillmentTargetChangeSchemaName}
+}
+
 func salesFiscalRequestEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName:    models.SalesFiscalRequestSchemaName,
 		DefineActions: defineSalesFiscalRequestActions,
 	}
+}
+
+// A billing instruction is client-creatable: recording that a buyer wants an invoice is how the
+// process starts, at a till or through back office. Its status is no_update, so the lifecycle runs
+// only through the actions below — a client that could write `ready` directly would be able to
+// release a document for issuance without the completeness check.
+func salesBillingInstructionEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName:    models.SalesBillingInstructionSchemaName,
+		DefineActions: defineSalesBillingInstructionActions,
+	}
+}
+
+// Issuance attempts are read-only: they are the evidence of whether a document was created,
+// including the indeterminate case where nobody knows. A writable attempt could fabricate a record
+// showing an invoice was issued, or erase the trace of one that may exist.
+func salesBillingIssuanceAttemptEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesBillingIssuanceAttemptSchemaName}
 }
 
 // A return is client-creatable, unlike a bill: raising one is how an agent starts the process. Its

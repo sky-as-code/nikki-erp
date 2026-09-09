@@ -1,0 +1,130 @@
+{
+	"name": "sales_fulfillment_attempt_item",
+	"label": "sales_fulfillment_attempt_item.label",
+	"table_name": "sales_fulfillment_attempt_items",
+	"should_build_db": true,
+	"record_label_field": "item_result",
+	"default_search_fields": ["failure_code"],
+	"search_indexes": [
+		{
+			"index_name": "sales_attempt_items_tid_attempt",
+			"fields": ["attempt_id"]
+		},
+		{
+			"index_name": "sales_attempt_items_tid_fulfil_item",
+			"fields": ["fulfillment_item_id"]
+		}
+	],
+	"composite_uniques": [
+		{
+			"index_name": "sales_attempt_items_tid_att_item",
+			"fields": ["attempt_id", "fulfillment_item_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "attempt_id",
+			"label": "fields.attempt_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The attempt this line of evidence belongs to."
+			}
+		},
+		{
+			"name": "fulfillment_item_id",
+			"label": "fields.fulfillment_item_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Which fulfillment item was attempted. Unique within the attempt: one try reports each item once, and a payload naming the same item twice is refused rather than summed, because the two entries could disagree and nothing could say which was right."
+			}
+		},
+		{
+			"name": "attempted_qty",
+			"label": "fields.attempted_qty",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "How much this try asked the executor for. Fixed when the attempt is created: it is what was requested, and a result that reports a different total is describing something other than what was asked."
+			}
+		},
+		{
+			"name": "dispensed_qty",
+			"label": "fields.dispensed_qty",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "How much physically reached the customer. This is the only quantity in the system that increases what a sale has delivered, and it is summed rather than incremented when the fulfillment item is recomputed, so a redelivered result cannot credit the same goods twice."
+			}
+		},
+		{
+			"name": "failed_qty",
+			"label": "fields.failed_qty",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "How much the executor could not hand over. It never reduces what is still owed: goods that failed to come out are still goods the customer paid for, and treating a failure as a delivery is the exact mistake this column exists to prevent. What it does feed is the failure policy, which decides whether to refund, wait, or park the shortfall."
+			}
+		},
+		{
+			"name": "item_result",
+			"label": "fields.item_result",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["pending", "success", "partial", "failure"]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"no_update": true,
+			"description": {
+				"en-US": "How this item ended, derived from the two quantities rather than asserted by the reporter: everything dispensed is success, nothing is failure, some of each is partial. Derived so a reporter cannot claim success while reporting a shortfall, which would settle a sale that still owes goods."
+			}
+		},
+		{
+			"name": "failure_code",
+			"label": "fields.failure_code",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "The executor's own machine-readable reason, such as a jammed slot. Kept unparsed and uninterpreted: Sales decides what a failure COSTS by policy, never by which fault the hardware reported, and a rule keyed on a device code would break with the next firmware."
+			}
+		},
+		{
+			"name": "failure_message",
+			"label": "fields.failure_message",
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": {
+				"en-US": "The human-readable form of the same, for an operator reading a log or a support agent explaining a shortfall to a customer."
+			}
+		}
+	],
+
+	"edges_to": [
+		{
+			"edge": "attempt",
+			"label": { "en-US": "Attempt" },
+			"type": "many:one",
+			"dest_schema": "sales_fulfillment_attempt",
+			"key_map": { "attempt_id": "id" }
+		},
+		{
+			"edge": "fulfillment_item",
+			"label": { "en-US": "Fulfillment item" },
+			"type": "many:one",
+			"dest_schema": "sales_order_fulfillment_item",
+			"key_map": { "fulfillment_item_id": "id" }
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

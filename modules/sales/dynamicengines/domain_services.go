@@ -13,6 +13,14 @@ import (
 // (mostly lifecycle transition rules). Each wraps the engine's own service rather than replacing it,
 // so ordinary CRUD still runs underneath. Must run after InitDynamicEngines.
 func InitDomainServices() error {
+	// The method service carries the archive guard: a method still named as a channel or point
+	// default cannot be withdrawn, because the configuration left behind would refuse every order.
+	if err := installDerivedService(models.SalesFulfillmentMethodSchemaName,
+		func(base drif.DynamicResourceService) drif.DynamicResourceService {
+			return services.NewSalesFulfillmentMethodDomainService(base)
+		}); err != nil {
+		return err
+	}
 	if err := installDerivedService(models.SalesChannelSchemaName,
 		func(base drif.DynamicResourceService) drif.DynamicResourceService {
 			return services.NewSalesChannelDomainService(base)
@@ -94,4 +102,21 @@ func installDerivedService(
 	}
 	engine.SetResourceService(derive(engine.ResourceService()))
 	return nil
+}
+
+// FulfillmentMethodService resolves the derived method service from its own engine on each call,
+// rather than being captured in a package var at Init. The engines are built after the ports are
+// pushed, so a var set alongside the ports would be nil for every request; this is a map lookup on
+// a registry that no longer changes once the module has started.
+//
+// A missing engine answers nil rather than an error, and resolution then finds no method. An order
+// that named one still hears why it was refused; an order that named none is treated as an ordinary
+// sale rather than failing to confirm because a machine-dispensing feature is not configured.
+func FulfillmentMethodService() *services.SalesFulfillmentMethodDomainServiceImpl {
+	engine, ok := dynamicresource.Registry().GetEngine(models.SalesFulfillmentMethodSchemaName)
+	if !ok {
+		return nil
+	}
+	derived, _ := engine.ResourceService().(*services.SalesFulfillmentMethodDomainServiceImpl)
+	return derived
 }

@@ -46,6 +46,7 @@ func TestActionsAreFullyDeclared(t *testing.T) {
 	actions = append(actions, billActions(t)...)
 	actions = append(actions, fiscalActions(t)...)
 	actions = append(actions, quotationActions(t)...)
+	actions = append(actions, partyActions(t)...)
 
 	for _, def := range actions {
 		if def.ActionName == "" {
@@ -76,6 +77,7 @@ func TestRecordActionsAreScopedToAnId(t *testing.T) {
 	actions = append(actions, billActions(t)...)
 	actions = append(actions, fiscalActions(t)...)
 	actions = append(actions, quotationActions(t)...)
+	actions = append(actions, partyActions(t)...)
 
 	collectionLevel := map[string]bool{
 		ActionResolve:     true,
@@ -110,6 +112,7 @@ func TestActionPermissionsAreSeeded(t *testing.T) {
 	actions = append(actions, billActions(t)...)
 	actions = append(actions, fiscalActions(t)...)
 	actions = append(actions, quotationActions(t)...)
+	actions = append(actions, partyActions(t)...)
 
 	for _, def := range actions {
 		if def.Permission == "" {
@@ -130,24 +133,24 @@ func seededActionCodes(t *testing.T) map[string]bool {
 
 	// Every Sales IAM migration, not just the first: reading only 1007002 would let an action seeded
 	// later pass this check while being unreachable in production.
-	migrations := []string{
-		"1007002_sales_iam.sql",
-		"1007006_sales_voucher_iam.sql",
-		"1007008_sales_bill_iam.sql",
-		"1007010_sales_payment_iam.sql",
-		"1007012_sales_fulfillment_iam.sql",
-		"1007014_sales_fiscal_iam.sql",
-		"1007016_sales_outbox_iam.sql",
-		"1007018_sales_quotation_iam.sql",
-		"1007020_sales_manual_discount_iam.sql",
+	//
+	// Matched by pattern rather than listed by name, because the incremental per-submodule migrations
+	// get folded back into 1007002_sales_iam.sql. A hardcoded list breaks on the consolidation and,
+	// worse, silently stops covering a file that is renamed rather than deleted.
+	pattern := filepath.Join("..", "..", "..", "scripts", "migrations", "*_sales*_iam.sql")
+	paths, err := filepath.Glob(pattern)
+	if err != nil {
+		t.Fatalf("listing the Sales IAM migrations: %v", err)
+	}
+	if len(paths) == 0 {
+		t.Fatalf("no Sales IAM migration matched %s; the migrations moved or were renamed", pattern)
 	}
 
 	codes := map[string]bool{}
-	for _, name := range migrations {
-		path := filepath.Join("..", "..", "..", "scripts", "migrations", name)
+	for _, path := range paths {
 		content, err := os.ReadFile(path)
 		if err != nil {
-			t.Fatalf("the Sales IAM migration %s must be readable from the test: %v", name, err)
+			t.Fatalf("the Sales IAM migration %s must be readable from the test: %v", path, err)
 		}
 		collectActionCodes(string(content), codes)
 	}
@@ -178,6 +181,15 @@ func orderActions(t *testing.T) []drif.DynamicActionDefinition {
 	engine := &captureEngine{}
 	if err := defineSalesOrderVoucherActions(engine); err != nil {
 		t.Fatalf("defineSalesOrderVoucherActions: %v", err)
+	}
+	return engine.defs
+}
+
+func partyActions(t *testing.T) []drif.DynamicActionDefinition {
+	t.Helper()
+	engine := &captureEngine{}
+	if err := defineSalesOrderPartyActions(engine); err != nil {
+		t.Fatalf("defineSalesOrderPartyActions: %v", err)
 	}
 	return engine.defs
 }

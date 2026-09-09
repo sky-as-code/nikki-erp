@@ -39,28 +39,28 @@ type ResourceApplicationServiceImpl struct {
 }
 
 func (this *ResourceApplicationServiceImpl) CreateResource(ctx corectx.Context, cmd itRes.CreateResourceCommand) (*itRes.CreateResourceResult, error) {
-	if cErr := assertPermission(ctx, "create", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "create", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itRes.CreateResourceResult{ClientErrors: *cErr}, nil
 	}
 	return this.resourceSvc.CreateResource(ctx, cmd)
 }
 
 func (this *ResourceApplicationServiceImpl) DeleteResource(ctx corectx.Context, cmd itRes.DeleteResourceCommand) (*itRes.DeleteResourceResult, error) {
-	if cErr := assertPermission(ctx, "delete", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "delete", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itRes.DeleteResourceResult{ClientErrors: *cErr}, nil
 	}
 	return this.resourceSvc.DeleteResource(ctx, cmd)
 }
 
 func (this *ResourceApplicationServiceImpl) ResourceExists(ctx corectx.Context, query itRes.ResourceExistsQuery) (*itRes.ResourceExistsResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itRes.ResourceExistsResult{ClientErrors: *cErr}, nil
 	}
 	return this.resourceSvc.ResourceExists(ctx, query)
 }
 
 func (this *ResourceApplicationServiceImpl) GetResource(ctx corectx.Context, query itRes.GetResourceQuery) (*itRes.GetResourceResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itRes.GetResourceResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[domain.Resource, *domain.Resource]{
@@ -73,13 +73,15 @@ func (this *ResourceApplicationServiceImpl) GetResource(ctx corectx.Context, que
 }
 
 func (this *ResourceApplicationServiceImpl) SearchResources(ctx corectx.Context, query itRes.SearchResourcesQuery) (*itRes.SearchResourcesResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itRes.SearchResourcesResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Resource, *domain.Resource]{
 		Action:        "search resources",
 		Schema:        this.resourceRepo.GetBaseRepo().Schema(),
-		DefaultFields: []string{models.ResourceFieldName, models.ResourceFieldDescription},
+		// Code is the identifier an entitlement expression names, so it ships by default; see
+		// the note in resourceaction_appservice.go.
+		DefaultFields: []string{models.ResourceFieldCode, models.ResourceFieldName, models.ResourceFieldDescription},
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.Resource]], error) {
 			return this.resourceSvc.SearchResources(ctx, query, corecrud.ServiceSearchOptions{
 				AfterValidationSuccess: fn,
@@ -89,7 +91,7 @@ func (this *ResourceApplicationServiceImpl) SearchResources(ctx corectx.Context,
 }
 
 func (this *ResourceApplicationServiceImpl) UpdateResource(ctx corectx.Context, cmd itRes.UpdateResourceCommand) (*itRes.UpdateResourceResult, error) {
-	if cErr := assertPermission(ctx, "update", c.ResourceIamResource, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "update", c.ResourceIamResource, c.ResourceScopeTenant); cErr != nil {
 		return &itRes.UpdateResourceResult{ClientErrors: *cErr}, nil
 	}
 	return this.resourceSvc.UpdateResource(ctx, cmd)

@@ -72,6 +72,50 @@
 			}
 		},
 		{
+			"name": "fulfillment_id",
+			"label": "fields.fulfillment_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The delivery this refund line answers for, when it came from one. Nullable because an ordinary goods return has no fulfillment behind it — the customer simply brought something back — and inventing a link would attribute a shop return to a machine that never ran."
+			}
+		},
+		{
+			"name": "fulfillment_item_id",
+			"label": "fields.fulfillment_item_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "Which item of that delivery. This is what lets a settled refund raise the fulfillment item's refunded_qty, so a customer paid back for goods a machine failed to dispense stops being owed them."
+			}
+		},
+		{
+			"name": "requested_qty",
+			"label": "fields.requested_qty",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "1000000000000",
+				"scale": 6
+			},
+			"description": {
+				"en-US": "How much this line asks to have refunded. Distinct from `quantity` beside it, which counts goods physically coming back: a refund_only line asks for money against goods that never arrived, so its quantity is zero while this is not."
+			}
+		},
+		{
+			"name": "refunded_qty",
+			"label": "fields.refunded_qty",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "1000000000000",
+				"scale": 6
+			},
+			"description": {
+				"en-US": "How much has actually been paid back, which is only ever raised by a leg that SETTLED. Creation is not success: until the money moves the customer is still owed either the goods or the cash, and counting a requested amount as refunded would close an order nobody has been paid for. Never exceeds requested_qty."
+			}
+		},
+		{
 			"name": "refund_amount",
 			"label": "fields.refund_amount",
 			"data_type": {

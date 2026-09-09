@@ -44,6 +44,9 @@ type InCodeModule interface {
 	Init() error
 	IsInternal() bool
 	Version() semver.SemVer
+	// ModelPrefix returns the prefix this module's schemas are named with, without a
+	// trailing separator - GenSql appends the "_" itself.
+	ModelPrefix() string
 }
 
 type DynamicModule interface {
@@ -55,6 +58,9 @@ type DynamicModule interface {
 	IsInternal() bool
 	RegisterModels() error
 	Version() semver.SemVer
+	// ModelPrefix returns the prefix this module's schemas are named with, without a
+	// trailing separator - GenSql appends the "_" itself.
+	ModelPrefix() string
 }
 
 type InCodeModuleAppStarted interface {

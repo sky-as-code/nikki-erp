@@ -107,6 +107,10 @@ ent-migration:
 		echo "Error: name parameter is required. Usage: make ent-migration module=<module_name> name=<name>"; \
 		exit 1; \
 	fi
+
+	@echo "Clearing '$(migration_dir_tmp)' before generating migration..."
+	@find "${cwd}scripts/migrations-tmp" -mindepth 1 -delete
+
 	atlas migrate diff $(name) \
 		--dir "$(migration_dir_tmp)" \
 		--config file://${cwd}scripts/atlas.hcl \

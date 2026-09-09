@@ -31,6 +31,8 @@ const (
 	SalesReturnFieldRefundStatus           = "refund_status"
 	SalesReturnFieldFiscalAdjustmentStatus = "fiscal_adjustment_status"
 	SalesReturnFieldReason                 = "reason"
+	SalesReturnFieldRefundReason           = "refund_reason"
+	SalesReturnFieldReturnType             = "return_type"
 	SalesReturnFieldInventoryDisposition   = "inventory_disposition"
 	SalesReturnFieldRefundTotal            = "refund_total"
 	SalesReturnFieldInventoryReference     = "inventory_reference"
@@ -53,6 +55,10 @@ const (
 	SalesReturnLineFieldSalesReturnId           = "sales_return_id"
 	SalesReturnLineFieldSalesOrderLineId        = "sales_order_line_id"
 	SalesReturnLineFieldQuantity                = "quantity"
+	SalesReturnLineFieldFulfillmentId           = "fulfillment_id"
+	SalesReturnLineFieldFulfillmentItemId       = "fulfillment_item_id"
+	SalesReturnLineFieldRequestedQty            = "requested_qty"
+	SalesReturnLineFieldRefundedQty             = "refunded_qty"
 	SalesReturnLineFieldRefundAmount            = "refund_amount"
 	SalesReturnLineFieldRefundTaxAmount         = "refund_tax_amount"
 	SalesReturnLineFieldRequiresInventoryReturn = "requires_inventory_return"
@@ -215,4 +221,80 @@ func SumCompletedRefunds(refunds []dmodel.DynamicFields) decimal.Decimal {
 		}
 	}
 	return total
+}
+
+func (this SalesReturn) GetRefundReason() *string {
+	return this.GetFieldData().GetString(SalesReturnFieldRefundReason)
+}
+
+func (this *SalesReturn) SetRefundReason(value *string) {
+	this.GetFieldData().SetString(SalesReturnFieldRefundReason, value)
+}
+
+func (this SalesReturn) GetReturnType() *string {
+	return this.GetFieldData().GetString(SalesReturnFieldReturnType)
+}
+
+func (this *SalesReturn) SetReturnType(value *string) {
+	this.GetFieldData().SetString(SalesReturnFieldReturnType, value)
+}
+
+// IsRefundOnly reports that no goods are coming back, so the inventory-return step must be skipped
+// entirely. A failed dispense is the case that needs it: the goods never reached the customer, and
+// asking Inventory to receive them would book stock that never moved.
+func (this SalesReturn) IsRefundOnly() bool {
+	value := this.GetReturnType()
+	return value != nil && SalesReturnType(*value) == SalesReturnTypeRefundOnly
+}
+
+// IsFulfillmentFailure reports that this refund was raised because a delivery failed, rather than
+// because somebody asked for one. It is the only kind that may exist with no customer request behind
+// it, which is why several guards read it rather than assuming a person is waiting.
+func (this SalesReturn) IsFulfillmentFailure() bool {
+	value := this.GetRefundReason()
+	return value != nil && SalesRefundReason(*value) == SalesRefundReasonFulfillmentFailure
+}
+
+func (this SalesReturnLine) GetFulfillmentId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesReturnLineFieldFulfillmentId)
+}
+
+func (this *SalesReturnLine) SetFulfillmentId(value *model.Id) {
+	this.GetFieldData().SetModelId(SalesReturnLineFieldFulfillmentId, value)
+}
+
+func (this SalesReturnLine) GetFulfillmentItemId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesReturnLineFieldFulfillmentItemId)
+}
+
+func (this *SalesReturnLine) SetFulfillmentItemId(value *model.Id) {
+	this.GetFieldData().SetModelId(SalesReturnLineFieldFulfillmentItemId, value)
+}
+
+func (this SalesReturnLine) GetRequestedQty() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(SalesReturnLineFieldRequestedQty)
+}
+
+func (this *SalesReturnLine) SetRequestedQty(value *decimal.Decimal) {
+	this.GetFieldData().SetDecimal(SalesReturnLineFieldRequestedQty, value)
+}
+
+func (this SalesReturnLine) GetRefundedQty() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(SalesReturnLineFieldRefundedQty)
+}
+
+func (this *SalesReturnLine) SetRefundedQty(value *decimal.Decimal) {
+	this.GetFieldData().SetDecimal(SalesReturnLineFieldRefundedQty, value)
+}
+
+// RefundQuantityRequested is what this line asks to have paid back. It falls back to the goods
+// quantity for a line written before refund-by-quantity existed, where the two were the same thing.
+func (this SalesReturnLine) RefundQuantityRequested() decimal.Decimal {
+	if value := this.GetRequestedQty(); value != nil && !value.IsZero() {
+		return *value
+	}
+	if value := this.GetQuantity(); value != nil {
+		return *value
+	}
+	return decimal.Zero
 }

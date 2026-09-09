@@ -15,6 +15,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 )
 
 // CreatePaymentCommand opens an order and asks its gateway to start collecting.
@@ -95,3 +96,48 @@ type RefundResultData struct {
 }
 
 type RefundResult = dyn.OpResult[RefundResultData]
+
+// GetOrderStatusQuery names the order to read back. OrderId and OrderCode identify it the same two
+// ways a refund does, and exactly one is needed; OrderId wins when both are given.
+type GetOrderStatusQuery struct {
+	OrderId   string `json:"order_id,omitempty"`
+	OrderCode string `json:"order_code,omitempty"`
+}
+
+// GetOrderStatusResultData is what a caller reconciling a payment needs to decide what to do.
+type GetOrderStatusResultData struct {
+	OrderId   string `json:"order_id"`
+	OrderCode string `json:"order_code"`
+
+	// Status is the order's own status — pending, processing, payment_success and the rest. A caller
+	// maps it onto its own vocabulary rather than this module inventing a shared one, because what
+	// "settled" means to a till is not what it means to a ledger.
+	Status string `json:"status"`
+
+	Amount       decimal.Decimal `json:"amount"`
+	RefundAmount decimal.Decimal `json:"refund_amount"`
+
+	// RefTransactionId is the gateway's identifier for the payment, once there is one. Empty while
+	// the order is still pending: it is issued when money actually moves, which is exactly why it
+	// cannot be the key a caller correlates on beforehand.
+	RefTransactionId string `json:"ref_transaction_id,omitempty"`
+}
+
+type GetOrderStatusResult = dyn.OpResult[GetOrderStatusResultData]
+
+// The order statuses a caller reading GetOrderStatusResultData.Status may see.
+//
+// They are re-exported here, beside the field that carries them, because the values are part of
+// this port's contract: a caller has to branch on them, and reaching into this module's domain
+// models to name them would couple it to a package it has no other business with. The definitions
+// stay in domain/models — these are aliases of the same constants, not a second set.
+const (
+	OrderStatusPending        = models.OrderStatusPending
+	OrderStatusProcessing     = models.OrderStatusProcessing
+	OrderStatusPaymentSuccess = models.OrderStatusPaymentSuccess
+	OrderStatusPaymentFailed  = models.OrderStatusPaymentFailed
+	OrderStatusCanceled       = models.OrderStatusCanceled
+	OrderStatusRefundSuccess  = models.OrderStatusRefundSuccess
+	OrderStatusRefundFailed   = models.OrderStatusRefundFailed
+	OrderStatusExpired        = models.OrderStatusExpired
+)

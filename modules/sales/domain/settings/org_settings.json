@@ -20,6 +20,14 @@
 			"metadata": { "allow_override": true }
 		},
 		{
+			"name": "invoice_issue_delay_minutes",
+			"label": "sales.settings.invoiceIssueDelayMinutes",
+			"description": "settings_desc.invoice_issue_delay_minutes",
+			"data_type": { "type": "int32", "min": 1, "max": 10080 },
+			"default_value": 120,
+			"metadata": { "allow_override": true }
+		},
+		{
 			"name": "allow_overpayment",
 			"label": "sales.settings.allowOverpayment",
 			"description": "settings_desc.allow_overpayment",

@@ -14,32 +14,32 @@ func NewOrganizationApplicationServiceImpl(
 	orgRepo it.OrganizationRepository,
 ) it.OrganizationAppService {
 	return &OrganizationApplicationServiceImpl{
-		orgSvc:      orgSvc,
-		orgRepo:     orgRepo,
+		orgSvc:  orgSvc,
+		orgRepo: orgRepo,
 	}
 }
 
 type OrganizationApplicationServiceImpl struct {
-	orgSvc      it.OrganizationDomainService
-	orgRepo     it.OrganizationRepository
+	orgSvc  it.OrganizationDomainService
+	orgRepo it.OrganizationRepository
 }
 
 func (this *OrganizationApplicationServiceImpl) CreateOrg(ctx corectx.Context, cmd it.CreateOrgCommand) (*it.CreateOrgResult, error) {
-	if cErr := assertPermission(ctx, "create", c.ResourceIamOrganization, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "create", c.ResourceIamOrganization, c.ResourceScopeTenant); cErr != nil {
 		return &it.CreateOrgResult{ClientErrors: *cErr}, nil
 	}
 	return this.orgSvc.CreateOrg(ctx, cmd)
 }
 
 func (this *OrganizationApplicationServiceImpl) DeleteOrg(ctx corectx.Context, cmd it.DeleteOrgCommand) (*it.DeleteOrgResult, error) {
-	if cErr := assertPermission(ctx, "delete", c.ResourceIamOrganization, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "delete", c.ResourceIamOrganization, c.ResourceScopeTenant); cErr != nil {
 		return &it.DeleteOrgResult{ClientErrors: *cErr}, nil
 	}
 	return this.orgSvc.DeleteOrg(ctx, cmd)
 }
 
 func (this *OrganizationApplicationServiceImpl) GetOrg(ctx corectx.Context, query it.GetOrgQuery) (*it.GetOrgResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamOrganization, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamOrganization, c.ResourceScopeTenant); cErr != nil {
 		return &it.GetOrgResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[models.Organization, *models.Organization]{
@@ -52,21 +52,21 @@ func (this *OrganizationApplicationServiceImpl) GetOrg(ctx corectx.Context, quer
 }
 
 func (this *OrganizationApplicationServiceImpl) OrgExists(ctx corectx.Context, query it.OrgExistsQuery) (*it.OrgExistsResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamOrganization, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamOrganization, c.ResourceScopeTenant); cErr != nil {
 		return &it.OrgExistsResult{ClientErrors: *cErr}, nil
 	}
 	return this.orgSvc.OrgExists(ctx, query)
 }
 
 func (this *OrganizationApplicationServiceImpl) ManageOrgUsers(ctx corectx.Context, cmd it.ManageOrgUsersCommand) (*it.ManageOrgUsersResult, error) {
-	if cErr := assertPermission(ctx, "manage_users", c.ResourceIamOrganization, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "manage_users", c.ResourceIamOrganization, c.ResourceScopeTenant); cErr != nil {
 		return &it.ManageOrgUsersResult{ClientErrors: *cErr}, nil
 	}
 	return this.orgSvc.ManageOrgUsers(ctx, cmd)
 }
 
 func (this *OrganizationApplicationServiceImpl) SearchOrgs(ctx corectx.Context, query it.SearchOrgsQuery) (*it.SearchOrgsResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamOrganization, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamOrganization, c.ResourceScopeTenant); cErr != nil {
 		return &it.SearchOrgsResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[models.Organization, *models.Organization]{
@@ -82,14 +82,14 @@ func (this *OrganizationApplicationServiceImpl) SearchOrgs(ctx corectx.Context, 
 }
 
 func (this *OrganizationApplicationServiceImpl) SetOrgIsArchived(ctx corectx.Context, cmd it.SetOrgIsArchivedCommand) (*it.SetOrgIsArchivedResult, error) {
-	if cErr := assertPermission(ctx, "set_archived", c.ResourceIamOrganization, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "set_archived", c.ResourceIamOrganization, c.ResourceScopeTenant); cErr != nil {
 		return &it.SetOrgIsArchivedResult{ClientErrors: *cErr}, nil
 	}
 	return this.orgSvc.SetOrgIsArchived(ctx, cmd)
 }
 
 func (this *OrganizationApplicationServiceImpl) UpdateOrg(ctx corectx.Context, cmd it.UpdateOrgCommand) (*it.UpdateOrgResult, error) {
-	if cErr := assertPermission(ctx, "update", c.ResourceIamOrganization, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "update", c.ResourceIamOrganization, c.ResourceScopeTenant); cErr != nil {
 		return &it.UpdateOrgResult{ClientErrors: *cErr}, nil
 	}
 	return this.orgSvc.UpdateOrg(ctx, cmd)

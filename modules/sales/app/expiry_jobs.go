@@ -28,19 +28,31 @@ const (
 	expiryPageSize = 200
 )
 
-// ExpiryJobs expires stale drafts and lapsed quotations.
+// ExpiryJobs expires stale drafts, lapsed quotations and lapsed fulfillment reservations.
 type ExpiryJobs struct {
 	settings itExt.EffectiveSettingsExtService
 	logger   logging.LoggerService
+
+	// reservations releases the stock of a lapsed fulfillment. Nil is supported: the fulfillment is
+	// still marked expired, so it stops being offered, and the hold is left for Inventory's own
+	// sweep to reclaim rather than the sale being stranded.
+	reservations itExt.FulfillmentReservationExtService
 
 	// now is injected so a test can drive the clock.
 	now func() time.Time
 }
 
 func NewExpiryJobs(
-	settings itExt.EffectiveSettingsExtService, logger logging.LoggerService,
+	settings itExt.EffectiveSettingsExtService,
+	reservations itExt.FulfillmentReservationExtService,
+	logger logging.LoggerService,
 ) *ExpiryJobs {
-	return &ExpiryJobs{settings: settings, logger: logger, now: time.Now}
+	return &ExpiryJobs{
+		settings:     settings,
+		reservations: reservations,
+		logger:       logger,
+		now:          time.Now,
+	}
 }
 
 func (this *ExpiryJobs) RegisterJobs(registry job.CronjobRegistry) error {
@@ -65,11 +77,23 @@ func (this *ExpiryJobs) Sweep(ctx corectx.Context) error {
 	quotations, err := services.ExpireLapsedQuotations(ctx, now, expiryPageSize)
 	if err != nil {
 		this.logError("sales expiry: expiring lapsed quotations failed", err)
-		return nil
-	}
-	if len(quotations.ExpiredQuotationIds) > 0 {
+	} else if len(quotations.ExpiredQuotationIds) > 0 {
 		this.logInfo("sales expiry: expired quotations",
 			len(quotations.ExpiredQuotationIds), 0)
+	}
+
+	// Releases the stock of a hold nobody claimed. It never refunds and never asks for an invoice:
+	// the customer keeps the entitlement and may reserve again, so an expiry that also took the
+	// money back would close a sale the customer has not finished making.
+	fulfillments, err := services.ExpireLapsedFulfillments(
+		ctx, now, expiryPageSize, this.reservations)
+	if err != nil {
+		this.logError("sales expiry: expiring lapsed fulfillment reservations failed", err)
+		return nil
+	}
+	if len(fulfillments.ExpiredFulfillmentIds) > 0 {
+		this.logInfo("sales expiry: expired fulfillment reservations",
+			len(fulfillments.ExpiredFulfillmentIds), 0)
 	}
 	return nil
 }

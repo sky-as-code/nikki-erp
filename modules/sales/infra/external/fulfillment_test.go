@@ -1,6 +1,8 @@
 package external
 
 import (
+	"time"
+
 	"testing"
 
 	"github.com/shopspring/decimal"
@@ -40,6 +42,11 @@ type stubTransfers struct {
 	calls []string
 
 	validatedWithKey string
+
+	sourceReservationResult *itStock.SourceReservationResult
+	sourceReservationErr    error
+	reservedForSource       itStock.SourceReservationRequest
+	reallocatedWith         itStock.ReservationReallocationRequest
 }
 
 func (this *stubTransfers) Create(
@@ -92,6 +99,46 @@ func (this *stubTransfers) CreateReturn(
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	this.calls = append(this.calls, "create_return")
 	return nil, nil
+}
+
+// The source-keyed reservation operations. Sales' adapter does not use them yet — the kiosk
+// fulfillment path calls them directly — but the port is one interface, so the stub implements them
+// to keep the compile-time assertion honest.
+func (this *stubTransfers) ReserveForSource(
+	ctx corectx.Context, request itStock.SourceReservationRequest,
+) (*itStock.SourceReservationResult, error) {
+	this.calls = append(this.calls, "reserve_for_source")
+	this.reservedForSource = request
+	return this.sourceReservationResult, this.sourceReservationErr
+}
+
+func (this *stubTransfers) ReleaseReservationBySource(
+	ctx corectx.Context, sourceType string, sourceId string,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	this.calls = append(this.calls, "release_by_source")
+	return this.unreserveResult, nil
+}
+
+func (this *stubTransfers) ReallocateReservation(
+	ctx corectx.Context, request itStock.ReservationReallocationRequest,
+) (*itStock.SourceReservationResult, error) {
+	this.calls = append(this.calls, "reallocate")
+	this.reallocatedWith = request
+	return this.sourceReservationResult, this.sourceReservationErr
+}
+
+func (this *stubTransfers) ExpireLapsedReservations(
+	ctx corectx.Context, asOf time.Time, limit int,
+) (int, error) {
+	this.calls = append(this.calls, "expire_lapsed")
+	return 0, nil
+}
+
+func (this *stubTransfers) ApplyFulfillmentResult(
+	ctx corectx.Context, request itStock.FulfillmentResultRequest,
+) (*itStock.FulfillmentResultResponse, error) {
+	this.calls = append(this.calls, "apply_fulfillment_result")
+	return &itStock.FulfillmentResultResponse{InventoryResultRef: request.EventId}, nil
 }
 
 // stubOperationTypes answers with whatever the deployment is pretending to have configured.

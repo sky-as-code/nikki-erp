@@ -39,6 +39,11 @@ func (*ContactsModule) Name() string {
 	return modconstants.ContactsModuleName
 }
 
+// ModelPrefix implements NikkiModule.
+func (*ContactsModule) ModelPrefix() string {
+	return modconstants.ContactsModuleName
+}
+
 // Deps implements NikkiModule.
 func (*ContactsModule) Deps() []string {
 	return []string{

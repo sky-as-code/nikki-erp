@@ -69,55 +69,15 @@ func (this *InvoiceDomainService) Issue(
 
 	var result *IssueResult
 	err := withInvoiceTransaction(ctx, func(tranxCtx corectx.Context) error {
-		invoice, err := findInvoiceById(tranxCtx, cmd.InvoiceId)
+		issued, innerErrs, err := this.issueWithin(tranxCtx, cmd.InvoiceId)
 		if err != nil {
 			return err
 		}
-		if invoice == nil {
-			appendFieldViolation(vErrs, models.InvoiceFieldId,
-				"paymentinvoice.invoice_not_found", "no invoice with id '"+cmd.InvoiceId+"'")
+		if innerErrs != nil && innerErrs.Count() > 0 {
+			vErrs.ConcatPtr(innerErrs)
 			return nil
 		}
-
-		// The status is re-read inside the transaction rather than trusted from a prior read, so
-		// two callers issuing the same draft at once cannot both pass this check.
-		if status := derefString(invoice.GetStatus()); status != models.InvoiceStatusDraft {
-			appendFieldViolation(vErrs, models.InvoiceFieldStatus,
-				"paymentinvoice.invoice_not_draft",
-				"only a draft may be issued; this invoice is '"+status+"'")
-			return nil
-		}
-
-		totals, err := this.recomputeLines(tranxCtx, cmd.InvoiceId, vErrs)
-		if err != nil || vErrs.Count() > 0 {
-			return err
-		}
-
-		issuedAt := time.Now().UTC()
-		number, err := allocateInvoiceNumber(tranxCtx, issuedAt.Year())
-		if err != nil {
-			return err
-		}
-
-		if err := writeInvoiceFields(tranxCtx, cmd.InvoiceId, dmodel.DynamicFields{
-			models.InvoiceFieldNumber:         number,
-			models.InvoiceFieldStatus:         models.InvoiceStatusIssued,
-			models.InvoiceFieldIssuedAt:       issuedAt,
-			models.InvoiceFieldSubtotalAmount: totals.Subtotal,
-			models.InvoiceFieldTaxAmount:      totals.Tax,
-			models.InvoiceFieldTotalAmount:    totals.Total,
-		}); err != nil {
-			return err
-		}
-
-		result = &IssueResult{
-			InvoiceId:      cmd.InvoiceId,
-			Number:         number,
-			IssuedAt:       issuedAt,
-			SubtotalAmount: totals.Subtotal,
-			TaxAmount:      totals.Tax,
-			TotalAmount:    totals.Total,
-		}
+		result = issued
 		return nil
 	})
 
@@ -125,6 +85,81 @@ func (this *InvoiceDomainService) Issue(
 		return nil, vErrs, err
 	}
 	return result, vErrs, nil
+}
+
+// issueWithin closes a draft inside a transaction the caller already opened.
+//
+// Split out of Issue so that raising a document from a source can reuse it: the draft, its lines and
+// the number have to be one atomic step, and a second copy of the closing logic would be a second
+// place for the totals or the numbering to go wrong.
+func (this *InvoiceDomainService) issueWithin(
+	ctx corectx.Context, invoiceId string,
+) (*IssueResult, *ft.ClientErrors, error) {
+	vErrs := ft.NewClientErrors()
+
+	invoice, err := findInvoiceById(ctx, invoiceId)
+	if err != nil {
+		return nil, nil, err
+	}
+	if invoice == nil {
+		appendFieldViolation(vErrs, models.InvoiceFieldId,
+			"paymentinvoice.invoice_not_found", "no invoice with id '"+invoiceId+"'")
+		return nil, vErrs, nil
+	}
+
+	// The status is re-read inside the transaction rather than trusted from a prior read, so two
+	// callers issuing the same draft at once cannot both pass this check.
+	if status := derefString(invoice.GetStatus()); status != models.InvoiceStatusDraft {
+		appendFieldViolation(vErrs, models.InvoiceFieldStatus,
+			"paymentinvoice.invoice_not_draft",
+			"only a draft may be issued; this invoice is '"+status+"'")
+		return nil, vErrs, nil
+	}
+
+	totals, err := this.recomputeLines(ctx, invoiceId, vErrs)
+	if err != nil || vErrs.Count() > 0 {
+		return nil, vErrs, err
+	}
+
+	issuedAt := time.Now().UTC()
+	number, err := allocateInvoiceNumber(ctx, issuedAt.Year())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := writeInvoiceFields(ctx, invoiceId, dmodel.DynamicFields{
+		models.InvoiceFieldNumber:         number,
+		models.InvoiceFieldStatus:         models.InvoiceStatusIssued,
+		models.InvoiceFieldIssuedAt:       issuedAt,
+		models.InvoiceFieldSubtotalAmount: totals.Subtotal,
+		models.InvoiceFieldTaxAmount:      totals.Tax,
+		models.InvoiceFieldTotalAmount:    totals.Total,
+	}); err != nil {
+		return nil, nil, err
+	}
+
+	return &IssueResult{
+		InvoiceId:      invoiceId,
+		Number:         number,
+		IssuedAt:       issuedAt,
+		SubtotalAmount: totals.Subtotal,
+		TaxAmount:      totals.Tax,
+		TotalAmount:    totals.Total,
+	}, vErrs, nil
+}
+
+// firstViolationMessage flattens a refusal into the one line a calling module can show. The full set
+// stays here: a caller reports why a document could not be raised, not this module's whole rule book.
+func firstViolationMessage(vErrs *ft.ClientErrors) string {
+	if vErrs == nil || vErrs.Count() == 0 {
+		return "the invoice was refused"
+	}
+	for _, violation := range *vErrs {
+		if message := violation.String(); message != "" {
+			return message
+		}
+	}
+	return "the invoice was refused"
 }
 
 // invoiceTotals is what the lines of one invoice come to.
@@ -170,13 +205,10 @@ func (this *InvoiceDomainService) recomputeLines(
 	}
 
 	for _, line := range lines {
-		quantity := int64(0)
-		if q := line.GetQuantity(); q != nil {
-			quantity = int64(*q)
-		}
+		quantity := derefDecimal(line.GetQuantity())
 		unitPrice := derefDecimal(line.GetUnitPrice())
 
-		amount := unitPrice.Mul(decimal.NewFromInt(quantity))
+		amount := unitPrice.Mul(quantity)
 		lineTax := amount.Mul(derefDecimal(line.GetTaxRatePercent())).Div(decimal.NewFromInt(100))
 
 		totals.Subtotal = totals.Subtotal.Add(amount)

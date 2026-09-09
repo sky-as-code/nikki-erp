@@ -27,21 +27,21 @@ type RoleRequestApplicationServiceImpl struct {
 }
 
 func (this *RoleRequestApplicationServiceImpl) CreateRoleRequest(ctx corectx.Context, cmd it.CreateRoleRequestCommand) (*it.CreateRoleRequestResult, error) {
-	if cErr := assertPermission(ctx, "create", c.ResourceIamGrantRequest, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "create", c.ResourceIamGrantRequest, c.ResourceScopeTenant); cErr != nil {
 		return &it.CreateRoleRequestResult{ClientErrors: *cErr}, nil
 	}
 	return this.roleRequestSvc.CreateRoleRequest(ctx, cmd)
 }
 
 func (this *RoleRequestApplicationServiceImpl) DeleteRoleRequest(ctx corectx.Context, cmd it.DeleteRoleRequestCommand) (*it.DeleteRoleRequestResult, error) {
-	if cErr := assertPermission(ctx, "delete", c.ResourceIamGrantRequest, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "delete", c.ResourceIamGrantRequest, c.ResourceScopeTenant); cErr != nil {
 		return &it.DeleteRoleRequestResult{ClientErrors: *cErr}, nil
 	}
 	return this.roleRequestSvc.DeleteRoleRequest(ctx, cmd)
 }
 
 func (this *RoleRequestApplicationServiceImpl) GetRoleRequest(ctx corectx.Context, query it.GetRoleRequestQuery) (*it.GetRoleRequestResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamGrantRequest, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamGrantRequest, c.ResourceScopeTenant); cErr != nil {
 		return &it.GetRoleRequestResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[models.RoleRequest, *models.RoleRequest]{
@@ -54,19 +54,19 @@ func (this *RoleRequestApplicationServiceImpl) GetRoleRequest(ctx corectx.Contex
 }
 
 func (this *RoleRequestApplicationServiceImpl) RoleRequestExists(ctx corectx.Context, query it.RoleRequestExistsQuery) (*it.RoleRequestExistsResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamGrantRequest, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamGrantRequest, c.ResourceScopeTenant); cErr != nil {
 		return &it.RoleRequestExistsResult{ClientErrors: *cErr}, nil
 	}
 	return this.roleRequestSvc.RoleRequestExists(ctx, query)
 }
 
 func (this *RoleRequestApplicationServiceImpl) SearchRoleRequests(ctx corectx.Context, query it.SearchRoleRequestsQuery) (*it.SearchRoleRequestsResult, error) {
-	if cErr := assertPermission(ctx, "read", c.ResourceIamGrantRequest, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamGrantRequest, c.ResourceScopeTenant); cErr != nil {
 		return &it.SearchRoleRequestsResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[models.RoleRequest, *models.RoleRequest]{
-		Action:        "search role requests",
-		Schema:        this.roleRequestRepo.GetBaseRepo().Schema(),
+		Action: "search role requests",
+		Schema: this.roleRequestRepo.GetBaseRepo().Schema(),
 		DefaultFields: []string{
 			fmt.Sprintf("%s.%s", models.RoleReqEdgeRole, models.RoleFieldName),
 			fmt.Sprintf("%s.%s", models.RoleReqEdgeRequestor, models.UserFieldDisplayName),
@@ -84,7 +84,7 @@ func (this *RoleRequestApplicationServiceImpl) SearchRoleRequests(ctx corectx.Co
 }
 
 func (this *RoleRequestApplicationServiceImpl) UpdateRoleRequest(ctx corectx.Context, cmd it.UpdateRoleRequestCommand) (*it.UpdateRoleRequestResult, error) {
-	if cErr := assertPermission(ctx, "update", c.ResourceIamGrantRequest, c.ResourceScopeDomain); cErr != nil {
+	if cErr := assertPermission(ctx, "update", c.ResourceIamGrantRequest, c.ResourceScopeTenant); cErr != nil {
 		return &it.UpdateRoleRequestResult{ClientErrors: *cErr}, nil
 	}
 	return this.roleRequestSvc.UpdateRoleRequest(ctx, cmd)

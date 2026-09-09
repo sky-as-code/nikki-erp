@@ -201,6 +201,24 @@ func pointServiceOf(input drif.ProcessInput) (*services.SalesPointDomainServiceI
 // readStringParam avoids a bare type assertion: a repository or JSON round-trip can hand back a
 // different concrete type, and a bare assertion panics the request. A malformed value degrades to
 // the empty string, which the services reject by name.
+// readBoolParam reads a flag, treating anything absent or not a bool as false.
+//
+// A checkbox that did not arrive is an unticked one, and defaulting to false is the conservative
+// reading for every flag that grants rather than restricts.
+func readBoolParam(params dmodel.DynamicFields, field string) bool {
+	value, ok := params[field]
+	if !ok || value == nil {
+		return false
+	}
+	if typed, ok := value.(bool); ok {
+		return typed
+	}
+	if typed, ok := value.(*bool); ok && typed != nil {
+		return *typed
+	}
+	return false
+}
+
 func readStringParam(params dmodel.DynamicFields, field string) string {
 	value, ok := params[field]
 	if !ok || value == nil {

@@ -72,3 +72,32 @@ func NewInsufficientPermissionsError(requiredEntitlements []string) *ClientError
 		},
 	)
 }
+
+// NewUnauthenticatedError reports that no principal was established for an operation that
+// requires one.
+//
+// Distinct from insufficient permissions on purpose: that one means "we know who you are and you
+// may not", this one means "nothing authenticated you". Reporting the former for the latter sends
+// an administrator looking for an entitlement to grant when the real fault is a caller - usually
+// a job or a consumer - that never established a principal.
+func NewUnauthenticatedError() *ClientErrorItem {
+	return NewAuthorizationError(
+		ErrorKey("err_unauthenticated"),
+		"This operation requires an authenticated principal.",
+	)
+}
+
+// NewInvalidOrganizationContextError reports that the organization the caller is acting in does
+// not permit the record being reached for.
+//
+// Authorization is entitlement AND organization scope: holding `update:product:org` says nothing
+// about a product in an org the caller is not acting within.
+func NewInvalidOrganizationContextError(orgId string) *ClientErrorItem {
+	return NewAuthorizationError(
+		ErrorKey("err_invalid_organization_context"),
+		"The current organization context does not permit this operation: {{org_id}}",
+		map[string]any{
+			"org_id": orgId,
+		},
+	)
+}

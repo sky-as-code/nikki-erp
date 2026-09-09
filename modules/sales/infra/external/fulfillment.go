@@ -33,6 +33,11 @@ type fulfillmentAdapter struct {
 	// operationTypes resolves which operation type to raise a transfer against. The ids live in
 	// settings because they are part of the deployment's warehouse setup, not a fact about selling.
 	operationTypes operationTypeResolver
+
+	// availability answers the advisory "could this place supply this" question. A separate port
+	// from transfers because it takes no lock and changes nothing: mixing it into the movement
+	// service would invite a caller to read a number and treat it as a hold.
+	availability itStock.StockProductSummaryReader
 }
 
 // operationTypeResolver answers which inventory operation type a given intent uses. The settings-
@@ -339,4 +344,18 @@ func (this *settingsOperationTypes) IncomingOperationTypeId(
 	ctx corectx.Context,
 ) (string, error) {
 	return services.ResolveSalesPolicy(ctx, this.settings).IncomingOperationTypeId, nil
+}
+
+// newFulfillmentAdapter builds the adapter both fulfillment ports are served by. It exists so the
+// two providers cannot drift into configuring the same type differently.
+func newFulfillmentAdapter(
+	transfers itStock.StockTransferMovementService,
+	availability itStock.StockProductSummaryReader,
+	settings itExt.EffectiveSettingsExtService,
+) *fulfillmentAdapter {
+	return &fulfillmentAdapter{
+		transfers:      transfers,
+		availability:   availability,
+		operationTypes: &settingsOperationTypes{settings: settings},
+	}
 }

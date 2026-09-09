@@ -24,15 +24,15 @@ func TestBuildExpression(t *testing.T) {
 		scopeId  *model.Id
 		expected string
 	}{
-		{"exact domain", "create", "iam_user", ResourceScopeDomain, nil, "create:iam_user:domain"},
+		{"exact tenant", "create", "iam_user", ResourceScopeTenant, nil, "create:iam_user:tenant"},
 		{"exact private", "view", "iam_user", ResourceScopePrivate, nil, "view:iam_user:private"},
 		{"bare org", "create", "iam_user", ResourceScopeOrg, nil, "create:iam_user:org"},
 		{"org with id", "create", "iam_user", ResourceScopeOrg, idOf("ORG1"), "create:iam_user:org/ORG1"},
 		{"bare orgunit", "create", "iam_user", ResourceScopeOrgUnit, nil, "create:iam_user:orgunit"},
 		{"orgunit with id", "create", "iam_user", ResourceScopeOrgUnit, idOf("OU1"), "create:iam_user:orgunit/OU1"},
-		{"wildcard action", "", "iam_user", ResourceScopeDomain, nil, "*:iam_user:domain"},
-		{"wildcard resource", "create", "", ResourceScopeDomain, nil, "create:*:domain"},
-		{"wildcard both", "", "", ResourceScopeDomain, nil, "*:*:domain"},
+		{"wildcard action", "", "iam_user", ResourceScopeTenant, nil, "*:iam_user:tenant"},
+		{"wildcard resource", "create", "", ResourceScopeTenant, nil, "create:*:tenant"},
+		{"wildcard both", "", "", ResourceScopeTenant, nil, "*:*:tenant"},
 		{"explicit wildcard token", Wildcard, Wildcard, ResourceScopeOrg, idOf("ORG1"), "*:*:org/ORG1"},
 		{"empty scope id ignored", "create", "iam_user", ResourceScopeOrg, idOf(""), "create:iam_user:org"},
 	}
@@ -52,13 +52,13 @@ func TestParseExpression_Valid(t *testing.T) {
 		scope    ResourceScope
 		scopeId  *model.Id
 	}{
-		{"create:iam_user:domain", "create", "iam_user", ResourceScopeDomain, nil},
+		{"create:iam_user:tenant", "create", "iam_user", ResourceScopeTenant, nil},
 		{"view:iam_user:private", "view", "iam_user", ResourceScopePrivate, nil},
 		{"create:iam_user:org", "create", "iam_user", ResourceScopeOrg, nil},
 		{"create:iam_user:org/ORG1", "create", "iam_user", ResourceScopeOrg, idOf("ORG1")},
 		{"create:iam_user:orgunit/OU1", "create", "iam_user", ResourceScopeOrgUnit, idOf("OU1")},
-		{"*:iam_user:domain", Wildcard, "iam_user", ResourceScopeDomain, nil},
-		{"create:*:domain", "create", Wildcard, ResourceScopeDomain, nil},
+		{"*:iam_user:tenant", Wildcard, "iam_user", ResourceScopeTenant, nil},
+		{"create:*:tenant", "create", Wildcard, ResourceScopeTenant, nil},
 		{"*:*:*", Wildcard, Wildcard, ResourceScope(Wildcard), nil},
 	}
 
@@ -89,13 +89,13 @@ func TestParseExpression_Invalid(t *testing.T) {
 		"",
 		"create",
 		"create:iam_user",
-		"create:iam_user:domain:extra",
+		"create:iam_user:tenant:extra",
 		"::",
-		":iam_user:domain",
-		"create::domain",
+		":iam_user:tenant",
+		"create::tenant",
 		"create:iam_user:",
 		"create:iam_user:galaxy",
-		"create:iam_user:domain/ORG1",
+		"create:iam_user:tenant/ORG1",
 		"create:iam_user:private/ORG1",
 		"create:iam_user:org/",
 		"*:iam_user:*",
@@ -120,8 +120,8 @@ func TestParseExpression_RejectsOverlongSegments(t *testing.T) {
 	long := strings.Repeat("a", maxSegmentLength+1)
 
 	overlong := []string{
-		long + ":iam_user:domain",
-		"read:" + long + ":domain",
+		long + ":iam_user:tenant",
+		"read:" + long + ":tenant",
 		"read:iam_user:org/" + long,
 	}
 	for _, expr := range overlong {
@@ -131,7 +131,7 @@ func TestParseExpression_RejectsOverlongSegments(t *testing.T) {
 	}
 
 	// At the limit it is still valid: the bound rejects the absurd, not the long.
-	atLimit := "read:" + strings.Repeat("a", maxSegmentLength) + ":domain"
+	atLimit := "read:" + strings.Repeat("a", maxSegmentLength) + ":tenant"
 	_, err := ParseExpression(atLimit)
 	assert.NoError(t, err)
 }
@@ -141,10 +141,10 @@ func TestParsedExpression_HasWildcard(t *testing.T) {
 		expr     string
 		wildcard bool
 	}{
-		{"create:iam_user:domain", false},
+		{"create:iam_user:tenant", false},
 		{"create:iam_user:org/ORG1", false},
-		{"*:iam_user:domain", true},
-		{"create:*:domain", true},
+		{"*:iam_user:tenant", true},
+		{"create:*:tenant", true},
 		{"*:*:*", true},
 	}
 

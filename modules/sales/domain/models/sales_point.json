@@ -78,6 +78,32 @@
 			"description": {
 				"en-US": "The business lifecycle. Suspended stops new orders while leaving returns, refunds and history working (CR 14), which is what a temporarily offline kiosk needs. Distinct from is_archived. Written only by the suspend and activate actions."
 			}
+		},
+		{
+			"name": "default_fulfillment_method_id",
+			"label": "fields.default_fulfillment_method_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The fulfillment method orders raised at this point use when the order names none, overriding the channel's default. Null means defer to the channel, which is the ordinary case: a point sets this only when it differs from its peers. Must be one of the CHANNEL's allowed methods — the point may narrow the channel's choice, never widen it, or a kiosk could opt itself into a policy the channel forbids."
+			}
+		},
+		{
+			"name": "fulfillment_enabled",
+			"label": "fields.fulfillment_enabled",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"description": {
+				"en-US": "Whether this point may be named as the place a fulfillment happens. Default false, so a point becomes a fulfillment target only when somebody says so: the alternative would offer every newly created sales point as a collection location before its stock was set up. Distinct from status — a suspended point stops SELLING, while this stops it being where goods are handed over, and a kiosk can legitimately be one without the other."
+			}
+		},
+		{
+			"name": "inventory_location_id",
+			"label": "fields.inventory_location_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The Inventory location holding the stock this point hands over. A plain identifier with no edge and no foreign key: the row belongs to Inventory, and a constraint across that boundary would couple the two modules' migrations (the same rule as sales_channel_payment_rel.payment_method_id). Required in practice for any point with fulfillment_enabled, since a target with no location has no stock to reserve; enforced by the fulfillment services rather than by the schema, because the pairing is a business rule and not a column constraint."
+			}
 		}
 	],
 

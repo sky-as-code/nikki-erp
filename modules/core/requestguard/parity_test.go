@@ -39,18 +39,18 @@ func parityScenarios() []parityScenario {
 		{
 			name:     "owner is allowed without holding anything",
 			isOwner:  true,
-			required: PermFor("create", "iam_user", ResourceScopeDomain),
+			required: PermFor("create", "iam_user", ResourceScopeTenant),
 			expected: true,
 		},
 		{
 			name:     "no grants denies",
-			required: PermFor("create", "iam_user", ResourceScopeDomain),
+			required: PermFor("create", "iam_user", ResourceScopeTenant),
 			expected: false,
 		},
 		{
-			name:     "exact domain grant",
-			grants:   []string{"create:iam_user:domain"},
-			required: PermFor("create", "iam_user", ResourceScopeDomain),
+			name:     "exact tenant grant",
+			grants:   []string{"create:iam_user:tenant"},
+			required: PermFor("create", "iam_user", ResourceScopeTenant),
 			expected: true,
 		},
 		{
@@ -62,14 +62,14 @@ func parityScenarios() []parityScenario {
 		{
 			// D4 regression: the SQL matcher used to omit this candidate entirely,
 			// so the guard allowed and the matcher denied the same question.
-			name:     "action wildcard at domain answers an org question",
-			grants:   []string{"create:*:domain"},
+			name:     "action wildcard at tenant answers an org question",
+			grants:   []string{"create:*:tenant"},
 			required: PermFor("create", "iam_user", ResourceScopeOrg).InOrg(orgId()),
 			expected: true,
 		},
 		{
-			name:     "resource wildcard at domain answers an org question",
-			grants:   []string{"*:iam_user:domain"},
+			name:     "resource wildcard at tenant answers an org question",
+			grants:   []string{"*:iam_user:tenant"},
 			required: PermFor("create", "iam_user", ResourceScopeOrg).InOrg(orgId()),
 			expected: true,
 		},
@@ -154,19 +154,19 @@ func parityScenarios() []parityScenario {
 		{
 			name:     "a narrower grant does not satisfy a wider requirement",
 			grants:   []string{"create:iam_user:org/ORG1"},
-			required: PermFor("create", "iam_user", ResourceScopeDomain),
+			required: PermFor("create", "iam_user", ResourceScopeTenant),
 			expected: false,
 		},
 		{
 			name:     "the wrong action denies",
-			grants:   []string{"view:iam_user:domain"},
-			required: PermFor("delete", "iam_user", ResourceScopeDomain),
+			grants:   []string{"view:iam_user:tenant"},
+			required: PermFor("delete", "iam_user", ResourceScopeTenant),
 			expected: false,
 		},
 		{
 			name:     "the wrong resource denies",
-			grants:   []string{"create:iam_group:domain"},
-			required: PermFor("create", "iam_user", ResourceScopeDomain),
+			grants:   []string{"create:iam_group:tenant"},
+			required: PermFor("create", "iam_user", ResourceScopeTenant),
 			expected: false,
 		},
 	}
@@ -183,6 +183,9 @@ func guardAllows(scenario parityScenario) bool {
 	ctx.SetPermissions(corectx.ContextPermissions{
 		IsOwner:      scenario.isOwner,
 		Entitlements: grants,
+		// These scenarios all describe an authenticated caller; the unauthenticated case is
+		// covered separately in TestAssertPermissionFailsClosedWithoutAPrincipal.
+		Principal:    corectx.Principal{Kind: corectx.PrincipalKindUser, Id: model.Id("01JQZ0X0000000000000000001")},
 		UserOrgIds:   orgs,
 		OrgUnitId:    scenario.evalCtx.OrgUnitId,
 		OrgUnitOrgId: scenario.evalCtx.OrgUnitOrgId,

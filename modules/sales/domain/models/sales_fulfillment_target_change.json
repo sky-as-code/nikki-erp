@@ -1,0 +1,130 @@
+{
+	"name": "sales_fulfillment_target_change",
+	"label": "sales_fulfillment_target_change.label",
+	"table_name": "sales_fulfillment_target_changes",
+	"should_build_db": true,
+	"record_label_field": "reason",
+	"default_search_fields": ["reason"],
+	"search_indexes": [
+		{
+			"index_name": "sales_target_changes_tid_fulfil",
+			"fields": ["fulfillment_id", "changed_at"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "fulfillment_id",
+			"label": "fields.fulfillment_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The fulfillment whose target moved. Every field on this record is immutable: it is an audit trail of something that already happened, and a row that could be edited afterwards would be evidence of nothing."
+			}
+		},
+		{
+			"name": "from_outlet_id",
+			"label": "fields.from_outlet_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "Where the goods were promised from before this change. Nullable, because a fulfillment whose reservation had expired holds no target at all, and recording a blank origin is more honest than inventing the one it used to have."
+			}
+		},
+		{
+			"name": "to_outlet_id",
+			"label": "fields.to_outlet_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Where they are promised from now. Required: a change with no destination is not a change."
+			}
+		},
+		{
+			"name": "inventory_operation_ref",
+			"label": "fields.inventory_operation_ref",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"no_update": true,
+			"description": {
+				"en-US": "The reservation Inventory created at the new location. It is what ties a commercial decision to the physical hold that carried it out, so an operator investigating a shortfall can follow the goods rather than infer them. Opaque here and never interpreted."
+			}
+		},
+		{
+			"name": "reason",
+			"label": "fields.reason",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["customer_requested", "stock_unavailable", "operational", "reservation_expired"]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Why the target moved, in business terms rather than technical ones. It is kept because the same movement means different things: a customer choosing another kiosk is a service event, while an operator moving stock away from a failing machine is an operational one, and a support agent reading the history needs to tell them apart. 'reservation_expired' marks the case where the old hold had already lapsed and a fresh one was taken rather than moved."
+			}
+		},
+		{
+			"name": "actor_type",
+			"label": "fields.actor_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["user", "service", "system"]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What sort of actor made the change, taken from the request's own authentication and never accepted from a caller. A workload is distinguishable from a person here precisely because 'the kiosk moved it' and 'a support agent moved it' are different answers to a customer asking why their order changed machine."
+			}
+		},
+		{
+			"name": "actor_id",
+			"label": "fields.actor_id",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"no_update": true,
+			"description": {
+				"en-US": "Which actor, when one was authenticated. Nullable, because a change made by a scheduled sweep has no principal to name, and recording an empty id is more honest than attributing it to whoever happened to trigger the run."
+			}
+		},
+		{
+			"name": "changed_at",
+			"label": "fields.changed_at",
+			"data_type": "datetime",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "When it happened. Stamped by the server rather than accepted, so a history cannot be written out of order."
+			}
+		}
+	],
+
+	"edges_to": [
+		{
+			"edge": "fulfillment",
+			"label": { "en-US": "Fulfillment" },
+			"type": "many:one",
+			"dest_schema": "sales_order_fulfillment",
+			"key_map": { "fulfillment_id": "id" }
+		},
+		{
+			"edge": "from_outlet",
+			"label": { "en-US": "Previous sales point" },
+			"type": "many:one",
+			"dest_schema": "sales_point",
+			"key_map": { "from_outlet_id": "id" }
+		},
+		{
+			"edge": "to_outlet",
+			"label": { "en-US": "New sales point" },
+			"type": "many:one",
+			"dest_schema": "sales_point",
+			"key_map": { "to_outlet_id": "id" }
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

@@ -50,13 +50,13 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M2PVRCH00000000000000001', 'Purchase Configuration', 'purchase_configuration', 'Per-organization approval mode, threshold and modification policy', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000002', 'Purchase Sourcing Group', 'purchase_sourcing_group', 'Technical grouping of purchase orders being compared as alternatives', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000003', 'Purchase Agreement', 'purchase_agreement', 'Blanket orders and purchase templates agreed with a vendor', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000004', 'Purchase Agreement Line', 'purchase_agreement_line', 'Committed product, quantity and price on a purchase agreement', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000005', 'Purchase Order', 'purchase_order', 'Requests for quotation and the purchase orders they become', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000006', 'Purchase Order Line', 'purchase_order_line', 'Product, quantity and price on a purchase order', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000007', 'Purchase Audit Event', 'purchase_audit_event', 'Immutable record of every purchase order and agreement state change', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2PVRCH00000000000000001', 'Purchase Configuration', 'purchase_configuration', 'Per-organization approval mode, threshold and modification policy', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000002', 'Purchase Sourcing Group', 'purchase_sourcing_group', 'Technical grouping of purchase orders being compared as alternatives', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000003', 'Purchase Agreement', 'purchase_agreement', 'Blanket orders and purchase templates agreed with a vendor', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000004', 'Purchase Agreement Line', 'purchase_agreement_line', 'Committed product, quantity and price on a purchase agreement', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000005', 'Purchase Order', 'purchase_order', 'Requests for quotation and the purchase orders they become', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000006', 'Purchase Order Line', 'purchase_order_line', 'Product, quantity and price on a purchase order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000007', 'Purchase Audit Event', 'purchase_audit_event', 'Immutable record of every purchase order and agreement state change', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -137,7 +137,7 @@ BEGIN
 			"id", "name", "code", "description", "owner_type", "max_scope",
 			"min_scope", "created_at", "etag"
 		) VALUES
-		('01M2PVRCH00000000000000100', 'Vendor Product Price', 'purchase_vendor_product_price', 'What a vendor currently offers a product at, by quantity, unit and validity', 'nikkierp', 'domain', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2PVRCH00000000000000100', 'Vendor Product Price', 'purchase_vendor_product_price', 'What a vendor currently offers a product at, by quantity, unit and validity', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

@@ -33,6 +33,11 @@ func (*CoreModule) Name() string {
 	return coreconstants.CoreModuleName
 }
 
+// ModelPrefix implements DynamicModule.
+func (*CoreModule) ModelPrefix() string {
+	return coreconstants.CoreModuleName
+}
+
 // LabelKey implements NikkiModule.
 func (*CoreModule) LabelKey() string {
 	return "core.moduleLabel"

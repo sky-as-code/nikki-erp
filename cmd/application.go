@@ -64,27 +64,16 @@ func (this *Application) Start() {
 	this.config = config.ConfigSvcSingleton()
 }
 
-// Stop invokes OnAppStopping on every module that implements it, in reverse initialization
-// order, so a module drains before the modules it depends on go away.
-//
-// Every module shares the one deadline carried by ctx, and each is given the whole remaining
-// budget rather than an equal slice of it: modules that stop instantly - which is most of
-// them - cost nothing, and splitting the budget in advance would starve the one module that
-// actually has work to drain.
-//
-// A module that returns an error or overruns the deadline is logged and stepped over. Refusing
-// to continue would leave the remaining modules unstopped, which is strictly worse than a
-// partial drain.
+// Stop drains modules in reverse init order under a shared ctx deadline; a failing or
+// overrunning module is logged and skipped rather than aborting the rest.
 func (this *Application) Stop(ctx context.Context) {
 	if len(this.orderedMods) == 0 {
 		return
 	}
 	this.logger.Info("Start stopping modules", nil)
 
-	// The scheduler stops FIRST, before any module drains. A sweep that fired while its module was
-	// shutting down would write through half-torn-down dependencies, and stopping it here also
-	// means no new job starts during the drain. Shutdown blocks until jobs already running return,
-	// which is what keeps a half-finished sweep from being abandoned mid-write.
+	// Scheduler stops first so no sweep fires against a half-torn-down module; blocks until
+	// in-flight jobs return.
 	if err := job.GetCronjob().Stop(); err != nil {
 		this.logger.Error("the cron scheduler did not stop cleanly", err)
 	}
@@ -127,71 +116,31 @@ func (this *Application) GenSql(moduleName string, dialect string) string {
 		os.Exit(1)
 	}
 
-	prefixes := schemaPrefixesOf(moduleName)
-	queries, err := orm.GenCreateSql(registry, dialect, prefixes...)
+	prefix := this.buildModuleMap()[moduleName].(modules.DynamicModule).ModelPrefix() + "_"
+	queries, err := orm.GenCreateSql(registry, dialect, prefix)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to generate create SQL: %v\n", err)
 		os.Exit(1)
 	}
 
-	// A module that registered schemas but matched no prefix means schemaPrefixesOf is wrong
-	// for it, which would otherwise surface as a silently empty migration. A module that
-	// registered nothing at all (report, for example) legitimately produces no SQL.
+	// Schemas registered but none matched the prefix: ModelPrefix() is wrong for this module.
 	if len(queries) == 0 && registeredCount > 0 {
 		fmt.Fprintf(os.Stderr,
-			"module '%s' registered %d schema(s) but none match [%s]; "+
-				"fix schemaPrefixesOf in cmd/application.go\n",
-			moduleName, registeredCount, strings.Join(prefixes, ", "))
+			"module '%s' registered %d schema(s) but none match '%s'; "+
+				"fix ModelPrefix() in the module's index.go\n",
+			moduleName, registeredCount, prefix)
 		os.Exit(1)
 	}
 	return strings.Join(queries, ";\n")
 }
 
-// schemaPrefixesOf maps a module name to the prefixes its schemas are named with, so
-// -createsql emits only that module's tables while its dependencies stay registered as FK
-// targets.
-//
-// Most modules name their schemas "{module}_...", but not all, and a wrong prefix silently
-// drops tables from the migration rather than failing loudly. Two exceptions today:
-//
-//   - vending_machine names its schemas "vending_..."
-//   - vending_machine_new names its schemas "vdmc_..."
-//   - iam owns "authenticate_password_store" as well as its "iam_" schemas, left over from
-//     the Identity/Authenticate merge
-//
-// Add an entry when a new module's schema names do not all start with its module name.
-func schemaPrefixesOf(moduleName string) []string {
-	switch moduleName {
-	case "vending_machine":
-		return []string{"vending_"}
-	case "vending_machine_new":
-		// Named "vdmc_", not "vending_machine_new_": the engine uses a schema name as both the
-		// REST route path and the IAM resource code, so the names are kept short. This does not
-		// overlap with vending_machine above, whose schemas are all "vending_".
-		return []string{"vdmc_"}
-	case "iam":
-		return []string{"iam_", "authenticate_"}
-	default:
-		return []string{moduleName + "_"}
-	}
-}
-
-// registerModelsUpTo registers models for the target module and its transitive
-// dependencies, in dependency order.
-//
-// The normal app path does this via registerModelInOrder, but -createsql cannot reuse it:
-// that method logs, and GenSql runs with a nil logger (see runCreateSql). Registering only
-// the target module is not enough either — base schemas such as "core.basemodel.base_model"
-// are put into the builder registry by CoreModule.RegisterModels, and a JSON model that
-// names one in "extend_before" panics when it has not run yet.
-//
-// Only the dependency closure is registered. Selecting by position in the full topological
-// order would be non-deterministic: topologicalSort seeds its walk from a map range, so
-// unrelated modules land before the target in some runs and after it in others, making the
-// generated SQL differ between two runs of the same command.
-//
-// Returns how many schemas moduleName itself added to the registry, which lets the caller
-// tell "this module owns no tables" from "the prefix filter matched nothing".
+// registerModelsUpTo registers models for moduleName and its transitive dependencies only
+// (not registerModelInOrder's full set — GenSql runs with a nil logger, and base schemas
+// like "core.basemodel.base_model" must exist before a JSON model can extend them).
+// Registers the dependency closure, not a slice of the full topological order, since that
+// order is non-deterministic across runs (topologicalSort seeds from a map range).
+// Returns how many schemas moduleName itself added, so callers can distinguish "no tables"
+// from "prefix filter matched nothing".
 func (this *Application) registerModelsUpTo(moduleName string) (int, error) {
 	mods, err := this.moduleLoader.LoadModules()
 	if err != nil {
@@ -245,14 +194,9 @@ func countSchemas(registry *dmodel.SchemaRegistry) int {
 	return count
 }
 
-// dependencyClosure returns root and everything it transitively depends on, ordered
-// dependencies-first, so "core" registers its base schemas before any module that extends
-// them by name. Modules outside root's closure are excluded entirely.
-//
-// The result is deterministic for a given graph: the walk starts at root rather than at an
-// arbitrary map key, and each node's dependencies are visited in their declared order.
-// Each module appears exactly once, which matters because RegisterSchemaBuilderFn rejects
-// duplicate registration.
+// dependencyClosure returns root and its transitive deps only, dependencies-first (so base
+// schemas register before modules extending them), each module exactly once (repeat
+// registration is rejected), deterministically (walk starts at root, not a map key).
 func dependencyClosure(graph map[string][]string, root string) ([]string, error) {
 	visited := make(map[string]bool)
 	inProgress := make(map[string]bool)
@@ -372,16 +316,10 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 		}
 	}
 
-	// The cron scheduler starts LAST, once every module has registered its jobs.
-	//
-	// Modules register cron jobs from OnAppStarted, and gocron fires on the schedule from the
-	// moment it is started - so starting it any earlier would silently skip whatever a later
-	// module registered until the following tick. For an hourly sweep that is an hour of nothing
-	// happening, with no error anywhere to connect it to.
-	//
-	// A failure here is logged rather than fatal. The scheduler runs background maintenance -
-	// draining an outbox, expiring stale drafts - and an application that serves requests without
-	// them is degraded, while one that refuses to boot serves nothing at all.
+	// Starts last, after all modules register their cron jobs in OnAppStarted — gocron fires
+	// on schedule immediately, so starting earlier would silently skip a later module's jobs
+	// until the next tick. Failure is logged, not fatal: degraded background sweeps beat not
+	// booting at all.
 	if err := job.GetCronjob().Start(); err != nil {
 		this.logger.Error("failed to start the cron scheduler; background sweeps will not run", err)
 	}
@@ -397,10 +335,7 @@ func (this *Application) registerModelInOrder(moduleMap map[string]modules.InCod
 		return errors.Wrap(err, "failed to determine model registering order")
 	}
 
-	// No need to force "core" to the front: buildDependencyGraph makes every other module
-	// implicitly depend on it, and core itself depends on "apptrait", so the sort already
-	// yields ["apptrait", "core", ...]. Prepending it here would visit it twice and
-	// register its schemas twice.
+	// "core" is already first: every module implicitly depends on it via buildDependencyGraph.
 	for _, modName := range initOrder {
 		mod := moduleMap[modName]
 		if mod == nil {
@@ -484,7 +419,6 @@ func topologicalSort(graph map[string][]string) ([]string, error) {
 			}
 			visited[node] = true
 			temp[node] = false
-			// Changed: append to end instead of prepending
 			order = append(order, node)
 		}
 		return nil

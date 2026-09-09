@@ -76,6 +76,20 @@ const (
 	SyncMaxRetries core.ConfigName = "PAYMENTINVOICE.SYNC.MAX_RETRIES"
 )
 
+// PaymentSettledEventTopic is where this module announces that an order reached a verdict.
+//
+// Distinct from the SYNC keys above, which configure the HTTP callback to an ordering system that
+// asked for one. This is the in-process announcement any module in the same build can subscribe to,
+// and the two are independent: an order can have both, either, or neither.
+const PaymentSettledEventTopic core.ConfigName = "PAYMENTINVOICE.EVENT.PAYMENT_SETTLED_TOPIC"
+
+// DefaultPaymentSettledEventTopic is the fallback when PaymentSettledEventTopic is unset.
+//
+// Declared once here and read by both the publisher and every subscriber, so the two halves of a
+// pub/sub pair cannot drift apart over where they meet — the mistake the vending-machine module
+// made by declaring its topic twice.
+const DefaultPaymentSettledEventTopic = "nikkierp.paymentinvoice.events.payment_settled"
+
 // PaymentProfileEncryptionKey names the hex-encoded 32-byte AES key that a payment profile's
 // gateway credentials are encrypted with before they reach the database.
 //

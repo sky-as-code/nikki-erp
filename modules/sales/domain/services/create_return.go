@@ -51,6 +51,18 @@ const (
 type CreateReturnLine struct {
 	SalesOrderLineId string
 	Quantity         decimal.Decimal
+
+	// FulfillmentId and FulfillmentItemId link this line to the delivery it answers for, when it
+	// came from one. Both empty for an ordinary goods return, where the customer simply brought
+	// something back and no machine was involved.
+	FulfillmentId     string
+	FulfillmentItemId string
+
+	// RequestedQty is how much to refund, which is NOT always the goods quantity: a refund-only line
+	// asks for money against goods that never arrived, so it carries a requested amount while the
+	// goods quantity stays zero. Zero here means "same as Quantity", which is what an ordinary
+	// return means.
+	RequestedQty decimal.Decimal
 }
 
 type CreateReturnParams struct {
@@ -58,6 +70,15 @@ type CreateReturnParams struct {
 	Reason               string
 	InventoryDisposition string
 	Lines                []CreateReturnLine
+
+	// RefundReason categorises why the money is going back, for the paths that act on it. Empty
+	// defaults to customer_requested, which is what a person raising a return means.
+	RefundReason models.SalesRefundReason
+
+	// ReturnType decides whether the inventory step runs. Empty defaults to goods_return; a failed
+	// dispense passes refund_only, because the goods never reached the customer and Inventory has
+	// already dealt with them.
+	ReturnType models.SalesReturnType
 }
 
 type CreateReturnResult struct {
@@ -83,6 +104,12 @@ type CreateReturnResultLine struct {
 	RefundAmount            decimal.Decimal
 	RefundTaxAmount         decimal.Decimal
 	RequiresInventoryReturn bool
+
+	// Carried through from the request so the write has everything in one place. See
+	// CreateReturnLine for what each means.
+	FulfillmentId     string
+	FulfillmentItemId string
+	RequestedQty      decimal.Decimal
 }
 
 // CreateReturn takes the ORDER's lock, not the return's: the decision reads every line's returned
@@ -219,6 +246,7 @@ func priceReturnLines(
 	vErrs := ft.NewClientErrors()
 	priced := make([]CreateReturnResultLine, 0, len(params.Lines))
 	seen := make(map[string]bool, len(params.Lines))
+	refundOnly := returnTypeOf(params) == models.SalesReturnTypeRefundOnly
 
 	for _, requested := range params.Lines {
 		if seen[requested.SalesOrderLineId] {
@@ -229,7 +257,13 @@ func priceReturnLines(
 		}
 		seen[requested.SalesOrderLineId] = true
 
-		if !requested.Quantity.IsPositive() {
+		// A refund-only line asks for money against goods that never arrived, so its GOODS quantity
+		// is legitimately zero; what must be positive there is the requested refund quantity.
+		claimed := requested.Quantity
+		if refundOnly && claimed.IsZero() {
+			claimed = requested.RequestedQty
+		}
+		if !claimed.IsPositive() {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesReturnLineFieldQuantity,
 				ReasonReturnQuantityRange,
 				"the quantity to return must be greater than zero"))
@@ -275,12 +309,24 @@ func priceReturnLines(
 		}
 
 		refund, tax := refundAmountFor(line, requested.Quantity, policy.RoundingScale)
+		// A refund-only line never asks Inventory for anything, whatever the product's basis says:
+		// the goods never reached the customer, so there is nothing for them to bring back.
+		requiresInventoryReturn := RequiresInventoryReturn(basis) && !refundOnly
+
+		requestedQty := requested.RequestedQty
+		if requestedQty.IsZero() {
+			requestedQty = requested.Quantity
+		}
+
 		priced = append(priced, CreateReturnResultLine{
 			SalesOrderLineId:        requested.SalesOrderLineId,
 			Quantity:                requested.Quantity,
 			RefundAmount:            refund,
 			RefundTaxAmount:         tax,
-			RequiresInventoryReturn: RequiresInventoryReturn(basis),
+			RequiresInventoryReturn: requiresInventoryReturn,
+			FulfillmentId:           requested.FulfillmentId,
+			FulfillmentItemId:       requested.FulfillmentItemId,
+			RequestedQty:            requestedQty,
 		})
 	}
 
@@ -382,6 +428,8 @@ func writeReturn(
 			models.SalesReturnFieldRefundStatus:           result.RefundStatus,
 			models.SalesReturnFieldFiscalAdjustmentStatus: result.FiscalAdjustmentStatus,
 			models.SalesReturnFieldReason:                 params.Reason,
+			models.SalesReturnFieldRefundReason:           string(refundReasonOf(params)),
+			models.SalesReturnFieldReturnType:             string(returnTypeOf(params)),
 			models.SalesReturnFieldInventoryDisposition:   params.InventoryDisposition,
 			models.SalesReturnFieldRefundTotal:            result.RefundTotal,
 			models.SalesReturnFieldRequestedAt:            model.ModelDateTime(time.Now().UTC()),
@@ -404,9 +452,13 @@ func writeReturn(
 				models.SalesReturnLineFieldSalesReturnId:           returnId,
 				models.SalesReturnLineFieldSalesOrderLineId:        line.SalesOrderLineId,
 				models.SalesReturnLineFieldQuantity:                line.Quantity,
+				models.SalesReturnLineFieldRequestedQty:            line.RequestedQty,
+				models.SalesReturnLineFieldRefundedQty:             decimal.Zero,
 				models.SalesReturnLineFieldRefundAmount:            line.RefundAmount,
 				models.SalesReturnLineFieldRefundTaxAmount:         line.RefundTaxAmount,
 				models.SalesReturnLineFieldRequiresInventoryReturn: line.RequiresInventoryReturn,
+				models.SalesReturnLineFieldFulfillmentId:           nullableId(line.FulfillmentId),
+				models.SalesReturnLineFieldFulfillmentItemId:       nullableId(line.FulfillmentItemId),
 			}); err != nil {
 				return err
 			}
@@ -420,4 +472,32 @@ func writeReturn(
 	result.SalesReturnId = returnId
 	result.ReturnNumber = returnNumber
 	return nil
+}
+
+// refundReasonOf defaults to a customer having asked, which is what a person raising a return means.
+// The automatic path states fulfillment_failure explicitly, because it is the only kind of refund
+// that may exist with nobody having asked for one.
+func refundReasonOf(params CreateReturnParams) models.SalesRefundReason {
+	if params.RefundReason == "" {
+		return models.SalesRefundReasonCustomerRequested
+	}
+	return params.RefundReason
+}
+
+// returnTypeOf defaults to goods coming back, so an existing caller that knows nothing about
+// refund-only returns keeps the behaviour it had.
+func returnTypeOf(params CreateReturnParams) models.SalesReturnType {
+	if params.ReturnType == "" {
+		return models.SalesReturnTypeGoodsReturn
+	}
+	return params.ReturnType
+}
+
+// nullableId writes a real NULL rather than an empty string for an absent optional id, so a query
+// filtering on "has a fulfillment" is not fooled by a blank that is neither set nor null.
+func nullableId(value string) any {
+	if value == "" {
+		return nil
+	}
+	return value
 }

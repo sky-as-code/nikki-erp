@@ -7,6 +7,8 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/core/job"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
@@ -22,6 +24,10 @@ import (
 
 var ModuleSingleton modules.InCodeModule = &InventoryModule{}
 
+// OnAppStarted is found by a runtime type assertion, so this assertion is what turns a rename or a
+// signature change into a compile error rather than a silently unregistered sweep.
+var _ modules.InCodeModuleAppStarted = &InventoryModule{}
+
 type InventoryModule struct {
 }
 
@@ -32,6 +38,11 @@ func (*InventoryModule) LabelKey() string {
 
 // Name implements NikkiModule.
 func (*InventoryModule) Name() string {
+	return modconstants.InventoryModuleName
+}
+
+// ModelPrefix implements DynamicModule.
+func (*InventoryModule) ModelPrefix() string {
 	return modconstants.InventoryModuleName
 }
 
@@ -170,7 +181,14 @@ func initStockQuantService() error {
 	// The same instance answers what Stock holds at a location, consulted before a location is
 	// suspended or archived. Publishing it as a port keeps the dependency one-way: the warehouse
 	// services read this contract and never a stock table.
-	return deps.Register(func() itStock.LocationUsageReadService { return derived })
+	if err := deps.Register(func() itStock.LocationUsageReadService { return derived }); err != nil {
+		return err
+	}
+
+	// And it answers how much of a variant is on hand, reserved and available, per warehouse and
+	// per location. Implemented for some time but never published, which made it unreachable: a
+	// consumer asking "can this kiosk supply these items" had no contract to ask through.
+	return deps.Register(func() itStock.StockProductSummaryReader { return derived })
 }
 
 // initStockScrapService installs the derived scrap service on the Stock Scrap engine. Do Scrap
@@ -236,6 +254,19 @@ func initProductVariantService() error {
 //
 // Schemas must be registered referenced-before-referencing: an edge is resolved against the schema
 // registry at registration time.
+// OnAppStarted registers the reservation expiry sweep. It registers here rather than in Init so it
+// never ticks against a half-built container: the sweep resolves the movement port, which Init is
+// still installing.
+func (*InventoryModule) OnAppStarted() error {
+	return deps.Invoke(func(
+		transfers itStock.StockTransferMovementService,
+		cronjobs job.CronjobRegistry,
+		logger logging.LoggerService,
+	) error {
+		return app.NewReservationExpiryJobs(transfers, logger).RegisterJobs(cronjobs)
+	})
+}
+
 func (*InventoryModule) RegisterModels() error {
 	return errors.Join(
 		// Master data: referenced by the template, so registered first.

@@ -19,7 +19,8 @@ import (
 // row is configured through its owner's capabilities; exposing it as a CRUD resource would let a
 // client rewrite a channel's payment mapping without the validation that mapping requires.
 var junctionSchemas = map[string]bool{
-	"sales_channel_payment_rel": true,
+	"sales_channel_payment_rel":        true,
+	"sales_channel_fulfillment_method": true,
 }
 
 // Every registered schema is served by an engine, except the declared junctions. A schema with no

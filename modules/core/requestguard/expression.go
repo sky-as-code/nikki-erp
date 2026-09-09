@@ -141,7 +141,7 @@ func splitScopeSegment(segment string) (ResourceScope, *model.Id, error) {
 // IsKnownScope reports whether the scope is one this system evaluates.
 func IsKnownScope(scope ResourceScope) bool {
 	switch scope {
-	case ResourceScopeDomain, ResourceScopeOrg, ResourceScopeOrgUnit, ResourceScopePrivate:
+	case ResourceScopeTenant, ResourceScopeOrg, ResourceScopeOrgUnit, ResourceScopePrivate:
 		return true
 	}
 	return false
