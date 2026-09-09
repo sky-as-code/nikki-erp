@@ -1,0 +1,227 @@
+{
+	"name": "sales_order_fulfillment_item",
+	"label": "sales_order_fulfillment_item.label",
+	"table_name": "sales_order_fulfillment_items",
+	"should_build_db": true,
+	"record_label_field": "item_status",
+	"default_search_fields": [
+		"item_status"
+	],
+	"search_indexes": [
+		{
+			"index_name": "sales_fulfil_items_tid_fulfil",
+			"fields": [
+				"fulfillment_id"
+			]
+		},
+		{
+			"index_name": "sales_fulfil_items_tid_line",
+			"fields": [
+				"sales_order_line_id"
+			]
+		}
+	],
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
+	"fields": [
+		{
+			"name": "fulfillment_id",
+			"label": "fields.fulfillment_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The fulfillment this item belongs to."
+			}
+		},
+		{
+			"name": "sales_order_line_id",
+			"label": "fields.sales_order_line_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The ordered line whose goods this item delivers. Not unique per fulfillment on purpose: one line may be split across targets, and each split owes its own quantity."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot of what was sold. Copied from the line rather than read through it, because reservation, dispense and refund all key on the variant, and a line edited afterwards must not repoint goods that are already being held for a customer."
+			}
+		},
+		{
+			"name": "uom_id",
+			"label": "fields.uom_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot of the unit the quantities below are counted in. Carried so Inventory is asked to reserve and consume in the same unit the sale was priced in, without a second lookup that could disagree."
+			}
+		},
+		{
+			"name": "ordered_qty",
+			"label": "fields.ordered_qty",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "How much this item owes in total. Fixed at creation: the sale's quantity is what was paid for, and everything below is measured against it."
+			}
+		},
+		{
+			"name": "fulfilled_qty",
+			"label": "fields.fulfilled_qty",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "How much has actually reached the customer, recomputed as the sum of the successful attempt quantities rather than incremented. Recomputing is what makes a replayed dispense result harmless: adding to a running total twice would hand a customer credit for goods that left the machine once. A failed quantity never touches this, and therefore never reduces what is still owed."
+			}
+		},
+		{
+			"name": "refunded_qty",
+			"label": "fields.refunded_qty",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "How much has been refunded and settled, counting only refunds whose money actually went back. A raised refund is not a refunded quantity: until settlement succeeds the customer is still owed either the goods or the money, and treating the request as the outcome would close an order that nobody has been paid back for."
+			}
+		},
+		{
+			"name": "inventory_reservation_ref",
+			"label": "fields.inventory_reservation_ref",
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 100
+			},
+			"description": {
+				"en-US": "The reservation Inventory handed back when the stock was put aside for this item. An opaque cross-module reference and deliberately not a foreign key: Inventory owns the document, and a database-level link would stop either module being deployed on its own. Null until the stock is reserved, and again after an expiry releases it."
+			}
+		},
+		{
+			"name": "item_status",
+			"label": "fields.item_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"pending",
+					"reserved",
+					"partially_fulfilled",
+					"fulfilled",
+					"cancelled"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "pending",
+			"no_update": true,
+			"description": {
+				"en-US": "How far this one item has got. It carries no waiting_customer_action: waiting is a decision taken once for the whole fulfillment by the failure policy, and recording it per item would let two items disagree about whose turn it is to act. Moved only by the fulfillment domain services."
+			}
+		},
+		{
+			"name": "remaining_qty",
+			"label": "fields.remaining_qty",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"op": "subtract",
+					"args": [
+						{
+							"op": "subtract",
+							"args": [
+								{
+									"field": "ordered_qty"
+								},
+								{
+									"function": "coalesce",
+									"args": [
+										{
+											"field": "fulfilled_qty"
+										},
+										{
+											"value": 0
+										}
+									]
+								}
+							]
+						},
+						{
+							"function": "coalesce",
+							"args": [
+								{
+									"field": "refunded_qty"
+								},
+								{
+									"value": 0
+								}
+							]
+						}
+					]
+				}
+			},
+			"description": {
+				"en-US": "What the customer is still owed: ordered minus delivered minus successfully refunded. Derived rather than stored so it cannot drift from the two quantities it is made of. Reaching zero on every item of a fulfillment is the definition of completion, whatever the refunds did on the way."
+			}
+		}
+	],
+	"edges_to": [
+		{
+			"edge": "fulfillment",
+			"label": {
+				"en-US": "Fulfillment"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_order_fulfillment",
+			"key_map": {
+				"fulfillment_id": "id"
+			}
+		},
+		{
+			"edge": "sales_order_line",
+			"label": {
+				"en-US": "Sales order line"
+			},
+			"type": "many:one",
+			"dest_schema": "sales_order_line",
+			"key_map": {
+				"sales_order_line_id": "id"
+			}
+		}
+	],
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

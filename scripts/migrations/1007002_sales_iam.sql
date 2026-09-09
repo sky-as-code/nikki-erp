@@ -678,3 +678,165 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
+
+-- ---------------------------------------------------------------------------
+-- Merged from 1007005_sales_fulfillment_method_iam.sql
+-- ---------------------------------------------------------------------------
+
+-- IAM for the fulfillment method catalogue.
+--
+-- Five actions, the standard CRUD set plus set_archived, which is the permission BOTH the archive
+-- and unarchive routes answer to: withdrawing a policy from new orders and restoring it are the same
+-- power in reverse, and splitting them would let a role retire a method it could not put back.
+--
+-- There is no suspend action here, unlike sales_channel and sales_point. A method is either offered
+-- to new orders or it is not, and the fulfillments that already snapshotted it keep running either
+-- way, so a second "temporarily off" state would say nothing is_archived does not already say.
+--
+-- sales_channel_fulfillment_methods gets no resource row at all: the mapping is configured through
+-- the channel that owns it and nothing routes to it, exactly as sales_channel_payment_rel is
+-- handled. A resource row for it would advertise a permission over an endpoint that does not exist.
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_resources'
+	) THEN
+		INSERT INTO "iam_resources" (
+			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
+		) VALUES
+		('01M3SALES0000000000000009E', 'Sales Fulfillment Method', 'sales_fulfillment_method', 'The policy a sale is handed over under: how the goods reach the customer, and what happens when that fails', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_actions'
+	) THEN
+		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
+		('01M3SALES0000000000000009F', 'Create', 'create', NULL, '01M3SALES0000000000000009E', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000009G', 'Update', 'update', NULL, '01M3SALES0000000000000009E', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000009H', 'Delete', 'delete', NULL, '01M3SALES0000000000000009E', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000009J', 'Read', 'read', NULL, '01M3SALES0000000000000009E', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000009K', 'Set archived status', 'set_archived', 'Withdraw a fulfillment method from new orders, or bring a withdrawn one back; running fulfillments are unaffected either way', '01M3SALES0000000000000009E', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- Order fulfillments (SFL-016, SFL-024)
+-- ---------------------------------------------------------------------------
+
+-- IAM for what a kiosk owes a customer.
+--
+-- Read alone, for both resources. A fulfillment is created by confirming an order and moved only by
+-- the fulfillment services: every one of its columns is either a policy snapshot the customer bought
+-- under, or a status that must not move without the stock moving with it. Granting create or update
+-- would let a holder declare goods delivered that never left a machine, or rewrite the refund policy
+-- a sale was made under after the fact.
+--
+-- The item resource is separate rather than folded into its parent because the two answer different
+-- questions — "what is this delivery doing" against "how much of this product is still owed" — and a
+-- report over quantities should not require the power to read every fulfillment's target and policy.
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_resources'
+	) THEN
+		INSERT INTO "iam_resources" (
+			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
+		) VALUES
+		('01M3SALES0000000000000009M', 'Sales Order Fulfillment', 'sales_order_fulfillment', 'One delivery a sales order owes: where it is handed over, under which policy, and how far it has got', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000009N', 'Sales Order Fulfillment Item', 'sales_order_fulfillment_item', 'One product within a fulfillment: how much was ordered, delivered, refunded and still owed', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_actions'
+	) THEN
+		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
+		('01M3SALES0000000000000009P', 'Read', 'read', NULL, '01M3SALES0000000000000009M', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000009Q', 'Read', 'read', NULL, '01M3SALES0000000000000009N', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- Fulfillment attempts (SFL-026, SFL-031)
+-- ---------------------------------------------------------------------------
+
+-- IAM for the evidence of what a machine was asked to do and what it did.
+--
+-- The attempt records themselves are READ-only: they are evidence about a physical event, and a
+-- holder able to write one could claim a machine dispensed goods it never did, which is the one lie
+-- this whole feature is built to make impossible. Attempts are created and settled by the services
+-- behind the two actions below, never by CRUD.
+--
+-- Those two actions live on sales_order_fulfillment and answer its `update` permission rather than
+-- carrying their own: commanding a dispense and recording its result both change what a delivery
+-- owes, which is the same power over the same sale. A separate action code would let a role report
+-- results it could not cause, and the pairing is what keeps the two together.
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_resources'
+	) THEN
+		INSERT INTO "iam_resources" (
+			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
+		) VALUES
+		('01M3SALES0000000000000009R', 'Sales Fulfillment Attempt', 'sales_fulfillment_attempt', 'One try at handing a fulfillment''s goods over: which machine was asked, when, and how it ended', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000009S', 'Sales Fulfillment Attempt Item', 'sales_fulfillment_attempt_item', 'What one try reported about one product: how much came out, how much did not, and why', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_actions'
+	) THEN
+		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
+		('01M3SALES0000000000000009T', 'Read', 'read', NULL, '01M3SALES0000000000000009R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000009V', 'Read', 'read', NULL, '01M3SALES0000000000000009S', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- Fulfillment target changes (SFL-041)
+-- ---------------------------------------------------------------------------
+
+-- IAM for the record of where a delivery has been promised from.
+--
+-- Read alone. The rows are an audit trail: they record something that already happened, written in
+-- the same transaction that moved the target, and a row a holder could create or edit would be
+-- evidence of nothing. The power to MOVE a target is `update` on sales_order_fulfillment, which is
+-- where the reassignment action lives -- granting it here as well would let a role rewrite the
+-- history of a move it was not allowed to make.
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_resources'
+	) THEN
+		INSERT INTO "iam_resources" (
+			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
+		) VALUES
+		('01M3SALES0000000000000009W', 'Sales Fulfillment Target Change', 'sales_fulfillment_target_change', 'The history of where a delivery has been promised from: which points, why it moved, and who moved it', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_actions'
+	) THEN
+		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
+		('01M3SALES0000000000000009X', 'Read', 'read', NULL, '01M3SALES0000000000000009W', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;

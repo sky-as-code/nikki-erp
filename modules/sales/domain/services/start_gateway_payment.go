@@ -58,9 +58,9 @@ type StartGatewayPaymentResult struct {
 // The refusal reasons opening a gateway collection can produce, beyond the ones RecordPayment
 // already reports.
 const (
-	ReasonGatewayUnavailable   = "sales_payment.gateway_unavailable"
-	ReasonMethodHasNoGateway   = "sales_payment.method_has_no_gateway"
-	ReasonGatewayRefusedOrder  = "sales_payment.gateway_refused"
+	ReasonGatewayUnavailable    = "sales_payment.gateway_unavailable"
+	ReasonMethodHasNoGateway    = "sales_payment.method_has_no_gateway"
+	ReasonGatewayRefusedOrder   = "sales_payment.gateway_refused"
 	ReasonGatewayOrderNotOpened = "sales_payment.gateway_order_not_opened"
 )
 

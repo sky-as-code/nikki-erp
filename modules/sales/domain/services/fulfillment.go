@@ -288,9 +288,13 @@ func recordFulfillmentOutcome(
 	return err
 }
 
-// SyncFulfilledQuantities recomputes each line's fulfilled quantity from the COMPLETED requests.
-// Derived rather than incremented: an increment compounds any update that did not land, while a
-// recount is self-correcting.
+// SyncFulfilledQuantities recomputes each line's fulfilled quantity from everything that actually
+// delivered it. Derived rather than incremented: an increment compounds any update that did not
+// land, while a recount is self-correcting.
+//
+// TWO sources, unioned. A warehouse sale delivers through completed fulfillment REQUESTS; a kiosk
+// sale raises none at all and delivers through fulfillment ITEMS instead. One roll-up reads both, so
+// neither channel needs its own and an order mixing them still totals correctly.
 func SyncFulfilledQuantities(ctx corectx.Context, orderId string) error {
 	requests, err := searchBy(ctx,
 		models.SalesFulfillmentRequestSchemaName,
@@ -319,6 +323,16 @@ func SyncFulfilledQuantities(ctx corectx.Context, orderId string) error {
 			fulfilled[lineId] = fulfilled[lineId].Add(
 				decimalOf(line, models.SalesFulfillmentLineFieldQuantity))
 		}
+	}
+
+	// The kiosk half. Added rather than replacing, because one order may legitimately deliver some
+	// lines from a warehouse and others from a machine.
+	dispensed, err := deliveredByOrderLine(ctx, orderId)
+	if err != nil {
+		return err
+	}
+	for lineId, quantity := range dispensed {
+		fulfilled[lineId] = fulfilled[lineId].Add(quantity)
 	}
 
 	engine, err := engineFor(models.SalesOrderLineSchemaName)

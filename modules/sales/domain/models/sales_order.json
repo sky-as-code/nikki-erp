@@ -4,32 +4,68 @@
 	"table_name": "sales_orders",
 	"should_build_db": true,
 	"record_label_field": "order_number",
-	"default_search_fields": ["order_number", "customer_reference", "external_reference"],
+	"default_search_fields": [
+		"order_number",
+		"customer_reference",
+		"external_reference"
+	],
 	"search_indexes": [
-		{ "index_name": "sales_orders_tid_channel_status", "fields": ["sales_channel_id", "status"] },
-		{ "index_name": "sales_orders_tid_point_status", "fields": ["sales_point_id", "status"] },
-		{ "index_name": "sales_orders_tid_customer", "fields": ["customer_reference"] },
-		{ "index_name": "sales_orders_tid_billto", "fields": ["bill_to_party_id"] }
+		{
+			"index_name": "sales_orders_tid_channel_status",
+			"fields": [
+				"sales_channel_id",
+				"status"
+			]
+		},
+		{
+			"index_name": "sales_orders_tid_point_status",
+			"fields": [
+				"sales_point_id",
+				"status"
+			]
+		},
+		{
+			"index_name": "sales_orders_tid_customer",
+			"fields": [
+				"customer_reference"
+			]
+		},
+		{
+			"index_name": "sales_orders_tid_billto",
+			"fields": [
+				"bill_to_party_id"
+			]
+		}
 	],
 	"partial_uniques_strict": [
 		{
 			"index_name": "sales_orders_tid_channel_idem",
-			"not_null_fields": ["sales_channel_id"],
+			"not_null_fields": [
+				"sales_channel_id"
+			],
 			"nullable_field": "idempotency_key"
 		},
 		{
 			"index_name": "sales_orders_tid_channel_extref",
-			"not_null_fields": ["sales_channel_id"],
+			"not_null_fields": [
+				"sales_channel_id"
+			],
 			"nullable_field": "external_reference"
 		}
 	],
-	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
-
+	"extend_before": [
+		"core.basemodel.base_model",
+		"core.basemodel.org_base_model"
+	],
 	"fields": [
 		{
 			"name": "order_number",
 			"label": "fields.order_number",
-			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 50
+			},
 			"required_for_create": true,
 			"unique": true,
 			"no_update": true,
@@ -84,6 +120,41 @@
 			}
 		},
 		{
+			"name": "requested_fulfillment_method_id",
+			"label": "fields.requested_fulfillment_method_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The fulfillment method the client asked for when raising the order, or null to take a default. It records the REQUEST, not the outcome: resolution happens at confirm, and what was actually settled on lives as a snapshot on the fulfillment. Kept apart from that snapshot because a client naming a method it turns out not to qualify for must be refused with the reason, which is impossible if the request was silently overwritten by whatever was chosen instead."
+			}
+		},
+		{
+			"name": "requested_target_outlet_id",
+			"label": "fields.requested_target_outlet_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The sales point the client asked to collect from, or null. Mandatory before confirm only for a method whose strategy is customer_selected_outlet; for every other method the target is derived and this stays null. As with the method above, this is the request rather than the live target, which moves on reassignment and lives on the fulfillment."
+			}
+		},
+		{
+			"name": "customer_identity_mode",
+			"label": "fields.customer_identity_mode",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"anonymous",
+					"authenticated"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "anonymous",
+			"no_update": true,
+			"description": {
+				"en-US": "Whether the buyer's identity was verified server-side when this order was raised. Calculated by the server from the request's own authentication and never accepted from a client: a caller able to assert its own identity mode would be choosing which fulfillment policies it qualifies for, including whether an undelivered item is refunded automatically or held open for a customer nobody can identify. Defaults to anonymous because a walk-up sale is the safe reading of an absent principal, and because a method that requires an identified buyer must refuse rather than assume one. Immutable: it is a snapshot of the moment of sale, not a profile that can be filled in later."
+			}
+		},
+		{
 			"name": "sold_to_party_id",
 			"label": "fields.sold_to_party_id",
 			"data_type": "ulid",
@@ -110,7 +181,11 @@
 		{
 			"name": "crm_opportunity_reference",
 			"label": "fields.crm_opportunity_reference",
-			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 100
+			},
 			"description": {
 				"en-US": "The opportunity in an external CRM this sale closed, if any (BR 90). A free string rather than an id, and deliberately so: there is no CRM in this system, so there is nothing to validate against and nothing to join to. It exists so that a sale originating from a CRM can be traced back to it without waiting for a CRM integration to be built."
 			}
@@ -118,7 +193,11 @@
 		{
 			"name": "currency_code",
 			"label": "fields.currency_code",
-			"data_type": { "type": "string", "min": 3, "max": 3 },
+			"data_type": {
+				"type": "string",
+				"min": 3,
+				"max": 3
+			},
 			"required_for_create": true,
 			"no_update": true,
 			"description": {
@@ -130,7 +209,13 @@
 			"label": "fields.status",
 			"data_type": {
 				"type": "enum_string",
-				"values": ["draft", "confirmed", "processing", "completed", "cancelled"]
+				"values": [
+					"draft",
+					"confirmed",
+					"processing",
+					"completed",
+					"cancelled"
+				]
 			},
 			"required_for_create": true,
 			"default_value": "draft",
@@ -144,7 +229,14 @@
 			"label": "fields.payment_status",
 			"data_type": {
 				"type": "enum_string",
-				"values": ["unpaid", "partially_paid", "paid", "overpaid", "refunded", "partially_refunded"]
+				"values": [
+					"unpaid",
+					"partially_paid",
+					"paid",
+					"overpaid",
+					"refunded",
+					"partially_refunded"
+				]
 			},
 			"required_for_create": true,
 			"default_value": "unpaid",
@@ -158,7 +250,14 @@
 			"label": "fields.fulfillment_status",
 			"data_type": {
 				"type": "enum_string",
-				"values": ["pending", "not_required", "partially_fulfilled", "fulfilled", "returned", "partially_returned"]
+				"values": [
+					"pending",
+					"not_required",
+					"partially_fulfilled",
+					"fulfilled",
+					"returned",
+					"partially_returned"
+				]
 			},
 			"required_for_create": true,
 			"default_value": "pending",
@@ -172,7 +271,13 @@
 			"label": "fields.invoice_status",
 			"data_type": {
 				"type": "enum_string",
-				"values": ["not_requested", "requested", "issued", "failed", "cancelled"]
+				"values": [
+					"not_requested",
+					"requested",
+					"issued",
+					"failed",
+					"cancelled"
+				]
 			},
 			"required_for_create": true,
 			"default_value": "not_requested",
@@ -184,7 +289,12 @@
 		{
 			"name": "subtotal",
 			"label": "fields.subtotal",
-			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
 			"required_for_create": true,
 			"default_value": "0",
 			"description": {
@@ -194,7 +304,12 @@
 		{
 			"name": "discount_total",
 			"label": "fields.discount_total",
-			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
 			"required_for_create": true,
 			"default_value": "0",
 			"description": {
@@ -204,7 +319,12 @@
 		{
 			"name": "tax_total",
 			"label": "fields.tax_total",
-			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
 			"required_for_create": true,
 			"default_value": "0",
 			"description": {
@@ -214,7 +334,12 @@
 		{
 			"name": "grand_total",
 			"label": "fields.grand_total",
-			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
 			"required_for_create": true,
 			"default_value": "0",
 			"description": {
@@ -233,7 +358,11 @@
 		{
 			"name": "external_reference",
 			"label": "fields.external_reference",
-			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 100
+			},
 			"no_update": true,
 			"description": {
 				"en-US": "The creating system's own identifier for this sale — a kiosk's transaction code, a marketplace's order id. Unique within a channel when present, so that the same reference from two different channels does not collide. Immutable: it is how the originating system finds this order again."
@@ -242,7 +371,11 @@
 		{
 			"name": "idempotency_key",
 			"label": "fields.idempotency_key",
-			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 100
+			},
 			"no_update": true,
 			"description": {
 				"en-US": "The caller's own key for de-duplicating a retried create (BR 7.2, D-29). The (sales_channel_id, idempotency_key) partial unique index IS the mechanism, not a comment about one: a caller that times out and retries loses the race at the database rather than creating a second order. Strict rather than loose, because the many orders carrying no key at all must stay unconstrained."
@@ -284,27 +417,33 @@
 			}
 		}
 	],
-
 	"extend_after": [
 		"core.basemodel.archivable_model",
 		"core.basemodel.auditable_model",
 		"core.basemodel.versioned_model"
 	],
-
 	"edges_to": [
 		{
 			"edge": "sales_channel",
-			"label": { "en-US": "Sales channel" },
+			"label": {
+				"en-US": "Sales channel"
+			},
 			"type": "many:one",
 			"dest_schema": "sales_channel",
-			"key_map": { "sales_channel_id": "id" }
+			"key_map": {
+				"sales_channel_id": "id"
+			}
 		},
 		{
 			"edge": "sales_point",
-			"label": { "en-US": "Sales point" },
+			"label": {
+				"en-US": "Sales point"
+			},
 			"type": "many:one",
 			"dest_schema": "sales_point",
-			"key_map": { "sales_point_id": "id" }
+			"key_map": {
+				"sales_point_id": "id"
+			}
 		}
 	]
 }

@@ -327,6 +327,9 @@ CREATE TABLE "inventory_stock_transfers" (
   "chain_group_id" character varying NULL,
   "idempotency_key" character varying NULL,
   "note" character varying NULL,
+  "source_type" character varying NULL,
+  "source_id" character varying NULL,
+  "expires_at" timestamptz NULL,
   "org_id" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
@@ -342,10 +345,14 @@ CREATE TABLE "inventory_stock_transfers" (
 CREATE INDEX "invty_stock_trfs_backorder_of_id_idx" ON "inventory_stock_transfers" ("backorder_of_id");
 -- Create index "invty_stock_trfs_chain_group_id_idx" to table: "inventory_stock_transfers"
 CREATE INDEX "invty_stock_trfs_chain_group_id_idx" ON "inventory_stock_transfers" ("chain_group_id");
+-- Create index "invty_stock_trfs_expires_at_idx" to table: "inventory_stock_transfers"
+CREATE INDEX "invty_stock_trfs_expires_at_idx" ON "inventory_stock_transfers" ("expires_at");
 -- Create index "invty_stock_trfs_op_type_id_status_idx" to table: "inventory_stock_transfers"
 CREATE INDEX "invty_stock_trfs_op_type_id_status_idx" ON "inventory_stock_transfers" ("operation_type_id", "status");
 -- Create index "invty_stock_trfs_org_id_idem_key_idx" to table: "inventory_stock_transfers"
 CREATE INDEX "invty_stock_trfs_org_id_idem_key_idx" ON "inventory_stock_transfers" ("org_id", "idempotency_key");
+-- Create index "invty_stock_trfs_source_idx" to table: "inventory_stock_transfers"
+CREATE INDEX "invty_stock_trfs_source_idx" ON "inventory_stock_transfers" ("source_type", "source_id");
 -- Create index "invty_stock_trfs_status_sched_at_idx" to table: "inventory_stock_transfers"
 CREATE INDEX "invty_stock_trfs_status_sched_at_idx" ON "inventory_stock_transfers" ("status", "scheduled_at");
 -- Create "inventory_stock_moves" table
@@ -373,6 +380,7 @@ CREATE TABLE "inventory_stock_moves" (
   "remaining_quantity" numeric NULL,
   "remaining_value" numeric NULL,
   "currency_id" character varying NULL,
+  "source_item_id" character varying NULL,
   "org_id" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,

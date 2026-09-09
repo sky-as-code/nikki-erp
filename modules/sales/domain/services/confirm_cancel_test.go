@@ -1,11 +1,14 @@
 package services
 
 import (
+	"strings"
 	"testing"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
 // The state gates of confirm and cancel; both read the repository and are exercised live.
@@ -120,15 +123,69 @@ func TestACompletedOrderCannotBeCancelled(t *testing.T) {
 	}
 }
 
-// A draft cancel has nothing to undo. A confirmed one holds stock and possibly a pending payment,
-// and saying so stops a caller assuming the stock came back.
+// A draft cancel has nothing to undo. A confirmed one still leaves its payments committed, and
+// saying so stops a caller assuming the money came back.
 func TestOnlyAConfirmedCancelReportsPendingWork(t *testing.T) {
-	if pending := pendingCancelSteps(string(models.SalesOrderStatusDraft)); len(pending) != 0 {
+	if pending := pendingCancelSteps(string(models.SalesOrderStatusDraft), nil); len(pending) != 0 {
 		t.Errorf("a draft cancel has nothing outstanding, got %v", pending)
 	}
-	if pending := pendingCancelSteps(string(models.SalesOrderStatusConfirmed)); len(pending) == 0 {
-		t.Error("a confirmed cancel cannot release stock or payments yet and must say so")
+	if pending := pendingCancelSteps(string(models.SalesOrderStatusConfirmed), nil); len(pending) == 0 {
+		t.Error("a confirmed cancel cannot cancel payments and must say so")
 	}
+}
+
+// Stock release is no longer pending work: cancel performs it. It stays reportable only when there
+// is no inventory port to perform it through, because then the goods really are still held.
+func TestStockReleaseIsPendingOnlyWithoutAnInventoryPort(t *testing.T) {
+	unbound := pendingCancelSteps(string(models.SalesOrderStatusConfirmed), nil)
+	if !mentions(unbound, "release_stock_reservation") {
+		t.Errorf("with no inventory port the stock is still held and must be reported, got %v", unbound)
+	}
+
+	bound := pendingCancelSteps(string(models.SalesOrderStatusConfirmed), stubReservations{})
+	if mentions(bound, "release_stock_reservation") {
+		t.Errorf("cancel releases the reservation itself, so it is not pending, got %v", bound)
+	}
+	if !mentions(bound, "cancel_pending_payments") {
+		t.Errorf("payments are still not cancelled and must stay reported, got %v", bound)
+	}
+}
+
+func mentions(pending []string, step string) bool {
+	for _, entry := range pending {
+		if strings.Contains(entry, step) {
+			return true
+		}
+	}
+	return false
+}
+
+// stubReservations stands in for a bound inventory port. pendingCancelSteps only asks whether one
+// exists, so nothing here needs to do anything.
+type stubReservations struct{}
+
+func (stubReservations) ReserveForFulfillment(
+	corectx.Context, itExt.FulfillmentReservationRequest,
+) (*itExt.FulfillmentReservationResponse, error) {
+	return nil, nil
+}
+
+func (stubReservations) ReallocateReservation(
+	corectx.Context, itExt.FulfillmentReservationRequest,
+) (*itExt.FulfillmentReservationResponse, error) {
+	return nil, nil
+}
+
+func (stubReservations) ReleaseFulfillmentReservation(
+	corectx.Context, string,
+) (*itExt.FulfillmentReservationResponse, error) {
+	return nil, nil
+}
+
+func (stubReservations) CheckAvailabilityByLocations(
+	corectx.Context, itExt.AvailabilityQuery,
+) (*itExt.AvailabilityResult, error) {
+	return nil, nil
 }
 
 // Confirm refuses anything that is not a draft, and re-confirming is refused rather than

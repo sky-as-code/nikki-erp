@@ -168,4 +168,24 @@ type StockProductSummaryReader interface {
 	GetStockByLocation(
 		ctx corectx.Context, query GetStockByLocationQuery,
 	) (*GetStockByLocationResult, error)
+
+	// AvailableByLocations totals free stock for a batch of locations and variants at once, keyed
+	// location first then variant. A pair holding nothing is absent rather than zero-valued, and a
+	// caller reads a missing entry as zero.
+	//
+	// Advisory: it takes no lock, so the answer is true of the instant it was read and of no
+	// instant after it. Only a reservation secures stock, which is why this returns quantities and
+	// never a reference that could be mistaken for a hold.
+	AvailableByLocations(
+		ctx corectx.Context, query LocationAvailabilityQuery,
+	) (map[string]map[string]decimal.Decimal, error)
+}
+
+// LocationAvailabilityQuery asks about the cross product of these places and these products. Both
+// lists are required: the question is which of a known shortlist can supply a known basket, and an
+// unbounded scan of either side would be a different, far more expensive question.
+type LocationAvailabilityQuery struct {
+	OrgId       string
+	LocationIds []string
+	VariantIds  []string
 }

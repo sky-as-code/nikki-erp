@@ -1,0 +1,187 @@
+{
+	"name": "sales_order_fulfillment",
+	"label": "sales_order_fulfillment.label",
+	"table_name": "sales_order_fulfillments",
+	"should_build_db": true,
+	"record_label_field": "fulfillment_status",
+	"default_search_fields": ["fulfillment_status"],
+	"search_indexes": [
+		{
+			"index_name": "sales_order_fulfil_tid_order",
+			"fields": ["sales_order_id"]
+		},
+		{
+			"index_name": "sales_order_fulfil_tid_target_status",
+			"fields": ["target_outlet_id", "fulfillment_status"]
+		},
+		{
+			"index_name": "sales_order_fulfil_tid_status_expiry",
+			"fields": ["fulfillment_status", "reservation_expires_at"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_order_id",
+			"label": "fields.sales_order_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The order this fulfillment delivers for. One order may hold several, because a single sale can be split across targets or raised again after an expiry, and each carries its own status, reservation and attempt history. Immutable: moving a fulfillment to another order would move goods that a different customer paid for."
+			}
+		},
+		{
+			"name": "fulfillment_method_id",
+			"label": "fields.fulfillment_method_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Which method was resolved for this fulfillment. Kept as a reference for reporting and traceability only — every rule that governs execution is snapshotted onto the columns below, so that archiving or editing the method never changes how a live fulfillment behaves."
+			}
+		},
+		{
+			"name": "fulfillment_type",
+			"label": "fields.fulfillment_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"kiosk_dispense",
+					"carrier_shipping",
+					"internal_delivery",
+					"store_pickup",
+					"external_fulfillment"
+				]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot of the method's type, and the field that chooses which execution workflow runs. Copied rather than read through the method because it selects code paths: a fulfillment created as a kiosk dispense must keep running as one even if somebody later corrects the catalogue."
+			}
+		},
+		{
+			"name": "target_outlet_id",
+			"label": "fields.target_outlet_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The sales point expected to hand the goods over — a kiosk, in the only workflow implemented. Nullable, because a method that lets the customer choose has no target until they do. This is the one policy-adjacent field that legitimately moves after creation, but never by a plain update: reassignment is a business operation that must move the inventory reservation with it, or the goods would be promised in one place and held in another."
+			}
+		},
+		{
+			"name": "fulfillment_status",
+			"label": "fields.fulfillment_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"pending_reservation",
+					"reserved",
+					"ready",
+					"in_progress",
+					"partially_fulfilled",
+					"waiting_customer_action",
+					"expired",
+					"completed",
+					"cancelled"
+				]
+			},
+			"required_for_create": true,
+			"default_value": "pending_reservation",
+			"no_update": true,
+			"description": {
+				"en-US": "How far this fulfillment has got in delivering its own goods. Carries no refund state: a refund succeeds or fails on its own timeline, and folding it in would conflate 'the goods are still owed' with 'the money came back'. Moved only by the fulfillment domain services, which is what no_update expresses — a client that could set it would be able to declare goods delivered without anything leaving a machine."
+			}
+		},
+		{
+			"name": "max_attempts",
+			"label": "fields.max_attempts",
+			"data_type": { "type": "int32", "min": 1, "max": 100 },
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot of how many times one item may be attempted before its outstanding quantity is terminally failed. Null means no counter limit. Frozen at creation: raising the catalogue limit must not silently reopen fulfillments that were already resolved as terminally failed under the old one."
+			}
+		},
+		{
+			"name": "failure_action",
+			"label": "fields.failure_action",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["auto_refund", "customer_action_required", "manual_resolution"]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot of what happens to a terminally failed quantity. Frozen because it is the customer's remedy: they bought under a policy that said their money comes back automatically, and an operator editing the catalogue afterwards must not be able to take that away."
+			}
+		},
+		{
+			"name": "allow_target_change",
+			"label": "fields.allow_target_change",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot of whether the target may be reassigned after confirmation."
+			}
+		},
+		{
+			"name": "allow_partial_fulfillment",
+			"label": "fields.allow_partial_fulfillment",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot of whether some items may be handed over while others stay outstanding."
+			}
+		},
+		{
+			"name": "reservation_ttl_minutes",
+			"label": "fields.reservation_ttl_minutes",
+			"data_type": { "type": "int32", "min": 1, "max": 525600 },
+			"no_update": true,
+			"description": {
+				"en-US": "Snapshot of the reservation lifetime in minutes. Null means the reservation does not lapse on a timer. Kept alongside reservation_expires_at because a reassignment has to compute a fresh deadline under the policy the customer bought under, not the current catalogue's."
+			}
+		},
+		{
+			"name": "reservation_expires_at",
+			"label": "fields.reservation_expires_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the held stock returns to the sellable pool if nothing has claimed it. Null when the method sets no TTL. Recomputed on reassignment and on a fresh reservation after expiry, which is why it is updatable while its source policy is not."
+			}
+		}
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_order",
+			"label": { "en-US": "Sales order" },
+			"type": "many:one",
+			"dest_schema": "sales_order",
+			"key_map": { "sales_order_id": "id" }
+		},
+		{
+			"edge": "fulfillment_method",
+			"label": { "en-US": "Fulfillment method" },
+			"type": "many:one",
+			"dest_schema": "sales_fulfillment_method",
+			"key_map": { "fulfillment_method_id": "id" }
+		},
+		{
+			"edge": "target_outlet",
+			"label": { "en-US": "Target sales point" },
+			"type": "many:one",
+			"dest_schema": "sales_point",
+			"key_map": { "target_outlet_id": "id" }
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

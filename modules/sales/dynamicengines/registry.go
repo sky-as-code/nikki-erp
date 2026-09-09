@@ -66,6 +66,17 @@ var engineSpecs = []engineSpec{
 	salesFulfillmentRequestEngineSpec(),
 	salesFulfillmentRequestLineEngineSpec(),
 
+	// Order fulfillments and their items: what a kiosk owes a customer, and how much of it is left.
+	salesOrderFulfillmentEngineSpec(),
+	salesOrderFulfillmentItemEngineSpec(),
+
+	// The evidence of what a machine was asked to do and what it actually did.
+	salesFulfillmentAttemptEngineSpec(),
+	salesFulfillmentAttemptItemEngineSpec(),
+
+	// The record of where a delivery has been promised from, and who moved it.
+	salesFulfillmentTargetChangeEngineSpec(),
+
 	// The fiscal contract: what Sales asked an eInvoice provider for, and what came back.
 	salesFiscalRequestEngineSpec(),
 
@@ -137,6 +148,13 @@ func salesOrderEngineSpec() engineSpec {
 			return stdErr.Join(
 				defineSalesOrderVoucherActions(engine),
 				defineSalesOrderPartyActions(engine),
+				// Both read-only, and hung off the order rather than the fulfillment because both
+				// questions are asked about an order: a caller must be able to find out whether any
+				// fulfillment exists without already knowing its id.
+				defineSalesOrderFulfillmentViewActions(engine),
+				// Refunds are raised against the order too: a customer asking for their money back
+				// knows what they bought, not which delivery it became.
+				defineSalesOrderRefundActions(engine),
 			)
 		},
 	}
@@ -245,6 +263,45 @@ func salesFulfillmentRequestLineEngineSpec() engineSpec {
 
 // The fiscal contract is read-only: a writable one could ask a tax authority for a document against
 // a sale that never happened, or mark an unissued request as issued.
+// A fulfillment is READ-ONLY to clients. It is created by confirming an order and moved only by the
+// fulfillment services, because every one of its columns is either a policy snapshot the customer
+// bought under or a status that must not move without the stock moving with it. A client able to
+// write fulfillment_status could declare goods delivered that never left a machine.
+func salesOrderFulfillmentEngineSpec() engineSpec {
+	return engineSpec{
+		SchemaName: models.SalesOrderFulfillmentSchemaName,
+
+		// The two write operations of the dispense loop hang here rather than on the attempt
+		// resource: both are about one DELIVERY, and a caller commanding a machine knows which
+		// delivery it means before any attempt exists to name.
+		DefineActions: defineSalesFulfillmentAttemptActions,
+	}
+}
+
+// Its items likewise: the quantities are recomputed from attempts and settled refunds, so a client
+// write would be overwritten at best and would credit a customer for undelivered goods at worst.
+func salesOrderFulfillmentItemEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesOrderFulfillmentItemSchemaName}
+}
+
+// An attempt is READ-ONLY to clients and written only by the attempt services. It is evidence about
+// a physical event: a client able to write one could claim a machine dispensed goods it never did,
+// which is the one lie the whole feature is built to make impossible.
+func salesFulfillmentAttemptEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesFulfillmentAttemptSchemaName}
+}
+
+func salesFulfillmentAttemptItemEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesFulfillmentAttemptItemSchemaName}
+}
+
+// A target change is an audit trail and therefore READ-only: it records something that already
+// happened, and a row a client could write or edit would be evidence of nothing. Rows are created
+// only by the reassignment operation, in the same transaction that moves the target.
+func salesFulfillmentTargetChangeEngineSpec() engineSpec {
+	return engineSpec{SchemaName: models.SalesFulfillmentTargetChangeSchemaName}
+}
+
 func salesFiscalRequestEngineSpec() engineSpec {
 	return engineSpec{
 		SchemaName:    models.SalesFiscalRequestSchemaName,

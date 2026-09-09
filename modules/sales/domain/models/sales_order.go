@@ -14,34 +14,37 @@ import (
 const (
 	SalesOrderSchemaName = "sales_order"
 
-	SalesOrderFieldId                      = "id"
-	SalesOrderFieldOrgId                   = "org_id"
-	SalesOrderFieldOrderNumber             = "order_number"
-	SalesOrderFieldSalesChannelId          = "sales_channel_id"
-	SalesOrderFieldSalesPointId            = "sales_point_id"
-	SalesOrderFieldCustomerReference       = "customer_reference"
-	SalesOrderFieldAdjustedByOrderId       = "adjusted_by_order_id"
-	SalesOrderFieldAdjustsOrderId          = "adjusts_order_id"
-	SalesOrderFieldSoldToPartyId           = "sold_to_party_id"
-	SalesOrderFieldBillToPartyId           = "bill_to_party_id"
-	SalesOrderFieldPayerPartyId            = "payer_party_id"
-	SalesOrderFieldCrmOpportunityReference = "crm_opportunity_reference"
-	SalesOrderFieldCurrencyCode            = "currency_code"
-	SalesOrderFieldStatus                  = "status"
-	SalesOrderFieldPaymentStatus           = "payment_status"
-	SalesOrderFieldFulfillmentStatus       = "fulfillment_status"
-	SalesOrderFieldInvoiceStatus           = "invoice_status"
-	SalesOrderFieldSubtotal                = "subtotal"
-	SalesOrderFieldDiscountTotal           = "discount_total"
-	SalesOrderFieldTaxTotal                = "tax_total"
-	SalesOrderFieldGrandTotal              = "grand_total"
-	SalesOrderFieldExchangeOfReturnId      = "exchange_of_return_id"
-	SalesOrderFieldExternalReference       = "external_reference"
-	SalesOrderFieldIdempotencyKey          = "idempotency_key"
-	SalesOrderFieldConfirmedAt             = "confirmed_at"
-	SalesOrderFieldCompletedAt             = "completed_at"
-	SalesOrderFieldTaxSnapshot             = "tax_snapshot"
-	SalesOrderFieldCancelledAt             = "cancelled_at"
+	SalesOrderFieldId                           = "id"
+	SalesOrderFieldOrgId                        = "org_id"
+	SalesOrderFieldOrderNumber                  = "order_number"
+	SalesOrderFieldSalesChannelId               = "sales_channel_id"
+	SalesOrderFieldSalesPointId                 = "sales_point_id"
+	SalesOrderFieldCustomerReference            = "customer_reference"
+	SalesOrderFieldAdjustedByOrderId            = "adjusted_by_order_id"
+	SalesOrderFieldAdjustsOrderId               = "adjusts_order_id"
+	SalesOrderFieldRequestedFulfillmentMethodId = "requested_fulfillment_method_id"
+	SalesOrderFieldRequestedTargetOutletId      = "requested_target_outlet_id"
+	SalesOrderFieldCustomerIdentityMode         = "customer_identity_mode"
+	SalesOrderFieldSoldToPartyId                = "sold_to_party_id"
+	SalesOrderFieldBillToPartyId                = "bill_to_party_id"
+	SalesOrderFieldPayerPartyId                 = "payer_party_id"
+	SalesOrderFieldCrmOpportunityReference      = "crm_opportunity_reference"
+	SalesOrderFieldCurrencyCode                 = "currency_code"
+	SalesOrderFieldStatus                       = "status"
+	SalesOrderFieldPaymentStatus                = "payment_status"
+	SalesOrderFieldFulfillmentStatus            = "fulfillment_status"
+	SalesOrderFieldInvoiceStatus                = "invoice_status"
+	SalesOrderFieldSubtotal                     = "subtotal"
+	SalesOrderFieldDiscountTotal                = "discount_total"
+	SalesOrderFieldTaxTotal                     = "tax_total"
+	SalesOrderFieldGrandTotal                   = "grand_total"
+	SalesOrderFieldExchangeOfReturnId           = "exchange_of_return_id"
+	SalesOrderFieldExternalReference            = "external_reference"
+	SalesOrderFieldIdempotencyKey               = "idempotency_key"
+	SalesOrderFieldConfirmedAt                  = "confirmed_at"
+	SalesOrderFieldCompletedAt                  = "completed_at"
+	SalesOrderFieldTaxSnapshot                  = "tax_snapshot"
+	SalesOrderFieldCancelledAt                  = "cancelled_at"
 
 	SalesOrderEdgeSalesChannel = "sales_channel"
 	SalesOrderEdgeSalesPoint   = "sales_point"
@@ -339,4 +342,37 @@ func (this SalesOrder) GetExchangeOfReturnId() *model.Id {
 // either charge the customer twice or leave the return unrefunded.
 func (this SalesOrder) IsExchange() bool {
 	return this.GetExchangeOfReturnId() != nil
+}
+
+func (this SalesOrder) GetCustomerIdentityMode() *string {
+	return this.GetFieldData().GetString(SalesOrderFieldCustomerIdentityMode)
+}
+
+func (this *SalesOrder) SetCustomerIdentityMode(value *string) {
+	this.GetFieldData().SetString(SalesOrderFieldCustomerIdentityMode, value)
+}
+
+// IsCustomerAuthenticated reports whether the buyer was identified when the order was raised. Read
+// it rather than the column, so that the absence of the snapshot on an older record answers
+// "anonymous" — the reading that refuses a policy needing an identified buyer, instead of granting
+// one on a null.
+func (this SalesOrder) IsCustomerAuthenticated() bool {
+	mode := this.GetCustomerIdentityMode()
+	return mode != nil && CustomerIdentityMode(*mode) == CustomerIdentityModeAuthenticated
+}
+
+func (this SalesOrder) GetRequestedFulfillmentMethodId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesOrderFieldRequestedFulfillmentMethodId)
+}
+
+func (this *SalesOrder) SetRequestedFulfillmentMethodId(value *model.Id) {
+	this.GetFieldData().SetModelId(SalesOrderFieldRequestedFulfillmentMethodId, value)
+}
+
+func (this SalesOrder) GetRequestedTargetOutletId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesOrderFieldRequestedTargetOutletId)
+}
+
+func (this *SalesOrder) SetRequestedTargetOutletId(value *model.Id) {
+	this.GetFieldData().SetModelId(SalesOrderFieldRequestedTargetOutletId, value)
 }

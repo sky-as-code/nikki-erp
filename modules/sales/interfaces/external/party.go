@@ -1,8 +1,8 @@
 package external
 
 import (
-	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 // PartyExtService answers two questions about a party: may this sale name it, and who is it for the

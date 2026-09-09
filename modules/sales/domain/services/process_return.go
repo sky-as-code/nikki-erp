@@ -201,6 +201,15 @@ func runInventoryStep(
 		return "", nil
 	}
 
+	// A refund-only return has no goods coming back: they never reached the customer, and asking
+	// Inventory to receive them would book stock that never moved. Stated here rather than left to
+	// emerge from every line happening to opt out, so the intent survives somebody later changing
+	// what requires_inventory_return defaults to.
+	if models.NewSalesReturnFrom(salesReturn).IsRefundOnly() {
+		result.InventoryReturnStatus = string(models.SalesReturnStepNotRequired)
+		return "", nil
+	}
+
 	lines, err := returnLinesOf(ctx, stringOf(salesReturn, models.SalesReturnFieldId))
 	if err != nil {
 		return "", err
@@ -368,6 +377,17 @@ func runFiscalStep(
 		return nil
 	}
 
+	// CR §62: nothing in the fulfillment feature may trigger an invoice workflow. A refund raised
+	// because a machine could not hand goods over is a fulfillment event, not a commercial revision
+	// of the sale — the customer bought and paid for goods they simply never received, and asking a
+	// tax authority to adjust a document over a jammed slot would file a correction for a sale that
+	// happened exactly as invoiced. Whether such a refund ever warrants a fiscal adjustment is a
+	// question for the fiscal owners, and until they answer it this path stays shut.
+	if models.NewSalesReturnFrom(salesReturn).IsFulfillmentFailure() {
+		result.FiscalAdjustmentStatus = string(models.SalesReturnStepNotRequired)
+		return nil
+	}
+
 	bill, err := issuedBillOfOrder(ctx, stringOf(salesReturn, models.SalesReturnFieldSalesOrderId))
 	if err != nil {
 		return err
@@ -482,7 +502,15 @@ func writeReturnOutcome(
 		//
 		// It does NOT replace the returnable-quantity guard, which counts non-cancelled return lines
 		// and stays the authority — this is the order reflecting reality, not a new source of truth.
-		return applyReturnedQuantities(tranxCtx, salesReturn, result.Status)
+		if err := applyReturnedQuantities(tranxCtx, salesReturn, result.Status); err != nil {
+			return err
+		}
+
+		// What the legs actually paid, turned into quantities the customer no longer owes — and, for
+		// a refund raised against a delivery, propagated to that delivery. Inside the same
+		// transaction as the outcome above: a refund recorded as settled while the fulfillment still
+		// showed the goods owed would let a customer be paid AND retried.
+		return SyncRefundedQuantities(tranxCtx, salesReturn)
 	})
 }
 

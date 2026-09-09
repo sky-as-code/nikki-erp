@@ -12,5 +12,9 @@ func InitApplicationServices() error {
 		deps.Register(NewSalesChannelApplicationServiceImpl),
 		deps.Register(NewSalesPointApplicationServiceImpl),
 		deps.Register(NewChannelPaymentApplicationServiceImpl),
+
+		// The in-process selling port. Registered here rather than in infra/external because it is
+		// an application service: it authorizes, and every caller of it is subject to that check.
+		deps.Register(NewSalesOrderExtService),
 	)
 }

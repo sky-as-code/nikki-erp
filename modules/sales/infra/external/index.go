@@ -11,8 +11,8 @@ import (
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
-	itJob "github.com/sky-as-code/nikki-erp/modules/jobscheduler/interfaces/job"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
+	itJob "github.com/sky-as-code/nikki-erp/modules/jobscheduler/interfaces/job"
 	itInvoice "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/invoice"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
 	itMethod "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/paymentmethod"
@@ -73,15 +73,24 @@ func InitExternal() error {
 		},
 		func(
 			transfers itStock.StockTransferMovementService,
+			availability itStock.StockProductSummaryReader,
 			settings itSettings.EffectiveSettingsAppService,
 		) itExt.FulfillmentExtService {
 			// An adapter necessarily: Sales sends one commercial intent, while inventory needs a
 			// document sequenced through create, confirm, reserve and validate. Binding directly
 			// would put inventory's lifecycle into Sales, where it would go stale.
-			return &fulfillmentAdapter{
-				transfers:      transfers,
-				operationTypes: &settingsOperationTypes{settings: settings},
-			}
+			return newFulfillmentAdapter(transfers, availability, settings)
+		},
+		func(
+			transfers itStock.StockTransferMovementService,
+			availability itStock.StockProductSummaryReader,
+			settings itSettings.EffectiveSettingsAppService,
+		) itExt.FulfillmentReservationExtService {
+			// The same adapter behind a second port. Two ports rather than one because the callers
+			// differ: the confirm and cancel flows send commercial intents, while the fulfillment
+			// services hold and move stock for a named target, and a module needing only one of
+			// those should not have to depend on both.
+			return newFulfillmentAdapter(transfers, availability, settings)
 		},
 		func(methods itMethod.PaymentMethodAppService) itExt.PaymentMethodExtService {
 			// Direct hand-over: the upstream service has exactly the two methods the port declares.
@@ -133,6 +142,7 @@ func InitExternal() error {
 		dLock lock.DistributedLock,
 		products itExt.ProductVariantExtService,
 		fulfillment itExt.FulfillmentExtService,
+		reservations itExt.FulfillmentReservationExtService,
 		basis itExt.ProductPricingBasisExtService,
 		parties itExt.PartyExtService,
 	) error {
@@ -147,6 +157,9 @@ func InitExternal() error {
 		// Reprice needs tax and settings; confirm and cancel additionally need the lock, because
 		// neither is a single-row update and the etag cannot guard them.
 		dynamicengines.SetPricingPorts(tax, settings, dLock, products, fulfillment, basis)
+		// Binding this is what turns the kiosk half of a confirm on: without it a kiosk order still
+		// gets its fulfillment and its policy snapshot, but no stock is held for it.
+		dynamicengines.SetFulfillmentReservationPort(reservations)
 		return nil
 	})
 }

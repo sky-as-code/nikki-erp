@@ -107,6 +107,16 @@ type CreateSalesPointCommand struct {
 	ExternalReferenceId string `json:"external_reference_id"`
 	// ExternalReferenceType says what kind of record that id names, as "{module}.{resource}".
 	ExternalReferenceType string `json:"external_reference_type"`
+
+	// FulfillmentEnabled marks a point that can hand goods over itself — a vending machine, as
+	// opposed to a till that only takes money. A point registered without it can sell but can never
+	// be the target of a fulfillment.
+	FulfillmentEnabled bool `json:"fulfillment_enabled"`
+
+	// InventoryLocationId is where this point's stock is held. Required in practice whenever
+	// FulfillmentEnabled is set: a point that can dispense but names no location would confirm an
+	// order and then have nowhere to reserve from. An opaque cross-module id, never resolved here.
+	InventoryLocationId string `json:"inventory_location_id"`
 }
 
 type SalesPointData struct {

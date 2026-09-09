@@ -1,20 +1,40 @@
--- Create "sales_channels" table
-CREATE TABLE "sales_channels" (
+-- Create "sales_promotion_compatibilities" table
+CREATE TABLE "sales_promotion_compatibilities" (
   "id" character varying NOT NULL,
   "org_id" character varying NOT NULL,
-  "code" character varying NOT NULL,
-  "name" character varying NOT NULL,
-  "description" character varying NULL,
-  "managed_by_module" character varying NULL,
-  "status" character varying NOT NULL,
-  "is_system" boolean NOT NULL,
-  "is_archived" boolean NOT NULL,
+  "program_a_id" character varying NOT NULL,
+  "program_b_id" character varying NOT NULL,
+  "compatibility" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_channels_code_ukey" UNIQUE ("code")
+  CONSTRAINT "sales_promo_compat_tid_pair_ukey" UNIQUE ("program_a_id", "program_b_id")
 );
+-- Create index "sales_promo_compat_tid_b_idx" to table: "sales_promotion_compatibilities"
+CREATE INDEX "sales_promo_compat_tid_b_idx" ON "sales_promotion_compatibilities" ("program_b_id");
+-- Create "sales_order_events" table
+CREATE TABLE "sales_order_events" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "sales_order_id" character varying NOT NULL,
+  "entity_type" character varying NOT NULL,
+  "entity_id" character varying NOT NULL,
+  "action" character varying NOT NULL,
+  "actor_id" character varying NULL,
+  "from_status" character varying NULL,
+  "to_status" character varying NULL,
+  "reason" character varying NULL,
+  "metadata" jsonb NULL,
+  "created_at" timestamptz NOT NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "sales_order_evts_tid_actor_idx" to table: "sales_order_events"
+CREATE INDEX "sales_order_evts_tid_actor_idx" ON "sales_order_events" ("actor_id");
+-- Create index "sales_order_evts_tid_entity_idx" to table: "sales_order_events"
+CREATE INDEX "sales_order_evts_tid_entity_idx" ON "sales_order_events" ("entity_type", "entity_id");
+-- Create index "sales_order_evts_tid_order_idx" to table: "sales_order_events"
+CREATE INDEX "sales_order_evts_tid_order_idx" ON "sales_order_events" ("sales_order_id");
 -- Create "sales_billing_instructions" table
 CREATE TABLE "sales_billing_instructions" (
   "id" character varying NOT NULL,
@@ -72,17 +92,6 @@ CREATE INDEX "sales_billing_attempts_tid_instr_idx" ON "sales_billing_issuance_a
 CREATE INDEX "sales_billing_attempts_tid_provreq_idx" ON "sales_billing_issuance_attempts" ("provider_request_id");
 -- Create index "sales_billing_attempts_tid_status_idx" to table: "sales_billing_issuance_attempts"
 CREATE INDEX "sales_billing_attempts_tid_status_idx" ON "sales_billing_issuance_attempts" ("status");
--- Create "sales_channel_payment_rel" table
-CREATE TABLE "sales_channel_payment_rel" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NOT NULL,
-  "sales_channel_id" character varying NOT NULL,
-  "payment_method_id" character varying NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_channel_payment_rel_tid_chan_method_ukey" UNIQUE ("sales_channel_id", "payment_method_id")
-);
 -- Create "sales_integration_outbox" table
 CREATE TABLE "sales_integration_outbox" (
   "id" character varying NOT NULL,
@@ -110,43 +119,35 @@ CREATE INDEX "sales_outbox_tid_occurred_idx" ON "sales_integration_outbox" ("occ
 CREATE INDEX "sales_outbox_tid_published_idx" ON "sales_integration_outbox" ("published_at");
 -- Create index "sales_outbox_tid_type_idx" to table: "sales_integration_outbox"
 CREATE INDEX "sales_outbox_tid_type_idx" ON "sales_integration_outbox" ("event_type");
--- Create "sales_promotion_compatibilities" table
-CREATE TABLE "sales_promotion_compatibilities" (
+-- Create "sales_channels" table
+CREATE TABLE "sales_channels" (
   "id" character varying NOT NULL,
   "org_id" character varying NOT NULL,
-  "program_a_id" character varying NOT NULL,
-  "program_b_id" character varying NOT NULL,
-  "compatibility" character varying NOT NULL,
+  "code" character varying NOT NULL,
+  "name" character varying NOT NULL,
+  "description" character varying NULL,
+  "managed_by_module" character varying NULL,
+  "status" character varying NOT NULL,
+  "is_system" boolean NOT NULL,
+  "default_fulfillment_method_id" character varying NULL,
+  "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_promo_compat_tid_pair_ukey" UNIQUE ("program_a_id", "program_b_id")
+  CONSTRAINT "sales_channels_code_ukey" UNIQUE ("code")
 );
--- Create index "sales_promo_compat_tid_b_idx" to table: "sales_promotion_compatibilities"
-CREATE INDEX "sales_promo_compat_tid_b_idx" ON "sales_promotion_compatibilities" ("program_b_id");
--- Create "sales_order_events" table
-CREATE TABLE "sales_order_events" (
+-- Create "sales_channel_payment_rel" table
+CREATE TABLE "sales_channel_payment_rel" (
   "id" character varying NOT NULL,
   "org_id" character varying NOT NULL,
-  "sales_order_id" character varying NOT NULL,
-  "entity_type" character varying NOT NULL,
-  "entity_id" character varying NOT NULL,
-  "action" character varying NOT NULL,
-  "actor_id" character varying NULL,
-  "from_status" character varying NULL,
-  "to_status" character varying NULL,
-  "reason" character varying NULL,
-  "metadata" jsonb NULL,
+  "sales_channel_id" character varying NOT NULL,
+  "payment_method_id" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
-  PRIMARY KEY ("id")
+  "updated_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_channel_payment_rel_tid_chan_method_ukey" UNIQUE ("sales_channel_id", "payment_method_id")
 );
--- Create index "sales_order_evts_tid_actor_idx" to table: "sales_order_events"
-CREATE INDEX "sales_order_evts_tid_actor_idx" ON "sales_order_events" ("actor_id");
--- Create index "sales_order_evts_tid_entity_idx" to table: "sales_order_events"
-CREATE INDEX "sales_order_evts_tid_entity_idx" ON "sales_order_events" ("entity_type", "entity_id");
--- Create index "sales_order_evts_tid_order_idx" to table: "sales_order_events"
-CREATE INDEX "sales_order_evts_tid_order_idx" ON "sales_order_events" ("sales_order_id");
 -- Create "sales_points" table
 CREATE TABLE "sales_points" (
   "id" character varying NOT NULL,
@@ -157,6 +158,9 @@ CREATE TABLE "sales_points" (
   "external_reference_id" character varying NULL,
   "external_reference_type" character varying NULL,
   "status" character varying NOT NULL,
+  "default_fulfillment_method_id" character varying NULL,
+  "fulfillment_enabled" boolean NOT NULL,
+  "inventory_location_id" character varying NULL,
   "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
@@ -180,6 +184,9 @@ CREATE TABLE "sales_orders" (
   "customer_reference" character varying NULL,
   "adjusted_by_order_id" character varying NULL,
   "adjusts_order_id" character varying NULL,
+  "requested_fulfillment_method_id" character varying NULL,
+  "requested_target_outlet_id" character varying NULL,
+  "customer_identity_mode" character varying NOT NULL,
   "sold_to_party_id" character varying NULL,
   "bill_to_party_id" character varying NULL,
   "payer_party_id" character varying NULL,
@@ -325,6 +332,43 @@ CREATE TABLE "sales_bill_relations" (
 CREATE INDEX "sales_bill_rels_tid_source_idx" ON "sales_bill_relations" ("source_bill_id");
 -- Create index "sales_bill_rels_tid_target_idx" to table: "sales_bill_relations"
 CREATE INDEX "sales_bill_rels_tid_target_idx" ON "sales_bill_relations" ("target_bill_id");
+-- Create "sales_fulfillment_methods" table
+CREATE TABLE "sales_fulfillment_methods" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "code" character varying NOT NULL,
+  "name" character varying NOT NULL,
+  "description" character varying NULL,
+  "fulfillment_type" character varying NOT NULL,
+  "initial_target_selection" character varying NOT NULL,
+  "max_attempts" integer NULL,
+  "failure_action" character varying NOT NULL,
+  "allow_target_change" boolean NOT NULL,
+  "allow_partial_fulfillment" boolean NOT NULL,
+  "requires_authenticated_customer" boolean NOT NULL,
+  "reservation_ttl_minutes" integer NULL,
+  "is_archived" boolean NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_fulfillment_methods_code_ukey" UNIQUE ("code")
+);
+-- Create index "sales_fulfil_methods_tid_type_arch_idx" to table: "sales_fulfillment_methods"
+CREATE INDEX "sales_fulfil_methods_tid_type_arch_idx" ON "sales_fulfillment_methods" ("fulfillment_type", "is_archived");
+-- Create "sales_channel_fulfillment_methods" table
+CREATE TABLE "sales_channel_fulfillment_methods" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "sales_channel_id" character varying NOT NULL,
+  "fulfillment_method_id" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_chan_fulfil_methods_tid_ch_me_ukey" UNIQUE ("sales_channel_id", "fulfillment_method_id"),
+  CONSTRAINT "sales_channel_fulfillment_methods_fulfillment_method_id_fkey" FOREIGN KEY ("fulfillment_method_id") REFERENCES "sales_fulfillment_methods" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "sales_channel_fulfillment_methods_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
 -- Create "sales_combos" table
 CREATE TABLE "sales_combos" (
   "id" character varying NOT NULL,
@@ -397,6 +441,111 @@ CREATE INDEX "sales_fiscal_reqs_tid_original_idx" ON "sales_fiscal_requests" ("o
 CREATE INDEX "sales_fiscal_reqs_tid_provref_idx" ON "sales_fiscal_requests" ("provider_reference");
 -- Create index "sales_fiscal_reqs_tid_status_idx" to table: "sales_fiscal_requests"
 CREATE INDEX "sales_fiscal_reqs_tid_status_idx" ON "sales_fiscal_requests" ("status");
+-- Create "sales_order_fulfillments" table
+CREATE TABLE "sales_order_fulfillments" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "sales_order_id" character varying NOT NULL,
+  "fulfillment_method_id" character varying NOT NULL,
+  "fulfillment_type" character varying NOT NULL,
+  "target_outlet_id" character varying NULL,
+  "fulfillment_status" character varying NOT NULL,
+  "max_attempts" integer NULL,
+  "failure_action" character varying NOT NULL,
+  "allow_target_change" boolean NOT NULL,
+  "allow_partial_fulfillment" boolean NOT NULL,
+  "reservation_ttl_minutes" integer NULL,
+  "reservation_expires_at" timestamptz NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_order_fulfillments_fulfillment_method_id_fkey" FOREIGN KEY ("fulfillment_method_id") REFERENCES "sales_fulfillment_methods" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "sales_order_fulfillments_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "sales_order_fulfillments_target_outlet_id_fkey" FOREIGN KEY ("target_outlet_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- Create index "sales_order_fulfil_tid_order_idx" to table: "sales_order_fulfillments"
+CREATE INDEX "sales_order_fulfil_tid_order_idx" ON "sales_order_fulfillments" ("sales_order_id");
+-- Create index "sales_order_fulfil_tid_status_expiry_idx" to table: "sales_order_fulfillments"
+CREATE INDEX "sales_order_fulfil_tid_status_expiry_idx" ON "sales_order_fulfillments" ("fulfillment_status", "reservation_expires_at");
+-- Create index "sales_order_fulfil_tid_target_status_idx" to table: "sales_order_fulfillments"
+CREATE INDEX "sales_order_fulfil_tid_target_status_idx" ON "sales_order_fulfillments" ("target_outlet_id", "fulfillment_status");
+-- Create "sales_fulfillment_attempts" table
+CREATE TABLE "sales_fulfillment_attempts" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "fulfillment_id" character varying NOT NULL,
+  "attempt_no" integer NOT NULL,
+  "executor_outlet_id" character varying NOT NULL,
+  "attempt_status" character varying NOT NULL,
+  "external_correlation_id" character varying NULL,
+  "result_event_id" character varying NULL,
+  "result_payload_hash" character varying NULL,
+  "inventory_result_ref" character varying NULL,
+  "started_at" timestamptz NOT NULL,
+  "completed_at" timestamptz NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_fulfil_attempts_tid_fulfil_no_ukey" UNIQUE ("fulfillment_id", "attempt_no"),
+  CONSTRAINT "sales_fulfillment_attempts_executor_outlet_id_fkey" FOREIGN KEY ("executor_outlet_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "sales_fulfillment_attempts_fulfillment_id_fkey" FOREIGN KEY ("fulfillment_id") REFERENCES "sales_order_fulfillments" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- Create index "sales_fulfil_attempts_tid_event_ukey" to table: "sales_fulfillment_attempts"
+CREATE UNIQUE INDEX "sales_fulfil_attempts_tid_event_ukey" ON "sales_fulfillment_attempts" ("org_id", "result_event_id") WHERE (result_event_id IS NOT NULL);
+-- Create index "sales_fulfil_attempts_tid_fulfil_idx" to table: "sales_fulfillment_attempts"
+CREATE INDEX "sales_fulfil_attempts_tid_fulfil_idx" ON "sales_fulfillment_attempts" ("fulfillment_id", "attempt_no");
+-- Create index "sales_fulfil_attempts_tid_status_idx" to table: "sales_fulfillment_attempts"
+CREATE INDEX "sales_fulfil_attempts_tid_status_idx" ON "sales_fulfillment_attempts" ("attempt_status");
+-- Create "sales_order_fulfillment_items" table
+CREATE TABLE "sales_order_fulfillment_items" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "fulfillment_id" character varying NOT NULL,
+  "sales_order_line_id" character varying NOT NULL,
+  "product_variant_id" character varying NOT NULL,
+  "uom_id" character varying NOT NULL,
+  "ordered_qty" numeric NOT NULL,
+  "fulfilled_qty" numeric NOT NULL,
+  "refunded_qty" numeric NOT NULL,
+  "inventory_reservation_ref" character varying NULL,
+  "item_status" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_order_fulfillment_items_fulfillment_id_fkey" FOREIGN KEY ("fulfillment_id") REFERENCES "sales_order_fulfillments" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "sales_order_fulfillment_items_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- Create index "sales_fulfil_items_tid_fulfil_idx" to table: "sales_order_fulfillment_items"
+CREATE INDEX "sales_fulfil_items_tid_fulfil_idx" ON "sales_order_fulfillment_items" ("fulfillment_id");
+-- Create index "sales_fulfil_items_tid_line_idx" to table: "sales_order_fulfillment_items"
+CREATE INDEX "sales_fulfil_items_tid_line_idx" ON "sales_order_fulfillment_items" ("sales_order_line_id");
+-- Create "sales_fulfillment_attempt_items" table
+CREATE TABLE "sales_fulfillment_attempt_items" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "attempt_id" character varying NOT NULL,
+  "fulfillment_item_id" character varying NOT NULL,
+  "attempted_qty" numeric NOT NULL,
+  "dispensed_qty" numeric NOT NULL,
+  "failed_qty" numeric NOT NULL,
+  "item_result" character varying NOT NULL,
+  "failure_code" character varying NULL,
+  "failure_message" character varying NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_attempt_items_tid_att_item_ukey" UNIQUE ("attempt_id", "fulfillment_item_id"),
+  CONSTRAINT "sales_fulfillment_attempt_items_attempt_id_fkey" FOREIGN KEY ("attempt_id") REFERENCES "sales_fulfillment_attempts" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "sales_fulfillment_attempt_items_fulfillment_item_id_fkey" FOREIGN KEY ("fulfillment_item_id") REFERENCES "sales_order_fulfillment_items" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- Create index "sales_attempt_items_tid_attempt_idx" to table: "sales_fulfillment_attempt_items"
+CREATE INDEX "sales_attempt_items_tid_attempt_idx" ON "sales_fulfillment_attempt_items" ("attempt_id");
+-- Create index "sales_attempt_items_tid_fulfil_item_idx" to table: "sales_fulfillment_attempt_items"
+CREATE INDEX "sales_attempt_items_tid_fulfil_item_idx" ON "sales_fulfillment_attempt_items" ("fulfillment_item_id");
 -- Create "sales_fulfillment_requests" table
 CREATE TABLE "sales_fulfillment_requests" (
   "id" character varying NOT NULL,
@@ -439,6 +588,28 @@ CREATE TABLE "sales_fulfillment_request_lines" (
 CREATE INDEX "sales_fulfil_lines_tid_ordline_idx" ON "sales_fulfillment_request_lines" ("sales_order_line_id");
 -- Create index "sales_fulfil_lines_tid_req_idx" to table: "sales_fulfillment_request_lines"
 CREATE INDEX "sales_fulfil_lines_tid_req_idx" ON "sales_fulfillment_request_lines" ("sales_fulfillment_request_id");
+-- Create "sales_fulfillment_target_changes" table
+CREATE TABLE "sales_fulfillment_target_changes" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "fulfillment_id" character varying NOT NULL,
+  "from_outlet_id" character varying NULL,
+  "to_outlet_id" character varying NOT NULL,
+  "inventory_operation_ref" character varying NULL,
+  "reason" character varying NOT NULL,
+  "actor_type" character varying NOT NULL,
+  "actor_id" character varying NULL,
+  "changed_at" timestamptz NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_fulfillment_target_changes_from_outlet_id_fkey" FOREIGN KEY ("from_outlet_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "sales_fulfillment_target_changes_fulfillment_id_fkey" FOREIGN KEY ("fulfillment_id") REFERENCES "sales_order_fulfillments" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "sales_fulfillment_target_changes_to_outlet_id_fkey" FOREIGN KEY ("to_outlet_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- Create index "sales_target_changes_tid_fulfil_idx" to table: "sales_fulfillment_target_changes"
+CREATE INDEX "sales_target_changes_tid_fulfil_idx" ON "sales_fulfillment_target_changes" ("fulfillment_id", "changed_at");
 -- Create "sales_manual_discounts" table
 CREATE TABLE "sales_manual_discounts" (
   "id" character varying NOT NULL,
@@ -780,6 +951,8 @@ CREATE TABLE "sales_returns" (
   "refund_status" character varying NOT NULL,
   "fiscal_adjustment_status" character varying NOT NULL,
   "reason" character varying NOT NULL,
+  "refund_reason" character varying NOT NULL,
+  "return_type" character varying NOT NULL,
   "inventory_disposition" character varying NULL,
   "refund_total" numeric NOT NULL,
   "inventory_reference" character varying NULL,
@@ -826,6 +999,10 @@ CREATE TABLE "sales_return_lines" (
   "sales_return_id" character varying NOT NULL,
   "sales_order_line_id" character varying NOT NULL,
   "quantity" numeric NOT NULL,
+  "fulfillment_id" character varying NULL,
+  "fulfillment_item_id" character varying NULL,
+  "requested_qty" numeric NULL,
+  "refunded_qty" numeric NULL,
   "refund_amount" numeric NOT NULL,
   "refund_tax_amount" numeric NOT NULL,
   "requires_inventory_return" boolean NOT NULL,

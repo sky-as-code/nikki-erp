@@ -133,6 +133,7 @@ func (*SalesModule) OnAppStarted() error {
 		orders itExt.PaymentOrderExtService,
 		invoicing itInvoicing.InvoicingExtService,
 		scheduler itExt.SchedulerExtService,
+		reservations itExt.FulfillmentReservationExtService,
 		cronjobs job.CronjobRegistry,
 		logger logging.LoggerService,
 	) error {
@@ -148,7 +149,7 @@ func (*SalesModule) OnAppStarted() error {
 		if err := app.NewPaymentReconJobs(orders, invoicing, logger).RegisterJobs(cronjobs); err != nil {
 			return err
 		}
-		if err := app.NewExpiryJobs(effective, logger).RegisterJobs(cronjobs); err != nil {
+		if err := app.NewExpiryJobs(effective, reservations, logger).RegisterJobs(cronjobs); err != nil {
 			return err
 		}
 		// Registered with the scheduler rather than the in-process cron, unlike the sweeps above:
@@ -196,6 +197,11 @@ func (*SalesModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.SalesPaymentSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesFulfillmentRequestSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesFulfillmentRequestLineSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesOrderFulfillmentSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesOrderFulfillmentItemSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesFulfillmentAttemptSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesFulfillmentAttemptItemSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesFulfillmentTargetChangeSchemaBuilder()),
 		// The fiscal request registers after the bill it points at.
 		dmodel.RegisterSchemaB(models.SalesFiscalRequestSchemaBuilder()),
 

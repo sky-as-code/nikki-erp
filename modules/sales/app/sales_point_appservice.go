@@ -32,6 +32,14 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 		c.SalesPointResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.CreateSalesPointResult{ClientErrors: *cErrs}, nil
 	}
+	// A point that can hand goods over must say where its stock is. The schema cannot express the
+	// pairing — it is a business rule, not a column constraint — so it is checked at every point of
+	// use, and this is the one that creates them. Without it a kiosk would register successfully and
+	// then fail every order at confirm, with nowhere to reserve from.
+	if command.FulfillmentEnabled && command.InventoryLocationId == "" {
+		return pointRejection("sales_point.inventory_location_required",
+			"a sales point that fulfills orders must name the inventory location holding its stock"), nil
+	}
 	if command.Name == "" {
 		return pointRejection("sales_point.name_required",
 			"a sales point requires a name"), nil
@@ -103,6 +111,12 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 	if command.ExternalReferenceId != "" {
 		fields[models.SalesPointFieldExternalReferenceId] = command.ExternalReferenceId
 		fields[models.SalesPointFieldExternalReferenceType] = command.ExternalReferenceType
+	}
+	if command.FulfillmentEnabled {
+		fields[models.SalesPointFieldFulfillmentEnabled] = true
+	}
+	if command.InventoryLocationId != "" {
+		fields[models.SalesPointFieldInventoryLocationId] = command.InventoryLocationId
 	}
 
 	created, err := pointEngine.ResourceService().Create(ctx, fields)

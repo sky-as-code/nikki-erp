@@ -333,3 +333,95 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
+
+-- ---------------------------------------------------------------------------
+-- Merged from 1005006_inventory_product_stock_iam.sql
+-- ---------------------------------------------------------------------------
+
+-- Permissions for the product-stock integration.
+--
+-- Two things are added. The new configuration resource, which holds a product line's inventory
+-- unit; and one read action on the existing Stock Quant resource, covering the summaries a
+-- product page shows.
+--
+-- The reads are one permission rather than six. They are the same power — seeing how much stock a
+-- product has — sliced only by which product is being looked at, so separating them would let an
+-- administrator grant a nonsensical combination such as "may see a template's total but not the
+-- variants behind it". Granting it lets a user look; it lets them change nothing, because every
+-- action behind it is a read.
+
+DO $$
+BEGIN
+	-- ---------------------------------------------------------------------------------------
+	-- Stock's settings for a product line (CR §11.4).
+	-- ---------------------------------------------------------------------------------------
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_resources'
+	) THEN
+		INSERT INTO "iam_resources" (
+			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
+		) VALUES
+		('01M2A7QK3P5NXCW9VBDT4RGZH2', 'Stock Product Configuration', 'inventory_stock_product_config', 'Stock settings of a product line, currently the unit its balances are counted in', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_actions'
+	) THEN
+		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
+		('01M2A7QK3PB8YFHV5JQW6E2SND', 'Create', 'create', 'Set the unit a product line''s stock is counted in', '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2A7QK3PC4TZR7KDXA9HM3VE', 'Read', 'read', NULL, '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		-- Changing the unit after stock has moved would reinterpret every quantity ever recorded,
+		-- so the engine refuses it outright. This permission covers the case where it is still
+		-- allowed: a product that has never been used.
+		('01M2A7QK3PDGX2W8N4VJQ5F7BK', 'Update', 'update', 'Change the unit, which the engine permits only while the product has no stock or stock history', '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2A7QK3PEH6RQY3TZB8KCW9M', 'Delete', 'delete', NULL, '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
+	-- ---------------------------------------------------------------------------------------
+	-- The product-facing stock reads, on the existing Stock Quant resource.
+	-- ---------------------------------------------------------------------------------------
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_actions'
+	) AND EXISTS (
+		SELECT FROM "iam_resources" WHERE "code" = 'inventory_stock_quant'
+	) THEN
+		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag")
+		SELECT '01M2A7QK3PF9J5MXV2NQ8YT4HR', 'Read Product Stock', 'read_product_stock', 'See how much stock a product has, where it sits and what would be stranded by archiving it. Reads only.', "id", (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text
+		FROM "iam_resources" WHERE "code" = 'inventory_stock_quant'
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- Merged from 1005008_inventory_fulfillment_result_iam.sql
+-- ---------------------------------------------------------------------------
+
+-- The permission for recording what an executor physically handed over.
+--
+-- Only one new action is seeded. The other three demand-addressed routes — reserve_for_source,
+-- release_for_source and reallocate_reservation — deliberately answer to the existing `reserve` and
+-- `unreserve` permissions: they are the same powers over the same stock, differing only in whether
+-- the caller names the transfer or the demand it was raised for, and giving them separate codes
+-- would let a role hold one without the other by accident.
+--
+-- apply_fulfillment_result is separate from `validate` because the callers are different in kind.
+-- Validate is an operator saying "ship this document"; this is a service relaying what a machine
+-- managed to dispense. Granting a vending service `validate` would let it complete any transfer in
+-- the organization, which is far more than reporting its own result requires.
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_actions'
+	) THEN
+		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
+		('01M3NVFRES0000000000000001', 'Apply fulfillment result', 'apply_fulfillment_result', 'Record what an executor physically handed over against a reservation: consume what left, release the hold on what did not', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;

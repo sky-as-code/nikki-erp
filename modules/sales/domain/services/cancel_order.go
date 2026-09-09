@@ -13,6 +13,7 @@ import (
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
 // Cancelling a sales order. What a cancel means depends on how far the sale got:
@@ -32,9 +33,13 @@ type CancelOrderResult struct {
 
 	ReleasedVoucherIds []string
 
-	// Pending names the steps this build cannot perform. A confirmed order's stock reservation and
-	// pending payments cannot be released yet, and a caller believing otherwise would leave stock
-	// reserved against a cancelled sale.
+	// ReleasedFulfillmentIds are the fulfillments whose held stock went back to the sellable pool.
+	// Empty for an order that reserved nothing, which is every order that never named a kiosk.
+	ReleasedFulfillmentIds []string
+
+	// Pending names the steps this cancel did not perform. Payments are always among them: cancel
+	// does not cancel them, and a caller believing otherwise would stop chasing money that is still
+	// committed against a sale nobody will complete.
 	Pending []string
 }
 
@@ -49,7 +54,10 @@ const (
 // cancel releases voucher redemptions on another table, and a cancel interleaved with a confirm
 // could release a reservation the confirm had just redeemed.
 func CancelOrder(
-	ctx corectx.Context, orderId, reason string, dLock lock.DistributedLock,
+	ctx corectx.Context,
+	orderId, reason string,
+	dLock lock.DistributedLock,
+	reservations itExt.FulfillmentReservationExtService,
 ) (*CancelOrderResult, *ft.ClientErrors, error) {
 	if dLock == nil {
 		return nil, nil, errors.New(
@@ -70,11 +78,13 @@ func CancelOrder(
 	}
 	defer func() { _ = dLock.Release(ctx, key) }()
 
-	return cancelUnderLock(ctx, orderId, reason)
+	return cancelUnderLock(ctx, orderId, reason, reservations)
 }
 
 func cancelUnderLock(
-	ctx corectx.Context, orderId, reason string,
+	ctx corectx.Context,
+	orderId, reason string,
+	reservations itExt.FulfillmentReservationExtService,
 ) (*CancelOrderResult, *ft.ClientErrors, error) {
 	record, err := loadRecord(ctx, models.SalesOrderSchemaName, models.SalesOrderFieldId, orderId)
 	if err != nil {
@@ -97,33 +107,50 @@ func cancelUnderLock(
 		return nil, nil, err
 	}
 
+	// The stock goes back BEFORE the status moves, for the same reason the vouchers do: a failure
+	// here leaves the order cancellable again rather than cancelled with goods still held against a
+	// sale nobody is going to complete.
+	releasedFulfillments, err := ReleaseOrderFulfillments(ctx, orderId, reservations)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	cancelledAt := time.Now().UTC()
 	if err := stampCancelled(ctx, orderId, record, fromStatus, reason, cancelledAt); err != nil {
 		return nil, nil, err
 	}
 
 	return &CancelOrderResult{
-		SalesOrderId:       orderId,
-		Status:             string(models.SalesOrderStatusCancelled),
-		CancelledAt:        cancelledAt.Format(time.RFC3339),
-		ReleasedVoucherIds: released,
-		Pending:            pendingCancelSteps(fromStatus),
+		SalesOrderId:           orderId,
+		Status:                 string(models.SalesOrderStatusCancelled),
+		CancelledAt:            cancelledAt.Format(time.RFC3339),
+		ReleasedVoucherIds:     released,
+		ReleasedFulfillmentIds: releasedFulfillments,
+		Pending:                pendingCancelSteps(fromStatus, reservations),
 	}, nil, nil
 }
 
 // pendingCancelSteps: a draft has nothing to undo; saying so for a confirmed order stops a caller
-// assuming the stock came back.
-func pendingCancelSteps(fromStatus string) []string {
+// assuming the money came back.
+func pendingCancelSteps(
+	fromStatus string, reservations itExt.FulfillmentReservationExtService,
+) []string {
 	if fromStatus == string(models.SalesOrderStatusDraft) {
 		return nil
 	}
-	// Both steps are named because neither is performed here: cancel does not call the fulfilment
-	// port to release the reservation, and does not cancel outstanding payments. The stock and the
-	// money are therefore still committed after a successful cancel, which the caller has to know.
-	return []string{
-		"release_stock_reservation (cancel does not release the reservation)",
-		"cancel_pending_payments (cancel does not cancel payments)",
+
+	pending := make([]string, 0, 2)
+	// The stock IS released now, through ReleaseOrderFulfillments — unless no port is bound, in
+	// which case there was nothing to release it through and the caller must know the goods are
+	// still held.
+	if reservations == nil {
+		pending = append(pending,
+			"release_stock_reservation (no inventory port bound)")
 	}
+	// Payments remain genuinely undone: cancel does not cancel them, so the money is still
+	// committed after a successful cancel and a caller told otherwise would stop chasing it.
+	pending = append(pending, "cancel_pending_payments (cancel does not cancel payments)")
+	return pending
 }
 
 // assertCancellable: the two refusals name the workflow to use instead, so an operator is not left
