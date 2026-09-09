@@ -124,8 +124,8 @@ func trimMovesToDispensed(
 		delivered := dispensed[sourceItemId]
 		demand := orZero(move.GetBaseDemandQuantity())
 
-		if delivered.GreaterThanOrEqual(demand) {
-			// Everything asked for came out; the move stands as it is.
+		trim := decideMoveTrim(demand, delivered)
+		if !trim.Rewrite {
 			continue
 		}
 
@@ -139,7 +139,7 @@ func trimMovesToDispensed(
 		if err := writeMoveDemand(ctx, operation, *move, delivered); err != nil {
 			return err
 		}
-		if delivered.LessThanOrEqual(decimal.Zero) {
+		if !trim.Rereserve {
 			// Nothing to consume. The move is closed by the validate that follows, having moved
 			// nothing, which is exactly what happened.
 			continue
@@ -149,6 +149,33 @@ func trimMovesToDispensed(
 		}
 	}
 	return nil
+}
+
+// moveTrim is what a delivery report means for one move's reservation.
+type moveTrim struct {
+	// Rewrite is false when everything asked for came out, and the move stands as it is.
+	Rewrite bool
+
+	// Rereserve is false when nothing came out: the hold is given back and no new one is taken.
+	Rereserve bool
+}
+
+// decideMoveTrim works out what a move's hold should become, given what physically moved.
+//
+// Split out from the loop that acts on it because this is the whole of the partial-delivery rule and
+// it is decidable from two numbers. A delivery that met the demand leaves the move untouched; a short
+// one releases the hold and re-takes it at the delivered quantity; a delivery of nothing releases and
+// takes nothing back.
+//
+// Over-delivery is treated as full delivery rather than as an error. A machine reporting more than it
+// was asked for has already handed the goods over — refusing the report would leave the ledger
+// believing they are still on the shelf, which is worse than recording the demand as met.
+func decideMoveTrim(demand, delivered decimal.Decimal) moveTrim {
+	if delivered.GreaterThanOrEqual(demand) {
+		return moveTrim{}
+	}
+
+	return moveTrim{Rewrite: true, Rereserve: delivered.GreaterThan(decimal.Zero)}
 }
 
 // writeMoveDemand rewrites what a move is asking for, so validate consumes that much and no more.

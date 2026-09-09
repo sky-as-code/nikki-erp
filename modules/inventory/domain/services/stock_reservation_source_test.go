@@ -5,6 +5,7 @@ import (
 
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
@@ -122,4 +123,50 @@ func TestBothSidesAreLockedInOneDeterministicOrder(t *testing.T) {
 		"two reallocations over the same rows must queue, not deadlock: both orderings must agree")
 	assert.Equal(t, "LOC-1", forward[0].LocationId, "ordered by location first")
 	assert.Equal(t, "VAR-A", forward[1].ProductVariantId, "then by variant within a location")
+}
+
+func wellFormedReallocation() itStock.ReservationReallocationRequest {
+	return itStock.ReservationReallocationRequest{
+		SourceType:      "sales_fulfillment",
+		SourceId:        "01ABC",
+		ToLocationId:    "01LOC2",
+		OperationTypeId: "01OPT",
+		Items: []itStock.SourceReservationItem{{
+			ProductVariantId: "01VAR",
+			Quantity:         decimal.NewFromInt(1),
+		}},
+	}
+}
+
+// The remaining branches of the reallocation guard. Each of these would otherwise fail deep inside a
+// transaction that has already taken row locks at both locations, which is a far more expensive way
+// to learn the request was never answerable.
+func TestReallocationRequiresItsDemandOperationTypeAndItems(t *testing.T) {
+	cases := map[string]func(*itStock.ReservationReallocationRequest){
+		"no source type":    func(r *itStock.ReservationReallocationRequest) { r.SourceType = "" },
+		"no source id":      func(r *itStock.ReservationReallocationRequest) { r.SourceId = "" },
+		"no operation type": func(r *itStock.ReservationReallocationRequest) { r.OperationTypeId = "" },
+		"no items":          func(r *itStock.ReservationReallocationRequest) { r.Items = nil },
+	}
+
+	for name, break_ := range cases {
+		request := wellFormedReallocation()
+		break_(&request)
+
+		refusal := assertReallocationWellFormed(request)
+
+		assert.NotNil(t, refusal, "a reallocation with %s must be refused", name)
+	}
+}
+
+// A destination that cannot supply the whole quantity is a REFUSAL, not a fault: the customer keeps
+// the hold they already had, and the caller is told why in terms it can show a user. The transaction
+// rolls back around this, so the message is the only trace the attempt leaves.
+func TestAReallocationShortageIsARefusalNamingTheDestination(t *testing.T) {
+	vErrs := reallocationShortage("01LOC-DEST")
+
+	require.Equal(t, 1, vErrs.Count())
+	assert.Equal(t, "stock_transfer.reallocation_insufficient_stock", vErrs[0].Key)
+	assert.Contains(t, vErrs[0].Message, "01LOC-DEST",
+		"the refusal must name the location that could not supply the stock")
 }
