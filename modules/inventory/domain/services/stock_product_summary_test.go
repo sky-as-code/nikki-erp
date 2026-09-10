@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"strings"
 	"testing"
 
@@ -10,9 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
@@ -32,7 +32,7 @@ const (
 // apply the graph's status conditions: the real repository filters in SQL, so a stub returning
 // everything would let a test pass while the production query excluded the rows under test.
 type stubRowRepository struct {
-	drif.DynamicResourceRepository
+	composable.CrudRepository
 
 	rows []dmodel.DynamicFields
 }
@@ -124,10 +124,10 @@ func allMoveStatuses() []string {
 func useSchemaEngines(t *testing.T, rowsBySchema map[string][]dmodel.DynamicFields) {
 	t.Helper()
 
-	original := engineFor
-	t.Cleanup(func() { engineFor = original })
-	engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
-		return &stubEngine{repo: &stubRowRepository{rows: rowsBySchema[schemaName]}}, nil
+	original := repoFor
+	t.Cleanup(func() { repoFor = original })
+	repoFor = func(schemaName string) (composable.CrudRepository, error) {
+		return &stubRowRepository{rows: rowsBySchema[schemaName]}, nil
 	}
 }
 

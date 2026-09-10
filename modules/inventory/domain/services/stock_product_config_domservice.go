@@ -45,13 +45,13 @@ func IsTemplateStockInUse(ctx corectx.Context, templateId string) (bool, error) 
 		return false, nil
 	}
 
-	variantEngine, err := engineFor(models.ProductVariantSchemaName)
+	variantEngine, err := repoFor(models.ProductVariantSchemaName)
 	if err != nil {
 		return false, err
 	}
 
 	rows, err := models.FindTemplateVariants(
-		ctx, variantEngine.ResourceRepository(), templateId, MaxCascadeVariants)
+		ctx, variantEngine, templateId, MaxCascadeVariants)
 	if err != nil {
 		return false, errors.Wrap(err, "IsTemplateStockInUse")
 	}
@@ -95,7 +95,7 @@ func IsUomUsable(ctx corectx.Context, uomId string) (bool, error) {
 		return false, nil
 	}
 
-	engine, err := engineFor(uomSchemaName)
+	engine, err := repoFor(uomSchemaName)
 	if err != nil {
 		// Essential missing means a deployment without the UoM module, not a bad request. Nothing can
 		// be validated, so the unit passes; Stock still refuses to move goods it cannot express a
@@ -103,7 +103,7 @@ func IsUomUsable(ctx corectx.Context, uomId string) (bool, error) {
 		return true, nil
 	}
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{
 		Graph: uomByIdGraph(uomId),
 		Page:  0,
 		Size:  1,
@@ -140,7 +140,7 @@ func uomByIdGraph(uomId string) *dmodel.SearchGraph {
 func anyMatching(
 	ctx corectx.Context, schemaName string, field string, ids []string,
 ) (bool, error) {
-	engine, err := engineFor(schemaName)
+	engine, err := repoFor(schemaName)
 	if err != nil {
 		return false, err
 	}

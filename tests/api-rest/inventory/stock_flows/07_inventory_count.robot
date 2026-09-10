@@ -23,12 +23,12 @@ Entering A Count Does Not Change On Hand
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
     ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    40
     POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
 
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/enter_count
-    ...    json=${{ {'counted_quantity': '37', 'count_reason_code': 'missing'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'counted_quantity': '37', 'count_reason_code': 'missing'} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
     ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
@@ -51,7 +51,7 @@ Applying A Count Moves The Balance To What Was Counted
     [Documentation]    BR §4.2.7.4. The variance of -3 is applied by generating a movement, never
     ...    by writing the quant directly (decision F3, INV-STK-R14).
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${COUNT_QUANT_ID}/apply_adjustment
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
     ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
@@ -84,7 +84,7 @@ Applying With No Pending Count Is Refused
     [Documentation]    The flag is the authority, and it was just cleared by the apply above.
     [Tags]    negative
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${COUNT_QUANT_ID}/apply_adjustment
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=Applying with nothing pending must be refused
 
@@ -95,17 +95,17 @@ A Stale Count Is Refused
     [Tags]    negative
     ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/enter_count
-    ...    json=${{ {'counted_quantity': '30'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'counted_quantity': '30'} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
     # The delivery that lands between the count and the apply.
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
     ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    10
     POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/apply_adjustment
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A count whose snapshot has gone stale must be refused, not applied
 
@@ -116,7 +116,7 @@ Resetting A Count Clears It And Leaves The Balance Alone
     ${before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
 
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/reset_count
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
     ${flag}=    Read Stock Quant Field    ${quant_id}    count_quantity_set
@@ -133,9 +133,9 @@ A Zero Variance Still Resolves The Count
     ${counted}=    Convert To String    ${on_hand}
 
     POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/enter_count
-    ...    json=${{ {'counted_quantity': $counted} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'counted_quantity': $counted} }}    expected_status=any
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/apply_adjustment
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
     ${flag}=    Read Stock Quant Field    ${quant_id}    count_quantity_set
@@ -150,7 +150,7 @@ A Negative Counted Quantity Is Refused
     [Tags]    negative
     ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/enter_count
-    ...    json=${{ {'counted_quantity': '-1'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'counted_quantity': '-1'} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A negative counted quantity must be refused
 
@@ -160,13 +160,13 @@ Scheduling And Assigning A Count Are Plain Field Writes
     ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
 
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/schedule_count
-    ...    json=${{ {'next_count_date': '2026-12-01'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'next_count_date': '2026-12-01'} }}    expected_status=any
     Response Status Should Be    ${resp}    200
     ${next}=    Read Stock Quant Field    ${quant_id}    next_count_date
     Should Contain    ${next}    2026-12-01
 
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${quant_id}/assign_counter
-    ...    json=${{ {'count_assigned_user_id': '01HQ9WBZ3XKAAAAAAAAAAAAAAA'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'count_assigned_user_id': '01HQ9WBZ3XKAAAAAAAAAAAAAAA'} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
 The Counts Due Worklist Is An Ordinary Filtered Search
@@ -190,6 +190,6 @@ Direct Writes To A Balance Are Still Refused
     [Tags]    negative
     ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${resp}=    PUT On Session    api    ${STOCK_QUANT_API}/${quant_id}
-    ...    json=${{ {'on_hand_quantity': '999'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'on_hand_quantity': '999'} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=Client writes to a stock balance must still be refused

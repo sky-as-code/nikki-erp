@@ -16,7 +16,7 @@ Variant Summary Answers For A Product With No Stock
     ...    "not found" would make a caller distinguish "no stock" from "no product", which are
     ...    different things and only one of them is an error.
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/variant_stock_summary
-    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_variant_id': $PRODUCT_VARIANT_ID} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     Should Be Equal As Numbers    ${body}[onHand]    0
@@ -28,7 +28,7 @@ Available Is Derived, Never Stored
     [Documentation]    AC-PROD-INT-006. Available is on-hand minus reserved, computed on read,
     ...    so nothing can persist a value that disagrees with the two it comes from.
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/variant_stock_summary
-    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_variant_id': $PRODUCT_VARIANT_ID} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     ${expected}=    Evaluate    float($body['onHand']) - float($body['reserved'])
@@ -41,7 +41,7 @@ Batch Summary Answers A Whole Page In One Request
     Ensure Second Variant For Summary
     ${ids}=    Create List    ${PRODUCT_VARIANT_ID}    ${SUMMARY_SECOND_VARIANT_ID}
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/variant_stock_summaries
-    ...    json=${{ {'product_variant_ids': $ids} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_variant_ids': $ids} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     Dictionary Should Contain Key    ${body}    ${PRODUCT_VARIANT_ID}
@@ -53,7 +53,7 @@ Template Summary Aggregates Its Variants
     ...    a reader can see where the number came from.
     Ensure Second Variant For Summary
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/template_stock_summary
-    ...    json=${{ {'product_template_id': $PRODUCT_TEMPLATE_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_template_id': $PRODUCT_TEMPLATE_ID} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     Dictionary Should Contain Key    ${body}    summary
@@ -66,12 +66,12 @@ Stock By Warehouse And By Location Are Readable
     [Documentation]    AC-PROD-INT-014 and AC-PROD-INT-015. Both answer for a product with no
     ...    stock too: an empty list, not an error.
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/stock_by_warehouse
-    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_variant_id': $PRODUCT_VARIANT_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be True    isinstance($resp.json(), list)
 
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/stock_by_location
-    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_variant_id': $PRODUCT_VARIANT_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be True    isinstance($resp.json(), list)
 
@@ -79,7 +79,7 @@ Product Usage Reports Whether A Product Can Be Archived
     [Documentation]    The reader's own verdict travels with its numbers, so a UI explains a
     ...    refusal without restating the rule and risking restating it differently.
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/product_usage
-    ...    json=${{ {'product_variant_id': $PRODUCT_VARIANT_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_variant_id': $PRODUCT_VARIANT_ID} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     Dictionary Should Contain Key    ${body}    canArchive

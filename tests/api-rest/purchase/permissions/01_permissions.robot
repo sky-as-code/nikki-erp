@@ -69,6 +69,6 @@ The Sourcing Group Refuses Direct Creation
 The Audit Trail Is Readable
     [Documentation]    Read is the one verb the audit event does have: the trail exists to be
     ...    consulted, and seeding it write-only would make it useless.
-    ${resp}=    GET On Session    api    ${AUDIT_EVENT_API}    params=${{ {'size': 5} }}
+    ${resp}=    GET On Session    api    ${AUDIT_EVENT_API}    params=${{ {'org_id': $PURCHASE_ORG_ID, 'size': 5} }}
     Response Status Should Be    ${resp}    200
     Dictionary Should Contain Key    ${resp.json()}    items

@@ -30,7 +30,7 @@ Moving A Branch Rewrites The Whole Subtree
     [Documentation]    The leaf is two levels down and nobody named it in the request, but its
     ...    path describes where it is — so it has to change when its ancestor moves.
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${MOVE_BRANCH_ID}/move
-    ...    json=${{ {'parent_location_id': $MOVE_SECOND_ROOT_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'parent_location_id': $MOVE_SECOND_ROOT_ID} }}
     Response Status Should Be    ${resp}    200
 
     ${item}=    Get Location    ${MOVE_BRANCH_ID}
@@ -44,7 +44,7 @@ Moving A Branch Rewrites The Whole Subtree
 
 Moving To No Parent Makes A Location A Root
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${MOVE_BRANCH_ID}/move
-    ...    json=${{ {} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
 
     ${item}=    Get Location    ${MOVE_BRANCH_ID}
@@ -57,7 +57,7 @@ Moving To No Parent Makes A Location A Root
 A Location Cannot Become Its Own Parent
     [Tags]    negative
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${MOVE_BRANCH_ID}/move
-    ...    json=${{ {'parent_location_id': $MOVE_BRANCH_ID} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'parent_location_id': $MOVE_BRANCH_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 A Location Cannot Move Under Its Own Descendant
@@ -65,13 +65,13 @@ A Location Cannot Move Under Its Own Descendant
     ...    and leave them pointing at each other.
     [Tags]    negative
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${MOVE_BRANCH_ID}/move
-    ...    json=${{ {'parent_location_id': $MOVE_LEAF_ID} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'parent_location_id': $MOVE_LEAF_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 Moving Under An Unknown Parent Is Refused
     [Tags]    negative
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${MOVE_BRANCH_ID}/move
-    ...    json=${{ {'parent_location_id': $NOT_FOUND_ID} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'parent_location_id': $NOT_FOUND_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 
@@ -106,11 +106,13 @@ Create Move Location
     Set To Dictionary    ${payload}    name    ${{ {'en-US': $name} }}
     IF    $parent_id    Set To Dictionary    ${payload}    parent_location_id    ${parent_id}
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}    json=${payload}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}    ${code}
 
 Get Location
     [Arguments]    ${id}
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
     RETURN    ${item}

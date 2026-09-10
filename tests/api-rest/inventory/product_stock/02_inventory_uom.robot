@@ -40,7 +40,7 @@ The Unit Can Be Changed While The Product Is Unused
     ${second}=    Create Second Uom For Change
     ${item}=    Get Stock Product Config
     ${resp}=    PUT On Session    api    ${STOCK_PRODUCT_CONFIG_API}/${STOCK_PRODUCT_CONFIG_ID}
-    ...    json=${{ {'inventory_uom_id': $second, 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'inventory_uom_id': $second, 'etag': $item['etag']} }}
     ...    expected_status=any
     Response Status Should Be    ${resp}    200
     ${item}=    Get Stock Product Config
@@ -53,7 +53,7 @@ An Archived Unit Cannot Be Chosen
     ${archived}=    Create Archived Uom
     ${item}=    Get Stock Product Config
     ${resp}=    PUT On Session    api    ${STOCK_PRODUCT_CONFIG_API}/${STOCK_PRODUCT_CONFIG_ID}
-    ...    json=${{ {'inventory_uom_id': $archived, 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'inventory_uom_id': $archived, 'etag': $item['etag']} }}
     ...    expected_status=any
     Should Be True    ${resp.status_code} >= 400
     ...    msg=An archived unit must not be selectable for new configuration
@@ -62,6 +62,7 @@ An Archived Unit Cannot Be Chosen
 *** Keywords ***
 Get Stock Product Config
     ${resp}=    GET On Session    api    ${STOCK_PRODUCT_CONFIG_API}/${STOCK_PRODUCT_CONFIG_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     RETURN    ${resp.json()}
 
@@ -90,7 +91,7 @@ Create Archived Uom
     ...    json=${{ {'name': {'en-US': $name}, 'symbol': $symbol, 'category_id': $UOMCAT_ID, 'uom_type': 'smaller', 'factor': '0.5', 'rounding': '0.01', 'org_id': $UOM_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    POST On Session    api    ${UOM_API}/${id}/archived
-    ...    json=${{ {'is_archived': True, 'etag': $etag} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $etag} }}
     Response Status Should Be    ${resp}    200
     Set Global Variable    ${ARCHIVED_INVENTORY_UOM_ID}    ${id}
     RETURN    ${id}

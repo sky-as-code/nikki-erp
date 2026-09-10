@@ -11,16 +11,17 @@ Test Tags         paymentinvoice    invoice    update
 Update Succeeds
     ${partner}=    Unique Display Name    Robot Updated Partner
     ${resp}=    PATCH On Session    api    ${INVOICE_API}/${INVOICE_ID}
-    ...    json=${{ {'partner_name': $partner, 'etag': $INVOICE_ETAG} }}
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID, 'partner_name': $partner, 'etag': $INVOICE_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${INVOICE_ETAG}
     IF    $etag is not None    Set Global Variable    ${INVOICE_ETAG}    ${etag}
 
 Update Optional Fields Succeeds
     ${resp}=    PATCH On Session    api    ${INVOICE_API}/${INVOICE_ID}
-    ...    json=${{ {'note': 'Updated by the robot suite', 'partner_address': '2 Robot Street', 'etag': $INVOICE_ETAG} }}
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID, 'note': 'Updated by the robot suite', 'partner_address': '2 Robot Street', 'etag': $INVOICE_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${INVOICE_ETAG}
     IF    $etag is not None    Set Global Variable    ${INVOICE_ETAG}    ${etag}
     ${resp}=    GET On Session    api    ${INVOICE_API}/${INVOICE_ID}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice.json    200
     Should Be Equal    ${item}[note]    Updated by the robot suite
     Set Global Variable    ${INVOICE_ETAG}    ${item}[etag]
@@ -28,14 +29,14 @@ Update Optional Fields Succeeds
 Update With Missing Etag Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${INVOICE_API}/${INVOICE_ID}
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
     Response Should Be Missing Fields Error    ${resp}    etag
 
 Update With Unmatched Etag Fails
     [Tags]    negative
     ${partner}=    Unique Display Name    Robot Stale Partner
     ${resp}=    PATCH On Session    api    ${INVOICE_API}/${INVOICE_ID}
-    ...    json=${{ {'partner_name': $partner, 'etag': '___________________'} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID, 'partner_name': $partner, 'etag': '___________________'} }}    expected_status=any
     Response Should Be Etag Unmatched Error    ${resp}
 
 Update Cannot Set The Status
@@ -48,8 +49,9 @@ Update Cannot Set The Status
     ...    matters either way is the stored value, so that is what is asserted: a test pinned
     ...    to the status code would pass while the status changed underneath it.
     ${resp}=    PATCH On Session    api    ${INVOICE_API}/${INVOICE_ID}
-    ...    json=${{ {'status': 'issued', 'etag': $INVOICE_ETAG} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID, 'status': 'issued', 'etag': $INVOICE_ETAG} }}    expected_status=any
     ${resp}=    GET On Session    api    ${INVOICE_API}/${INVOICE_ID}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice.json    200
     Should Be Equal    ${item}[status]    draft
     ...    msg=A client must not be able to issue an invoice through a plain update
@@ -61,8 +63,9 @@ Update Cannot Set The Number
     ...    would collide with, or leave a gap in, that sequence. As with the status, the
     ...    stored value is what is asserted rather than the status code.
     ${resp}=    PATCH On Session    api    ${INVOICE_API}/${INVOICE_ID}
-    ...    json=${{ {'number': 'INV-2026-000001', 'etag': $INVOICE_ETAG} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID, 'number': 'INV-2026-000001', 'etag': $INVOICE_ETAG} }}    expected_status=any
     ${resp}=    GET On Session    api    ${INVOICE_API}/${INVOICE_ID}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice.json    200
     ${number}=    Get From Dictionary    ${item}    number    ${None}
     Should Be Equal    ${number}    ${None}
@@ -74,8 +77,9 @@ Update Cannot Set The Totals
     ...    write them directly could author a document whose total disagrees with what it
     ...    totals, which is the one thing an invoice must never do.
     ${resp}=    PATCH On Session    api    ${INVOICE_API}/${INVOICE_ID}
-    ...    json=${{ {'total_amount': '999999', 'etag': $INVOICE_ETAG} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID, 'total_amount': '999999', 'etag': $INVOICE_ETAG} }}    expected_status=any
     ${resp}=    GET On Session    api    ${INVOICE_API}/${INVOICE_ID}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice.json    200
     Should Be Equal As Numbers    ${item}[total_amount]    0
     ...    msg=A client must not be able to write an invoice total directly
@@ -84,5 +88,5 @@ Update Cannot Set The Totals
 Update With Not Found Id Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${INVOICE_API}/${NOT_FOUND_ID}
-    ...    json=${{ {'note': 'x', 'etag': $INVOICE_ETAG} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID, 'note': 'x', 'etag': $INVOICE_ETAG} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}

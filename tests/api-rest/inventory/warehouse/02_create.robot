@@ -30,6 +30,7 @@ Creating A Warehouse Creates Its Root And Stock Locations
     Should Not Be Empty    ${stock}    msg=A warehouse must have a Stock location
 
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${stock}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
     Should Be Equal    ${item}[warehouse_id]    ${WAREHOUSE_ID}
     Should Be Equal    ${item}[location_usage]    internal
@@ -68,9 +69,10 @@ Create With Parent Warehouse Succeeds
     ...    warehouse holds its own goods.
     Ensure Secondary Warehouse Under Test
     ${resp}=    PATCH On Session    api    ${WAREHOUSE_API}/${SECONDARY_WAREHOUSE_ID}
-    ...    json=${{ {'parent_warehouse_id': $WAREHOUSE_ID, 'etag': $SECONDARY_WAREHOUSE_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'parent_warehouse_id': $WAREHOUSE_ID, 'etag': $SECONDARY_WAREHOUSE_ETAG} }}
     Response Should Be Update Success    ${resp}
     ${resp}=    GET On Session    api    ${WAREHOUSE_API}/${SECONDARY_WAREHOUSE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/warehouse.json    200
     Should Be Equal    ${item}[parent_warehouse_id]    ${WAREHOUSE_ID}
     Set Global Variable    ${SECONDARY_WAREHOUSE_ETAG}    ${item}[etag]
@@ -100,8 +102,9 @@ Archive Warehouse Fixture By Id
     ...    than deleted because it owns the locations it created, and those refuse to go while
     ...    it is live.
     [Arguments]    ${id}
-    ${resp}=    GET On Session    api    ${WAREHOUSE_API}/${id}    expected_status=any
+    ${resp}=    GET On Session    api    ${WAREHOUSE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     IF    ${resp.status_code} == 200
         POST On Session    api    ${WAREHOUSE_API}/${id}/archived
-        ...    json=${{ {'is_archived': True, 'etag': $resp.json()['etag']} }}    expected_status=any
+        ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $resp.json()['etag']} }}    expected_status=any
     END

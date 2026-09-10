@@ -1,0 +1,29 @@
+package v1
+
+import (
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
+)
+
+type CreateProductVariantAttributeValueRequest = itProduct.CreateProductVariantAttributeValueCommand
+type CreateProductVariantAttributeValueResponse = httpserver.RestCreateResponse
+
+type UpdateProductVariantAttributeValueRequest = itProduct.UpdateProductVariantAttributeValueCommand
+type UpdateProductVariantAttributeValueResponse = httpserver.RestMutateResponse
+
+type DeleteProductVariantAttributeValueRequest = itProduct.DeleteProductVariantAttributeValueCommand
+type DeleteProductVariantAttributeValueResponse = httpserver.RestMutateResponse
+
+type SetProductVariantAttributeValueArchivedRequest = itProduct.SetProductVariantAttributeValueArchivedCommand
+type SetProductVariantAttributeValueArchivedResponse = httpserver.RestMutateResponse
+
+type GetProductVariantAttributeValueRequest = itProduct.GetProductVariantAttributeValueByIdQuery
+type GetProductVariantAttributeValueResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
+
+type ProductVariantAttributeValueExistsRequest = itProduct.ProductVariantAttributeValueExistsQuery
+type ProductVariantAttributeValueExistsResponse = dyn.ExistsResultData
+
+type SearchProductVariantAttributeValuesRequest = itProduct.SearchProductVariantAttributeValuesQuery
+type SearchProductVariantAttributeValuesResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]

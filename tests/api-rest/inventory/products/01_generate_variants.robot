@@ -15,7 +15,7 @@ Generate Creates The Full Combination Set
     ...    would mean the attributes were treated as alternatives rather than combined; a
     ...    count of 1 would mean the combination key collapsed.
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${MATRIX_TEMPLATE_ID}/generate_variants
-    ...    json=${{ {} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${created}=    Set Variable    ${resp.json()}[created_variant_ids]
     Length Should Be    ${created}    4
@@ -39,7 +39,7 @@ Generate Again Creates Nothing
     ...    reuse the existing variants — creating four more would double every SKU each time
     ...    an admin pressed the button.
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${MATRIX_TEMPLATE_ID}/generate_variants
-    ...    json=${{ {} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${created}=    Set Variable    ${resp.json()}[created_variant_ids]
     Length Should Be    ${created}    0
@@ -54,26 +54,29 @@ Generate On A Template Without Attributes Creates One Variant
     ...    flag marking it (BR-PROD-VAR-005).
     ${template_id}    ${template_etag}=    Create Product Template    Robot Attributeless Template
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}/generate_variants
-    ...    json=${{ {} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${created}=    Set Variable    ${resp.json()}[created_variant_ids]
     Length Should Be    ${created}    1
     ...    msg=An attributeless template must still get exactly one variant (AC-PROD-008)
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${created}[0]
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_variant.json    200
     Should Be Equal    ${item}[combination_key]    ${EMPTY}
     ...    msg=The single variant of an attributeless template carries the empty combination
-    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${created}[0]    expected_status=any
-    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${created}[0]
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Generate With Not Found Template Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${NOT_FOUND_ID}/generate_variants
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Generate With Invalid Id Format Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/not-existing-1234567890123/generate_variants
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Invalid Format Error    ${resp}    id

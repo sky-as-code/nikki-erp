@@ -1,12 +1,12 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
@@ -17,8 +17,8 @@ const maxTemplateVariants = 1000
 
 // NewProductTemplateDomainService derives the Products service from the engine's default one, which
 // it embeds so built-in CRUD keeps running unchanged. Installed with Engine.SetResourceService.
-func NewProductTemplateDomainService(base drif.DynamicResourceService) itProduct.ProductService {
-	return &ProductTemplateDomainServiceImpl{DynamicResourceService: base}
+func NewProductTemplateDomainService(base composable.CrudDomainService) itProduct.ProductService {
+	return &ProductTemplateDomainServiceImpl{CrudDomainService: base}
 }
 
 // ProductTemplateDomainServiceImpl serves the Products capabilities the resource engine cannot
@@ -28,15 +28,15 @@ func NewProductTemplateDomainService(base drif.DynamicResourceService) itProduct
 // It resolves other resources' engines at call time rather than holding them, because engine
 // creation and this service's construction both happen during Init.
 type ProductTemplateDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
 // The derived service must satisfy both contracts — the engine installs it as its resource service,
 // and custom actions type-assert it back to the Products capability — since losing either would
 // only show up as a failed assertion at request time.
 var (
-	_ drif.DynamicResourceService = (*ProductTemplateDomainServiceImpl)(nil)
-	_ itProduct.ProductService    = (*ProductTemplateDomainServiceImpl)(nil)
+	_ composable.CrudDomainService = (*ProductTemplateDomainServiceImpl)(nil)
+	_ itProduct.ProductService     = (*ProductTemplateDomainServiceImpl)(nil)
 )
 
 func (this *ProductTemplateDomainServiceImpl) GetEffectiveProduct(
@@ -110,18 +110,18 @@ func (this *ProductTemplateDomainServiceImpl) valueLabels(
 		return nil, nil
 	}
 
-	templateValueEngine, err := engineFor(models.ProductTemplateAttributeValueSchemaName)
+	templateValueEngine, err := repoFor(models.ProductTemplateAttributeValueSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	valueEngine, err := engineFor(models.ProductAttributeValueSchemaName)
+	valueEngine, err := repoFor(models.ProductAttributeValueSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
 	labels := make([]string, 0, len(templateValueIds))
 	for _, templateValueId := range templateValueIds {
-		templateValue, err := templateValueEngine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+		templateValue, err := templateValueEngine.GetOne(ctx, dyn.RepoGetOneParam{
 			Filter: dmodel.DynamicFields{models.ProductTemplateAttributeValueFieldId: templateValueId},
 			Fields: []string{
 				models.ProductTemplateAttributeValueFieldId,
@@ -141,7 +141,7 @@ func (this *ProductTemplateDomainServiceImpl) valueLabels(
 			continue
 		}
 
-		value, err := valueEngine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+		value, err := valueEngine.GetOne(ctx, dyn.RepoGetOneParam{
 			Filter: dmodel.DynamicFields{models.ProductAttributeValueFieldId: globalValueId},
 			Fields: []string{models.ProductAttributeValueFieldId, models.ProductAttributeValueFieldName},
 		})
@@ -161,12 +161,12 @@ func (this *ProductTemplateDomainServiceImpl) valueLabels(
 func (this *ProductTemplateDomainServiceImpl) fetchVariant(
 	ctx corectx.Context, variantId string,
 ) (*models.ProductVariant, error) {
-	variantEngine, err := engineFor(models.ProductVariantSchemaName)
+	variantEngine, err := repoFor(models.ProductVariantSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	found, err := variantEngine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+	found, err := variantEngine.GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{models.ProductVariantFieldId: variantId},
 	})
 	if err != nil {
@@ -185,12 +185,12 @@ func (this *ProductTemplateDomainServiceImpl) fetchTemplate(
 		return nil, nil
 	}
 
-	templateEngine, err := engineFor(models.ProductTemplateSchemaName)
+	templateEngine, err := repoFor(models.ProductTemplateSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	found, err := templateEngine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+	found, err := templateEngine.GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{models.ProductTemplateFieldId: templateId},
 	})
 	if err != nil {

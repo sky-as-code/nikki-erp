@@ -77,7 +77,7 @@ func (this *StockQuantDomainServiceImpl) GetProductUsageBatch(
 func (this *StockQuantDomainServiceImpl) accumulateUsageQuantities(
 	ctx corectx.Context, variantIds []string, usages map[string]itStock.ProductUsage,
 ) error {
-	engine, err := engineFor(models.StockQuantSchemaName)
+	engine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (this *StockQuantDomainServiceImpl) accumulateUsageQuantities(
 	)
 
 	for page := 0; page < maxSummaryQuantPages; page++ {
-		found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  summaryScanPageSize,
@@ -130,7 +130,7 @@ func (this *StockQuantDomainServiceImpl) accumulateUsageQuantities(
 func (this *StockQuantDomainServiceImpl) accumulateOpenWork(
 	ctx corectx.Context, variantIds []string, usages map[string]itStock.ProductUsage,
 ) error {
-	engine, err := engineFor(models.StockMoveSchemaName)
+	engine, err := repoFor(models.StockMoveSchemaName)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (this *StockQuantDomainServiceImpl) accumulateOpenWork(
 
 	transfersSeen := map[string]map[string]bool{}
 	for page := 0; page < maxSummaryQuantPages; page++ {
-		found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  summaryScanPageSize,

@@ -44,12 +44,14 @@ Search Orders With Nonexist Field Fails
 
 Get Order With Not Found Id Fails
     [Tags]    negative
-    ${resp}=    GET On Session    api    ${ORDER_API}/${NOT_FOUND_ID}    expected_status=any
+    ${resp}=    GET On Session    api    ${ORDER_API}/${NOT_FOUND_ID}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Get Order With Invalid Id Format Fails
     [Tags]    negative
-    ${resp}=    GET On Session    api    ${ORDER_API}/not-existing-1234567890123    expected_status=any
+    ${resp}=    GET On Session    api    ${ORDER_API}/not-existing-1234567890123
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
     Response Should Be Invalid Format Error    ${resp}    id
 
 Search Transactions Succeeds
@@ -59,5 +61,6 @@ Search Transactions Succeeds
 
 Get Transaction With Not Found Id Fails
     [Tags]    negative
-    ${resp}=    GET On Session    api    ${TRANSACTION_API}/${NOT_FOUND_ID}    expected_status=any
+    ${resp}=    GET On Session    api    ${TRANSACTION_API}/${NOT_FOUND_ID}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}

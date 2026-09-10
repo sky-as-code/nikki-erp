@@ -12,23 +12,27 @@ Test Tags         inventory    brand    delete
 *** Test Cases ***
 Delete Succeeds
     ${resp}=    DELETE On Session    api    ${BRAND_API}/${BRAND_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Should Be Delete Success    ${resp}    count=1
 
 Delete Again With Same Id Fails
     [Documentation]    Idempotency check on the just-deleted id; clears the globals so the
     ...    brand under test is not reused after this point.
     [Tags]    negative
-    ${resp}=    DELETE On Session    api    ${BRAND_API}/${BRAND_ID}    expected_status=any
+    ${resp}=    DELETE On Session    api    ${BRAND_API}/${BRAND_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
     Set Global Variable    ${BRAND_ID}    ${EMPTY}
     Set Global Variable    ${BRAND_ETAG}    ${EMPTY}
 
 Delete With Not Found Id Fails
     [Tags]    negative
-    ${resp}=    DELETE On Session    api    ${BRAND_API}/${NOT_FOUND_ID}    expected_status=any
+    ${resp}=    DELETE On Session    api    ${BRAND_API}/${NOT_FOUND_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Delete With Invalid Id Format Fails
     [Tags]    negative
-    ${resp}=    DELETE On Session    api    ${BRAND_API}/not-existing-1234567890123    expected_status=any
+    ${resp}=    DELETE On Session    api    ${BRAND_API}/not-existing-1234567890123
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Invalid Format Error    ${resp}    id

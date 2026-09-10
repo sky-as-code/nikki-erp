@@ -17,29 +17,35 @@ Delete Cascades To Comm Channels
     ${party_id}    ${party_etag}=    Create Party    Robot Cascade Party
     ${channel_id}    ${channel_etag}=    Create Comm Channel    ${party_id}    email
     ${resp}=    DELETE On Session    api    ${PARTY_API}/${party_id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     Response Should Be Delete Success    ${resp}    count=1
-    ${resp}=    GET On Session    api    ${COMM_CHANNEL_API}/${channel_id}    expected_status=any
+    ${resp}=    GET On Session    api    ${COMM_CHANNEL_API}/${channel_id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Delete Succeeds
     ${resp}=    DELETE On Session    api    ${PARTY_API}/${PARTY_ID}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     Response Should Be Delete Success    ${resp}    count=1
 
 Delete Again With Same Id Fails
     [Documentation]    Idempotency check on the just-deleted id; clears the globals so the
     ...    party under test is not reused after this point.
     [Tags]    negative
-    ${resp}=    DELETE On Session    api    ${PARTY_API}/${PARTY_ID}    expected_status=any
+    ${resp}=    DELETE On Session    api    ${PARTY_API}/${PARTY_ID}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
     Set Global Variable    ${PARTY_ID}    ${EMPTY}
     Set Global Variable    ${PARTY_ETAG}    ${EMPTY}
 
 Delete With Not Found Id Fails
     [Tags]    negative
-    ${resp}=    DELETE On Session    api    ${PARTY_API}/${NOT_FOUND_ID}    expected_status=any
+    ${resp}=    DELETE On Session    api    ${PARTY_API}/${NOT_FOUND_ID}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Delete With Invalid Id Format Fails
     [Tags]    negative
-    ${resp}=    DELETE On Session    api    ${PARTY_API}/not-existing-1234567890123    expected_status=any
+    ${resp}=    DELETE On Session    api    ${PARTY_API}/not-existing-1234567890123
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     Response Should Be Invalid Format Error    ${resp}    id

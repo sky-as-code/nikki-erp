@@ -26,6 +26,7 @@ Create With Parent Location Succeeds
     ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'internal', 'parent_location_id': $INVENTORY_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
     Should Be Equal    ${item}[parent_location_id]    ${INVENTORY_LOCATION_ID}
     Set Global Variable    ${CHILD_INVENTORY_LOCATION_ID}    ${id}
@@ -40,7 +41,8 @@ Create Each Virtual Location Type Succeeds
         ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
         ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': $type, 'org_id': $INV_ORG_ID} }}
         ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-        DELETE On Session    api    ${INVENTORY_LOCATION_API}/${id}    expected_status=any
+        DELETE On Session    api    ${INVENTORY_LOCATION_API}/${id}
+        ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     END
 
 Create Defaults Location Type To Internal
@@ -52,9 +54,11 @@ Create Defaults Location Type To Internal
     ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
     Should Be Equal    ${item}[location_usage]    internal
-    DELETE On Session    api    ${INVENTORY_LOCATION_API}/${id}    expected_status=any
+    DELETE On Session    api    ${INVENTORY_LOCATION_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Unknown Location Type Fails
     [Tags]    negative

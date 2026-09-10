@@ -25,9 +25,11 @@ Archiving A Relationship Leaves Both Parties Live
     [Documentation]    The link is the archivable thing, not either end of it. Ending an
     ...    employment must not retire the employee or the employer.
     ${resp}=    GET On Session    api    ${PARTY_API}/${PARTY_ID}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${CONTACTS_SCHEMA_DIR}/party.json    200
     Should Be Equal    ${item}[is_archived]    ${False}
     ${resp}=    GET On Session    api    ${PARTY_API}/${TARGET_PARTY_ID}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${CONTACTS_SCHEMA_DIR}/party.json    200
     Should Be Equal    ${item}[is_archived]    ${False}
 

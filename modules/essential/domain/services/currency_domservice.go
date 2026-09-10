@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
 )
@@ -21,11 +21,14 @@ import (
 // commonest precision rather than to zero. Rounding money to zero places silently discards cents.
 const defaultDecimalPlaces = 2
 
-func NewCurrencyDomainServiceImpl() itCurrency.CurrencyDomainService {
-	return &CurrencyDomainServiceImpl{}
+// NewCurrencyDomainService is handed the composable default by the currency onion. The CRUD is
+// the default's; what this type adds is the money capability other modules depend on.
+func NewCurrencyDomainService(base composable.CrudDomainService) itCurrency.CurrencyDomainService {
+	return &CurrencyDomainServiceImpl{CrudDomainService: base}
 }
 
 type CurrencyDomainServiceImpl struct {
+	composable.CrudDomainService
 }
 
 // GetCurrency fetches a single currency, so that a consuming module can validate a currency
@@ -115,19 +118,10 @@ func (this *CurrencyDomainServiceImpl) AssertUsable(
 }
 
 // loadCurrency fetches one currency by id, returning nil when it does not exist.
-//
-// A missing engine is a Go error rather than a validation failure: it means this module was
-// initialized wrongly, which is a defect in the deployment and not something a caller can correct.
 func (this *CurrencyDomainServiceImpl) loadCurrency(
 	ctx corectx.Context, currencyId model.Id,
 ) (*models.Currency, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(models.CurrencySchemaName)
-	if !ok {
-		return nil, errors.Errorf("loadCurrency: the '%s' engine is not registered",
-			models.CurrencySchemaName)
-	}
-
-	found, err := engine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+	found, err := this.Repository().GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{models.CurrencyFieldId: currencyId},
 	})
 	if err != nil {

@@ -139,7 +139,7 @@ func sumPickedQuantity(
 	ctx corectx.Context, operation *transferOperationContext, moveId string,
 ) (decimal.Decimal, error) {
 	items, err := models.FindMoveLines(
-		ctx, operation.MoveLineEngine.ResourceRepository(), moveId, models.MaxMoveLines)
+		ctx, operation.MoveLineRepo, moveId, models.MaxMoveLines)
 	if err != nil {
 		return decimal.Zero, err
 	}
@@ -175,7 +175,7 @@ func sumAlreadyReturned(
 		}
 
 		moves, err := models.FindTransferMoves(
-			ctx, operation.MoveEngine.ResourceRepository(),
+			ctx, operation.MoveRepo,
 			derefString(returnTransfer.GetId()), models.MaxTransferMoves)
 		if err != nil {
 			return nil, err
@@ -204,7 +204,7 @@ func findReturnsOf(
 	graph.And(*dmodel.NewSearchNode().NewCondition(
 		models.StockTransferFieldReturnOfId, dmodel.Equals, transferId))
 
-	found, err := operation.TransferEngine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := operation.TransferRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  models.MaxTransferMoves,
@@ -309,7 +309,7 @@ func insertReturnTransfer(
 		fields[models.StockTransferFieldOperationTypeId] = derefString(original.GetOperationTypeId())
 	}
 
-	if _, err := operation.TransferEngine.ResourceRepository().Insert(ctx, fields); err != nil {
+	if _, err := operation.TransferRepo.Insert(ctx, fields); err != nil {
 		return "", errors.Wrap(err, "insertReturnTransfer")
 	}
 	return findTransferByNumber(ctx, operation, derefString(original.GetOrgId()), transferNumber)
@@ -331,7 +331,7 @@ func insertReturnMoves(
 		}
 		quantity := line.Quantity.String()
 
-		_, err := operation.MoveEngine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+		_, err := operation.MoveRepo.Insert(ctx, dmodel.DynamicFields{
 			models.StockMoveFieldTransferId:         returnId,
 			models.StockMoveFieldProductVariantId:   derefString(source.GetProductVariantId()),
 			models.StockMoveFieldDemandQuantity:     quantity,
@@ -369,7 +369,7 @@ func reverseOperationCode(code string) string {
 func findOperationTypeByCode(
 	ctx corectx.Context, orgId, operationCode string,
 ) (*models.StockOperationType, error) {
-	engine, err := engineFor(models.StockOperationTypeSchemaName)
+	engine, err := repoFor(models.StockOperationTypeSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +381,7 @@ func findOperationTypeByCode(
 			models.StockOperationTypeFieldOperationCode, dmodel.Equals, operationCode),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,

@@ -27,9 +27,11 @@ Create With All Optional Fields Succeeds
     ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID, 'website': 'https://example.com', 'description': {'en-US': 'A robot brand'}} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${BRAND_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/brand.json    200
     Should Be Equal    ${item}[website]    https://example.com
-    DELETE On Session    api    ${BRAND_API}/${id}    expected_status=any
+    DELETE On Session    api    ${BRAND_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Malformed Website Fails
     [Documentation]    website is data_type `url`; no dedicated assertion keyword pins the
@@ -62,7 +64,8 @@ Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${resp}=    POST On Session    api    ${BRAND_API}
-    ...    data={ "name": {"en-US": "broken",    headers=${headers}    expected_status=any
+    ...    data={ "name": {"en-US": "broken",    headers=${headers}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}
 
 Create With Nonexist Field Fails

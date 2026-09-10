@@ -21,7 +21,7 @@ A Variant With Stock Cannot Be Archived
     [Tags]    negative
     ${item}=    Get Guarded Variant
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_VARIANT_ID}/archived
-    ...    json=${{ {'is_archived': True, 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $item['etag']} }}
     ...    expected_status=any
     Should Be True    ${resp.status_code} >= 400
     ...    msg=A product still holding stock must not be archivable
@@ -30,7 +30,7 @@ The Refused Archive Changed Nothing
     [Documentation]    AC-PROD-INT-033. Archiving must never generate a movement, an adjustment
     ...    or a scrap to make the stock go away, so the balance is unchanged by the refusal.
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/product_usage
-    ...    json=${{ {'product_variant_id': $GUARDED_VARIANT_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_variant_id': $GUARDED_VARIANT_ID} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     Should Be True    float($body['onHandQuantity']) > 0
@@ -46,10 +46,11 @@ A Template Is Refused While Any Variant Holds Stock
     ...    not at all, so one variant with stock blocks the whole template.
     [Tags]    negative
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${GUARDED_TEMPLATE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${template}=    Set Variable    ${resp.json()}
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${GUARDED_TEMPLATE_ID}/archived
-    ...    json=${{ {'is_archived': True, 'etag': $template['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $template['etag']} }}
     ...    expected_status=any
     Should Be True    ${resp.status_code} >= 400
     ...    msg=One variant with stock blocks archiving the product line
@@ -63,6 +64,7 @@ No Variant Was Archived By The Refused Template Archive
     ...    msg=A refused template archive must leave every variant untouched
 
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Not Be True    ${resp.json()}[is_archived]
     ...    msg=The clean variant must not be archived by an operation that was rejected
@@ -71,13 +73,15 @@ A Variant With No Stock Can Be Archived
     [Documentation]    TS-PROD-11 and AC-PROD-INT-031. History does not block: a variant holding
     ...    nothing archives, and completed records keep resolving it.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Set Variable    ${resp.json()}
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}/archived
-    ...    json=${{ {'is_archived': True, 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $item['etag']} }}
     Response Status Should Be    ${resp}    200
 
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be True    ${resp.json()}[is_archived]
 
@@ -85,16 +89,18 @@ Unarchiving Is Never Blocked By Stock
     [Documentation]    Restoring a product to the working set strands nothing. Guarding it would
     ...    make a variant archived by mistake impossible to recover.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Set Variable    ${resp.json()}
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}/archived
-    ...    json=${{ {'is_archived': False, 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': False, 'etag': $item['etag']} }}
     Response Status Should Be    ${resp}    200
 
 
 *** Keywords ***
 Get Guarded Variant
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     RETURN    ${resp.json()}
 
@@ -140,8 +146,8 @@ Receive Stock For Guarded Variant
     Set Global Variable    ${GUARDED_MOVE_ID}    ${move_id}
 
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/confirm
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} < 400
     ...    msg=The fixture needs the receipt to complete, or there is no stock to guard against

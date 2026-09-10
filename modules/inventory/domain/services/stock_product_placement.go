@@ -156,7 +156,7 @@ func (this *StockQuantDomainServiceImpl) GetStockByLocation(
 func (this *StockQuantDomainServiceImpl) readVariantPlacements(
 	ctx corectx.Context, variantId string,
 ) (map[string]quantPlacement, error) {
-	engine, err := engineFor(models.StockQuantSchemaName)
+	engine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (this *StockQuantDomainServiceImpl) readVariantPlacements(
 
 	placements := map[string]quantPlacement{}
 	for page := 0; page < maxSummaryQuantPages; page++ {
-		found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  summaryScanPageSize,

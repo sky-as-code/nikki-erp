@@ -17,7 +17,7 @@ const (
 	ProductVariantAttributeValueFieldId                       = basemodel.FieldId
 	ProductVariantAttributeValueFieldProductVariantId         = "product_variant_id"
 	ProductVariantAttributeValueFieldTemplateAttributeValueId = "template_attribute_value_id"
-	ProductVariantAttributeValueFieldSalesPriceExtra           = "sales_price_extra"
+	ProductVariantAttributeValueFieldSalesPriceExtra          = "sales_price_extra"
 
 	ProductVariantAttributeValueEdgeVariant                = "variant"
 	ProductVariantAttributeValueEdgeTemplateAttributeValue = "template_attribute_value"

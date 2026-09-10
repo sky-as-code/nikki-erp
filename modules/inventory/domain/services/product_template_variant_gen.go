@@ -1,12 +1,12 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
@@ -39,13 +39,13 @@ func (this *ProductTemplateDomainServiceImpl) ResolveProductSelection(
 		HasData: true,
 	}
 
-	variantEngine, err := engineFor(models.ProductVariantSchemaName)
+	variantEngine, err := repoFor(models.ProductVariantSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
 	existing, err := models.FindVariantsByCombination(
-		ctx, variantEngine.ResourceRepository(), query.TemplateId, combinationKey, 1)
+		ctx, variantEngine, query.TemplateId, combinationKey, 1)
 	if err != nil {
 		return nil, errors.Wrap(err, "ResolveProductSelection")
 	}
@@ -83,12 +83,12 @@ func (this *ProductTemplateDomainServiceImpl) GenerateVariants(
 		return nil, err
 	}
 
-	variantEngine, err := engineFor(models.ProductVariantSchemaName)
+	variantEngine, err := repoFor(models.ProductVariantSchemaName)
 	if err != nil {
 		return nil, err
 	}
 	existingRows, err := models.FindActiveTemplateVariants(
-		ctx, variantEngine.ResourceRepository(), query.TemplateId, maxTemplateVariants)
+		ctx, variantEngine, query.TemplateId, maxTemplateVariants)
 	if err != nil {
 		return nil, errors.Wrap(err, "GenerateVariants")
 	}
@@ -133,21 +133,21 @@ func (this *ProductTemplateDomainServiceImpl) GenerateVariants(
 func (this *ProductTemplateDomainServiceImpl) wantedCombinations(
 	ctx corectx.Context, templateId string,
 ) ([]string, error) {
-	templateAttrEngine, err := engineFor(models.ProductTemplateAttributeSchemaName)
+	templateAttrEngine, err := repoFor(models.ProductTemplateAttributeSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	valueEngine, err := engineFor(models.ProductTemplateAttributeValueSchemaName)
+	valueEngine, err := repoFor(models.ProductTemplateAttributeValueSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	attributeEngine, err := engineFor(models.ProductAttributeSchemaName)
+	attributeEngine, err := repoFor(models.ProductAttributeSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
 	templateAttrs, err := models.FindTemplateAttributes(
-		ctx, templateAttrEngine.ResourceRepository(), templateId, maxTemplateVariants)
+		ctx, templateAttrEngine, templateId, maxTemplateVariants)
 	if err != nil {
 		return nil, errors.Wrap(err, "wantedCombinations")
 	}
@@ -166,7 +166,7 @@ func (this *ProductTemplateDomainServiceImpl) wantedCombinations(
 		}
 
 		valueRows, err := models.FindTemplateAttributeValues(
-			ctx, valueEngine.ResourceRepository(), derefString(templateAttr.GetId()), maxTemplateVariants)
+			ctx, valueEngine, derefString(templateAttr.GetId()), maxTemplateVariants)
 		if err != nil {
 			return nil, errors.Wrap(err, "wantedCombinations")
 		}
@@ -192,9 +192,9 @@ func (this *ProductTemplateDomainServiceImpl) wantedCombinations(
 }
 
 func (this *ProductTemplateDomainServiceImpl) attributeMode(
-	ctx corectx.Context, attributeEngine drif.DynamicResourceEngine, attributeId string,
+	ctx corectx.Context, attributeEngine composable.CrudRepository, attributeId string,
 ) (models.VariantCreationMode, error) {
-	found, err := attributeEngine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+	found, err := attributeEngine.GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{models.ProductAttributeFieldId: attributeId},
 		Fields: []string{models.ProductAttributeFieldId, models.ProductAttributeFieldVariantCreationMode},
 	})
@@ -212,7 +212,7 @@ func (this *ProductTemplateDomainServiceImpl) attributeMode(
 
 // materializeVariant creates the variant holding one combination of a template.
 func (this *ProductTemplateDomainServiceImpl) materializeVariant(
-	ctx corectx.Context, variantEngine drif.DynamicResourceEngine, templateId string, combinationKey string,
+	ctx corectx.Context, variantEngine composable.CrudRepository, templateId string, combinationKey string,
 ) (string, error) {
 	template, err := this.fetchTemplate(ctx, templateId)
 	if err != nil {
@@ -234,7 +234,11 @@ func (this *ProductTemplateDomainServiceImpl) materializeVariant(
 	// Created through the engine's resource service, not its repository: the create pipeline applies
 	// the schema defaults (id, created_at, etag, is_archived) and the audit fields, and a raw Insert
 	// would reach the database with a null primary key.
-	created, err := variantEngine.ResourceService().Create(ctx, variant.GetFieldData())
+	variantSvc, err := domainServiceFor(models.ProductVariantSchemaName)
+	if err != nil {
+		return "", errors.Wrap(err, "materializeVariant")
+	}
+	created, err := variantSvc.Create(ctx, variant.GetFieldData())
 	if err != nil {
 		return "", errors.Wrap(err, "materializeVariant")
 	}

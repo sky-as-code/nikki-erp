@@ -220,7 +220,7 @@ Attach Attribute To Template
     ...    junction id — the id the allowed-value rows point at, not the attribute's.
     [Arguments]    ${template_id}    ${attribute_id}
     ${resp}=    POST On Session    api    ${TEMPLATE_ATTRIBUTE_API}
-    ...    json=${{ {'product_template_id': $template_id, 'attribute_id': $attribute_id} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_template_id': $template_id, 'attribute_id': $attribute_id} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 
@@ -228,7 +228,7 @@ Allow Attribute Value On Template
     [Documentation]    Adds one attribute value to a template attribute's allowed subset.
     [Arguments]    ${template_attribute_id}    ${attribute_value_id}
     ${resp}=    POST On Session    api    ${TEMPLATE_ATTRIBUTE_VALUE_API}
-    ...    json=${{ {'template_attribute_id': $template_attribute_id, 'attribute_value_id': $attribute_value_id} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'template_attribute_id': $template_attribute_id, 'attribute_value_id': $attribute_value_id} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 
@@ -352,7 +352,8 @@ Delete Inventory Fixture
     [Arguments]    ${api}    ${variable_name}
     ${id}=    Get Variable Value    ${${variable_name}}    ${EMPTY}
     IF    $id
-        DELETE On Session    api    ${api}/${id}    expected_status=any
+        DELETE On Session    api    ${api}/${id}
+        ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
         Set Global Variable    ${${variable_name}}    ${EMPTY}
     END
 
@@ -364,11 +365,12 @@ Archive Inventory Fixture
     [Arguments]    ${api}    ${variable_name}
     ${id}=    Get Variable Value    ${${variable_name}}    ${EMPTY}
     IF    $id
-        ${resp}=    GET On Session    api    ${api}/${id}    expected_status=any
+        ${resp}=    GET On Session    api    ${api}/${id}
+        ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
         IF    ${resp.status_code} == 200
             ${etag}=    Set Variable    ${resp.json()}[etag]
             POST On Session    api    ${api}/${id}/archived
-            ...    json=${{ {'is_archived': True, 'etag': $etag} }}    expected_status=any
+            ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $etag} }}    expected_status=any
         END
         Set Global Variable    ${${variable_name}}    ${EMPTY}
     END
@@ -384,10 +386,12 @@ Delete Matrix Template Fixture
     ...    expected_status=any
     IF    ${resp.status_code} == 200
         FOR    ${item}    IN    @{resp.json()}[items]
-            DELETE On Session    api    ${PRODUCT_VARIANT_API}/${item}[id]    expected_status=any
+            DELETE On Session    api    ${PRODUCT_VARIANT_API}/${item}[id]
+            ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
         END
     END
-    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Set Global Variable    ${MATRIX_TEMPLATE_ID}    ${EMPTY}
 
 # --- Stock ----------------------------------------------------------------------------
@@ -669,6 +673,7 @@ Read Stock Quant Field
     [Documentation]    Reads one field off a balance, for asserting count metadata.
     [Arguments]    ${quant_id}    ${field}
     ${resp}=    GET On Session    api    ${STOCK_QUANT_API}/${quant_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     RETURN    ${resp.json()}[data].get('${field}')
 
@@ -696,7 +701,7 @@ Receive Stock Into Location
     ${move_id}    ${move_etag}=    Response Should Be Create Success    ${resp}
 
     POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/confirm
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     RETURN    ${transfer_id}    ${move_id}
 
 Read Stock On Hand

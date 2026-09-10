@@ -21,14 +21,14 @@ Replayed Validate Does Not Move Stock Twice
 
     ${id}    ${etag}=    Create Stock Transfer    ${INTERNAL_OPERATION_TYPE_ID}
     ${move_id}=    Add Stock Move    ${id}    ${PRODUCT_VARIANT_ID}    15
-    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {} }}    expected_status=any
-    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/reserve    json=${{ {} }}    expected_status=any
+    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/reserve    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
     ${source_before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${dest_before}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_DEST_LOCATION_ID}
 
     ${first}=    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/validate
-    ...    json=${{ {'idempotency_key': $key} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'idempotency_key': $key} }}    expected_status=any
     Response Status Should Be    ${first}    200
 
     ${source_once}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
@@ -36,7 +36,7 @@ Replayed Validate Does Not Move Stock Twice
 
     #    The retry a timed-out client sends: same transfer, same key.
     ${second}=    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/validate
-    ...    json=${{ {'idempotency_key': $key} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'idempotency_key': $key} }}    expected_status=any
     #    A replayed validate must report the prior success, not an error: the client's first
     #    attempt did in fact work, it just never saw the response.
     Response Status Should Be    ${second}    200
@@ -60,6 +60,7 @@ Validate Records The Key It Completed Under
     ...    Written afterwards there would be a window in which the stock had moved but a retry
     ...    could not tell.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${IDEMPOTENT_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Equal    ${resp.json()}[data][idempotency_key]    ${IDEMPOTENT_KEY}
 
@@ -69,7 +70,7 @@ Validate With A Different Key Is Not A Replay
     [Tags]    negative
     ${other}=    Unique Code    idemx
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${IDEMPOTENT_TRANSFER_ID}/validate
-    ...    json=${{ {'idempotency_key': $other} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'idempotency_key': $other} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A done transfer must refuse a validate carrying an unfamiliar key
 
@@ -78,7 +79,7 @@ Validate Without A Key Gets No Replay Protection
     ...    a transfer that happens to carry one — it gets the ordinary already-closed refusal.
     [Tags]    negative
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${IDEMPOTENT_TRANSFER_ID}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
 
 
@@ -89,4 +90,4 @@ Seed Stock For Idempotency
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
     ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    100
     POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any

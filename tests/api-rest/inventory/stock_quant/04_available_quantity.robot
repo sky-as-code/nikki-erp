@@ -42,6 +42,6 @@ Available Quantity Is Rejected On Write
     ...    cannot smuggle a balance in through the derived column. Combined with
     ...    03_reject_direct_write.robot this closes both paths to setting a balance by hand.
     ${resp}=    PATCH On Session    api    ${STOCK_QUANT_API}/${NOT_FOUND_ID}
-    ...    json=${{ {'available_quantity': '999', 'etag': '___________________'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'available_quantity': '999', 'etag': '___________________'} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=available_quantity must not be writable

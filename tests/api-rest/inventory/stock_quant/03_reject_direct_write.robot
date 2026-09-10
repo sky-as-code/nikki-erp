@@ -36,12 +36,13 @@ Update Is Refused
     [Documentation]    Uses a not-found id on purpose: whichever answer comes back, a 200 is
     ...    the one outcome that must never happen, since it would mean the action is live.
     ${resp}=    PATCH On Session    api    ${STOCK_QUANT_API}/${NOT_FOUND_ID}
-    ...    json=${{ {'on_hand_quantity': '50', 'etag': '___________________'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'on_hand_quantity': '50', 'etag': '___________________'} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A stock balance must not be updatable through the API
 
 Delete Is Refused
-    ${resp}=    DELETE On Session    api    ${STOCK_QUANT_API}/${NOT_FOUND_ID}    expected_status=any
+    ${resp}=    DELETE On Session    api    ${STOCK_QUANT_API}/${NOT_FOUND_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A stock balance must not be deletable through the API
 
@@ -49,6 +50,6 @@ Archive Is Not Offered
     [Documentation]    BR §4.2.2.2: a quant carries no is_archived, so the archive action
     ...    must not exist for it — archive is not a substitute for a corrective movement.
     ${resp}=    POST On Session    api    ${STOCK_QUANT_API}/${NOT_FOUND_ID}/archived
-    ...    json=${{ {'etag': '___________________', 'is_archived': True} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': '___________________', 'is_archived': True} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A stock balance must not expose an archive action

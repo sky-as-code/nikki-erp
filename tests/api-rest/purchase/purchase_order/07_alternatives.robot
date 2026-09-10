@@ -20,11 +20,13 @@ Create Alternative Puts Two Orders In One Sourcing Group
     ${second_party}    ${party_etag}=    Create Party    Robot Alt Vendor    company
     ${profile}=    POST On Session    api    ${VENDOR_PROFILE_API}    json=${{ {'party_id': $second_party, 'org_id': $PURCHASE_ORG_ID, 'status': 'active'} }}
     Response Status Should Be    ${profile}    201
-    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'vendor_id': $second_party} }}
+    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'org_id': $PURCHASE_ORG_ID, 'vendor_id': $second_party} }}
     Response Status Should Be    ${resp}    200
     ${alt_id}=    Set Variable    ${resp.json()}[id]
     ${original}=    GET On Session    api    ${PURCHASE_ORDER_API}/${order_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     ${alternative}=    GET On Session    api    ${PURCHASE_ORDER_API}/${alt_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Not Be Empty    ${original.json()}[sourcing_group_id]
     Should Be Equal    ${original.json()}[sourcing_group_id]    ${alternative.json()}[sourcing_group_id]
     [Teardown]    Run Keywords
@@ -38,10 +40,11 @@ An Alternative Asks A Different Vendor
     ${order_id}    ${etag}=    Create Confirmable Purchase Order
     ${second_party}    ${party_etag}=    Create Party    Robot Alt Vendor Two    company
     POST On Session    api    ${VENDOR_PROFILE_API}    json=${{ {'party_id': $second_party, 'org_id': $PURCHASE_ORG_ID, 'status': 'active'} }}
-    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'vendor_id': $second_party} }}
+    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'org_id': $PURCHASE_ORG_ID, 'vendor_id': $second_party} }}
     Response Status Should Be    ${resp}    200
     ${alt_id}=    Set Variable    ${resp.json()}[id]
     ${alternative}=    GET On Session    api    ${PURCHASE_ORDER_API}/${alt_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal    ${alternative.json()}[vendor_id]    ${second_party}
     Should Be Equal    ${alternative.json()}[status]       rfq
     [Teardown]    Run Keywords
@@ -50,7 +53,8 @@ An Alternative Asks A Different Vendor
 
 Create Alternative Requires A Vendor
     ${order_id}    ${etag}=    Create Confirmable Purchase Order
-    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    expected_status=any
+    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Response Should Be Purchase Violation    ${resp}    purchase_order.alternative_vendor_required
     [Teardown]    Delete Purchase Order Fixture    ${order_id}
 
@@ -60,9 +64,10 @@ Compare Alternatives Names The Cheapest
     ${order_id}    ${etag}=    Create Confirmable Purchase Order    10    100.00
     ${second_party}    ${party_etag}=    Create Party    Robot Cheap Vendor    company
     POST On Session    api    ${VENDOR_PROFILE_API}    json=${{ {'party_id': $second_party, 'org_id': $PURCHASE_ORG_ID, 'status': 'active'} }}
-    ${created}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'vendor_id': $second_party} }}
+    ${created}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'org_id': $PURCHASE_ORG_ID, 'vendor_id': $second_party} }}
     ${alt_id}=    Set Variable    ${created.json()}[id]
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/compare_alternatives
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     Length Should Be    ${body}[Alternatives]    2
@@ -78,11 +83,12 @@ Confirming With Open Alternatives Is Refused Until The Caller Decides
     ${order_id}    ${etag}=    Create Confirmable Purchase Order
     ${second_party}    ${party_etag}=    Create Party    Robot Warn Vendor    company
     POST On Session    api    ${VENDOR_PROFILE_API}    json=${{ {'party_id': $second_party, 'org_id': $PURCHASE_ORG_ID, 'status': 'active'} }}
-    ${created}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'vendor_id': $second_party} }}
+    ${created}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'org_id': $PURCHASE_ORG_ID, 'vendor_id': $second_party} }}
     ${alt_id}=    Set Variable    ${created.json()}[id]
     ${resp}=    Confirm Purchase Order    ${order_id}
     Response Should Be Purchase Violation    ${resp}    purchase_order.open_alternatives
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${order_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal    ${order.json()}[status]    rfq    msg=A refused confirm must not have moved the order
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${alt_id}
@@ -94,11 +100,12 @@ Confirming With Keep Alternatives Leaves The Others Open
     ${order_id}    ${etag}=    Create Confirmable Purchase Order
     ${second_party}    ${party_etag}=    Create Party    Robot Keep Vendor    company
     POST On Session    api    ${VENDOR_PROFILE_API}    json=${{ {'party_id': $second_party, 'org_id': $PURCHASE_ORG_ID, 'status': 'active'} }}
-    ${created}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'vendor_id': $second_party} }}
+    ${created}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'org_id': $PURCHASE_ORG_ID, 'vendor_id': $second_party} }}
     ${alt_id}=    Set Variable    ${created.json()}[id]
     ${resp}=    Confirm Purchase Order    ${order_id}    keep_alternatives
     Response Status Should Be    ${resp}    200
     ${alternative}=    GET On Session    api    ${PURCHASE_ORDER_API}/${alt_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal    ${alternative.json()}[status]    rfq
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${alt_id}
@@ -110,11 +117,12 @@ Confirming With Cancel Alternatives Closes The Others
     ${order_id}    ${etag}=    Create Confirmable Purchase Order
     ${second_party}    ${party_etag}=    Create Party    Robot Cancel Vendor    company
     POST On Session    api    ${VENDOR_PROFILE_API}    json=${{ {'party_id': $second_party, 'org_id': $PURCHASE_ORG_ID, 'status': 'active'} }}
-    ${created}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'vendor_id': $second_party} }}
+    ${created}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/create_alternative    json=${{ {'org_id': $PURCHASE_ORG_ID, 'vendor_id': $second_party} }}
     ${alt_id}=    Set Variable    ${created.json()}[id]
     ${resp}=    Confirm Purchase Order    ${order_id}    cancel_alternatives
     Response Status Should Be    ${resp}    200
     ${alternative}=    GET On Session    api    ${PURCHASE_ORDER_API}/${alt_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal    ${alternative.json()}[status]    cancelled
     Audit Trail Should Record    ${alt_id}    cancel
     [Teardown]    Run Keywords
@@ -128,10 +136,12 @@ Merge Folds Draft Orders Into The Oldest
     ${first_id}    ${first_etag}=    Create Confirmable Purchase Order    5    10.00
     ${second_id}    ${second_etag}=    Create Confirmable Purchase Order    3    10.00
     ${ids}=    Create List    ${first_id}    ${second_id}
-    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/merge    json=${{ {'order_ids': $ids} }}
+    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/merge    json=${{ {'org_id': $PURCHASE_ORG_ID, 'order_ids': $ids} }}
     Response Status Should Be    ${resp}    200
     ${first}=    GET On Session    api    ${PURCHASE_ORDER_API}/${first_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     ${second}=    GET On Session    api    ${PURCHASE_ORDER_API}/${second_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     ${statuses}=    Create List    ${first.json()}[status]    ${second.json()}[status]
     Should Contain    ${statuses}    cancelled
     ...    msg=One of the merged orders must be cancelled as the source
@@ -142,7 +152,7 @@ Merge Folds Draft Orders Into The Oldest
 Merge Needs At Least Two Orders
     ${order_id}    ${etag}=    Create Confirmable Purchase Order
     ${ids}=    Create List    ${order_id}
-    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/merge    json=${{ {'order_ids': $ids} }}    expected_status=any
+    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/merge    json=${{ {'org_id': $PURCHASE_ORG_ID, 'order_ids': $ids} }}    expected_status=any
     Response Should Be Purchase Violation    ${resp}    purchase_order.merge_needs_two
     [Teardown]    Delete Purchase Order Fixture    ${order_id}
 
@@ -154,7 +164,7 @@ Merge Refuses Orders With Different Vendors
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}    json=${{ {'vendor_id': $other_party, 'buyer_id': $PURCHASE_BUYER_ID, 'currency_id': $PURCHASE_CURRENCY_ID, 'org_id': $PURCHASE_ORG_ID, 'priority': 'normal'} }}
     ${second_id}    ${second_etag}=    Response Should Be Create Success    ${resp}
     ${ids}=    Create List    ${first_id}    ${second_id}
-    ${merge}=    POST On Session    api    ${PURCHASE_ORDER_API}/merge    json=${{ {'order_ids': $ids} }}    expected_status=any
+    ${merge}=    POST On Session    api    ${PURCHASE_ORDER_API}/merge    json=${{ {'org_id': $PURCHASE_ORG_ID, 'order_ids': $ids} }}    expected_status=any
     Response Should Be Purchase Violation    ${merge}    purchase_order.merge_vendor_mismatch
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${first_id}
@@ -167,7 +177,7 @@ Merge Refuses A Confirmed Order
     ${second_id}    ${second_etag}=    Create Confirmable Purchase Order
     Confirm Purchase Order    ${second_id}
     ${ids}=    Create List    ${first_id}    ${second_id}
-    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/merge    json=${{ {'order_ids': $ids} }}    expected_status=any
+    ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/merge    json=${{ {'org_id': $PURCHASE_ORG_ID, 'order_ids': $ids} }}    expected_status=any
     Response Should Be Purchase Violation    ${resp}    purchase_order.not_mergeable
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${first_id}

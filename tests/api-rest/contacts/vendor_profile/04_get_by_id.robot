@@ -9,6 +9,7 @@ Test Tags         contacts    vendor_profile    get
 *** Test Cases ***
 Get Succeeds
     ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/${VENDOR_PROFILE_ID}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${CONTACTS_SCHEMA_DIR}/vendor_profile.json    200
     Should Be Equal    ${item}[party_id]    ${PARTY_ID}
     Should Be Equal    ${item}[org_id]    ${CONTACTS_ORG_ID}
@@ -20,6 +21,7 @@ Get Returns The Defaults A Purchase Order Reads
     ...    be able to tell "not stated" from a value, and a field omitted entirely from the
     ...    payload cannot express either.
     ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/${VENDOR_PROFILE_ID}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Set Variable    ${resp.json()}[item]
     Dictionary Should Contain Key    ${item}    default_currency_id
@@ -28,21 +30,23 @@ Get Returns The Defaults A Purchase Order Reads
 
 Get With Columns Succeeds
     ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/${VENDOR_PROFILE_ID}
-    ...    params=${{ {'fields': ['party_id', 'status', 'payment_terms']} }}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID, 'fields': ['party_id', 'status', 'payment_terms']} }}
     Response Status Should Be    ${resp}    200
 
 Get With Nonexist Column Fails
     [Tags]    negative
     ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/${VENDOR_PROFILE_ID}
-    ...    params=${{ {'fields': ['status', 'bla_bla_field']} }}    expected_status=any
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID, 'fields': ['status', 'bla_bla_field']} }}    expected_status=any
     Response Should Be Nonexist Fields Error    ${resp}    bla_bla_field
 
 Get With Not Found Id Fails
     [Tags]    negative
-    ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/${NOT_FOUND_ID}    expected_status=any
+    ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/${NOT_FOUND_ID}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Get With Invalid Id Format Fails
     [Tags]    negative
-    ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/not-existing-1234567890123    expected_status=any
+    ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/not-existing-1234567890123
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     Response Should Be Invalid Format Error    ${resp}    id

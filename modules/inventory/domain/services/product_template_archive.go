@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -8,7 +9,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
@@ -28,10 +28,10 @@ func (this *ProductTemplateDomainServiceImpl) SetArchived(
 	if !hasFlag {
 		// is_archived is RequiredAlways on the command schema, so the base call reports the missing
 		// flag as a client error.
-		return this.DynamicResourceService.SetArchived(ctx, params)
+		return this.CrudDomainService.SetArchived(ctx, params)
 	}
 
-	variantEngine, err := engineFor(models.ProductVariantSchemaName)
+	variantEngine, err := repoFor(models.ProductVariantSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (this *ProductTemplateDomainServiceImpl) SetArchived(
 		return guarded, err
 	}
 
-	tranx, err := variantEngine.ResourceRepository().BeginTransaction(ctx)
+	tranx, err := variantEngine.BeginTransaction(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "SetArchived")
 	}
@@ -55,7 +55,7 @@ func (this *ProductTemplateDomainServiceImpl) SetArchived(
 	tranxCtx := corectx.CloneRequestContext(ctx)
 	tranxCtx.SetDbTranx(tranx)
 
-	result, err := this.DynamicResourceService.SetArchived(tranxCtx, params)
+	result, err := this.CrudDomainService.SetArchived(tranxCtx, params)
 	if err != nil {
 		return nil, errors.Wrap(err, "SetArchived")
 	}
@@ -100,13 +100,13 @@ func (this *ProductTemplateDomainServiceImpl) guardStockUsage(
 // cascadeArchiveToVariants applies a template's archive change to each of its variants, deciding
 // per variant with ShouldSkipCascade and CascadeArchiveFields.
 func (this *ProductTemplateDomainServiceImpl) cascadeArchiveToVariants(
-	ctx corectx.Context, variantEngine drif.DynamicResourceEngine, templateId string, archive bool,
+	ctx corectx.Context, variantEngine composable.CrudRepository, templateId string, archive bool,
 ) error {
 	if templateId == "" {
 		return nil
 	}
 
-	repo := variantEngine.ResourceRepository()
+	repo := variantEngine
 	variants, err := models.FindTemplateVariants(ctx, repo, templateId, MaxCascadeVariants)
 	if err != nil {
 		return errors.Wrap(err, "cascadeArchiveToVariants")

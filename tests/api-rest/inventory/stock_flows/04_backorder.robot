@@ -25,13 +25,14 @@ Partial Processing Leaves The Original Demand Intact
 
     ${id}    ${etag}=    Create Stock Transfer    ${INTERNAL_OPERATION_TYPE_ID}
     ${move_id}=    Add Stock Move    ${id}    ${PRODUCT_VARIANT_ID}    ${demand}
-    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {} }}    expected_status=any
-    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/reserve    json=${{ {} }}    expected_status=any
+    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/reserve    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
     ${check}=    GET On Session    api    ${STOCK_MOVE_API}/${move_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${actual}=    Convert To Number    ${check.json()}[data][demand_quantity]
     Should Be Equal As Numbers    ${actual}    ${demand}
     ...    msg=A partial validate must not rewrite the original demand
@@ -57,6 +58,7 @@ Backorder Points Back At Its Original
     [Documentation]    STOCK-INV-010. The link is what makes a split delivery traceable in both
     ...    directions after the fact.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${BACKORDER_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Equal    ${resp.json()}[data][backorder_of_id]    ${PARTIAL_TRANSFER_ID}
 
@@ -64,11 +66,13 @@ Backorder Starts As A Fresh Draft
     [Documentation]    It is a new document with its own number and its own lifecycle, not a
     ...    reopening of the original — which stays Done.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${BACKORDER_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Set Variable    ${resp.json()}[data]
     Should Be Equal    ${item}[status]    draft
     Should Not Be Empty    ${item}[transfer_number]
 
     ${original}=    GET On Session    api    ${STOCK_TRANSFER_API}/${PARTIAL_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Should Be Equal    ${original.json()}[data][status]    done
     ...    msg=The original transfer stays done: what it delivered, it delivered
 
@@ -101,16 +105,16 @@ Ask Policy Requires An Explicit Decision
     ...    json=${{ {'operation_type_id': $type_id, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${move_id}=    Add Stock Move    ${id}    ${PRODUCT_VARIANT_ID}    ${demand}
-    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {} }}    expected_status=any
-    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/reserve    json=${{ {} }}    expected_status=any
+    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/reserve    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=An 'ask' policy with an undelivered remainder must require create_backorder
 
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/validate
-    ...    json=${{ {'create_backorder': False} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'create_backorder': False} }}    expected_status=any
     #    An explicit decision must be accepted, whichever way it goes.
     Response Status Should Be    ${resp}    200
 
@@ -124,4 +128,4 @@ Seed Stock For Backorder
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
     ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    40
     POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any

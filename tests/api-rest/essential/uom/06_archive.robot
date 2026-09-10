@@ -10,7 +10,7 @@ Test Tags         essential    uom    archive
 *** Test Cases ***
 Archive Succeeds
     ${resp}=    POST On Session    api    ${UOM_API}/${UOM_ID}/archived
-    ...    json=${{ {'etag': $UOM_ETAG, 'is_archived': True} }}
+    ...    json=${{ {'org_id': $UOM_ORG_ID, 'etag': $UOM_ETAG, 'is_archived': True} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${UOM_ETAG}
     IF    $etag is not None    Set Global Variable    ${UOM_ETAG}    ${etag}
 
@@ -18,29 +18,30 @@ Archived Uom Is Still Readable
     [Documentation]    BR-UOM-ESS-019: archived records stay in the data so historical
     ...    quantities remain interpretable; only new use is barred.
     ${resp}=    GET On Session    api    ${UOM_API}/${UOM_ID}
+    ...    params=${{ {'org_id': $UOM_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${ESSENTIAL_SCHEMA_DIR}/uom.json    200
     Should Be True    ${item}[is_archived]    msg=The UoM should read back as archived
 
 Unarchive Succeeds
     ${resp}=    POST On Session    api    ${UOM_API}/${UOM_ID}/archived
-    ...    json=${{ {'etag': $UOM_ETAG, 'is_archived': False} }}
+    ...    json=${{ {'org_id': $UOM_ORG_ID, 'etag': $UOM_ETAG, 'is_archived': False} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${UOM_ETAG}
     IF    $etag is not None    Set Global Variable    ${UOM_ETAG}    ${etag}
 
 Archive With Not Found Id Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${UOM_API}/${NOT_FOUND_ID}/archived
-    ...    json=${{ {'etag': $UOM_ETAG, 'is_archived': True} }}    expected_status=any
+    ...    json=${{ {'org_id': $UOM_ORG_ID, 'etag': $UOM_ETAG, 'is_archived': True} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Archive With Unmatched Etag Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${UOM_API}/${UOM_ID}/archived
-    ...    json=${{ {'etag': '___________________', 'is_archived': True} }}    expected_status=any
+    ...    json=${{ {'org_id': $UOM_ORG_ID, 'etag': '___________________', 'is_archived': True} }}    expected_status=any
     Response Should Be Etag Unmatched Error    ${resp}
 
 Archive With Missing Required Fields Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${UOM_API}/${UOM_ID}/archived
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
     Response Should Be Missing Fields Error    ${resp}    etag    is_archived

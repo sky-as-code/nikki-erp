@@ -100,12 +100,12 @@ func assertScrappableStock(
 ) (*ft.ClientErrors, error) {
 	vErrs := ft.NewClientErrors()
 
-	engine, err := engineFor(models.StockQuantSchemaName)
+	engine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return vErrs, err
 	}
 
-	locked, err := LockQuantsForUpdate(ctx, engine.ResourceRepository().GetBaseRepo(), QuantLockKey{
+	locked, err := LockQuantsForUpdate(ctx, engine.GetBaseRepo(), QuantLockKey{
 		OrgId:            model.Id(derefString(scrap.GetOrgId())),
 		ProductVariantId: model.Id(derefString(scrap.GetProductVariantId())),
 		LocationId:       model.Id(derefString(scrap.GetSourceLocationId())),
@@ -196,11 +196,11 @@ func loadScrapDestination(
 ) (string, error) {
 	named := derefString(scrap.GetScrapLocationId())
 	if named != "" {
-		engine, err := engineFor(models.InventoryLocationSchemaName)
+		engine, err := repoFor(models.InventoryLocationSchemaName)
 		if err != nil {
 			return "", err
 		}
-		found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+		found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
 			models.InventoryLocationFieldId: named,
 		})
 		if err != nil {
@@ -224,12 +224,12 @@ func loadScrapDestination(
 // closeScrap marks the document done and records the movement it generated. All three fields are
 // written together: a done scrap with no move id is a write-off nobody could trace.
 func closeScrap(ctx corectx.Context, scrap models.StockScrap, moveId string) error {
-	engine, err := engineFor(models.StockScrapSchemaName)
+	engine, err := repoFor(models.StockScrapSchemaName)
 	if err != nil {
 		return err
 	}
 
-	_, err = engine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err = engine.Update(ctx, dmodel.DynamicFields{
 		models.StockScrapFieldId:          derefString(scrap.GetId()),
 		models.StockScrapFieldStatus:      models.StockScrapStatusDone,
 		models.StockScrapFieldMoveId:      moveId,

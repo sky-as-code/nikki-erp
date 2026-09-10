@@ -14,6 +14,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/engine"
 	it "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
@@ -215,6 +216,10 @@ func searchSourceRowsForComputed(
 ) ([]dmodel.DynamicFields, error) {
 	sourceEngine, ok := registrySingleton.GetEngine(schemaName)
 	if !ok {
+		// The source may have migrated to a composable onion, which this registry does not hold.
+		if repo, served := composable.LookupSourceRepository(schemaName); served {
+			return composable.SearchRepositoryRows(ctx, repo, schemaName, keyColumn, keys, fields)
+		}
 		return nil, errors.Errorf("no resource engine for computed-field source '%s'", schemaName)
 	}
 	graph := dmodel.NewSearchGraph()
@@ -282,6 +287,22 @@ func assertComputedFunctionsDefined() error {
 	for _, resourceEngine := range registrySingleton.AllEngines() {
 		if err := resourceEngine.AssertComputedFunctionsDefined(); err != nil {
 			failures = append(failures, err)
+		}
+	}
+	failures = append(failures, composable.AssertComputedFunctionsDefined())
+	return stdErr.Join(failures...)
+}
+
+// assertNoDualServing fails the boot when a schema is served by both this registry and a
+// composable onion: both would register the same routes, and echo would silently answer with
+// whichever came first. A module migrating a resource removes it from its legacy specs in the
+// same change that adds the onion.
+func assertNoDualServing() error {
+	var failures []error
+	for _, schemaName := range composable.BuiltSchemaNames() {
+		if _, legacy := registrySingleton.GetEngine(schemaName); legacy {
+			failures = append(failures, errors.Errorf(
+				"resource '%s' is served by both the legacy engine registry and a composable onion", schemaName))
 		}
 	}
 	return stdErr.Join(failures...)

@@ -16,7 +16,7 @@ Test Tags         inventory    inventory_location    lifecycle
 Suspend Takes A Location Out Of Use
     [Documentation]    TS-STATUS-04.
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${LIFECYCLE_LOCATION_ID}/suspend
-    ...    json=${{ {} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Get Lifecycle Location
     Should Be Equal    ${item}[status]    suspended
@@ -26,12 +26,12 @@ Suspend Takes A Location Out Of Use
 Suspending A Suspended Location Is Refused
     [Tags]    negative
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${LIFECYCLE_LOCATION_ID}/suspend
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 Resume Returns A Location To Use
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${LIFECYCLE_LOCATION_ID}/resume
-    ...    json=${{ {} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Get Lifecycle Location
     Should Be Equal    ${item}[status]    active
@@ -41,12 +41,12 @@ Unarchive Leaves A Location Suspended
     ...    than active: the tree it sat in may have changed while it was archived.
     ${item}=    Get Lifecycle Location
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${LIFECYCLE_LOCATION_ID}/archived
-    ...    json=${{ {'is_archived': True, 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $item['etag']} }}
     Response Status Should Be    ${resp}    200
 
     ${item}=    Get Lifecycle Location
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${LIFECYCLE_LOCATION_ID}/archived
-    ...    json=${{ {'is_archived': False, 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': False, 'etag': $item['etag']} }}
     Response Status Should Be    ${resp}    200
 
     ${item}=    Get Lifecycle Location
@@ -55,7 +55,7 @@ Unarchive Leaves A Location Suspended
     ...    msg=Unarchiving returns a location to suspended, never straight to active
 
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${LIFECYCLE_LOCATION_ID}/resume
-    ...    json=${{ {} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
 
 Archiving A Location With A Live Child Is Refused
@@ -65,10 +65,11 @@ Archiving A Location With A Live Child Is Refused
     ${child}=    Create Child Of Lifecycle Location
     ${item}=    Get Lifecycle Location
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${LIFECYCLE_LOCATION_ID}/archived
-    ...    json=${{ {'is_archived': True, 'etag': $item['etag']} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $item['etag']} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
     ...    msg=A location with a live child must not archive
-    DELETE On Session    api    ${INVENTORY_LOCATION_API}/${child}    expected_status=any
+    DELETE On Session    api    ${INVENTORY_LOCATION_API}/${child}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 A System Generated Location Cannot Be Archived While Its Warehouse Lives
     [Documentation]    The Stock location is what makes a warehouse able to hold anything.
@@ -80,9 +81,10 @@ A System Generated Location Cannot Be Archived While Its Warehouse Lives
     Should Not Be Empty    ${stock}
 
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${stock}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${stock}/archived
-    ...    json=${{ {'is_archived': True, 'etag': $item['etag']} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $item['etag']} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 A System Generated Location Cannot Be Moved
@@ -90,7 +92,7 @@ A System Generated Location Cannot Be Moved
     [Tags]    negative
     ${stock}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    Stock
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${stock}/move
-    ...    json=${{ {'parent_location_id': $LIFECYCLE_LOCATION_ID} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'parent_location_id': $LIFECYCLE_LOCATION_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 A Client Cannot Mint A System Generated Location
@@ -104,16 +106,18 @@ A Client Cannot Mint A System Generated Location
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
 
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
     Should Not Be True    ${item}[is_system_generated]
     ...    msg=Only the warehouse service may mark a location system-generated
-    DELETE On Session    api    ${INVENTORY_LOCATION_API}/${id}    expected_status=any
+    DELETE On Session    api    ${INVENTORY_LOCATION_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 There Is No Activate Or Deactivate Action
     [Tags]    negative
     FOR    ${action}    IN    activate    deactivate
         ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${LIFECYCLE_LOCATION_ID}/${action}
-        ...    json=${{ {} }}    expected_status=any
+        ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
         Should Be True    ${resp.status_code} >= 400
         ...    msg=/${action} must not be served
     END
@@ -134,6 +138,7 @@ Ensure Lifecycle Location
 
 Get Lifecycle Location
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${LIFECYCLE_LOCATION_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
     RETURN    ${item}
 

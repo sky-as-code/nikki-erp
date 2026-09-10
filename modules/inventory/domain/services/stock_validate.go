@@ -137,7 +137,7 @@ func executeOneMove(
 	}
 
 	lines, err := models.FindMoveLines(
-		ctx, operation.MoveLineEngine.ResourceRepository(), moveId, models.MaxMoveLines)
+		ctx, operation.MoveLineRepo, moveId, models.MaxMoveLines)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func executeOneMove(
 	// Lock the source balances before any is read or written, so the whole move sees one consistent
 	// picture and no other request can interleave.
 	if _, err := LockQuantsForUpdate(
-		ctx, operation.QuantEngine.ResourceRepository().GetBaseRepo(), QuantLockKey{
+		ctx, operation.QuantRepo.GetBaseRepo(), QuantLockKey{
 			OrgId:            derefString(move.GetOrgId()),
 			ProductVariantId: derefString(move.GetProductVariantId()),
 			LocationId:       derefString(move.GetSourceLocationId()),
@@ -171,7 +171,7 @@ func executeOneMove(
 		// Nothing moved, so cancel rather than mark done: "done" must mean "this stock moved".
 		next = models.StockMoveStatusCancelled
 	}
-	if err := updateMoveStatus(ctx, operation.MoveEngine, move, next); err != nil {
+	if err := updateMoveStatus(ctx, operation.MoveRepo, move, next); err != nil {
 		return nil, err
 	}
 
@@ -225,7 +225,7 @@ func ensureIncomingLine(
 		models.StockMoveLineFieldOwnerRef:              "",
 		models.StockMoveLineFieldOrgId:                 derefString(move.GetOrgId()),
 	}
-	_, err = operation.MoveLineEngine.ResourceService().Create(ctx, line)
+	_, err = operation.MoveLineSvc.Create(ctx, line)
 	return errors.Wrap(err, "ensureIncomingLine")
 }
 
@@ -296,7 +296,7 @@ func ensureDestinationQuant(
 func ensureQuantForDimension(
 	ctx corectx.Context, operation *transferOperationContext, dimension models.QuantDimension,
 ) (model.Id, error) {
-	found, err := models.FindQuantForDimension(ctx, operation.QuantEngine.ResourceRepository(), dimension)
+	found, err := models.FindQuantForDimension(ctx, operation.QuantRepo, dimension)
 	if err != nil {
 		return "", err
 	}
@@ -304,7 +304,7 @@ func ensureQuantForDimension(
 		return derefString(models.NewStockQuantFrom(found[0]).GetId()), nil
 	}
 
-	_, err = operation.QuantEngine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+	_, err = operation.QuantRepo.Insert(ctx, dmodel.DynamicFields{
 		models.StockQuantFieldProductVariantId: dimension.ProductVariantId,
 		models.StockQuantFieldLocationId:       dimension.LocationId,
 		models.StockQuantFieldLotRef:           dimension.LotRef,
@@ -320,7 +320,7 @@ func ensureQuantForDimension(
 	}
 
 	// Re-read to get the id the insert generated, by the same unique dimension.
-	found, err = models.FindQuantForDimension(ctx, operation.QuantEngine.ResourceRepository(), dimension)
+	found, err = models.FindQuantForDimension(ctx, operation.QuantRepo, dimension)
 	if err != nil {
 		return "", err
 	}
@@ -340,7 +340,7 @@ func applyQuantDelta(
 	onHandDelta decimal.Decimal,
 	reservedDelta decimal.Decimal,
 ) error {
-	found, err := operation.QuantEngine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := operation.QuantRepo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.StockQuantFieldId: quantId,
 	})
 	if err != nil {
@@ -361,7 +361,7 @@ func applyQuantDelta(
 			"validating would drive stock quant '%s' to a negative reserved quantity", quantId)
 	}
 
-	_, err = operation.QuantEngine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err = operation.QuantRepo.Update(ctx, dmodel.DynamicFields{
 		models.StockQuantFieldId:               quantId,
 		models.StockQuantFieldOnHandQuantity:   nextOnHand.String(),
 		models.StockQuantFieldReservedQuantity: nextReserved.String(),
@@ -374,7 +374,7 @@ func applyQuantDelta(
 func stampLineExecuted(
 	ctx corectx.Context, operation *transferOperationContext, line models.StockMoveLine,
 ) error {
-	_, err := operation.MoveLineEngine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err := operation.MoveLineRepo.Update(ctx, dmodel.DynamicFields{
 		models.StockMoveLineFieldId:          derefString(line.GetId()),
 		models.StockMoveLineFieldPicked:      true,
 		models.StockMoveLineFieldOperationAt: time.Now().UTC(),
@@ -430,6 +430,6 @@ func closeTransfer(
 		update[models.StockTransferFieldIdempotencyKey] = idempotencyKey
 	}
 
-	_, err := operation.TransferEngine.ResourceRepository().Update(ctx, update)
+	_, err := operation.TransferRepo.Update(ctx, update)
 	return errors.Wrap(err, "closeTransfer")
 }

@@ -1,26 +1,33 @@
 package app
 
 import (
+	"go.bryk.io/pkg/errors"
+
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
 )
 
-func NewCurrencyApplicationServiceImpl(
-	currencySvc itCurrency.CurrencyDomainService,
-) itCurrency.CurrencyAppService {
-	return &CurrencyApplicationServiceImpl{currencySvc: currencySvc}
+// NewCurrencyApplicationService is handed the composable default by the currency onion. The
+// domain service behind it is the module's own, so the assertion is a wiring check rather
+// than a guess.
+func NewCurrencyApplicationService(base composable.CrudApplicationService) itCurrency.CurrencyApplicationService {
+	currencySvc, ok := base.DomainService().(itCurrency.CurrencyDomainService)
+	if !ok {
+		panic(errors.New("the currency onion must be built with NewCurrencyDomainService"))
+	}
+	return &CurrencyApplicationServiceImpl{CrudApplicationService: base, currencySvc: currencySvc}
 }
 
-// CurrencyApplicationServiceImpl is the capability boundary other modules bind to.
+// CurrencyApplicationServiceImpl is the authorized CRUD plus the capability boundary other
+// modules bind to.
 //
-// It stays a thin delegation on purpose, exactly as the UoM one does: when Essential is split into
-// its own service, this is the type a REST client replaces, and any logic living here would have to
-// be duplicated.
-//
-// Purchase is the first consumer ([PUR-018]) and the reason this exists. Until it did, the
-// interface documented a binding that nothing provided — which is not a compile error, so it
-// surfaced only when a consuming module failed to start.
+// The cross-module methods stay a thin delegation on purpose, exactly as the UoM one does: when
+// Essential is split into its own service, this is the type a REST client replaces, and any
+// logic living here would have to be duplicated. They assert no permission because the caller is
+// another module acting on its own authority, not a user reading currencies.
 type CurrencyApplicationServiceImpl struct {
+	composable.CrudApplicationService
 	currencySvc itCurrency.CurrencyDomainService
 }
 

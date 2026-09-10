@@ -80,7 +80,7 @@ func sortRulesByPriority(rules []models.PutawayRule) {
 func findCandidatePutawayRules(
 	ctx corectx.Context, putawayCtx PutawayContext,
 ) ([]models.PutawayRule, error) {
-	engine, err := engineFor(models.PutawayRuleSchemaName)
+	engine, err := repoFor(models.PutawayRuleSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func findCandidatePutawayRules(
 
 	rules := make([]models.PutawayRule, 0)
 	for page := 0; ; page++ {
-		found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  usageScanPageSize,
@@ -142,11 +142,11 @@ func isLocationUsableForPutaway(ctx corectx.Context, locationId string) (bool, e
 		return false, nil
 	}
 
-	engine, err := engineFor(models.InventoryLocationSchemaName)
+	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return false, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.InventoryLocationFieldId: locationId,
 	})
 	if err != nil {

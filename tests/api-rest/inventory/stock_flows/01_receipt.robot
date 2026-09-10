@@ -20,7 +20,7 @@ Receipt Raises On Hand By The Processed Quantity
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
     ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    25
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
     ${after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
@@ -35,6 +35,7 @@ Validated Receipt Is Done And Stamped
     [Documentation]    BR §4.2.3.10 postconditions: the transfer is Done and completed_at is
     ...    recorded. The stamp is what makes it historical rather than merely finished.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${RECEIPT_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Set Variable    ${resp.json()}[data]
     Should Be Equal    ${item}[status]    done
@@ -43,6 +44,7 @@ Validated Receipt Is Done And Stamped
 
 Validated Receipt Closes Its Moves
     ${resp}=    GET On Session    api    ${STOCK_MOVE_API}/${RECEIPT_MOVE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Equal    ${resp.json()}[data][status]    done
 
@@ -51,7 +53,7 @@ Validating A Done Transfer Fails
     ...    move the stock again.
     [Tags]    negative
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${RECEIPT_TRANSFER_ID}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A completed transfer must not be validated a second time
 
@@ -60,7 +62,7 @@ Cancelling A Done Transfer Is Refused
     ...    edits can make that not have happened, so the remedy is a reverse transfer.
     [Tags]    negative
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${RECEIPT_TRANSFER_ID}/cancel
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A completed transfer cannot be cancelled
 

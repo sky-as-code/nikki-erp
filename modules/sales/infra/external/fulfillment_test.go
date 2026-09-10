@@ -13,6 +13,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	invModels "github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 
@@ -50,7 +51,7 @@ type stubTransfers struct {
 }
 
 func (this *stubTransfers) Create(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, _ ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	this.calls = append(this.calls, "create")
 	return this.createResult, this.createErr

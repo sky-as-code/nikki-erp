@@ -27,9 +27,11 @@ Create With Default Locations Succeeds
     ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'never', 'default_source_location_id': $INVENTORY_LOCATION_ID, 'default_destination_location_id': $INVENTORY_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${STOCK_OPERATION_TYPE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/stock_operation_type.json    200
     Should Be Equal    ${item}[default_source_location_id]    ${INVENTORY_LOCATION_ID}
-    DELETE On Session    api    ${STOCK_OPERATION_TYPE_API}/${id}    expected_status=any
+    DELETE On Session    api    ${STOCK_OPERATION_TYPE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Unknown Operation Code Fails
     [Tags]    negative

@@ -27,7 +27,8 @@ Create With Positive Price Extra Succeeds
     ${resp}=    POST On Session    api    ${ATTRIBUTE_VALUE_API}
     ...    json=${{ {'attribute_id': $PRODUCT_ATTRIBUTE_ID, 'code': $code, 'name': {'en-US': $name}, 'price_extra': '12.5', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    DELETE On Session    api    ${ATTRIBUTE_VALUE_API}/${id}    expected_status=any
+    DELETE On Session    api    ${ATTRIBUTE_VALUE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Negative Price Extra Succeeds
     [Documentation]    price_extra is signed (BR: "a value may also discount"), so a negative
@@ -38,9 +39,11 @@ Create With Negative Price Extra Succeeds
     ...    json=${{ {'attribute_id': $PRODUCT_ATTRIBUTE_ID, 'code': $code, 'name': {'en-US': $name}, 'price_extra': '-5.5', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${ATTRIBUTE_VALUE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_attribute_value.json    200
     Should Be Equal As Numbers    ${item}[price_extra]    -5.5
-    DELETE On Session    api    ${ATTRIBUTE_VALUE_API}/${id}    expected_status=any
+    DELETE On Session    api    ${ATTRIBUTE_VALUE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Out Of Range Price Extra Fails
     [Documentation]    price_extra is bounded to +/-1000000000000; a caller sending beyond
@@ -78,8 +81,10 @@ Create With Same Code Under Different Attribute Succeeds
     ${resp}=    POST On Session    api    ${ATTRIBUTE_VALUE_API}
     ...    json=${{ {'attribute_id': $attr_id, 'code': $ATTRIBUTE_VALUE_CODE, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    DELETE On Session    api    ${ATTRIBUTE_VALUE_API}/${id}    expected_status=any
-    DELETE On Session    api    ${PRODUCT_ATTRIBUTE_API}/${attr_id}    expected_status=any
+    DELETE On Session    api    ${ATTRIBUTE_VALUE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_ATTRIBUTE_API}/${attr_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Missing Required Fields Fails
     [Tags]    negative
@@ -102,7 +107,8 @@ Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${resp}=    POST On Session    api    ${ATTRIBUTE_VALUE_API}
-    ...    data={ "name": {"en-US": "broken",    headers=${headers}    expected_status=any
+    ...    data={ "name": {"en-US": "broken",    headers=${headers}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}
 
 Create With Nonexist Field Fails

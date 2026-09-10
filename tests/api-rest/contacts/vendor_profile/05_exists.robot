@@ -13,7 +13,7 @@ Test Tags         contacts    vendor_profile    exists
 *** Test Cases ***
 Exists With One Id Succeeds
     ${resp}=    POST On Session    api    ${VENDOR_PROFILE_API}/exists
-    ...    json=${{ {'ids': [$VENDOR_PROFILE_ID]} }}
+    ...    json=${{ {'org_id': $CONTACTS_ORG_ID, 'ids': [$VENDOR_PROFILE_ID]} }}
     Response Should Be Exists Success    ${resp}    existing=1    not_existing=0
 
 Exists With Mixed Ids Succeeds
@@ -21,17 +21,17 @@ Exists With Mixed Ids Succeeds
     ${ids}=    Create List    ${VENDOR_PROFILE_ID}
     ${ids}=    Combine Lists    ${ids}    ${fakes}
     ${resp}=    POST On Session    api    ${VENDOR_PROFILE_API}/exists
-    ...    json=${{ {'ids': $ids} }}
+    ...    json=${{ {'org_id': $CONTACTS_ORG_ID, 'ids': $ids} }}
     Response Should Be Exists Success    ${resp}    existing=1    not_existing=5
 
 Exists With Missing Required Field Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${VENDOR_PROFILE_API}/exists
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     Response Should Be Missing Fields Error    ${resp}    ids
 
 Exists With Invalid Id Format Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${VENDOR_PROFILE_API}/exists
-    ...    json=${{ {'ids': ['invalid']} }}    expected_status=any
+    ...    json=${{ {'org_id': $CONTACTS_ORG_ID, 'ids': ['invalid']} }}    expected_status=any
     Response Should Be Invalid Format Error    ${resp}    ids

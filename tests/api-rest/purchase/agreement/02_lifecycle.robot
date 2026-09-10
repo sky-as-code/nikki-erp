@@ -12,6 +12,7 @@ Create Agreement Starts As A Draft
     ...    agreement created `confirmed` would be a commitment nobody made.
     Ensure Agreement Under Test
     ${resp}=    GET On Session    api    ${AGREEMENT_API}/${AGREEMENT_ID}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Equal    ${resp.json()}[status]    draft
     Should Start With    ${resp.json()}[code]    PA-
@@ -21,8 +22,10 @@ Confirm Makes The Agreement Live
     ${id}    ${etag}=    Create Purchase Agreement
     Create Agreement Line    ${id}
     ${resp}=    POST On Session    api    ${AGREEMENT_API}/${id}/confirm
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${agreement}=    GET On Session    api    ${AGREEMENT_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal    ${agreement.json()}[status]    confirmed
     Audit Trail Should Record    ${id}    confirm
     [Teardown]    Delete Agreement Fixture    ${id}
@@ -31,7 +34,8 @@ Confirm Is Refused On An Agreement With No Line
     [Documentation]    AC-16. A blanket order with no line commits to no quantity at no price,
     ...    which is not an agreement any vendor could act on.
     ${id}    ${etag}=    Create Purchase Agreement
-    ${resp}=    POST On Session    api    ${AGREEMENT_API}/${id}/confirm    expected_status=any
+    ${resp}=    POST On Session    api    ${AGREEMENT_API}/${id}/confirm
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Response Should Be Purchase Violation    ${resp}    purchase_agreement.no_lines
     [Teardown]    Delete Agreement Fixture    ${id}
 
@@ -42,9 +46,11 @@ Create Rfq Raises An Order From The Agreement
     ...    have been pre-filled, and must be confirmed like any other.
     ${agreement_id}=    Create Confirmed Agreement
     ${resp}=    POST On Session    api    ${AGREEMENT_API}/${agreement_id}/create_rfq
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${order_id}=    Set Variable    ${resp.json()}[id]
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${order_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${order}    200
     Should Be Equal    ${order.json()}[status]        rfq
     Should Be Equal    ${order.json()}[agreement_id]  ${agreement_id}
@@ -58,7 +64,8 @@ Create Rfq Is Refused On A Draft Agreement
     ...    them would quote terms nobody committed to.
     ${id}    ${etag}=    Create Purchase Agreement
     Create Agreement Line    ${id}
-    ${resp}=    POST On Session    api    ${AGREEMENT_API}/${id}/create_rfq    expected_status=any
+    ${resp}=    POST On Session    api    ${AGREEMENT_API}/${id}/create_rfq
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Response Should Be Purchase Violation    ${resp}    purchase_agreement.not_confirmed
     [Teardown]    Delete Agreement Fixture    ${id}
 
@@ -68,8 +75,10 @@ Close Is Refused While Orders Are Open Against The Agreement
     ...    terms still apply to goods on their way.
     ${agreement_id}=    Create Confirmed Agreement
     ${created}=    POST On Session    api    ${AGREEMENT_API}/${agreement_id}/create_rfq
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     ${order_id}=    Set Variable    ${created.json()}[id]
-    ${resp}=    POST On Session    api    ${AGREEMENT_API}/${agreement_id}/close    expected_status=any
+    ${resp}=    POST On Session    api    ${AGREEMENT_API}/${agreement_id}/close
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Response Should Be Purchase Violation    ${resp}    purchase_agreement.has_open_orders
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${order_id}
@@ -80,8 +89,10 @@ Close Succeeds Once The Open Orders Are Settled
     ...    "no more orders from here", not "the ones already placed are void".
     ${agreement_id}=    Create Confirmed Agreement
     ${resp}=    POST On Session    api    ${AGREEMENT_API}/${agreement_id}/close
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${agreement}=    GET On Session    api    ${AGREEMENT_API}/${agreement_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal    ${agreement.json()}[status]    closed
     Audit Trail Should Record    ${agreement_id}    close
     [Teardown]    Delete Agreement Fixture    ${agreement_id}
@@ -89,9 +100,10 @@ Close Succeeds Once The Open Orders Are Settled
 Cancel Calls The Agreement Off
     [Documentation]    AC-19, §43.
     ${id}    ${etag}=    Create Purchase Agreement
-    ${resp}=    POST On Session    api    ${AGREEMENT_API}/${id}/cancel    json=${{ {'reason': 'terms not agreed'} }}
+    ${resp}=    POST On Session    api    ${AGREEMENT_API}/${id}/cancel    json=${{ {'org_id': $PURCHASE_ORG_ID, 'reason': 'terms not agreed'} }}
     Response Status Should Be    ${resp}    200
     ${agreement}=    GET On Session    api    ${AGREEMENT_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal    ${agreement.json()}[status]    cancelled
     ${event}=    Audit Trail Should Record    ${id}    cancel
     Should Be Equal    ${event}[reason]    terms not agreed
@@ -102,11 +114,12 @@ Archive And Restore Use The Built In Set Archived
     ...    power applied in reverse, so splitting them would let a role archive agreements it
     ...    could not bring back. This is a deliberate correction to the plan's §4 table.
     ${id}    ${etag}=    Create Purchase Agreement
-    ${resp}=    PUT On Session    api    ${AGREEMENT_API}/${id}/archived    json=${{ {'etag': $etag, 'is_archived': ${True}} }}
+    ${resp}=    PUT On Session    api    ${AGREEMENT_API}/${id}/archived    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $etag, 'is_archived': ${True}} }}
     Response Status Should Be    ${resp}    200
     ${archived}=    GET On Session    api    ${AGREEMENT_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be True    ${archived.json()}[is_archived]
-    ${restore}=    PUT On Session    api    ${AGREEMENT_API}/${id}/archived    json=${{ {'etag': $archived.json()['etag'], 'is_archived': ${False}} }}
+    ${restore}=    PUT On Session    api    ${AGREEMENT_API}/${id}/archived    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $archived.json()['etag'], 'is_archived': ${False}} }}
     Response Status Should Be    ${restore}    200
     [Teardown]    Delete Agreement Fixture    ${id}
 
@@ -115,10 +128,12 @@ A Draft Agreement Is Deletable Where A Draft Order Is Not
     ...    confirmed, which is the whole reason the two rules differ.
     ${id}    ${etag}=    Create Purchase Agreement
     ${resp}=    DELETE On Session    api    ${AGREEMENT_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Should Be Delete Success    ${resp}
 
 Delete Is Refused On A Confirmed Agreement
     ${agreement_id}=    Create Confirmed Agreement
-    ${resp}=    DELETE On Session    api    ${AGREEMENT_API}/${agreement_id}    expected_status=any
+    ${resp}=    DELETE On Session    api    ${AGREEMENT_API}/${agreement_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Response Should Be Purchase Violation    ${resp}    purchase_agreement.not_deletable
     [Teardown]    Delete Agreement Fixture    ${agreement_id}

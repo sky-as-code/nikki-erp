@@ -181,7 +181,7 @@ func (this *StockTransferDomainServiceImpl) findAllReservationsBySource(
 	if sourceType == "" || sourceId == "" {
 		return nil, nil
 	}
-	engine, err := engineFor(models.StockTransferSchemaName)
+	engine, err := repoFor(models.StockTransferSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (this *StockTransferDomainServiceImpl) findAllReservationsBySource(
 	graph.And(*dmodel.NewSearchNode().
 		NewCondition(models.StockTransferFieldSourceId, dmodel.Equals, sourceId))
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  models.MaxTransferMoves,
@@ -226,7 +226,7 @@ func (this *StockTransferDomainServiceImpl) findAllReservationsBySource(
 func (this *StockTransferDomainServiceImpl) ExpireLapsedReservations(
 	ctx corectx.Context, asOf time.Time, limit int,
 ) (int, error) {
-	engine, err := engineFor(models.StockTransferSchemaName)
+	engine, err := repoFor(models.StockTransferSchemaName)
 	if err != nil {
 		return 0, err
 	}
@@ -236,7 +236,7 @@ func (this *StockTransferDomainServiceImpl) ExpireLapsedReservations(
 		NewCondition(models.StockTransferFieldExpiresAt, dmodel.LessThan,
 			model.ModelDateTime(asOf.UTC())))
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  limit,

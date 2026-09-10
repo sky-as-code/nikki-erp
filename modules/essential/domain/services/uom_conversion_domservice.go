@@ -10,7 +10,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 )
@@ -20,11 +19,12 @@ import (
 // survive a chain of conversions; rounding happens once, at the end.
 const conversionScale = 24
 
-func NewUomConversionDomainServiceImpl() itUom.UomConversionDomainService {
-	return &UomConversionDomainServiceImpl{}
+func NewUomConversionDomainServiceImpl(uomRepo itUom.UomRepository) itUom.UomConversionDomainService {
+	return &UomConversionDomainServiceImpl{uomRepo: uomRepo}
 }
 
 type UomConversionDomainServiceImpl struct {
+	uomRepo itUom.UomRepository
 }
 
 // Convert re-expresses a quantity from one UoM into another (BR-UOM-ESS-013).
@@ -153,12 +153,7 @@ func (this *UomConversionDomainServiceImpl) loadConversionPair(
 func (this *UomConversionDomainServiceImpl) loadUom(
 	ctx corectx.Context, uomId model.Id, field string, vErrs *ft.ClientErrors,
 ) (*models.Uom, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(models.UomSchemaName)
-	if !ok {
-		return nil, errors.Errorf("loadUom: the '%s' engine is not registered", models.UomSchemaName)
-	}
-
-	found, err := engine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+	found, err := this.uomRepo.GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{models.UomFieldId: uomId},
 	})
 	if err != nil {
@@ -193,13 +188,7 @@ func (this *UomConversionDomainServiceImpl) loadCategoryReferenceUom(
 		return nil, nil
 	}
 
-	engine, ok := dynamicresource.Registry().GetEngine(models.UomSchemaName)
-	if !ok {
-		return nil, errors.Errorf("loadCategoryReferenceUom: the '%s' engine is not registered",
-			models.UomSchemaName)
-	}
-
-	found, err := models.FindCategoryReferenceUoms(ctx, engine.ResourceRepository(), *categoryId, 1)
+	found, err := models.FindCategoryReferenceUoms(ctx, this.uomRepo, *categoryId, 1)
 	if err != nil {
 		return nil, errors.Wrap(err, "loadCategoryReferenceUom")
 	}

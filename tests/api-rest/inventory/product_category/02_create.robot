@@ -27,10 +27,12 @@ Create Without Parent Succeeds
     ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_CATEGORY_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_category.json    200
     Should Be True    ${{ not $item.get('parent_category_id') }}
     ...    msg=A category created without a parent should have none
-    DELETE On Session    api    ${PRODUCT_CATEGORY_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_CATEGORY_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Parent Succeeds
     [Documentation]    Points a new category at a real parent, forming the two-level tree
@@ -41,7 +43,8 @@ Create With Parent Succeeds
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
     ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'parent_category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    DELETE On Session    api    ${PRODUCT_CATEGORY_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_CATEGORY_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Duplicate Code And Org Fails
     [Documentation]    BR §6.4.1: (code, org_id) is a composite unique — the same code is
@@ -63,7 +66,8 @@ Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    data={ "name": {"en-US": "broken",    headers=${headers}    expected_status=any
+    ...    data={ "name": {"en-US": "broken",    headers=${headers}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}
 
 Create With Nonexist Field Fails

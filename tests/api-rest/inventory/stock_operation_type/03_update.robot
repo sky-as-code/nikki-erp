@@ -11,7 +11,7 @@ Test Tags         inventory    stock_operation_type    update
 Update Succeeds
     ${name}=    Unique Display Name    Robot Updated Operation
     ${resp}=    PATCH On Session    api    ${STOCK_OPERATION_TYPE_API}/${STOCK_OPERATION_TYPE_ID}
-    ...    json=${{ {'name': {'en-US': $name}, 'etag': $STOCK_OPERATION_TYPE_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'name': {'en-US': $name}, 'etag': $STOCK_OPERATION_TYPE_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1
     ...    previous_etag=${STOCK_OPERATION_TYPE_ETAG}
     IF    $etag is not None    Set Global Variable    ${STOCK_OPERATION_TYPE_ETAG}    ${etag}
@@ -20,11 +20,12 @@ Update Reservation Method Succeeds
     [Documentation]    BR §4.2.1.4: policy is reconfigurable while the type is not archived.
     ...    A transfer already created keeps the policy it snapshotted.
     ${resp}=    PATCH On Session    api    ${STOCK_OPERATION_TYPE_API}/${STOCK_OPERATION_TYPE_ID}
-    ...    json=${{ {'reservation_method': 'manual', 'backorder_policy': 'always', 'etag': $STOCK_OPERATION_TYPE_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'reservation_method': 'manual', 'backorder_policy': 'always', 'etag': $STOCK_OPERATION_TYPE_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1
     ...    previous_etag=${STOCK_OPERATION_TYPE_ETAG}
     IF    $etag is not None    Set Global Variable    ${STOCK_OPERATION_TYPE_ETAG}    ${etag}
     ${resp}=    GET On Session    api    ${STOCK_OPERATION_TYPE_API}/${STOCK_OPERATION_TYPE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}
     ...    ${INVENTORY_SCHEMA_DIR}/stock_operation_type.json    200
     Should Be Equal    ${item}[reservation_method]    manual
@@ -36,9 +37,10 @@ Update Operation Code Is Rejected Or Ignored
     ...    field rather than failing the request, so this pins the stored value is unchanged
     ...    either way — what must never happen is the direction silently flipping.
     ${resp}=    PATCH On Session    api    ${STOCK_OPERATION_TYPE_API}/${STOCK_OPERATION_TYPE_ID}
-    ...    json=${{ {'operation_code': 'outgoing', 'etag': $STOCK_OPERATION_TYPE_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'operation_code': 'outgoing', 'etag': $STOCK_OPERATION_TYPE_ETAG} }}
     ...    expected_status=any
     ${resp}=    GET On Session    api    ${STOCK_OPERATION_TYPE_API}/${STOCK_OPERATION_TYPE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}
     ...    ${INVENTORY_SCHEMA_DIR}/stock_operation_type.json    200
     Should Be Equal    ${item}[operation_code]    incoming
@@ -47,18 +49,18 @@ Update Operation Code Is Rejected Or Ignored
 Update With Missing Etag Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${STOCK_OPERATION_TYPE_API}/${STOCK_OPERATION_TYPE_ID}
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Missing Fields Error    ${resp}    etag
 
 Update With Unmatched Etag Fails
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Stale Operation
     ${resp}=    PATCH On Session    api    ${STOCK_OPERATION_TYPE_API}/${STOCK_OPERATION_TYPE_ID}
-    ...    json=${{ {'name': {'en-US': $name}, 'etag': '___________________'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'name': {'en-US': $name}, 'etag': '___________________'} }}    expected_status=any
     Response Should Be Etag Unmatched Error    ${resp}
 
 Update With Not Found Id Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${STOCK_OPERATION_TYPE_API}/${NOT_FOUND_ID}
-    ...    json=${{ {'etag': $STOCK_OPERATION_TYPE_ETAG} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $STOCK_OPERATION_TYPE_ETAG} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"testing"
 
 	"github.com/shopspring/decimal"
@@ -10,7 +11,6 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
@@ -192,9 +192,9 @@ func TestTemplateGuardSkipsAlreadyArchivedVariants(t *testing.T) {
 func useVariantEngine(t *testing.T, repo *stubVariantRepository) {
 	t.Helper()
 
-	original := engineFor
-	t.Cleanup(func() { engineFor = original })
-	engineFor = func(_ string) (drif.DynamicResourceEngine, error) {
-		return &stubEngine{repo: repo}, nil
+	original := repoFor
+	t.Cleanup(func() { repoFor = original })
+	repoFor = func(_ string) (composable.CrudRepository, error) {
+		return repo, nil
 	}
 }

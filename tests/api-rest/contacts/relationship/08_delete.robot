@@ -17,8 +17,10 @@ Deleting A Relationship Leaves Both Parties Live
     [Documentation]    The cascade runs from party to relationship, never the other way. A
     ...    link is removable without touching either contact it joined.
     ${resp}=    GET On Session    api    ${PARTY_API}/${PARTY_ID}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     Item Should Match Schema    ${resp}    ${CONTACTS_SCHEMA_DIR}/party.json    200
     ${resp}=    GET On Session    api    ${PARTY_API}/${TARGET_PARTY_ID}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     Item Should Match Schema    ${resp}    ${CONTACTS_SCHEMA_DIR}/party.json    200
 
 Delete Again With Same Id Fails

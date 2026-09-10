@@ -196,7 +196,7 @@ func (this *InventoryLocationDomainServiceImpl) rewritePathsFrom(
 func (this *InventoryLocationDomainServiceImpl) listChildren(
 	ctx corectx.Context, parentId string,
 ) ([]models.InventoryLocation, error) {
-	engine, err := engineFor(models.InventoryLocationSchemaName)
+	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (this *InventoryLocationDomainServiceImpl) listChildren(
 
 	children := make([]models.InventoryLocation, 0)
 	for page := 0; ; page++ {
-		found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  usageScanPageSize,
@@ -234,7 +234,7 @@ func (this *InventoryLocationDomainServiceImpl) listChildren(
 func (this *InventoryLocationDomainServiceImpl) countUnarchivedChildren(
 	ctx corectx.Context, parentId string,
 ) (int, error) {
-	engine, err := engineFor(models.InventoryLocationSchemaName)
+	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return 0, err
 	}
@@ -255,7 +255,7 @@ func (this *InventoryLocationDomainServiceImpl) countUnarchivedChildren(
 func (this *InventoryLocationDomainServiceImpl) countOperationTypesUsing(
 	ctx corectx.Context, locationId string,
 ) (int, error) {
-	engine, err := engineFor(models.StockOperationTypeSchemaName)
+	engine, err := repoFor(models.StockOperationTypeSchemaName)
 	if err != nil {
 		return 0, err
 	}
@@ -284,11 +284,11 @@ func (this *InventoryLocationDomainServiceImpl) isOwningWarehouseUsable(
 		return false, nil
 	}
 
-	engine, err := engineFor(models.WarehouseSchemaName)
+	engine, err := repoFor(models.WarehouseSchemaName)
 	if err != nil {
 		return false, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.WarehouseFieldId: warehouseId,
 	})
 	if err != nil {

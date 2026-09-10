@@ -25,9 +25,11 @@ Create Company Party Succeeds
     ...    json=${{ {'display_name': $name, 'type': 'company', 'org_id': $CONTACTS_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PARTY_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${CONTACTS_SCHEMA_DIR}/party.json    200
     Should Be Equal    ${item}[type]    company
-    DELETE On Session    api    ${PARTY_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PARTY_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
 
 Create With All Optional Fields Succeeds
     [Documentation]    website and avatar_url are data_type `url`, not plain strings; this
@@ -39,10 +41,12 @@ Create With All Optional Fields Succeeds
     ...    json=${{ {'display_name': $name, 'type': 'company', 'org_id': $CONTACTS_ORG_ID, 'legal_name': 'Robot Legal Name', 'legal_address': '1 Robot Street', 'tax_id': $tax_id, 'job_position': 'Buyer', 'title': 'Mr', 'note': 'A robot party', 'website': $website, 'avatar_url': 'https://example.com/avatar.png'} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PARTY_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${CONTACTS_SCHEMA_DIR}/party.json    200
     Should Be Equal    ${item}[tax_id]    ${tax_id}
     Should Be Equal    ${item}[website]    ${website}
-    DELETE On Session    api    ${PARTY_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PARTY_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
 
 Create Defaults Type To Individual
     [Documentation]    `type` carries default_value "individual", so omitting it must not be
@@ -52,9 +56,11 @@ Create Defaults Type To Individual
     ...    json=${{ {'display_name': $name, 'org_id': $CONTACTS_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PARTY_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${CONTACTS_SCHEMA_DIR}/party.json    200
     Should Be Equal    ${item}[type]    individual
-    DELETE On Session    api    ${PARTY_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PARTY_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
 
 Create With Invalid Type Fails
     [Tags]    negative
@@ -101,8 +107,10 @@ Create With Duplicate Tax Id Succeeds
     ${resp}=    POST On Session    api    ${PARTY_API}
     ...    json=${{ {'display_name': $second, 'type': 'company', 'org_id': $CONTACTS_ORG_ID, 'tax_id': $tax_id} }}
     ${second_id}    ${second_etag}=    Response Should Be Create Success    ${resp}
-    DELETE On Session    api    ${PARTY_API}/${second_id}    expected_status=any
-    DELETE On Session    api    ${PARTY_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PARTY_API}/${second_id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
+    DELETE On Session    api    ${PARTY_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
 
 Create Two Parties Without Tax Id Succeeds
     [Documentation]    The case that ruled out the partial unique. Most contacts have no tax id at
@@ -117,8 +125,10 @@ Create Two Parties Without Tax Id Succeeds
     ${resp}=    POST On Session    api    ${PARTY_API}
     ...    json=${{ {'display_name': $second, 'type': 'individual', 'org_id': $CONTACTS_ORG_ID} }}
     ${second_id}    ${second_etag}=    Response Should Be Create Success    ${resp}
-    DELETE On Session    api    ${PARTY_API}/${second_id}    expected_status=any
-    DELETE On Session    api    ${PARTY_API}/${first_id}    expected_status=any    expected_status=any
+    DELETE On Session    api    ${PARTY_API}/${second_id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
+    DELETE On Session    api    ${PARTY_API}/${first_id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any    expected_status=any
 
 Create With Missing Required Fields Fails
     [Tags]    negative
@@ -129,7 +139,8 @@ Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${resp}=    POST On Session    api    ${PARTY_API}
-    ...    data={ "display_name": "broken",    headers=${headers}    expected_status=any
+    ...    data={ "display_name": "broken",    headers=${headers}
+    ...    json=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}
 
 Create With Nonexist Field Fails

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -12,7 +13,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
@@ -148,12 +148,12 @@ func (this *StockQuantDomainServiceImpl) AssignCounter(
 func (this *StockQuantDomainServiceImpl) updateCountMetadata(
 	ctx corectx.Context, quantId string, fields map[string]any,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
-	engine, err := engineFor(models.StockQuantSchemaName)
+	engine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.StockQuantFieldId: quantId,
 	})
 	if err != nil {
@@ -272,12 +272,12 @@ func lockQuantById(
 ) (*LockedQuant, *models.StockQuant, *ft.ClientErrors, error) {
 	vErrs := ft.NewClientErrors()
 
-	engine, err := engineFor(models.StockQuantSchemaName)
+	engine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return nil, nil, vErrs, err
 	}
 
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.StockQuantFieldId: quantId,
 	})
 	if err != nil {
@@ -305,9 +305,9 @@ func lockQuantById(
 }
 
 func lockQuantRow(
-	ctx corectx.Context, engine drif.DynamicResourceEngine, quant models.StockQuant, quantId string,
+	ctx corectx.Context, engine composable.CrudRepository, quant models.StockQuant, quantId string,
 ) (*LockedQuant, error) {
-	rows, err := LockQuantsForUpdate(ctx, engine.ResourceRepository().GetBaseRepo(), QuantLockKey{
+	rows, err := LockQuantsForUpdate(ctx, engine.GetBaseRepo(), QuantLockKey{
 		OrgId:            model.Id(derefString(quant.GetOrgId())),
 		ProductVariantId: model.Id(derefString(quant.GetProductVariantId())),
 		LocationId:       model.Id(derefString(quant.GetLocationId())),
@@ -329,7 +329,7 @@ func lockQuantRow(
 func updateQuantFields(
 	ctx corectx.Context, quant models.StockQuant, fields map[string]any,
 ) error {
-	engine, err := engineFor(models.StockQuantSchemaName)
+	engine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func updateQuantFields(
 		update[key] = value
 	}
 
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = engine.Update(ctx, update)
 	return errors.Wrap(err, "updateQuantFields")
 }
 
@@ -350,12 +350,12 @@ func updateQuantFields(
 // not left visible to whatever runs next. There is no join-an-existing branch because BeginTx
 // returns ErrTxNested.
 func withQuantTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
-	engine, err := engineFor(models.StockQuantSchemaName)
+	engine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return err
 	}
 
-	tranx, err := engine.ResourceRepository().BeginTransaction(ctx)
+	tranx, err := engine.BeginTransaction(ctx)
 	if err != nil {
 		return errors.Wrap(err, "withQuantTransaction")
 	}

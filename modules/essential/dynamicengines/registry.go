@@ -1,75 +1,22 @@
-// Package dynamicengines declares the resource engines the Essential module serves through
-// the dynamic resource engine, and creates them during the module's Init().
+// Package dynamicengines declares the resource onions the Essential module serves through the
+// composable resource engine, and registers them into the dependency container during the
+// module's Init().
 //
-// It is deliberately a leaf package: it imports the domain models and the dynamicresource
-// module, but nothing else from essential. That lets both essential (which creates the
-// engines) and essential/transport/restful (which registers their routes) import it
-// without a cycle.
+// Each resource file wires the module's own repository, domain service and application service
+// onto the composable defaults, and publishes those typed layers so that transport and other
+// modules inject them by type. Nothing here is built eagerly: an onion is a container
+// constructor, resolved the first time a consumer asks for it.
 package dynamicengines
 
 import (
-	"go.bryk.io/pkg/errors"
-
-	"github.com/sky-as-code/nikki-erp/common/array"
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	stdErr "errors"
 )
 
-// engineSpec declares one resource engine the Essential module owns.
-type engineSpec struct {
-	// SchemaName is the dynamic-model schema the engine serves. It must be an
-	// XSchemaName constant, never a string derived from the resource path.
-	SchemaName string
-
-
-	// DefineActions adds resource-specific actions and validation on top of the built-in
-	// CRUD ones. It is optional: a resource without custom behavior leaves it nil.
-	DefineActions func(drif.DynamicResourceEngine) error
-}
-
-// engineSpecs lists the resources Essential serves through the dynamic resource engine,
-// each with the field set its listing UI needs.
-var engineSpecs = []engineSpec{
-	currencyEngineSpec(),
-	uomCatEngineSpec(),
-	uomEngineSpec(),
-}
-
-// EngineSchemaNames lists the schemas Essential creates an engine for, so that route
-// registration and engine creation cannot drift apart.
-func EngineSchemaNames() []string {
-	return array.Map(engineSpecs, func(spec engineSpec) string {
-		return spec.SchemaName
-	})
-}
-
-// InitDynamicEngines creates the resource engines this module owns and publishes them
-// into the dependency container, so that other modules can inject them by name.
+// InitDynamicEngines registers every resource onion this module owns.
 func InitDynamicEngines() error {
-	for _, spec := range engineSpecs {
-		if err := initEngine(spec); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func initEngine(spec engineSpec) error {
-	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create the '%s' resource engine", spec.SchemaName)
-	}
-
-	if spec.DefineActions != nil {
-		if err := spec.DefineActions(engine); err != nil {
-			return errors.Wrapf(err, "failed to define actions of the '%s' resource engine", spec.SchemaName)
-		}
-	}
-
-	err = deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(spec.SchemaName),
-		func() drif.DynamicResourceEngine { return engine },
+	return stdErr.Join(
+		registerCurrencyEngine(),
+		registerUomEngine(),
+		registerUomCatEngine(),
 	)
-	return errors.Wrapf(err, "failed to register the '%s' resource engine", spec.SchemaName)
 }

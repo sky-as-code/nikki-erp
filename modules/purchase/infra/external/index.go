@@ -21,6 +21,7 @@ import (
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 	invModels "github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
+	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 	itExt "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/external"
 )
 
@@ -36,8 +37,10 @@ func InitExternal() error {
 			// a hand-over rather than an adapter.
 			return uomSvc
 		}),
-		deps.Register(func(variantSvc itProduct.ProductVariantDomainService) itExt.ProductExtService {
-			return &productAdapter{variants: variantSvc}
+		deps.Register(func(
+			variantSvc itProduct.ProductVariantDomainService, configRepo itStock.StockProductConfigRepository,
+		) itExt.ProductExtService {
+			return &productAdapter{variants: variantSvc, configs: configRepo}
 		}),
 		deps.Register(func(vendorSvc itVendor.VendorAppService) itExt.VendorExtService {
 			return vendorSvc
@@ -50,9 +53,10 @@ func InitExternal() error {
 
 // productAdapter narrows Inventory's variant service to the two questions a purchase line asks. It
 // is a real adapter because no single Inventory service answers both: purchasability comes from the
-// variant's template field, the inventory unit from stock_product_config, which has no port.
+// variant's template field, the inventory unit from the stock_product_config repository.
 type productAdapter struct {
 	variants itProduct.ProductVariantDomainService
+	configs  itStock.StockProductConfigRepository
 }
 
 var _ itExt.ProductExtService = (*productAdapter)(nil)
@@ -108,17 +112,11 @@ func (this *productAdapter) inventoryUomOf(ctx corectx.Context, templateId strin
 		return "", nil
 	}
 
-	engine, ok := engineFor(invModels.StockProductConfigSchemaName)
-	if !ok {
-		// A deployment without the stock feature is not an error: nothing can be reconciled.
-		return "", nil
-	}
-
 	graph := &dmodel.SearchGraph{}
 	graph.And(*dmodel.NewSearchNode().NewCondition(
 		invModels.StockProductConfigFieldProductTemplateId, dmodel.Equals, templateId))
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := this.configs.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,
@@ -133,12 +131,6 @@ func (this *productAdapter) inventoryUomOf(ctx corectx.Context, templateId strin
 		invModels.StockProductConfigFieldInventoryUomId)), nil
 }
 
-// engineFor resolves another module's resource engine from the shared registry — how this file
-// reads a resource that publishes no port. Confined to this package, like every cross-module import.
-func engineFor(schemaName string) (drif.DynamicResourceEngine, bool) {
-	return dynamicresource.Registry().GetEngine(schemaName)
-}
-
 func derefId(value *model.Id) model.Id {
 	if value == nil {
 		return ""
@@ -148,4 +140,10 @@ func derefId(value *model.Id) model.Id {
 
 func derefBool(value *bool) bool {
 	return value != nil && *value
+}
+
+// engineFor resolves one of this module's own resource engines from the legacy registry, for the
+// usage probe that reads purchase rows. Inventory's resources are reached through their ports.
+func engineFor(schemaName string) (drif.DynamicResourceEngine, bool) {
+	return dynamicresource.Registry().GetEngine(schemaName)
 }

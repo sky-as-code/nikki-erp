@@ -39,10 +39,12 @@ Created Factor Keeps Full Precision
     ...    json=${{ {'name': {'en-US': $name}, 'symbol': $symbol, 'category_id': $UOMCAT_ID, 'uom_type': 'smaller', 'factor': '0.453592', 'rounding': '0.01', 'org_id': $UOM_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${UOM_API}/${id}
+    ...    params=${{ {'org_id': $UOM_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${ESSENTIAL_SCHEMA_DIR}/uom.json    200
     Should Be True    ${{ __import__('decimal').Decimal($item['factor']) == __import__('decimal').Decimal('0.453592') }}
     ...    msg=Factor lost precision in the round trip: ${item}[factor]
-    DELETE On Session    api    ${UOM_API}/${id}    expected_status=any
+    DELETE On Session    api    ${UOM_API}/${id}
+    ...    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
 
 Create Second Reference In Category Fails
     [Documentation]    BR-UOM-ESS-005 / UOM-ESS-INV-09: a category has exactly one
@@ -123,7 +125,8 @@ Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${resp}=    POST On Session    api    ${UOM_API}
-    ...    data={ "symbol": "broken",    headers=${headers}    expected_status=any
+    ...    data={ "symbol": "broken",    headers=${headers}
+    ...    json=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}
 
 Create With Duplicate Symbol Fails

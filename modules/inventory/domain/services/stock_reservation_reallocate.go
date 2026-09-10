@@ -119,7 +119,7 @@ var errRollbackReallocation = errors.New("reallocation refused; rolling back")
 func lockBothSides(
 	ctx corectx.Context, request itStock.ReservationReallocationRequest,
 ) error {
-	quantEngine, err := engineFor(models.StockQuantSchemaName)
+	quantEngine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func lockBothSides(
 		}
 		seen[key] = true
 		if _, err := LockQuantsForUpdate(
-			ctx, quantEngine.ResourceRepository().GetBaseRepo(), key); err != nil {
+			ctx, quantEngine.GetBaseRepo(), key); err != nil {
 			return err
 		}
 	}
@@ -180,7 +180,7 @@ func sortQuantLockKeys(keys []QuantLockKey) {
 func originLocationsOf(
 	ctx corectx.Context, request itStock.ReservationReallocationRequest,
 ) ([]string, error) {
-	engine, err := engineFor(models.StockTransferSchemaName)
+	engine, err := repoFor(models.StockTransferSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func originLocationsOf(
 	graph.And(*dmodel.NewSearchNode().
 		NewCondition(models.StockTransferFieldSourceId, dmodel.Equals, request.SourceId))
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  models.MaxTransferMoves,

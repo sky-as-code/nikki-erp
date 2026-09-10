@@ -40,7 +40,7 @@ func (this *StockQuantDomainServiceImpl) transitLocationIds(
 func (this *StockQuantDomainServiceImpl) locationIdsWithUsage(
 	ctx corectx.Context, usage string,
 ) (map[string]bool, error) {
-	engine, err := engineFor(models.InventoryLocationSchemaName)
+	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (this *StockQuantDomainServiceImpl) locationIdsWithUsage(
 
 	found := map[string]bool{}
 	for page := 0; page < maxLocationScanPages; page++ {
-		result, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		result, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  locationScanPageSize,
@@ -99,7 +99,7 @@ func (this *StockQuantDomainServiceImpl) loadLocationDetails(
 		return details, nil
 	}
 
-	engine, err := engineFor(models.InventoryLocationSchemaName)
+	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (this *StockQuantDomainServiceImpl) loadLocationDetails(
 	)
 
 	for page := 0; page < maxLocationScanPages; page++ {
-		result, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		result, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  locationScanPageSize,
@@ -179,7 +179,7 @@ func (this *StockQuantDomainServiceImpl) loadWarehouseDetails(
 		return details, nil
 	}
 
-	engine, err := engineFor(models.WarehouseSchemaName)
+	engine, err := repoFor(models.WarehouseSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func (this *StockQuantDomainServiceImpl) loadWarehouseDetails(
 			models.WarehouseFieldId, dmodel.In, toAnySlice(warehouseIds)...),
 	)
 
-	result, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	result, err := engine.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  locationScanPageSize,

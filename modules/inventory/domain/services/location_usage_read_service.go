@@ -60,7 +60,7 @@ func (this *StockQuantDomainServiceImpl) GetLocationUsage(
 func sumQuantitiesAtLocation(
 	ctx corectx.Context, locationId string,
 ) (decimal.Decimal, decimal.Decimal, error) {
-	engine, err := engineFor(models.StockQuantSchemaName)
+	engine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return decimal.Zero, decimal.Zero, err
 	}
@@ -72,7 +72,7 @@ func sumQuantitiesAtLocation(
 
 	onHand, reserved := decimal.Zero, decimal.Zero
 	for page := 0; ; page++ {
-		found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  usageScanPageSize,
@@ -101,7 +101,7 @@ func sumQuantitiesAtLocation(
 // direction. Done and cancelled moves are excluded: an archived location still resolves for the
 // records that name it, so history never blocks a lifecycle change.
 func countOpenMovesAtLocation(ctx corectx.Context, locationId string) (int, error) {
-	engine, err := engineFor(models.StockMoveSchemaName)
+	engine, err := repoFor(models.StockMoveSchemaName)
 	if err != nil {
 		return 0, err
 	}
@@ -124,7 +124,7 @@ func countOpenMovesAtLocation(ctx corectx.Context, locationId string) (int, erro
 
 // countOpenTransfersAtLocation counts the transfers still in flight through a location.
 func countOpenTransfersAtLocation(ctx corectx.Context, locationId string) (int, error) {
-	engine, err := engineFor(models.StockTransferSchemaName)
+	engine, err := repoFor(models.StockTransferSchemaName)
 	if err != nil {
 		return 0, err
 	}

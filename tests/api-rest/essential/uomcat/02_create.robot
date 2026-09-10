@@ -26,10 +26,12 @@ Create Without Reference Uom Succeeds
     ...    json=${{ {'name': {'en-US': $name}, 'org_id': $UOM_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${UOMCAT_API}/${id}
+    ...    params=${{ {'org_id': $UOM_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${ESSENTIAL_SCHEMA_DIR}/uomcat.json    200
     Should Be True    ${{ not $item.get('reference_uom_id') }}
     ...    msg=A category created without a reference UoM should have none
-    DELETE On Session    api    ${UOMCAT_API}/${id}    expected_status=any
+    DELETE On Session    api    ${UOMCAT_API}/${id}
+    ...    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
 
 Create With Missing Required Fields Fails
     [Tags]    negative
@@ -40,7 +42,8 @@ Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${resp}=    POST On Session    api    ${UOMCAT_API}
-    ...    data={ "name": {"en-US": "broken",    headers=${headers}    expected_status=any
+    ...    data={ "name": {"en-US": "broken",    headers=${headers}
+    ...    json=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}
 
 Create With Nonexist Field Fails

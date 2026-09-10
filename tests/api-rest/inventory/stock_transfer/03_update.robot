@@ -10,7 +10,7 @@ Test Tags         inventory    stock_transfer    update
 *** Test Cases ***
 Update Note Succeeds
     ${resp}=    PATCH On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
-    ...    json=${{ {'note': 'Robot updated note', 'etag': $STOCK_TRANSFER_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'note': 'Robot updated note', 'etag': $STOCK_TRANSFER_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}
     Set Global Variable    ${STOCK_TRANSFER_ETAG}    ${etag}
 
@@ -19,7 +19,7 @@ Update With A Stale Etag Fails
     ...    before someone else's write must be told, not silently allowed to overwrite them.
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
-    ...    json=${{ {'note': 'Robot stale write', 'etag': '___________________'} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'note': 'Robot stale write', 'etag': '___________________'} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A stale etag must be refused
@@ -29,9 +29,10 @@ Update Cannot Change The Status
     ...    reserve, validate and cancel. A hand-set status would claim an outcome no movement
     ...    produced, which is the same hole the quant's read-only rule closes.
     ${resp}=    PATCH On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
-    ...    json=${{ {'status': 'done', 'etag': $STOCK_TRANSFER_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'status': 'done', 'etag': $STOCK_TRANSFER_ETAG} }}
     ...    expected_status=any
     ${check}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Should Not Be Equal    ${check.json()}[data][status]    done
     ...    msg=A transfer must not be driven to done by a plain update
     ${etag}=    Set Variable    ${check.json()}[data][etag]
@@ -41,11 +42,13 @@ Update Cannot Change The Transfer Number
     [Documentation]    The number is the reference quoted on paperwork and in other documents,
     ...    so renumbering a transfer would orphan every mention of it.
     ${before}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${original}=    Set Variable    ${before.json()}[data][transfer_number]
     PATCH On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
-    ...    json=${{ {'transfer_number': 'ROBOT-RENUMBERED', 'etag': $STOCK_TRANSFER_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'transfer_number': 'ROBOT-RENUMBERED', 'etag': $STOCK_TRANSFER_ETAG} }}
     ...    expected_status=any
     ${after}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Should Be Equal    ${after.json()}[data][transfer_number]    ${original}
     ...    msg=transfer_number is immutable
     ${etag}=    Set Variable    ${after.json()}[data][etag]
@@ -54,6 +57,6 @@ Update Cannot Change The Transfer Number
 Update Of An Unknown Transfer Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${STOCK_TRANSFER_API}/${NOT_FOUND_ID}
-    ...    json=${{ {'note': 'Robot ghost', 'etag': '___________________'} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'note': 'Robot ghost', 'etag': '___________________'} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200

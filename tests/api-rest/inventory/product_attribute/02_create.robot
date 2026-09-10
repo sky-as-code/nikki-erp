@@ -30,10 +30,12 @@ Create Applies The Declared Enum Defaults
     ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_ATTRIBUTE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_attribute.json    200
     Should Be Equal    ${item}[data_type]    option
     Should Be Equal    ${item}[variant_creation_mode]    instant
-    DELETE On Session    api    ${PRODUCT_ATTRIBUTE_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_ATTRIBUTE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Each Variant Creation Mode Succeeds
     [Documentation]    BR §14.3 step 2: instant, dynamic and never are all legal at create
@@ -45,7 +47,8 @@ Create With Each Variant Creation Mode Succeeds
         ${resp}=    POST On Session    api    ${PRODUCT_ATTRIBUTE_API}
         ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'data_type': 'option', 'variant_creation_mode': $mode, 'org_id': $INV_ORG_ID} }}
         ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-        DELETE On Session    api    ${PRODUCT_ATTRIBUTE_API}/${id}    expected_status=any
+        DELETE On Session    api    ${PRODUCT_ATTRIBUTE_API}/${id}
+        ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     END
 
 Create With Invalid Data Type Fails
@@ -95,7 +98,8 @@ Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${resp}=    POST On Session    api    ${PRODUCT_ATTRIBUTE_API}
-    ...    data={ "name": {"en-US": "broken",    headers=${headers}    expected_status=any
+    ...    data={ "name": {"en-US": "broken",    headers=${headers}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}
 
 Create With Nonexist Field Fails
