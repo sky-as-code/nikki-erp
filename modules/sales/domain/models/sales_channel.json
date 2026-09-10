@@ -39,7 +39,7 @@
 			"data_type": { "type": "string", "min": 0, "max": 100 },
 			"no_update": true,
 			"description": {
-				"en-US": "The module that registered this channel, for example 'vending_machine_new'. Plain metadata with no foreign key into any module registry (CR 8): it exists so that one module cannot take over another module's channel, and so the UI can warn that a channel's real lifecycle is owned elsewhere. NULL for a channel a human created."
+				"en-US": "The module that registered this channel, for example 'vendingmachine'. Plain metadata with no foreign key into any module registry (CR 8): it exists so that one module cannot take over another module's channel, and so the UI can warn that a channel's real lifecycle is owned elsewhere. NULL for a channel a human created."
 			}
 		},
 		{

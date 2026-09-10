@@ -9,6 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 )
@@ -41,6 +42,10 @@ type BuildParam struct {
 	QueryBuilder  orm.QueryBuilder
 	Logger        logging.LoggerService
 	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
+
+	// Storage holds the transient file of an import. Optional so a binary without object storage
+	// still builds every onion; import then answers a configuration error instead.
+	Storage filestorage.FileStorageAdapter `optional:"true"`
 }
 
 // DynamicResourceEngineOnionImpl declares a resource. Only SchemaName is required; every other
@@ -107,7 +112,7 @@ func (this *DynamicResourceEngineOnionImpl) Build(param BuildParam) (DynamicReso
 
 	this.repository = this.buildRepository(param)
 	this.domSvc = this.buildDomainService()
-	this.appSvc = this.buildApplicationService()
+	this.appSvc = this.buildApplicationService(param)
 
 	registerSource(this.SchemaName, this.repository, this)
 	return this, nil
@@ -153,12 +158,15 @@ func (this *DynamicResourceEngineOnionImpl) buildDomainService() CrudDomainServi
 	return domSvc
 }
 
-func (this *DynamicResourceEngineOnionImpl) buildApplicationService() CrudApplicationService {
+func (this *DynamicResourceEngineOnionImpl) buildApplicationService(param BuildParam) CrudApplicationService {
 	appSvc := NewDefaultApplicationService(NewAppServiceParam{
 		DomainService:   this.domSvc,
 		PermissionScope: this.PermissionScope,
 		IsOrgScoped:     this.IsOrgScoped,
 		CrudActions:     this.CrudActions,
+		Storage:         param.Storage,
+		ImportLimits:    readImportLimits(param.ConfigSvc),
+		Logger:          param.Logger,
 	})
 	if this.NewAppServiceFn != nil {
 		appSvc = this.NewAppServiceFn(appSvc)

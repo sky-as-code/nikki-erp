@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
@@ -32,6 +33,8 @@ const (
 	CrudActionExists       = CrudAction("exists")
 	CrudActionGetSchema    = CrudAction("get_schema")
 	CrudActionComputeField = CrudAction("compute_field")
+	CrudActionBulkCreate   = CrudAction("bulk_create")
+	CrudActionImport       = CrudAction("import")
 )
 
 func (this CrudAction) String() string {
@@ -43,7 +46,7 @@ func AllCrudActions() []CrudAction {
 	return []CrudAction{
 		CrudActionCreate, CrudActionUpdate, CrudActionDelete, CrudActionSetArchived,
 		CrudActionGetById, CrudActionGetByUnique, CrudActionSearch, CrudActionExists,
-		CrudActionGetSchema, CrudActionComputeField,
+		CrudActionGetSchema, CrudActionComputeField, CrudActionBulkCreate, CrudActionImport,
 	}
 }
 
@@ -145,6 +148,38 @@ type (
 	ExistsResult       = dyn.OpResult[dyn.ExistsResultData]
 	GetSchemaResult    = dyn.OpResult[any]
 	ComputeFieldResult = dyn.OpResult[ComputeFieldResultData]
+	BulkCreateResult   = dyn.OpResult[BulkCreateResultData]
+)
+
+// BulkCreateResultData answers bulk_create and import alike: what was written, and which rows
+// were skipped and why. Skipped rows are data, not client errors, because the caller cannot
+// fix them by changing the request - only by changing the file.
+type BulkCreateResultData struct {
+	AffectedCount int                 `json:"affected_count"`
+	CreatedCount  int                 `json:"created_count"`
+	UpdatedCount  int                 `json:"updated_count"`
+	AffectedAt    model.ModelDateTime `json:"affected_at"`
+	TotalRows     int                 `json:"total_rows"`
+	ErrorCount    int                 `json:"error_count"`
+	Errors        []RowError          `json:"errors"`
+}
+
+// RowError locates one rejected row. Row is 1-based over the data rows, the header excluded,
+// so it matches what the user sees in a spreadsheet minus the header line.
+type RowError struct {
+	Row    int            `json:"row"`
+	Field  string         `json:"field,omitempty"`
+	Code   string         `json:"code"`
+	Params map[string]any `json:"params,omitempty"`
+}
+
+// Deduplication fields. A schema declaring both gets insert-or-update semantics in bulk create.
+const (
+	FieldSourceSystem = "source_system"
+	FieldExternalId   = "external_id"
+
+	SourceSystemManual = "manual"
+	SourceSystemImport = "import"
 )
 
 // ComputeFieldResultData is the answer of a meta/compute call: the evaluated value with the

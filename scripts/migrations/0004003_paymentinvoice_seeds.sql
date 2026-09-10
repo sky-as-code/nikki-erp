@@ -1,6 +1,6 @@
 -- Seed data for the Payment Invoice module: the payment methods a deployment can be paid through.
 --
--- These four mirror the methods coremart/scripts/migrations/2002003_vending_machine_new_seed.sql
+-- These four mirror the methods coremart/scripts/migrations/2001003_vendingmachine_seed.sql
 -- configures on its kiosks. That file writes them into vdmc_new_payments, which is the vending
 -- module's own copy; this file writes the master records they are a copy OF, so that Sales and
 -- anything else can name a payment method without reaching into the vending module's table.

@@ -132,6 +132,8 @@ CREATE TABLE "inventory_product_categories" (
   "parent_category_id" character varying NULL,
   "sequence" integer NULL,
   "description" jsonb NULL,
+  "source_system" character varying NOT NULL,
+  "external_id" character varying NULL,
   "org_id" character varying NOT NULL,
   "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
@@ -141,6 +143,8 @@ CREATE TABLE "inventory_product_categories" (
   CONSTRAINT "inventory_product_categories_code_org_id_ukey" UNIQUE ("code", "org_id"),
   CONSTRAINT "inventory_product_categories_parent_category_id_fkey" FOREIGN KEY ("parent_category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+-- Create index "invty_prod_cats_tid_src_sys_ext_id_ukey" to table: "inventory_product_categories"
+CREATE UNIQUE INDEX "invty_prod_cats_tid_src_sys_ext_id_ukey" ON "inventory_product_categories" ("source_system", "external_id") WHERE (external_id IS NOT NULL);
 -- Create "inventory_product_types" table
 CREATE TABLE "inventory_product_types" (
   "id" character varying NOT NULL,
@@ -178,6 +182,8 @@ CREATE TABLE "inventory_product_templates" (
   "default_width" numeric NULL,
   "default_height" numeric NULL,
   "status" character varying NOT NULL,
+  "source_system" character varying NOT NULL,
+  "external_id" character varying NULL,
   "org_id" character varying NOT NULL,
   "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
@@ -188,6 +194,8 @@ CREATE TABLE "inventory_product_templates" (
   CONSTRAINT "inventory_product_templates_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_product_templates_product_type_id_fkey" FOREIGN KEY ("product_type_id") REFERENCES "inventory_product_types" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+-- Create index "invty_prod_tpls_tid_src_sys_ext_id_ukey" to table: "inventory_product_templates"
+CREATE UNIQUE INDEX "invty_prod_tpls_tid_src_sys_ext_id_ukey" ON "inventory_product_templates" ("source_system", "external_id") WHERE (external_id IS NOT NULL);
 -- Create "inventory_product_template_attributes" table
 CREATE TABLE "inventory_product_template_attributes" (
   "id" character varying NOT NULL,
@@ -233,6 +241,8 @@ CREATE TABLE "inventory_product_variants" (
   "height" numeric NULL,
   "status" character varying NOT NULL,
   "archive_source" character varying NULL,
+  "source_system" character varying NOT NULL,
+  "external_id" character varying NULL,
   "org_id" character varying NOT NULL,
   "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
@@ -242,6 +252,8 @@ CREATE TABLE "inventory_product_variants" (
   CONSTRAINT "invty_prod_variants_tid_ptpl_id_comb_key_ukey" UNIQUE ("product_template_id", "combination_key"),
   CONSTRAINT "inventory_product_variants_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+-- Create index "invty_prod_variants_tid_src_sys_ext_id_ukey" to table: "inventory_product_variants"
+CREATE UNIQUE INDEX "invty_prod_variants_tid_src_sys_ext_id_ukey" ON "inventory_product_variants" ("source_system", "external_id") WHERE (external_id IS NOT NULL);
 -- Create "inventory_product_variant_attribute_values" table
 CREATE TABLE "inventory_product_variant_attribute_values" (
   "id" character varying NOT NULL,

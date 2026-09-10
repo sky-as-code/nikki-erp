@@ -5,6 +5,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
@@ -38,6 +39,28 @@ var (
 	_ composable.CrudDomainService = (*ProductTemplateDomainServiceImpl)(nil)
 	_ itProduct.ProductService     = (*ProductTemplateDomainServiceImpl)(nil)
 )
+
+// Delete refuses to remove a template that still owns variants, reporting it as a field-level
+// business error naming Archive as the alternative. Without the guard the variant foreign key
+// refuses the statement and the failure reaches the client as a 500.
+func (this *ProductTemplateDomainServiceImpl) Delete(
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	variantRepo, err := repoFor(models.ProductVariantSchemaName)
+	if err != nil {
+		return nil, err
+	}
+
+	vErrs := ft.NewClientErrors()
+	templateId := readStringParam(params, models.ProductTemplateFieldId)
+	if err := AssertTemplateDeletable(ctx, variantRepo, templateId, vErrs); err != nil {
+		return nil, err
+	}
+	if vErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
+	}
+	return this.CrudDomainService.Delete(ctx, params, options...)
+}
 
 func (this *ProductTemplateDomainServiceImpl) GetEffectiveProduct(
 	ctx corectx.Context, query itProduct.GetEffectiveProductQuery,

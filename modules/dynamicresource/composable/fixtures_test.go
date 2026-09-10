@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -11,8 +12,10 @@ import (
 
 	ds "github.com/sky-as-code/nikki-erp/common/datastructure"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
@@ -92,16 +95,42 @@ func newOrgRequiredSchema() *dmodel.ModelSchema {
 		Build()
 }
 
-// stubRepository records the keys it was asked to fetch and returns a canned record.
+// stubRepository records the keys it was asked to fetch and returns a canned record. For the
+// bulk paths it also opens a fake transaction and answers Search from searchItems.
 type stubRepository struct {
 	CrudRepository
 	schema      *dmodel.ModelSchema
 	fetchedKeys dmodel.DynamicFields
 	record      dmodel.DynamicFields
 	found       bool
+
+	searchItems []dmodel.DynamicFields
+	searchGraph *dmodel.SearchGraph
+	tranx       *stubTransaction
 }
 
+type stubTransaction struct {
+	committed  bool
+	rolledBack bool
+}
+
+func (this *stubTransaction) Commit() error   { this.committed = true; return nil }
+func (this *stubTransaction) Rollback() error { this.rolledBack = true; return nil }
+
 func (this *stubRepository) Schema() *dmodel.ModelSchema { return this.schema }
+
+func (this *stubRepository) BeginTransaction(_ corectx.Context) (database.DbTransaction, error) {
+	this.tranx = &stubTransaction{}
+	return this.tranx, nil
+}
+
+func (this *stubRepository) Search(_ corectx.Context, param dyn.RepoSearchParam) (*SearchResult, error) {
+	this.searchGraph = param.Graph
+	return &SearchResult{
+		Data:    dyn.PagedResultData[dmodel.DynamicFields]{Items: this.searchItems, Total: len(this.searchItems)},
+		HasData: len(this.searchItems) > 0,
+	}, nil
+}
 
 func (this *stubRepository) FindByKeys(
 	_ corectx.Context, keys dmodel.DynamicFields,
@@ -114,10 +143,18 @@ func (this *stubRepository) FindByKeys(
 // be exercised without a database.
 type fakeDomainService struct {
 	CrudDomainService
-	schema *dmodel.ModelSchema
-	repo   CrudRepository
-	seen   dmodel.DynamicFields
-	calls  int
+	schema  *dmodel.ModelSchema
+	repo    CrudRepository
+	seen    dmodel.DynamicFields
+	history []dmodel.DynamicFields
+	calls   int
+
+	// rejectName makes Create/Update answer a client error for a record with that name, so the
+	// bulk paths can be shown skipping a bad row without a database.
+	rejectName string
+
+	// idPrefix, when set, makes Create answer a generated id ("{prefix}{n}") like a real create.
+	idPrefix string
 
 	createOpts CreateOptions
 	updateOpts UpdateOptions
@@ -134,17 +171,36 @@ func (this *fakeDomainService) Repository() CrudRepository  { return this.repo }
 func (this *fakeDomainService) record(params dmodel.DynamicFields) {
 	this.calls++
 	this.seen = params
+	this.history = append(this.history, params)
+}
+
+func (this *fakeDomainService) rejects(cmd dmodel.DynamicFields) ft.ClientErrors {
+	if this.rejectName == "" || readString(cmd, "name") != this.rejectName {
+		return nil
+	}
+	return ft.ClientErrors{*ft.NewValidationError("name", "err_test_rejected", "rejected by the fake")}
 }
 
 func (this *fakeDomainService) Create(_ corectx.Context, cmd CreateCommand, options ...CreateOptions) (*CreateResult, error) {
 	this.record(cmd)
 	this.createOpts = firstOrZero(options)
-	return &CreateResult{Data: cmd, HasData: true}, nil
+	if cErrs := this.rejects(cmd); cErrs != nil {
+		return &CreateResult{ClientErrors: cErrs}, nil
+	}
+	data := cmd
+	if this.idPrefix != "" {
+		data = copyFields(cmd)
+		data[basemodel.FieldId] = this.idPrefix + strconv.Itoa(this.calls)
+	}
+	return &CreateResult{Data: data, HasData: true}, nil
 }
 
 func (this *fakeDomainService) Update(_ corectx.Context, cmd UpdateCommand, options ...UpdateOptions) (*MutateResult, error) {
 	this.record(cmd)
 	this.updateOpts = firstOrZero(options)
+	if cErrs := this.rejects(cmd); cErrs != nil {
+		return &MutateResult{ClientErrors: cErrs}, nil
+	}
 	return &MutateResult{HasData: true}, nil
 }
 
@@ -218,6 +274,12 @@ func (this *stubHandlers) GetSchema(echoCtx *echo.Context) error {
 }
 func (this *stubHandlers) ComputeField(echoCtx *echo.Context) error {
 	return this.answer("compute_field")(echoCtx)
+}
+func (this *stubHandlers) CreateBulk(echoCtx *echo.Context) error {
+	return this.answer("bulk_create")(echoCtx)
+}
+func (this *stubHandlers) Import(echoCtx *echo.Context) error {
+	return this.answer("import")(echoCtx)
 }
 func (this *stubHandlers) ApplicationService() CrudApplicationService {
 	return this.appSvc

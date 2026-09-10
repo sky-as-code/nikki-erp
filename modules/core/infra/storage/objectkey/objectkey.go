@@ -36,6 +36,21 @@ func Build(prefix, filename string) (string, error) {
 	return path.Join(prefix, *uuid, SanitizeFilename(filename)), nil
 }
 
+// BuildRandom names the object by a fresh UUID alone, keeping only the extension of the original
+// file. Use it when the original name must not leak into the bucket (e.g. a transient import).
+func BuildRandom(prefix, ext string) (string, error) {
+	uuid, err := model.NewUUID()
+	if err != nil {
+		return "", err
+	}
+	ext = strings.ToLower(strings.TrimPrefix(strings.TrimSpace(ext), "."))
+	name := *uuid
+	if ext != "" {
+		name += "." + ext
+	}
+	return path.Join(prefix, name), nil
+}
+
 func BuildFromFileHeader(prefix string, header *multipart.FileHeader) (string, error) {
 	return Build(prefix, SanitizeFileHeaderName(header))
 }

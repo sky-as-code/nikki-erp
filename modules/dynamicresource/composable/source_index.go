@@ -42,6 +42,16 @@ func LookupSourceRepository(schemaName string) (CrudRepository, bool) {
 	return repo, ok
 }
 
+// LookupSourceOnion returns the whole onion of a schema served by a composable engine, for a
+// caller that needs the domain service of a sibling resource (import resolves and, on request,
+// creates referenced records through it so their own rules run).
+func LookupSourceOnion(schemaName string) (DynamicResourceEngineOnion, bool) {
+	sourceIndex.mutex.RLock()
+	defer sourceIndex.mutex.RUnlock()
+	onion, ok := sourceIndex.onions[schemaName]
+	return onion, ok
+}
+
 // BuiltSchemaNames lists every schema whose onion has been built so far, sorted. Onions are dig
 // constructors, so one nobody resolved is absent; by OnAppStarted every routed onion is built.
 func BuiltSchemaNames() []string {

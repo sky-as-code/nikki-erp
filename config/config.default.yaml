@@ -123,6 +123,13 @@ CORE:
     SECRET_KEY: "secret-key"
     ENDPOINT: "https://hcm.ss.bfcplatform.vn"
     BUCKET: ""
+  IMPORT:
+    # Upper bound of one uploaded import file, in bytes (default 10 MiB)
+    MAX_FILE_SIZE_BYTES: 10485760
+    # Comma-separated, lowercase, without dots
+    ALLOWED_EXTENSIONS: "xlsx,csv"
+    # Data rows (header excluded) accepted from one file
+    MAX_ROWS: 10000
   TOKEN:
     # Secret key for JWT token signing and verification
     # IMPORTANT: Override this in local.env or production environment

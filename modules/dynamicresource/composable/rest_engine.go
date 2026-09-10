@@ -97,6 +97,8 @@ func (this *RestEngineImpl) builtinRoutes() []crudRoute {
 		{CrudActionExists, ActionTypeGeneric, "exists", func() echo.HandlerFunc { return h.Exists }},
 		{CrudActionGetSchema, ActionTypeRead, "meta/schema", func() echo.HandlerFunc { return h.GetSchema }},
 		{CrudActionComputeField, ActionTypeGeneric, "meta/compute/:field", func() echo.HandlerFunc { return h.ComputeField }},
+		{CrudActionBulkCreate, ActionTypeCreate, "bulk", func() echo.HandlerFunc { return h.CreateBulk }},
+		{CrudActionImport, ActionTypeUpload, "import", func() echo.HandlerFunc { return h.Import }},
 	}
 }
 

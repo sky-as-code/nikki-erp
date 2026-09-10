@@ -110,3 +110,10 @@ const (
 	S3StorageEndpoint    ConfigName = "CORE.S3_STORAGE.ENDPOINT"
 	S3StorageBucket      ConfigName = "CORE.S3_STORAGE.BUCKET"
 )
+
+// Resource import (POST /{resource}/import on the composable engine).
+const (
+	ImportMaxFileSizeBytes  ConfigName = "CORE.IMPORT.MAX_FILE_SIZE_BYTES"
+	ImportAllowedExtensions ConfigName = "CORE.IMPORT.ALLOWED_EXTENSIONS"
+	ImportMaxRows           ConfigName = "CORE.IMPORT.MAX_ROWS"
+)

@@ -23,6 +23,8 @@ type CrudRestHandlers interface {
 	Exists(echoCtx *echo.Context) error
 	GetSchema(echoCtx *echo.Context) error
 	ComputeField(echoCtx *echo.Context) error
+	CreateBulk(echoCtx *echo.Context) error
+	Import(echoCtx *echo.Context) error
 
 	ApplicationService() CrudApplicationService
 }
@@ -124,6 +126,16 @@ func (this *CrudRestBase) ComputeField(echoCtx *echo.Context) error {
 			return bindPayload(echoCtx, nil, ActionTypeGeneric)
 		},
 		this.appSvc.ComputeField, identity[ComputeFieldResultData], httpserver.JsonOk, false)
+}
+
+// CreateBulk serves POST {resource}/bulk with a body of {org_id?, items: [...]}. The body is
+// bound raw: "items" is not a schema field, and each item is filtered by the create path.
+func (this *CrudRestBase) CreateBulk(echoCtx *echo.Context) error {
+	return serve(echoCtx, "create bulk",
+		func(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
+			return bindRawBodyParams(echoCtx, this.schema(), ActionTypeCreate)
+		},
+		this.appSvc.CreateBulk, identity[BulkCreateResultData], httpserver.JsonOk, false)
 }
 
 // serve is the single path every built-in endpoint takes. It mirrors the error handling of

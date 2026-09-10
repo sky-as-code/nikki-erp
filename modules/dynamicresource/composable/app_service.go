@@ -6,6 +6,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 )
 
@@ -29,6 +31,13 @@ type CrudApplicationService interface {
 	Exists(ctx corectx.Context, query ExistsQuery) (*ExistsResult, error)
 	GetSchema(ctx corectx.Context, query GetSchemaQuery) (*GetSchemaResult, error)
 	ComputeField(ctx corectx.Context, cmd ComputeFieldCommand) (*ComputeFieldResult, error)
+
+	// CreateBulk writes {items: [...]} under one permission check and one transaction; a row
+	// the schema rejects is reported in the result rather than failing the call.
+	CreateBulk(ctx corectx.Context, cmd BulkCreateCommand) (*BulkCreateResult, error)
+
+	// Import parses an uploaded xlsx/csv through a column mapping and writes it like CreateBulk.
+	Import(ctx corectx.Context, cmd ImportCommand) (*BulkCreateResult, error)
 
 	DomainService() CrudDomainService
 	Schema() *dmodel.ModelSchema
@@ -60,6 +69,11 @@ type NewAppServiceParam struct {
 
 	// CrudActions is the allow-list. Empty means every action is supported.
 	CrudActions []CrudAction
+
+	// Import support. Storage may be nil (see BuildParam.Storage); Logger may be nil in tests.
+	Storage      filestorage.FileStorageAdapter
+	ImportLimits ImportLimits
+	Logger       logging.LoggerService
 }
 
 func NewDefaultApplicationService(param NewAppServiceParam) CrudApplicationService {
@@ -72,18 +86,24 @@ func NewDefaultApplicationService(param NewAppServiceParam) CrudApplicationServi
 		crudActions[action] = true
 	}
 	return &DefaultApplicationServiceImpl{
-		domSvc:      param.DomainService,
-		scope:       scope,
-		orgScoped:   param.IsOrgScoped == nil || *param.IsOrgScoped,
-		crudActions: crudActions,
+		domSvc:       param.DomainService,
+		scope:        scope,
+		orgScoped:    param.IsOrgScoped == nil || *param.IsOrgScoped,
+		crudActions:  crudActions,
+		storage:      param.Storage,
+		importLimits: param.ImportLimits,
+		logger:       param.Logger,
 	}
 }
 
 type DefaultApplicationServiceImpl struct {
-	domSvc      CrudDomainService
-	scope       requestguard.ResourceScope
-	orgScoped   bool
-	crudActions map[CrudAction]bool
+	domSvc       CrudDomainService
+	scope        requestguard.ResourceScope
+	orgScoped    bool
+	crudActions  map[CrudAction]bool
+	storage      filestorage.FileStorageAdapter
+	importLimits ImportLimits
+	logger       logging.LoggerService
 }
 
 func (this *DefaultApplicationServiceImpl) DomainService() CrudDomainService {
@@ -112,13 +132,7 @@ func (this *DefaultApplicationServiceImpl) Create(
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionCreate); cErrs != nil {
 		return &CreateResult{ClientErrors: *cErrs}, nil
 	}
-	if this.orgIdIsSchemaRequired() && readString(cmd, basemodel.FieldOrgId) == "" {
-		if cErrs := this.AssertPermission(ctx, PermissionCreate, nil); cErrs != nil {
-			return &CreateResult{ClientErrors: *cErrs}, nil
-		}
-		return this.domSvc.Create(ctx, cmd)
-	}
-	if _, cErrs := this.AssertAction(ctx, PermissionCreate, cmd); cErrs != nil {
+	if _, cErrs := this.guardCreateLike(ctx, cmd); cErrs != nil {
 		return &CreateResult{ClientErrors: *cErrs}, nil
 	}
 	return this.domSvc.Create(ctx, cmd)

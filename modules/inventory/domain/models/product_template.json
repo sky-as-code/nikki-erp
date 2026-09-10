@@ -5,6 +5,9 @@
 	"should_build_db": true,
 	"record_label_field": "name",
 	"default_search_fields": ["name", "short_name", "status", "sale_ok", "purchase_ok"],
+	"partial_uniques_strict": [
+		{ "index_name": "invty_prod_tpls_tid_src_sys_ext_id", "not_null_fields": ["source_system"], "nullable_field": "external_id" }
+	],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
@@ -117,6 +120,24 @@
 			"default_value": "draft",
 			"description": {
 				"en-US": "Business lifecycle of the product line. Distinct from is_archived, which is system visibility: a discontinued product may deliberately stay unarchived so it still appears in discontinued-product listings."
+			}
+		},
+		{
+			"name": "source_system",
+			"label": "fields.source_system",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"default_value": "manual",
+			"description": {
+				"en-US": "Which system the record originates from: 'manual' for records entered through the UI, 'import' for rows loaded from a file, or an external system's own code. Together with external_id it is the key an import uses to recognise a record it has written before."
+			}
+		},
+		{
+			"name": "external_id",
+			"label": "fields.external_id",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"description": {
+				"en-US": "The record's identifier in its source system. Optional; unique per tenant together with source_system when present, which is the database's last defence against importing one record twice."
 			}
 		},
 		{

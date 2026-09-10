@@ -54,7 +54,9 @@ func TestBuiltinRoutesOfEveryComposableResource(t *testing.T) {
 			base := "/v1/essential/" + schemaName
 			assert.Equal(t, []string{
 				"GET " + base + "/meta/schema",
+				"POST " + base + "/bulk",
 				"POST " + base + "/exists",
+				"POST " + base + "/import",
 				"POST " + base,
 				"GET " + base,
 				"POST " + base + "/meta/compute/:field",

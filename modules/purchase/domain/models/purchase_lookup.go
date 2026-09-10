@@ -91,12 +91,14 @@ func FindOpenOrdersForAgreement(
 	graph.And(
 		*dmodel.NewSearchNode().NewCondition(
 			PurchaseOrderFieldAgreementId, dmodel.Equals, agreementId),
+		// NewCondition takes the operands variadically, so the statuses are spread: passing the
+		// slice as one operand reaches the query builder as a single non-string value.
 		*dmodel.NewSearchNode().NewCondition(
-			PurchaseOrderFieldStatus, dmodel.In, []string{
-				string(PurchaseOrderStatusRfq),
-				string(PurchaseOrderStatusRfqSent),
-				string(PurchaseOrderStatusToApprove),
-			}),
+			PurchaseOrderFieldStatus, dmodel.In,
+			string(PurchaseOrderStatusRfq),
+			string(PurchaseOrderStatusRfqSent),
+			string(PurchaseOrderStatusToApprove),
+		),
 	)
 	return searchAll(ctx, repo, graph, limit, "FindOpenOrdersForAgreement")
 }

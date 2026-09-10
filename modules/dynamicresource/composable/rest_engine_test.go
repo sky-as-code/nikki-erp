@@ -27,7 +27,9 @@ func TestAddCrudRoutesCoversBuiltins(t *testing.T) {
 
 	assert.Equal(t, []string{
 		"GET /cmp_plain_resource/meta/schema",
+		"POST /cmp_plain_resource/bulk",
 		"POST /cmp_plain_resource/exists",
+		"POST /cmp_plain_resource/import",
 		"POST /cmp_plain_resource",
 		"GET /cmp_plain_resource",
 		"POST /cmp_plain_resource/meta/compute/:field",

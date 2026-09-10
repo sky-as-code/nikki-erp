@@ -1,10 +1,15 @@
 package services
 
 import (
+	"fmt"
+	"sort"
+
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/common/codify"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -13,8 +18,9 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
-// NewProductCategoryDomainService attaches the category-tree invariant to create and update. The
-// CRUD processing is the default's; only the rule the schema cannot express belongs here.
+// NewProductCategoryDomainService attaches the category-tree invariant to create and update, and
+// derives a missing code from the name on create. The CRUD processing is the default's; only the
+// rules the schema cannot express belong here.
 func NewProductCategoryDomainService(base composable.CrudDomainService) itProduct.ProductCategoryDomainService {
 	return &ProductCategoryDomainServiceImpl{CrudDomainService: base}
 }
@@ -27,8 +33,105 @@ func (this *ProductCategoryDomainServiceImpl) Create(
 	ctx corectx.Context, cmd itProduct.CreateProductCategoryCommand, options ...composable.CreateOptions,
 ) (*itProduct.CreateProductCategoryResult, error) {
 	opts := safe.GetOptional(options, composable.CreateOptions{})
+	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, this.fillCodeFromName)
 	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.validateCategoryCreate)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
+}
+
+// codeLabelLanguage is the translation a generated code is derived from when the name carries it;
+// otherwise the first language in sorted order, so the result does not depend on map iteration.
+const codeLabelLanguage = "en-US"
+
+// maxCodeSuffixAttempts bounds the "_2", "_3", … search for a free code within the org.
+const maxCodeSuffixAttempts = 20
+
+// fillCodeFromName derives `code` from `name` when the caller gave none, so a category can be
+// created from its label alone (the import's "create referenced record" does exactly that). The
+// code is unique per org, so a taken one gets a numeric suffix. A name-less create is left to
+// schema validation, which reports both missing fields.
+func (this *ProductCategoryDomainServiceImpl) fillCodeFromName(
+	ctx corectx.Context, entity *composable.DynamicEntity, _ *ft.ClientErrors,
+) (*composable.DynamicEntity, error) {
+	category := models.NewProductCategoryFrom(entity.GetFieldData())
+	if derefString(category.GetCode()) != "" {
+		return entity, nil
+	}
+	base := codify.Codify(nameLabel(category), codify.DefaultMaxLength-4)
+	if base == "" {
+		return entity, nil
+	}
+	code, err := this.freeCode(ctx, base, derefString(category.GetOrgId()))
+	if err != nil {
+		return nil, err
+	}
+	if code != "" {
+		category.SetCode(&code)
+	}
+	return entity, nil
+}
+
+func nameLabel(category *models.ProductCategory) string {
+	name := category.GetName()
+	if name == nil || len(*name) == 0 {
+		return ""
+	}
+	if text, ok := (*name)[codeLabelLanguage]; ok && text != "" {
+		return text
+	}
+	languages := make([]string, 0, len(*name))
+	for language := range *name {
+		languages = append(languages, string(language))
+	}
+	sort.Strings(languages)
+	return (*name)[model.LanguageCode(languages[0])]
+}
+
+// freeCode answers base, or base with the first free numeric suffix; empty after the last attempt
+// so the create falls through to the duplicate check and reports the collision honestly.
+func (this *ProductCategoryDomainServiceImpl) freeCode(ctx corectx.Context, base string, orgId string) (string, error) {
+	for attempt := 1; attempt <= maxCodeSuffixAttempts; attempt++ {
+		candidate := base
+		if attempt > 1 {
+			candidate = fmt.Sprintf("%s_%d", base, attempt)
+		}
+		taken, err := this.codeExists(ctx, candidate, orgId)
+		if err != nil {
+			return "", err
+		}
+		if !taken {
+			return candidate, nil
+		}
+	}
+	return "", nil
+}
+
+func (this *ProductCategoryDomainServiceImpl) codeExists(ctx corectx.Context, code string, orgId string) (bool, error) {
+	filter := dmodel.DynamicFields{models.ProductCategoryFieldCode: code}
+	if orgId != "" {
+		filter[models.ProductCategoryFieldOrgId] = orgId
+	}
+	found, err := this.Repository().GetOne(ctx, dyn.RepoGetOneParam{
+		Filter: filter,
+		Fields: []string{models.ProductCategoryFieldId},
+	})
+	if err != nil {
+		return false, errors.Wrap(err, "fillCodeFromName")
+	}
+	return found != nil && found.HasData, nil
+}
+
+// chainBeforeValidation runs the caller's hook first, then ours, over the entity the first returns.
+func chainBeforeValidation(first composable.BeforeValidationFn, second composable.BeforeValidationFn) composable.BeforeValidationFn {
+	if first == nil {
+		return second
+	}
+	return func(ctx corectx.Context, entity *composable.DynamicEntity, vErrs *ft.ClientErrors) (*composable.DynamicEntity, error) {
+		entity, err := first(ctx, entity, vErrs)
+		if err != nil || entity == nil {
+			return entity, err
+		}
+		return second(ctx, entity, vErrs)
+	}
 }
 
 func (this *ProductCategoryDomainServiceImpl) Update(
