@@ -414,11 +414,11 @@ func writeReturn(
 	returnNumber := "RET-" + string(*number)
 
 	err = withTransaction(ctx, models.SalesReturnSchemaName, func(tranxCtx corectx.Context) error {
-		engine, err := engineFor(models.SalesReturnSchemaName)
+		engineRepo, err := repoFor(models.SalesReturnSchemaName)
 		if err != nil {
 			return err
 		}
-		if _, err := engine.ResourceRepository().Insert(tranxCtx, dmodel.DynamicFields{
+		if _, err := engineRepo.Insert(tranxCtx, dmodel.DynamicFields{
 			models.SalesReturnFieldId:                     returnId,
 			models.SalesReturnFieldOrgId:                  orgId,
 			models.SalesReturnFieldReturnNumber:           returnNumber,
@@ -437,7 +437,7 @@ func writeReturn(
 			return err
 		}
 
-		lineEngine, err := engineFor(models.SalesReturnLineSchemaName)
+		lineRepo, err := repoFor(models.SalesReturnLineSchemaName)
 		if err != nil {
 			return err
 		}
@@ -446,7 +446,7 @@ func writeReturn(
 			if err != nil {
 				return err
 			}
-			if _, err := lineEngine.ResourceRepository().Insert(tranxCtx, dmodel.DynamicFields{
+			if _, err := lineRepo.Insert(tranxCtx, dmodel.DynamicFields{
 				models.SalesReturnLineFieldId:                      string(*lineId),
 				models.SalesReturnLineFieldOrgId:                   orgId,
 				models.SalesReturnLineFieldSalesReturnId:           returnId,

@@ -106,7 +106,7 @@ func conditionFrom(
 func searchBy(
 	ctx corectx.Context, schemaName, field, value string,
 ) ([]dmodel.DynamicFields, error) {
-	engine, err := engineFor(schemaName)
+	engineRepo, err := repoFor(schemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func searchBy(
 	graph := &dmodel.SearchGraph{}
 	graph.And(*dmodel.NewSearchNode().NewCondition(field, dmodel.Equals, value))
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engineRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  model.MODEL_RULE_PAGE_MAX_SIZE,

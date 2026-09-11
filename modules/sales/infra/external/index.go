@@ -8,7 +8,6 @@ import (
 	itAccCurrency "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/currency"
 	itTax "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
 	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
-	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
@@ -16,7 +15,6 @@ import (
 	itInvoice "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/invoice"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
 	itMethod "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/paymentmethod"
-	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
 	salesInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/infra/external/invoicing"
 	salesMessage "github.com/sky-as-code/nikki-erp/modules/sales/infra/external/message"
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
@@ -130,36 +128,8 @@ func InitExternal() error {
 	); err != nil {
 		return err
 	}
-
-	// The channel's payment actions reach the port through a package variable rather than the
-	// container, because an action callback is handed only its own engine.
-	return deps.Invoke(func(
-		methods itExt.PaymentMethodExtService,
-		orders itExt.PaymentOrderExtService,
-		invoicing itInvoicing.InvoicingExtService,
-		tax itExt.TaxCalculationExtService,
-		settings itExt.EffectiveSettingsExtService,
-		dLock lock.DistributedLock,
-		products itExt.ProductVariantExtService,
-		fulfillment itExt.FulfillmentExtService,
-		reservations itExt.FulfillmentReservationExtService,
-		basis itExt.ProductPricingBasisExtService,
-		parties itExt.PartyExtService,
-	) error {
-		dynamicengines.SetPaymentMethodPort(methods)
-		dynamicengines.SetPaymentOrderPort(orders)
-		// Without this a sale could name any party at all, including one belonging to another
-		// organization: the port is the only thing that checks.
-		dynamicengines.SetPartyPort(parties)
-		// Binding this is what turns a fiscal request from a row that stays `pending` into a
-		// document that actually gets issued.
-		dynamicengines.SetInvoicingPort(invoicing)
-		// Reprice needs tax and settings; confirm and cancel additionally need the lock, because
-		// neither is a single-row update and the etag cannot guard them.
-		dynamicengines.SetPricingPorts(tax, settings, dLock, products, fulfillment, basis)
-		// Binding this is what turns the kiosk half of a confirm on: without it a kiosk order still
-		// gets its fulfillment and its policy snapshot, but no stock is held for it.
-		dynamicengines.SetFulfillmentReservationPort(reservations)
-		return nil
-	})
+	// Every port Sales consumes is now injected into the onion that needs it, so nothing is pushed
+	// into a package variable here any more: the composable engine hands a resource its
+	// dependencies at construction, which is what the legacy action callbacks could not do.
+	return nil
 }

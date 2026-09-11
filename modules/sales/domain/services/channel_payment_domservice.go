@@ -7,7 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
@@ -19,11 +19,11 @@ import (
 // resolves ids against a locally registered schema; a payment method belongs to paymentinvoice,
 // so this service validates the target through the port instead.
 type ChannelPaymentDomainServiceImpl struct {
-	repo drif.DynamicResourceRepository
+	repo composable.CrudRepository
 }
 
 func NewChannelPaymentDomainService(
-	repo drif.DynamicResourceRepository,
+	repo composable.CrudRepository,
 ) *ChannelPaymentDomainServiceImpl {
 	return &ChannelPaymentDomainServiceImpl{repo: repo}
 }

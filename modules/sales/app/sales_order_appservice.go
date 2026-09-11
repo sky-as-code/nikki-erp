@@ -3,10 +3,9 @@ package app
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	c "github.com/sky-as-code/nikki-erp/modules/sales/constants"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/order"
@@ -61,7 +60,7 @@ func (this *SalesOrderExtServiceImpl) CreateOrder(
 	ctx corectx.Context, command it.CreateSalesOrderCommand,
 ) (*it.CreateSalesOrderResult, error) {
 	if cErrs := assertPermission(
-		ctx, drif.PermissionCreate, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
+		ctx, composable.PermissionCreate, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.CreateSalesOrderResult{ClientErrors: *cErrs}, nil
 	}
 
@@ -114,7 +113,7 @@ func (this *SalesOrderExtServiceImpl) ConfirmOrder(
 	ctx corectx.Context, command it.SalesOrderCommand,
 ) (*it.ConfirmSalesOrderResult, error) {
 	if cErrs := assertPermission(
-		ctx, drif.PermissionUpdate, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
+		ctx, composable.PermissionUpdate, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.ConfirmSalesOrderResult{ClientErrors: *cErrs}, nil
 	}
 
@@ -130,14 +129,28 @@ func (this *SalesOrderExtServiceImpl) ConfirmOrder(
 	}
 
 	data := it.ConfirmedOrderData{
-		SalesOrderId: confirmed.SalesOrderId,
-		Status:       confirmed.Status,
-		Pending:      confirmed.Pending,
+		SalesOrderId:     confirmed.SalesOrderId,
+		Status:           confirmed.Status,
+		InitialBillId:    confirmed.InitialBillId,
+		AlreadyConfirmed: confirmed.AlreadyConfirmed,
+		Pending:          confirmed.Pending,
 	}
 	if confirmed.KioskFulfillment != nil {
 		data.FulfillmentId = confirmed.KioskFulfillment.FulfillmentId
 		data.FulfillmentStatus = confirmed.KioskFulfillment.Status
 	}
+
+	// The whole order and bill for the caller standing at the till: it is about to ask for money and
+	// the amount is here rather than one request away.
+	view, err := services.LoadConfirmedOrderView(ctx, confirmed.SalesOrderId, confirmed.InitialBillId)
+	if err != nil {
+		return nil, err
+	}
+	if view != nil {
+		data.Order = view.Order
+		data.InitialBill = view.Bill
+	}
+
 	return &it.ConfirmSalesOrderResult{HasData: true, Data: data}, nil
 }
 
@@ -145,7 +158,7 @@ func (this *SalesOrderExtServiceImpl) CancelOrder(
 	ctx corectx.Context, command it.CancelSalesOrderCommand,
 ) (*it.CancelSalesOrderResult, error) {
 	if cErrs := assertPermission(
-		ctx, drif.PermissionUpdate, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
+		ctx, composable.PermissionUpdate, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.CancelSalesOrderResult{ClientErrors: *cErrs}, nil
 	}
 
@@ -168,18 +181,13 @@ func (this *SalesOrderExtServiceImpl) CancelOrder(
 	}, nil
 }
 
-// salesFulfillmentMethodService resolves the derived method service from its engine on each call.
+// salesFulfillmentMethodService resolves the derived method service through the resource hub.
 //
-// Read here rather than injected because the engines are built after the ports are wired, so a value
-// captured at construction would be nil for every request. A missing engine answers nil, and
-// resolution then treats the sale as an ordinary one — the same fallback the engine action uses.
+// Read here rather than injected because this package is imported by dynamicengines, which builds
+// the onions: injecting would close an import cycle. A resource that is not built answers nil, and
+// resolution then treats the sale as an ordinary one.
 func salesFulfillmentMethodService() *services.SalesFulfillmentMethodDomainServiceImpl {
-	engine, err := services.EngineFor(models.SalesFulfillmentMethodSchemaName)
-	if err != nil || engine == nil {
-		return nil
-	}
-	derived, _ := engine.ResourceService().(*services.SalesFulfillmentMethodDomainServiceImpl)
-	return derived
+	return services.FulfillmentMethodService()
 }
 
 func (this *SalesOrderExtServiceImpl) CreateAttempt(
@@ -188,7 +196,7 @@ func (this *SalesOrderExtServiceImpl) CreateAttempt(
 	// Update on the order, not a permission of its own: commanding a dispense changes what a
 	// delivery owes, which is the same power over the same sale that recording its result is.
 	if cErrs := assertPermission(
-		ctx, drif.PermissionUpdate, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
+		ctx, composable.PermissionUpdate, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.CreateAttemptResult{ClientErrors: *cErrs}, nil
 	}
 
@@ -226,7 +234,7 @@ func (this *SalesOrderExtServiceImpl) ReportAttemptResult(
 	ctx corectx.Context, command it.ReportAttemptResultCommand,
 ) (*it.ReportAttemptResultResult, error) {
 	if cErrs := assertPermission(
-		ctx, drif.PermissionUpdate, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
+		ctx, composable.PermissionUpdate, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.ReportAttemptResultResult{ClientErrors: *cErrs}, nil
 	}
 
@@ -275,7 +283,7 @@ func (this *SalesOrderExtServiceImpl) ViewFulfillment(
 	ctx corectx.Context, command it.ViewFulfillmentCommand,
 ) (*it.ViewFulfillmentResult, error) {
 	if cErrs := assertPermission(
-		ctx, drif.PermissionRead, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
+		ctx, composable.PermissionRead, c.SalesOrderResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.ViewFulfillmentResult{ClientErrors: *cErrs}, nil
 	}
 

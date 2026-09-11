@@ -43,8 +43,13 @@ const SalesEventSchemaVersion = "1.0"
 // consumer should do about it: an instruction-shaped name would be Sales coupling itself to another
 // module, which is what the outbox exists to avoid.
 const (
-	EventSalesOrderConfirmed  = "SalesOrderConfirmed"
-	EventSalesOrderCancelled  = "SalesOrderCancelled"
+	// EventSalesOrderStageChanged announces that an order entered a new stage, and is the ONLY
+	// order-lifecycle event. It replaced the per-action SalesOrderConfirmed and SalesOrderCancelled
+	// (DEC-003): a rule that every stage transition announces itself cannot be built out of one
+	// event type per action, because the next stage anyone adds would silently announce nothing.
+	// Which transition it was is in the payload, as previous_stage and current_stage.
+	EventSalesOrderStageChanged = "SalesOrderStageChanged"
+
 	EventSalesPaymentCaptured = "SalesPaymentCaptured"
 	EventSalesPaymentRefunded = "SalesPaymentRefunded"
 
@@ -66,8 +71,7 @@ const (
 // type published but absent from this list is one no consumer was told to expect.
 func SalesEventTypes() []string {
 	return []string{
-		EventSalesOrderConfirmed,
-		EventSalesOrderCancelled,
+		EventSalesOrderStageChanged,
 		EventSalesPaymentCaptured,
 		EventSalesPaymentRefunded,
 		EventSalesFulfillmentRequested,

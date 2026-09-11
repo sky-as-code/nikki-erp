@@ -7,7 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	c "github.com/sky-as-code/nikki-erp/modules/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
@@ -26,7 +26,7 @@ func NewSalesChannelApplicationServiceImpl() it.SalesChannelAppService {
 func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 	ctx corectx.Context, command it.RegisterSalesChannelCommand,
 ) (*it.RegisterSalesChannelResult, error) {
-	if cErrs := assertPermission(ctx, drif.PermissionCreate,
+	if cErrs := assertPermission(ctx, composable.PermissionCreate,
 		c.SalesChannelResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.RegisterSalesChannelResult{ClientErrors: *cErrs}, nil
 	}
@@ -41,12 +41,12 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 			"registering a sales channel requires the name of the module that owns it"), nil
 	}
 
-	engine, err := services.EngineFor(models.SalesChannelSchemaName)
+	engineRepo, err := services.RepositoryFor(models.SalesChannelSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	existing, err := models.FindSalesChannelByCode(ctx, engine.ResourceRepository(), code)
+	existing, err := models.FindSalesChannelByCode(ctx, engineRepo, code)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,13 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 	if err != nil {
 		return nil, errors.Wrap(err, "RegisterSalesChannel")
 	}
-	created, err := engine.ResourceService().Create(ctx, dmodel.DynamicFields{
+	// Through the domain service rather than the repository: a channel row needs the schema
+	// defaults and audit fields the create pipeline applies.
+	channelSvc, err := services.DomainServiceFor(models.SalesChannelSchemaName)
+	if err != nil {
+		return nil, err
+	}
+	created, err := channelSvc.Create(ctx, dmodel.DynamicFields{
 		models.SalesChannelFieldId:              string(*id),
 		models.SalesChannelFieldCode:            code,
 		models.SalesChannelFieldName:            command.Name,
@@ -94,7 +100,7 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 func (this *SalesChannelApplicationServiceImpl) ResolveSalesChannelByCode(
 	ctx corectx.Context, query it.ResolveSalesChannelQuery,
 ) (*it.ResolveSalesChannelResult, error) {
-	if cErrs := assertPermission(ctx, drif.PermissionRead,
+	if cErrs := assertPermission(ctx, composable.PermissionRead,
 		c.SalesChannelResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.ResolveSalesChannelResult{ClientErrors: *cErrs}, nil
 	}
@@ -107,11 +113,11 @@ func (this *SalesChannelApplicationServiceImpl) ResolveSalesChannelByCode(
 		}, nil
 	}
 
-	engine, err := services.EngineFor(models.SalesChannelSchemaName)
+	engineRepo, err := services.RepositoryFor(models.SalesChannelSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	found, err := models.FindSalesChannelByCode(ctx, engine.ResourceRepository(), code)
+	found, err := models.FindSalesChannelByCode(ctx, engineRepo, code)
 	if err != nil {
 		return nil, err
 	}

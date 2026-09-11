@@ -5,19 +5,23 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
 // SalesPricelistDomainServiceImpl adds the two rules a pricelist carries that plain CRUD cannot
 // express: at most one default per organization, and a currency that stops being editable once
 // anything depends on it. It wraps rather than replaces the engine's default service.
+// A signature change on either side breaks the build here rather than at the engine registration.
+var _ itCatalog.SalesPricelistDomainService = (*SalesPricelistDomainServiceImpl)(nil)
+
 type SalesPricelistDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
-func NewSalesPricelistDomainService(base drif.DynamicResourceService) *SalesPricelistDomainServiceImpl {
-	return &SalesPricelistDomainServiceImpl{DynamicResourceService: base}
+func NewSalesPricelistDomainService(base composable.CrudDomainService) *SalesPricelistDomainServiceImpl {
+	return &SalesPricelistDomainServiceImpl{CrudDomainService: base}
 }
 
 // SetDefault promotes one pricelist to be its organization's default, demoting whatever held that
@@ -58,11 +62,11 @@ func (this *SalesPricelistDomainServiceImpl) SetDefault(
 			return nil
 		}
 
-		engine, err := engineFor(models.SalesPricelistSchemaName)
+		engineRepo, err := repoFor(models.SalesPricelistSchemaName)
 		if err != nil {
 			return err
 		}
-		current, err := models.FindDefaultPricelists(tranxCtx, engine.ResourceRepository(), orgId)
+		current, err := models.FindDefaultPricelists(tranxCtx, engineRepo, orgId)
 		if err != nil {
 			return err
 		}
@@ -99,10 +103,10 @@ func (this *SalesPricelistDomainServiceImpl) SetDefault(
 // its own price and currency, so the rules are what would be reinterpreted, and the answer does not
 // change as order history grows.
 func (this *SalesPricelistDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields,
-) (*dyn.OpResult[dyn.MutateResultData], error) {
+	ctx corectx.Context, params composable.UpdateCommand, options ...composable.UpdateOptions,
+) (*composable.MutateResult, error) {
 	if _, changing := params[models.SalesPricelistFieldCurrencyId]; !changing {
-		return this.DynamicResourceService.Update(ctx, params)
+		return this.CrudDomainService.Update(ctx, params, options...)
 	}
 
 	pricelistId := stringOf(params, models.SalesPricelistFieldId)
@@ -114,18 +118,18 @@ func (this *SalesPricelistDomainServiceImpl) Update(
 	// A missing record is the engine's business to report, not this guard's. Falling through lets it
 	// produce its own not-found rather than a second shape for the same failure.
 	if stored == nil {
-		return this.DynamicResourceService.Update(ctx, params)
+		return this.CrudDomainService.Update(ctx, params, options...)
 	}
 
 	if !isCurrencyChanging(params, stored) {
-		return this.DynamicResourceService.Update(ctx, params)
+		return this.CrudDomainService.Update(ctx, params, options...)
 	}
 
-	engine, err := engineFor(models.SalesPricelistSchemaName)
+	engineRepo, err := repoFor(models.SalesPricelistSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	items, err := models.CountPricelistItems(ctx, engine.ResourceRepository(), pricelistId)
+	items, err := models.CountPricelistItems(ctx, engineRepo, pricelistId)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +140,7 @@ func (this *SalesPricelistDomainServiceImpl) Update(
 				"create a new pricelist for a different currency"), nil
 	}
 
-	return this.DynamicResourceService.Update(ctx, params)
+	return this.CrudDomainService.Update(ctx, params, options...)
 }
 
 // isCurrencyChanging reports whether an update actually moves the pricelist to a different

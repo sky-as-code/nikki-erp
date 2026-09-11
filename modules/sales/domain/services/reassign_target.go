@@ -433,7 +433,7 @@ func repointItemReservations(
 }
 
 func writeTargetChange(ctx corectx.Context, params commitReassignmentParams) error {
-	engine, err := engineFor(models.SalesFulfillmentTargetChangeSchemaName)
+	engineRepo, err := repoFor(models.SalesFulfillmentTargetChangeSchemaName)
 	if err != nil {
 		return err
 	}
@@ -462,7 +462,7 @@ func writeTargetChange(ctx corectx.Context, params commitReassignmentParams) err
 		fields[models.SalesFulfillmentTargetChangeFieldActorId] = actorId
 	}
 
-	_, err = engine.ResourceRepository().Insert(ctx, fields)
+	_, err = engineRepo.Insert(ctx, fields)
 	return errors.Wrap(err, "writing the fulfillment target change")
 }
 

@@ -5,18 +5,22 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
 // SalesChannelDomainServiceImpl adds the channel lifecycle to the engine's default service. It
 // wraps rather than replaces: ordinary CRUD still runs through the engine's implementation.
+// A signature change on either side breaks the build here rather than at the engine registration.
+var _ itCatalog.SalesChannelDomainService = (*SalesChannelDomainServiceImpl)(nil)
+
 type SalesChannelDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
-func NewSalesChannelDomainService(base drif.DynamicResourceService) *SalesChannelDomainServiceImpl {
-	return &SalesChannelDomainServiceImpl{DynamicResourceService: base}
+func NewSalesChannelDomainService(base composable.CrudDomainService) *SalesChannelDomainServiceImpl {
+	return &SalesChannelDomainServiceImpl{CrudDomainService: base}
 }
 
 // ResolveByCode answers the id and metadata of the channel an external module names by code, which
@@ -32,11 +36,11 @@ func (this *SalesChannelDomainServiceImpl) ResolveByCode(
 			"resolving a sales channel requires a code"), nil
 	}
 
-	engine, err := engineFor(models.SalesChannelSchemaName)
+	engineRepo, err := repoFor(models.SalesChannelSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	found, err := models.FindSalesChannelByCode(ctx, engine.ResourceRepository(), normalized)
+	found, err := models.FindSalesChannelByCode(ctx, engineRepo, normalized)
 	if err != nil {
 		return nil, err
 	}
@@ -164,12 +168,12 @@ func (this *SalesChannelDomainServiceImpl) Archive(
 func (this *SalesChannelDomainServiceImpl) activeSalesPointsOf(
 	ctx corectx.Context, channelId string,
 ) ([]dmodel.DynamicFields, error) {
-	engine, err := engineFor(models.SalesPointSchemaName)
+	engineRepo, err := repoFor(models.SalesPointSchemaName)
 	if err != nil {
 		return nil, err
 	}
 	return models.FindActiveSalesPointsOfChannel(
-		ctx, engine.ResourceRepository(), channelId, models.MaxSalesPointsPerChannel)
+		ctx, engineRepo, channelId, models.MaxSalesPointsPerChannel)
 }
 
 // AssertMutable refuses a change to a channel the API may not alter, and is called by the write

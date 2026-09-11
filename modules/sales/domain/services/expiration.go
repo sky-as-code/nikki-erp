@@ -114,14 +114,15 @@ func expireOneOrder(
 		}
 		released = codes
 
-		engine, err := engineFor(models.SalesOrderSchemaName)
-		if err != nil {
-			return err
-		}
-		if _, err := engine.ResourceRepository().Update(tranxCtx, dmodel.DynamicFields{
-			models.SalesOrderFieldId:     orderId,
-			models.SalesOrderFieldStatus: string(models.SalesOrderStatusCancelled),
-		}); err != nil {
+		// Through the stage mechanism like every other status move, so a sweep that quietly cancels a
+		// basket announces it the same way an operator cancelling one does. A kiosk holding a stale
+		// draft learns it is gone.
+		if err := TransitionOrderStage(tranxCtx, order,
+			string(models.SalesOrderStatusCancelled), nil,
+			StageEventExtras{
+				Reason:     "draft expired without being confirmed",
+				OccurredAt: now,
+			}); err != nil {
 			return err
 		}
 
@@ -219,11 +220,11 @@ func StampQuotationValidUntil(
 		return nil
 	}
 
-	engine, err := engineFor(models.SalesQuotationSchemaName)
+	engineRepo, err := repoFor(models.SalesQuotationSchemaName)
 	if err != nil {
 		return err
 	}
-	_, err = engine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err = engineRepo.Update(ctx, dmodel.DynamicFields{
 		models.SalesQuotationFieldId: quotationId,
 		models.SalesQuotationFieldValidUntil: model.ModelDateTime(
 			now.Add(time.Duration(hours) * time.Hour)),

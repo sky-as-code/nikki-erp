@@ -134,7 +134,7 @@ func writeAdjustmentOrder(
 	adjustmentId string,
 	kept []keptLine,
 ) error {
-	engine, err := engineFor(models.SalesOrderSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderSchemaName)
 	if err != nil {
 		return err
 	}
@@ -149,6 +149,10 @@ func writeAdjustmentOrder(
 		// Confirmed, not draft: the sale it describes already happened and was paid for. A draft
 		// would be swept away by the expiry job as an abandoned basket.
 		models.SalesOrderFieldStatus: string(models.SalesOrderStatusConfirmed),
+
+		// It enters `confirmed` as its first stage, so the version starts there rather than at the 1
+		// an order that passed through draft would hold.
+		models.SalesOrderFieldStageVersion: int32(1),
 
 		models.SalesOrderFieldSalesChannelId: stringOf(original, models.SalesOrderFieldSalesChannelId),
 		models.SalesOrderFieldSalesPointId:   stringOf(original, models.SalesOrderFieldSalesPointId),
@@ -178,7 +182,20 @@ func writeAdjustmentOrder(
 		}
 	}
 
-	if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
+	if _, err := engineRepo.Insert(ctx, fields); err != nil {
+		return err
+	}
+
+	// An adjustment order enters `confirmed` without ever having been a draft, so there is no
+	// transition to validate - but it DID enter a stage, and a consumer tracking sales by stage
+	// event would otherwise never learn this order exists.
+	if err := RecordOrderStageChanged(ctx, OrderStageChangedParams{
+		Order:         fields,
+		PreviousStage: "",
+		CurrentStage:  string(models.SalesOrderStatusConfirmed),
+		StageVersion:  1,
+		Reason:        "adjustment order for a processed return",
+	}); err != nil {
 		return err
 	}
 	return writeAdjustmentOrderLines(ctx, adjustmentId, orgId, kept)
@@ -253,7 +270,7 @@ func proratedLineAmounts(line keptLine) proratedAmounts {
 func writeAdjustmentOrderLines(
 	ctx corectx.Context, adjustmentId, orgId string, kept []keptLine,
 ) error {
-	engine, err := engineFor(models.SalesOrderLineSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderLineSchemaName)
 	if err != nil {
 		return err
 	}
@@ -309,7 +326,7 @@ func writeAdjustmentOrderLines(
 			}
 		}
 
-		if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
+		if _, err := engineRepo.Insert(ctx, fields); err != nil {
 			return err
 		}
 	}

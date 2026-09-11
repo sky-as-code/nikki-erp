@@ -30,7 +30,7 @@ func outboxRow(eventId, eventType string, occurredAt time.Time) dmodel.DynamicFi
 // The event id is the public contract consumers deduplicate on; the row id is Sales storage. Tying
 // them would make a change of storage a change of the contract.
 func TestTheRowIdAndTheEventIdAreSeparate(t *testing.T) {
-	row := outboxRow("EVT-1", models.EventSalesOrderConfirmed, time.Now())
+	row := outboxRow("EVT-1", models.EventSalesOrderStageChanged, time.Now())
 
 	event := IntegrationEventOf(row)
 	if event.EventId != "EVT-1" {
@@ -113,8 +113,8 @@ func TestEventsSortByBusinessTimeOldestFirst(t *testing.T) {
 	base := time.Date(2026, 8, 27, 10, 0, 0, 0, time.UTC)
 
 	rows := []dmodel.DynamicFields{
-		outboxRow("EVT-CANCEL", models.EventSalesOrderCancelled, base.Add(time.Hour)),
-		outboxRow("EVT-CONFIRM", models.EventSalesOrderConfirmed, base),
+		outboxRow("EVT-CANCEL", models.EventSalesOrderStageChanged, base.Add(time.Hour)),
+		outboxRow("EVT-CONFIRM", models.EventSalesOrderStageChanged, base),
 	}
 
 	if occurredAtOf(rows[0]) <= occurredAtOf(rows[1]) {
@@ -128,7 +128,7 @@ func TestEventsSortByBusinessTimeOldestFirst(t *testing.T) {
 
 // A row with no timestamp sorts first: sending it earliest cannot reorder stamped events around it.
 func TestAnUnstampedEventSortsFirst(t *testing.T) {
-	stamped := outboxRow("EVT-1", models.EventSalesOrderConfirmed, time.Now())
+	stamped := outboxRow("EVT-1", models.EventSalesOrderStageChanged, time.Now())
 	unstamped := dmodel.DynamicFields{models.SalesOutboxFieldEventId: "EVT-0"}
 
 	if occurredAtOf(unstamped) >= occurredAtOf(stamped) {
@@ -138,6 +138,11 @@ func TestAnUnstampedEventSortsFirst(t *testing.T) {
 
 // The minimum event set, asserted against the exported list: an event type published but absent from
 // the list is one no consumer was told to expect.
+//
+// SalesOrderStageChanged stands where BR 80 listed SalesOrderConfirmed and SalesOrderCancelled
+// (DEC-003). The two named events could not satisfy the rule that EVERY stage transition announces
+// itself: the stages they do not name - processing, completed, and whatever is added next - would
+// each have needed another event type, and an order moving through one of them announced nothing.
 func TestTheMinimumEventSetIsDeclared(t *testing.T) {
 	declared := map[string]bool{}
 	for _, eventType := range models.SalesEventTypes() {
@@ -145,7 +150,7 @@ func TestTheMinimumEventSetIsDeclared(t *testing.T) {
 	}
 
 	for _, required := range []string{
-		"SalesOrderConfirmed", "SalesOrderCancelled",
+		"SalesOrderStageChanged",
 		"SalesPaymentCaptured", "SalesPaymentRefunded",
 		"SalesFulfillmentRequested",
 		"SalesReturnApproved", "SalesReturnCompleted",
@@ -153,6 +158,19 @@ func TestTheMinimumEventSetIsDeclared(t *testing.T) {
 	} {
 		if !declared[required] {
 			t.Errorf("BR 80 requires the %q event, which is not declared", required)
+		}
+	}
+}
+
+// The retired per-action order events must not come back: a module emitting both would announce
+// every confirmation twice, and a consumer written against the pair would silently miss the stages
+// they never covered.
+func TestThePerActionOrderEventsAreRetired(t *testing.T) {
+	for _, eventType := range models.SalesEventTypes() {
+		switch eventType {
+		case "SalesOrderConfirmed", "SalesOrderCancelled":
+			t.Errorf("%q was replaced by SalesOrderStageChanged (DEC-003) and must not be "+
+				"declared again", eventType)
 		}
 	}
 }

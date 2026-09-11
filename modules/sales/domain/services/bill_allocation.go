@@ -170,6 +170,17 @@ func AllocateAcrossBills(
 	return shares
 }
 
+// BillsOfOrder lists every bill raised against one order.
+//
+// includeCancelled true is the reconciliation view and shows the superseded ones too: a payment
+// recorded against a bill that a later split replaced still points at it, so an answer that hid it
+// would leave money attached to nothing anybody can see.
+func BillsOfOrder(
+	ctx corectx.Context, orderId string, includeCancelled bool,
+) ([]dmodel.DynamicFields, error) {
+	return billsOfOrder(ctx, orderId, includeCancelled)
+}
+
 func billsOfOrder(
 	ctx corectx.Context, orderId string, includeCancelled bool,
 ) ([]dmodel.DynamicFields, error) {

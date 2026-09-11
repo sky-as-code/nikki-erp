@@ -166,7 +166,7 @@ func assertCodeUsable(code *models.SalesVoucherCode, nowUnix int64) *ft.ClientEr
 func insertReservation(
 	ctx corectx.Context, voucherCodeId, salesOrderId, orgId string,
 ) (*models.SalesVoucherRedemption, error) {
-	engine, err := engineFor(models.SalesVoucherRedemptionSchemaName)
+	engineRepo, err := repoFor(models.SalesVoucherRedemptionSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func insertReservation(
 
 	// Through the repository rather than the resource service: the redemption ledger is read-only to
 	// clients, and must stay so while the system writes its own rows.
-	if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
+	if _, err := engineRepo.Insert(ctx, fields); err != nil {
 		return nil, err
 	}
 	return models.NewSalesVoucherRedemptionFrom(fields), nil
@@ -249,11 +249,11 @@ func SettleRedemption(
 		update[models.SalesVoucherRedemptionFieldReversedAt] = model.ModelDateTime(time.Now().UTC())
 	}
 
-	engine, err := engineFor(models.SalesVoucherRedemptionSchemaName)
+	engineRepo, err := repoFor(models.SalesVoucherRedemptionSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := engine.ResourceRepository().Update(ctx, update); err != nil {
+	if _, err := engineRepo.Update(ctx, update); err != nil {
 		return nil, err
 	}
 
@@ -319,17 +319,17 @@ func refreshUsageCount(ctx corectx.Context, voucherCodeId string) error {
 		}
 	}
 
-	engine, err := engineFor(models.SalesVoucherCodeSchemaName)
+	engineRepo, err := repoFor(models.SalesVoucherCodeSchemaName)
 	if err != nil {
 		return err
 	}
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = engineRepo.Update(ctx, update)
 	return err
 }
 
 // countHeldRedemptions counts the rows currently holding a use of this code.
 func countHeldRedemptions(ctx corectx.Context, voucherCodeId string) (int32, error) {
-	engine, err := engineFor(models.SalesVoucherRedemptionSchemaName)
+	engineRepo, err := repoFor(models.SalesVoucherRedemptionSchemaName)
 	if err != nil {
 		return 0, err
 	}
@@ -338,7 +338,7 @@ func countHeldRedemptions(ctx corectx.Context, voucherCodeId string) (int32, err
 	graph.And(*dmodel.NewSearchNode().
 		NewCondition(models.SalesVoucherRedemptionFieldVoucherCodeId, dmodel.Equals, voucherCodeId))
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engineRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  model.MODEL_RULE_PAGE_MAX_SIZE,

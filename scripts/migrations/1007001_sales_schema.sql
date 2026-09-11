@@ -204,6 +204,8 @@ CREATE TABLE "sales_orders" (
   "exchange_of_return_id" character varying NULL,
   "external_reference" character varying NULL,
   "idempotency_key" character varying NULL,
+  "stage_version" integer NULL,
+  "initial_bill_id" character varying NULL,
   "confirmed_at" timestamptz NULL,
   "completed_at" timestamptz NULL,
   "tax_snapshot" jsonb NULL,
@@ -697,6 +699,9 @@ CREATE TABLE "sales_payments" (
   "amount" numeric NOT NULL,
   "currency_code" character varying NOT NULL,
   "status" character varying NOT NULL,
+  "qr_code_url" character varying NULL,
+  "pay_url" character varying NULL,
+  "idempotency_key" character varying NULL,
   "external_transaction_id" character varying NULL,
   "provider_reference" character varying NULL,
   "payment_order_id" character varying NULL,
@@ -709,6 +714,8 @@ CREATE TABLE "sales_payments" (
 );
 -- Create index "sales_payments_tid_bill_extxn_ukey" to table: "sales_payments"
 CREATE UNIQUE INDEX "sales_payments_tid_bill_extxn_ukey" ON "sales_payments" ("sales_bill_id", "external_transaction_id") WHERE (external_transaction_id IS NOT NULL);
+-- Create index "sales_payments_tid_bill_idem_ukey" to table: "sales_payments"
+CREATE UNIQUE INDEX "sales_payments_tid_bill_idem_ukey" ON "sales_payments" ("sales_bill_id", "idempotency_key") WHERE (idempotency_key IS NOT NULL);
 -- Create index "sales_payments_tid_bill_idx" to table: "sales_payments"
 CREATE INDEX "sales_payments_tid_bill_idx" ON "sales_payments" ("sales_bill_id");
 -- Create index "sales_payments_tid_method_idx" to table: "sales_payments"

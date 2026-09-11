@@ -101,11 +101,11 @@ func SettleBillIfPaid(
 		update[models.SalesBillFieldSettledAt] = model.ModelDateTime(time.Now().UTC())
 	}
 
-	engine, err := engineFor(models.SalesBillSchemaName)
+	engineRepo, err := repoFor(models.SalesBillSchemaName)
 	if err != nil {
 		return nil, nil, err
 	}
-	if _, err := engine.ResourceRepository().Update(ctx, update); err != nil {
+	if _, err := engineRepo.Update(ctx, update); err != nil {
 		return nil, nil, err
 	}
 
@@ -218,11 +218,11 @@ func SyncOrderPaymentStatus(ctx corectx.Context, orderId string) (string, error)
 		return "", err
 	}
 
-	engine, err := engineFor(models.SalesOrderSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderSchemaName)
 	if err != nil {
 		return "", err
 	}
-	_, err = engine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err = engineRepo.Update(ctx, dmodel.DynamicFields{
 		models.SalesOrderFieldId:            orderId,
 		models.SalesOrderFieldPaymentStatus: status,
 	})

@@ -15,25 +15,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
-
-// engineFor resolves a resource engine from the shared registry. It is a var rather than a plain
-// function so a test can substitute the registry, which is how the lifecycle rules are tested
-// without a database.
-var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
-	if !ok {
-		return nil, errors.Errorf("no resource engine for '%s'", schemaName)
-	}
-	return engine, nil
-}
-
-// EngineFor exposes the registry lookup to sibling packages that need another resource's engine.
-func EngineFor(schemaName string) (drif.DynamicResourceEngine, error) {
-	return engineFor(schemaName)
-}
 
 // withTransaction runs body inside one database transaction on the named schema's repository.
 //
@@ -44,12 +26,12 @@ func EngineFor(schemaName string) (drif.DynamicResourceEngine, error) {
 func withTransaction(
 	ctx corectx.Context, schemaName string, body func(tranxCtx corectx.Context) error,
 ) error {
-	engine, err := engineFor(schemaName)
+	repo, err := repoFor(schemaName)
 	if err != nil {
 		return err
 	}
 
-	tranx, err := engine.ResourceRepository().BeginTransaction(ctx)
+	tranx, err := repo.BeginTransaction(ctx)
 	if err != nil {
 		return errors.Wrap(err, "withTransaction")
 	}
@@ -68,11 +50,11 @@ func withTransaction(
 func loadRecord(
 	ctx corectx.Context, schemaName string, idField string, id string,
 ) (dmodel.DynamicFields, error) {
-	engine, err := engineFor(schemaName)
+	repo, err := repoFor(schemaName)
 	if err != nil {
 		return nil, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{idField: id})
+	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{idField: id})
 	if err != nil {
 		return nil, errors.Wrap(err, "loadRecord")
 	}
@@ -91,7 +73,7 @@ func loadRecord(
 func writeChanges(
 	ctx corectx.Context, schemaName string, record dmodel.DynamicFields, changes dmodel.DynamicFields,
 ) error {
-	engine, err := engineFor(schemaName)
+	repo, err := repoFor(schemaName)
 	if err != nil {
 		return err
 	}
@@ -103,7 +85,7 @@ func writeChanges(
 	update[basemodel.FieldId] = stringOf(record, basemodel.FieldId)
 	update[basemodel.FieldEtag] = stringOf(record, basemodel.FieldEtag)
 
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = repo.Update(ctx, update)
 	return errors.Wrap(err, "writeChanges")
 }
 

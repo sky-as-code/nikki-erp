@@ -161,7 +161,7 @@ func writeFulfillment(
 	}
 
 	err = withTransaction(ctx, models.SalesOrderFulfillmentSchemaName, func(tranxCtx corectx.Context) error {
-		engine, err := engineFor(models.SalesOrderFulfillmentSchemaName)
+		engineRepo, err := repoFor(models.SalesOrderFulfillmentSchemaName)
 		if err != nil {
 			return err
 		}
@@ -191,7 +191,7 @@ func writeFulfillment(
 			fields[models.SalesOrderFulfillmentFieldReservationExpiresAt] = *expiresAt
 		}
 
-		if _, err := engine.ResourceRepository().Insert(tranxCtx, fields); err != nil {
+		if _, err := engineRepo.Insert(tranxCtx, fields); err != nil {
 			return errors.Wrap(err, "writing the order fulfillment")
 		}
 		return writeFulfillmentItems(tranxCtx, fulfillmentId, orgId, lines, itemIds)
@@ -205,7 +205,7 @@ func writeFulfillment(
 func writeFulfillmentItems(
 	ctx corectx.Context, fulfillmentId, orgId string, lines []itExt.FulfillmentLine, itemIds []string,
 ) error {
-	engine, err := engineFor(models.SalesOrderFulfillmentItemSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderFulfillmentItemSchemaName)
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func writeFulfillmentItems(
 
 			basemodel.FieldOrgId: orgId,
 		}
-		if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
+		if _, err := engineRepo.Insert(ctx, fields); err != nil {
 			return errors.Wrap(err, "writing an order fulfillment item")
 		}
 	}

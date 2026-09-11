@@ -120,7 +120,7 @@ func CreateBillingInstruction(
 		source = string(models.SalesBillingInstructionSourceBackOffice)
 	}
 
-	engine, err := engineFor(models.SalesBillingInstructionSchemaName)
+	engineRepo, err := repoFor(models.SalesBillingInstructionSchemaName)
 	if err != nil {
 		return "", nil, err
 	}
@@ -142,7 +142,7 @@ func CreateBillingInstruction(
 	}
 	applySnapshotFields(fields, params.Snapshot)
 
-	if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
+	if _, err := engineRepo.Insert(ctx, fields); err != nil {
 		return "", nil, err
 	}
 	return string(*id), nil, nil

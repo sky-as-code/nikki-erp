@@ -6,8 +6,8 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
+	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
@@ -61,17 +61,23 @@ func (this *salesUomProbe) IsUomInUse(ctx corectx.Context, uomId string) (bool, 
 func anyReferencing(
 	ctx corectx.Context, schemaName, field, value string,
 ) (bool, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
-	if !ok {
-		// The engine is missing only if this module failed to initialise, in which case it holds no
-		// data either, so "not in use" is accurate rather than optimistic.
+	// Through the resource hub, which answers whichever generation serves the schema. Resolved at
+	// probe-call time rather than at registration, so the eager registration in InitExternal stays
+	// correct even though the onions are built later.
+	//
+	// The "not in use" answer on a failed lookup is preserved rather than fixed here: it is a
+	// filed defect (ESS-2026-09-11-001 in docs/problems/essential/2026-09-11.md), because
+	// answering false silently PERMITS a UoM edit that should have been blocked. Changing it
+	// needs a decision from the owner of essential's guard.
+	engineRepo, err := services.RepositoryFor(schemaName)
+	if err != nil {
 		return false, nil
 	}
 
 	graph := &dmodel.SearchGraph{}
 	graph.And(*dmodel.NewSearchNode().NewCondition(field, dmodel.Equals, value))
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engineRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,

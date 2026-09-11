@@ -395,6 +395,28 @@
 			}
 		},
 		{
+			"name": "stage_version",
+			"label": "fields.stage_version",
+			"data_type": {
+				"type": "int32",
+				"min": 0,
+				"max": 1000000
+			},
+			"default_value": "0",
+			"description": {
+				"en-US": "How many stages this order has entered, counting from 1 at creation. It travels on every stage event so a consumer can drop one that arrives after a later one it has already applied - at-least-once delivery reorders, and a kiosk acting on a stale 'confirmed' after a 'cancelled' would dispense goods for a sale that was called off. Distinct from etag, which is a random optimistic-lock token that changes on EVERY write and therefore cannot say which of two events is newer."
+			}
+		},
+		{
+			"name": "initial_bill_id",
+			"label": "fields.initial_bill_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The bill raised automatically when this order was first confirmed. Null before confirmation and written once, in the same transaction as the status change, so a confirmed order without one is a data-integrity fault rather than a state to repair at runtime. It is what makes a repeated confirm idempotent: a caller that lost the response is given THIS bill back rather than a second one. It keeps pointing at the original bill even after a split or a merge has superseded it, because the question it answers is what confirmation produced, not what is currently open. No foreign key and no edge, matching adjusts_order_id and exchange_of_return_id: sales_orders is created before sales_bills in the migration order, so the constraint would reference a table that does not yet exist."
+			}
+		},
+		{
 			"name": "confirmed_at",
 			"label": "fields.confirmed_at",
 			"data_type": "datetime",
