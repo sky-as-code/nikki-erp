@@ -33,12 +33,21 @@ type StartGatewayPaymentParams struct {
 	SalesBillId     string
 	PaymentMethodId string
 
-	Amount       decimal.Decimal
-	CurrencyCode string
+	// Amount is optional: zero means the whole of what the bill still owes. A client naming an
+	// amount is partially settling a bill, and may never name more than is outstanding.
+	//
+	// The CURRENCY is not here at all. It is the bill's, always, and a client-supplied one could
+	// only ever agree with it or be wrong.
+	Amount decimal.Decimal
 
 	// Content is what the payer sees on their statement. Empty lets the provider fall back to the
 	// order identifier, which is still traceable.
 	Content string
+
+	// IdempotencyKey lets a caller retry safely. Required in practice for a gateway collection: the
+	// dangerous failure is a timeout AFTER the provider opened an order, where retrying without a key
+	// shows the customer a second QR code for money they are already being asked for.
+	IdempotencyKey string
 }
 
 // StartGatewayPaymentResult is what the till puts in front of the customer.
@@ -53,6 +62,10 @@ type StartGatewayPaymentResult struct {
 	// device the customer is standing at.
 	QrCodeUrl string
 	PayUrl    string
+
+	// AlreadyStarted says this collection was already open and nothing new was asked of the
+	// provider. The instructions are the original ones, which is the point of retrying with a key.
+	AlreadyStarted bool
 }
 
 // The refusal reasons opening a gateway collection can produce, beyond the ones RecordPayment
@@ -90,6 +103,28 @@ func StartGatewayPayment(
 			"no bill exists with id '"+params.SalesBillId+"'"), nil
 	}
 
+	// The replay, checked BEFORE anything is validated or written. A retry of a collection that
+	// already opened must answer with the same QR code: re-running the gates would be wasted work,
+	// and reaching the provider again would open a second order for one debt.
+	if params.IdempotencyKey != "" {
+		existing, err := findPaymentByIdempotencyKey(ctx, params.SalesBillId, params.IdempotencyKey)
+		if err != nil {
+			return nil, nil, err
+		}
+		if existing != nil {
+			return replayGatewayPayment(existing), nil, nil
+		}
+	}
+
+	// The money is resolved from the BILL, never taken from the caller. A client that believes it
+	// owes less than it does must not be able to make that true by saying so, and a currency it
+	// names could only agree with the bill or be wrong.
+	amount, vErrs := payableAmountOf(ctx, bill, params.Amount)
+	if vErrs != nil {
+		return nil, vErrs, nil
+	}
+	params.Amount = amount
+
 	if vErrs, err := assertMethodCollectsThroughGateway(
 		ctx, params, methods,
 	); err != nil || vErrs != nil {
@@ -103,7 +138,8 @@ func StartGatewayPayment(
 		SalesBillId:     params.SalesBillId,
 		PaymentMethodId: params.PaymentMethodId,
 		Amount:          params.Amount,
-		CurrencyCode:    params.CurrencyCode,
+		CurrencyCode:    stringOf(bill, models.SalesBillFieldCurrencyCode),
+		IdempotencyKey:  params.IdempotencyKey,
 		Status:          string(models.SalesPaymentStatusPending),
 	}, methods, channelPayments, policy)
 	if err != nil || vErrs != nil {
@@ -149,6 +185,71 @@ func StartGatewayPayment(
 	}, nil, nil
 }
 
+// The refusal reasons resolving the amount can produce.
+const (
+	ReasonNothingOutstanding = "sales_bill.nothing_outstanding"
+	ReasonAmountExceedsDue   = "sales_payment.amount_exceeds_outstanding"
+)
+
+// payableAmountOf answers what this collection is for: the caller's amount when it named one, and
+// the whole outstanding balance when it did not.
+//
+// Overpayment is refused here even where the cash policy would allow it. A customer handing over a
+// note and taking change is one thing; a QR code asking for more than the bill is owed is another,
+// and the excess would have to be refunded through the provider rather than out of the till.
+func payableAmountOf(
+	ctx corectx.Context, bill dmodel.DynamicFields, requested decimal.Decimal,
+) (decimal.Decimal, *ft.ClientErrors) {
+	billId := stringOf(bill, models.SalesBillFieldId)
+	captured, err := capturedTotalOf(ctx, billId)
+	if err != nil {
+		// Treated as nothing captured rather than failing the collection: the worst case is asking
+		// for too much, which the outstanding check below then refuses on the caller's own number.
+		captured = decimal.Zero
+	}
+
+	outstanding := decimalOf(bill, models.SalesBillFieldTotalAmount).Sub(captured)
+	return resolvePayableAmount(outstanding, requested)
+}
+
+// resolvePayableAmount is the decision itself, kept separate from reading the money so it can be
+// pinned by a test: the rule is what matters, and it must not depend on a database to be checkable.
+func resolvePayableAmount(
+	outstanding, requested decimal.Decimal,
+) (decimal.Decimal, *ft.ClientErrors) {
+	if !outstanding.IsPositive() {
+		return decimal.Zero, refusal("sales_bill_id", ReasonNothingOutstanding,
+			"this bill has nothing left to pay")
+	}
+
+	if !requested.IsPositive() {
+		return outstanding, nil
+	}
+	if requested.GreaterThan(outstanding) {
+		return decimal.Zero, refusal("amount", ReasonAmountExceedsDue,
+			"this bill has "+outstanding.String()+" outstanding, less than the "+
+				requested.String()+" requested")
+	}
+	return requested, nil
+}
+
+// replayGatewayPayment answers a retry with the collection that is already open, QR included.
+//
+// The instructions are read back from the payment rather than asked of the provider again: the
+// customer may already be looking at that QR code, and a second one for the same debt is the
+// confusion the idempotency key exists to prevent.
+func replayGatewayPayment(existing dmodel.DynamicFields) *StartGatewayPaymentResult {
+	return &StartGatewayPaymentResult{
+		SalesPaymentId: stringOf(existing, models.SalesPaymentFieldId),
+		SalesBillId:    stringOf(existing, models.SalesPaymentFieldSalesBillId),
+		PaymentOrderId: stringOf(existing, models.SalesPaymentFieldPaymentOrderId),
+		OrderCode:      stringOf(existing, models.SalesPaymentFieldProviderReference),
+		QrCodeUrl:      stringOf(existing, models.SalesPaymentFieldQrCodeUrl),
+		PayUrl:         stringOf(existing, models.SalesPaymentFieldPayUrl),
+		AlreadyStarted: true,
+	}
+}
+
 // assertMethodCollectsThroughGateway refuses a method that takes money at the counter.
 //
 // Sales asks whether the method has a gateway at all, never which one: that is paymentinvoice's
@@ -190,6 +291,15 @@ func attachPaymentOrder(
 ) error {
 	fields := dmodel.DynamicFields{
 		models.SalesPaymentFieldPaymentOrderId: opened.OrderId,
+	}
+
+	// The instructions are stored, not just returned: a retry with the same key is answered from
+	// this row, and a QR code that lived only in the lost response could not be handed back.
+	if opened.QrCodeUrl != "" {
+		fields[models.SalesPaymentFieldQrCodeUrl] = opened.QrCodeUrl
+	}
+	if opened.PayUrl != "" {
+		fields[models.SalesPaymentFieldPayUrl] = opened.PayUrl
 	}
 	if opened.OrderCode != "" {
 		// The gateway's own key, kept for reconciliation and support. provider_reference rather than

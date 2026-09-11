@@ -114,14 +114,15 @@ func expireOneOrder(
 		}
 		released = codes
 
-		engineRepo, err := repoFor(models.SalesOrderSchemaName)
-		if err != nil {
-			return err
-		}
-		if _, err := engineRepo.Update(tranxCtx, dmodel.DynamicFields{
-			models.SalesOrderFieldId:     orderId,
-			models.SalesOrderFieldStatus: string(models.SalesOrderStatusCancelled),
-		}); err != nil {
+		// Through the stage mechanism like every other status move, so a sweep that quietly cancels a
+		// basket announces it the same way an operator cancelling one does. A kiosk holding a stale
+		// draft learns it is gone.
+		if err := TransitionOrderStage(tranxCtx, order,
+			string(models.SalesOrderStatusCancelled), nil,
+			StageEventExtras{
+				Reason:     "draft expired without being confirmed",
+				OccurredAt: now,
+			}); err != nil {
 			return err
 		}
 

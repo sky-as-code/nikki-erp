@@ -302,12 +302,15 @@ func (this *SalesBillApplicationServiceImpl) runStartGatewayPayment(
 ) (*dyn.OpResult[any], error) {
 	policy := services.ResolveSalesPolicy(ctx, this.effectiveSettings)
 
+	// No currency_code is read from the body, deliberately: it is the bill's, and a caller naming one
+	// could only ever agree with it or be wrong. amount stays optional - omitted means the whole
+	// outstanding balance.
 	result, vErrs, err := services.StartGatewayPayment(ctx, services.StartGatewayPaymentParams{
 		SalesBillId:     readStringParam(params, paramRecordId),
 		PaymentMethodId: readStringParam(params, paramPaymentMethodId),
 		Amount:          readDecimalParam(params, "amount"),
-		CurrencyCode:    readStringParam(params, "currency_code"),
 		Content:         readStringParam(params, "content"),
+		IdempotencyKey:  readStringParam(params, "idempotency_key"),
 	}, this.paymentMethods, this.paymentOrders, this.channelPayments, policy)
 	if err != nil {
 		return nil, err
@@ -325,5 +328,9 @@ func (this *SalesBillApplicationServiceImpl) runStartGatewayPayment(
 		"order_code":       result.OrderCode,
 		"qr_code_url":      result.QrCodeUrl,
 		"pay_url":          result.PayUrl,
+
+		// True means this retry was recognised and the instructions are the original ones, so a
+		// caller can tell "your QR is still valid" from "here is a new one".
+		"already_started": result.AlreadyStarted,
 	}}, nil
 }

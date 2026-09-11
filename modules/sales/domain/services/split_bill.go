@@ -330,19 +330,6 @@ func writeSplitParts(
 	return billIds, grandTotal, nil
 }
 
-// billTotals accumulates one new bill's figures as its allocations are written.
-type billTotals struct {
-	net   decimal.Decimal
-	tax   decimal.Decimal
-	total decimal.Decimal
-}
-
-func (this *billTotals) add(net, tax, total decimal.Decimal) {
-	this.net = this.net.Add(net)
-	this.tax = this.tax.Add(tax)
-	this.total = this.total.Add(total)
-}
-
 // billNumberOf derives a child bill's number from its parent's, rather than allocating a sequential
 // one, so BILL-7 splits into BILL-7-1 and BILL-7-2 and a customer holding one can be matched to the
 // original without a lookup.
@@ -351,53 +338,8 @@ func billNumberOf(source dmodel.DynamicFields, index int) string {
 	return parent + "-" + decimal.NewFromInt(int64(index+1)).String()
 }
 
-func insertBill(
-	ctx corectx.Context, billId, orderId, orgId, currency, billNumber string, totals *billTotals,
-) error {
-	engineRepo, err := repoFor(models.SalesBillSchemaName)
-	if err != nil {
-		return err
-	}
-	_, err = engineRepo.Insert(ctx, dmodel.DynamicFields{
-		models.SalesBillFieldId:            billId,
-		models.SalesBillFieldBillNumber:    billNumber,
-		models.SalesBillFieldSalesOrderId:  orderId,
-		models.SalesBillFieldStatus:        string(models.SalesBillStatusOpen),
-		models.SalesBillFieldPaymentStatus: string(models.SalesOrderPaymentStatusUnpaid),
-		models.SalesBillFieldCurrencyCode:  currency,
-		models.SalesBillFieldSubtotal:      totals.net,
-		models.SalesBillFieldDiscountTotal: decimal.Zero,
-		models.SalesBillFieldTaxTotal:      totals.tax,
-		models.SalesBillFieldTotalAmount:   totals.total,
-		basemodel.FieldOrgId:               orgId,
-	})
-	return err
-}
-
-func insertBillLine(
-	ctx corectx.Context, billId, orderLineId, orgId string,
-	quantity, net, tax, total decimal.Decimal,
-) error {
-	engineRepo, err := repoFor(models.SalesBillLineSchemaName)
-	if err != nil {
-		return err
-	}
-	id, err := model.NewId()
-	if err != nil {
-		return err
-	}
-	_, err = engineRepo.Insert(ctx, dmodel.DynamicFields{
-		models.SalesBillLineFieldId:                   string(*id),
-		models.SalesBillLineFieldSalesBillId:          billId,
-		models.SalesBillLineFieldSalesOrderLineId:     orderLineId,
-		models.SalesBillLineFieldQuantity:             quantity,
-		models.SalesBillLineFieldAllocatedNetAmount:   net,
-		models.SalesBillLineFieldAllocatedTaxAmount:   tax,
-		models.SalesBillLineFieldAllocatedTotalAmount: total,
-		basemodel.FieldOrgId:                          orgId,
-	})
-	return err
-}
+// insertBill and insertBillLine moved to bill_write.go: the initial bill raised at confirmation
+// writes the same rows a split does, and two writers would let the two paths drift.
 
 // cancelSupersededBill marks a bill superseded and writes the lineage rows. Never a delete: a
 // payment already recorded against the source must still resolve to something, and an auditor

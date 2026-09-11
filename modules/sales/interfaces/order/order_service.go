@@ -278,6 +278,20 @@ type ConfirmedOrderData struct {
 	// bound, and telling a customer to expect goods on that basis would be wrong.
 	FulfillmentStatus string `json:"fulfillment_status"`
 
+	// InitialBillId is the bill the confirmation raised, and what a payment settles against. Always
+	// set on success - a confirmed order without one is a data-integrity fault, not a case to handle.
+	InitialBillId string `json:"initial_bill_id"`
+
+	// AlreadyConfirmed says the order was already confirmed and this call changed nothing. The bill
+	// is the original one, which is what makes a retry after a lost response safe.
+	AlreadyConfirmed bool `json:"already_confirmed"`
+
+	// Order and InitialBill are the whole records, for a caller whose next act is to ask for money
+	// and would otherwise need a second round trip to learn how much. Nil when the read-back failed;
+	// the ids above are the contract.
+	Order       map[string]any `json:"order,omitempty"`
+	InitialBill map[string]any `json:"initial_bill,omitempty"`
+
 	// Pending names the steps confirm did not complete, so a caller does not read a success as
 	// "everything is done".
 	Pending []string `json:"pending"`

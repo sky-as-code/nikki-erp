@@ -43,6 +43,10 @@ type RecordPaymentParams struct {
 	ExternalTransactionId string
 	ProviderReference     string
 
+	// IdempotencyKey is the CALLER's key, and the only protection that exists before the provider
+	// has answered: a collection that timed out has no transaction id to be recognised by yet.
+	IdempotencyKey string
+
 	// Status is what the provider says, defaulting to captured because the common case at a till is
 	// money already taken; a gateway flow supplies pending or authorized explicitly.
 	Status string
@@ -368,6 +372,26 @@ func findPaymentByTransactionId(
 	return nil, nil
 }
 
+// findPaymentByIdempotencyKey finds a collection this caller already started against this bill.
+//
+// Scoped to the bill, like the unique index it mirrors: a key is the caller's own string and two
+// tills using the same one on different bills are two payments, not a duplicate.
+func findPaymentByIdempotencyKey(
+	ctx corectx.Context, billId, key string,
+) (dmodel.DynamicFields, error) {
+	payments, err := searchBy(ctx,
+		models.SalesPaymentSchemaName, models.SalesPaymentFieldSalesBillId, billId)
+	if err != nil {
+		return nil, err
+	}
+	for _, payment := range payments {
+		if stringOf(payment, models.SalesPaymentFieldIdempotencyKey) == key {
+			return payment, nil
+		}
+	}
+	return nil, nil
+}
+
 // replayResult answers a duplicate with the payment that already exists.
 func replayResult(
 	ctx corectx.Context, bill dmodel.DynamicFields, existing dmodel.DynamicFields,
@@ -415,6 +439,9 @@ func writePayment(
 		models.SalesPaymentFieldCurrencyCode:    currency,
 		models.SalesPaymentFieldStatus:          status,
 		basemodel.FieldOrgId:                    stringOf(bill, basemodel.FieldOrgId),
+	}
+	if params.IdempotencyKey != "" {
+		fields[models.SalesPaymentFieldIdempotencyKey] = params.IdempotencyKey
 	}
 	if params.ExternalTransactionId != "" {
 		fields[models.SalesPaymentFieldExternalTransactionId] = params.ExternalTransactionId

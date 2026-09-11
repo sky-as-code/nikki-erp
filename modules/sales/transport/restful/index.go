@@ -291,6 +291,9 @@ func initSalesOrderV1(route *echo.Group) error {
 			AddRoute(composable.RouteDefinition{
 				Path: ":id/refunds_view", ActionType: composable.ActionTypeRead, HandlerFn: rest.ViewRefunds,
 			}).
+			AddRoute(composable.RouteDefinition{
+				Path: ":id/bills", ActionType: composable.ActionTypeRead, HandlerFn: rest.ListBills,
+			}).
 			RegisterRoutes(route)
 	})
 }

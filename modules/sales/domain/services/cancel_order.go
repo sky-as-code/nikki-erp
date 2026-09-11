@@ -247,20 +247,6 @@ func stampCancelledInTranx(
 	ctx corectx.Context, orderId string, record dmodel.DynamicFields,
 	fromStatus, reason string, at time.Time,
 ) error {
-	engineRepo, err := repoFor(models.SalesOrderSchemaName)
-	if err != nil {
-		return err
-	}
-
-	update := dmodel.DynamicFields{
-		models.SalesOrderFieldId:          orderId,
-		models.SalesOrderFieldStatus:      string(models.SalesOrderStatusCancelled),
-		models.SalesOrderFieldCancelledAt: model.ModelDateTime(at),
-	}
-	if _, err := engineRepo.Update(ctx, update); err != nil {
-		return err
-	}
-
 	orgId := stringOf(record, basemodel.FieldOrgId)
 	if err := WriteSalesAuditEvent(ctx, SalesAuditEntry{
 		SalesOrderId: orderId,
@@ -275,22 +261,12 @@ func stampCancelledInTranx(
 		return err
 	}
 
-	_, err = RecordEvent(ctx, RecordEventParams{
-		EventType:   models.EventSalesOrderCancelled,
-		AggregateId: orderId,
-		OrgId:       orgId,
-		OccurredAt:  at.Unix(),
-		Payload: map[string]any{
-			"sales_order_id": orderId,
-			"order_number":   stringOf(record, models.SalesOrderFieldOrderNumber),
-
-			// The status it came FROM, because what a consumer must undo depends on it: cancelling a
-			// draft releases nothing, a confirmed sale releases a reservation.
-			"from_status": fromStatus,
-			"reason":      reason,
-
-			"cancelled_at": at.Unix(),
+	// The status change and its announcement, as one step. previous_stage carries what it came FROM,
+	// because what a consumer must undo depends on it: cancelling a draft releases nothing, a
+	// confirmed sale releases a reservation.
+	return TransitionOrderStage(ctx, record, string(models.SalesOrderStatusCancelled),
+		dmodel.DynamicFields{
+			models.SalesOrderFieldCancelledAt: model.ModelDateTime(at),
 		},
-	})
-	return err
+		StageEventExtras{Reason: reason, OccurredAt: at})
 }

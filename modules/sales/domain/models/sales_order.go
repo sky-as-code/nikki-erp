@@ -42,6 +42,8 @@ const (
 	SalesOrderFieldExchangeOfReturnId           = "exchange_of_return_id"
 	SalesOrderFieldExternalReference            = "external_reference"
 	SalesOrderFieldIdempotencyKey               = "idempotency_key"
+	SalesOrderFieldStageVersion                 = "stage_version"
+	SalesOrderFieldInitialBillId                = "initial_bill_id"
 	SalesOrderFieldConfirmedAt                  = "confirmed_at"
 	SalesOrderFieldCompletedAt                  = "completed_at"
 	SalesOrderFieldTaxSnapshot                  = "tax_snapshot"

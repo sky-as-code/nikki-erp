@@ -15,6 +15,11 @@
 			"index_name": "sales_payments_tid_bill_extxn",
 			"not_null_fields": ["sales_bill_id"],
 			"nullable_field": "external_transaction_id"
+		},
+		{
+			"index_name": "sales_payments_tid_bill_idem",
+			"not_null_fields": ["sales_bill_id"],
+			"nullable_field": "idempotency_key"
 		}
 	],
 	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
@@ -78,6 +83,31 @@
 			"default_value": "pending",
 			"description": {
 				"en-US": "Where this payment stands with the provider. Only 'captured' counts toward settling the bill: an authorization is a hold the provider may still release, and treating it as money in would settle a bill against funds that never arrived."
+			}
+		},
+		{
+			"name": "qr_code_url",
+			"label": "fields.qr_code_url",
+			"data_type": { "type": "string", "min": 0, "max": 2000 },
+			"description": {
+				"en-US": "The payment instruction the provider issued, as the customer sees it. Stored rather than held only in the response, because a retry of the same collection must be answered with the SAME code: asking the provider again would open a second order, and a customer shown two QR codes for one debt cannot tell which to scan. Empty for a card terminal, where the prompt is pushed to the device instead."
+			}
+		},
+		{
+			"name": "pay_url",
+			"label": "fields.pay_url",
+			"data_type": { "type": "string", "min": 0, "max": 2000 },
+			"description": {
+				"en-US": "The hosted payment page for this collection, stored for the same reason as qr_code_url. Empty where the provider issues no link."
+			}
+		},
+		{
+			"name": "idempotency_key",
+			"label": "fields.idempotency_key",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"no_update": true,
+			"description": {
+				"en-US": "The caller's own key for de-duplicating a retried collection, unique per bill when present. It guards the window external_transaction_id cannot: that id only exists once the provider has answered, so a caller that timed out waiting for it has nothing to retry against and would open a SECOND gateway order for the same money. Null for a payment nobody may retry - a cash tender counted at the counter."
 			}
 		},
 		{

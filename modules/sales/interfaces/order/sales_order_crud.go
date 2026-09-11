@@ -56,6 +56,10 @@ type SalesOrderApplicationService interface {
 	// The refund views.
 	CreateRefunds(ctx corectx.Context, cmd OrderActionCommand) (*dyn.OpResult[any], error)
 	ViewRefunds(ctx corectx.Context, query OrderActionCommand) (*dyn.OpResult[any], error)
+
+	// ListBills answers what this order owes and owed, superseded bills included, for a client that
+	// lost a confirm response and for reconciliation after a split or a merge.
+	ListBills(ctx corectx.Context, query OrderActionCommand) (*dyn.OpResult[any], error)
 }
 
 // OrderActionCommand is the bound request of a custom order action: the field map the REST engine

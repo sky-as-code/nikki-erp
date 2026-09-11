@@ -396,7 +396,12 @@ func writeDraftOrder(
 			models.SalesOrderFieldSalesPointId:   params.SalesPointId,
 			models.SalesOrderFieldCurrencyCode:   params.CurrencyCode,
 
-			models.SalesOrderFieldStatus:            string(models.SalesOrderStatusDraft),
+			models.SalesOrderFieldStatus: string(models.SalesOrderStatusDraft),
+
+			// Entering draft IS entering a stage, so the count starts at one here rather than at the
+			// first move away from it.
+			models.SalesOrderFieldStageVersion: int32(1),
+
 			models.SalesOrderFieldPaymentStatus:     string(models.SalesOrderPaymentStatusUnpaid),
 			models.SalesOrderFieldFulfillmentStatus: string(models.SalesOrderFulfillmentStatusPending),
 			models.SalesOrderFieldInvoiceStatus:     string(models.SalesOrderInvoiceStatusNotRequested),
@@ -436,6 +441,19 @@ func writeDraftOrder(
 		}
 
 		if _, err := orderRepo.Insert(tranxCtx, fields); err != nil {
+			return err
+		}
+
+		// null -> draft. An order entering its first stage announces itself like any other stage
+		// change, so a consumer tracking the lifecycle sees the sale from its beginning rather than
+		// first hearing of it at confirmation. Written in the creating transaction, so an order that
+		// failed to insert announces nothing.
+		if err := RecordOrderStageChanged(tranxCtx, OrderStageChangedParams{
+			Order:         fields,
+			PreviousStage: "",
+			CurrentStage:  string(models.SalesOrderStatusDraft),
+			StageVersion:  1,
+		}); err != nil {
 			return err
 		}
 		return writeOrderLines(tranxCtx, orderId, orgId, params.Lines)

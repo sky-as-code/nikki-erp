@@ -129,14 +129,28 @@ func (this *SalesOrderExtServiceImpl) ConfirmOrder(
 	}
 
 	data := it.ConfirmedOrderData{
-		SalesOrderId: confirmed.SalesOrderId,
-		Status:       confirmed.Status,
-		Pending:      confirmed.Pending,
+		SalesOrderId:     confirmed.SalesOrderId,
+		Status:           confirmed.Status,
+		InitialBillId:    confirmed.InitialBillId,
+		AlreadyConfirmed: confirmed.AlreadyConfirmed,
+		Pending:          confirmed.Pending,
 	}
 	if confirmed.KioskFulfillment != nil {
 		data.FulfillmentId = confirmed.KioskFulfillment.FulfillmentId
 		data.FulfillmentStatus = confirmed.KioskFulfillment.Status
 	}
+
+	// The whole order and bill for the caller standing at the till: it is about to ask for money and
+	// the amount is here rather than one request away.
+	view, err := services.LoadConfirmedOrderView(ctx, confirmed.SalesOrderId, confirmed.InitialBillId)
+	if err != nil {
+		return nil, err
+	}
+	if view != nil {
+		data.Order = view.Order
+		data.InitialBill = view.Bill
+	}
+
 	return &it.ConfirmSalesOrderResult{HasData: true, Data: data}, nil
 }
 

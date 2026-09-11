@@ -24,12 +24,16 @@ import (
 // 	1. validate the order is confirmable
 // 	2. reprice - catalogue prices may have moved since the draft was last touched
 // 	3. redeem the voucher reservations, failing the confirm if one was exhausted meanwhile
-// 	4. freeze the snapshot and stamp confirmed_at
+// 	4. freeze the snapshot, create the initial bill, stamp confirmed_at and announce the stage
 // 	5. raise a fulfilment request for stock-managed lines
-// 	6. create the initial bill                              [not built]
 //
-// Step 6 is absent rather than stubbed: a placeholder that silently did nothing would make a
-// confirm look complete when it is not. See ConfirmOrderResult.Pending.
+// Step 4 is ONE transaction, and the bill is part of it deliberately: an order that says confirmed
+// with no bill is a sale nobody can take money against, and it is the state the whole operation is
+// arranged to make impossible. The stage event goes into the outbox in that same transaction, so a
+// consumer told the order is confirmed can rely on the bill already being there.
+//
+// A second confirm of an already-confirmed order is NOT an error: it returns the original bill
+// without creating another. See assertConfirmable.
 //
 // It all runs under a distributed lock: confirm is not a single-row update, so the etag that
 // guards ordinary edits cannot protect it, and a second confirm interleaved anywhere could redeem
@@ -53,6 +57,16 @@ type ConfirmOrderResult struct {
 	SalesOrderId string
 	Status       string
 	ConfirmedAt  string
+
+	// InitialBillId is the bill this confirmation raised, or the one the FIRST confirmation raised
+	// when this call was a retry. Always set on success: a confirmed order without a bill is a
+	// data-integrity fault, not a state a caller has to handle.
+	InitialBillId string
+
+	// AlreadyConfirmed says this call found the work already done and changed nothing. The caller
+	// still gets the order and its initial bill, which is the point: a client that lost the first
+	// response can ask again without risking a second bill.
+	AlreadyConfirmed bool
 
 	Pricing *RepriceResult
 
@@ -147,6 +161,17 @@ func confirmUnderLock(
 		return nil, OrderNotFoundErrors(orderId), nil
 	}
 
+	// A confirm that already happened answers with what it produced rather than refusing. The
+	// client that lost the response is the ordinary case, and the alternative - an error - pushes it
+	// towards creating a second order for a sale that is already on the books.
+	replay, vErrs, err := replayConfirm(record)
+	if err != nil || vErrs != nil {
+		return nil, vErrs, err
+	}
+	if replay != nil {
+		return replay, nil, nil
+	}
+
 	if vErrs, err := assertConfirmable(ctx, record); err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}
@@ -174,10 +199,14 @@ func confirmUnderLock(
 		return nil, vErrs, err
 	}
 
-	// Step 4: freeze. The snapshot columns become immutable the moment the status is `confirmed`,
-	// enforced by assertSnapshotsUnchanged on every later write.
+	// Steps 4 and 6: freeze, and raise the initial bill. The snapshot columns become immutable the
+	// moment the status is `confirmed`, enforced by assertSnapshotsUnchanged on every later write.
+	// The bill, the link to it, the status and the stage event are ONE transaction: a confirmed
+	// order with no bill is a sale nobody can pay, and an announcement of a confirmation that then
+	// rolled back is what the outbox exists to prevent.
 	confirmedAt := time.Now().UTC()
-	if err := stampConfirmed(ctx, orderId, record, confirmedAt); err != nil {
+	initialBillId, err := stampConfirmed(ctx, orderId, record, confirmedAt, policy)
+	if err != nil {
 		return nil, nil, err
 	}
 
@@ -201,6 +230,7 @@ func confirmUnderLock(
 		SalesOrderId:       orderId,
 		Status:             string(models.SalesOrderStatusConfirmed),
 		ConfirmedAt:        confirmedAt.Format(time.RFC3339),
+		InitialBillId:      initialBillId,
 		Pricing:            priced,
 		RedeemedVoucherIds: redeemed,
 		Fulfillment:        fulfilment,
@@ -223,7 +253,6 @@ func pendingConfirmSteps(
 		if kiosk.Status != string(models.FulfillmentStatusReserved) {
 			pending = append(pending, "fulfillment_reservation (the stock is not held)")
 		}
-		pending = append(pending, "initial_bill (confirm does not raise a bill)")
 		return pending
 	}
 
@@ -240,10 +269,6 @@ func pendingConfirmSteps(
 		pending = append(pending, "fulfilment_request (inventory rejected the request)")
 	}
 
-	// The bill itself is raised later, not by confirm. Reported rather than omitted for the same
-	// reason as the fulfilment step: a caller told the confirm succeeded would otherwise assume
-	// there is something to take payment against.
-	pending = append(pending, "initial_bill (confirm does not raise a bill)")
 	return pending
 }
 
@@ -256,6 +281,51 @@ func describeFirstViolation(vErrs *ft.ClientErrors) string {
 		return first.Message
 	}
 	return first.Key
+}
+
+// replayConfirm answers a repeated confirm with what the first one produced, or nil when this is a
+// genuine first attempt.
+//
+// Only `confirmed` replays. A `processing`, `completed` or `cancelled` order has moved on since its
+// confirmation, so a caller asking to confirm it is not retrying a lost response but acting on a
+// stale view - assertConfirmable refuses those, as before.
+//
+// The bill is deliberately NOT re-derived here: initial_bill_id names the bill the FIRST confirm
+// raised, and searching for a current one would answer with whatever a later split or merge left
+// open, which is a different question.
+func replayConfirm(record dmodel.DynamicFields) (*ConfirmOrderResult, *ft.ClientErrors, error) {
+	if stringOf(record, models.SalesOrderFieldStatus) != string(models.SalesOrderStatusConfirmed) {
+		return nil, nil, nil
+	}
+
+	orderId := stringOf(record, models.SalesOrderFieldId)
+	billId := stringOf(record, models.SalesOrderFieldInitialBillId)
+	if billId == "" {
+		// Confirmed with no bill: an invariant violation, and NOT something to repair by raising one
+		// now. The order may have been billed and paid through a path that predates this column, and
+		// a fresh bill would ask the customer for money they have already handed over. It is a
+		// migration's job to work out which (CR §25), with the evidence this code does not have.
+		return nil, nil, errors.New("sales order '" + orderId +
+			"' is confirmed but names no initial bill; this is a data-integrity fault and must be " +
+			"reconciled rather than re-confirmed")
+	}
+
+	confirmedAt := ""
+	if at := dateTimeOf(record, models.SalesOrderFieldConfirmedAt); at != nil {
+		confirmedAt = at.GoTime().Format(time.RFC3339)
+	}
+
+	return &ConfirmOrderResult{
+		SalesOrderId:     orderId,
+		Status:           string(models.SalesOrderStatusConfirmed),
+		ConfirmedAt:      confirmedAt,
+		InitialBillId:    billId,
+		AlreadyConfirmed: true,
+
+		// Nothing is repriced, redeemed or reserved on a replay, so those stay empty rather than
+		// restating work this call did not do.
+		Pending: []string{},
+	}, nil, nil
 }
 
 func assertConfirmable(
@@ -346,57 +416,81 @@ func redeemOrderVouchers(
 // rolled back is exactly the failure the outbox exists to prevent.
 func stampConfirmed(
 	ctx corectx.Context, orderId string, record dmodel.DynamicFields, at time.Time,
-) error {
-	return withTransaction(ctx, models.SalesOrderSchemaName, func(tranxCtx corectx.Context) error {
-		return stampConfirmedInTranx(tranxCtx, orderId, record, at)
+	policy SalesPolicy,
+) (billId string, err error) {
+	err = withTransaction(ctx, models.SalesOrderSchemaName, func(tranxCtx corectx.Context) error {
+		billId, err = stampConfirmedInTranx(tranxCtx, orderId, record, at, policy)
+		return err
 	})
+	if err != nil {
+		return "", err
+	}
+	return billId, nil
 }
 
 func stampConfirmedInTranx(
 	ctx corectx.Context, orderId string, record dmodel.DynamicFields, at time.Time,
-) error {
+	policy SalesPolicy,
+) (string, error) {
 	engineRepo, err := repoFor(models.SalesOrderSchemaName)
 	if err != nil {
-		return err
+		return "", err
+	}
+
+	// The bill FIRST, so the order can be written already pointing at it: the link and the status
+	// are one write, and no committed state ever has a confirmed order whose initial_bill_id is
+	// still being filled in.
+	billId, err := CreateInitialBill(ctx, record, policy)
+	if err != nil {
+		return "", err
 	}
 
 	update := dmodel.DynamicFields{
-		models.SalesOrderFieldId:          orderId,
-		models.SalesOrderFieldStatus:      string(models.SalesOrderStatusConfirmed),
-		models.SalesOrderFieldConfirmedAt: model.ModelDateTime(at),
+		models.SalesOrderFieldId:            orderId,
+		models.SalesOrderFieldStatus:        string(models.SalesOrderStatusConfirmed),
+		models.SalesOrderFieldConfirmedAt:   model.ModelDateTime(at),
+		models.SalesOrderFieldInitialBillId: billId,
 	}
 
 	if _, err := engineRepo.Update(ctx, update); err != nil {
-		return err
+		return "", err
+	}
+
+	// Checked after the write and inside the transaction, the way a split checks itself: the
+	// allocations of a bill mean nothing until they are all written, and an initial bill that does
+	// not add up to its order must take the whole confirmation down with it.
+	vErrs, err := AssertOrderAllocationBalances(ctx, orderId)
+	if err != nil {
+		return "", err
+	}
+	if vErrs != nil {
+		return "", errors.New("the initial bill did not balance against its order: " +
+			vErrs.ToError().Error())
 	}
 
 	orgId := stringOf(record, basemodel.FieldOrgId)
 	if err := WriteOrderStatusEvent(ctx, orderId, models.SalesOrderActionConfirm,
 		string(models.SalesOrderStatusDraft), string(models.SalesOrderStatusConfirmed),
 		orgId); err != nil {
-		return err
+		return "", err
 	}
 
 	// The INTEGRATION event, distinct from the audit event just written: that one is Sales' own
 	// history, this one a public announcement. Both are written here so neither can exist without
 	// the status change that justifies it.
-	_, err = RecordEvent(ctx, RecordEventParams{
-		EventType:   models.EventSalesOrderConfirmed,
-		AggregateId: orderId,
-		OrgId:       orgId,
-		OccurredAt:  at.Unix(),
-		Payload: map[string]any{
-			"sales_order_id": orderId,
-			"order_number":   stringOf(record, models.SalesOrderFieldOrderNumber),
-			"currency_code":  stringOf(record, models.SalesOrderFieldCurrencyCode),
-
-			// The totals travel WITH the event so a consumer never reads back into Sales, and acts on
-			// what was true at confirmation.
-			"grand_total": decimalOf(record, models.SalesOrderFieldGrandTotal),
-			"tax_total":   decimalOf(record, models.SalesOrderFieldTaxTotal),
-
-			"confirmed_at": at.Unix(),
-		},
+	//
+	// initial_bill_id travels with it: a consumer told an order is confirmed may rely on the bill
+	// already existing in committed state, which is only true because both were written here.
+	err = RecordOrderStageChanged(ctx, OrderStageChangedParams{
+		Order:         record,
+		PreviousStage: string(models.SalesOrderStatusDraft),
+		CurrentStage:  string(models.SalesOrderStatusConfirmed),
+		StageVersion:  nextStageVersion(record),
+		InitialBillId: billId,
+		OccurredAt:    at,
 	})
-	return err
+	if err != nil {
+		return "", err
+	}
+	return billId, nil
 }

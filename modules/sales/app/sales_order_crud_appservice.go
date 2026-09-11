@@ -414,14 +414,27 @@ func (this *SalesOrderApplicationServiceImpl) runConfirmOrder(
 		"sales_order_id":       result.SalesOrderId,
 		"status":               result.Status,
 		"confirmed_at":         result.ConfirmedAt,
+		"initial_bill_id":      result.InitialBillId,
+		"already_confirmed":    result.AlreadyConfirmed,
 		"redeemed_voucher_ids": result.RedeemedVoucherIds,
 
 		// In the response, not just the log: a kiosk that believed a confirm was complete would
-		// dispense goods against an order with no bill and no fulfilment request.
+		// dispense goods against an order with no fulfilment request.
 		"pending": result.Pending,
 	}
 	if result.Pricing != nil {
 		data["grand_total"] = result.Pricing.GrandTotal
+	}
+
+	// The whole order and the whole bill, not just their ids: the caller's next act is to ask for
+	// money, and a second round trip to learn how much would be one the confirm could have saved.
+	view, err := services.LoadConfirmedOrderView(ctx, result.SalesOrderId, result.InitialBillId)
+	if err != nil {
+		return nil, err
+	}
+	if view != nil {
+		data["order"] = view.Order
+		data["initial_bill"] = view.Bill
 	}
 
 	return &dyn.OpResult[any]{HasData: true, Data: data}, nil
@@ -771,6 +784,42 @@ func (this *SalesOrderCrudApplicationServiceImpl) ViewRefunds(
 		return anyFailure(cErrs, err)
 	}
 	return this.runViewOrderRefunds(ctx, query)
+}
+
+// ListBills answers every bill of one order, superseded ones included.
+//
+// It exists for the client that lost the response to a confirm and knows only the order, and for
+// reconciliation afterwards. Addressed by the ORDER rather than filtered on the bill collection, so
+// the org check is the order's: a caller who may not read the sale may not enumerate what it owes.
+func (this *SalesOrderCrudApplicationServiceImpl) ListBills(
+	ctx corectx.Context, query itOrder.OrderActionCommand,
+) (*dyn.OpResult[any], error) {
+	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionRead, query); cErrs != nil || err != nil {
+		return anyFailure(cErrs, err)
+	}
+	return this.runListOrderBills(ctx, query)
+}
+
+func (this *SalesOrderCrudApplicationServiceImpl) runListOrderBills(
+	ctx corectx.Context, params dmodel.DynamicFields,
+) (*dyn.OpResult[any], error) {
+	orderId := readStringParam(params, paramRecordId)
+
+	// Cancelled bills included: this is the history, and a split that superseded a bill does not
+	// unmake the payment somebody recorded against it.
+	bills, err := services.BillsOfOrder(ctx, orderId, true)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]any, 0, len(bills))
+	for _, bill := range bills {
+		items = append(items, bill)
+	}
+	return &dyn.OpResult[any]{HasData: true, Data: map[string]any{
+		"sales_order_id": orderId,
+		"items":          items,
+	}}, nil
 }
 
 // Parameter names and the violation shape the refund bodies read.

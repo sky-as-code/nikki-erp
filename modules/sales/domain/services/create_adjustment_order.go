@@ -150,6 +150,10 @@ func writeAdjustmentOrder(
 		// would be swept away by the expiry job as an abandoned basket.
 		models.SalesOrderFieldStatus: string(models.SalesOrderStatusConfirmed),
 
+		// It enters `confirmed` as its first stage, so the version starts there rather than at the 1
+		// an order that passed through draft would hold.
+		models.SalesOrderFieldStageVersion: int32(1),
+
 		models.SalesOrderFieldSalesChannelId: stringOf(original, models.SalesOrderFieldSalesChannelId),
 		models.SalesOrderFieldSalesPointId:   stringOf(original, models.SalesOrderFieldSalesPointId),
 		models.SalesOrderFieldCurrencyCode:   stringOf(original, models.SalesOrderFieldCurrencyCode),
@@ -179,6 +183,19 @@ func writeAdjustmentOrder(
 	}
 
 	if _, err := engineRepo.Insert(ctx, fields); err != nil {
+		return err
+	}
+
+	// An adjustment order enters `confirmed` without ever having been a draft, so there is no
+	// transition to validate - but it DID enter a stage, and a consumer tracking sales by stage
+	// event would otherwise never learn this order exists.
+	if err := RecordOrderStageChanged(ctx, OrderStageChangedParams{
+		Order:         fields,
+		PreviousStage: "",
+		CurrentStage:  string(models.SalesOrderStatusConfirmed),
+		StageVersion:  1,
+		Reason:        "adjustment order for a processed return",
+	}); err != nil {
 		return err
 	}
 	return writeAdjustmentOrderLines(ctx, adjustmentId, orgId, kept)

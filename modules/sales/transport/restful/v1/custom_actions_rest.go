@@ -230,6 +230,11 @@ func (this *SalesOrderRest) ViewRefunds(echoCtx *echo.Context, payload map[strin
 		this.orderSvc.ViewRefunds, composable.Identity[any])
 }
 
+func (this *SalesOrderRest) ListBills(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "list order bills", payload,
+		this.orderSvc.ListBills, composable.Identity[any])
+}
+
 // The quotation's three transitions.
 
 func (this *SalesQuotationRest) Convert(echoCtx *echo.Context, payload map[string]any) error {
