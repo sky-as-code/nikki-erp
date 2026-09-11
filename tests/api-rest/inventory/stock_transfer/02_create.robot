@@ -26,6 +26,7 @@ Create Generates The Transfer Number
     ...    it is generated rather than client-supplied: two clients picking the same one would
     ...    collide, and one could otherwise impersonate another's reference.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Set Variable    ${resp.json()}[data]
     Should Not Be Empty    ${item}[transfer_number]
@@ -35,6 +36,7 @@ Create Starts In Draft
     [Documentation]    AC-STOCK-003. A transfer that could be created in any other state would be
     ...    a movement with nothing behind it.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Set Variable    ${resp.json()}[data]
     Should Be Equal    ${item}[status]    draft
 
@@ -43,6 +45,7 @@ Create Snapshots The Operation Type Policies
     ...    partial, and the transfer must carry its own copy of each: reconfiguring the type
     ...    afterwards must not reinterpret a transfer already created.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Set Variable    ${resp.json()}[data]
     Should Be Equal    ${item}[operation_code]    internal
     Should Be Equal    ${item}[reservation_method]    manual
@@ -61,7 +64,8 @@ Create Overrides A Client Supplied Status
         ${check}=    Get On Session    api    ${STOCK_TRANSFER_API}/${id}
         Should Be Equal    ${check.json()}[data][status]    draft
         ...    msg=A client-supplied status must not survive create
-        DELETE On Session    api    ${STOCK_TRANSFER_API}/${id}    expected_status=any
+        DELETE On Session    api    ${STOCK_TRANSFER_API}/${id}
+        ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     END
 
 Create With The Same Source And Destination Fails
@@ -94,7 +98,7 @@ Create With An Archived Operation Type Fails
     ${type_id}    ${type_etag}=    Response Should Be Create Success    ${resp}
 
     POST On Session    api    ${STOCK_OPERATION_TYPE_API}/${type_id}/archived
-    ...    json=${{ {'is_archived': True, 'etag': $type_etag} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $type_etag} }}    expected_status=any
 
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
     ...    json=${{ {'operation_type_id': $type_id, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
@@ -104,6 +108,6 @@ Create With An Archived Operation Type Fails
 
 Create With Missing Required Fields Fails
     [Tags]    negative
-    ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}    json=${{ {} }}    expected_status=any
+    ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
     ...    msg=A transfer needs an operation type, both locations and an org

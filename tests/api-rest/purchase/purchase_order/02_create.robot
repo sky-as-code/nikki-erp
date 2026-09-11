@@ -22,6 +22,7 @@ New Order Starts As A Request For Quotation
     ...    `purchase_order` would be a commitment with no confirmation behind it.
     Ensure Purchase Order Under Test
     ${resp}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Equal    ${resp.json()}[status]    rfq
 
@@ -34,6 +35,7 @@ Server Mints The Order Code
     ...    document quoting the old one.
     Ensure Purchase Order Under Test
     ${resp}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Start With    ${resp.json()}[code]    PO-
 
@@ -46,6 +48,7 @@ A Client Supplied Code And Status Are Overwritten Not Rejected
     ...    json=${{ {'vendor_id': $PURCHASE_VENDOR_ID, 'buyer_id': $PURCHASE_BUYER_ID, 'currency_id': $PURCHASE_CURRENCY_ID, 'org_id': $PURCHASE_ORG_ID, 'priority': 'normal', 'code': 'PO-CLIENT-CHOSEN', 'status': 'purchase_order'} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${created}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${created}    200
     Should Not Be Equal    ${created.json()}[code]    PO-CLIENT-CHOSEN
     Should Be Equal    ${created.json()}[status]    rfq
@@ -56,6 +59,7 @@ New Order Totals Start At Zero
     ...    stamped rather than omitted because they are required_for_create.
     Ensure Purchase Order Under Test
     ${resp}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     Should Be Equal As Numbers    ${body}[untaxed_amount]    0
@@ -68,6 +72,7 @@ New Order Flags Start False
     ...    and the order's total, neither of which is knowable at create.
     Ensure Purchase Order Under Test
     ${resp}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     Should Not Be True    ${body}[is_locked]

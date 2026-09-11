@@ -26,11 +26,13 @@ Create Defaults To Draft Status
     ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_template.json    200
     Should Be Equal    ${item}[status]    draft
     Should Be Equal    ${item}[is_archived]    ${False}
     ...    msg=A new template must not be born archived
-    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create Defaults The Capability Flags On
     [Documentation]    BR §6.1.2: sale_ok and purchase_ok default true, so a template is
@@ -41,10 +43,12 @@ Create Defaults The Capability Flags On
     ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_template.json    200
     Should Be Equal    ${item}[sale_ok]    ${True}
     Should Be Equal    ${item}[purchase_ok]    ${True}
-    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Brand And Defaults Succeeds
     [Documentation]    The optional half of the model: brand plus the fallback dimensions a
@@ -56,9 +60,11 @@ Create With Brand And Defaults Succeeds
     ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'brand_id': $BRAND_ID, 'default_weight': '1.5', 'default_length': '10', 'status': 'draft', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_template.json    200
     Should Be Equal    ${item}[brand_id]    ${BRAND_ID}
-    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create Without Brand Succeeds
     [Documentation]    brand_id is nullable: an unbranded or own-label product is normal,
@@ -68,10 +74,12 @@ Create Without Brand Succeeds
     ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_template.json    200
     Should Be True    ${{ not $item.get('brand_id') }}
     ...    msg=A template created without a brand should have none
-    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Missing Required Fields Fails
     [Documentation]    status is required_for_create too, but it declares a default, and the
@@ -125,7 +133,8 @@ Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    data={ "name": {"en-US": "broken",    headers=${headers}    expected_status=any
+    ...    data={ "name": {"en-US": "broken",    headers=${headers}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}
 
 Create With Nonexist Field Fails

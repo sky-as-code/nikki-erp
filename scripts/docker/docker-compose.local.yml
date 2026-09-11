@@ -76,6 +76,21 @@ services:
     networks:
       - nikki_net
 
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: nikki_minio
+    ports:
+      - "9000:9000"       # S3 API Endpoint
+      - "9001:9001"       # Web UI Console
+    environment:
+      MINIO_ROOT_USER: nikki_admin
+      MINIO_ROOT_PASSWORD: nikki_password
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - nikki_net
+
 networks:
   nikki_net:
     driver: bridge
@@ -86,3 +101,4 @@ volumes:
   keydb_data:
   redis_data:
   rabbitmq_data:
+  minio_data:

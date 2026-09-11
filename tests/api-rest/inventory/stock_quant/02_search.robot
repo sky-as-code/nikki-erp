@@ -52,11 +52,12 @@ Search With Nonexist Column Fails
 
 Get With Not Found Id Fails
     [Tags]    negative
-    ${resp}=    GET On Session    api    ${STOCK_QUANT_API}/${NOT_FOUND_ID}    expected_status=any
+    ${resp}=    GET On Session    api    ${STOCK_QUANT_API}/${NOT_FOUND_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Get With Invalid Id Format Fails
     [Tags]    negative
     ${resp}=    GET On Session    api    ${STOCK_QUANT_API}/not-existing-1234567890123
-    ...    expected_status=any
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Invalid Format Error    ${resp}    id

@@ -78,7 +78,7 @@ func (this *StockQuantDomainServiceImpl) GetVariantSummaries(
 func (this *StockQuantDomainServiceImpl) accumulateQuants(
 	ctx corectx.Context, variantIds []string, summaries map[string]itStock.VariantStockSummary,
 ) error {
-	engine, err := engineFor(models.StockQuantSchemaName)
+	engine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (this *StockQuantDomainServiceImpl) accumulateQuants(
 			break
 		}
 
-		found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  summaryScanPageSize,
@@ -213,7 +213,7 @@ func (this *StockQuantDomainServiceImpl) fillLocationCounts(
 func (this *StockQuantDomainServiceImpl) accumulateMoves(
 	ctx corectx.Context, variantIds []string, summaries map[string]itStock.VariantStockSummary,
 ) error {
-	engine, err := engineFor(models.StockMoveSchemaName)
+	engine, err := repoFor(models.StockMoveSchemaName)
 	if err != nil {
 		return err
 	}
@@ -232,7 +232,7 @@ func (this *StockQuantDomainServiceImpl) accumulateMoves(
 	)
 
 	for page := 0; page < maxSummaryQuantPages; page++ {
-		found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  summaryScanPageSize,
@@ -295,13 +295,13 @@ func (this *StockQuantDomainServiceImpl) GetTemplateSummary(
 		return nil, errors.New("GetTemplateSummary requires a template id")
 	}
 
-	variantEngine, err := engineFor(models.ProductVariantSchemaName)
+	variantEngine, err := repoFor(models.ProductVariantSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
 	rows, err := models.FindTemplateVariants(
-		ctx, variantEngine.ResourceRepository(), query.TemplateId, itStock.MaxSummaryVariants)
+		ctx, variantEngine, query.TemplateId, itStock.MaxSummaryVariants)
 	if err != nil {
 		return nil, errors.Wrap(err, "GetTemplateSummary")
 	}

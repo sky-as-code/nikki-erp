@@ -9,11 +9,6 @@ ifndef cwd
 cwd := $(dir $(lastword $(MAKEFILE_LIST)))
 endif
 
-ifndef migration_dir_tmp
-migration_dir_tmp := file://${cwd}scripts/migrations-tmp
-endif
-
-
 .PHONY: build build-mods build-static build-dynamic clean ent-init ent-gen ent-current ent-hash ent-migration ent-apply infra-up infra-down nikki test-api-rest test-api-rest-deps
 
 
@@ -100,23 +95,11 @@ ent-hash:
 
 ent-migration:
 	@if [ -z "$(module)" ]; then \
-		echo "Error: module parameter is required. Usage: make ent-migration module=<module_name> name=<name>"; \
-		exit 1; \
-	fi
-	@if [ -z "$(name)" ]; then \
-		echo "Error: name parameter is required. Usage: make ent-migration module=<module_name> name=<name>"; \
+		echo "Error: module parameter is required. Usage: make ent-migration module=<module_name>"; \
 		exit 1; \
 	fi
 
-	@echo "Clearing '$(migration_dir_tmp)' before generating migration..."
-	@find "${cwd}scripts/migrations-tmp" -mindepth 1 -delete
-
-	atlas migrate diff $(name) \
-		--dir "$(migration_dir_tmp)" \
-		--config file://${cwd}scripts/atlas.hcl \
-		--env nikki \
-		--var module=$(module) \
-		--var cwd='${cwd}'
+	"${cwd}scripts/db-migrations.sh" "$(module)" '${cwd}'
 
 ent-apply:
 	@echo "Applying migration files in '$(migration_dir)'..."
@@ -140,7 +123,7 @@ ent-infra-apply:
 # START: Local development
 
 infra-up:
-	docker compose -f "${cwd}scripts/docker/docker-compose.local.yml" up -d
+	"${cwdnikki}scripts/infra-up.sh" "${cwd}scripts/docker/docker-compose.local.yml" "${cwd}config"
 
 infra-down:
 	docker compose -f "${cwd}scripts/docker/docker-compose.local.yml" down -v

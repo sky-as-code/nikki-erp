@@ -11,7 +11,7 @@ Test Tags         inventory    product_category    update
 Update Succeeds
     ${name}=    Unique Display Name    Robot Updated Category
     ${resp}=    PATCH On Session    api    ${PRODUCT_CATEGORY_API}/${PRODUCT_CATEGORY_ID}
-    ...    json=${{ {'name': {'en-US': $name}, 'etag': $PRODUCT_CATEGORY_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'name': {'en-US': $name}, 'etag': $PRODUCT_CATEGORY_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${PRODUCT_CATEGORY_ETAG}
     IF    $etag is not None    Set Global Variable    ${PRODUCT_CATEGORY_ETAG}    ${etag}
 
@@ -21,7 +21,7 @@ Update Parent Succeeds
     ...    the category under test back to a root so the rest of the suite sees it unchanged.
     Ensure Child Product Category
     ${resp}=    PATCH On Session    api    ${PRODUCT_CATEGORY_API}/${CHILD_CATEGORY_ID}
-    ...    json=${{ {'sequence': 1, 'etag': $CHILD_CATEGORY_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'sequence': 1, 'etag': $CHILD_CATEGORY_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${CHILD_CATEGORY_ETAG}
     IF    $etag is not None    Set Global Variable    ${CHILD_CATEGORY_ETAG}    ${etag}
 
@@ -30,7 +30,7 @@ Update With Self As Parent Fails
     ...    one-node cycle, reported separately from the walk because there is no chain.
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${PRODUCT_CATEGORY_API}/${PRODUCT_CATEGORY_ID}
-    ...    json=${{ {'parent_category_id': $PRODUCT_CATEGORY_ID, 'etag': $PRODUCT_CATEGORY_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'parent_category_id': $PRODUCT_CATEGORY_ID, 'etag': $PRODUCT_CATEGORY_ETAG} }}
     ...    expected_status=any
     Response Should Be Category Self Parent Error    ${resp}
 
@@ -40,31 +40,31 @@ Update With Descendant As Parent Fails
     [Tags]    negative
     Ensure Child Product Category
     ${resp}=    PATCH On Session    api    ${PRODUCT_CATEGORY_API}/${PRODUCT_CATEGORY_ID}
-    ...    json=${{ {'parent_category_id': $CHILD_CATEGORY_ID, 'etag': $PRODUCT_CATEGORY_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'parent_category_id': $CHILD_CATEGORY_ID, 'etag': $PRODUCT_CATEGORY_ETAG} }}
     ...    expected_status=any
     Response Should Be Category Cycle Error    ${resp}
 
 Update With Missing Etag Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${PRODUCT_CATEGORY_API}/${PRODUCT_CATEGORY_ID}
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Missing Fields Error    ${resp}    etag
 
 Update With Unmatched Etag Fails
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Stale Category
     ${resp}=    PATCH On Session    api    ${PRODUCT_CATEGORY_API}/${PRODUCT_CATEGORY_ID}
-    ...    json=${{ {'name': {'en-US': $name}, 'etag': '___________________'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'name': {'en-US': $name}, 'etag': '___________________'} }}    expected_status=any
     Response Should Be Etag Unmatched Error    ${resp}
 
 Update With Invalid Id Format Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${PRODUCT_CATEGORY_API}/not-invalid-1234567890123
-    ...    json=${{ {'etag': $PRODUCT_CATEGORY_ETAG} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $PRODUCT_CATEGORY_ETAG} }}    expected_status=any
     Response Should Be Invalid Format Error    ${resp}    id
 
 Update With Not Found Id Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${PRODUCT_CATEGORY_API}/${NOT_FOUND_ID}
-    ...    json=${{ {'etag': $PRODUCT_CATEGORY_ETAG} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $PRODUCT_CATEGORY_ETAG} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}

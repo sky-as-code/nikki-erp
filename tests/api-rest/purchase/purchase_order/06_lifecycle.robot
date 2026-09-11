@@ -19,8 +19,10 @@ Send Moves A Draft To Quotation Sent
     ...    a quote" distinguishable from "not yet asked".
     ${id}    ${etag}=    Create Purchase Order
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/send
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal    ${order.json()}[status]    rfq_sent
     Audit Trail Should Record    ${id}    send
     [Teardown]    Delete Purchase Order Fixture    ${id}
@@ -31,7 +33,7 @@ Send Is Refused On A Confirmed Order
     ${id}    ${etag}=    Create Confirmable Purchase Order
     Confirm Purchase Order    ${id}
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/send
-    ...    expected_status=any
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Response Should Be Client Error    ${resp}
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
@@ -42,6 +44,7 @@ Confirm Commits The Order
     ${resp}=    Confirm Purchase Order    ${id}
     Response Status Should Be    ${resp}    200
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal    ${order.json()}[status]    purchase_order
     Should Not Be Empty    ${order.json()}[confirmed_at]
     Audit Trail Should Record    ${id}    confirm
@@ -55,6 +58,7 @@ Confirm Is Refused On An Order With No Priced Line
     ${resp}=    Confirm Purchase Order    ${id}
     Response Should Be Client Error    ${resp}
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal    ${order.json()}[status]    rfq
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
@@ -75,6 +79,7 @@ Confirm Recomputes The Totals From The Lines
     ${id}    ${etag}=    Create Confirmable Purchase Order    10    25.00
     Confirm Purchase Order    ${id}
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${order}    200
     Should Be Equal As Numbers    ${order.json()}[untaxed_amount]    250.00
     Should Be Equal As Numbers    ${order.json()}[total_amount]      250.00
@@ -86,8 +91,10 @@ Lock Closes A Confirmed Order To Editing
     ${id}    ${etag}=    Create Confirmable Purchase Order
     Confirm Purchase Order    ${id}
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/lock
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be True    ${order.json()}[is_locked]
     Should Be Equal    ${order.json()}[status]    purchase_order
     Audit Trail Should Record    ${id}    lock
@@ -98,7 +105,7 @@ Lock Is Refused On A Draft
     ...    with no way out except unlocking it again.
     ${id}    ${etag}=    Create Purchase Order
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/lock
-    ...    expected_status=any
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Response Should Be Client Error    ${resp}
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
@@ -109,10 +116,12 @@ Unlock Requires A Reason
     ${id}    ${etag}=    Create Confirmable Purchase Order
     Confirm Purchase Order    ${id}
     POST On Session    api    ${PURCHASE_ORDER_API}/${id}/lock
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/unlock
-    ...    expected_status=any
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Response Should Be Client Error    ${resp}
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be True    ${order.json()}[is_locked]    msg=A refused unlock must leave the order locked
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
@@ -122,10 +131,12 @@ Unlock With A Reason Reopens The Order And Records Why
     ${id}    ${etag}=    Create Confirmable Purchase Order
     Confirm Purchase Order    ${id}
     POST On Session    api    ${PURCHASE_ORDER_API}/${id}/lock
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/unlock
-    ...    json=${{ {'reason': 'price correction agreed with the vendor'} }}
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID, 'reason': 'price correction agreed with the vendor'} }}
     Response Status Should Be    ${resp}    200
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Not Be True    ${order.json()}[is_locked]
     ${event}=    Audit Trail Should Record    ${id}    unlock
     Should Be Equal    ${event}[reason]    price correction agreed with the vendor
@@ -137,8 +148,10 @@ Acknowledge Records The Vendor Confirmation
     ${id}    ${etag}=    Create Confirmable Purchase Order
     Confirm Purchase Order    ${id}
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/acknowledge
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be True    ${order.json()}[vendor_acknowledged]
     Audit Trail Should Record    ${id}    acknowledge
     [Teardown]    Delete Purchase Order Fixture    ${id}
@@ -149,7 +162,9 @@ Acknowledging Twice Writes Only One Audit Event
     ${id}    ${etag}=    Create Confirmable Purchase Order
     Confirm Purchase Order    ${id}
     POST On Session    api    ${PURCHASE_ORDER_API}/${id}/acknowledge
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/acknowledge
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Audit Trail Should Record    ${id}    acknowledge
     [Teardown]    Delete Purchase Order Fixture    ${id}
@@ -158,7 +173,7 @@ Acknowledge Is Refused Before Confirmation
     [Documentation]    There is nothing to acknowledge before the order is committed.
     ${id}    ${etag}=    Create Purchase Order
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/acknowledge
-    ...    expected_status=any
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Response Should Be Client Error    ${resp}
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
@@ -169,9 +184,10 @@ Cancel Leaves The Order And Its Trail In Place
     ${id}    ${etag}=    Create Confirmable Purchase Order
     Confirm Purchase Order    ${id}
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/cancel
-    ...    json=${{ {'reason': 'vendor withdrew'} }}
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID, 'reason': 'vendor withdrew'} }}
     Response Status Should Be    ${resp}    200
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${order}    200
     Should Be Equal    ${order.json()}[status]    cancelled
     ${event}=    Audit Trail Should Record    ${id}    cancel
@@ -184,7 +200,7 @@ A Confirmed Order Can Still Be Cancelled
     ${id}    ${etag}=    Create Confirmable Purchase Order
     Confirm Purchase Order    ${id}
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/cancel
-    ...    json=${{ {'reason': 'no longer required'} }}
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID, 'reason': 'no longer required'} }}
     Response Status Should Be    ${resp}    200
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
@@ -194,7 +210,7 @@ A Cancelled Order Cannot Be Revived
     ...    could rely on. Duplicate is the way to start again.
     ${id}    ${etag}=    Create Confirmable Purchase Order
     POST On Session    api    ${PURCHASE_ORDER_API}/${id}/cancel
-    ...    json=${{ {'reason': 'abandoned'} }}
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID, 'reason': 'abandoned'} }}
     ${resp}=    Confirm Purchase Order    ${id}
     Response Should Be Client Error    ${resp}
     [Teardown]    Delete Purchase Order Fixture    ${id}
@@ -206,16 +222,20 @@ Duplicate Starts A Fresh Draft With None Of The History
     ${id}    ${etag}=    Create Confirmable Purchase Order
     Confirm Purchase Order    ${id}
     POST On Session    api    ${PURCHASE_ORDER_API}/${id}/lock
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/duplicate
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${copy_id}=    Set Variable    ${resp.json()}[id]
     ${copy}=    GET On Session    api    ${PURCHASE_ORDER_API}/${copy_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${copy}    200
     ${body}=    Set Variable    ${copy.json()}
     Should Be Equal    ${body}[status]    rfq
     Should Not Be True    ${body}[is_locked]
     Should Not Be True    ${body}[vendor_acknowledged]
     ${original}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Not Be Equal    ${body}[code]    ${original.json()}[code]
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${copy_id}
@@ -226,9 +246,11 @@ Duplicate Copies The Lines And Their Totals
     ...    the order, and it could not be confirmed.
     ${id}    ${etag}=    Create Confirmable Purchase Order    4    50.00
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${id}/duplicate
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${copy_id}=    Set Variable    ${resp.json()}[id]
     ${copy}=    GET On Session    api    ${PURCHASE_ORDER_API}/${copy_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal As Numbers    ${copy.json()}[total_amount]    200.00
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${copy_id}

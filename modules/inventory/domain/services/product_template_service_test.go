@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"testing"
 
 	"go.bryk.io/pkg/errors"
@@ -16,7 +17,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
@@ -31,7 +31,7 @@ const (
 // stubVariantRepository stands in for the variant engine's repository. Only the three methods the
 // cascade uses are implemented; the embedded interface covers the rest.
 type stubVariantRepository struct {
-	drif.DynamicResourceRepository
+	composable.CrudRepository
 
 	variants []dmodel.DynamicFields
 	updates  []dmodel.DynamicFields
@@ -85,7 +85,7 @@ func (this *stubTransaction) Rollback() error {
 // stubBaseService stands in for the engine's default resource service, which the override
 // delegates the template write to.
 type stubBaseService struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 
 	calls        int
 	seenContexts []corectx.Context
@@ -132,17 +132,6 @@ func archiveParams(isArchived bool) dmodel.DynamicFields {
 	}
 }
 
-// stubEngine hands out the stub repository. Only ResourceRepository is reached by the cascade.
-type stubEngine struct {
-	drif.DynamicResourceEngine
-
-	repo drif.DynamicResourceRepository
-}
-
-func (this *stubEngine) ResourceRepository() drif.DynamicResourceRepository {
-	return this.repo
-}
-
 // runCascadeRaw archives a template against the stub engines, restoring the engine lookup
 // afterwards so the swap cannot leak into another test.
 func runCascadeRaw(
@@ -150,16 +139,16 @@ func runCascadeRaw(
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	t.Helper()
 
-	original := engineFor
-	t.Cleanup(func() { engineFor = original })
-	engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
+	original := repoFor
+	t.Cleanup(func() { repoFor = original })
+	repoFor = func(schemaName string) (composable.CrudRepository, error) {
 		// Two schemas are legitimately reached: the cascade writes variant rows, and the stock guard
 		// asks the quant engine what the variants hold. The quant engine is answered with an error,
 		// which the guard reads as "stock is not wired" and lets the archive proceed, keeping these
 		// tests about the cascade.
 		switch schemaName {
 		case models.ProductVariantSchemaName:
-			return &stubEngine{repo: repo}, nil
+			return repo, nil
 		case models.StockQuantSchemaName:
 			return nil, errors.New("no stock engine in this test")
 		}
@@ -167,7 +156,7 @@ func runCascadeRaw(
 		return nil, nil
 	}
 
-	service := &ProductTemplateDomainServiceImpl{DynamicResourceService: base}
+	service := &ProductTemplateDomainServiceImpl{CrudDomainService: base}
 	return service.SetArchived(callerContext(), archiveParams(archive))
 }
 
@@ -189,7 +178,7 @@ func runCascade(
 // request to the base service rather than guessing.
 func TestSetArchivedWithoutFlagDelegatesToTheBase(t *testing.T) {
 	base := &stubBaseService{}
-	service := &ProductTemplateDomainServiceImpl{DynamicResourceService: base}
+	service := &ProductTemplateDomainServiceImpl{CrudDomainService: base}
 
 	result, err := service.SetArchived(callerContext(), dmodel.DynamicFields{
 		models.ProductTemplateFieldId: testTemplateId,

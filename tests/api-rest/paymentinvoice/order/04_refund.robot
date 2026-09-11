@@ -18,19 +18,19 @@ Refund Without An Order Or Amount Fails
     ...    fixing them one round trip at a time.
     [Tags]    negative
     ${resp}=    POST On Session    api    ${ORDER_API}/refund
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    400
 
 Refund Without An Amount Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${ORDER_API}/refund
-    ...    json=${{ {'order_id': 'VDMCMOM0Q8HABCDEFGH'} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID, 'order_id': 'VDMCMOM0Q8HABCDEFGH'} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    400
 
 Refund With A Malformed Amount Is Refused
     [Tags]    negative
     ${resp}=    POST On Session    api    ${ORDER_API}/refund
-    ...    json=${{ {'order_id': 'VDMCMOM0Q8HABCDEFGH', 'amount': 'abc'} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID, 'order_id': 'VDMCMOM0Q8HABCDEFGH', 'amount': 'abc'} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    400
 
 Refunding An Unknown Order Is A Client Error
@@ -38,7 +38,7 @@ Refunding An Unknown Order Is A Client Error
     ...    not a server failure, and the distinction is what tells them to check the id.
     [Tags]    negative
     ${resp}=    POST On Session    api    ${ORDER_API}/refund
-    ...    json=${{ {'order_id': 'NOSUCHORDER00000000', 'amount': '50000'} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID, 'order_id': 'NOSUCHORDER00000000', 'amount': '50000'} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    400
     ...    msg=An unknown order must be reported as a client error, never a 500
 
@@ -49,6 +49,6 @@ Remove Pos Orders On A Terminal With Nothing Queued Succeeds
     ...    which is a complete outcome rather than an error: the caller asked for the queue to
     ...    be empty and it is.
     ${resp}=    POST On Session    api    ${ORDER_API}/remove_pos_orders/ROBOT_NO_SUCH_TERMINAL
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    200
     Should Be Equal As Integers    ${resp.json()}[affected_count]    0

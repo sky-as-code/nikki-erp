@@ -24,6 +24,7 @@ A New Invoice Is A Draft With Zero Totals
     ...    then. A client that could set them on create could author a document whose total
     ...    disagreed with what it totals.
     ${resp}=    GET On Session    api    ${INVOICE_API}/${INVOICE_ID}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice.json    200
     Should Be Equal    ${item}[status]    draft
     Should Be Equal As Numbers    ${item}[subtotal_amount]    0
@@ -34,6 +35,7 @@ A New Invoice Has No Number
     [Documentation]    The number is assigned by the issue action, not on create: handing one
     ...    out earlier would leave a gap in the sequence whenever a draft was abandoned.
     ${resp}=    GET On Session    api    ${INVOICE_API}/${INVOICE_ID}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice.json    200
     ${number}=    Get From Dictionary    ${item}    number    ${None}
     Should Be Equal    ${number}    ${None}
@@ -45,10 +47,12 @@ Create With All Optional Fields Succeeds
     ...    json=${{ {'partner_name': $partner, 'currency_id': $PAYINV_CURRENCY_ID, 'org_id': $PAYINV_ORG_ID, 'partner_tax_code': '0101234567', 'partner_address': '1 Robot Street', 'note': 'Created by the robot suite'} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${INVOICE_API}/${id}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice.json    200
     Should Be Equal    ${item}[partner_tax_code]    0101234567
     Should Be Equal    ${item}[partner_address]    1 Robot Street
-    DELETE On Session    api    ${INVOICE_API}/${id}    expected_status=any
+    DELETE On Session    api    ${INVOICE_API}/${id}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
 
 Create With Missing Required Fields Fails
     [Tags]    negative
@@ -59,7 +63,8 @@ Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${resp}=    POST On Session    api    ${INVOICE_API}
-    ...    data={ "partner_name": "broken",    headers=${headers}    expected_status=any
+    ...    data={ "partner_name": "broken",    headers=${headers}
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}
 
 Create With Nonexist Field Fails
@@ -76,6 +81,7 @@ Create Invoice Line Succeeds
     ${line_id}=    Add Invoice Line    ${INVOICE_ID}    2    50000    0
     Set Global Variable    ${INVOICE_LINE_ID}    ${line_id}
     ${resp}=    GET On Session    api    ${INVOICE_LINE_API}/${line_id}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice_line.json    200
     Should Be Equal As Integers    ${item}[quantity]    2
 

@@ -30,12 +30,14 @@ Create With Full Payload Succeeds
     ...    json=${{ {'party_id': $party_id, 'status': 'proposed', 'org_id': $CONTACTS_ORG_ID, 'status_reason': 'Awaiting compliance review', 'payment_terms': 'Net 30', 'lead_time_days': 14, 'note': 'Robot full vendor'} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     Item Should Match Schema    ${resp}    ${CONTACTS_SCHEMA_DIR}/vendor_profile.json    200
     ${item}=    Set Variable    ${resp.json()}[item]
     Should Be Equal    ${item}[payment_terms]    Net 30
     Should Be Equal As Integers    ${item}[lead_time_days]    14
     [Teardown]    Run Keywords
-    ...    DELETE On Session    api    ${VENDOR_PROFILE_API}/${id}    expected_status=any
+    ...    DELETE On Session    api    ${VENDOR_PROFILE_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     ...    AND    DELETE On Session    api    ${PARTY_API}/${party_id}    expected_status=any
 
 Status Defaults To Proposed
@@ -47,10 +49,12 @@ Status Defaults To Proposed
     ...    json=${{ {'party_id': $party_id, 'org_id': $CONTACTS_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Equal    ${resp.json()}[item][status]    proposed
     [Teardown]    Run Keywords
-    ...    DELETE On Session    api    ${VENDOR_PROFILE_API}/${id}    expected_status=any
+    ...    DELETE On Session    api    ${VENDOR_PROFILE_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     ...    AND    DELETE On Session    api    ${PARTY_API}/${party_id}    expected_status=any
 
 Create Second Profile For Same Party And Org Fails
@@ -85,7 +89,8 @@ Create With Negative Lead Time Fails
     ...    json=${{ {'party_id': $party_id, 'status': 'active', 'org_id': $CONTACTS_ORG_ID, 'lead_time_days': -1} }}
     ...    expected_status=any
     Response Should Be Invalid Number Range Error    ${resp}    lead_time_days
-    [Teardown]    DELETE On Session    api    ${PARTY_API}/${party_id}    expected_status=any
+    [Teardown]    DELETE On Session    api    ${PARTY_API}/${party_id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
 
 Create With Nonexist Field Fails
     [Tags]    negative
@@ -97,5 +102,6 @@ Create With Nonexist Field Fails
 Create With Malformed Payload Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${VENDOR_PROFILE_API}
-    ...    data=not-a-json-object    expected_status=any
+    ...    data=not-a-json-object
+    ...    json=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}

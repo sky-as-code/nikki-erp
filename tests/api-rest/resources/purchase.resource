@@ -91,7 +91,7 @@ Ensure Purchase Currency
     ${resolved}=    Get Variable Value    ${PURCHASE_CURRENCY_ID}    ${EMPTY}
     IF    $resolved    RETURN
     ${resp}=    GET On Session    api    /v1/essential/essential_currency
-    ...    params=${{ {'size': 1, 'graph': '{"if":["code","eq","%s"]}' % $code} }}
+    ...    params=${{ {'size': 1, 'graph': '{"if":["code","=","%s"]}' % $code} }}
     Response Status Should Be    ${resp}    200
     ${items}=    Set Variable    ${resp.json()}[items]
     Should Not Be Empty    ${items}    msg=Currency ${code} is missing; the ISO-4217 seed has not been applied
@@ -108,7 +108,7 @@ Ensure Purchase Product
     ${resolved}=    Get Variable Value    ${PURCHASE_VARIANT_ID}    ${EMPTY}
     IF    $resolved    RETURN
     ${resp}=    GET On Session    api    /v1/inventory/inventory_product_variant
-    ...    params=${{ {'size': 1, 'fields': 'id,product_template_id,template_purchase_ok'} }}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID, 'size': 1, 'fields': 'id,product_template_id,template_purchase_ok'} }}
     Response Status Should Be    ${resp}    200
     ${items}=    Set Variable    ${resp.json()}[items]
     Should Not Be Empty    ${items}    msg=No product variant exists to put on a purchase line
@@ -121,7 +121,7 @@ Ensure Purchase Uom
     ...    rather than that the suite is wrong.
     ${resolved}=    Get Variable Value    ${PURCHASE_UOM_ID}    ${EMPTY}
     IF    $resolved    RETURN
-    ${resp}=    GET On Session    api    /v1/essential/essential_uom    params=${{ {'size': 1} }}
+    ${resp}=    GET On Session    api    /v1/essential/essential_uom    params=${{ {'org_id': $PURCHASE_ORG_ID, 'size': 1} }}
     Response Status Should Be    ${resp}    200
     ${items}=    Set Variable    ${resp.json()}[items]
     Should Not Be Empty    ${items}    msg=No unit of measure exists to price a purchase line against
@@ -192,6 +192,7 @@ Create Confirmable Purchase Order
     ${id}    ${etag}=    Create Purchase Order
     Create Purchase Order Line    ${id}    ${quantity}    ${unit_price}
     ${refreshed}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${refreshed}    200
     RETURN    ${id}    ${refreshed.json()}[etag]
 
@@ -205,7 +206,8 @@ Confirm Purchase Order
         Set To Dictionary    ${body}    alternative_choice    ${alternative_choice}
     END
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/confirm
-    ...    json=${body}    expected_status=any
+    ...    json=${body}
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     RETURN    ${resp}
 
 # --- Purchase agreement ------------------------------------------------------------------
@@ -253,6 +255,7 @@ Create Confirmed Agreement
     ${id}    ${etag}=    Create Purchase Agreement
     Create Agreement Line    ${id}
     ${resp}=    POST On Session    api    ${AGREEMENT_API}/${id}/confirm
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     RETURN    ${id}
 
@@ -262,9 +265,9 @@ Get Audit Events For
     [Documentation]    Reads the audit trail of one record. PUR-R6 requires exactly one event
     ...    per state-changing action, so the suites count as well as inspect.
     [Arguments]    ${entity_id}
-    ${graph}=    Set Variable    {"if":["entity_id","eq","${entity_id}"]}
+    ${graph}=    Set Variable    {"if":["entity_id","=","${entity_id}"]}
     ${resp}=    GET On Session    api    ${AUDIT_EVENT_API}
-    ...    params=${{ {'size': 100, 'graph': $graph} }}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID, 'size': 100, 'graph': $graph} }}
     Response Status Should Be    ${resp}    200
     RETURN    ${resp.json()}[items]
 
@@ -302,8 +305,9 @@ Delete Purchase Order Fixture
     [Arguments]    ${order_id}
     IF    not $order_id    RETURN
     POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/cancel
-    ...    json=${{ {'reason': 'robot teardown'} }}    expected_status=any
-    DELETE On Session    api    ${PURCHASE_ORDER_API}/${order_id}    expected_status=any
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID, 'reason': 'robot teardown'} }}    expected_status=any
+    DELETE On Session    api    ${PURCHASE_ORDER_API}/${order_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
 
 Delete Agreement Fixture
     [Documentation]    Cancels then deletes one agreement. A draft is deletable outright, but
@@ -311,8 +315,9 @@ Delete Agreement Fixture
     [Arguments]    ${agreement_id}
     IF    not $agreement_id    RETURN
     POST On Session    api    ${AGREEMENT_API}/${agreement_id}/cancel
-    ...    json=${{ {'reason': 'robot teardown'} }}    expected_status=any
-    DELETE On Session    api    ${AGREEMENT_API}/${agreement_id}    expected_status=any
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID, 'reason': 'robot teardown'} }}    expected_status=any
+    DELETE On Session    api    ${AGREEMENT_API}/${agreement_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
 
 # --- Business violations ------------------------------------------------------------------
 # The key/message pairs are server contracts emitted by modules/purchase/domain/services.

@@ -22,10 +22,10 @@ Validating Moves Stock From Source To Destination
 
     ${id}    ${etag}=    Create Stock Transfer    ${INTERNAL_OPERATION_TYPE_ID}
     ${move_id}=    Add Stock Move    ${id}    ${PRODUCT_VARIANT_ID}    30
-    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {} }}    expected_status=any
-    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/reserve    json=${{ {} }}    expected_status=any
+    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/reserve    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
     ${source_after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
@@ -77,15 +77,16 @@ Validating An Unreserved Internal Transfer Moves Nothing
 
     ${id}    ${etag}=    Create Stock Transfer    ${INTERNAL_OPERATION_TYPE_ID}
     ${move_id}=    Add Stock Move    ${id}    ${PRODUCT_VARIANT_ID}    5
-    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {} }}    expected_status=any
-    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/validate    json=${{ {} }}    expected_status=any
+    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/confirm    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    POST On Session    api    ${STOCK_TRANSFER_API}/${id}/validate    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
     ${source_after}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     Should Be Equal As Numbers    ${source_after}    ${source_before}
     ...    msg=Validating without a reservation must not move stock
 
     [Teardown]    Run Keywords
-    ...    DELETE On Session    api    ${STOCK_MOVE_API}/${move_id}    expected_status=any
+    ...    DELETE On Session    api    ${STOCK_MOVE_API}/${move_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     ...    AND    DELETE On Session    api    ${STOCK_TRANSFER_API}/${id}    expected_status=any
 
 
@@ -98,7 +99,7 @@ Seed Stock For Validation
         ${transfer_id}    ${move_id}=    Receive Stock Into Location
         ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    200
         POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
-        ...    json=${{ {} }}    expected_status=any
+        ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     END
     ${source}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
     ${dest}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${STOCK_DEST_LOCATION_ID}

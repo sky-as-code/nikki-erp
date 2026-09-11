@@ -30,10 +30,13 @@ Create With Empty Combination Succeeds
     ...    json=${{ {'product_template_id': $template_id, 'combination_key': '', 'sku': $sku, 'status': 'active', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_variant.json    200
     Should Be Equal    ${item}[combination_key]    ${EMPTY}
-    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${id}    expected_status=any
-    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Duplicate Combination Fails
     [Documentation]    BR-PROD-VAR-002 / AC-PROD-012: a template holds at most one variant
@@ -56,8 +59,10 @@ Create Same Combination On Another Template Succeeds
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}
     ...    json=${{ {'product_template_id': $template_id, 'combination_key': $PRODUCT_VARIANT_COMBINATION, 'sku': $sku, 'status': 'active', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${id}    expected_status=any
-    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create Defaults To Active And Materialized
     [Documentation]    BR §6.2.2: a variant created directly is a real SKU, so it defaults to
@@ -68,18 +73,21 @@ Create Defaults To Active And Materialized
     ...    json=${{ {'product_template_id': $PRODUCT_TEMPLATE_ID, 'combination_key': $key, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_variant.json    200
     Should Be Equal    ${item}[status]    active
     Should Be Equal    ${item}[is_materialized]    ${True}
     Should Be True    ${{ not $item.get('archive_source') }}
     ...    msg=A live variant must carry no archive_source stamp
-    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create Inherits The Template Fields
     [Documentation]    BR §7.6 / AC-PROD-032: the template's name and classification reach a
     ...    variant read through the virtual template_* fields, without being stored on it.
     ...    A consumer must never have to join the two halves itself.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_variant.json    200
     Should Not Be Empty    ${item}[template_name]
     ...    msg=A variant must inherit its template's name rather than storing one
@@ -130,7 +138,8 @@ Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}
-    ...    data={ "sku": "broken",    headers=${headers}    expected_status=any
+    ...    data={ "sku": "broken",    headers=${headers}
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}
 
 Create With Nonexist Field Fails

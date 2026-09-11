@@ -191,7 +191,7 @@ func writeMoveDemand(
 		models.StockMoveFieldDemandQuantity:     quantity.String(),
 		models.StockMoveFieldBaseDemandQuantity: quantity.String(),
 	}
-	_, err := operation.MoveEngine.ResourceRepository().Update(ctx, update)
+	_, err := operation.MoveRepo.Update(ctx, update)
 	return errors.Wrap(err, "writeMoveDemand")
 }
 

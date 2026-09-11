@@ -13,7 +13,7 @@ Test Tags         inventory    warehouse    lifecycle
 Suspend Closes The Warehouse Temporarily
     [Documentation]    TS-STATUS-01. A warehouse shut for a stocktake or a repair is suspended,
     ...    not archived: it is still part of the operational structure and is expected back.
-    ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/suspend    json=${{ {} }}
+    ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/suspend    json=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Get Warehouse Under Test
     Should Be Equal    ${item}[status]    suspended
@@ -23,7 +23,7 @@ Suspend Closes The Warehouse Temporarily
 Suspending A Suspended Warehouse Is Refused
     [Tags]    negative
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/suspend
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 Suspending Does Not Cascade To The Warehouse Locations
@@ -32,13 +32,14 @@ Suspending Does Not Cascade To The Warehouse Locations
     ...    suspended warehouse is unusable however the location itself reads.
     ${stock}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    Stock
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${stock}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
     Should Be Equal    ${item}[status]    active
     ...    msg=The location keeps its own state; the warehouse's is read alongside it
 
 Resume Returns The Warehouse To Service
     [Documentation]    TS-STATUS-02.
-    ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/resume    json=${{ {} }}
+    ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/resume    json=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Get Warehouse Under Test
     Should Be Equal    ${item}[status]    active
@@ -46,7 +47,7 @@ Resume Returns The Warehouse To Service
 Resuming An Active Warehouse Is Refused
     [Tags]    negative
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/resume
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 Unarchive Leaves The Warehouse Suspended
@@ -55,13 +56,13 @@ Unarchive Leaves The Warehouse Suspended
     ...    someone confirms the configuration through Resume.
     ${item}=    Get Warehouse Under Test
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/archived
-    ...    json=${{ {'is_archived': True, 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $item['etag']} }}
     Response Status Should Be    ${resp}    200
 
     ${item}=    Get Warehouse Under Test
     Should Be True    ${item}[is_archived]
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/archived
-    ...    json=${{ {'is_archived': False, 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': False, 'etag': $item['etag']} }}
     Response Status Should Be    ${resp}    200
 
     ${item}=    Get Warehouse Under Test
@@ -69,7 +70,7 @@ Unarchive Leaves The Warehouse Suspended
     Should Be Equal    ${item}[status]    suspended
     ...    msg=Unarchiving returns a warehouse to suspended, never straight to active
 
-    ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/resume    json=${{ {} }}
+    ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/resume    json=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
 
 There Is No Activate Or Deactivate Action
@@ -79,7 +80,7 @@ There Is No Activate Or Deactivate Action
     [Tags]    negative
     FOR    ${action}    IN    activate    deactivate
         ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/${action}
-        ...    json=${{ {} }}    expected_status=any
+        ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
         Should Be True    ${resp.status_code} >= 400
         ...    msg=/${action} must not be served
     END
@@ -88,6 +89,7 @@ There Is No Activate Or Deactivate Action
 *** Keywords ***
 Get Warehouse Under Test
     ${resp}=    GET On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/warehouse.json    200
     Set Global Variable    ${WAREHOUSE_ETAG}    ${item}[etag]
     RETURN    ${item}

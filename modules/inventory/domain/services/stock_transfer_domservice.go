@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"strings"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
@@ -20,18 +20,18 @@ import (
 
 // NewStockTransferDomainService derives the transfer service from the engine's default one, which
 // it embeds so built-in CRUD keeps running unchanged. Installed with Engine.SetResourceService.
-func NewStockTransferDomainService(base drif.DynamicResourceService) *StockTransferDomainServiceImpl {
-	return &StockTransferDomainServiceImpl{DynamicResourceService: base}
+func NewStockTransferDomainService(base composable.CrudDomainService) *StockTransferDomainServiceImpl {
+	return &StockTransferDomainServiceImpl{CrudDomainService: base}
 }
 
 // StockTransferDomainServiceImpl adds the movement operations to the transfer resource. Each is a
 // transaction over the transfer, its moves, their lines and the balances on both sides, so they
 // live on the service rather than in an engine callback, which may only adapt and validate.
 type StockTransferDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
-var _ drif.DynamicResourceService = (*StockTransferDomainServiceImpl)(nil)
+var _ composable.CrudDomainService = (*StockTransferDomainServiceImpl)(nil)
 
 // The published goods-movement port, asserted here so changing an operation's signature breaks the
 // build in this file rather than at deps.Register or in a consuming module.
@@ -40,10 +40,14 @@ var _ itStock.StockTransferMovementService = (*StockTransferDomainServiceImpl)(n
 // transferOperationContext carries what every movement operation needs: the engines it writes
 // through and the transfer it is acting on.
 type transferOperationContext struct {
-	TransferEngine drif.DynamicResourceEngine
-	MoveEngine     drif.DynamicResourceEngine
-	MoveLineEngine drif.DynamicResourceEngine
-	QuantEngine    drif.DynamicResourceEngine
+	TransferRepo composable.CrudRepository
+	MoveRepo     composable.CrudRepository
+	MoveLineRepo composable.CrudRepository
+	QuantRepo    composable.CrudRepository
+
+	// MoveLineSvc creates lines through the resource's own create pipeline, so schema defaults
+	// and audit fields are applied as they would be for a client write.
+	MoveLineSvc composable.CrudDomainService
 
 	Transfer models.StockTransfer
 	Moves    []dmodel.DynamicFields
@@ -60,7 +64,7 @@ func loadTransferOperation(
 		return nil, err
 	}
 
-	found, err := engines.TransferEngine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engines.TransferRepo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.StockTransferFieldId: transferId,
 	})
 	if err != nil {
@@ -71,7 +75,7 @@ func loadTransferOperation(
 	}
 
 	moves, err := models.FindTransferMoves(
-		ctx, engines.MoveEngine.ResourceRepository(), transferId, models.MaxTransferMoves)
+		ctx, engines.MoveRepo, transferId, models.MaxTransferMoves)
 	if err != nil {
 		return nil, err
 	}
@@ -82,27 +86,32 @@ func loadTransferOperation(
 }
 
 func resolveStockEngines() (*transferOperationContext, error) {
-	transferEngine, err := engineFor(models.StockTransferSchemaName)
+	transferEngine, err := repoFor(models.StockTransferSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	moveEngine, err := engineFor(models.StockMoveSchemaName)
+	moveEngine, err := repoFor(models.StockMoveSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	moveLineEngine, err := engineFor(models.StockMoveLineSchemaName)
+	moveLineEngine, err := repoFor(models.StockMoveLineSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	quantEngine, err := engineFor(models.StockQuantSchemaName)
+	quantEngine, err := repoFor(models.StockQuantSchemaName)
+	if err != nil {
+		return nil, err
+	}
+	moveLineSvc, err := domainServiceFor(models.StockMoveLineSchemaName)
 	if err != nil {
 		return nil, err
 	}
 	return &transferOperationContext{
-		TransferEngine: transferEngine,
-		MoveEngine:     moveEngine,
-		MoveLineEngine: moveLineEngine,
-		QuantEngine:    quantEngine,
+		MoveLineSvc:  moveLineSvc,
+		TransferRepo: transferEngine,
+		MoveRepo:     moveEngine,
+		MoveLineRepo: moveLineEngine,
+		QuantRepo:    quantEngine,
 	}, nil
 }
 
@@ -122,12 +131,12 @@ func withTransferTransaction(
 		return body(ctx)
 	}
 
-	engine, err := engineFor(models.StockTransferSchemaName)
+	engine, err := repoFor(models.StockTransferSchemaName)
 	if err != nil {
 		return err
 	}
 
-	tranx, err := engine.ResourceRepository().BeginTransaction(ctx)
+	tranx, err := engine.BeginTransaction(ctx)
 	if err != nil {
 		return errors.Wrap(err, "withTransferTransaction")
 	}
@@ -174,7 +183,7 @@ func mutateOk() *dyn.OpResult[dyn.MutateResultData] {
 // The guard sits here because every state-changing path goes through it, making an illegal
 // transition impossible to write rather than merely unlikely.
 func updateTransferStatus(
-	ctx corectx.Context, engine drif.DynamicResourceEngine, transfer models.StockTransfer, next string,
+	ctx corectx.Context, engine composable.CrudRepository, transfer models.StockTransfer, next string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	current := derefString(transfer.GetStatus())
 	if current == next {
@@ -196,13 +205,13 @@ func updateTransferStatus(
 		update[models.StockTransferFieldCompletedAt] = time.Now().UTC()
 	}
 
-	_, err := engine.ResourceRepository().Update(ctx, update)
+	_, err := engine.Update(ctx, update)
 	return nil, errors.Wrap(err, "updateTransferStatus")
 }
 
 // updateMoveStatus writes a new move state, refusing a transition the machine forbids.
 func updateMoveStatus(
-	ctx corectx.Context, engine drif.DynamicResourceEngine, move models.StockMove, next string,
+	ctx corectx.Context, engine composable.CrudRepository, move models.StockMove, next string,
 ) error {
 	current := derefString(move.GetStatus())
 	if current == next {
@@ -212,7 +221,7 @@ func updateMoveStatus(
 		return errors.Errorf("a stock move cannot go from '%s' to '%s'", current, next)
 	}
 
-	_, err := engine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err := engine.Update(ctx, dmodel.DynamicFields{
 		models.StockMoveFieldId:     derefString(move.GetId()),
 		models.StockMoveFieldStatus: next,
 		basemodel.FieldEtag:         derefString(move.GetEtag()),

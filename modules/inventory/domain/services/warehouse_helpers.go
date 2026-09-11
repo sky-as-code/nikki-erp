@@ -29,11 +29,11 @@ func loadWarehouseById(
 		return nil, vErrs, nil
 	}
 
-	engine, err := engineFor(models.WarehouseSchemaName)
+	engine, err := repoFor(models.WarehouseSchemaName)
 	if err != nil {
 		return nil, vErrs, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.WarehouseFieldId: warehouseId,
 	})
 	if err != nil {
@@ -61,7 +61,7 @@ func (this *WarehouseDomainServiceImpl) WriteStatus(
 func writeWarehouseFields(
 	ctx corectx.Context, warehouseId string, fields dmodel.DynamicFields,
 ) error {
-	engine, err := engineFor(models.WarehouseSchemaName)
+	engine, err := repoFor(models.WarehouseSchemaName)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func writeWarehouseFields(
 	for key, value := range fields {
 		update[key] = value
 	}
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = engine.Update(ctx, update)
 	return errors.Wrap(err, "writeWarehouseFields")
 }
 
@@ -78,7 +78,7 @@ func writeWarehouseFields(
 func (this *WarehouseDomainServiceImpl) countUnarchivedChildren(
 	ctx corectx.Context, warehouseId string,
 ) (int, error) {
-	engine, err := engineFor(models.WarehouseSchemaName)
+	engine, err := repoFor(models.WarehouseSchemaName)
 	if err != nil {
 		return 0, err
 	}
@@ -98,7 +98,7 @@ func (this *WarehouseDomainServiceImpl) countUnarchivedChildren(
 func (this *WarehouseDomainServiceImpl) countUnarchivedSupplyRelations(
 	ctx corectx.Context, warehouseId string,
 ) (int, error) {
-	engine, err := engineFor(models.WarehouseSupplyRelationSchemaName)
+	engine, err := repoFor(models.WarehouseSupplyRelationSchemaName)
 	if err != nil {
 		return 0, err
 	}

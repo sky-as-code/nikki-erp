@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/shopspring/decimal"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -9,7 +10,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
@@ -84,7 +84,7 @@ func checkMoveAvailability(
 	}
 
 	quants, err := models.FindQuantsAtLocation(
-		ctx, operation.QuantEngine.ResourceRepository(),
+		ctx, operation.QuantRepo,
 		derefString(move.GetOrgId()),
 		derefString(move.GetProductVariantId()),
 		derefString(move.GetSourceLocationId()),
@@ -199,7 +199,7 @@ func reserveOneMove(
 	}
 
 	// The lock, then the arithmetic. Never the other way around.
-	locked, err := LockQuantsForUpdate(ctx, operation.QuantEngine.ResourceRepository().GetBaseRepo(), QuantLockKey{
+	locked, err := LockQuantsForUpdate(ctx, operation.QuantRepo.GetBaseRepo(), QuantLockKey{
 		OrgId:            derefString(move.GetOrgId()),
 		ProductVariantId: derefString(move.GetProductVariantId()),
 		LocationId:       derefString(move.GetSourceLocationId()),
@@ -218,7 +218,7 @@ func reserveOneMove(
 	claimed := TotalAllocated(allocations)
 	next := DeriveMoveStatus(
 		derefString(move.GetStatus()), orZero(move.GetBaseDemandQuantity()), alreadyReserved.Add(claimed))
-	if err := updateMoveStatus(ctx, operation.MoveEngine, move, next); err != nil {
+	if err := updateMoveStatus(ctx, operation.MoveRepo, move, next); err != nil {
 		return decimal.Zero, err
 	}
 	return claimed, nil
@@ -230,7 +230,7 @@ func reserveOneMove(
 func applyReservation(
 	ctx corectx.Context, operation *transferOperationContext, allocation Allocation, move models.StockMove,
 ) error {
-	if err := addToQuantReserved(ctx, operation.QuantEngine, allocation.QuantId, allocation.Quantity); err != nil {
+	if err := addToQuantReserved(ctx, operation.QuantRepo, allocation.QuantId, allocation.Quantity); err != nil {
 		return err
 	}
 
@@ -248,7 +248,7 @@ func applyReservation(
 		models.StockMoveLineFieldOwnerRef:              allocation.OwnerRef,
 		models.StockMoveLineFieldOrgId:                 derefString(move.GetOrgId()),
 	}
-	_, err := operation.MoveLineEngine.ResourceService().Create(ctx, line)
+	_, err := operation.MoveLineSvc.Create(ctx, line)
 	return errors.Wrap(err, "applyReservation")
 }
 
@@ -257,9 +257,9 @@ func applyReservation(
 // reserved_quantity although the field is `no_update`: that flag is enforced in the service layer
 // to close the field to clients, while the repository writes what it is given.
 func addToQuantReserved(
-	ctx corectx.Context, quantEngine drif.DynamicResourceEngine, quantId model.Id, delta decimal.Decimal,
+	ctx corectx.Context, quantEngine composable.CrudRepository, quantId model.Id, delta decimal.Decimal,
 ) error {
-	found, err := quantEngine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := quantEngine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.StockQuantFieldId: quantId,
 	})
 	if err != nil {
@@ -278,7 +278,7 @@ func addToQuantReserved(
 			"releasing %s from stock quant '%s' would drive its reserved quantity negative", delta.String(), quantId)
 	}
 
-	_, err = quantEngine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err = quantEngine.Update(ctx, dmodel.DynamicFields{
 		models.StockQuantFieldId:               quantId,
 		models.StockQuantFieldReservedQuantity: next.String(),
 		basemodel.FieldEtag:                    derefString(quant.GetEtag()),
@@ -292,7 +292,7 @@ func reservedForMove(
 	ctx corectx.Context, operation *transferOperationContext, moveId string,
 ) (decimal.Decimal, error) {
 	lines, err := models.FindMoveLines(
-		ctx, operation.MoveLineEngine.ResourceRepository(), moveId, models.MaxMoveLines)
+		ctx, operation.MoveLineRepo, moveId, models.MaxMoveLines)
 	if err != nil {
 		return decimal.Zero, err
 	}
@@ -353,7 +353,7 @@ func unreserveTransferMoves(ctx corectx.Context, operation *transferOperationCon
 		if err := releaseMoveLines(ctx, operation, *move); err != nil {
 			return err
 		}
-		if err := updateMoveStatus(ctx, operation.MoveEngine, *move, models.StockMoveStatusConfirmed); err != nil {
+		if err := updateMoveStatus(ctx, operation.MoveRepo, *move, models.StockMoveStatusConfirmed); err != nil {
 			return err
 		}
 	}
@@ -365,7 +365,7 @@ func releaseMoveLines(
 	ctx corectx.Context, operation *transferOperationContext, move models.StockMove,
 ) error {
 	lines, err := models.FindMoveLines(
-		ctx, operation.MoveLineEngine.ResourceRepository(), derefString(move.GetId()), models.MaxMoveLines)
+		ctx, operation.MoveLineRepo, derefString(move.GetId()), models.MaxMoveLines)
 	if err != nil {
 		return err
 	}
@@ -378,11 +378,11 @@ func releaseMoveLines(
 		}
 		if quantId != "" {
 			released := orZero(line.GetBaseQuantity()).Neg()
-			if err := addToQuantReserved(ctx, operation.QuantEngine, quantId, released); err != nil {
+			if err := addToQuantReserved(ctx, operation.QuantRepo, quantId, released); err != nil {
 				return err
 			}
 		}
-		if _, err := operation.MoveLineEngine.ResourceRepository().DeleteOne(ctx, dmodel.DynamicFields{
+		if _, err := operation.MoveLineRepo.DeleteOne(ctx, dmodel.DynamicFields{
 			models.StockMoveLineFieldId: derefString(line.GetId()),
 		}); err != nil {
 			return errors.Wrap(err, "releaseMoveLines")
@@ -397,7 +397,7 @@ func releaseMoveLines(
 func findQuantForLine(
 	ctx corectx.Context, operation *transferOperationContext, move models.StockMove, line models.StockMoveLine,
 ) (model.Id, error) {
-	found, err := models.FindQuantForDimension(ctx, operation.QuantEngine.ResourceRepository(),
+	found, err := models.FindQuantForDimension(ctx, operation.QuantRepo,
 		models.QuantDimension{
 			OrgId:            derefString(move.GetOrgId()),
 			ProductVariantId: derefString(line.GetProductVariantId()),
@@ -420,14 +420,14 @@ func recomputeTransferFromMoves(
 	ctx corectx.Context, operation *transferOperationContext, transferId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	refreshed, err := models.FindTransferMoves(
-		ctx, operation.MoveEngine.ResourceRepository(), transferId, models.MaxTransferMoves)
+		ctx, operation.MoveRepo, transferId, models.MaxTransferMoves)
 	if err != nil {
 		return nil, err
 	}
 
 	current := derefString(operation.Transfer.GetStatus())
 	next := DeriveTransferStatus(current, moveStatuses(refreshed))
-	if failed, err := updateTransferStatus(ctx, operation.TransferEngine, operation.Transfer, next); err != nil {
+	if failed, err := updateTransferStatus(ctx, operation.TransferRepo, operation.Transfer, next); err != nil {
 		return nil, err
 	} else if failed != nil {
 		return failed, nil

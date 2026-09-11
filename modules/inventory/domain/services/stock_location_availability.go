@@ -30,7 +30,7 @@ func (this *StockQuantDomainServiceImpl) AvailableByLocations(
 		return map[string]map[string]decimal.Decimal{}, nil
 	}
 
-	engine, err := engineFor(models.StockQuantSchemaName)
+	engine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (this *StockQuantDomainServiceImpl) AvailableByLocations(
 
 	available := map[string]map[string]decimal.Decimal{}
 	for page := 0; page < maxSummaryQuantPages; page++ {
-		found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  summaryScanPageSize,

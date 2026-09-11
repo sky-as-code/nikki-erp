@@ -16,7 +16,7 @@ Archive Succeeds
     ...    last-variant sync below.
     Ensure Seeded Product Variants    50
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}/archived
-    ...    json=${{ {'etag': $PRODUCT_VARIANT_ETAG, 'is_archived': True} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $PRODUCT_VARIANT_ETAG, 'is_archived': True} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${PRODUCT_VARIANT_ETAG}
     IF    $etag is not None    Set Global Variable    ${PRODUCT_VARIANT_ETAG}    ${etag}
 
@@ -25,6 +25,7 @@ Archiving Stamps The User Source
     ...    `template_cascade`. That is what lets a later template unarchive restore only the
     ...    variants it cascaded to and leave this one deliberately archived.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_variant.json    200
     Should Be Equal    ${item}[is_archived]    ${True}
     Should Be Equal    ${item}[archive_source]    user
@@ -36,6 +37,7 @@ Archived Variant Is Not Selectable
     ...    answer to "may a transaction line reference this?", so no consumer has to re-apply
     ...    the archive and status rules itself.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}/effective
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${data}=    Set Variable    ${resp.json()}
     Validate Json Schema    ${data}    ${INVENTORY_SCHEMA_DIR}/effective_product.json
@@ -45,7 +47,7 @@ Archived Variant Is Not Selectable
 
 Unarchive Succeeds
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}/archived
-    ...    json=${{ {'etag': $PRODUCT_VARIANT_ETAG, 'is_archived': False} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $PRODUCT_VARIANT_ETAG, 'is_archived': False} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${PRODUCT_VARIANT_ETAG}
     IF    $etag is not None    Set Global Variable    ${PRODUCT_VARIANT_ETAG}    ${etag}
 
@@ -57,10 +59,11 @@ Archiving The Last Variant Archives Its Template
     ${key}=    Unique Code    lastcomb
     ${variant_id}    ${variant_etag}=    Create Product Variant    ${template_id}    ${key}
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${variant_id}/archived
-    ...    json=${{ {'etag': $variant_etag, 'is_archived': True} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $variant_etag, 'is_archived': True} }}
     ${variant_etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${variant_etag}
 
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_template.json    200
     Should Be Equal    ${item}[is_archived]    ${True}
     ...    msg=Archiving the last active variant must archive its template (BR-PROD-VAR-006)
@@ -72,30 +75,33 @@ Unarchiving A Variant Restores Its Template
     [Documentation]    BR-PROD-VAR-007: the symmetry of the rule above. Bringing a variant
     ...    back makes the product line transactable again, so the template returns with it.
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${SYNC_VARIANT_ID}/archived
-    ...    json=${{ {'etag': $SYNC_VARIANT_ETAG, 'is_archived': False} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $SYNC_VARIANT_ETAG, 'is_archived': False} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${SYNC_VARIANT_ETAG}
 
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${SYNC_TEMPLATE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_template.json    200
     Should Be Equal    ${item}[is_archived]    ${False}
     ...    msg=Unarchiving a variant must restore its template (BR-PROD-VAR-007)
-    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${SYNC_VARIANT_ID}    expected_status=any
-    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${SYNC_TEMPLATE_ID}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${SYNC_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${SYNC_TEMPLATE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Archive With Not Found Id Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${NOT_FOUND_ID}/archived
-    ...    json=${{ {'etag': $PRODUCT_VARIANT_ETAG, 'is_archived': True} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $PRODUCT_VARIANT_ETAG, 'is_archived': True} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Archive With Unmatched Etag Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}/archived
-    ...    json=${{ {'etag': '___________________', 'is_archived': True} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': '___________________', 'is_archived': True} }}    expected_status=any
     Response Should Be Etag Unmatched Error    ${resp}
 
 Archive With Missing Required Fields Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}/archived
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Missing Fields Error    ${resp}    etag    is_archived

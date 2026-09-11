@@ -7,21 +7,24 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	"github.com/sky-as-code/nikki-erp/modules/essential/dynamicengines"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/essential/transport/restful/v1"
 )
 
 func InitRestfulHandlers() error {
 	err := deps.Register(
 		// v1.NewContactRest,
+		v1.NewCurrencyRest,
 		v1.NewEnumRest,
 		v1.NewFieldMetadataRest,
 		v1.NewLanguageRest,
 		v1.NewModelMetadataRest,
 		v1.NewModuleRest,
 		v1.NewTagRest,
+		v1.NewUomCatRest,
 		v1.NewUomConversionRest,
+		v1.NewUomRest,
 	)
 	err = stdErr.Join(
 		err,
@@ -36,11 +39,12 @@ func initEssentialV1() error {
 	) error {
 		routeV1 := route.Group("/v1/essential")
 
-		// UoM and UoM Category are served entirely by the dynamic resource engine, at
-		// /v1/essential/{schema_name}. They have no hand-written REST layer.
-		registerEngineRoutes(routeV1)
-
 		return stdErr.Join(
+			// Currency, UoM and UoM Category are served by the composable resource engine at
+			// /v1/essential/{schema_name}: the built-in route table, nothing resource-specific.
+			initCurrencyV1(routeV1),
+			initUomV1(routeV1),
+			initUomCatV1(routeV1),
 			initEnumV1(routeV1),
 			initFieldMetadataV1(routeV1),
 			initLanguageV1(routeV1),
@@ -52,16 +56,28 @@ func initEssentialV1() error {
 	})
 }
 
-// registerEngineRoutes exposes every Essential resource engine over HTTP.
-// A missing engine is skipped, so that a build which drops one still starts.
-func registerEngineRoutes(routeV1 *echo.Group) {
-	for _, schemaName := range dynamicengines.EngineSchemaNames() {
-		engine, exists := dynamicresource.Registry().GetEngine(schemaName)
-		if !exists {
-			continue
-		}
-		engine.RestApi().RegisterRoutes(routeV1, m.SmokeAuthz())
-	}
+func initCurrencyV1(route *echo.Group) error {
+	return deps.Invoke(func(currencyRest *v1.CurrencyRest) error {
+		return composable.NewRestEngine(models.CurrencySchemaName, currencyRest).
+			AddCrudRoutes().
+			RegisterRoutes(route)
+	})
+}
+
+func initUomV1(route *echo.Group) error {
+	return deps.Invoke(func(uomRest *v1.UomRest) error {
+		return composable.NewRestEngine(models.UomSchemaName, uomRest).
+			AddCrudRoutes().
+			RegisterRoutes(route)
+	})
+}
+
+func initUomCatV1(route *echo.Group) error {
+	return deps.Invoke(func(uomCatRest *v1.UomCatRest) error {
+		return composable.NewRestEngine(models.UomCatSchemaName, uomCatRest).
+			AddCrudRoutes().
+			RegisterRoutes(route)
+	})
 }
 
 func initEnumV1(route *echo.Group) error {

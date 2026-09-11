@@ -3,21 +3,30 @@ package currency
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
 type GetCurrencyResult = dyn.OpResult[GetCurrencyResultData]
 type RoundResult = dyn.OpResult[RoundResultData]
 type AssertUsableResult = dyn.OpResult[struct{}]
 
-// CurrencyLookupService answers questions about a single currency. CRUD itself belongs to the
-// dynamic resource engine; this exists because other modules must be able to validate a currency
-// reference without reaching into Essential's repositories.
+// CurrencyRepository reads and writes currency rows. It is the composable default and nothing
+// more today; it exists as its own type so a bespoke query has a home when one is needed.
+type CurrencyRepository interface {
+	composable.CrudRepository
+}
+
+// CurrencyLookupService answers questions about a single currency. It exists because other
+// modules must be able to validate a currency reference without reaching into Essential's
+// repositories.
 type CurrencyLookupService interface {
 	GetCurrency(ctx corectx.Context, query GetCurrencyQuery) (*GetCurrencyResult, error)
 }
 
-// CurrencyDomainService is the full capability, implemented inside Essential.
+// CurrencyDomainService is the full capability, implemented inside Essential: the CRUD of the
+// resource plus the money rules other modules depend on.
 type CurrencyDomainService interface {
+	composable.CrudDomainService
 	CurrencyLookupService
 
 	// Round rounds an amount to the currency's decimal_places.
@@ -38,10 +47,17 @@ type CurrencyDomainService interface {
 }
 
 // CurrencyAppService is the capability other modules consume. It is the type a consuming module's
-// infra/external/index.go binds to its own local port.
+// infra/external/index.go binds to its own local port, and deliberately excludes the CRUD.
 type CurrencyAppService interface {
 	CurrencyLookupService
 
 	Round(ctx corectx.Context, query RoundQuery) (*RoundResult, error)
 	AssertUsable(ctx corectx.Context, query AssertUsableQuery) (*AssertUsableResult, error)
+}
+
+// CurrencyApplicationService is the whole application layer of the resource: the authorized CRUD
+// the REST handler serves, plus the cross-module capability.
+type CurrencyApplicationService interface {
+	composable.CrudApplicationService
+	CurrencyAppService
 }

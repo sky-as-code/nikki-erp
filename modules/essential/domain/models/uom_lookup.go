@@ -46,3 +46,30 @@ func FindCategoryReferenceUoms(
 	}
 	return found.Data.Items, nil
 }
+
+// FindCategoryUoms returns up to limit UoMs of the category, whatever their type. The delete
+// guard asks only whether any exists, so it passes limit 1.
+func FindCategoryUoms(
+	ctx corectx.Context, repo UomSearcher, categoryId string, limit int,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(UomFieldCategoryId, dmodel.Equals, categoryId),
+	)
+
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
+		Graph: graph,
+		Page:  0,
+		Size:  limit,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "FindCategoryUoms")
+	}
+	if found.ClientErrors.Count() > 0 {
+		return nil, errors.Wrap(found.ClientErrors.ToError(), "FindCategoryUoms")
+	}
+	if !found.HasData {
+		return nil, nil
+	}
+	return found.Data.Items, nil
+}

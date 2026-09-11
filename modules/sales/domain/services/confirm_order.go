@@ -34,7 +34,7 @@ import (
 // It all runs under a distributed lock: confirm is not a single-row update, so the etag that
 // guards ordinary edits cannot protect it, and a second confirm interleaved anywhere could redeem
 // the same voucher twice. KNOWN LIMITATION of that lock (see
-// vending_machine_new/domain/services/order_lock.go): Release deletes the key unconditionally with
+// vendingmachine/domain/services/order_lock.go): Release deletes the key unconditionally with
 // no fencing token, so an operation overrunning the TTL deletes a second caller's lock. Nothing
 // under the lock may therefore block unboundedly - hence the bounded reprice and no gateway call.
 

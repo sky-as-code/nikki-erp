@@ -11,7 +11,7 @@ Test Tags         inventory    product_template    exists
 *** Test Cases ***
 Exists With One Id Succeeds
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/exists
-    ...    json=${{ {'ids': [$PRODUCT_TEMPLATE_ID]} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'ids': [$PRODUCT_TEMPLATE_ID]} }}
     Response Should Be Exists Success    ${resp}    existing=1    not_existing=0
 
 Exists With Many Ids Succeeds
@@ -20,17 +20,17 @@ Exists With Many Ids Succeeds
     ${fakes}=    Not Found Id List    5
     ${ids}=    Combine Lists    ${existing}    ${fakes}
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/exists
-    ...    json=${{ {'ids': $ids} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'ids': $ids} }}
     Response Should Be Exists Success    ${resp}    existing=45    not_existing=5
 
 Exists With Missing Required Field Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/exists
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Missing Fields Error    ${resp}    ids
 
 Exists With Invalid Id Format Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/exists
-    ...    json=${{ {'ids': ['invalid']} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'ids': ['invalid']} }}    expected_status=any
     Response Should Be Invalid Format Error    ${resp}    ids

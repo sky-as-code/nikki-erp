@@ -2,12 +2,12 @@ package services
 
 import (
 	"github.com/shopspring/decimal"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
@@ -30,9 +30,9 @@ func closedTransferStatuses() []string {
 // countMatching returns how many rows match, without fetching them: the repository reports Total
 // alongside the page, so one row is enough to learn the count of a large set.
 func countMatching(
-	ctx corectx.Context, engine drif.DynamicResourceEngine, graph *dmodel.SearchGraph,
+	ctx corectx.Context, engine composable.CrudRepository, graph *dmodel.SearchGraph,
 ) (int, error) {
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,

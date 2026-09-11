@@ -21,7 +21,7 @@ Create With Required Fields Succeeds
 
 Suggest Returns The Matching Destination
     ${resp}=    POST On Session    api    ${PUTAWAY_RULE_API}/suggest_location
-    ...    json=${{ {'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $PUTAWAY_ARRIVAL_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $PUTAWAY_ARRIVAL_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Equal    ${resp.json()}[destination_location_id]    ${PUTAWAY_DEST_ID}
     Should Be Equal    ${resp.json()}[matched_rule_id]    ${PUTAWAY_RULE_ID}
@@ -31,7 +31,7 @@ Suggest Changes No Stock
     ...    moved anything, a caller could not ask twice without consequences.
     ${before}=    Count Transfers In Org
     POST On Session    api    ${PUTAWAY_RULE_API}/suggest_location
-    ...    json=${{ {'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $PUTAWAY_ARRIVAL_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $PUTAWAY_ARRIVAL_ID} }}
     ${after}=    Count Transfers In Org
     Should Be Equal As Integers    ${before}    ${after}
 
@@ -45,50 +45,53 @@ The Lowest Priority Rule Wins
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
 
     ${resp}=    POST On Session    api    ${PUTAWAY_RULE_API}/suggest_location
-    ...    json=${{ {'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $PUTAWAY_ARRIVAL_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $PUTAWAY_ARRIVAL_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Equal    ${resp.json()}[destination_location_id]    ${second_dest}
     ...    msg=Priority 1 must be considered before priority 5
 
-    DELETE On Session    api    ${PUTAWAY_RULE_API}/${id}    expected_status=any
+    DELETE On Session    api    ${PUTAWAY_RULE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 A Suspended Destination Is Skipped
     [Documentation]    TS-STATUS-05. A suspended location still exists and still holds whatever
     ...    it held, but nothing new is routed to it. Suggesting somewhere goods may not go
     ...    would be worse than suggesting nowhere.
-    POST On Session    api    ${INVENTORY_LOCATION_API}/${PUTAWAY_DEST_ID}/suspend    json=${{ {} }}
+    POST On Session    api    ${INVENTORY_LOCATION_API}/${PUTAWAY_DEST_ID}/suspend    json=${{ {'org_id': $INV_ORG_ID} }}
 
     ${resp}=    POST On Session    api    ${PUTAWAY_RULE_API}/suggest_location
-    ...    json=${{ {'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $PUTAWAY_ARRIVAL_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $PUTAWAY_ARRIVAL_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Empty    ${resp.json()}[destination_location_id]
     ...    msg=A rule pointing at a suspended location suggests nothing
 
-    POST On Session    api    ${INVENTORY_LOCATION_API}/${PUTAWAY_DEST_ID}/resume    json=${{ {} }}
+    POST On Session    api    ${INVENTORY_LOCATION_API}/${PUTAWAY_DEST_ID}/resume    json=${{ {'org_id': $INV_ORG_ID} }}
 
 An Archived Rule Is Not Evaluated
     [Documentation]    TS-STATUS-09. Archiving is the whole of a rule's lifecycle: an archived
     ...    rule is out of the working set, so it takes no part in the decision.
     ${resp}=    GET On Session    api    ${PUTAWAY_RULE_API}/${PUTAWAY_RULE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/putaway_rule.json    200
     POST On Session    api    ${PUTAWAY_RULE_API}/${PUTAWAY_RULE_ID}/archived
-    ...    json=${{ {'is_archived': True, 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $item['etag']} }}
 
     ${resp}=    POST On Session    api    ${PUTAWAY_RULE_API}/suggest_location
-    ...    json=${{ {'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $PUTAWAY_ARRIVAL_ID} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $PUTAWAY_ARRIVAL_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Empty    ${resp.json()}[destination_location_id]
 
     ${resp}=    GET On Session    api    ${PUTAWAY_RULE_API}/${PUTAWAY_RULE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/putaway_rule.json    200
     POST On Session    api    ${PUTAWAY_RULE_API}/${PUTAWAY_RULE_ID}/archived
-    ...    json=${{ {'is_archived': False, 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': False, 'etag': $item['etag']} }}
 
 Suggest With No Matching Rule Answers Nothing
     [Documentation]    Not an error: the caller falls back to whatever default it had in mind.
     ${elsewhere}=    Create Putaway Location    putelse    internal
     ${resp}=    POST On Session    api    ${PUTAWAY_RULE_API}/suggest_location
-    ...    json=${{ {'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $elsewhere} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'warehouse_id': $WAREHOUSE_ID, 'arrival_location_id': $elsewhere} }}
     Response Status Should Be    ${resp}    200
     Should Be Empty    ${resp.json()}[destination_location_id]
     Should Be Empty    ${resp.json()}[matched_rule_id]

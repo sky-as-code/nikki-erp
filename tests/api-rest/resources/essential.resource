@@ -172,23 +172,27 @@ Delete Uom Seed Data
     ...    category with surviving units cannot be removed (BR-UOM-ESS-002).
     ${foreign_uom}=    Get Variable Value    ${FOREIGN_UOM_ID}    ${EMPTY}
     IF    $foreign_uom
-        DELETE On Session    api    ${UOM_API}/${foreign_uom}    expected_status=any
+        DELETE On Session    api    ${UOM_API}/${foreign_uom}
+        ...    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
         Set Global Variable    ${FOREIGN_UOM_ID}    ${EMPTY}
     END
     ${foreign_cat}=    Get Variable Value    ${FOREIGN_UOMCAT_ID}    ${EMPTY}
     IF    $foreign_cat
-        DELETE On Session    api    ${UOMCAT_API}/${foreign_cat}    expected_status=any
+        DELETE On Session    api    ${UOMCAT_API}/${foreign_cat}
+        ...    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
         Set Global Variable    ${FOREIGN_UOMCAT_ID}    ${EMPTY}
     END
     # Holds no UoM by design, so it needs no member cleanup before it goes.
     ${bare_cat}=    Get Variable Value    ${BARE_UOMCAT_ID}    ${EMPTY}
     IF    $bare_cat
-        DELETE On Session    api    ${UOMCAT_API}/${bare_cat}    expected_status=any
+        DELETE On Session    api    ${UOMCAT_API}/${bare_cat}
+        ...    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
         Set Global Variable    ${BARE_UOMCAT_ID}    ${EMPTY}
     END
     ${reference}=    Get Variable Value    ${REFERENCE_UOM_ID}    ${EMPTY}
     IF    $reference
-        DELETE On Session    api    ${UOM_API}/${reference}    expected_status=any
+        DELETE On Session    api    ${UOM_API}/${reference}
+        ...    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
         Set Global Variable    ${REFERENCE_UOM_ID}    ${EMPTY}
     END
 
@@ -201,14 +205,16 @@ Delete Uom Fixtures
     FOR    ${name}    IN    GRAM_UOM_ID    TONNE_UOM_ID    YARD_UOM_ID
         ${id}=    Get Variable Value    ${${name}}    ${EMPTY}
         IF    $id
-            DELETE On Session    api    ${UOM_API}/${id}    expected_status=any
+            DELETE On Session    api    ${UOM_API}/${id}
+            ...    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
             Set Global Variable    ${${name}}    ${EMPTY}
         END
     END
     Delete Uom Seed Data
     ${cat}=    Get Variable Value    ${UOMCAT_ID}    ${EMPTY}
     IF    $cat
-        DELETE On Session    api    ${UOMCAT_API}/${cat}    expected_status=any
+        DELETE On Session    api    ${UOMCAT_API}/${cat}
+        ...    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
         Set Global Variable    ${UOMCAT_ID}    ${EMPTY}
         Set Global Variable    ${UOMCAT_ETAG}    ${EMPTY}
     END

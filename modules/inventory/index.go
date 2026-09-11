@@ -14,12 +14,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/dynamicengines"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/transport/restful"
-
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
 var ModuleSingleton modules.InCodeModule = &InventoryModule{}
@@ -66,198 +62,26 @@ func (*InventoryModule) Version() semver.SemVer {
 
 // Init implements NikkiModule.
 //
-// The steps must run in this order: engines exist before a service is derived from one, a derived
-// service is installed before the actions that type-assert it, and REST registers routes last.
+// The onions are container constructors, so the layers they derive from one another (the location
+// service needs the quant's usage port, the warehouse orchestration needs the location service)
+// are ordered by the container rather than by this function. REST resolves every onion, which is
+// what builds them all before the first request.
 //
-// The superseded ./product implementation is deliberately not initialized; see ./product/README.md.
+// The superseded ./legacy implementation is deliberately not initialized; see ./legacy/README.md.
 func (*InventoryModule) Init() error {
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
-		return err
-	}
-	if err := initProductService(); err != nil {
-		return err
-	}
-	if err := initStockQuantService(); err != nil {
-		return err
-	}
-	if err := initStockTransferService(); err != nil {
-		return err
-	}
-	if err := initStockScrapService(); err != nil {
-		return err
-	}
-	// Must follow the quant service, which answers the location lifecycle guards.
-	if err := initWarehouseServices(); err != nil {
 		return err
 	}
 	return restful.InitRestfulHandlers()
 }
 
-// initWarehouseServices installs the warehouse and location services and the layer above them.
-//
-// Order is load-bearing: the location service needs the quant service's usage port, and the
-// application service composes both services created here.
-func initWarehouseServices() error {
-	warehouseEngine, ok := dynamicresource.Registry().GetEngine(models.WarehouseSchemaName)
-	if !ok {
-		return errors.New("the '" + models.WarehouseSchemaName + "' engine is not registered")
-	}
-	locationEngine, ok := dynamicresource.Registry().GetEngine(models.InventoryLocationSchemaName)
-	if !ok {
-		return errors.New("the '" + models.InventoryLocationSchemaName + "' engine is not registered")
-	}
-
-	var usageReader itStock.LocationUsageReadService
-	if err := deps.Invoke(func(reader itStock.LocationUsageReadService) { usageReader = reader }); err != nil {
-		return errors.Join(errors.New("the stock usage reader is not registered"), err)
-	}
-
-	warehouseSvc := services.NewWarehouseDomainService(warehouseEngine.ResourceService())
-	warehouseEngine.SetResourceService(warehouseSvc)
-
-	locationSvc := services.NewInventoryLocationDomainService(locationEngine.ResourceService(), usageReader)
-	locationEngine.SetResourceService(locationSvc)
-
-	if err := installDerivedService(models.StorageCategorySchemaName,
-		func(base drif.DynamicResourceService) drif.DynamicResourceService {
-			return services.NewStorageCategoryDomainService(base)
-		}); err != nil {
-		return err
-	}
-	if err := installDerivedService(models.WarehouseSupplyRelationSchemaName,
-		func(base drif.DynamicResourceService) drif.DynamicResourceService {
-			return services.NewSupplyRelationDomainService(base)
-		}); err != nil {
-		return err
-	}
-
-	return app.InitApplicationServices(warehouseSvc, locationSvc)
-}
-
-// installDerivedService replaces one engine's resource service with a derived one. The warehouse
-// and location services are built by hand above instead, because the layer over them needs the
-// concrete types.
-func installDerivedService(
-	schemaName string, derive func(drif.DynamicResourceService) drif.DynamicResourceService,
-) error {
-	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
-	if !ok {
-		return errors.New("the '" + schemaName + "' engine is not registered")
-	}
-	engine.SetResourceService(derive(engine.ResourceService()))
-	return nil
-}
-
-// initStockTransferService installs the derived transfer service on the Stock Transfer engine.
-// The movement actions (confirm, reserve, validate, ...) type-assert the engine's service to the
-// derived type, so without this each one fails at the assertion.
-func initStockTransferService() error {
-	transferEngine, ok := dynamicresource.Registry().GetEngine(models.StockTransferSchemaName)
-	if !ok {
-		return errors.New("the '" + models.StockTransferSchemaName + "' engine is not registered")
-	}
-
-	derived := services.NewStockTransferDomainService(transferEngine.ResourceService())
-	transferEngine.SetResourceService(derived)
-
-	// Published for consumers that sequence a movement outside an engine action, from their own
-	// transaction boundaries. The narrowed interface is published, never the struct: handing over
-	// the embedded CRUD would make the lifecycle rules optional.
-	return deps.Register(func() itStock.StockTransferMovementService { return derived })
-}
-
-// initStockQuantService installs the derived quant service on the Stock Quant engine. It fills
-// available_quantity on a read: the field has no database column, so without this the engine
-// advertises it in meta/schema and serves it as permanently null.
-func initStockQuantService() error {
-	quantEngine, ok := dynamicresource.Registry().GetEngine(models.StockQuantSchemaName)
-	if !ok {
-		return errors.New("the '" + models.StockQuantSchemaName + "' engine is not registered")
-	}
-
-	derived := services.NewStockQuantDomainService(quantEngine.ResourceService())
-	quantEngine.SetResourceService(derived)
-
-	// The same instance answers what Stock holds at a location, consulted before a location is
-	// suspended or archived. Publishing it as a port keeps the dependency one-way: the warehouse
-	// services read this contract and never a stock table.
-	if err := deps.Register(func() itStock.LocationUsageReadService { return derived }); err != nil {
-		return err
-	}
-
-	// And it answers how much of a variant is on hand, reserved and available, per warehouse and
-	// per location. Implemented for some time but never published, which made it unreachable: a
-	// consumer asking "can this kiosk supply these items" had no contract to ask through.
-	return deps.Register(func() itStock.StockProductSummaryReader { return derived })
-}
-
-// initStockScrapService installs the derived scrap service on the Stock Scrap engine. Do Scrap
-// type-asserts to the derived type, and the create/update/delete overrides stop a done scrap being
-// edited or deleted. Without this the CRUD still works but the document rules silently do not apply.
-func initStockScrapService() error {
-	scrapEngine, ok := dynamicresource.Registry().GetEngine(models.StockScrapSchemaName)
-	if !ok {
-		return errors.New("the '" + models.StockScrapSchemaName + "' engine is not registered")
-	}
-
-	scrapEngine.SetResourceService(services.NewStockScrapDomainService(scrapEngine.ResourceService()))
-	return nil
-}
-
-// initProductService installs the derived Products service on the Product Template engine. The
-// replacement embeds the default service, so built-in CRUD is untouched while custom actions reach
-// the extra methods through ProcessInput.ResourceService.
-//
-// SetResourceService is an unlocked field assignment, so it is safe only during Init, before any
-// request is served.
-func initProductService() error {
-	templateEngine, ok := dynamicresource.Registry().GetEngine(models.ProductTemplateSchemaName)
-	if !ok {
-		return errors.New("the '" + models.ProductTemplateSchemaName + "' engine is not registered")
-	}
-
-	derived := services.NewProductTemplateDomainService(templateEngine.ResourceService())
-	templateEngine.SetResourceService(derived)
-
-	if err := initProductVariantService(); err != nil {
-		return err
-	}
-
-	// Published for consumers that reach the capability outside an engine action.
-	return deps.Register(func() itProduct.ProductService { return derived })
-}
-
-// initProductVariantService installs the derived variant service on the Product Variant engine. It
-// fills the template_* virtual fields on a read: they have no database column, so without this the
-// engine serves them as permanently absent.
-func initProductVariantService() error {
-	variantEngine, ok := dynamicresource.Registry().GetEngine(models.ProductVariantSchemaName)
-	if !ok {
-		return errors.New("the '" + models.ProductVariantSchemaName + "' engine is not registered")
-	}
-
-	derived := services.NewProductVariantDomainService(variantEngine.ResourceService())
-	variantEngine.SetResourceService(derived)
-
-	// One instance serves all four ports, so a consumer gets the batched template_* fill whichever
-	// it injects. The pricing-basis port stays separate because it grants strictly less: a price
-	// calculator gets the pricing inputs without a general product reader.
-	return errors.Join(
-		deps.Register(func() itProduct.ProductVariantDomainService { return derived }),
-		deps.Register(func() itProduct.ProductTemplateReadService { return derived }),
-		deps.Register(func() itProduct.ProductCategoryReadService { return derived }),
-		deps.Register(func() itProduct.ProductPricingBasisService { return derived }),
-	)
-}
-
-// RegisterModels implements DynamicModule.
-//
-// Schemas must be registered referenced-before-referencing: an edge is resolved against the schema
-// registry at registration time.
-// OnAppStarted registers the reservation expiry sweep. It registers here rather than in Init so it
-// never ticks against a half-built container: the sweep resolves the movement port, which Init is
-// still installing.
+// OnAppStarted registers the reservation expiry sweep and checks that every resource the
+// services may reach at call time was built. The sweep registers here rather than in Init so it
+// never ticks against a half-built container.
 func (*InventoryModule) OnAppStarted() error {
+	if err := assertEveryResourceInstalled(); err != nil {
+		return err
+	}
 	return deps.Invoke(func(
 		transfers itStock.StockTransferMovementService,
 		cronjobs job.CronjobRegistry,
@@ -267,6 +91,27 @@ func (*InventoryModule) OnAppStarted() error {
 	})
 }
 
+// assertEveryResourceInstalled fails the boot when an onion was declared but never built: a
+// service reaching it through the resource hub would otherwise fail on the first request that
+// needs it, long after the boot looked healthy.
+func assertEveryResourceInstalled() error {
+	installed := map[string]bool{}
+	for _, name := range services.InstalledResourceNames() {
+		installed[name] = true
+	}
+	var missing []error
+	for _, name := range dynamicengines.SchemaNames() {
+		if !installed[name] {
+			missing = append(missing, errors.New("the '"+name+"' inventory resource was declared but never built"))
+		}
+	}
+	return errors.Join(missing...)
+}
+
+// RegisterModels implements DynamicModule.
+//
+// Schemas must be registered referenced-before-referencing: an edge is resolved against the schema
+// registry at registration time.
 func (*InventoryModule) RegisterModels() error {
 	return errors.Join(
 		// Master data: referenced by the template, so registered first.

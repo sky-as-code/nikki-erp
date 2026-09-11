@@ -37,6 +37,7 @@ A Variant With No Stock Reads Zero, Not Null
     ...    what turns that into the zero a product page should show.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
     ...    params=fields=id,on_hand_quantity,reserved_quantity,available_quantity
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Set Variable    ${resp.json()}
 
@@ -49,6 +50,7 @@ Available Agrees With The Two Figures It Derives From
     ...    subquery, so it cannot report a total that disagrees with them.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
     ...    params=fields=id,on_hand_quantity,reserved_quantity,available_quantity
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Set Variable    ${resp.json()}
     ${expected}=    Evaluate    float($item['on_hand_quantity']) - float($item['reserved_quantity'])
@@ -60,6 +62,7 @@ Asking Only For Available Still Answers Correctly
     ...    and read as zero for a product that does hold stock.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
     ...    params=fields=id,available_quantity
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Dictionary Should Contain Key    ${resp.json()}    available_quantity
 
@@ -68,16 +71,18 @@ The Columns Are Read-Only
     ...    field is rejected on write rather than silently dropped, so a client that tries is told.
     [Tags]    negative
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Set Variable    ${resp.json()}
     ${resp}=    PUT On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
-    ...    json=${{ {'on_hand_quantity': '999', 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'on_hand_quantity': '999', 'etag': $item['etag']} }}
     ...    expected_status=any
     Should Be True    ${resp.status_code} >= 400
     ...    msg=Writing a stock figure through the product must be refused
 
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
     ...    params=fields=id,on_hand_quantity
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Equal As Numbers    ${resp.json()}[on_hand_quantity]    0
     ...    msg=The refused write must not have reached anything
@@ -88,6 +93,7 @@ Stock Cannot Be Filtered Or Sorted On Yet
     ...    changes when stored computed fields ship, and this test is what will notice.
     [Tags]    negative
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}
-    ...    params=order_by=on_hand_quantity desc    expected_status=any
+    ...    params=order_by=on_hand_quantity desc
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
     ...    msg=Sorting by a field with no column must be refused, not silently ignored

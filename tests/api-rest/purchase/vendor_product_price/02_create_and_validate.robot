@@ -26,6 +26,7 @@ Create A Template Wide Vendor Price
     Should Not Be Empty    ${id}
 
     ${resp}=    GET On Session    api    ${VENDOR_PRICE_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Should Match Schema    ${resp}    ${VENDOR_PRICE_SCHEMA}    200
     Should Be Equal    ${resp.json()}[vendor_id]    ${PURCHASE_VENDOR_ID}
     Should Be Equal    ${resp.json()}[product_template_id]    ${PURCHASE_TEMPLATE_ID}
@@ -37,6 +38,7 @@ Create A Variant Specific Vendor Price
     ...    product_variant_id=${PURCHASE_VARIANT_ID}
 
     ${resp}=    GET On Session    api    ${VENDOR_PRICE_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Equal    ${resp.json()}[product_variant_id]    ${PURCHASE_VARIANT_ID}
 
@@ -46,6 +48,7 @@ A New Vendor Price Is Not Archived
     ${id}    ${etag}=    Create Vendor Price    min_quantity=1    unit_price=100000
 
     ${resp}=    GET On Session    api    ${VENDOR_PRICE_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Not Be True    ${resp.json()}[is_archived]
 
@@ -58,7 +61,7 @@ Quantity Breaks Are Recorded Separately
     ${hundred}    ${etag}=    Create Vendor Price    min_quantity=100    unit_price=220000
 
     ${resp}=    GET On Session    api    ${VENDOR_PRICE_API}
-    ...    params=${{ {'size': 50, 'graph': '{"if":["product_template_id","eq","%s"]}' % $PURCHASE_TEMPLATE_ID} }}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID, 'size': 50, 'graph': '{"if":["product_template_id","=","%s"]}' % $PURCHASE_TEMPLATE_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be True    ${resp.json()}[total] >= 3
 
@@ -67,14 +70,14 @@ A Price For An Unknown Vendor Is Refused
     ...    does not exist would look perfectly ordinary until an order tried to resolve through it.
     ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}
     ...    json=${{ dict($VENDOR_PRICE_BODY, vendor_id='01ZZZZZZZZZZZZZZZZZZZZZZZZ') }}
-    ...    expected_status=any
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
     ...    msg=A price for a non-existent vendor was accepted; nothing else would have caught it
 
 A Price For An Unknown Product Is Refused
     ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}
     ...    json=${{ dict($VENDOR_PRICE_BODY, product_template_id='01ZZZZZZZZZZZZZZZZZZZZZZZZ') }}
-    ...    expected_status=any
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 A Variant From Another Template Is Refused
@@ -83,14 +86,16 @@ A Variant From Another Template Is Refused
     ${other}=    Find A Variant Of Another Template
     Skip If    not $other    msg=Only one product template exists; nothing to mismatch against
     ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}
-    ...    json=${{ dict($VENDOR_PRICE_BODY, product_variant_id=$other) }}    expected_status=any
+    ...    json=${{ dict($VENDOR_PRICE_BODY, product_variant_id=$other) }}
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 A Negative Unit Price Is Refused
     [Documentation]    A vendor does not pay the buyer to take goods away. The bound is on the
     ...    field, so this is really asserting that the bound survived.
     ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}
-    ...    json=${{ dict($VENDOR_PRICE_BODY, unit_price='-1') }}    expected_status=any
+    ...    json=${{ dict($VENDOR_PRICE_BODY, unit_price='-1') }}
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 Archiving A Price Keeps It Readable
@@ -100,10 +105,11 @@ Archiving A Price Keeps It Readable
     ${id}    ${etag}=    Create Vendor Price    min_quantity=1    unit_price=999000
 
     ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}/${id}/set_archived
-    ...    json=${{ {'is_archived': True, 'etag': $etag} }}    expected_status=any
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID, 'is_archived': True, 'etag': $etag} }}    expected_status=any
     Should Be True    ${resp.status_code} < 400    msg=Archiving a vendor price must be permitted
 
     ${resp}=    GET On Session    api    ${VENDOR_PRICE_API}/${id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be True    ${resp.json()}[is_archived]
 
@@ -135,6 +141,7 @@ Create Vendor Price
         ${body}=    Evaluate    dict($body, product_variant_id=$product_variant_id)
     END
     ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}    json=${body}
+    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    201
     Append To List    ${CREATED_PRICE_IDS}    ${resp.json()}[id]
     RETURN    ${resp.json()}[id]    ${resp.json()}[etag]
@@ -144,7 +151,7 @@ Find A Variant Of Another Template
     ...    environment has only one — in which case the mismatch cannot be constructed and the
     ...    test skips rather than passing vacuously.
     ${resp}=    GET On Session    api    /v1/inventory/inventory_product_variant
-    ...    params=${{ {'size': 50, 'fields': 'id,product_template_id'} }}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID, 'size': 50, 'fields': 'id,product_template_id'} }}
     Response Status Should Be    ${resp}    200
     FOR    ${item}    IN    @{resp.json()}[items]
         IF    $item['product_template_id'] != $PURCHASE_TEMPLATE_ID
@@ -162,5 +169,6 @@ Delete Vendor Price Fixtures
     ...    masking the real one.
     FOR    ${id}    IN    @{CREATED_PRICE_IDS}
         Run Keyword And Ignore Error
-        ...    DELETE On Session    api    ${VENDOR_PRICE_API}/${id}    expected_status=any
+        ...    DELETE On Session    api    ${VENDOR_PRICE_API}/${id}
+        ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
     END

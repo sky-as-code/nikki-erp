@@ -1,0 +1,167 @@
+package composable
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+)
+
+// fakeOnion serves a referenced schema in tests: a fake domain service over a stub repository.
+type fakeOnion struct {
+	DynamicResourceEngineOnion
+	domSvc *fakeDomainService
+}
+
+func (this *fakeOnion) Schema() *dmodel.ModelSchema      { return this.domSvc.schema }
+func (this *fakeOnion) Repository() CrudRepository       { return this.domSvc.repo }
+func (this *fakeOnion) DomainService() CrudDomainService { return this.domSvc }
+func (this *fakeOnion) ResourceName() string             { return this.domSvc.schema.Name() }
+
+func newReferenceFixture(t *testing.T, createMissing bool) (*referenceResolver, *fakeOnion) {
+	t.Helper()
+	owner, category := newImportSchemas(t)
+	plan, cErrs := planImport(owner, fullHeaders, fullMapping())
+	require.Nil(t, cErrs)
+
+	onion := &fakeOnion{domSvc: newFakeDomainService(category)}
+	onion.domSvc.idPrefix = "cat_"
+	resolver := &referenceResolver{
+		plan:          plan,
+		createMissing: createMissing,
+		orgId:         "org_mine",
+		lookupOnion: func(name string) (DynamicResourceEngineOnion, bool) {
+			if name == category.Name() {
+				return onion, true
+			}
+			return nil, false
+		},
+	}
+	return resolver, onion
+}
+
+func referenceRows(labels ...string) []BulkRow {
+	rows := make([]BulkRow, 0, len(labels))
+	for i, label := range labels {
+		fields := dmodel.DynamicFields{"name": "p"}
+		if label != "" {
+			fields["category_id"] = label
+		}
+		rows = append(rows, BulkRow{Number: i + 1, Fields: fields})
+	}
+	return rows
+}
+
+func TestAssertTargetsServedReadsTheLocalizedLabelField(t *testing.T) {
+	resolver, _ := newReferenceFixture(t, false)
+
+	targets, cErrs := resolver.assertTargetsServed()
+
+	require.Nil(t, cErrs)
+	require.Len(t, targets, 1)
+	assert.Equal(t, "category_id", targets[0].field)
+	assert.Equal(t, "name", targets[0].labelField)
+	assert.False(t, targets[0].labelIsLang)
+	assert.True(t, targets[0].hasOrg)
+}
+
+func TestAssertTargetsServedRefusesAnUnservedSchema(t *testing.T) {
+	resolver, _ := newReferenceFixture(t, false)
+	resolver.lookupOnion = func(string) (DynamicResourceEngineOnion, bool) { return nil, false }
+
+	targets, cErrs := resolver.assertTargetsServed()
+
+	assert.Nil(t, targets)
+	require.NotNil(t, cErrs)
+	assert.Equal(t, ErrImportMappingInvalid, (*cErrs)[0].Key)
+}
+
+func TestResolveRewritesLabelsToIdsWithinTheOrg(t *testing.T) {
+	resolver, onion := newReferenceFixture(t, false)
+	onion.domSvc.repo.(*stubRepository).searchItems = []dmodel.DynamicFields{
+		{"id": "c1", "name": "Beverage", basemodel.FieldOrgId: "org_mine"},
+		{"id": "c9", "name": "Snack", basemodel.FieldOrgId: "org_other"},
+		{"id": "c2", "name": "Global", basemodel.FieldOrgId: ""},
+	}
+	targets, cErrs := resolver.assertTargetsServed()
+	require.Nil(t, cErrs)
+
+	kept, rowErrors, err := resolver.resolve(ownerContext(), targets, referenceRows("beverage", "Snack", "Global", ""))
+
+	require.NoError(t, err)
+	require.Len(t, rowErrors, 1)
+	assert.Equal(t, RowError{Row: 2, Field: "category_id", Code: ErrRowReferenceNotFound,
+		Params: map[string]any{"schema": "cmp_imp_category", "value": "Snack"}}, rowErrors[0])
+	require.Len(t, kept, 3)
+	assert.Equal(t, "c1", kept[0].Fields["category_id"], "matched case-insensitively")
+	assert.Equal(t, "c2", kept[1].Fields["category_id"], "a global record matches any org")
+	assert.Nil(t, kept[2].Fields["category_id"], "an empty cell stays absent")
+	assert.Empty(t, onion.domSvc.history, "nothing is created when the option is off")
+}
+
+func TestResolveReportsAnAmbiguousLabel(t *testing.T) {
+	resolver, onion := newReferenceFixture(t, true)
+	onion.domSvc.repo.(*stubRepository).searchItems = []dmodel.DynamicFields{
+		{"id": "c1", "name": "Dup", basemodel.FieldOrgId: "org_mine"},
+		{"id": "c2", "name": "dup", basemodel.FieldOrgId: "org_mine"},
+	}
+	targets, _ := resolver.assertTargetsServed()
+
+	kept, rowErrors, err := resolver.resolve(ownerContext(), targets, referenceRows("Dup"))
+
+	require.NoError(t, err)
+	assert.Empty(t, kept)
+	require.Len(t, rowErrors, 1)
+	assert.Equal(t, ErrRowReferenceAmbiguous, rowErrors[0].Code)
+	assert.Empty(t, onion.domSvc.history, "an ambiguous label is never created")
+}
+
+func TestResolveCreatesAMissingReferenceOnceThroughItsDomainService(t *testing.T) {
+	resolver, onion := newReferenceFixture(t, true)
+	targets, _ := resolver.assertTargetsServed()
+
+	kept, rowErrors, err := resolver.resolve(ownerContext(), targets, referenceRows("New", "new", "Other"))
+
+	require.NoError(t, err)
+	assert.Empty(t, rowErrors)
+	require.Len(t, onion.domSvc.history, 2, "one create per distinct label")
+	assert.Equal(t, dmodel.DynamicFields{"name": "New", basemodel.FieldOrgId: "org_mine"}, onion.domSvc.history[0])
+	assert.Equal(t, kept[0].Fields["category_id"], kept[1].Fields["category_id"])
+	assert.NotEqual(t, kept[0].Fields["category_id"], kept[2].Fields["category_id"])
+}
+
+func TestResolveReportsARefusedReferenceCreate(t *testing.T) {
+	resolver, onion := newReferenceFixture(t, true)
+	onion.domSvc.rejectName = "Bad"
+	targets, _ := resolver.assertTargetsServed()
+
+	kept, rowErrors, err := resolver.resolve(ownerContext(), targets, referenceRows("Bad", "Good"))
+
+	require.NoError(t, err)
+	require.Len(t, kept, 1)
+	require.Len(t, rowErrors, 1)
+	assert.Equal(t, 1, rowErrors[0].Row)
+	assert.Equal(t, ErrRowReferenceCreateFailed, rowErrors[0].Code)
+	assert.NotNil(t, rowErrors[0].Params["errors"])
+}
+
+func TestResolveWrapsALocalizedLabelOnCreateAndOnLookup(t *testing.T) {
+	resolver, onion := newReferenceFixture(t, true)
+	targets, _ := resolver.assertTargetsServed()
+	targets[0].labelIsLang = true
+	onion.domSvc.repo.(*stubRepository).searchItems = []dmodel.DynamicFields{
+		{"id": "c1", "name": model.LangJson{"vi-VN": "Nước", "en-US": "Water"}, basemodel.FieldOrgId: "org_mine"},
+	}
+
+	kept, rowErrors, err := resolver.resolve(ownerContext(), targets, referenceRows("nước", "Mới"))
+
+	require.NoError(t, err)
+	assert.Empty(t, rowErrors)
+	assert.Equal(t, "c1", kept[0].Fields["category_id"])
+	require.Len(t, onion.domSvc.history, 1)
+	assert.Equal(t, model.LangJson{"vi-VN": "Mới"}, onion.domSvc.history[0]["name"])
+}

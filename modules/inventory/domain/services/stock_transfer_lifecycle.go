@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -22,12 +23,12 @@ import (
 // `done` would be a completed movement with nothing behind it. It creates no stock and reserves
 // nothing.
 func (this *StockTransferDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	operationTypeId := readStringParam(params, models.StockTransferFieldOperationTypeId)
 	if operationTypeId == "" {
 		// The field is required by the schema, so the base call reports the omission.
-		return this.DynamicResourceService.Create(ctx, params)
+		return this.CrudDomainService.Create(ctx, params)
 	}
 
 	operationType, vErrs, err := loadUsableOperationType(ctx, operationTypeId)
@@ -46,7 +47,7 @@ func (this *StockTransferDomainServiceImpl) Create(
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *clientErrs}, nil
 	}
 
-	return this.DynamicResourceService.Create(ctx, prepared)
+	return this.CrudDomainService.Create(ctx, prepared)
 }
 
 // loadUsableOperationType reads the operation type and refuses an archived one. The check must stay
@@ -57,11 +58,11 @@ func loadUsableOperationType(
 ) (*models.StockOperationType, *ft.ClientErrors, error) {
 	vErrs := ft.NewClientErrors()
 
-	engine, err := engineFor(models.StockOperationTypeSchemaName)
+	engine, err := repoFor(models.StockOperationTypeSchemaName)
 	if err != nil {
 		return nil, vErrs, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.StockOperationTypeFieldId: operationTypeId,
 	})
 	if err != nil {
@@ -216,7 +217,7 @@ func confirmMoves(ctx corectx.Context, operation *transferOperationContext) erro
 		if !IsMoveOpen(derefString(move.GetStatus())) {
 			continue
 		}
-		if err := updateMoveStatus(ctx, operation.MoveEngine, *move, models.StockMoveStatusConfirmed); err != nil {
+		if err := updateMoveStatus(ctx, operation.MoveRepo, *move, models.StockMoveStatusConfirmed); err != nil {
 			return err
 		}
 	}
@@ -235,7 +236,7 @@ func finishConfirm(
 		}
 		// Reservation rewrote the move states, so they are re-read rather than reused.
 		refreshed, err := models.FindTransferMoves(
-			ctx, operation.MoveEngine.ResourceRepository(), transferId, models.MaxTransferMoves)
+			ctx, operation.MoveRepo, transferId, models.MaxTransferMoves)
 		if err != nil {
 			return nil, err
 		}
@@ -252,7 +253,7 @@ func finishConfirm(
 		next = models.StockTransferStatusReady
 	}
 
-	if failed, err := updateTransferStatus(ctx, operation.TransferEngine, operation.Transfer, next); err != nil {
+	if failed, err := updateTransferStatus(ctx, operation.TransferRepo, operation.Transfer, next); err != nil {
 		return nil, err
 	} else if failed != nil {
 		return failed, nil
@@ -298,7 +299,7 @@ func (this *StockTransferDomainServiceImpl) Cancel(
 		}
 
 		failed, err := updateTransferStatus(
-			tranxCtx, operation.TransferEngine, operation.Transfer, models.StockTransferStatusCancelled)
+			tranxCtx, operation.TransferRepo, operation.Transfer, models.StockTransferStatusCancelled)
 		if err != nil {
 			return err
 		}
@@ -324,7 +325,7 @@ func cancelMoves(ctx corectx.Context, operation *transferOperationContext) error
 		if !IsMoveOpen(derefString(move.GetStatus())) {
 			continue
 		}
-		if err := updateMoveStatus(ctx, operation.MoveEngine, *move, models.StockMoveStatusCancelled); err != nil {
+		if err := updateMoveStatus(ctx, operation.MoveRepo, *move, models.StockMoveStatusCancelled); err != nil {
 			return err
 		}
 	}

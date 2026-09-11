@@ -1,6 +1,7 @@
 package stock
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -26,7 +27,7 @@ type StockTransferMovementService interface {
 	// status and policies from it. Writes the HEADER only — the move engine is not published, so a
 	// consumer outside Inventory must use CreateWithMoves instead.
 	Create(
-		ctx corectx.Context, params dmodel.DynamicFields,
+		ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
 	) (*dyn.OpResult[dmodel.DynamicFields], error)
 
 	// CreateWithMoves raises a draft transfer together with the lines it moves, in ONE transaction.

@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"go.bryk.io/pkg/errors"
 
@@ -9,7 +10,6 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
@@ -18,21 +18,21 @@ import (
 const supplyGraphScanLimit = 50
 
 // NewSupplyRelationDomainService derives the supply relation service from the engine's default.
-func NewSupplyRelationDomainService(base drif.DynamicResourceService) *SupplyRelationDomainServiceImpl {
-	return &SupplyRelationDomainServiceImpl{DynamicResourceService: base}
+func NewSupplyRelationDomainService(base composable.CrudDomainService) *SupplyRelationDomainServiceImpl {
+	return &SupplyRelationDomainServiceImpl{CrudDomainService: base}
 }
 
 // SupplyRelationDomainServiceImpl keeps the resupply topology sane. A relation only declares who
 // may restock whom — it reserves nothing and starts no transfer — so what is guarded is the shape
 // of the graph: no self-supply, no duplicates, one default per destination, no cycles.
 type SupplyRelationDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
-var _ drif.DynamicResourceService = (*SupplyRelationDomainServiceImpl)(nil)
+var _ composable.CrudDomainService = (*SupplyRelationDomainServiceImpl)(nil)
 
 func (this *SupplyRelationDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	vErrs, err := this.assertRelationValid(ctx, params, "")
 	if err != nil {
@@ -41,14 +41,14 @@ func (this *SupplyRelationDomainServiceImpl) Create(
 	if vErrs.Count() > 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 	}
-	return this.DynamicResourceService.Create(ctx, params)
+	return this.CrudDomainService.Create(ctx, params)
 }
 
 // Update re-checks the same rules, since priority and the default flag can change. Source and
 // destination are deliberately not updatable: repointing a relation is really a different relation,
 // and rewriting one in place would make the audit trail read as though the old route never existed.
 func (this *SupplyRelationDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	relationId := readStringParam(params, models.WarehouseSupplyRelationFieldId)
 
@@ -80,7 +80,7 @@ func (this *SupplyRelationDomainServiceImpl) Update(
 			return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 		}
 	}
-	return this.DynamicResourceService.Update(ctx, prepared)
+	return this.CrudDomainService.Update(ctx, prepared)
 }
 
 // assertRelationValid applies every rule about a new relation.

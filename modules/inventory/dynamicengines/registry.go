@@ -1,102 +1,73 @@
-// Package dynamicengines declares the resource engines the Inventory module serves, and creates
-// them during the module's Init().
+// Package dynamicengines declares the resource onions the Inventory module serves through the
+// composable resource engine, and registers them into the dependency container during the
+// module's Init().
 //
-// Its imports point one way only: domain, the module's own interfaces, and the dynamicresource
-// module — never app/, infra/ or transport/. That keeps it importable by both inventory and
-// inventory/transport/restful without a cycle. The rules the callbacks enforce live in
-// domain/services.
+// Each resource file wires the module's own repository, domain service and application service
+// onto the composable defaults, publishes those typed layers, and installs the built onion into
+// the domain services' resource hub so peer services can reach it at call time.
 package dynamicengines
 
 import (
-	"go.bryk.io/pkg/errors"
+	stdErr "errors"
 
-	"github.com/sky-as-code/nikki-erp/common/array"
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 )
 
-// engineSpec declares one resource engine the Inventory module owns.
-type engineSpec struct {
-	// SchemaName is the dynamic-model schema the engine serves. It must be an XSchemaName
-	// constant, never a string derived from the resource path.
-	SchemaName string
-
-	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD ones.
-	// Optional: a resource without custom behavior leaves it nil.
-	DefineActions func(drif.DynamicResourceEngine) error
-}
-
-// engineSpecs lists the resources Inventory serves through the dynamic resource engine.
-var engineSpecs = []engineSpec{
-	productTypeEngineSpec(),
-	productCategoryEngineSpec(),
-	brandEngineSpec(),
-	productAttributeEngineSpec(),
-	productAttributeValueEngineSpec(),
-	productTemplateEngineSpec(),
-	productTemplateAttributeEngineSpec(),
-	productTemplateAttributeValueEngineSpec(),
-	productVariantEngineSpec(),
-	productVariantAttributeValueEngineSpec(),
-	warehouseEngineSpec(),
-	storageCategoryEngineSpec(),
-	inventoryLocationEngineSpec(),
-	warehouseSupplyRelationEngineSpec(),
-	putawayRuleEngineSpec(),
-	stockOperationTypeEngineSpec(),
-	stockQuantEngineSpec(),
-	stockTransferEngineSpec(),
-	stockMoveEngineSpec(),
-	stockMoveLineEngineSpec(),
-	stockMoveDependencyEngineSpec(),
-	stockScrapEngineSpec(),
-	// Stock's settings for a product line: which unit its balances are counted in.
-	stockProductConfigEngineSpec(),
-}
-
-// EngineSchemaNames lists the schemas Inventory creates an engine for, so route registration and
-// engine creation cannot drift apart.
-func EngineSchemaNames() []string {
-	return array.Map(engineSpecs, func(spec engineSpec) string {
-		return spec.SchemaName
-	})
-}
-
-// InitDynamicEngines creates the resource engines this module owns and publishes them into the
-// dependency container, so other modules can inject them by name.
+// InitDynamicEngines registers every resource onion this module owns. Nothing is built here: an
+// onion is a container constructor, resolved the first time a consumer asks for it.
 func InitDynamicEngines() error {
-	for _, spec := range engineSpecs {
-		if err := initEngine(spec); err != nil {
-			return err
-		}
-	}
-	return nil
+	return stdErr.Join(
+		registerProductTypeEngine(),
+		registerProductCategoryEngine(),
+		registerBrandEngine(),
+		registerProductAttributeEngine(),
+		registerProductAttributeValueEngine(),
+		registerProductTemplateEngine(),
+		registerProductTemplateAttributeEngine(),
+		registerProductTemplateAttributeValueEngine(),
+		registerProductVariantEngine(),
+		registerProductVariantAttributeValueEngine(),
+		registerWarehouseEngine(),
+		registerStorageCategoryEngine(),
+		registerInventoryLocationEngine(),
+		registerWarehouseSupplyRelationEngine(),
+		registerPutawayRuleEngine(),
+		registerStockOperationTypeEngine(),
+		registerStockQuantEngine(),
+		registerStockTransferEngine(),
+		registerStockMoveEngine(),
+		registerStockMoveLineEngine(),
+		registerStockMoveDependencyEngine(),
+		registerStockScrapEngine(),
+		registerStockProductConfigEngine(),
+	)
 }
 
-func initEngine(spec engineSpec) error {
-	// The listing's field set lives in the model's JSON as `default_search_fields`, which the
-	// engine reads off the schema itself.
-	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create the '%s' resource engine", spec.SchemaName)
-	}
+// buildOnion builds one onion with the module-wide rules applied and installs it into the
+// resource hub. Every Inventory resource refuses is_archived on create: archiving goes through
+// the /archived action, and the guard runs ahead of any rule a derived service adds.
+func buildOnion(impl *composable.DynamicResourceEngineOnionImpl, param composable.BuildParam) composable.DynamicResourceEngineOnion {
+	impl.RejectArchivedOnCreate = true
+	onion := composable.MustBuild(impl, param)
+	services.InstallResource(impl.SchemaName, onion.Repository(), onion.DomainService())
+	return onion
+}
 
-	if spec.DefineActions != nil {
-		if err := spec.DefineActions(engine); err != nil {
-			return errors.Wrapf(err, "failed to define actions of the '%s' resource engine", spec.SchemaName)
-		}
+// SchemaNames lists every resource this module declares, for the boot-time check that each was
+// built.
+func SchemaNames() []string {
+	return []string{
+		models.ProductTypeSchemaName, models.ProductCategorySchemaName, models.BrandSchemaName,
+		models.ProductAttributeSchemaName, models.ProductAttributeValueSchemaName,
+		models.ProductTemplateSchemaName, models.ProductTemplateAttributeSchemaName,
+		models.ProductTemplateAttributeValueSchemaName, models.ProductVariantSchemaName,
+		models.ProductVariantAttributeValueSchemaName, models.WarehouseSchemaName,
+		models.StorageCategorySchemaName, models.InventoryLocationSchemaName,
+		models.WarehouseSupplyRelationSchemaName, models.PutawayRuleSchemaName,
+		models.StockOperationTypeSchemaName, models.StockQuantSchemaName, models.StockTransferSchemaName,
+		models.StockMoveSchemaName, models.StockMoveLineSchemaName, models.StockMoveDependencySchemaName,
+		models.StockScrapSchemaName, models.StockProductConfigSchemaName,
 	}
-
-	// Must run after DefineActions: ModifyAction replaces ValidateExtra rather than chaining it, so
-	// attaching the guard first would let a spec's own create validation silently drop it.
-	if err := rejectArchivedOnCreate(engine); err != nil {
-		return errors.Wrapf(err, "failed to attach the create guard of the '%s' resource engine", spec.SchemaName)
-	}
-
-	err = deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(spec.SchemaName),
-		func() drif.DynamicResourceEngine { return engine },
-	)
-	return errors.Wrapf(err, "failed to register the '%s' resource engine", spec.SchemaName)
 }

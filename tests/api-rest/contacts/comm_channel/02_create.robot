@@ -23,9 +23,11 @@ Create With Structured Value Succeeds
     ...    json=${{ {'party_id': $PARTY_ID, 'type': 'post', 'value_json': {'street': '1 Robot Street', 'city': 'Da Nang'}, 'org_id': $CONTACTS_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${COMM_CHANNEL_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${CONTACTS_SCHEMA_DIR}/comm_channel.json    200
     Should Be Equal    ${item}[value_json][city]    Da Nang
-    DELETE On Session    api    ${COMM_CHANNEL_API}/${id}    expected_status=any
+    DELETE On Session    api    ${COMM_CHANNEL_API}/${id}
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
 
 Create Every Channel Type Succeeds
     [Documentation]    One party legitimately holds several channels of different kinds, and
@@ -36,7 +38,8 @@ Create Every Channel Type Succeeds
         ${resp}=    POST On Session    api    ${COMM_CHANNEL_API}
         ...    json=${{ {'party_id': $PARTY_ID, 'type': $type, 'value': 'val' + $suffix, 'org_id': $CONTACTS_ORG_ID} }}
         ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-        DELETE On Session    api    ${COMM_CHANNEL_API}/${id}    expected_status=any
+        DELETE On Session    api    ${COMM_CHANNEL_API}/${id}
+        ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     END
 
 Create With Invalid Type Fails
@@ -68,7 +71,8 @@ Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json
     ${resp}=    POST On Session    api    ${COMM_CHANNEL_API}
-    ...    data={ "type": "email",    headers=${headers}    expected_status=any
+    ...    data={ "type": "email",    headers=${headers}
+    ...    json=${{ {'org_id': $CONTACTS_ORG_ID} }}    expected_status=any
     Response Should Be Malformed Payload Error    ${resp}
 
 Create With Nonexist Field Fails

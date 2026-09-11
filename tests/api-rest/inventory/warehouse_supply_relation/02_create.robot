@@ -61,7 +61,8 @@ A Second Non Default Source Is Allowed
     ${resp}=    POST On Session    api    ${SUPPLY_RELATION_API}
     ...    json=${{ {'source_warehouse_id': $third, 'destination_warehouse_id': $SECONDARY_WAREHOUSE_ID, 'priority': 2, 'is_default': False, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    DELETE On Session    api    ${SUPPLY_RELATION_API}/${id}    expected_status=any
+    DELETE On Session    api    ${SUPPLY_RELATION_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 A Circular Route Is Refused
     [Documentation]    A supplies B and B supplies A would let replenishment planning chase its

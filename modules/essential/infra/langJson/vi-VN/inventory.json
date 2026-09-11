@@ -401,5 +401,7 @@
 	"warehouse_sections_putawayRules": "Quy tắc cất hàng",
 	"warehouse_sections_supplyRelations": "Quan hệ cấp hàng",
 	"warehouse_status.active": "Đang hoạt động",
-	"warehouse_status.suspended": "Tạm ngừng"
+	"warehouse_status.suspended": "Tạm ngừng",
+	"fields.external_id": "Mã ngoài",
+	"fields.source_system": "Hệ thống nguồn"
 }

@@ -17,9 +17,9 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product categories
-		INSERT INTO "inventory_product_categories" ("id", "code", "name", "parent_category_id", "sequence", "description", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
-		('01K5INV000000000000CAT0001', 'beverages', jsonb_build_object('en-US', 'Beverages', 'vi-VN', 'Đồ uống'), NULL, 1, NULL, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV000000000000CAT0002', 'snacks', jsonb_build_object('en-US', 'Snacks', 'vi-VN', 'Đồ ăn vặt'), NULL, 2, NULL, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		INSERT INTO "inventory_product_categories" ("id", "code", "name", "parent_category_id", "sequence", "description", "source_system", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
+		('01K5INV000000000000CAT0001', 'beverages', jsonb_build_object('en-US', 'Beverages', 'vi-VN', 'Đồ uống'), NULL, 1, NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV000000000000CAT0002', 'snacks', jsonb_build_object('en-US', 'Snacks', 'vi-VN', 'Đồ ăn vặt'), NULL, 2, NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product attributes
@@ -37,10 +37,10 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product templates
-		INSERT INTO "inventory_product_templates" ("id", "name", "short_name", "product_type_id", "category_id", "brand_id", "sale_ok", "purchase_ok", "description", "sales_description", "purchase_description", "default_image_id", "default_weight", "default_length", "default_width", "default_height", "status", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
-		('01K5INV0000000TMPL00000001', jsonb_build_object('en-US', 'Energy Drink', 'vi-VN', 'Nước tăng lực'), NULL, '01K5INV0000000000000TYPE01', '01K5INV000000000000CAT0001', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Caffeinated beverage', 'vi-VN', 'Đồ uống có caffeine'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV0000000TMPL00000002', jsonb_build_object('en-US', 'Mineral Water', 'vi-VN', 'Nước khoáng'), NULL, '01K5INV0000000000000TYPE01', '01K5INV000000000000CAT0001', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Still water', 'vi-VN', 'Nước không ga'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV0000000TMPL00000003', jsonb_build_object('en-US', 'Potato Chips', 'vi-VN', 'Khoai tây chiên'), NULL, '01K5INV0000000000000TYPE02', '01K5INV000000000000CAT0002', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Original flavor chips', 'vi-VN', 'Khoai tây chiên vị tự nhiên'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		INSERT INTO "inventory_product_templates" ("id", "name", "short_name", "product_type_id", "category_id", "brand_id", "sale_ok", "purchase_ok", "description", "sales_description", "purchase_description", "default_image_id", "default_weight", "default_length", "default_width", "default_height", "status", "source_system", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
+		('01K5INV0000000TMPL00000001', jsonb_build_object('en-US', 'Energy Drink', 'vi-VN', 'Nước tăng lực'), NULL, '01K5INV0000000000000TYPE01', '01K5INV000000000000CAT0001', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Caffeinated beverage', 'vi-VN', 'Đồ uống có caffeine'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV0000000TMPL00000002', jsonb_build_object('en-US', 'Mineral Water', 'vi-VN', 'Nước khoáng'), NULL, '01K5INV0000000000000TYPE01', '01K5INV000000000000CAT0001', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Still water', 'vi-VN', 'Nước không ga'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV0000000TMPL00000003', jsonb_build_object('en-US', 'Potato Chips', 'vi-VN', 'Khoai tây chiên'), NULL, '01K5INV0000000000000TYPE02', '01K5INV000000000000CAT0002', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Original flavor chips', 'vi-VN', 'Khoai tây chiên vị tự nhiên'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product template attributes
@@ -59,11 +59,11 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product variants
-		INSERT INTO "inventory_product_variants" ("id", "product_template_id", "combination_key", "sku", "primary_barcode", "is_materialized", "variant_image_id", "weight", "length", "width", "height", "status", "archive_source", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
-		('01K5INV00000000VARIANT0001', '01K5INV0000000TMPL00000001', 'flavor:berry', 'INV-SEED-ED-BERRY', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV00000000VARIANT0002', '01K5INV0000000TMPL00000001', 'flavor:citrus', 'INV-SEED-ED-CITRUS', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV00000000VARIANT0003', '01K5INV0000000TMPL00000002', 'size:size_500ml', 'INV-SEED-WATER-500', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV00000000VARIANT0004', '01K5INV0000000TMPL00000003', 'size:size_90g', 'INV-SEED-CHIPS-ORG', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		INSERT INTO "inventory_product_variants" ("id", "product_template_id", "combination_key", "sku", "primary_barcode", "is_materialized", "variant_image_id", "weight", "length", "width", "height", "status", "archive_source", "source_system", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
+		('01K5INV00000000VARIANT0001', '01K5INV0000000TMPL00000001', 'flavor:berry', 'INV-SEED-ED-BERRY', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV00000000VARIANT0002', '01K5INV0000000TMPL00000001', 'flavor:citrus', 'INV-SEED-ED-CITRUS', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV00000000VARIANT0003', '01K5INV0000000TMPL00000002', 'size:size_500ml', 'INV-SEED-WATER-500', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV00000000VARIANT0004', '01K5INV0000000TMPL00000003', 'size:size_90g', 'INV-SEED-CHIPS-ORG', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product variant attribute values

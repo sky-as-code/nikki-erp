@@ -74,7 +74,7 @@ func (this *ProductVariantDomainServiceImpl) ProductVariantsExist(
 		return &itProduct.ProductVariantsExistResult{HasData: true}, nil
 	}
 
-	engine, err := engineFor(models.ProductVariantSchemaName)
+	engine, err := repoFor(models.ProductVariantSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (this *ProductVariantDomainServiceImpl) ProductVariantsExist(
 		keys = append(keys, dmodel.DynamicFields{models.ProductVariantFieldId: string(id)})
 	}
 
-	found, err := engine.ResourceRepository().Exists(ctx, keys)
+	found, err := engine.Exists(ctx, keys)
 	if err != nil {
 		return nil, errors.Wrap(err, "ProductVariantsExist")
 	}
@@ -147,7 +147,7 @@ func searchQueryToParams(query dyn.SearchQuery) dmodel.DynamicFields {
 func searchRows(
 	ctx corectx.Context, schemaName string, query dyn.SearchQuery, what string,
 ) (*dyn.PagedResultData[dmodel.DynamicFields], error) {
-	engine, err := engineFor(schemaName)
+	engine, err := repoFor(schemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func searchRows(
 		language = dyn.ResolveLocale(ctx)
 	}
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{
 		Fields:   query.Fields,
 		Page:     query.Page,
 		Size:     query.Size,

@@ -119,3 +119,37 @@ func FindTemplatesByCategory(
 	)
 	return searchAll(ctx, repo, graph, limit, "FindTemplatesByCategory")
 }
+
+// FindTemplatesByBrand returns up to limit templates carrying the brand, archived ones included:
+// the foreign key does not care about archiving, so a delete guard must not either.
+func FindTemplatesByBrand(
+	ctx corectx.Context, repo ProductSearcher, brandId string, limit int,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(ProductTemplateFieldBrandId, dmodel.Equals, brandId),
+	)
+	return searchAll(ctx, repo, graph, limit, "FindTemplatesByBrand")
+}
+
+// FindTemplatesByProductType returns up to limit templates of the product type.
+func FindTemplatesByProductType(
+	ctx corectx.Context, repo ProductSearcher, productTypeId string, limit int,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(ProductTemplateFieldProductTypeId, dmodel.Equals, productTypeId),
+	)
+	return searchAll(ctx, repo, graph, limit, "FindTemplatesByProductType")
+}
+
+// FindAttributeValues returns up to limit values of an attribute.
+func FindAttributeValues(
+	ctx corectx.Context, repo ProductSearcher, attributeId string, limit int,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(ProductAttributeValueFieldAttributeId, dmodel.Equals, attributeId),
+	)
+	return searchAll(ctx, repo, graph, limit, "FindAttributeValues")
+}

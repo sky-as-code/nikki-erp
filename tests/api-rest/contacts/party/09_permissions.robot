@@ -67,7 +67,7 @@ Plain User Is Allowed Uom Read
     ...    system User role domain-wide read on purpose, so a 403 here would mean the account
     ...    is simply broken rather than that Contacts is correctly restricted.
     ${resp}=    GET On Session    plain_user    /v1/essential/essential_uom
-    ...    params=${{ {'size': 1} }}    expected_status=any
+    ...    params=${{ {'org_id': $CONTACTS_ORG_ID, 'size': 1} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    403
     ...    msg=The plain user must still read UoM; a 403 here means the fixture account is wrong
 

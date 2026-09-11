@@ -14,7 +14,7 @@ Widening The Incoming Flow Creates The Stops It Needs
     [Documentation]    TS-09 and AC-CR-LOC-028. Three steps in means goods stop at Input and
     ...    then Quality Control before reaching Stock, so both locations must exist afterwards.
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/configure_incoming_flow
-    ...    json=${{ {'flow': 'three_step'} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'flow': 'three_step'} }}
     Response Status Should Be    ${resp}    200
 
     ${item}=    Get Warehouse Under Test
@@ -29,7 +29,7 @@ Widening The Outgoing Flow Creates The Stops It Needs
     [Documentation]    AC-CR-LOC-029. Three steps out means Packing then Output before the
     ...    goods leave.
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/configure_outgoing_flow
-    ...    json=${{ {'flow': 'three_step'} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'flow': 'three_step'} }}
     Response Status Should Be    ${resp}    200
 
     FOR    ${expected}    IN    Packing    Output
@@ -45,16 +45,18 @@ Narrowing A Flow Suspends The Unused Stop Rather Than Deleting It
     Should Not Be Empty    ${quality}
 
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/configure_incoming_flow
-    ...    json=${{ {'flow': 'two_step'} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'flow': 'two_step'} }}
     Response Status Should Be    ${resp}    200
 
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${quality}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
     Should Be Equal    ${item}[status]    suspended
     ...    msg=A stop a flow no longer uses is suspended, never deleted
 
     ${input}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    Input
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${input}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
     Should Be Equal    ${item}[status]    active
     ...    msg=Input is still needed at two steps, so it stays in service
@@ -65,7 +67,7 @@ Widening Again Reuses The Suspended Stop
     ${before}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    Quality Control
 
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/configure_incoming_flow
-    ...    json=${{ {'flow': 'three_step'} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'flow': 'three_step'} }}
     Response Status Should Be    ${resp}    200
 
     ${after}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    Quality Control
@@ -73,6 +75,7 @@ Widening Again Reuses The Suspended Stop
     ...    msg=The same location comes back, rather than a duplicate being created
 
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${after}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
     Should Be Equal    ${item}[status]    active
 
@@ -82,7 +85,7 @@ Reconfiguring A Flow Creates No Stock Movement
     ${before}=    Count Transfers In Org
 
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/configure_outgoing_flow
-    ...    json=${{ {'flow': 'two_step'} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'flow': 'two_step'} }}
     Response Status Should Be    ${resp}    200
 
     ${after}=    Count Transfers In Org
@@ -91,7 +94,7 @@ Reconfiguring A Flow Creates No Stock Movement
 
 Setting A Flow To Its Current Value Changes Nothing
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/configure_outgoing_flow
-    ...    json=${{ {'flow': 'two_step'} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'flow': 'two_step'} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Get Warehouse Under Test
     Should Be Equal    ${item}[outgoing_flow]    two_step
@@ -99,13 +102,14 @@ Setting A Flow To Its Current Value Changes Nothing
 Configuring An Unknown Flow Is Refused
     [Tags]    negative
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/configure_incoming_flow
-    ...    json=${{ {'flow': 'four_step'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'flow': 'four_step'} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 
 *** Keywords ***
 Get Warehouse Under Test
     ${resp}=    GET On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/warehouse.json    200
     Set Global Variable    ${WAREHOUSE_ETAG}    ${item}[etag]
     RETURN    ${item}

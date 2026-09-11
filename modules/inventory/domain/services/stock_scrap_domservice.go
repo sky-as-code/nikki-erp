@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"strings"
 
 	"github.com/shopspring/decimal"
@@ -11,31 +12,30 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // NewStockScrapDomainService derives the scrap service from the engine's default one, which it
 // embeds so built-in CRUD keeps running unchanged.
-func NewStockScrapDomainService(base drif.DynamicResourceService) *StockScrapDomainServiceImpl {
-	return &StockScrapDomainServiceImpl{DynamicResourceService: base}
+func NewStockScrapDomainService(base composable.CrudDomainService) *StockScrapDomainServiceImpl {
+	return &StockScrapDomainServiceImpl{CrudDomainService: base}
 }
 
 // StockScrapDomainServiceImpl adds the scrap document's own rules. A scrap is a document, not a
 // balance: while draft it changes nothing, and completing it generates the movement. That is why
 // create, update and delete stay open here, merely constrained, where the quant refuses them.
 type StockScrapDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
-var _ drif.DynamicResourceService = (*StockScrapDomainServiceImpl)(nil)
+var _ composable.CrudDomainService = (*StockScrapDomainServiceImpl)(nil)
 
 // Create stamps the scrap number and forces the status to draft. A client-chosen number could
 // collide with or impersonate another document's, and a scrap created `done` would be a completed
 // movement with nothing behind it.
 func (this *StockScrapDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	if vErrs := assertScrapQuantityPositive(params); vErrs.Count() > 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
@@ -60,13 +60,13 @@ func (this *StockScrapDomainServiceImpl) Create(
 	applyEmptyStringDefault(prepared, models.StockScrapFieldPackageRef)
 	applyEmptyStringDefault(prepared, models.StockScrapFieldOwnerRef)
 
-	return this.DynamicResourceService.Create(ctx, prepared)
+	return this.CrudDomainService.Create(ctx, prepared)
 }
 
 // Update refuses to change a scrap that is already done: editing it would rewrite the description
 // of a movement that already happened, leaving document and stock disagreeing.
 func (this *StockScrapDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	scrap, vErrs, err := this.loadScrap(ctx, readStringParam(params, models.StockScrapFieldId))
 	if err != nil {
@@ -96,14 +96,14 @@ func (this *StockScrapDomainServiceImpl) Update(
 	delete(prepared, models.StockScrapFieldCompletedAt)
 	delete(prepared, models.StockScrapFieldScrapNumber)
 
-	return this.DynamicResourceService.Update(ctx, prepared)
+	return this.CrudDomainService.Update(ctx, prepared)
 }
 
 // Delete refuses to remove a scrap that is already done: the movement it generated is permanent,
 // and deleting the document would leave it unexplained. A scrap made in error is corrected by a
 // reverse movement.
 func (this *StockScrapDomainServiceImpl) Delete(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	scrap, vErrs, err := this.loadScrap(ctx, readStringParam(params, models.StockScrapFieldId))
 	if err != nil {
@@ -120,7 +120,7 @@ func (this *StockScrapDomainServiceImpl) Delete(
 				"a completed scrap cannot be deleted; reverse the movement instead"),
 		}, nil
 	}
-	return this.DynamicResourceService.Delete(ctx, params)
+	return this.CrudDomainService.Delete(ctx, params)
 }
 
 // loadScrap reads one scrap, reporting a missing id as a client error.
@@ -134,11 +134,11 @@ func (this *StockScrapDomainServiceImpl) loadScrap(
 		return nil, vErrs, nil
 	}
 
-	engine, err := engineFor(models.StockScrapSchemaName)
+	engine, err := repoFor(models.StockScrapSchemaName)
 	if err != nil {
 		return nil, vErrs, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.StockScrapFieldId: scrapId,
 	})
 	if err != nil {

@@ -20,7 +20,7 @@ Issue Assigns A Number And Freezes The Totals
     ...    with what it totals.
     ${invoice_id}=    Create Draft Invoice
     Add Invoice Line    ${invoice_id}    2    50000    0
-    ${resp}=    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {} }}
+    ${resp}=    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {'org_id': $PAYINV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     Should Be Equal As Numbers    ${body}[subtotal_amount]    100000
@@ -31,8 +31,9 @@ Issue Assigns A Number And Freezes The Totals
 An Issued Invoice Is No Longer A Draft
     ${invoice_id}=    Create Draft Invoice
     Add Invoice Line    ${invoice_id}    1    25000    0
-    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {} }}
+    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${resp}=    GET On Session    api    ${INVOICE_API}/${invoice_id}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice.json    200
     Should Be Equal    ${item}[status]    issued
     Should Not Be Equal    ${item}[issued_at]    ${None}
@@ -44,7 +45,7 @@ Issue Applies Tax Per Line
     ...    different rates.
     ${invoice_id}=    Create Draft Invoice
     Add Invoice Line    ${invoice_id}    1    100000    10
-    ${resp}=    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {} }}
+    ${resp}=    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {'org_id': $PAYINV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     Should Be Equal As Numbers    ${body}[subtotal_amount]    100000
@@ -57,7 +58,7 @@ Issue Totals Lines Carrying Different Tax Rates
     ${invoice_id}=    Create Draft Invoice
     Add Invoice Line    ${invoice_id}    1    100000    10
     Add Invoice Line    ${invoice_id}    1    200000    0
-    ${resp}=    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {} }}
+    ${resp}=    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {'org_id': $PAYINV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${body}=    Set Variable    ${resp.json()}
     Should Be Equal As Numbers    ${body}[subtotal_amount]    300000
@@ -70,8 +71,9 @@ Issue Recomputes A Line Amount That Disagrees With Its Quantity And Price
     ...    amount is corrected rather than trusted.
     ${invoice_id}=    Create Draft Invoice
     ${line_id}=    Add Invoice Line    ${invoice_id}    3    20000    0
-    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {} }}
+    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${resp}=    GET On Session    api    ${INVOICE_LINE_API}/${line_id}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice_line.json    200
     Should Be Equal As Numbers    ${item}[amount]    60000
 
@@ -82,10 +84,10 @@ Two Invoices Issued In Sequence Get Distinct Numbers
     Add Invoice Line    ${first_id}    1    10000    0
     ${second_id}=    Create Draft Invoice
     Add Invoice Line    ${second_id}    1    10000    0
-    ${resp}=    POST On Session    api    ${INVOICE_API}/${first_id}/issue    json=${{ {} }}
+    ${resp}=    POST On Session    api    ${INVOICE_API}/${first_id}/issue    json=${{ {'org_id': $PAYINV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${first_number}=    Set Variable    ${resp.json()}[number]
-    ${resp}=    POST On Session    api    ${INVOICE_API}/${second_id}/issue    json=${{ {} }}
+    ${resp}=    POST On Session    api    ${INVOICE_API}/${second_id}/issue    json=${{ {'org_id': $PAYINV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${second_number}=    Set Variable    ${resp.json()}[number]
     Should Not Be Equal    ${first_number}    ${second_number}
@@ -97,9 +99,9 @@ Issuing An Already Issued Invoice Fails
     [Tags]    negative
     ${invoice_id}=    Create Draft Invoice
     Add Invoice Line    ${invoice_id}    1    10000    0
-    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {} }}
+    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue    json=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${resp}=    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    400
     ...    msg=A second issue must be refused as a client error, not a server failure
 
@@ -108,10 +110,11 @@ An Invoice With No Lines Cannot Be Issued
     [Tags]    negative
     ${invoice_id}=    Create Draft Invoice
     ${resp}=    POST On Session    api    ${INVOICE_API}/${invoice_id}/issue
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    400
     ...    msg=An invoice with no lines must be refused
     ${resp}=    GET On Session    api    ${INVOICE_API}/${invoice_id}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice.json    200
     Should Be Equal    ${item}[status]    draft
     ...    msg=A refused issue must leave the invoice a draft
@@ -119,6 +122,6 @@ An Invoice With No Lines Cannot Be Issued
 Issuing A Nonexistent Invoice Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${INVOICE_API}/${NOT_FOUND_ID}/issue
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=Issuing an invoice that does not exist must not succeed

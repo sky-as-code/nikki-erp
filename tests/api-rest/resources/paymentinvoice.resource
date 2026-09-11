@@ -142,7 +142,8 @@ Delete Payment Invoice Fixture
     [Arguments]    ${api}    ${variable_name}
     ${id}=    Get Variable Value    ${${variable_name}}    ${EMPTY}
     IF    $id
-        DELETE On Session    api    ${api}/${id}    expected_status=any
+        DELETE On Session    api    ${api}/${id}
+        ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
         Set Global Variable    ${${variable_name}}    ${EMPTY}
     END
 

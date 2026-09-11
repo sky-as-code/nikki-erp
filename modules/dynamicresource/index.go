@@ -1,8 +1,11 @@
 package dynamicresource
 
 import (
+	stdErr "errors"
+
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
 // ModuleName is the name feature modules must list in their Deps() to use resource engines.
@@ -51,6 +54,10 @@ func (*DynamicResourceModule) Version() semver.SemVer {
 // modules can create their engines during their own Init(). This module is initialized
 // before them because they declare it in their Deps().
 func (*DynamicResourceModule) Init() error {
+	// A composable resource may compute over a source this registry still serves, so the
+	// registry is the onion's fallback for source rows. The reverse direction lives in
+	// searchSourceRowsForComputed.
+	composable.SetLegacySourceResolver(searchSourceRowsForComputed)
 	return initRegistryDeps()
 }
 
@@ -62,5 +69,5 @@ func (*DynamicResourceModule) Init() error {
 // By the time any OnAppStarted runs, every module's Init() has completed — so a missing function
 // fails the boot with a precise message instead of surfacing as a broken read later.
 func (*DynamicResourceModule) OnAppStarted() error {
-	return assertComputedFunctionsDefined()
+	return stdErr.Join(assertComputedFunctionsDefined(), assertNoDualServing())
 }

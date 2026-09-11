@@ -1,12 +1,12 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
@@ -20,11 +20,11 @@ func loadSupplyRelation(
 		return nil, nil
 	}
 
-	engine, err := engineFor(models.WarehouseSupplyRelationSchemaName)
+	engine, err := repoFor(models.WarehouseSupplyRelationSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.WarehouseSupplyRelationFieldId: relationId,
 	})
 	if err != nil {
@@ -40,7 +40,7 @@ func loadSupplyRelation(
 func (this *SupplyRelationDomainServiceImpl) findDuplicate(
 	ctx corectx.Context, sourceId string, destinationId string, selfId string,
 ) (bool, error) {
-	engine, err := engineFor(models.WarehouseSupplyRelationSchemaName)
+	engine, err := repoFor(models.WarehouseSupplyRelationSchemaName)
 	if err != nil {
 		return false, err
 	}
@@ -70,7 +70,7 @@ func (this *SupplyRelationDomainServiceImpl) findDuplicate(
 func (this *SupplyRelationDomainServiceImpl) findConflictingDefault(
 	ctx corectx.Context, destinationId string, selfId string,
 ) (bool, error) {
-	engine, err := engineFor(models.WarehouseSupplyRelationSchemaName)
+	engine, err := repoFor(models.WarehouseSupplyRelationSchemaName)
 	if err != nil {
 		return false, err
 	}
@@ -99,7 +99,7 @@ func (this *SupplyRelationDomainServiceImpl) findConflictingDefault(
 func (this *SupplyRelationDomainServiceImpl) listSuppliedWarehouses(
 	ctx corectx.Context, sourceId string,
 ) ([]string, error) {
-	engine, err := engineFor(models.WarehouseSupplyRelationSchemaName)
+	engine, err := repoFor(models.WarehouseSupplyRelationSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -123,11 +123,11 @@ func (this *SupplyRelationDomainServiceImpl) listSuppliedWarehouses(
 }
 
 func (this *SupplyRelationDomainServiceImpl) searchRelations(
-	ctx corectx.Context, engine drif.DynamicResourceEngine, graph *dmodel.SearchGraph,
+	ctx corectx.Context, engine composable.CrudRepository, graph *dmodel.SearchGraph,
 ) ([]models.WarehouseSupplyRelation, error) {
 	relations := make([]models.WarehouseSupplyRelation, 0)
 	for page := 0; ; page++ {
-		found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
 			Graph: graph,
 			Page:  page,
 			Size:  usageScanPageSize,

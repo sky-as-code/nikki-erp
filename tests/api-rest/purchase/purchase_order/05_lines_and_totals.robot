@@ -24,6 +24,7 @@ Line Totals Are Computed From Quantity And Price
     ${order_id}    ${etag}=    Create Purchase Order
     ${line_id}    ${line_etag}=    Create Purchase Order Line    ${order_id}    10    25.00
     ${line}=    GET On Session    api    ${PURCHASE_ORDER_LINE_API}/${line_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${line}    200
     Should Be Equal As Numbers    ${line.json()}[subtotal]    250.00
     Should Be Equal As Numbers    ${line.json()}[total]       250.00
@@ -36,6 +37,7 @@ Tax Is An Input And Not A Calculation
     ${order_id}    ${etag}=    Create Purchase Order
     ${line_id}    ${line_etag}=    Create Purchase Order Line    ${order_id}    10    25.00    12.50
     ${line}=    GET On Session    api    ${PURCHASE_ORDER_LINE_API}/${line_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal As Numbers    ${line.json()}[tax_amount]    12.50
     Should Be Equal As Numbers    ${line.json()}[total]         262.50
     [Teardown]    Delete Purchase Order Fixture    ${order_id}
@@ -47,6 +49,7 @@ A Discount Comes Off The Whole Line
     ${order_id}    ${etag}=    Create Purchase Order
     ${line_id}    ${line_etag}=    Create Purchase Order Line    ${order_id}    4    25.00    0    10
     ${line}=    GET On Session    api    ${PURCHASE_ORDER_LINE_API}/${line_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal As Numbers    ${line.json()}[subtotal]    90.00
     [Teardown]    Delete Purchase Order Fixture    ${order_id}
 
@@ -60,6 +63,7 @@ A Client Supplied Subtotal Is Overwritten
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_LINE_API}    json=${{ {'purchase_order_id': $order_id, 'sequence': 1, 'line_type': 'product', 'product_variant_id': $PURCHASE_VARIANT_ID, 'uom_id': $PURCHASE_UOM_ID, 'quantity': '2', 'unit_price': '10.00', 'discount_percent': '0', 'tax_amount': '0', 'subtotal': '999999.00', 'total': '999999.00', 'org_id': $PURCHASE_ORG_ID} }}
     ${line_id}    ${line_etag}=    Response Should Be Create Success    ${resp}
     ${line}=    GET On Session    api    ${PURCHASE_ORDER_LINE_API}/${line_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal As Numbers    ${line.json()}[subtotal]    20.00
     Should Be Equal As Numbers    ${line.json()}[total]       20.00
     [Teardown]    Delete Purchase Order Fixture    ${order_id}
@@ -71,6 +75,7 @@ The Header Totals Are The Sum Of The Lines
     Create Purchase Order Line    ${order_id}    10    25.00    0    0    1
     Create Purchase Order Line    ${order_id}    4     25.00    0    0    2
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${order_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${order}    200
     Should Be Equal As Numbers    ${order.json()}[untaxed_amount]    350.00
     Should Be Equal As Numbers    ${order.json()}[total_amount]      350.00
@@ -82,9 +87,10 @@ The Header Follows A Line Update
     ...    quantity.
     ${order_id}    ${etag}=    Create Purchase Order
     ${line_id}    ${line_etag}=    Create Purchase Order Line    ${order_id}    10    25.00
-    ${resp}=    PUT On Session    api    ${PURCHASE_ORDER_LINE_API}/${line_id}    json=${{ {'etag': $line_etag, 'quantity': '20'} }}
+    ${resp}=    PUT On Session    api    ${PURCHASE_ORDER_LINE_API}/${line_id}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $line_etag, 'quantity': '20'} }}
     Response Should Be Update Success    ${resp}
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${order_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal As Numbers    ${order.json()}[total_amount]    500.00
     [Teardown]    Delete Purchase Order Fixture    ${order_id}
 
@@ -95,8 +101,10 @@ The Header Follows A Line Delete
     ${order_id}    ${etag}=    Create Purchase Order
     ${line_id}    ${line_etag}=    Create Purchase Order Line    ${order_id}    10    25.00
     ${resp}=    DELETE On Session    api    ${PURCHASE_ORDER_LINE_API}/${line_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Should Be Delete Success    ${resp}
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${order_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal As Numbers    ${order.json()}[total_amount]    0
     [Teardown]    Delete Purchase Order Fixture    ${order_id}
 
@@ -109,6 +117,7 @@ A Section Line Contributes Nothing To The Totals
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_LINE_API}    json=${{ {'purchase_order_id': $order_id, 'sequence': 2, 'line_type': 'section', 'description': 'Consumables', 'quantity': '0', 'unit_price': '0', 'discount_percent': '0', 'tax_amount': '0', 'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    201
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${order_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Should Be Equal As Numbers    ${order.json()}[total_amount]    250.00
     [Teardown]    Delete Purchase Order Fixture    ${order_id}
 
@@ -120,6 +129,7 @@ The Ordered Quantity And Unit Survive The Conversion
     ${order_id}    ${etag}=    Create Purchase Order
     ${line_id}    ${line_etag}=    Create Purchase Order Line    ${order_id}    10    25.00
     ${line}=    GET On Session    api    ${PURCHASE_ORDER_LINE_API}/${line_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${line}    200
     Should Be Equal As Numbers    ${line.json()}[quantity]    10
     Should Be Equal    ${line.json()}[uom_id]    ${PURCHASE_UOM_ID}
@@ -132,7 +142,7 @@ Inventory Quantity Cannot Be Written By A Client
     ...    one — and the one Purchase stored would be the one nobody could reproduce.
     ${order_id}    ${etag}=    Create Purchase Order
     ${line_id}    ${line_etag}=    Create Purchase Order Line    ${order_id}    10    25.00
-    ${resp}=    PUT On Session    api    ${PURCHASE_ORDER_LINE_API}/${line_id}    json=${{ {'etag': $line_etag, 'inventory_quantity': '99999'} }}    expected_status=any
+    ${resp}=    PUT On Session    api    ${PURCHASE_ORDER_LINE_API}/${line_id}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $line_etag, 'inventory_quantity': '99999'} }}    expected_status=any
     Response Should Be Client Error    ${resp}
     [Teardown]    Delete Purchase Order Fixture    ${order_id}
 

@@ -25,22 +25,24 @@ A Done Transfer Can Raise A Return
     ${transfer_id}    ${move_id}=    Receive Stock Into Location
     ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    60
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/validate
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${original}=    Set Variable    ${resp.json()}[data]
     Set Suite Variable    ${RETURN_ORIGINAL_ID}    ${transfer_id}
     Set Suite Variable    ${RETURN_ORIGINAL_UPDATED_AT}    ${original.get('updated_at')}
 
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/create_return
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Status Should Be    ${resp}    200
 
 The Return Is A New Draft Transfer Pointing At The Original
     [Documentation]    STOCK-INV-011: a return is a new transaction, never a reopening.
     ${return_id}=    Find Return Of Transfer    ${RETURN_ORIGINAL_ID}
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${return_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Set Variable    ${resp.json()}[data]
     Should Be Equal    ${item}[status]    draft
@@ -52,8 +54,10 @@ The Return Reverses The Direction Of Travel
     [Documentation]    A return of a receipt is a delivery: the goods go back where they came
     ...    from. Getting this wrong produces a transfer moving stock the way it already went.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${RETURN_ORIGINAL_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${original}=    Set Variable    ${resp.json()}[data]
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${RETURN_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${reverse}=    Set Variable    ${resp.json()}[data]
 
     Should Be Equal    ${reverse}[source_location_id]    ${original}[destination_location_id]
@@ -67,6 +71,7 @@ The Original Transfer Is Untouched
     [Documentation]    AC-STOCK-010, STOCK-INV-005 and BR §4.2.10.5. Not edited, not reopened, not
     ...    cancelled. This is the assertion the whole design of the return exists to satisfy.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${RETURN_ORIGINAL_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Set Variable    ${resp.json()}[data]
     Should Be Equal    ${item}[status]    done
@@ -104,7 +109,7 @@ Returning More Than Was Shipped Is Refused
     Should Not Be Empty    ${origin_move}
 
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${RETURN_ORIGINAL_ID}/create_return
-    ...    json=${{ {'lines': [{'move_id': $origin_move, 'quantity': '9999'}]} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'lines': [{'move_id': $origin_move, 'quantity': '9999'}]} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A return beyond the returnable quantity must be refused, with no override
 
@@ -115,7 +120,7 @@ Returning A Transfer That Is Not Done Is Refused
     ...    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}    5
 
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}/create_return
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=Only a completed transfer can be returned
 

@@ -58,9 +58,10 @@ Convert To Archived Uom Fails
     ...    target of a new conversion.
     [Tags]    negative
     ${resp}=    GET On Session    api    ${UOM_API}/${TONNE_UOM_ID}
+    ...    params=${{ {'org_id': $UOM_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${ESSENTIAL_SCHEMA_DIR}/uom.json    200
     ${resp}=    POST On Session    api    ${UOM_API}/${TONNE_UOM_ID}/archived
-    ...    json=${{ {'etag': $item['etag'], 'is_archived': True} }}
+    ...    json=${{ {'org_id': $UOM_ORG_ID, 'etag': $item['etag'], 'is_archived': True} }}
     Response Should Be Update Success    ${resp}    count=1
 
     ${resp}=    POST On Session    api    ${UOM_CONVERT_API}
@@ -105,9 +106,10 @@ Ensure Conversion Fixtures
     # The foreign category's reference metre is the conversion target for the yard.
     Set Global Variable    ${METRE_UOM_ID}    ${FOREIGN_UOM_ID}
     ${resp}=    GET On Session    api    ${UOM_API}/${METRE_UOM_ID}
+    ...    params=${{ {'org_id': $UOM_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${ESSENTIAL_SCHEMA_DIR}/uom.json    200
     ${resp}=    PATCH On Session    api    ${UOM_API}/${METRE_UOM_ID}
-    ...    json=${{ {'rounding': '0.01', 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $UOM_ORG_ID, 'rounding': '0.01', 'etag': $item['etag']} }}
     Response Should Be Update Success    ${resp}    count=1
     ${yard}=    Get Variable Value    ${YARD_UOM_ID}    ${EMPTY}
     IF    not $yard

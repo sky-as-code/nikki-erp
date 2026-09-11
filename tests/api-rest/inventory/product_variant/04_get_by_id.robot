@@ -10,19 +10,20 @@ Test Tags         inventory    product_variant    get
 *** Test Cases ***
 Get Succeeds
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_variant.json    200
     Set Global Variable    ${PRODUCT_VARIANT_ETAG}    ${item}[etag]
 
 Get With Columns Succeeds
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
-    ...    params=${{ {'fields': ['sku', 'combination_key', 'status']} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['sku', 'combination_key', 'status']} }}
     Response Status Should Be    ${resp}    200
 
 Get With Edge Columns Succeeds
     [Documentation]    The `template` edge is how the variant detail page names its parent
     ...    product line instead of showing a ULID.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
-    ...    params=${{ {'fields': ['sku', 'template.name']} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['sku', 'template.name']} }}
     Response Status Should Be    ${resp}    200
 
 Get Effective Product Succeeds
@@ -31,6 +32,7 @@ Get Effective Product Succeeds
     ...    exactly what this endpoint exists to prevent. is_selectable is served rather than
     ...    derived, so no caller has to re-apply the archive and status rules.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}/effective
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${data}=    Set Variable    ${resp.json()}
     Validate Json Schema    ${data}    ${INVENTORY_SCHEMA_DIR}/effective_product.json
@@ -41,21 +43,24 @@ Get Effective Product Succeeds
 
 Get Effective Product With Not Found Id Fails
     [Tags]    negative
-    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${NOT_FOUND_ID}/effective    expected_status=any
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${NOT_FOUND_ID}/effective
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Get With Nonexist Column Fails
     [Tags]    negative
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
-    ...    params=${{ {'fields': ['sku', 'bla_bla_field']} }}    expected_status=any
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['sku', 'bla_bla_field']} }}    expected_status=any
     Response Should Be Nonexist Fields Error    ${resp}    bla_bla_field
 
 Get With Not Found Id Fails
     [Tags]    negative
-    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${NOT_FOUND_ID}    expected_status=any
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${NOT_FOUND_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Get With Invalid Id Format Fails
     [Tags]    negative
-    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/not-existing-1234567890123    expected_status=any
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/not-existing-1234567890123
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Invalid Format Error    ${resp}    id

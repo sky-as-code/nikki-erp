@@ -12,7 +12,7 @@ Test Tags         inventory    product_template    archive
 *** Test Cases ***
 Archive Succeeds
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${PRODUCT_TEMPLATE_ID}/archived
-    ...    json=${{ {'etag': $PRODUCT_TEMPLATE_ETAG, 'is_archived': True} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $PRODUCT_TEMPLATE_ETAG, 'is_archived': True} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${PRODUCT_TEMPLATE_ETAG}
     IF    $etag is not None    Set Global Variable    ${PRODUCT_TEMPLATE_ETAG}    ${etag}
 
@@ -21,6 +21,7 @@ Archiving Does Not Change Status
     ...    proved discontinuing does not archive; this proves archiving does not discontinue.
     ...    Both states stay independently visible.
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${PRODUCT_TEMPLATE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_template.json    200
     Should Be Equal    ${item}[is_archived]    ${True}
     Should Be Equal    ${item}[status]    active
@@ -29,7 +30,7 @@ Archiving Does Not Change Status
 
 Unarchive Succeeds
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${PRODUCT_TEMPLATE_ID}/archived
-    ...    json=${{ {'etag': $PRODUCT_TEMPLATE_ETAG, 'is_archived': False} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $PRODUCT_TEMPLATE_ETAG, 'is_archived': False} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${PRODUCT_TEMPLATE_ETAG}
     IF    $etag is not None    Set Global Variable    ${PRODUCT_TEMPLATE_ETAG}    ${etag}
 
@@ -43,10 +44,11 @@ Archive Cascades To Variants
     ${key}=    Unique Code    cascade
     ${variant_id}    ${variant_etag}=    Create Product Variant    ${template_id}    ${key}
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}/archived
-    ...    json=${{ {'etag': $template_etag, 'is_archived': True} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $template_etag, 'is_archived': True} }}
     ${template_etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${template_etag}
 
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${variant_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_variant.json    200
     Should Be Equal    ${item}[is_archived]    ${True}
     ...    msg=Archiving a template must archive its variants (BR-PROD-TPL-002)
@@ -61,32 +63,35 @@ Unarchive Cascades Back To Variants
     ...    The archive_source stamp is cleared with them, so a later user-archive is not
     ...    mistaken for a cascade.
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${CASCADE_TEMPLATE_ID}/archived
-    ...    json=${{ {'etag': $CASCADE_TEMPLATE_ETAG, 'is_archived': False} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $CASCADE_TEMPLATE_ETAG, 'is_archived': False} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${CASCADE_TEMPLATE_ETAG}
 
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${CASCADE_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_variant.json    200
     Should Be Equal    ${item}[is_archived]    ${False}
     ...    msg=Unarchiving a template must restore the variants it cascaded to
     Should Be True    ${{ not $item.get('archive_source') }}
     ...    msg=Restoring a cascaded variant must clear its archive_source stamp
-    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${CASCADE_VARIANT_ID}    expected_status=any
-    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${CASCADE_TEMPLATE_ID}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${CASCADE_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${CASCADE_TEMPLATE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Archive With Not Found Id Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${NOT_FOUND_ID}/archived
-    ...    json=${{ {'etag': $PRODUCT_TEMPLATE_ETAG, 'is_archived': True} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $PRODUCT_TEMPLATE_ETAG, 'is_archived': True} }}    expected_status=any
     Response Should Be Not Found Error    ${resp}
 
 Archive With Unmatched Etag Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${PRODUCT_TEMPLATE_ID}/archived
-    ...    json=${{ {'etag': '___________________', 'is_archived': True} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': '___________________', 'is_archived': True} }}    expected_status=any
     Response Should Be Etag Unmatched Error    ${resp}
 
 Archive With Missing Required Fields Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${PRODUCT_TEMPLATE_ID}/archived
-    ...    json=${{ {} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Missing Fields Error    ${resp}    etag    is_archived

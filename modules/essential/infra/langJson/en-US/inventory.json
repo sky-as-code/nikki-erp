@@ -401,5 +401,7 @@
 	"warehouse_sections_putawayRules": "Putaway rules",
 	"warehouse_sections_supplyRelations": "Supply relations",
 	"warehouse_status.active": "Active",
-	"warehouse_status.suspended": "Suspended"
+	"warehouse_status.suspended": "Suspended",
+	"fields.external_id": "External ID",
+	"fields.source_system": "Source system"
 }

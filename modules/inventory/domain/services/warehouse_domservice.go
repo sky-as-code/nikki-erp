@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"go.bryk.io/pkg/errors"
 
@@ -9,7 +10,6 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
@@ -18,24 +18,24 @@ import (
 const warehouseHierarchyScanLimit = 50
 
 // NewWarehouseDomainService derives the warehouse service from the engine's default one.
-func NewWarehouseDomainService(base drif.DynamicResourceService) *WarehouseDomainServiceImpl {
-	return &WarehouseDomainServiceImpl{DynamicResourceService: base}
+func NewWarehouseDomainService(base composable.CrudDomainService) *WarehouseDomainServiceImpl {
+	return &WarehouseDomainServiceImpl{CrudDomainService: base}
 }
 
 // WarehouseDomainServiceImpl holds the rules about a warehouse on its own: its hierarchy, code and
 // operational state. Operations that also touch locations live on the application service, because
 // they span two resources and must be atomic across both.
 type WarehouseDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
-var _ drif.DynamicResourceService = (*WarehouseDomainServiceImpl)(nil)
+var _ composable.CrudDomainService = (*WarehouseDomainServiceImpl)(nil)
 
 // Update keeps the hierarchy acyclic and protects the code once the warehouse is in use: the code
 // is the first segment of every system location's path, so changing it would leave those paths
 // naming a warehouse that no longer exists. Renaming needs its own operation.
 func (this *WarehouseDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	warehouseId := readStringParam(params, models.WarehouseFieldId)
 	current, vErrs, err := this.loadWarehouse(ctx, warehouseId)
@@ -61,7 +61,7 @@ func (this *WarehouseDomainServiceImpl) Update(
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
 
-	return this.DynamicResourceService.Update(ctx, prepared)
+	return this.CrudDomainService.Update(ctx, prepared)
 }
 
 // SetArchived guards archiving and leaves an unarchived warehouse suspended rather than active. One
@@ -83,10 +83,10 @@ func (this *WarehouseDomainServiceImpl) SetArchived(
 		} else if vErrs.Count() > 0 {
 			return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 		}
-		return this.DynamicResourceService.SetArchived(ctx, params)
+		return this.CrudDomainService.SetArchived(ctx, params)
 	}
 
-	result, err := this.DynamicResourceService.SetArchived(ctx, params)
+	result, err := this.CrudDomainService.SetArchived(ctx, params)
 	if err != nil || result == nil || result.ClientErrors.Count() > 0 {
 		return result, err
 	}

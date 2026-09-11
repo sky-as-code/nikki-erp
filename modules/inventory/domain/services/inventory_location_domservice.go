@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"strings"
 
 	"go.bryk.io/pkg/errors"
@@ -9,7 +10,6 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
@@ -18,27 +18,27 @@ import (
 // usage tells it what Stock holds at a location, injected rather than looked up so the archive
 // guard can be tested without a stock engine.
 func NewInventoryLocationDomainService(
-	base drif.DynamicResourceService, usage itStock.LocationUsageReadService,
+	base composable.CrudDomainService, usage itStock.LocationUsageReadService,
 ) *InventoryLocationDomainServiceImpl {
-	return &InventoryLocationDomainServiceImpl{DynamicResourceService: base, usage: usage}
+	return &InventoryLocationDomainServiceImpl{CrudDomainService: base, usage: usage}
 }
 
 // InventoryLocationDomainServiceImpl adds the tree rules and lifecycle guards to the location
 // resource: keeping the tree coherent, and stopping a location from being retired while something
 // depends on it. None of it changes a quantity.
 type InventoryLocationDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 
 	usage itStock.LocationUsageReadService
 }
 
-var _ drif.DynamicResourceService = (*InventoryLocationDomainServiceImpl)(nil)
+var _ composable.CrudDomainService = (*InventoryLocationDomainServiceImpl)(nil)
 
 // Create applies the tree rules and derives the cached path. is_system_generated is stripped from
 // whatever the client sent: a client able to set it could mint a location that then refuses to be
 // archived.
 func (this *InventoryLocationDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	prepared := copyFields(params)
 	delete(prepared, models.InventoryLocationFieldIsSystemGenerated)
@@ -54,14 +54,14 @@ func (this *InventoryLocationDomainServiceImpl) Create(
 	if err := this.fillDerivedPath(ctx, prepared); err != nil {
 		return nil, err
 	}
-	return this.DynamicResourceService.Create(ctx, prepared)
+	return this.CrudDomainService.Create(ctx, prepared)
 }
 
 // Update applies the same placement rules and refuses to restructure a system-generated location.
 // A warehouse's Stock, Input or Output location may be renamed and given a storage category, but
 // re-parenting it or changing its purpose would break the flow that created it.
 func (this *InventoryLocationDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	locationId := readStringParam(params, models.InventoryLocationFieldId)
 	current, vErrs, err := this.loadLocation(ctx, locationId)
@@ -91,7 +91,7 @@ func (this *InventoryLocationDomainServiceImpl) Update(
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
 
-	return this.DynamicResourceService.Update(ctx, prepared)
+	return this.CrudDomainService.Update(ctx, prepared)
 }
 
 // SetArchived guards archiving: the location must be empty of stock and work in flight, have no
@@ -115,10 +115,10 @@ func (this *InventoryLocationDomainServiceImpl) SetArchived(
 		} else if vErrs.Count() > 0 {
 			return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 		}
-		return this.DynamicResourceService.SetArchived(ctx, params)
+		return this.CrudDomainService.SetArchived(ctx, params)
 	}
 
-	result, err := this.DynamicResourceService.SetArchived(ctx, params)
+	result, err := this.CrudDomainService.SetArchived(ctx, params)
 	if err != nil || result == nil || result.ClientErrors.Count() > 0 {
 		return result, err
 	}

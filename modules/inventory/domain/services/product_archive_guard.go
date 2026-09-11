@@ -27,16 +27,16 @@ import (
 // An error means the stock side is not wired in this deployment. Callers treat that as "cannot
 // check" rather than "must fail": Product keeps working when Stock is unavailable.
 func stockUsageReader() (itStock.StockProductUsageReader, error) {
-	engine, err := engineFor(models.StockQuantSchemaName)
+	quantSvc, err := domainServiceFor(models.StockQuantSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	reader, ok := engine.ResourceService().(itStock.StockProductUsageReader)
+	reader, ok := quantSvc.(itStock.StockProductUsageReader)
 	if !ok {
 		return nil, errors.New(
-			"the stock quant engine is not running the derived quant service; " +
-				"InventoryModule.Init must install it with SetResourceService")
+			"the stock quant onion is not built with the derived quant service; " +
+				"the module's engine registration must install NewStockQuantDomainService")
 	}
 	return reader, nil
 }
@@ -157,13 +157,13 @@ func GuardTemplateArchive(
 		return nil
 	}
 
-	variantEngine, err := engineFor(models.ProductVariantSchemaName)
+	variantEngine, err := repoFor(models.ProductVariantSchemaName)
 	if err != nil {
 		return err
 	}
 
 	rows, err := models.FindTemplateVariants(
-		ctx, variantEngine.ResourceRepository(), templateId, MaxCascadeVariants)
+		ctx, variantEngine, templateId, MaxCascadeVariants)
 	if err != nil {
 		return errors.Wrap(err, "GuardTemplateArchive")
 	}

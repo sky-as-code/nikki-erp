@@ -98,7 +98,7 @@ func createBackorderTransfer(
 		return err
 	}
 
-	created, err := operation.TransferEngine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+	created, err := operation.TransferRepo.Insert(ctx, dmodel.DynamicFields{
 		models.StockTransferFieldTransferNumber:        transferNumber,
 		models.StockTransferFieldOperationTypeId:       derefString(original.GetOperationTypeId()),
 		models.StockTransferFieldOperationCode:         operationCode,
@@ -135,7 +135,7 @@ func findTransferByNumber(
 		*dmodel.NewSearchNode().NewCondition(
 			models.StockTransferFieldTransferNumber, dmodel.Equals, transferNumber),
 	)
-	found, err := operation.TransferEngine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := operation.TransferRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,
@@ -165,7 +165,7 @@ func copyShortfallMoves(
 			continue
 		}
 
-		_, err := operation.MoveEngine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+		_, err := operation.MoveRepo.Insert(ctx, dmodel.DynamicFields{
 			models.StockMoveFieldTransferId:            backorderId,
 			models.StockMoveFieldProductVariantId:      derefString(source.GetProductVariantId()),
 			models.StockMoveFieldDemandQuantity:        shortfall.String(),

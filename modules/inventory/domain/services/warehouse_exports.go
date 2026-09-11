@@ -90,7 +90,7 @@ func MarkLocationSystemGenerated(ctx corectx.Context, locationId string) error {
 func FindWarehouseLocationByCode(
 	ctx corectx.Context, warehouseId string, code string,
 ) (*models.InventoryLocation, error) {
-	engine, err := engineFor(models.InventoryLocationSchemaName)
+	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func FindWarehouseLocationByCode(
 			models.InventoryLocationFieldCode, dmodel.Equals, code),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,
@@ -121,12 +121,12 @@ func FindWarehouseLocationByCode(
 // and flow reconfiguration each write a warehouse and its locations, and half of either result is
 // useless.
 func WithWarehouseTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
-	engine, err := engineFor(models.WarehouseSchemaName)
+	engine, err := repoFor(models.WarehouseSchemaName)
 	if err != nil {
 		return err
 	}
 
-	tranx, err := engine.ResourceRepository().BeginTransaction(ctx)
+	tranx, err := engine.BeginTransaction(ctx)
 	if err != nil {
 		return errors.Wrap(err, "WithWarehouseTransaction")
 	}
@@ -146,7 +146,7 @@ func WithWarehouseTransaction(ctx corectx.Context, body func(tranxCtx corectx.Co
 func writeLocationFieldsDirect(
 	ctx corectx.Context, locationId string, fields dmodel.DynamicFields,
 ) error {
-	engine, err := engineFor(models.InventoryLocationSchemaName)
+	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return err
 	}
@@ -155,6 +155,6 @@ func writeLocationFieldsDirect(
 	for key, value := range fields {
 		update[key] = value
 	}
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = engine.Update(ctx, update)
 	return errors.Wrap(err, "writeLocationFieldsDirect")
 }

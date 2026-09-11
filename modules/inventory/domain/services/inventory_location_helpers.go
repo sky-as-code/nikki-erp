@@ -28,11 +28,11 @@ func (this *InventoryLocationDomainServiceImpl) loadLocation(
 		return nil, vErrs, nil
 	}
 
-	engine, err := engineFor(models.InventoryLocationSchemaName)
+	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return nil, vErrs, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.InventoryLocationFieldId: locationId,
 	})
 	if err != nil {
@@ -83,7 +83,7 @@ func (this *InventoryLocationDomainServiceImpl) writeDerivedPath(
 func (this *InventoryLocationDomainServiceImpl) writeLocationFields(
 	ctx corectx.Context, locationId string, fields dmodel.DynamicFields,
 ) error {
-	engine, err := engineFor(models.InventoryLocationSchemaName)
+	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (this *InventoryLocationDomainServiceImpl) writeLocationFields(
 	for key, value := range fields {
 		update[key] = value
 	}
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = engine.Update(ctx, update)
 	return errors.Wrap(err, "writeLocationFields")
 }
 
@@ -100,12 +100,12 @@ func (this *InventoryLocationDomainServiceImpl) writeLocationFields(
 // must go on the clone, never ctx itself, or a committed transaction stays visible to whatever runs
 // next.
 func withLocationTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
-	engine, err := engineFor(models.InventoryLocationSchemaName)
+	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return err
 	}
 
-	tranx, err := engine.ResourceRepository().BeginTransaction(ctx)
+	tranx, err := engine.BeginTransaction(ctx)
 	if err != nil {
 		return errors.Wrap(err, "withLocationTransaction")
 	}

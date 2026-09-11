@@ -160,7 +160,7 @@ func insertCorrectionTransfer(
 		return "", err
 	}
 
-	_, err = operation.TransferEngine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+	_, err = operation.TransferRepo.Insert(ctx, dmodel.DynamicFields{
 		models.StockTransferFieldTransferNumber:        transferNumber,
 		models.StockTransferFieldOperationTypeId:       derefString(operationType.GetId()),
 		models.StockTransferFieldOperationCode:         correctionOperationCode,
@@ -188,7 +188,7 @@ func insertCorrectionMove(
 	ctx corectx.Context, operation *transferOperationContext, request CorrectionRequest,
 ) (string, error) {
 	quantity := request.Quantity.String()
-	_, err := operation.MoveEngine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+	_, err := operation.MoveRepo.Insert(ctx, dmodel.DynamicFields{
 		models.StockMoveFieldTransferId:            derefString(operation.Transfer.GetId()),
 		models.StockMoveFieldProductVariantId:      request.ProductVariantId,
 		models.StockMoveFieldDemandQuantity:        quantity,
@@ -204,7 +204,7 @@ func insertCorrectionMove(
 	}
 
 	moves, err := models.FindTransferMoves(
-		ctx, operation.MoveEngine.ResourceRepository(),
+		ctx, operation.MoveRepo,
 		derefString(operation.Transfer.GetId()), models.MaxTransferMoves)
 	if err != nil {
 		return "", err
@@ -244,7 +244,7 @@ func insertCorrectionMoveLine(
 	}
 
 	quantity := request.Quantity.String()
-	_, err := operation.MoveLineEngine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+	_, err := operation.MoveLineRepo.Insert(ctx, dmodel.DynamicFields{
 		models.StockMoveLineFieldMoveId:                moveId,
 		models.StockMoveLineFieldTransferId:            derefString(operation.Transfer.GetId()),
 		models.StockMoveLineFieldProductVariantId:      request.ProductVariantId,
@@ -266,7 +266,7 @@ func insertCorrectionMoveLine(
 // having moved no stock.
 func reloadCorrectionMoves(ctx corectx.Context, operation *transferOperationContext) error {
 	moves, err := models.FindTransferMoves(
-		ctx, operation.MoveEngine.ResourceRepository(),
+		ctx, operation.MoveRepo,
 		derefString(operation.Transfer.GetId()), models.MaxTransferMoves)
 	if err != nil {
 		return err
@@ -316,7 +316,7 @@ func assertCorrectionComplete(outcomes []moveOutcome) error {
 func FindLocationByType(
 	ctx corectx.Context, orgId string, locationType string,
 ) (*models.InventoryLocation, error) {
-	engine, err := engineFor(models.InventoryLocationSchemaName)
+	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +328,7 @@ func FindLocationByType(
 			models.InventoryLocationFieldLocationUsage, dmodel.Equals, locationType),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,
@@ -346,7 +346,7 @@ func FindLocationByType(
 func findCorrectionOperationType(
 	ctx corectx.Context, orgId string,
 ) (*models.StockOperationType, error) {
-	engine, err := engineFor(models.StockOperationTypeSchemaName)
+	engine, err := repoFor(models.StockOperationTypeSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +358,7 @@ func findCorrectionOperationType(
 			models.StockOperationTypeFieldCode, dmodel.Equals, models.StockCorrectionOperationTypeCode),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,
