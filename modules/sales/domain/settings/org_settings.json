@@ -52,6 +52,20 @@
 			"metadata": { "allow_override": true }
 		},
 		{
+			"name": "estimated_price_tolerance",
+			"label": "sales.settings.estimatedPriceTolerance",
+			"description": "settings_desc.estimated_price_tolerance",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"metadata": {
+				"allow_override": false
+			}
+		},
+		{
 			"name": "rounding_scale",
 			"label": "sales.settings.roundingScale",
 			"description": "settings_desc.rounding_scale",

@@ -27,6 +27,7 @@ const (
 	SalesOrderLineFieldRequiresFulfillment      = "requires_fulfillment"
 	SalesOrderLineFieldFulfilledQuantity        = "fulfilled_quantity"
 	SalesOrderLineFieldReturnedQuantity         = "returned_quantity"
+	SalesOrderLineFieldEstimatedPrice           = "estimated_price"
 	SalesOrderLineFieldBaseUnitPrice            = "base_unit_price"
 	SalesOrderLineFieldEffectiveUnitPrice       = "effective_unit_price"
 	SalesOrderLineFieldGrossAmount              = "gross_amount"
@@ -164,6 +165,16 @@ func (this SalesOrderLine) GetReturnedQuantity() *decimal.Decimal {
 
 func (this *SalesOrderLine) SetReturnedQuantity(quantity *decimal.Decimal) {
 	this.GetFieldData().SetDecimal(SalesOrderLineFieldReturnedQuantity, quantity)
+}
+
+// GetEstimatedPrice reads the unit price the client calculated. Reference only: every amount is
+// computed from GetEffectiveUnitPrice.
+func (this SalesOrderLine) GetEstimatedPrice() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(SalesOrderLineFieldEstimatedPrice)
+}
+
+func (this *SalesOrderLine) SetEstimatedPrice(amount *decimal.Decimal) {
+	this.GetFieldData().SetDecimal(SalesOrderLineFieldEstimatedPrice, amount)
 }
 
 func (this SalesOrderLine) GetBaseUnitPrice() *decimal.Decimal {

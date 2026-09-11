@@ -88,3 +88,11 @@ func TestAnOrderWithNoStatusIsNotEditable(t *testing.T) {
 	assert.False(t, order.IsEditable(),
 		"an unreadable status must not be read as permission")
 }
+
+// estimated_price is a client's own calculation, not a record of what the world looked like when the
+// sale was made. Freezing it would be wrong twice over: it is not authoritative, and a REPRICE must
+// leave it reading exactly what the client sent.
+func TestTheClientEstimateIsNotASnapshotField(t *testing.T) {
+	assert.NotContains(t, SnapshotFields, SalesOrderLineFieldEstimatedPrice,
+		"the estimate records what a client believed, not what was true at the time of sale")
+}

@@ -59,13 +59,11 @@ func ReleaseOrderFulfillments(
 		}
 
 		fulfillmentId := stringOf(record, models.SalesOrderFulfillmentFieldId)
-		if reservations != nil {
-			// The refusal is deliberately not propagated. Inventory answering "no such reservation"
-			// means the hold is gone, which is the end state this asked for; any other refusal still
-			// must not keep an order the customer cancelled in a state they cannot leave.
-			if _, err := reservations.ReleaseFulfillmentReservation(ctx, fulfillmentId); err != nil {
-				return nil, err
-			}
+		// The refusal is deliberately not propagated. Inventory answering "no such reservation"
+		// means the hold is gone, which is the end state this asked for; any other refusal still
+		// must not keep an order the customer cancelled in a state they cannot leave.
+		if err := releaseEveryHold(ctx, fulfillmentId, reservations); err != nil {
+			return nil, err
 		}
 
 		if err := setFulfillmentStatus(ctx, fulfillmentId, models.FulfillmentStatusCancelled); err != nil {
@@ -89,15 +87,79 @@ func ExpireFulfillment(
 	fulfillmentId string,
 	reservations itExt.FulfillmentReservationExtService,
 ) error {
-	if reservations != nil {
-		if _, err := reservations.ReleaseFulfillmentReservation(ctx, fulfillmentId); err != nil {
-			return err
-		}
+	if err := releaseEveryHold(ctx, fulfillmentId, reservations); err != nil {
+		return err
 	}
 	if err := setFulfillmentStatus(ctx, fulfillmentId, models.FulfillmentStatusExpired); err != nil {
 		return err
 	}
 	return clearReservationRefs(ctx, fulfillmentId)
+}
+
+// reservationSourceId is the key a hold is found by afterwards.
+//
+// A hold at the fulfillment's own single target keeps the bare fulfillment id, so nothing about the
+// existing non-slotted flows — or the holds they have already taken — changes. A hold at a specific
+// slot is suffixed with that location, because Inventory records ONE location per reservation and
+// is idempotent by the source pair: reusing the bare id for several slots would make the second
+// slot look like a replay of the first and silently hold nothing.
+func reservationSourceId(fulfillmentId, locationId, targetLocationId string) string {
+	if locationId == "" || locationId == targetLocationId {
+		return fulfillmentId
+	}
+	return fulfillmentId + reservationSourceSeparator + locationId
+}
+
+// reservationSourceSeparator joins a fulfillment to a slot in a reservation's source id. A colon is
+// safe because both halves are ULIDs, which never contain one.
+const reservationSourceSeparator = ":"
+
+// releaseEveryHold gives back the bare hold AND every per-slot hold of a fulfillment.
+//
+// Both are attempted because a fulfillment may legitimately carry either shape: the bare id when its
+// target has one location, a suffixed id per slot when it does not, and a retried confirm that
+// changed shape could leave one of each. Releasing a source that holds nothing is success, so the
+// extra calls cost nothing and missing one would strand stock.
+func releaseEveryHold(
+	ctx corectx.Context,
+	fulfillmentId string,
+	reservations itExt.FulfillmentReservationExtService,
+) error {
+	if reservations == nil {
+		return nil
+	}
+	if _, err := reservations.ReleaseFulfillmentReservation(ctx, fulfillmentId); err != nil {
+		return err
+	}
+	for _, sourceId := range slotSourceIdsOf(ctx, fulfillmentId) {
+		if _, err := reservations.ReleaseFulfillmentReservation(ctx, sourceId); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// slotSourceIdsOf lists the per-slot source ids a fulfillment's items imply.
+//
+// A read failure yields nothing rather than an error: this feeds a release, and a release that
+// cannot enumerate the slots must still give back the bare hold instead of refusing outright. What
+// it leaves behind is a hold with a TTL, which the expiry sweep reclaims.
+func slotSourceIdsOf(ctx corectx.Context, fulfillmentId string) []string {
+	items, err := ItemsOfFulfillment(ctx, fulfillmentId)
+	if err != nil {
+		return nil
+	}
+	seen := make(map[string]bool, len(items))
+	sourceIds := make([]string, 0, len(items))
+	for _, item := range items {
+		locationId := stringOf(item, models.SalesOrderFulfillmentItemFieldSourceLocationId)
+		if locationId == "" || seen[locationId] {
+			continue
+		}
+		seen[locationId] = true
+		sourceIds = append(sourceIds, fulfillmentId+reservationSourceSeparator+locationId)
+	}
+	return sourceIds
 }
 
 // clearReservationRefs drops the inventory references from a fulfillment's items once its hold is

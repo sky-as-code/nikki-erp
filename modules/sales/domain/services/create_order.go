@@ -48,6 +48,10 @@ type CreateOrderParams struct {
 	// refund rules.
 	Fulfillment CreateOrderFulfillment
 
+	// EstimatedTotalPrice is the order total the client worked out for itself. Recorded for
+	// reconciliation and never charged; nil means the client did not send one.
+	EstimatedTotalPrice *decimal.Decimal
+
 	OrgId string
 }
 
@@ -70,6 +74,11 @@ type CreateOrderLine struct {
 
 	// UnitPrice is the fallback when no pricelist item matches.
 	UnitPrice decimal.Decimal
+
+	// EstimatedPrice is the unit price the client worked out for itself, recorded so a POS or kiosk
+	// showing a different number can be reconciled against what Sales charged. Never priced from:
+	// nil simply means the client did not send one.
+	EstimatedPrice *decimal.Decimal
 
 	ProductCode string
 	ProductName string
@@ -167,6 +176,19 @@ func CreateOrder(
 	priced, vErrs, err := RepriceOrder(ctx, orderId, taxSvc, policy, basisSvc)
 	if err != nil || vErrs != nil {
 		return nil, vErrs, err
+	}
+
+	// Reported, never enforced: the order stands at the price Sales calculated whatever the client
+	// thought it would be.
+	err = RecordEstimatedPriceDivergence(ctx, EstimatedPriceCheckParams{
+		SalesOrderId: orderId,
+		OrgId:        params.OrgId,
+		Estimated:    params.EstimatedTotalPrice,
+		Actual:       priced.GrandTotal,
+		Tolerance:    policy.EstimatedPriceTolerance,
+	})
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return &CreateOrderResult{
@@ -401,6 +423,9 @@ func writeDraftOrder(
 		if params.IdempotencyKey != "" {
 			fields[models.SalesOrderFieldIdempotencyKey] = params.IdempotencyKey
 		}
+		if params.EstimatedTotalPrice != nil {
+			fields[models.SalesOrderFieldEstimatedTotalPrice] = *params.EstimatedTotalPrice
+		}
 		// Recorded as asked for, not validated here: the method is resolved at confirm, where the
 		// channel, the target's readiness and the customer's identity are all known together.
 		if params.Fulfillment.FulfillmentMethodId != "" {
@@ -474,6 +499,9 @@ func writeOrderLines(
 		}
 		if line.ProductName != "" {
 			fields[models.SalesOrderLineFieldProductNameSnapshot] = line.ProductName
+		}
+		if line.EstimatedPrice != nil {
+			fields[models.SalesOrderLineFieldEstimatedPrice] = *line.EstimatedPrice
 		}
 		if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
 			return err

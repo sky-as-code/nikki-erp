@@ -125,6 +125,14 @@
 			}
 		},
 		{
+			"name": "estimated_price",
+			"label": "fields.estimated_price",
+			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },
+			"description": {
+				"en-US": "The unit price the client calculated locally and sent with the order, stored verbatim for reconciliation and audit. Never authoritative: Sales runs its own pricing engine and every amount downstream — subtotal, tax, discount, payment, refund — uses effective_unit_price, whatever this says. Nullable with no default so a client that sent nothing stays distinguishable from one that sent zero, and a REPRICE leaves it untouched because it records what the client believed at the time it asked, not what the price later became."
+			}
+		},
+		{
 			"name": "base_unit_price",
 			"label": "fields.base_unit_price",
 			"data_type": { "type": "decimal", "min": "0", "max": "999999999999", "scale": 4 },

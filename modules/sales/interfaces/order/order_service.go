@@ -88,6 +88,16 @@ type FulfillmentItemView struct {
 
 	// FulfillableQty is what an attempt may ask for. This is the number to use, not RemainingQty.
 	FulfillableQty decimal.Decimal `json:"fulfillable_qty"`
+
+	// SourceLocationId is the exact place this item's goods are held — a vending slot, where the
+	// target has addressable positions. Empty means the fulfillment's single target location holds
+	// them, which is every target that does not.
+	SourceLocationId string `json:"source_location_id,omitempty"`
+
+	// InventorySourceId is the key the hold for THIS item is found by in Inventory. An executor
+	// reporting a physical result quotes it so the right hold is consumed or released: with stock
+	// held at several slots there is no longer one hold per fulfillment to guess at.
+	InventorySourceId string `json:"inventory_source_id,omitempty"`
 }
 
 type FulfillmentView struct {
@@ -211,13 +221,23 @@ type CreateSalesOrderCommand struct {
 	// sale was made. Empty for a kiosk selling to the customer standing in front of it, where the
 	// method resolves the target to the selling point itself.
 	TargetOutletId string `json:"target_outlet_id"`
+
+	// EstimatedTotalPrice is what the caller's own calculation came to. It does not breach the
+	// no-prices rule above: it is recorded for reconciliation and never charged, so a caller sending
+	// it cannot sell at a price the business did not set.
+	EstimatedTotalPrice *decimal.Decimal `json:"estimated_total_price,omitempty"`
 }
 
-// CreateSalesOrderLine is one product and how much of it. No price: see the command above.
+// CreateSalesOrderLine is one product and how much of it. No authoritative price: see the command
+// above.
 type CreateSalesOrderLine struct {
 	ProductVariantId string          `json:"product_variant_id"`
 	UomId            string          `json:"uom_id"`
 	Quantity         decimal.Decimal `json:"quantity"`
+
+	// EstimatedPrice is the unit price the caller displayed to the customer. Recorded so a device
+	// showing a stale price can be found; Sales prices the line regardless of what it says.
+	EstimatedPrice *decimal.Decimal `json:"estimated_price,omitempty"`
 }
 
 type SalesOrderData struct {

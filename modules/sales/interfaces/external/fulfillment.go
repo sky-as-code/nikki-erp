@@ -59,6 +59,11 @@ type FulfillmentLine struct {
 	ProductVariantId string
 	UomId            string
 	Quantity         decimal.Decimal
+
+	// SourceLocationId is the exact location this line's goods come from, for a target whose stock
+	// sits in addressable places rather than one pool — a vending slot being the case that needs it.
+	// Empty means the fulfillment's single target location applies, which is every other target.
+	SourceLocationId string
 }
 
 // FulfillmentResponse is what Inventory answered.
@@ -146,6 +151,10 @@ type FulfillmentReservationItem struct {
 	ProductVariantId  string
 	UomId             string
 	Quantity          decimal.Decimal
+
+	// SourceLocationId is where this item's stock is held. Empty defers to the request's LocationId.
+	// Sales groups items by this before calling Inventory, because a hold names one location.
+	SourceLocationId string
 }
 
 // FulfillmentReservationResponse is what Inventory answered about a hold.

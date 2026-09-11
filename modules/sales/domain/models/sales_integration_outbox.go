@@ -50,6 +50,11 @@ const (
 
 	EventSalesFulfillmentRequested = "SalesFulfillmentRequested"
 
+	// EventSalesOrderPriceDiverged reports that a client's own calculation differed from the price
+	// Sales charged, by more than the configured tolerance. Diagnostic: the sale stands, and the
+	// event exists so a device pricing stock data can be found before customers notice.
+	EventSalesOrderPriceDiverged = "SalesOrderPriceDiverged"
+
 	EventSalesReturnApproved  = "SalesReturnApproved"
 	EventSalesReturnCompleted = "SalesReturnCompleted"
 
@@ -66,6 +71,7 @@ func SalesEventTypes() []string {
 		EventSalesPaymentCaptured,
 		EventSalesPaymentRefunded,
 		EventSalesFulfillmentRequested,
+		EventSalesOrderPriceDiverged,
 		EventSalesReturnApproved,
 		EventSalesReturnCompleted,
 		EventFiscalDocumentRequested,

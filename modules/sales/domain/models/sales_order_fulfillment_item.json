@@ -112,6 +112,14 @@
 			}
 		},
 		{
+			"name": "source_location_id",
+			"label": "fields.source_location_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The inventory location this item's stock is held at and dispensed from. For a vending sale it is the individual slot, which is what lets one fulfillment hold stock at several places and consume or release each independently. An opaque cross-module reference and deliberately not a foreign key, for the same reason inventory_reservation_ref is not. Null means the fulfillment's single target location applies, which is how every non-slotted target behaves."
+			}
+		},
+		{
 			"name": "inventory_reservation_ref",
 			"label": "fields.inventory_reservation_ref",
 			"data_type": {

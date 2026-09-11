@@ -33,6 +33,11 @@ type SalesPolicy struct {
 	// DefaultSalesTaxCode names the accounting tax applied to every sale line. Empty means untaxed.
 	DefaultSalesTaxCode string
 
+	// EstimatedPriceTolerance is how far a client's own calculation may sit from Sales' before the
+	// divergence is recorded. Zero means no check, which is the default: a divergence never refuses
+	// a sale, and an organization that has not configured a tolerance has not asked to hear about it.
+	EstimatedPriceTolerance decimal.Decimal
+
 	// The Inventory operation types a sale ships against and a return is received against. Empty
 	// means fulfilment is not configured, and a fulfilment request is refused rather than guessed:
 	// unlike every other field here there is no safe default, because an operation type decides
@@ -95,6 +100,8 @@ func ResolveSalesPolicy(
 		salessettings.OrgSettingRoundingScale, policy.RoundingScale)
 	policy.InvoiceIssueDelayMinutes = int32Setting(values,
 		salessettings.OrgSettingInvoiceIssueDelayMinutes, policy.InvoiceIssueDelayMinutes)
+	policy.EstimatedPriceTolerance = decimalSetting(values,
+		salessettings.OrgSettingEstimatedPriceTolerance, policy.EstimatedPriceTolerance)
 	policy.DefaultTaxRate = decimalSetting(values,
 		salessettings.OrgSettingDefaultTaxRate, policy.DefaultTaxRate)
 	policy.DefaultSalesTaxCode = stringSetting(values,
