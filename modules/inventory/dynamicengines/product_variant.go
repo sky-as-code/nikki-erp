@@ -66,5 +66,11 @@ func registerProductVariantEngine() error {
 		func(p productVariantEngineParam) itProduct.ProductPricingBasisService {
 			return p.Engine.DomainService().(itProduct.ProductPricingBasisService)
 		},
+		// The org-scoped read, for a caller that reaches this port with no user permission of its
+		// own and so must supply the org itself rather than have it asserted from the caller's
+		// membership.
+		func(domain itProduct.ProductVariantDomainService) itProduct.ProductVariantService {
+			return services.NewProductVariantService(domain)
+		},
 	))
 }

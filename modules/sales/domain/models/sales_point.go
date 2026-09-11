@@ -30,7 +30,7 @@ const (
 // KioskReferenceType is the external_reference_type a vending kiosk's sales point carries. It names
 // the owning module and resource so external_reference_id is unambiguous: a bare ulid says nothing
 // about which module to resolve it against.
-const KioskReferenceType = "vending_machine.kiosk"
+const KioskReferenceType = "vendingmachine.kiosk"
 
 //go:embed sales_point.json
 var salesPointSchemaJson string
