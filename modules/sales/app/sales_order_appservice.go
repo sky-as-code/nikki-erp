@@ -71,6 +71,7 @@ func (this *SalesOrderExtServiceImpl) CreateOrder(
 			ProductVariantId: line.ProductVariantId,
 			UomId:            line.UomId,
 			Quantity:         line.Quantity,
+			EstimatedPrice:   line.EstimatedPrice,
 		})
 	}
 
@@ -81,6 +82,8 @@ func (this *SalesOrderExtServiceImpl) CreateOrder(
 		IdempotencyKey:    command.IdempotencyKey,
 		ExternalReference: command.ExternalReference,
 		Lines:             lines,
+
+		EstimatedTotalPrice: command.EstimatedTotalPrice,
 
 		// Only the target is passed through. The METHOD is never accepted from a caller: it is
 		// resolved from the point's and channel's defaults, so a seller cannot pick the policy that
@@ -292,6 +295,8 @@ func (this *SalesOrderExtServiceImpl) ViewFulfillment(
 			RemainingQty:      item.RemainingQty,
 			PendingRefundQty:  item.PendingRefundQty,
 			FulfillableQty:    item.FulfillableQty,
+			SourceLocationId:  item.SourceLocationId,
+			InventorySourceId: item.InventorySourceId,
 		})
 	}
 

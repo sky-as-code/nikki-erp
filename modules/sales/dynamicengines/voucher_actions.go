@@ -508,6 +508,8 @@ func processCreateOrder(ctx corectx.Context, input drif.ProcessInput) (*drif.Act
 		ExternalReference: readStringParam(input.Params, "external_reference"),
 		IdempotencyKey:    readStringParam(input.Params, "idempotency_key"),
 		Lines:             readOrderLines(input.Params),
+
+		EstimatedTotalPrice: readOptionalDecimalParam(input.Params, "estimated_total_price"),
 	}
 
 	result, vErrs, err := services.CreateOrder(ctx, params, taxCalculation, productVariants, pricingBasis, policy)
@@ -558,9 +560,25 @@ func readOrderLines(params map[string]any) []services.CreateOrderLine {
 			UnitPrice:        readDecimalParam(fields, "unit_price"),
 			ProductCode:      readStringParam(fields, "product_code"),
 			ProductName:      readStringParam(fields, "product_name"),
+			EstimatedPrice:   readOptionalDecimalParam(fields, "estimated_price"),
 		})
 	}
 	return lines
+}
+
+// readOptionalDecimalParam tells "the client sent nothing" apart from "the client sent zero", which
+// readDecimalParam cannot: a reconciliation field has to keep that difference, because a missing
+// estimate is not a claim that the price was zero.
+func readOptionalDecimalParam(params map[string]any, field string) *decimal.Decimal {
+	value, ok := params[field]
+	if !ok || value == nil {
+		return nil
+	}
+	if text, isText := value.(string); isText && text == "" {
+		return nil
+	}
+	parsed := readDecimalParam(params, field)
+	return &parsed
 }
 
 // readDecimalParam accepts whatever shape JSON delivered. A decimal crosses as a string so it does

@@ -38,6 +38,14 @@ type FulfillmentItemView struct {
 	ProductVariantId string
 	Status           string
 
+	// SourceLocationId is where this item's stock is held, when the target has addressable places
+	// rather than one pool. Empty means the fulfillment's single target location.
+	SourceLocationId string
+
+	// InventorySourceId is the key THIS item's hold is found by in Inventory, so an executor can
+	// consume or release exactly the hold its result concerns.
+	InventorySourceId string
+
 	OrderedQty   decimal.Decimal
 	FulfilledQty decimal.Decimal
 	RefundedQty  decimal.Decimal
@@ -93,17 +101,23 @@ func ViewOrderFulfillments(
 				fulfillable = decimal.Zero
 			}
 
+			sourceLocationId := stringOf(itemRecord,
+				models.SalesOrderFulfillmentItemFieldSourceLocationId)
+			inventorySourceId := reservationSourceId(fulfillmentId, sourceLocationId, "")
+
 			items = append(items, FulfillmentItemView{
-				ItemId:           stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldId),
-				SalesOrderLineId: stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldSalesOrderLineId),
-				ProductVariantId: stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldProductVariantId),
-				Status:           stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldItemStatus),
-				OrderedQty:       decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldOrderedQty),
-				FulfilledQty:     decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldFulfilledQty),
-				RefundedQty:      decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldRefundedQty),
-				RemainingQty:     remaining,
-				PendingRefundQty: pendingRefund,
-				FulfillableQty:   fulfillable,
+				ItemId:            stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldId),
+				SalesOrderLineId:  stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldSalesOrderLineId),
+				ProductVariantId:  stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldProductVariantId),
+				Status:            stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldItemStatus),
+				OrderedQty:        decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldOrderedQty),
+				FulfilledQty:      decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldFulfilledQty),
+				RefundedQty:       decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldRefundedQty),
+				RemainingQty:      remaining,
+				PendingRefundQty:  pendingRefund,
+				FulfillableQty:    fulfillable,
+				SourceLocationId:  sourceLocationId,
+				InventorySourceId: inventorySourceId,
 			})
 		}
 
@@ -284,17 +298,23 @@ func ViewFulfillment(ctx corectx.Context, fulfillmentId string) (*FulfillmentVie
 			fulfillable = decimal.Zero
 		}
 
+		sourceLocationId := stringOf(itemRecord,
+			models.SalesOrderFulfillmentItemFieldSourceLocationId)
+		inventorySourceId := reservationSourceId(fulfillmentId, sourceLocationId, "")
+
 		items = append(items, FulfillmentItemView{
-			ItemId:           itemId,
-			SalesOrderLineId: stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldSalesOrderLineId),
-			ProductVariantId: stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldProductVariantId),
-			Status:           stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldItemStatus),
-			OrderedQty:       decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldOrderedQty),
-			FulfilledQty:     decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldFulfilledQty),
-			RefundedQty:      decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldRefundedQty),
-			RemainingQty:     remaining,
-			PendingRefundQty: pendingRefund,
-			FulfillableQty:   fulfillable,
+			ItemId:            itemId,
+			SalesOrderLineId:  stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldSalesOrderLineId),
+			ProductVariantId:  stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldProductVariantId),
+			Status:            stringOf(itemRecord, models.SalesOrderFulfillmentItemFieldItemStatus),
+			OrderedQty:        decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldOrderedQty),
+			FulfilledQty:      decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldFulfilledQty),
+			RefundedQty:       decimalOf(itemRecord, models.SalesOrderFulfillmentItemFieldRefundedQty),
+			RemainingQty:      remaining,
+			PendingRefundQty:  pendingRefund,
+			FulfillableQty:    fulfillable,
+			SourceLocationId:  sourceLocationId,
+			InventorySourceId: inventorySourceId,
 		})
 	}
 

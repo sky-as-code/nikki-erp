@@ -347,6 +347,19 @@
 			}
 		},
 		{
+			"name": "estimated_total_price",
+			"label": "fields.estimated_total_price",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"description": {
+				"en-US": "The order total the client calculated locally and sent with the order, stored verbatim for reconciliation and audit. Never authoritative: grand_total is what the customer owes, and a divergence between the two is a signal to investigate a client's pricing, not a reason to charge this number. Nullable with no default, and never rewritten by a REPRICE."
+			}
+		},
+		{
 			"name": "exchange_of_return_id",
 			"label": "fields.exchange_of_return_id",
 			"data_type": "ulid",

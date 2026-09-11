@@ -23,6 +23,7 @@ const (
 	SalesOrderFulfillmentItemFieldOrderedQty              = "ordered_qty"
 	SalesOrderFulfillmentItemFieldFulfilledQty            = "fulfilled_qty"
 	SalesOrderFulfillmentItemFieldRefundedQty             = "refunded_qty"
+	SalesOrderFulfillmentItemFieldSourceLocationId        = "source_location_id"
 	SalesOrderFulfillmentItemFieldInventoryReservationRef = "inventory_reservation_ref"
 	SalesOrderFulfillmentItemFieldItemStatus              = "item_status"
 	SalesOrderFulfillmentItemFieldRemainingQty            = "remaining_qty"
@@ -117,6 +118,14 @@ func (this SalesOrderFulfillmentItem) GetRefundedQty() *decimal.Decimal {
 
 func (this *SalesOrderFulfillmentItem) SetRefundedQty(value *decimal.Decimal) {
 	this.GetFieldData().SetDecimal(SalesOrderFulfillmentItemFieldRefundedQty, value)
+}
+
+func (this SalesOrderFulfillmentItem) GetSourceLocationId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesOrderFulfillmentItemFieldSourceLocationId)
+}
+
+func (this *SalesOrderFulfillmentItem) SetSourceLocationId(value *model.Id) {
+	this.GetFieldData().SetModelId(SalesOrderFulfillmentItemFieldSourceLocationId, value)
 }
 
 func (this SalesOrderFulfillmentItem) GetInventoryReservationRef() *string {

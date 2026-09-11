@@ -239,6 +239,11 @@ func writeFulfillmentItems(
 // A partial hold is refused rather than accepted. The customer is being promised one machine, and
 // half the goods at that machine is not a smaller version of the promise — it is a different sale,
 // which they should be allowed to decline before paying.
+//
+// Items are grouped by the location they come from, and each group is a hold of its own. A vending
+// sale spans several slots, and Inventory holds stock at ONE location per reservation, so a single
+// call could not express it. Grouping is also what makes a partial dispense attributable later: the
+// slot that failed releases its own hold while the slots that succeeded keep theirs.
 func reserveFulfillment(
 	ctx corectx.Context,
 	fulfillmentId, orgId string,
@@ -254,49 +259,101 @@ func reserveFulfillment(
 		return false, nil, nil
 	}
 
-	items := make([]itExt.FulfillmentReservationItem, 0, len(lines))
-	for index, line := range lines {
-		items = append(items, itExt.FulfillmentReservationItem{
-			FulfillmentItemId: itemIds[index],
-			ProductVariantId:  line.ProductVariantId,
-			UomId:             line.UomId,
-			Quantity:          line.Quantity,
+	groups := groupItemsByLocation(resolved.TargetLocationId, lines, itemIds)
+	for _, group := range groups {
+		response, err := reservations.ReserveForFulfillment(ctx, itExt.FulfillmentReservationRequest{
+			FulfillmentId: reservationSourceId(fulfillmentId, group.LocationId, resolved.TargetLocationId),
+			OrgId:         orgId,
+			LocationId:    group.LocationId,
+			ExpiresAt:     expiresAt,
+			Items:         group.Items,
 		})
+		refusal, err := assertGroupReserved(ctx, fulfillmentId, response, err, reservations)
+		if err != nil || refusal != nil {
+			return false, refusal, err
+		}
+		if err := stampReservationRefs(ctx, group.ItemIds, response.InventoryReference); err != nil {
+			return false, nil, err
+		}
 	}
+	return true, nil, nil
+}
 
-	response, err := reservations.ReserveForFulfillment(ctx, itExt.FulfillmentReservationRequest{
-		FulfillmentId: fulfillmentId,
-		OrgId:         orgId,
-		LocationId:    resolved.TargetLocationId,
-		ExpiresAt:     expiresAt,
-		Items:         items,
-	})
-	if err != nil {
+// assertGroupReserved turns one group's answer into a decision, releasing EVERY hold this
+// fulfillment has taken before refusing.
+//
+// Releasing all of them rather than only the group that failed is what the all-or-nothing promise
+// requires: the earlier groups succeeded, and leaving their stock held for a sale that is being
+// refused would make goods unsellable for a customer who never got them.
+func assertGroupReserved(
+	ctx corectx.Context,
+	fulfillmentId string,
+	response *itExt.FulfillmentReservationResponse,
+	reserveErr error,
+	reservations itExt.FulfillmentReservationExtService,
+) (*ft.ClientErrors, error) {
+	if reserveErr != nil {
 		// A transport or database fault says nothing about whether the claim landed. Attempt the
 		// release before propagating, so a reservation that did commit does not outlive the confirm
 		// that was abandoned; the original error is what the caller hears either way.
 		releaseAfterFailedReserve(ctx, fulfillmentId, reservations)
-		return false, nil, err
+		return nil, reserveErr
 	}
-
 	if response == nil || !response.Accepted {
 		// Nothing was necessarily claimed, but a refusal can still land after a partial claim, so the
 		// release runs on this branch too. Releasing a hold that never existed is a no-op.
 		releaseAfterFailedReserve(ctx, fulfillmentId, reservations)
-		return false, reservationRefusal(response, ReasonFulfillmentReserveFailed), nil
+		return reservationRefusal(response, ReasonFulfillmentReserveFailed), nil
 	}
 	if !response.FullyReserved {
 		// Inventory holds the part it could claim. Giving it back before refusing is what stops a
 		// declined sale sitting on stock: the TTL sweep would eventually reclaim it, but a method
 		// with no reservation_ttl_minutes is never swept, so the goods would be held forever.
 		releaseAfterFailedReserve(ctx, fulfillmentId, reservations)
-		return false, reservationRefusal(response, ReasonFulfillmentInsufficientStock), nil
+		return reservationRefusal(response, ReasonFulfillmentInsufficientStock), nil
 	}
+	return nil, nil
+}
 
-	if err := stampReservationRefs(ctx, itemIds, response.InventoryReference); err != nil {
-		return false, nil, err
+// reservationGroup is the items of one fulfillment that come from one location.
+type reservationGroup struct {
+	LocationId string
+	ItemIds    []string
+	Items      []itExt.FulfillmentReservationItem
+}
+
+// groupItemsByLocation splits a fulfillment's items by where their stock sits, preserving the order
+// the lines were given so a group's items stay in a stable, reproducible order.
+//
+// A line naming no location falls to the fulfillment's single target, which is how every target
+// without addressable slots behaves and why this change leaves those flows untouched.
+func groupItemsByLocation(
+	targetLocationId string, lines []itExt.FulfillmentLine, itemIds []string,
+) []reservationGroup {
+	groups := make([]reservationGroup, 0, 1)
+	indexOf := make(map[string]int, 1)
+
+	for index, line := range lines {
+		locationId := line.SourceLocationId
+		if locationId == "" {
+			locationId = targetLocationId
+		}
+		at, seen := indexOf[locationId]
+		if !seen {
+			at = len(groups)
+			indexOf[locationId] = at
+			groups = append(groups, reservationGroup{LocationId: locationId})
+		}
+		groups[at].ItemIds = append(groups[at].ItemIds, itemIds[index])
+		groups[at].Items = append(groups[at].Items, itExt.FulfillmentReservationItem{
+			FulfillmentItemId: itemIds[index],
+			ProductVariantId:  line.ProductVariantId,
+			UomId:             line.UomId,
+			Quantity:          line.Quantity,
+			SourceLocationId:  locationId,
+		})
 	}
-	return true, nil, nil
+	return groups
 }
 
 // stampReservationRefs records the hold against every item, so an operator tracing one item can
@@ -409,10 +466,7 @@ func refusalStopsConfirm(namedMethod bool, vErrs *ft.ClientErrors) bool {
 func releaseAfterFailedReserve(
 	ctx corectx.Context, fulfillmentId string, reservations itExt.FulfillmentReservationExtService,
 ) {
-	if reservations == nil {
-		return
-	}
-	_, _ = reservations.ReleaseFulfillmentReservation(ctx, fulfillmentId)
+	_ = releaseEveryHold(ctx, fulfillmentId, reservations)
 }
 
 // reusableFulfillment finds a fulfillment of this order that a retried confirm may take over, and

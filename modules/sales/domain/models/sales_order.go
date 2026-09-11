@@ -38,6 +38,7 @@ const (
 	SalesOrderFieldDiscountTotal                = "discount_total"
 	SalesOrderFieldTaxTotal                     = "tax_total"
 	SalesOrderFieldGrandTotal                   = "grand_total"
+	SalesOrderFieldEstimatedTotalPrice          = "estimated_total_price"
 	SalesOrderFieldExchangeOfReturnId           = "exchange_of_return_id"
 	SalesOrderFieldExternalReference            = "external_reference"
 	SalesOrderFieldIdempotencyKey               = "idempotency_key"
@@ -234,6 +235,16 @@ func (this SalesOrder) GetTaxSnapshot() any {
 
 func (this *SalesOrder) SetTaxSnapshot(snapshot any) {
 	this.GetFieldData().SetAny(SalesOrderFieldTaxSnapshot, snapshot)
+}
+
+// GetEstimatedTotalPrice reads what the client said the order came to. Reference only: GetGrandTotal
+// is the amount the customer owes.
+func (this SalesOrder) GetEstimatedTotalPrice() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(SalesOrderFieldEstimatedTotalPrice)
+}
+
+func (this *SalesOrder) SetEstimatedTotalPrice(amount *decimal.Decimal) {
+	this.GetFieldData().SetDecimal(SalesOrderFieldEstimatedTotalPrice, amount)
 }
 
 func (this SalesOrder) GetGrandTotal() *decimal.Decimal {

@@ -35,6 +35,11 @@ const (
 	// OrgSettingDraftOrderExpiryHours is how long a draft order survives untouched.
 	OrgSettingDraftOrderExpiryHours = "draft_order_expiry_hours"
 
+	// OrgSettingEstimatedPriceTolerance is how far a client's own price may differ from the price
+	// Sales calculated before the divergence is worth recording. Unset means no check at all, which
+	// is the default: a divergence is a diagnostic signal and must never fail a sale.
+	OrgSettingEstimatedPriceTolerance = "estimated_price_tolerance"
+
 	// OrgSettingRoundingScale is the decimal place monetary totals are rounded to.
 	OrgSettingRoundingScale = "rounding_scale"
 
