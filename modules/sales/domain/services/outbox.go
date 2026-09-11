@@ -60,7 +60,7 @@ func RecordEvent(ctx corectx.Context, params RecordEventParams) (string, error) 
 		occurredAt = NowUnix()
 	}
 
-	engine, err := engineFor(models.SalesIntegrationOutboxSchemaName)
+	engineRepo, err := repoFor(models.SalesIntegrationOutboxSchemaName)
 	if err != nil {
 		return "", err
 	}
@@ -77,7 +77,7 @@ func RecordEvent(ctx corectx.Context, params RecordEventParams) (string, error) 
 		basemodel.FieldOrgId: params.OrgId,
 	}
 
-	if _, err := engine.ResourceRepository().Insert(ctx, record); err != nil {
+	if _, err := engineRepo.Insert(ctx, record); err != nil {
 		return "", err
 	}
 	return string(*eventId), nil
@@ -99,7 +99,7 @@ func payloadOrEmpty(payload map[string]any) map[string]any {
 // land in the page is still the repository's choice, so a backlog larger than one page can drain
 // slightly out of order across sweeps; consumers must be idempotent and order by occurred_at anyway.
 func UnpublishedEvents(ctx corectx.Context, limit int) ([]dmodel.DynamicFields, error) {
-	engine, err := engineFor(models.SalesIntegrationOutboxSchemaName)
+	engineRepo, err := repoFor(models.SalesIntegrationOutboxSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func UnpublishedEvents(ctx corectx.Context, limit int) ([]dmodel.DynamicFields, 
 	graph.And(*dmodel.NewSearchNode().NewCondition(
 		models.SalesOutboxFieldPublishedAt, dmodel.IsNotSet))
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engineRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  limit,
@@ -141,11 +141,11 @@ func occurredAtOf(record dmodel.DynamicFields) int64 {
 // before: marking first would lose any event whose publish then failed, while marking after can only
 // republish one, which consumers deduplicate on event_id.
 func MarkEventPublished(ctx corectx.Context, rowId string) error {
-	engine, err := engineFor(models.SalesIntegrationOutboxSchemaName)
+	engineRepo, err := repoFor(models.SalesIntegrationOutboxSchemaName)
 	if err != nil {
 		return err
 	}
-	_, err = engine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err = engineRepo.Update(ctx, dmodel.DynamicFields{
 		models.SalesOutboxFieldId:          rowId,
 		models.SalesOutboxFieldPublishedAt: model.ModelDateTime(time.Now().UTC()),
 	})
@@ -155,11 +155,11 @@ func MarkEventPublished(ctx corectx.Context, rowId string) error {
 // RecordPublishFailure counts a failed attempt and keeps the reason. The row stays unpublished so the
 // next sweep retries it, and attempt_count is incremented here so a retry loop cannot forget to count.
 func RecordPublishFailure(ctx corectx.Context, row dmodel.DynamicFields, message string) error {
-	engine, err := engineFor(models.SalesIntegrationOutboxSchemaName)
+	engineRepo, err := repoFor(models.SalesIntegrationOutboxSchemaName)
 	if err != nil {
 		return err
 	}
-	_, err = engine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err = engineRepo.Update(ctx, dmodel.DynamicFields{
 		models.SalesOutboxFieldId:           stringOf(row, models.SalesOutboxFieldId),
 		models.SalesOutboxFieldAttemptCount: int32Of(row, models.SalesOutboxFieldAttemptCount) + 1,
 		models.SalesOutboxFieldLastError:    truncateError(message),

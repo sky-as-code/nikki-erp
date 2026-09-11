@@ -55,7 +55,7 @@ type SalesAuditEntry struct {
 // else as having performed it. It is left empty when the context carries no user: a kiosk sale, a
 // gateway callback and a scheduled expiry genuinely have no actor.
 func WriteSalesAuditEvent(ctx corectx.Context, entry SalesAuditEntry) error {
-	engine, err := engineFor(models.SalesOrderEventSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderEventSchemaName)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func WriteSalesAuditEvent(ctx corectx.Context, entry SalesAuditEntry) error {
 
 	// The insert goes through the repository rather than the resource service: the resource is
 	// read-only to clients (its IAM seed grants read alone) and must stay that way.
-	_, err = engine.ResourceRepository().Insert(ctx, event)
+	_, err = engineRepo.Insert(ctx, event)
 	return errors.Wrap(err, "WriteSalesAuditEvent")
 }
 

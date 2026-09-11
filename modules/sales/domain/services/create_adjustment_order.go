@@ -134,7 +134,7 @@ func writeAdjustmentOrder(
 	adjustmentId string,
 	kept []keptLine,
 ) error {
-	engine, err := engineFor(models.SalesOrderSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderSchemaName)
 	if err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func writeAdjustmentOrder(
 		}
 	}
 
-	if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
+	if _, err := engineRepo.Insert(ctx, fields); err != nil {
 		return err
 	}
 	return writeAdjustmentOrderLines(ctx, adjustmentId, orgId, kept)
@@ -253,7 +253,7 @@ func proratedLineAmounts(line keptLine) proratedAmounts {
 func writeAdjustmentOrderLines(
 	ctx corectx.Context, adjustmentId, orgId string, kept []keptLine,
 ) error {
-	engine, err := engineFor(models.SalesOrderLineSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderLineSchemaName)
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func writeAdjustmentOrderLines(
 			}
 		}
 
-		if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
+		if _, err := engineRepo.Insert(ctx, fields); err != nil {
 			return err
 		}
 	}

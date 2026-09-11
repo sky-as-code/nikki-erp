@@ -120,11 +120,11 @@ func resolveCodeByString(
 		return nil, notFound(), nil
 	}
 
-	engine, err := engineFor(models.SalesVoucherCodeSchemaName)
+	engineRepo, err := repoFor(models.SalesVoucherCodeSchemaName)
 	if err != nil {
 		return nil, nil, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engineRepo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.SalesVoucherCodeFieldCode: code,
 	})
 	if err != nil {
@@ -298,12 +298,12 @@ func loadCompatibilityRules(
 		return nil, nil
 	}
 
-	engine, err := engineFor(models.SalesPromotionCompatibilitySchemaName)
+	engineRepo, err := repoFor(models.SalesPromotionCompatibilitySchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engineRepo.Search(ctx, dyn.RepoSearchParam{
 		Page: 0,
 		Size: model.MODEL_RULE_PAGE_MAX_SIZE,
 	})

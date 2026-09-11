@@ -122,7 +122,7 @@ func reconcileOutcomeOf(status itExt.GatewayOrderStatus) (ConfirmPaymentOutcome,
 func pendingGatewayPaymentsOlderThan(
 	ctx corectx.Context, cutoff time.Time, limit int,
 ) ([]dmodel.DynamicFields, error) {
-	engine, err := engineFor(models.SalesPaymentSchemaName)
+	engineRepo, err := repoFor(models.SalesPaymentSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func pendingGatewayPaymentsOlderThan(
 			basemodel.FieldCreatedAt, dmodel.LessThan, model.ModelDateTime(cutoff)),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engineRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  size,

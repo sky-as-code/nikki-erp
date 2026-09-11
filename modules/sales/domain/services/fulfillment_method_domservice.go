@@ -7,7 +7,8 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
@@ -25,14 +26,17 @@ const (
 // service. There is no suspend here, unlike a channel or a point: a method is either offered to new
 // orders or it is not, and the fulfillments that already snapshotted it keep running either way, so
 // a second "temporarily off" state would say nothing the archive flag does not.
+// A signature change on either side breaks the build here rather than at the engine registration.
+var _ itCatalog.SalesFulfillmentMethodDomainService = (*SalesFulfillmentMethodDomainServiceImpl)(nil)
+
 type SalesFulfillmentMethodDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
 func NewSalesFulfillmentMethodDomainService(
-	base drif.DynamicResourceService,
+	base composable.CrudDomainService,
 ) *SalesFulfillmentMethodDomainServiceImpl {
-	return &SalesFulfillmentMethodDomainServiceImpl{DynamicResourceService: base}
+	return &SalesFulfillmentMethodDomainServiceImpl{CrudDomainService: base}
 }
 
 // Archive withdraws a method from new orders. Idempotent: archiving an archived method reports
@@ -123,7 +127,7 @@ func (this *SalesFulfillmentMethodDomainServiceImpl) isNamedAsDefault(
 func anyRecordWhere(
 	ctx corectx.Context, schemaName string, field string, value string,
 ) (bool, error) {
-	engine, err := engineFor(schemaName)
+	engineRepo, err := repoFor(schemaName)
 	if err != nil {
 		return false, err
 	}
@@ -131,7 +135,7 @@ func anyRecordWhere(
 	graph := &dmodel.SearchGraph{}
 	graph.And(*dmodel.NewSearchNode().NewCondition(field, dmodel.Equals, value))
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engineRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,
@@ -201,11 +205,11 @@ func (this *SalesFulfillmentMethodDomainServiceImpl) IsAllowedOnChannel(
 	if channelId == "" || methodId == "" {
 		return false, nil
 	}
-	engine, err := engineFor(models.SalesChannelFulfillmentMethodSchemaName)
+	engineRepo, err := repoFor(models.SalesChannelFulfillmentMethodSchemaName)
 	if err != nil {
 		return false, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engineRepo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.SalesChannelFulfillmentMethodFieldSalesChannelId:      channelId,
 		models.SalesChannelFulfillmentMethodFieldFulfillmentMethodId: methodId,
 	})

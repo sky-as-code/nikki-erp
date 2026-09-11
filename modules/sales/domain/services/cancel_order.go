@@ -247,7 +247,7 @@ func stampCancelledInTranx(
 	ctx corectx.Context, orderId string, record dmodel.DynamicFields,
 	fromStatus, reason string, at time.Time,
 ) error {
-	engine, err := engineFor(models.SalesOrderSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderSchemaName)
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func stampCancelledInTranx(
 		models.SalesOrderFieldStatus:      string(models.SalesOrderStatusCancelled),
 		models.SalesOrderFieldCancelledAt: model.ModelDateTime(at),
 	}
-	if _, err := engine.ResourceRepository().Update(ctx, update); err != nil {
+	if _, err := engineRepo.Update(ctx, update); err != nil {
 		return err
 	}
 

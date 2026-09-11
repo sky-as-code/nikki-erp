@@ -5,7 +5,8 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
@@ -13,19 +14,22 @@ import (
 // cannot express, because all three are conditional on another field: which target column must be
 // set depends on applies_to, which price fields are required depends on calculation_method, and
 // whether a base pricelist is acceptable depends on the whole derivation graph.
+// A signature change on either side breaks the build here rather than at the engine registration.
+var _ itCatalog.SalesPricelistItemDomainService = (*SalesPricelistItemDomainServiceImpl)(nil)
+
 type SalesPricelistItemDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
 func NewSalesPricelistItemDomainService(
-	base drif.DynamicResourceService,
+	base composable.CrudDomainService,
 ) *SalesPricelistItemDomainServiceImpl {
-	return &SalesPricelistItemDomainServiceImpl{DynamicResourceService: base}
+	return &SalesPricelistItemDomainServiceImpl{CrudDomainService: base}
 }
 
 func (this *SalesPricelistItemDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields,
-) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	ctx corectx.Context, params composable.CreateCommand, options ...composable.CreateOptions,
+) (*composable.CreateResult, error) {
 	if vErrs := assertRuleConsistent(params); vErrs != nil {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 	}
@@ -35,15 +39,15 @@ func (this *SalesPricelistItemDomainServiceImpl) Create(
 		}
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 	}
-	return this.DynamicResourceService.Create(ctx, params)
+	return this.CrudDomainService.Create(ctx, params, options...)
 }
 
 // Update validates the record as it will BE, not as it was sent. A partial update names only the
 // fields it changes, so validating the payload alone would reject a rule for lacking a target it
 // already has.
 func (this *SalesPricelistItemDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields,
-) (*dyn.OpResult[dyn.MutateResultData], error) {
+	ctx corectx.Context, params composable.UpdateCommand, options ...composable.UpdateOptions,
+) (*composable.MutateResult, error) {
 	itemId := stringOf(params, models.SalesPricelistItemFieldId)
 	stored, err := loadRecord(ctx, models.SalesPricelistItemSchemaName,
 		models.SalesPricelistItemFieldId, itemId)
@@ -65,7 +69,7 @@ func (this *SalesPricelistItemDomainServiceImpl) Update(
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
 
-	return this.DynamicResourceService.Update(ctx, params)
+	return this.CrudDomainService.Update(ctx, params, options...)
 }
 
 // assertNoCycle refuses a rule that would make pricelist derivation circular. Skipped when the
@@ -91,12 +95,12 @@ func (this *SalesPricelistItemDomainServiceImpl) assertNoCycle(
 			"a rule priced from another pricelist must name which one"), nil
 	}
 
-	engine, err := engineFor(models.SalesPricelistItemSchemaName)
+	engineRepo, err := repoFor(models.SalesPricelistItemSchemaName)
 	if err != nil {
 		return nil, err
 	}
 	ownerId := stringOf(merged, models.SalesPricelistItemFieldSalesPricelistId)
-	reader := newRepoPricelistBaseReader(ctx, engine.ResourceRepository())
+	reader := newRepoPricelistBaseReader(ctx, engineRepo)
 
 	if err := AssertNoPricelistCycle(ownerId, baseId, reader); err != nil {
 		// A cycle is the user's problem to fix, not a server fault: the message names what is

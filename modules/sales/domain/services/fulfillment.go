@@ -197,11 +197,11 @@ func writeFulfillmentRequest(
 
 	err = withTransaction(ctx, models.SalesFulfillmentRequestSchemaName,
 		func(tranxCtx corectx.Context) error {
-			engine, err := engineFor(models.SalesFulfillmentRequestSchemaName)
+			engineRepo, err := repoFor(models.SalesFulfillmentRequestSchemaName)
 			if err != nil {
 				return err
 			}
-			if _, err := engine.ResourceRepository().Insert(tranxCtx, dmodel.DynamicFields{
+			if _, err := engineRepo.Insert(tranxCtx, dmodel.DynamicFields{
 				models.SalesFulfillmentRequestFieldId:           requestId,
 				models.SalesFulfillmentRequestFieldSalesOrderId: stringOf(order, models.SalesOrderFieldId),
 				models.SalesFulfillmentRequestFieldRequestType:  requestType,
@@ -212,7 +212,7 @@ func writeFulfillmentRequest(
 				return err
 			}
 
-			lineEngine, err := engineFor(models.SalesFulfillmentRequestLineSchemaName)
+			lineRepo, err := repoFor(models.SalesFulfillmentRequestLineSchemaName)
 			if err != nil {
 				return err
 			}
@@ -221,7 +221,7 @@ func writeFulfillmentRequest(
 				if err != nil {
 					return err
 				}
-				if _, err := lineEngine.ResourceRepository().Insert(tranxCtx, dmodel.DynamicFields{
+				if _, err := lineRepo.Insert(tranxCtx, dmodel.DynamicFields{
 					models.SalesFulfillmentLineFieldId:          string(*lineId),
 					models.SalesFulfillmentLineFieldRequestId:   requestId,
 					models.SalesFulfillmentLineFieldOrderLineId: line.SalesOrderLineId,
@@ -256,7 +256,7 @@ func writeFulfillmentRequest(
 func recordFulfillmentOutcome(
 	ctx corectx.Context, requestId string, response *itExt.FulfillmentResponse,
 ) error {
-	engine, err := engineFor(models.SalesFulfillmentRequestSchemaName)
+	engineRepo, err := repoFor(models.SalesFulfillmentRequestSchemaName)
 	if err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func recordFulfillmentOutcome(
 		update[models.SalesFulfillmentRequestFieldFailReason] = response.FailureReason
 	}
 
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = engineRepo.Update(ctx, update)
 	return err
 }
 
@@ -335,12 +335,12 @@ func SyncFulfilledQuantities(ctx corectx.Context, orderId string) error {
 		fulfilled[lineId] = fulfilled[lineId].Add(quantity)
 	}
 
-	engine, err := engineFor(models.SalesOrderLineSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderLineSchemaName)
 	if err != nil {
 		return err
 	}
 	for lineId, quantity := range fulfilled {
-		if _, err := engine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+		if _, err := engineRepo.Update(ctx, dmodel.DynamicFields{
 			models.SalesOrderLineFieldId:                lineId,
 			models.SalesOrderLineFieldFulfilledQuantity: quantity,
 		}); err != nil {

@@ -204,7 +204,7 @@ func writeRepricedOrder(
 }
 
 func writeLineResults(ctx corectx.Context, lines []pricing.LineResult) error {
-	engine, err := engineFor(models.SalesOrderLineSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderLineSchemaName)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func writeLineResults(ctx corectx.Context, lines []pricing.LineResult) error {
 			models.SalesOrderLineFieldFinalAmount:        line.FinalAmount,
 			models.SalesOrderLineFieldPricingSource:      line.PricingSource,
 		}
-		if _, err := engine.ResourceRepository().Update(ctx, update); err != nil {
+		if _, err := engineRepo.Update(ctx, update); err != nil {
 			return err
 		}
 	}
@@ -234,11 +234,11 @@ func writeLineResults(ctx corectx.Context, lines []pricing.LineResult) error {
 func replaceAdjustments(
 	ctx corectx.Context, orderId string, adjustments []pricing.Adjustment,
 ) error {
-	engine, err := engineFor(models.SalesOrderAdjustmentSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderAdjustmentSchemaName)
 	if err != nil {
 		return err
 	}
-	repo := engine.ResourceRepository()
+	repo := engineRepo
 
 	existing, err := searchBy(ctx,
 		models.SalesOrderAdjustmentSchemaName,
@@ -302,7 +302,7 @@ func writeOrderTotals(
 	result pricing.Result,
 	basketTax *BasketTax,
 ) error {
-	engine, err := engineFor(models.SalesOrderSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderSchemaName)
 	if err != nil {
 		return err
 	}
@@ -321,7 +321,7 @@ func writeOrderTotals(
 		update[models.SalesOrderFieldTaxSnapshot] = basketTax.Snapshot
 	}
 
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = engineRepo.Update(ctx, update)
 	return err
 }
 

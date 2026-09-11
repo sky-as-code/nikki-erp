@@ -114,11 +114,11 @@ func expireOneOrder(
 		}
 		released = codes
 
-		engine, err := engineFor(models.SalesOrderSchemaName)
+		engineRepo, err := repoFor(models.SalesOrderSchemaName)
 		if err != nil {
 			return err
 		}
-		if _, err := engine.ResourceRepository().Update(tranxCtx, dmodel.DynamicFields{
+		if _, err := engineRepo.Update(tranxCtx, dmodel.DynamicFields{
 			models.SalesOrderFieldId:     orderId,
 			models.SalesOrderFieldStatus: string(models.SalesOrderStatusCancelled),
 		}); err != nil {
@@ -219,11 +219,11 @@ func StampQuotationValidUntil(
 		return nil
 	}
 
-	engine, err := engineFor(models.SalesQuotationSchemaName)
+	engineRepo, err := repoFor(models.SalesQuotationSchemaName)
 	if err != nil {
 		return err
 	}
-	_, err = engine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err = engineRepo.Update(ctx, dmodel.DynamicFields{
 		models.SalesQuotationFieldId: quotationId,
 		models.SalesQuotationFieldValidUntil: model.ModelDateTime(
 			now.Add(time.Duration(hours) * time.Hour)),

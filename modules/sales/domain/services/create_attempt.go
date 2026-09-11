@@ -291,7 +291,7 @@ func writeAttempt(
 	startedAt := model.ModelDateTime(time.Now().UTC())
 
 	err = withTransaction(ctx, models.SalesFulfillmentAttemptSchemaName, func(tranxCtx corectx.Context) error {
-		engine, err := engineFor(models.SalesFulfillmentAttemptSchemaName)
+		engineRepo, err := repoFor(models.SalesFulfillmentAttemptSchemaName)
 		if err != nil {
 			return err
 		}
@@ -305,7 +305,7 @@ func writeAttempt(
 			models.SalesFulfillmentAttemptFieldStartedAt:             startedAt,
 			basemodel.FieldOrgId:                                     orgId,
 		}
-		if _, err := engine.ResourceRepository().Insert(tranxCtx, fields); err != nil {
+		if _, err := engineRepo.Insert(tranxCtx, fields); err != nil {
 			return errors.Wrap(err, "writing the fulfillment attempt")
 		}
 		return writeAttemptItems(tranxCtx, attemptId, orgId, params.Items)
@@ -319,7 +319,7 @@ func writeAttempt(
 func writeAttemptItems(
 	ctx corectx.Context, attemptId, orgId string, items []CreateAttemptItem,
 ) error {
-	engine, err := engineFor(models.SalesFulfillmentAttemptItemSchemaName)
+	engineRepo, err := repoFor(models.SalesFulfillmentAttemptItemSchemaName)
 	if err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func writeAttemptItems(
 
 			basemodel.FieldOrgId: orgId,
 		}
-		if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
+		if _, err := engineRepo.Insert(ctx, fields); err != nil {
 			return errors.Wrap(err, "writing a fulfillment attempt item")
 		}
 	}

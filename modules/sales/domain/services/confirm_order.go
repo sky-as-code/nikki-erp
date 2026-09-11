@@ -355,7 +355,7 @@ func stampConfirmed(
 func stampConfirmedInTranx(
 	ctx corectx.Context, orderId string, record dmodel.DynamicFields, at time.Time,
 ) error {
-	engine, err := engineFor(models.SalesOrderSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderSchemaName)
 	if err != nil {
 		return err
 	}
@@ -366,7 +366,7 @@ func stampConfirmedInTranx(
 		models.SalesOrderFieldConfirmedAt: model.ModelDateTime(at),
 	}
 
-	if _, err := engine.ResourceRepository().Update(ctx, update); err != nil {
+	if _, err := engineRepo.Update(ctx, update); err != nil {
 		return err
 	}
 

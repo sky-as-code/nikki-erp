@@ -102,7 +102,7 @@ func ReconcileStaleFiscalRequests(
 func pendingFiscalRequestsOlderThan(
 	ctx corectx.Context, cutoff time.Time, limit int,
 ) ([]dmodel.DynamicFields, error) {
-	engine, err := engineFor(models.SalesFiscalRequestSchemaName)
+	engineRepo, err := repoFor(models.SalesFiscalRequestSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func pendingFiscalRequestsOlderThan(
 			basemodel.FieldCreatedAt, dmodel.LessThan, model.ModelDateTime(cutoff)),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engineRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  size,

@@ -176,7 +176,7 @@ func writeManualDiscount(
 
 	err = withTransaction(ctx, models.SalesManualDiscountSchemaName,
 		func(tranxCtx corectx.Context) error {
-			engine, err := engineFor(models.SalesManualDiscountSchemaName)
+			engineRepo, err := repoFor(models.SalesManualDiscountSchemaName)
 			if err != nil {
 				return err
 			}
@@ -200,7 +200,7 @@ func writeManualDiscount(
 				record[models.SalesManualDiscountFieldGrantedBy] = actorId
 			}
 
-			if _, err := engine.ResourceRepository().Insert(tranxCtx, record); err != nil {
+			if _, err := engineRepo.Insert(tranxCtx, record); err != nil {
 				return err
 			}
 
@@ -255,11 +255,11 @@ func RevokeManualDiscount(
 
 	err = withTransaction(ctx, models.SalesManualDiscountSchemaName,
 		func(tranxCtx corectx.Context) error {
-			engine, err := engineFor(models.SalesManualDiscountSchemaName)
+			engineRepo, err := repoFor(models.SalesManualDiscountSchemaName)
 			if err != nil {
 				return err
 			}
-			if _, err := engine.ResourceRepository().DeleteOne(tranxCtx, dmodel.DynamicFields{
+			if _, err := engineRepo.DeleteOne(tranxCtx, dmodel.DynamicFields{
 				models.SalesManualDiscountFieldId: discountId,
 			}); err != nil {
 				return err

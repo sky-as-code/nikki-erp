@@ -209,11 +209,11 @@ func stampQuotationAccepted(
 
 	return withTransaction(ctx, models.SalesQuotationSchemaName,
 		func(tranxCtx corectx.Context) error {
-			engine, err := engineFor(models.SalesQuotationSchemaName)
+			engineRepo, err := repoFor(models.SalesQuotationSchemaName)
 			if err != nil {
 				return err
 			}
-			if _, err := engine.ResourceRepository().Update(tranxCtx, dmodel.DynamicFields{
+			if _, err := engineRepo.Update(tranxCtx, dmodel.DynamicFields{
 				models.SalesQuotationFieldId:             quotationId,
 				models.SalesQuotationFieldStatus:         string(models.SalesQuotationStatusAccepted),
 				models.SalesQuotationFieldConvertedOrder: orderId,
@@ -296,7 +296,7 @@ func TransitionQuotation(
 		return vErrs, nil
 	}
 
-	engine, err := engineFor(models.SalesQuotationSchemaName)
+	engineRepo, err := repoFor(models.SalesQuotationSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +312,7 @@ func TransitionQuotation(
 		update[models.SalesQuotationFieldCancelledAt] = model.ModelDateTime(time.Now().UTC())
 	}
 
-	if _, err := engine.ResourceRepository().Update(ctx, update); err != nil {
+	if _, err := engineRepo.Update(ctx, update); err != nil {
 		return nil, err
 	}
 	return nil, nil

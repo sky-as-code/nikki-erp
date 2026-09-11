@@ -341,7 +341,7 @@ func assertVariantsSellable(
 func findOrderByIdempotencyKey(
 	ctx corectx.Context, channelId, key string,
 ) (dmodel.DynamicFields, error) {
-	engine, err := engineFor(models.SalesOrderSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +352,7 @@ func findOrderByIdempotencyKey(
 	graph.And(*dmodel.NewSearchNode().
 		NewCondition(models.SalesOrderFieldIdempotencyKey, dmodel.Equals, key))
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engineRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,
@@ -384,7 +384,7 @@ func writeDraftOrder(
 	}
 
 	err = withTransaction(ctx, models.SalesOrderSchemaName, func(tranxCtx corectx.Context) error {
-		orderEngine, err := engineFor(models.SalesOrderSchemaName)
+		orderRepo, err := repoFor(models.SalesOrderSchemaName)
 		if err != nil {
 			return err
 		}
@@ -435,7 +435,7 @@ func writeDraftOrder(
 			fields[models.SalesOrderFieldRequestedTargetOutletId] = params.Fulfillment.TargetOutletId
 		}
 
-		if _, err := orderEngine.ResourceRepository().Insert(tranxCtx, fields); err != nil {
+		if _, err := orderRepo.Insert(tranxCtx, fields); err != nil {
 			return err
 		}
 		return writeOrderLines(tranxCtx, orderId, orgId, params.Lines)
@@ -454,7 +454,7 @@ func writeOrderLines(
 		return nil
 	}
 
-	engine, err := engineFor(models.SalesOrderLineSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderLineSchemaName)
 	if err != nil {
 		return err
 	}
@@ -503,7 +503,7 @@ func writeOrderLines(
 		if line.EstimatedPrice != nil {
 			fields[models.SalesOrderLineFieldEstimatedPrice] = *line.EstimatedPrice
 		}
-		if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
+		if _, err := engineRepo.Insert(ctx, fields); err != nil {
 			return err
 		}
 	}

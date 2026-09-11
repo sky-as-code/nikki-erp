@@ -373,7 +373,7 @@ func writeFiscalRequest(
 	}
 	requestId := string(*id)
 
-	engine, err := engineFor(models.SalesFiscalRequestSchemaName)
+	engineRepo, err := repoFor(models.SalesFiscalRequestSchemaName)
 	if err != nil {
 		return "", err
 	}
@@ -396,7 +396,7 @@ func writeFiscalRequest(
 		record[models.SalesFiscalRequestFieldOriginalId] = params.OriginalFiscalRequestId
 	}
 
-	if _, err := engine.ResourceRepository().Insert(ctx, record); err != nil {
+	if _, err := engineRepo.Insert(ctx, record); err != nil {
 		return "", err
 	}
 
@@ -523,7 +523,7 @@ func recordFiscalOutcome(
 	requestId string,
 	response *itInvoicing.IssueResult,
 ) error {
-	engine, err := engineFor(models.SalesFiscalRequestSchemaName)
+	engineRepo, err := repoFor(models.SalesFiscalRequestSchemaName)
 	if err != nil {
 		return err
 	}
@@ -537,7 +537,7 @@ func recordFiscalOutcome(
 		update[models.SalesFiscalRequestFieldStatus] = string(models.SalesFiscalStatusFailed)
 		update[models.SalesFiscalRequestFieldLastError] = response.FailureReason
 	}
-	if _, err := engine.ResourceRepository().Update(ctx, update); err != nil {
+	if _, err := engineRepo.Update(ctx, update); err != nil {
 		return err
 	}
 
@@ -567,11 +567,11 @@ func recordFiscalFailure(ctx corectx.Context, requestId, message string) error {
 		return err
 	}
 
-	engine, err := engineFor(models.SalesFiscalRequestSchemaName)
+	engineRepo, err := repoFor(models.SalesFiscalRequestSchemaName)
 	if err != nil {
 		return err
 	}
-	_, err = engine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err = engineRepo.Update(ctx, dmodel.DynamicFields{
 		models.SalesFiscalRequestFieldId:           requestId,
 		models.SalesFiscalRequestFieldStatus:       string(models.SalesFiscalStatusFailed),
 		models.SalesFiscalRequestFieldLastError:    truncateError(message),
@@ -598,11 +598,11 @@ func syncOrderInvoiceStatus(ctx corectx.Context, orderId, status string) error {
 	if orderId == "" {
 		return nil
 	}
-	engine, err := engineFor(models.SalesOrderSchemaName)
+	engineRepo, err := repoFor(models.SalesOrderSchemaName)
 	if err != nil {
 		return err
 	}
-	_, err = engine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err = engineRepo.Update(ctx, dmodel.DynamicFields{
 		models.SalesOrderFieldId:            orderId,
 		models.SalesOrderFieldInvoiceStatus: status,
 	})

@@ -7,98 +7,10 @@ package dynamicengines
 import (
 	stdErr "errors"
 
-	"go.bryk.io/pkg/errors"
-
-	"github.com/sky-as-code/nikki-erp/common/array"
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 )
-
-// engineSpec declares one resource engine the Sales module owns.
-type engineSpec struct {
-	// SchemaName must be an XSchemaName constant, never a string derived from the resource path.
-	SchemaName string
-
-	// DefineActions is optional; a resource without custom behavior leaves it nil.
-	DefineActions func(drif.DynamicResourceEngine) error
-}
-
-// engineSpecs lists the resources this module serves. The order matches RegisterModels for
-// readability only; engines are created after every schema is registered. Junction tables never get
-// an entry: a _rel row is configured through its owner, so it has no route and no IAM resource row.
-var engineSpecs = []engineSpec{
-	// The fulfillment policy catalogue, which channels and points name a default from.
-	salesFulfillmentMethodEngineSpec(),
-
-	salesChannelEngineSpec(),
-	salesPointEngineSpec(),
-	salesOrderEngineSpec(),
-	salesOrderLineEngineSpec(),
-	salesOrderLineComponentEngineSpec(),
-	salesOrderAdjustmentEngineSpec(),
-	salesOrderEventEngineSpec(),
-
-	// Pricing master data, client-managed: an operator sets up pricelists and bundles through the UI.
-	salesPricelistEngineSpec(),
-	salesPricelistItemEngineSpec(),
-	salesComboEngineSpec(),
-	salesComboComponentEngineSpec(),
-
-	// Promotion master data, also operator-managed.
-	salesPromotionProgramEngineSpec(),
-	salesPromotionConditionGroupEngineSpec(),
-	salesPromotionConditionEngineSpec(),
-	salesPromotionConditionTargetEngineSpec(),
-	salesPromotionRewardEngineSpec(),
-	salesPromotionCompatibilityEngineSpec(),
-
-	// Voucher codes are operator-managed master data; redemptions are the ledger of their use.
-	salesVoucherCodeEngineSpec(),
-	salesVoucherRedemptionEngineSpec(),
-
-	// Billing: the settlement units of a sale, their allocations, and the lineage between them.
-	salesBillEngineSpec(),
-	salesBillLineEngineSpec(),
-	salesBillRelationEngineSpec(),
-	salesPaymentEngineSpec(),
-	salesFulfillmentRequestEngineSpec(),
-	salesFulfillmentRequestLineEngineSpec(),
-
-	// Order fulfillments and their items: what a kiosk owes a customer, and how much of it is left.
-	salesOrderFulfillmentEngineSpec(),
-	salesOrderFulfillmentItemEngineSpec(),
-
-	// The evidence of what a machine was asked to do and what it actually did.
-	salesFulfillmentAttemptEngineSpec(),
-	salesFulfillmentAttemptItemEngineSpec(),
-
-	// The record of where a delivery has been promised from, and who moved it.
-	salesFulfillmentTargetChangeEngineSpec(),
-
-	// The fiscal contract: what Sales asked an eInvoice provider for, and what came back.
-	salesFiscalRequestEngineSpec(),
-
-	// Billing instructions: who a sale is to be invoiced to, and the record of each try at issuing.
-	salesBillingInstructionEngineSpec(),
-	salesBillingIssuanceAttemptEngineSpec(),
-
-	// Operator price overrides.
-	salesManualDiscountEngineSpec(),
-
-	// Quotations: an offer and its lines, which back-office raises and converts.
-	salesQuotationEngineSpec(),
-	salesQuotationLineEngineSpec(),
-
-	// Returns and the refunds that settle them.
-	salesReturnEngineSpec(),
-	salesReturnLineEngineSpec(),
-	salesRefundPaymentEngineSpec(),
-
-	// The integration event feed.
-	salesIntegrationOutboxEngineSpec(),
-}
 
 // junctionSchemas lists association schemas that need an engine built but not served: a schema here
 // gets a repository and nothing else — no route, no IAM resource row, no CRUD. They need an engine
@@ -111,330 +23,122 @@ var junctionSchemas = []string{
 	models.SalesChannelFulfillmentMethodSchemaName,
 }
 
-// The method catalogue is operator-managed master data, like a pricelist: an administrator creates
-// the policies their organization sells under. Its lifecycle is archive and unarchive alone — there
-// is no suspend, because a method is either offered to new orders or it is not, and the fulfillments
-// that already snapshotted it keep running either way.
-func salesFulfillmentMethodEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName:    models.SalesFulfillmentMethodSchemaName,
-		DefineActions: defineSalesFulfillmentMethodActions,
-	}
-}
-
-func salesChannelEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.SalesChannelSchemaName,
-		DefineActions: func(engine drif.DynamicResourceEngine) error {
-			// Two families of action on the same record: lifecycle and payment-method configuration.
-			// Declared separately because they answer to different permissions and seed rows.
-			return stdErr.Join(
-				defineSalesChannelActions(engine),
-				defineChannelPaymentActions(engine),
-			)
-		},
-	}
-}
-
-// salesOrderEngineSpec serves the order. The lifecycle actions wait for the state machines that
-// would validate them; apply_voucher is safe ahead of those because it moves no status, and party
-// assignment because it names who is party to a sale rather than moving the sale itself.
-func salesOrderEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.SalesOrderSchemaName,
-		DefineActions: func(engine drif.DynamicResourceEngine) error {
-			// Two families of action on the same record: pricing and the parties to the sale.
-			// Declared separately because they answer to different permissions and seed rows.
-			return stdErr.Join(
-				defineSalesOrderVoucherActions(engine),
-				defineSalesOrderPartyActions(engine),
-				// Both read-only, and hung off the order rather than the fulfillment because both
-				// questions are asked about an order: a caller must be able to find out whether any
-				// fulfillment exists without already knowing its id.
-				defineSalesOrderFulfillmentViewActions(engine),
-				// Refunds are raised against the order too: a customer asking for their money back
-				// knows what they bought, not which delivery it became.
-				defineSalesOrderRefundActions(engine),
-			)
-		},
-	}
-}
-
-// A line is its own resource rather than a nested payload, because a whole-order update would
-// rewrite untouched lines and lose concurrent edits to them.
-func salesOrderLineEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.SalesOrderLineSchemaName,
-	}
-}
-
-// The three records that explain an order rather than form it, all read-only: a client able to POST
-// one could forge a price explanation or an audit trail. engineSpec has no ReadOnly flag, so the
-// read-onlyness comes from their IAM seeds granting `read` alone.
-func salesOrderLineComponentEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.SalesOrderLineComponentSchemaName,
-	}
-}
-
-func salesOrderAdjustmentEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.SalesOrderAdjustmentSchemaName,
-	}
-}
-
-func salesOrderEventEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.SalesOrderEventSchemaName,
-	}
-}
-
-func salesPricelistEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName:    models.SalesPricelistSchemaName,
-		DefineActions: defineSalesPricelistActions,
-	}
-}
-
-func salesPricelistItemEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesPricelistItemSchemaName}
-}
-
-func salesComboEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesComboSchemaName}
-}
-
-func salesComboComponentEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesComboComponentSchemaName}
-}
-
-func salesPromotionProgramEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesPromotionProgramSchemaName}
-}
-
-func salesPromotionConditionGroupEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesPromotionConditionGroupSchemaName}
-}
-
-func salesPromotionConditionEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesPromotionConditionSchemaName}
-}
-
-func salesPromotionConditionTargetEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesPromotionConditionTargetSchemaName}
-}
-
-func salesPromotionRewardEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesPromotionRewardSchemaName}
-}
-
-func salesBillEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName:    models.SalesBillSchemaName,
-		DefineActions: defineSalesBillActions,
-	}
-}
-
-func salesBillLineEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesBillLineSchemaName}
-}
-
-// The lineage is read-only: its rows come from split and merge alone, and a writable one could
-// fabricate a trail showing a payment settled a bill it never touched.
-func salesBillRelationEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesBillRelationSchemaName}
-}
-
-// Payments are read-only: money is recorded through record_payment alone, which applies gates a
-// plain POST would bypass, including asking another module whether the method may be used.
-func salesPaymentEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesPaymentSchemaName}
-}
-
-// The fulfilment tables are read-only: a writable one could tell Inventory to move goods no sale
-// asked for.
-func salesFulfillmentRequestEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesFulfillmentRequestSchemaName}
-}
-
-func salesFulfillmentRequestLineEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesFulfillmentRequestLineSchemaName}
-}
-
-// The fiscal contract is read-only: a writable one could ask a tax authority for a document against
-// a sale that never happened, or mark an unissued request as issued.
-// A fulfillment is READ-ONLY to clients. It is created by confirming an order and moved only by the
-// fulfillment services, because every one of its columns is either a policy snapshot the customer
-// bought under or a status that must not move without the stock moving with it. A client able to
-// write fulfillment_status could declare goods delivered that never left a machine.
-func salesOrderFulfillmentEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.SalesOrderFulfillmentSchemaName,
-
-		// The two write operations of the dispense loop hang here rather than on the attempt
-		// resource: both are about one DELIVERY, and a caller commanding a machine knows which
-		// delivery it means before any attempt exists to name.
-		DefineActions: defineSalesFulfillmentAttemptActions,
-	}
-}
-
-// Its items likewise: the quantities are recomputed from attempts and settled refunds, so a client
-// write would be overwritten at best and would credit a customer for undelivered goods at worst.
-func salesOrderFulfillmentItemEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesOrderFulfillmentItemSchemaName}
-}
-
-// An attempt is READ-ONLY to clients and written only by the attempt services. It is evidence about
-// a physical event: a client able to write one could claim a machine dispensed goods it never did,
-// which is the one lie the whole feature is built to make impossible.
-func salesFulfillmentAttemptEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesFulfillmentAttemptSchemaName}
-}
-
-func salesFulfillmentAttemptItemEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesFulfillmentAttemptItemSchemaName}
-}
-
-// A target change is an audit trail and therefore READ-only: it records something that already
-// happened, and a row a client could write or edit would be evidence of nothing. Rows are created
-// only by the reassignment operation, in the same transaction that moves the target.
-func salesFulfillmentTargetChangeEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesFulfillmentTargetChangeSchemaName}
-}
-
-func salesFiscalRequestEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName:    models.SalesFiscalRequestSchemaName,
-		DefineActions: defineSalesFiscalRequestActions,
-	}
-}
-
-// A billing instruction is client-creatable: recording that a buyer wants an invoice is how the
-// process starts, at a till or through back office. Its status is no_update, so the lifecycle runs
-// only through the actions below — a client that could write `ready` directly would be able to
-// release a document for issuance without the completeness check.
-func salesBillingInstructionEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName:    models.SalesBillingInstructionSchemaName,
-		DefineActions: defineSalesBillingInstructionActions,
-	}
-}
-
-// Issuance attempts are read-only: they are the evidence of whether a document was created,
-// including the indeterminate case where nobody knows. A writable attempt could fabricate a record
-// showing an invoice was issued, or erase the trace of one that may exist.
-func salesBillingIssuanceAttemptEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesBillingIssuanceAttemptSchemaName}
-}
-
-// A return is client-creatable, unlike a bill: raising one is how an agent starts the process. Its
-// status columns are no_update, so the lifecycle runs only through the actions below.
-func salesReturnEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName:    models.SalesReturnSchemaName,
-		DefineActions: defineSalesReturnActions,
-	}
-}
-
-// Return lines are read-only: create_return checks each quantity against what is still returnable
-// and prices it from historical amounts, so a writable line could return more than was delivered or
-// name its own refund amount.
-func salesReturnLineEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesReturnLineSchemaName}
-}
-
-// Refund legs are read-only: the return workflow caps each leg at what its original payment
-// captured, so a writable row could create an outflow with no matching inflow.
-func salesRefundPaymentEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesRefundPaymentSchemaName}
-}
-
-// The outbox is read-only: a writable row could announce a sale that never happened, or set
-// published_at on an event that never went, which drops it from the queue. It is routed at all so an
-// operator can see what Sales believes it published, and when.
-func salesIntegrationOutboxEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesIntegrationOutboxSchemaName}
-}
-
-// Overrides are read-only: a plain POST would bypass the gates that make one auditable (mandatory
-// reason, draft-only check, audit entry recording both prices).
-func salesManualDiscountEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesManualDiscountSchemaName}
-}
-
-// A quotation is client-creatable through the built-in POST, since creating one commits nothing.
-// Its status is no_update and moves only through the actions below, because accepting one creates
-// an order.
-func salesQuotationEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName:    models.SalesQuotationSchemaName,
-		DefineActions: defineSalesQuotationActions,
-	}
-}
-
-func salesQuotationLineEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesQuotationLineSchemaName}
-}
-
-func salesVoucherCodeEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesVoucherCodeSchemaName}
-}
-
-// The redemption ledger is read-only through its IAM seed granting `read` alone: a writable row
-// could forge a discount's provenance or release a hold another order relies on.
-func salesVoucherRedemptionEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesVoucherRedemptionSchemaName}
-}
-
-func salesPromotionCompatibilityEngineSpec() engineSpec {
-	return engineSpec{SchemaName: models.SalesPromotionCompatibilitySchemaName}
-}
-
-func salesPointEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName:    models.SalesPointSchemaName,
-		DefineActions: defineSalesPointActions,
-	}
-}
-
 // EngineSchemaNames keeps route registration and engine creation from drifting apart.
+// EngineSchemaNames answers every schema Sales serves. Kept as a name distinct from SchemaNames
+// because the module's surface tests are written against it; both now answer the same list, the
+// legacy generation having been removed.
 func EngineSchemaNames() []string {
-	return array.Map(engineSpecs, func(spec engineSpec) string {
-		return spec.SchemaName
-	})
+	return SchemaNames()
 }
 
 // InitDynamicEngines creates this module's engines and publishes them into the dependency container
 // so other modules can inject them by name.
+// InitDynamicEngines registers every resource this module serves, and the association
+// repositories. Nothing is built here: an onion is a container constructor, and BuildAllEngines
+// forces the construction once the application services it may inject are registered.
 func InitDynamicEngines() error {
-	for _, spec := range engineSpecs {
-		if err := initEngine(spec); err != nil {
-			return err
-		}
-	}
-	for _, schemaName := range junctionSchemas {
-		if err := initEngine(engineSpec{SchemaName: schemaName}); err != nil {
-			return err
-		}
-	}
-	return nil
+	return stdErr.Join(
+		registerSalesFulfillmentMethodEngine(),
+		registerSalesChannelEngine(),
+		registerSalesPointEngine(),
+		registerSalesPricelistEngine(),
+		registerSalesPricelistItemEngine(),
+		registerSalesComboEngine(),
+		registerSalesComboComponentEngine(),
+		registerSalesOrderEngine(),
+		registerSalesOrderLineEngine(),
+		registerSalesOrderLineComponentEngine(),
+		registerSalesOrderAdjustmentEngine(),
+		registerSalesOrderEventEngine(),
+		registerSalesBillEngine(),
+		registerSalesBillLineEngine(),
+		registerSalesBillRelationEngine(),
+		registerSalesPaymentEngine(),
+		registerSalesFulfillmentRequestEngine(),
+		registerSalesFulfillmentRequestLineEngine(),
+		registerSalesOrderFulfillmentEngine(),
+		registerSalesOrderFulfillmentItemEngine(),
+		registerSalesFulfillmentAttemptEngine(),
+		registerSalesFulfillmentAttemptItemEngine(),
+		registerSalesFulfillmentTargetChangeEngine(),
+		registerSalesReturnEngine(),
+		registerSalesReturnLineEngine(),
+		registerSalesRefundPaymentEngine(),
+		registerSalesPromotionProgramEngine(),
+		registerSalesPromotionConditionGroupEngine(),
+		registerSalesPromotionConditionEngine(),
+		registerSalesPromotionConditionTargetEngine(),
+		registerSalesPromotionRewardEngine(),
+		registerSalesPromotionCompatibilityEngine(),
+		registerSalesVoucherCodeEngine(),
+		registerSalesVoucherRedemptionEngine(),
+		registerSalesQuotationEngine(),
+		registerSalesQuotationLineEngine(),
+		registerSalesFiscalRequestEngine(),
+		registerSalesBillingInstructionEngine(),
+		registerSalesBillingIssuanceAttemptEngine(),
+		registerSalesManualDiscountEngine(),
+		registerSalesIntegrationOutboxEngine(),
+		InitJunctionRepositories(),
+	)
 }
 
-func initEngine(spec engineSpec) error {
-	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create the '%s' resource engine", spec.SchemaName)
-	}
+// buildOnion builds one onion with the module-wide rules applied and installs it into the resource
+// hub. Every Sales resource refuses is_archived on create: archiving goes through the dedicated
+// actions, and no schema declares the field itself (domain/models/archivable_test.go holds that).
+func buildOnion(
+	impl *composable.DynamicResourceEngineOnionImpl, param composable.BuildParam,
+) composable.DynamicResourceEngineOnion {
+	impl.RejectArchivedOnCreate = true
+	onion := composable.MustBuild(impl, param)
+	services.InstallResource(impl.SchemaName, onion.Repository(), onion.DomainService())
+	return onion
+}
 
-	if spec.DefineActions != nil {
-		if err := spec.DefineActions(engine); err != nil {
-			return errors.Wrapf(err, "failed to define actions of the '%s' resource engine", spec.SchemaName)
-		}
+// SchemaNames lists the resources served by a composable onion, for the boot-time check that each
+// was built. It excludes the junctions, which have no onion.
+func SchemaNames() []string {
+	return []string{
+		models.SalesFulfillmentMethodSchemaName,
+		models.SalesChannelSchemaName,
+		models.SalesPointSchemaName,
+		models.SalesPricelistSchemaName,
+		models.SalesPricelistItemSchemaName,
+		models.SalesComboSchemaName,
+		models.SalesComboComponentSchemaName,
+		models.SalesOrderSchemaName,
+		models.SalesOrderLineSchemaName,
+		models.SalesOrderLineComponentSchemaName,
+		models.SalesOrderAdjustmentSchemaName,
+		models.SalesOrderEventSchemaName,
+		models.SalesBillSchemaName,
+		models.SalesBillLineSchemaName,
+		models.SalesBillRelationSchemaName,
+		models.SalesPaymentSchemaName,
+		models.SalesFulfillmentRequestSchemaName,
+		models.SalesFulfillmentRequestLineSchemaName,
+		models.SalesOrderFulfillmentSchemaName,
+		models.SalesOrderFulfillmentItemSchemaName,
+		models.SalesFulfillmentAttemptSchemaName,
+		models.SalesFulfillmentAttemptItemSchemaName,
+		models.SalesFulfillmentTargetChangeSchemaName,
+		models.SalesReturnSchemaName,
+		models.SalesReturnLineSchemaName,
+		models.SalesRefundPaymentSchemaName,
+		models.SalesPromotionProgramSchemaName,
+		models.SalesPromotionConditionGroupSchemaName,
+		models.SalesPromotionConditionSchemaName,
+		models.SalesPromotionConditionTargetSchemaName,
+		models.SalesPromotionRewardSchemaName,
+		models.SalesPromotionCompatibilitySchemaName,
+		models.SalesVoucherCodeSchemaName,
+		models.SalesVoucherRedemptionSchemaName,
+		models.SalesQuotationSchemaName,
+		models.SalesQuotationLineSchemaName,
+		models.SalesFiscalRequestSchemaName,
+		models.SalesBillingInstructionSchemaName,
+		models.SalesBillingIssuanceAttemptSchemaName,
+		models.SalesManualDiscountSchemaName,
+		models.SalesIntegrationOutboxSchemaName,
 	}
-
-	err = deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(spec.SchemaName),
-		func() drif.DynamicResourceEngine { return engine },
-	)
-	return errors.Wrapf(err, "failed to register the '%s' resource engine", spec.SchemaName)
 }

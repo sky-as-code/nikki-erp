@@ -20,10 +20,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
 	eventhandlers "github.com/sky-as-code/nikki-erp/modules/sales/event_handlers"
 	"github.com/sky-as-code/nikki-erp/modules/sales/infra/external"
-	itChannel "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
 	itMessage "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/message"
@@ -95,18 +95,12 @@ func (*SalesModule) Init() error {
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}
-	if err := dynamicengines.InitDomainServices(); err != nil {
-		return err
-	}
 	if err := app.InitApplicationServices(); err != nil {
 		return err
 	}
-	// The payment mapping gate is one of Sales' own application services, so it resolves only
-	// after the step above registers it — not with the external ports.
-	if err := deps.Invoke(func(channels itChannel.ChannelPaymentAppService) error {
-		dynamicengines.SetChannelPaymentService(channels)
-		return nil
-	}); err != nil {
+	// After the application services: the channel and bill onions inject ChannelPaymentAppService,
+	// which the step above registers. Forcing the build any earlier fails with a missing type.
+	if err := dynamicengines.BuildAllEngines(); err != nil {
 		return err
 	}
 	// Event handlers before subscribers: a subscriber resolves its handler registry at construction,
@@ -122,7 +116,29 @@ func (*SalesModule) Init() error {
 	if err := salescqrs.InitCqrsHandlers(); err != nil {
 		return err
 	}
-	return restful.InitRestfulHandlers()
+	if err := restful.InitRestfulHandlers(); err != nil {
+		return err
+	}
+	// After the routes, because registering them is what forces dig to build the onions. A resource
+	// declared but never built would answer every resource-hub lookup with "not installed", and the
+	// first caller to notice would be a cron sweep hours later rather than this boot.
+	return assertEveryResourceInstalled()
+}
+
+// assertEveryResourceInstalled fails the boot when an onion was declared but never built.
+func assertEveryResourceInstalled() error {
+	installed := map[string]bool{}
+	for _, name := range services.InstalledResourceNames() {
+		installed[name] = true
+	}
+	var missing []error
+	for _, name := range dynamicengines.SchemaNames() {
+		if !installed[name] {
+			missing = append(missing,
+				stdErr.New("the '"+name+"' sales resource was declared but never built"))
+		}
+	}
+	return stdErr.Join(missing...)
 }
 
 // OnAppStarted implements InCodeModuleAppStarted. The settings schema registers here, not in Init,

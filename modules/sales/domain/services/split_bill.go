@@ -354,11 +354,11 @@ func billNumberOf(source dmodel.DynamicFields, index int) string {
 func insertBill(
 	ctx corectx.Context, billId, orderId, orgId, currency, billNumber string, totals *billTotals,
 ) error {
-	engine, err := engineFor(models.SalesBillSchemaName)
+	engineRepo, err := repoFor(models.SalesBillSchemaName)
 	if err != nil {
 		return err
 	}
-	_, err = engine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+	_, err = engineRepo.Insert(ctx, dmodel.DynamicFields{
 		models.SalesBillFieldId:            billId,
 		models.SalesBillFieldBillNumber:    billNumber,
 		models.SalesBillFieldSalesOrderId:  orderId,
@@ -378,7 +378,7 @@ func insertBillLine(
 	ctx corectx.Context, billId, orderLineId, orgId string,
 	quantity, net, tax, total decimal.Decimal,
 ) error {
-	engine, err := engineFor(models.SalesBillLineSchemaName)
+	engineRepo, err := repoFor(models.SalesBillLineSchemaName)
 	if err != nil {
 		return err
 	}
@@ -386,7 +386,7 @@ func insertBillLine(
 	if err != nil {
 		return err
 	}
-	_, err = engine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+	_, err = engineRepo.Insert(ctx, dmodel.DynamicFields{
 		models.SalesBillLineFieldId:                   string(*id),
 		models.SalesBillLineFieldSalesBillId:          billId,
 		models.SalesBillLineFieldSalesOrderLineId:     orderLineId,
@@ -408,11 +408,11 @@ func cancelSupersededBill(
 	sourceId := stringOf(source, models.SalesBillFieldId)
 	orgId := stringOf(source, basemodel.FieldOrgId)
 
-	billEngine, err := engineFor(models.SalesBillSchemaName)
+	billRepo, err := repoFor(models.SalesBillSchemaName)
 	if err != nil {
 		return err
 	}
-	if _, err := billEngine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	if _, err := billRepo.Update(ctx, dmodel.DynamicFields{
 		models.SalesBillFieldId:          sourceId,
 		models.SalesBillFieldStatus:      string(models.SalesBillStatusCancelled),
 		models.SalesBillFieldCancelledAt: model.ModelDateTime(time.Now().UTC()),
@@ -420,7 +420,7 @@ func cancelSupersededBill(
 		return err
 	}
 
-	relationEngine, err := engineFor(models.SalesBillRelationSchemaName)
+	relationRepo, err := repoFor(models.SalesBillRelationSchemaName)
 	if err != nil {
 		return err
 	}
@@ -429,7 +429,7 @@ func cancelSupersededBill(
 		if err != nil {
 			return err
 		}
-		if _, err := relationEngine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+		if _, err := relationRepo.Insert(ctx, dmodel.DynamicFields{
 			models.SalesBillRelationFieldId:           string(*id),
 			models.SalesBillRelationFieldSourceBillId: sourceId,
 			models.SalesBillRelationFieldTargetBillId: targetId,

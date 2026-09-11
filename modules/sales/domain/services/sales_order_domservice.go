@@ -9,8 +9,9 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	itOrder "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/order"
 )
 
 // SalesOrderDomainServiceImpl derives the order resource, adding the rules the built-in CRUD
@@ -20,13 +21,14 @@ import (
 // immutability rule have exactly one enforcement point, which is this file: a write bypassing this
 // service bypasses the invariant entirely.
 type SalesOrderDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
-var _ drif.DynamicResourceService = (*SalesOrderDomainServiceImpl)(nil)
+// A signature change on either side breaks the build here rather than at the engine registration.
+var _ itOrder.SalesOrderDomainService = (*SalesOrderDomainServiceImpl)(nil)
 
-func NewSalesOrderDomainService(base drif.DynamicResourceService) *SalesOrderDomainServiceImpl {
-	return &SalesOrderDomainServiceImpl{DynamicResourceService: base}
+func NewSalesOrderDomainService(base composable.CrudDomainService) *SalesOrderDomainServiceImpl {
+	return &SalesOrderDomainServiceImpl{CrudDomainService: base}
 }
 
 // AssertEditable refuses a change to an order that is no longer a draft. Confirmation is the line:
@@ -54,27 +56,27 @@ func (this *SalesOrderDomainServiceImpl) AssertEditable(
 
 // SalesOrderLineDomainServiceImpl derives the order line resource.
 type SalesOrderLineDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
-var _ drif.DynamicResourceService = (*SalesOrderLineDomainServiceImpl)(nil)
+var _ itOrder.SalesOrderLineDomainService = (*SalesOrderLineDomainServiceImpl)(nil)
 
 func NewSalesOrderLineDomainService(
-	base drif.DynamicResourceService,
+	base composable.CrudDomainService,
 ) *SalesOrderLineDomainServiceImpl {
-	return &SalesOrderLineDomainServiceImpl{DynamicResourceService: base}
+	return &SalesOrderLineDomainServiceImpl{CrudDomainService: base}
 }
 
 // Create writes a line, refusing one whose quantities break the invariant. The check runs on
 // create as well as update because a line can be born broken: ordered_quantity 0, or a fulfilled
 // quantity above it, would otherwise surface only when something computed a refund from it.
 func (this *SalesOrderLineDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields,
-) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	ctx corectx.Context, params composable.CreateCommand, options ...composable.CreateOptions,
+) (*composable.CreateResult, error) {
 	if vErrs := assertQuantitiesConsistent(params); vErrs != nil {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 	}
-	return this.DynamicResourceService.Create(ctx, params)
+	return this.CrudDomainService.Create(ctx, params, options...)
 }
 
 // Update refuses a change that would break the quantity invariant or edit a frozen snapshot.
@@ -83,8 +85,8 @@ func (this *SalesOrderLineDomainServiceImpl) Create(
 // checking the payload alone would let a fulfilled_quantity of 5 through against a stored
 // ordered_quantity of 3. The invariant is a property of the resulting row.
 func (this *SalesOrderLineDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields,
-) (*dyn.OpResult[dyn.MutateResultData], error) {
+	ctx corectx.Context, params composable.UpdateCommand, options ...composable.UpdateOptions,
+) (*composable.MutateResult, error) {
 	lineId := stringOf(params, models.SalesOrderLineFieldId)
 	stored, err := loadRecord(ctx,
 		models.SalesOrderLineSchemaName, models.SalesOrderLineFieldId, lineId)
@@ -107,7 +109,7 @@ func (this *SalesOrderLineDomainServiceImpl) Update(
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *frozen}, nil
 	}
 
-	return this.DynamicResourceService.Update(ctx, params)
+	return this.CrudDomainService.Update(ctx, params, options...)
 }
 
 // assertSnapshotsUnchanged freezes a line's snapshot fields once the order is confirmed.

@@ -389,7 +389,7 @@ func replayResult(
 func writePayment(
 	ctx corectx.Context, bill dmodel.DynamicFields, params RecordPaymentParams,
 ) (string, error) {
-	engine, err := engineFor(models.SalesPaymentSchemaName)
+	engineRepo, err := repoFor(models.SalesPaymentSchemaName)
 	if err != nil {
 		return "", err
 	}
@@ -426,7 +426,7 @@ func writePayment(
 		fields[models.SalesPaymentFieldPaidAt] = model.ModelDateTime(time.Now().UTC())
 	}
 
-	if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
+	if _, err := engineRepo.Insert(ctx, fields); err != nil {
 		return "", err
 	}
 

@@ -169,7 +169,7 @@ func writeRefundLegs(
 	orgId := orgIdOf(salesReturn)
 
 	return withTransaction(ctx, models.SalesRefundPaymentSchemaName, func(tranxCtx corectx.Context) error {
-		engine, err := engineFor(models.SalesRefundPaymentSchemaName)
+		engineRepo, err := repoFor(models.SalesRefundPaymentSchemaName)
 		if err != nil {
 			return err
 		}
@@ -178,7 +178,7 @@ func writeRefundLegs(
 			if err != nil {
 				return err
 			}
-			if _, err := engine.ResourceRepository().Insert(tranxCtx, dmodel.DynamicFields{
+			if _, err := engineRepo.Insert(tranxCtx, dmodel.DynamicFields{
 				models.SalesRefundPaymentFieldId:                     string(*id),
 				models.SalesRefundPaymentFieldOrgId:                  orgId,
 				models.SalesRefundPaymentFieldSalesReturnId:          returnId,

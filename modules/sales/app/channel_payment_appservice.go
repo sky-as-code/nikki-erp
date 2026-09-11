@@ -4,11 +4,10 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	c "github.com/sky-as-code/nikki-erp/modules/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
-	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
 	it "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
@@ -17,13 +16,18 @@ import (
 // It holds the paymentinvoice port because listing merges against it and enabling validates against
 // it; only disabling deliberately does not.
 type ChannelPaymentApplicationServiceImpl struct {
-	methods itExt.PaymentMethodExtService
+	methods  itExt.PaymentMethodExtService
+	mappings *services.ChannelPaymentDomainServiceImpl
 }
 
+// The mapping service is injected rather than fetched from a package function: the junction's
+// repository is registered in the container, so dig resolves it here and the app package no longer
+// has to reach back into dynamicengines for it.
 func NewChannelPaymentApplicationServiceImpl(
 	methods itExt.PaymentMethodExtService,
+	mappings *services.ChannelPaymentDomainServiceImpl,
 ) it.ChannelPaymentAppService {
-	return &ChannelPaymentApplicationServiceImpl{methods: methods}
+	return &ChannelPaymentApplicationServiceImpl{methods: methods, mappings: mappings}
 }
 
 // ListChannelPaymentMethods merges upstream methods with this channel's mappings so the frontend
@@ -32,7 +36,7 @@ func NewChannelPaymentApplicationServiceImpl(
 func (this *ChannelPaymentApplicationServiceImpl) ListChannelPaymentMethods(
 	ctx corectx.Context, query it.ListChannelPaymentMethodsQuery,
 ) (*it.ListChannelPaymentMethodsResult, error) {
-	if cErrs := assertPermission(ctx, drif.PermissionRead,
+	if cErrs := assertPermission(ctx, composable.PermissionRead,
 		c.SalesChannelResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.ListChannelPaymentMethodsResult{ClientErrors: *cErrs}, nil
 	}
@@ -55,10 +59,7 @@ func (this *ChannelPaymentApplicationServiceImpl) ListChannelPaymentMethods(
 		return &it.ListChannelPaymentMethodsResult{ClientErrors: upstream.ClientErrors}, nil
 	}
 
-	service, err := dynamicengines.ChannelPaymentService()
-	if err != nil {
-		return nil, err
-	}
+	service := this.mappings
 	mappings, err := service.ListMappings(ctx, channelId)
 	if err != nil {
 		return nil, err
@@ -147,10 +148,7 @@ func (this *ChannelPaymentApplicationServiceImpl) EnableChannelPaymentMethod(
 		return &it.ChannelPaymentMutationResult{ClientErrors: usable.ClientErrors}, nil
 	}
 
-	service, err := dynamicengines.ChannelPaymentService()
-	if err != nil {
-		return nil, err
-	}
+	service := this.mappings
 	result, err := service.Enable(ctx,
 		stringOf(channel, models.SalesChannelFieldId), command.PaymentMethodId)
 	if err != nil {
@@ -186,10 +184,7 @@ func (this *ChannelPaymentApplicationServiceImpl) DisableChannelPaymentMethod(
 		return &it.ChannelPaymentMutationResult{ClientErrors: *cErrs}, nil
 	}
 
-	service, err := dynamicengines.ChannelPaymentService()
-	if err != nil {
-		return nil, err
-	}
+	service := this.mappings
 	result, err := service.Disable(ctx, channelId, command.PaymentMethodId)
 	if err != nil {
 		return nil, err
@@ -206,7 +201,7 @@ func (this *ChannelPaymentApplicationServiceImpl) DisableChannelPaymentMethod(
 func (this *ChannelPaymentApplicationServiceImpl) IsPaymentMethodEnabledForChannel(
 	ctx corectx.Context, query it.IsPaymentMethodEnabledQuery,
 ) (*it.IsPaymentMethodEnabledResult, error) {
-	if cErrs := assertPermission(ctx, drif.PermissionRead,
+	if cErrs := assertPermission(ctx, composable.PermissionRead,
 		c.SalesChannelResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.IsPaymentMethodEnabledResult{ClientErrors: *cErrs}, nil
 	}
@@ -220,10 +215,7 @@ func (this *ChannelPaymentApplicationServiceImpl) IsPaymentMethodEnabledForChann
 		return &it.IsPaymentMethodEnabledResult{HasData: true, Data: false}, nil
 	}
 
-	service, err := dynamicengines.ChannelPaymentService()
-	if err != nil {
-		return nil, err
-	}
+	service := this.mappings
 	isEnabled, err := service.IsEnabled(ctx, channelId, query.PaymentMethodId)
 	if err != nil {
 		return nil, err
@@ -236,13 +228,13 @@ func (this *ChannelPaymentApplicationServiceImpl) IsPaymentMethodEnabledForChann
 func (this *ChannelPaymentApplicationServiceImpl) resolveChannel(
 	ctx corectx.Context, channelId string, channelCode string,
 ) (dmodel.DynamicFields, *ft.ClientErrors, error) {
-	engine, err := services.EngineFor(models.SalesChannelSchemaName)
+	engineRepo, err := services.RepositoryFor(models.SalesChannelSchemaName)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	if channelId != "" {
-		found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+		found, err := engineRepo.FindByKeys(ctx, dmodel.DynamicFields{
 			models.SalesChannelFieldId: channelId,
 		})
 		if err != nil {
@@ -258,7 +250,7 @@ func (this *ChannelPaymentApplicationServiceImpl) resolveChannel(
 	if code == "" {
 		return nil, channelNotFound("a sales channel id or code is required"), nil
 	}
-	found, err := models.FindSalesChannelByCode(ctx, engine.ResourceRepository(), code)
+	found, err := models.FindSalesChannelByCode(ctx, engineRepo, code)
 	if err != nil {
 		return nil, nil, err
 	}

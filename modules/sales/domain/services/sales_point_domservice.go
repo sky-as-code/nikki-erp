@@ -5,17 +5,21 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
 // SalesPointDomainServiceImpl adds the sales point lifecycle to the engine's default service.
+// A signature change on either side breaks the build here rather than at the engine registration.
+var _ itCatalog.SalesPointDomainService = (*SalesPointDomainServiceImpl)(nil)
+
 type SalesPointDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 }
 
-func NewSalesPointDomainService(base drif.DynamicResourceService) *SalesPointDomainServiceImpl {
-	return &SalesPointDomainServiceImpl{DynamicResourceService: base}
+func NewSalesPointDomainService(base composable.CrudDomainService) *SalesPointDomainServiceImpl {
+	return &SalesPointDomainServiceImpl{CrudDomainService: base}
 }
 
 // Suspend stops a sales point taking new orders. Returns, refunds and history keep working, which
@@ -182,12 +186,12 @@ func (this *SalesPointDomainServiceImpl) FindByExternalReference(
 	if channelId == "" || externalReferenceId == "" {
 		return nil, nil
 	}
-	engine, err := engineFor(models.SalesPointSchemaName)
+	engineRepo, err := repoFor(models.SalesPointSchemaName)
 	if err != nil {
 		return nil, err
 	}
 	found, err := models.FindSalesPointByExternalReferenceId(
-		ctx, engine.ResourceRepository(), channelId, externalReferenceId)
+		ctx, engineRepo, channelId, externalReferenceId)
 	if err != nil {
 		return nil, err
 	}
@@ -236,11 +240,11 @@ func (this *SalesPointDomainServiceImpl) DeleteOrArchive(
 			})
 		}
 
-		engine, err := engineFor(models.SalesPointSchemaName)
+		engineRepo, err := repoFor(models.SalesPointSchemaName)
 		if err != nil {
 			return err
 		}
-		_, err = engine.ResourceRepository().DeleteOne(tranxCtx, dmodel.DynamicFields{
+		_, err = engineRepo.DeleteOne(tranxCtx, dmodel.DynamicFields{
 			models.SalesPointFieldId: salesPointId,
 		})
 		if err != nil {

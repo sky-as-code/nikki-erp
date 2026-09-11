@@ -9,7 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	c "github.com/sky-as-code/nikki-erp/modules/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
@@ -28,7 +28,7 @@ func NewSalesPointApplicationServiceImpl() it.SalesPointAppService {
 func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 	ctx corectx.Context, command it.CreateSalesPointCommand,
 ) (*it.CreateSalesPointResult, error) {
-	if cErrs := assertPermission(ctx, drif.PermissionCreate,
+	if cErrs := assertPermission(ctx, composable.PermissionCreate,
 		c.SalesPointResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.CreateSalesPointResult{ClientErrors: *cErrs}, nil
 	}
@@ -56,15 +56,9 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 	}
 
 	channelId := stringOf(channel, models.SalesChannelFieldId)
-	pointEngine, err := services.EngineFor(models.SalesPointSchemaName)
+	service, err := services.SalesPointService()
 	if err != nil {
 		return nil, err
-	}
-	service, ok := pointEngine.ResourceService().(*services.SalesPointDomainServiceImpl)
-	if !ok {
-		return nil, errors.New(
-			"the sales point engine is not running the derived sales point service; " +
-				"SalesModule.Init must install it before CreateSalesPoint runs")
 	}
 
 	// The retry path, checked before channel usability: re-registering an existing point must
@@ -119,7 +113,7 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 		fields[models.SalesPointFieldInventoryLocationId] = command.InventoryLocationId
 	}
 
-	created, err := pointEngine.ResourceService().Create(ctx, fields)
+	created, err := service.Create(ctx, fields)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +133,7 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 func (this *SalesPointApplicationServiceImpl) ArchiveSalesPoint(
 	ctx corectx.Context, command it.SalesPointCommand,
 ) (*it.SalesPointMutationResult, error) {
-	return this.mutate(ctx, command, drif.PermissionSetArchived,
+	return this.mutate(ctx, command, composable.PermissionSetArchived,
 		func(service *services.SalesPointDomainServiceImpl) (*dyn.OpResult[dyn.MutateResultData], error) {
 			return service.Archive(ctx, command.SalesPointId)
 		})
@@ -168,7 +162,7 @@ func (this *SalesPointApplicationServiceImpl) ActivateSalesPoint(
 func (this *SalesPointApplicationServiceImpl) DeleteSalesPoint(
 	ctx corectx.Context, command it.SalesPointCommand,
 ) (*it.DeleteSalesPointResult, error) {
-	if cErrs := assertPermission(ctx, drif.PermissionDelete,
+	if cErrs := assertPermission(ctx, composable.PermissionDelete,
 		c.SalesPointResource, c.ResourceScopeOrg); cErrs != nil {
 		return &it.DeleteSalesPointResult{ClientErrors: *cErrs}, nil
 	}
@@ -225,11 +219,11 @@ func (this *SalesPointApplicationServiceImpl) resolveChannel(
 	if normalized == "" {
 		return nil, nil
 	}
-	engine, err := services.EngineFor(models.SalesChannelSchemaName)
+	engineRepo, err := services.RepositoryFor(models.SalesChannelSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	found, err := models.FindSalesChannelByCode(ctx, engine.ResourceRepository(), normalized)
+	found, err := models.FindSalesChannelByCode(ctx, engineRepo, normalized)
 	if err != nil {
 		return nil, err
 	}
@@ -240,25 +234,15 @@ func (this *SalesPointApplicationServiceImpl) resolveChannel(
 }
 
 func salesPointService() (*services.SalesPointDomainServiceImpl, error) {
-	engine, err := services.EngineFor(models.SalesPointSchemaName)
-	if err != nil {
-		return nil, err
-	}
-	service, ok := engine.ResourceService().(*services.SalesPointDomainServiceImpl)
-	if !ok {
-		return nil, errors.New(
-			"the sales point engine is not running the derived sales point service; " +
-				"SalesModule.Init must install it with SetResourceService")
-	}
-	return service, nil
+	return services.SalesPointService()
 }
 
 func loadSalesPoint(ctx corectx.Context, salesPointId string) (dmodel.DynamicFields, error) {
-	engine, err := services.EngineFor(models.SalesPointSchemaName)
+	engineRepo, err := services.RepositoryFor(models.SalesPointSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := engineRepo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.SalesPointFieldId: salesPointId,
 	})
 	if err != nil {

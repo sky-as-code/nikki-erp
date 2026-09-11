@@ -503,7 +503,7 @@ func buildIssueLinesForOrder(
 func instructionsDueForIssuance(
 	ctx corectx.Context, cutoff time.Time, limit int,
 ) ([]dmodel.DynamicFields, error) {
-	engine, err := engineFor(models.SalesBillingInstructionSchemaName)
+	engineRepo, err := repoFor(models.SalesBillingInstructionSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +520,7 @@ func instructionsDueForIssuance(
 			string(models.SalesBillingInstructionStatusReady)),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := engineRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		// Over-read, because most candidates are filtered out below and a page sized to the limit
@@ -693,7 +693,7 @@ func openIssuanceAttempt(
 	providerRequestId string,
 	now time.Time,
 ) (string, error) {
-	engine, err := engineFor(models.SalesBillingIssuanceAttemptSchemaName)
+	engineRepo, err := repoFor(models.SalesBillingIssuanceAttemptSchemaName)
 	if err != nil {
 		return "", err
 	}
@@ -702,7 +702,7 @@ func openIssuanceAttempt(
 		return "", err
 	}
 
-	if _, err := engine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+	if _, err := engineRepo.Insert(ctx, dmodel.DynamicFields{
 		models.SalesBillingIssuanceAttemptFieldId:            string(*id),
 		models.SalesBillingIssuanceAttemptFieldInstructionId: stringOf(instruction, models.SalesBillingInstructionFieldId),
 		models.SalesBillingIssuanceAttemptFieldAttemptNo:     attemptNo,
