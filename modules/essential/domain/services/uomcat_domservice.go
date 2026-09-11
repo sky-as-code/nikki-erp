@@ -44,6 +44,54 @@ func (this *UomCatDomainServiceImpl) Update(
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
 
+// Delete refuses to remove a category that still has units of measure. Without the guard the UoM
+// foreign key refuses the statement and the failure reaches the client as a 500.
+func (this *UomCatDomainServiceImpl) Delete(
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	vErrs := ft.NewClientErrors()
+	categoryId := readUomCatIdParam(params, models.UomCatFieldId)
+	if err := AssertUomCatDeletable(ctx, this.uomRepo, categoryId, vErrs); err != nil {
+		return nil, err
+	}
+	if vErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
+	}
+	return this.CrudDomainService.Delete(ctx, params, options...)
+}
+
+// AssertUomCatDeletable blocks the delete once any UoM belongs to the category.
+func AssertUomCatDeletable(
+	ctx corectx.Context, repo models.UomSearcher, categoryId string, vErrs *ft.ClientErrors,
+) error {
+	if categoryId == "" {
+		return nil
+	}
+
+	uoms, err := models.FindCategoryUoms(ctx, repo, categoryId, 1)
+	if err != nil {
+		return errors.Wrap(err, "AssertUomCatDeletable")
+	}
+	if len(uoms) > 0 {
+		vErrs.Append(*ft.NewBusinessViolation(models.UomCatFieldId, "uomcat.has_uoms",
+			"this category still has units of measure; move or delete them first"))
+	}
+	return nil
+}
+
+// readUomCatIdParam reads a delete parameter as a plain string. model.Id is a string type, so the
+// string case covers it too.
+func readUomCatIdParam(params dmodel.DynamicFields, field string) string {
+	val, ok := params[field]
+	if !ok || val == nil {
+		return ""
+	}
+	if typed, ok := val.(string); ok {
+		return typed
+	}
+	return ""
+}
+
 type uomCatUpdateCheckFn func(
 	ctx corectx.Context, params dmodel.DynamicFields, found *models.UomCat, vErrs *ft.ClientErrors,
 )

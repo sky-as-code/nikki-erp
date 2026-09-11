@@ -218,3 +218,56 @@ func (this *ProductCategoryDomainServiceImpl) assertNoCategoryCycle(
 	}
 	return nil
 }
+
+// Delete refuses to remove a category that still holds products or child categories. Without the
+// guard either foreign key refuses the statement and the failure reaches the client as a 500.
+func (this *ProductCategoryDomainServiceImpl) Delete(
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	templateRepo, err := repoFor(models.ProductTemplateSchemaName)
+	if err != nil {
+		return nil, err
+	}
+
+	vErrs := ft.NewClientErrors()
+	categoryId := readStringParam(params, models.ProductCategoryFieldId)
+	if err := AssertProductCategoryDeletable(ctx, templateRepo, this.Repository(), categoryId, vErrs); err != nil {
+		return nil, err
+	}
+	if vErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
+	}
+	return this.CrudDomainService.Delete(ctx, params, options...)
+}
+
+// AssertProductCategoryDeletable reports every kind of child blocking the delete rather than
+// stopping at the first, so a user clearing them sees the whole list in one response.
+func AssertProductCategoryDeletable(
+	ctx corectx.Context, templateRepo models.ProductSearcher, categoryRepo models.ProductSearcher,
+	categoryId string, vErrs *ft.ClientErrors,
+) error {
+	if categoryId == "" {
+		return nil
+	}
+
+	templates, err := models.FindTemplatesByCategory(ctx, templateRepo, categoryId, 1)
+	if err != nil {
+		return errors.Wrap(err, "AssertProductCategoryDeletable")
+	}
+	if len(templates) > 0 {
+		vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldId,
+			"product_category.has_templates",
+			"this category still has products"))
+	}
+
+	children, err := models.FindChildCategories(ctx, categoryRepo, categoryId, 1)
+	if err != nil {
+		return errors.Wrap(err, "AssertProductCategoryDeletable")
+	}
+	if len(children) > 0 {
+		vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldId,
+			"product_category.has_children",
+			"this category still has child categories"))
+	}
+	return nil
+}
