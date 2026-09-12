@@ -53,5 +53,11 @@ func registerWarehouseEngine() error {
 		func(p warehouseEngineParam) itWarehouse.WarehouseAppService {
 			return p.Engine.ApplicationService().(itWarehouse.WarehouseAppService)
 		},
+		// The read port: listing warehouses for selection, narrower than WarehouseAppService on
+		// purpose — filling a selection list must not carry the power to create a warehouse or
+		// reconfigure its flows.
+		func(p warehouseEngineParam) itWarehouse.WarehouseReadService {
+			return p.Engine.DomainService().(itWarehouse.WarehouseReadService)
+		},
 	))
 }

@@ -55,5 +55,10 @@ func registerStockTransferEngine() error {
 		func(p stockTransferEngineParam) itStock.StockTransferMovementService {
 			return p.Engine.DomainService().(itStock.StockTransferMovementService)
 		},
+		// The operation type reader rides on the same instance but is a separate contract:
+		// resolving which type a movement runs under grants no power to move anything.
+		func(p stockTransferEngineParam) itStock.StockOperationTypeReadService {
+			return p.Engine.DomainService().(itStock.StockOperationTypeReadService)
+		},
 	))
 }

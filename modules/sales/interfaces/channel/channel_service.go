@@ -100,8 +100,11 @@ type CreateSalesPointCommand struct {
 	// SalesChannelCode names the channel by its stable code rather than its id, so the caller
 	// stores no database identifier of ours.
 	SalesChannelCode string `json:"sales_channel_code"`
-	Name             string `json:"name"`
-	Code             string `json:"code"`
+	// OrgId is the organization the point is created under. Required: a caller registering a
+	// selling place always does so on behalf of one org.
+	OrgId string `json:"org_id"`
+	Name  string `json:"name"`
+	Code  string `json:"code"`
 	// ExternalReferenceId is the caller's own id for the thing this point represents, and the key
 	// a retry resolves against.
 	ExternalReferenceId string `json:"external_reference_id"`
