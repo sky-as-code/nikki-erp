@@ -253,6 +253,11 @@ func (this *ModelSchemaBuilder) EdgeTo(rb *RelationBuilder) *ModelSchemaBuilder 
 	return this
 }
 
+// validateManyToManyCascade keeps a join table's two foreign keys to the pair they can mean.
+// A join row exists only to pair its two sides, so CASCADE (the row goes with either side) and
+// NO ACTION (the pairing must be removed first) are the only coherent policies. SET NULL would
+// leave a half-pair that names nothing, and RESTRICT belongs on the owning reference rather
+// than on the pairing.
 func (this *ModelSchemaBuilder) validateManyToManyCascade(rel ModelRelation) {
 	if rel.OnDelete != "" && rel.OnDelete != RelationCascadeNoAction &&
 		rel.OnDelete != RelationCascadeCascade {
@@ -731,6 +736,17 @@ func (this *FieldBuilder) RequiredForCreate() *FieldBuilder {
 	return this
 }
 
+// DbNullable drops the column's NOT NULL constraint while leaving the field required for create.
+//
+// Use it only where the database itself must be able to write NULL: a foreign key declared
+// ON DELETE SET NULL clears the column when the parent is deleted, which a NOT NULL column would
+// refuse. It does not make the field optional to a client - RequiredForCreate still applies -
+// so it never widens what the API accepts.
+func (this *FieldBuilder) DbNullable() *FieldBuilder {
+	this.field.isDbNullable = true
+	return this
+}
+
 // Causes the field to be required for update operations,
 // but doesn't affect the generated CREATE SQL query.
 // Missing field error will occur when the input value is nil REGARDLESS the field has a registered default value or not.
@@ -952,11 +968,19 @@ func (this *RelationBuilder) ManyToMany(peerSchemaName, throughSchemaName, srcFi
 }
 
 func (this *RelationBuilder) OnDelete(onDelete RelationCascade) *RelationBuilder {
+	if !onDelete.IsValid() {
+		panic(errors.Errorf("OnDelete: relation '%s': unknown referential action '%s'",
+			this.relation.Edge, onDelete))
+	}
 	this.relation.OnDelete = onDelete
 	return this
 }
 
 func (this *RelationBuilder) OnUpdate(onUpdate RelationCascade) *RelationBuilder {
+	if !onUpdate.IsValid() {
+		panic(errors.Errorf("OnUpdate: relation '%s': unknown referential action '%s'",
+			this.relation.Edge, onUpdate))
+	}
 	this.relation.OnUpdate = onUpdate
 	return this
 }

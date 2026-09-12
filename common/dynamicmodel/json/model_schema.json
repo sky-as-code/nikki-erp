@@ -110,6 +110,11 @@
 				"required_for_update": { "type": "boolean" },
 				"required_with": { "type": "string", "minLength": 1 },
 
+				"db_nullable": {
+					"type": "boolean",
+					"description": "Drops the column's NOT NULL constraint while the field stays required for create. Only for a foreign key declared ON DELETE SET NULL, where the database itself must be able to clear the column."
+				},
+
 				"no_update": { "type": "boolean" },
 				"unique": { "type": "boolean" },
 				"auto_generated": { "type": "boolean" },
@@ -541,7 +546,7 @@
 
 		"relationCascade": {
 			"type": "string",
-			"enum": ["NO ACTION", "SET NULL", "SET DEFAULT", "CASCADE"]
+			"enum": ["NO ACTION", "SET NULL", "SET DEFAULT", "CASCADE", "RESTRICT"]
 		},
 
 		"edgeTo": {

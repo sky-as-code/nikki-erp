@@ -52,6 +52,7 @@
 			"label": "fields.uom_id",
 			"data_type": "ulid",
 			"required_for_create": true,
+			"db_nullable": true,
 			"no_update": true,
 			"description": {
 				"en-US": "The unit this component is counted in. It need not match the others in the bundle: a hamper can hold two bottles and half a kilo of coffee."
@@ -91,6 +92,22 @@
 			"dest_schema": "sales_combo",
 			"key_map": { "sales_combo_id": "id" },
 			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "uom",
+			"label": { "en-US": "Unit of measure" },
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": { "uom_id": "id" },
+			"on_delete": "SET NULL"
+		},
+		{
+			"edge": "product_variant",
+			"label": { "en-US": "Product variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "product_variant_id": "id" },
+			"on_delete": "RESTRICT"
 		}
 	]
 }

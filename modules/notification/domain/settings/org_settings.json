@@ -1,0 +1,31 @@
+{
+	"name": "notification_org_settings",
+	"label": "notification.settings.orgSettings",
+
+	"fields": [
+		{
+			"name": "web_enabled",
+			"label": "notification.settings.webEnabled",
+			"description": "settings_desc.web_enabled",
+			"data_type": "boolean",
+			"default_value": true,
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "stream_heartbeat_interval_seconds",
+			"label": "notification.settings.streamHeartbeatIntervalSeconds",
+			"description": "settings_desc.stream_heartbeat_interval_seconds",
+			"data_type": { "type": "int32", "min": 1, "max": 600 },
+			"default_value": 20,
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "stream_max_buffered_events",
+			"label": "notification.settings.streamMaxBufferedEvents",
+			"description": "settings_desc.stream_max_buffered_events",
+			"data_type": { "type": "int32", "min": 1, "max": 10000 },
+			"default_value": 100,
+			"metadata": { "allow_override": true }
+		}
+	]
+}

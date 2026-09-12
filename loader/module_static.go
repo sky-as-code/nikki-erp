@@ -19,6 +19,7 @@ import (
 	// "github.com/sky-as-code/nikki-erp/modules/helpdesk"
 	"github.com/sky-as-code/nikki-erp/modules/inventory"
 	"github.com/sky-as-code/nikki-erp/modules/jobscheduler"
+	"github.com/sky-as-code/nikki-erp/modules/notification"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice"
 	"github.com/sky-as-code/nikki-erp/modules/purchase"
 	"github.com/sky-as-code/nikki-erp/modules/sales"
@@ -54,6 +55,7 @@ func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 		iam.ModuleSingleton,
 		inventory.ModuleSingleton,
 		jobscheduler.ModuleSingleton,
+		notification.ModuleSingleton,
 		paymentinvoice.ModuleSingleton,
 		purchase.ModuleSingleton,
 		sales.ModuleSingleton,

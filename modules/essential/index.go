@@ -11,7 +11,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	models "github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
@@ -52,6 +54,25 @@ func (*EssentialModule) Deps() []string {
 		// Essential registers the settings every user may set for their own account. The edge is
 		// safe: settings depends only on dynamicresource, so nothing routes back here.
 		"settings",
+	}
+}
+
+// Dependants implements InCodeModuleDependants: the modules holding a uom_id, which Essential
+// asks before deleting a unit of measure. Hard-coded and owned here rather than derived, because
+// nothing in the dependency graph runs in this direction — each of these depends on essential,
+// not the reverse.
+//
+// Every module carrying a uom_id column belongs here. Missing one means a unit still referenced
+// by that module's rows can be deleted, and the database clears the reference (ON DELETE SET
+// NULL) — silently blanking the unit from a quantity already recorded.
+func (*EssentialModule) Dependants() []string {
+	return []string{
+		"sales",
+		"purchase",
+		"inventory",
+		// Accounting holds rate_uom_id on a tax rate version: a specific-duty tax is charged per
+		// unit, and superseded versions stay readable, so the unit must survive with them.
+		"accounting",
 	}
 }
 
@@ -105,13 +126,24 @@ func (*EssentialModule) RegisterModels() error {
 // OnAppStarted runs after every module has initialized.
 func (*EssentialModule) OnAppStarted() error {
 	return deps.Invoke(func(
-		modules []modules.InCodeModule,
+		loadedMods []modules.InCodeModule,
 		moduleSvc it.ModuleAppService,
 		settingsSvc itExt.SettingsRegistrationExtService,
 		effectiveSvc itExt.EffectiveSettingsExtService,
+		cqrsBus cqrs.CqrsBus,
+		dependants *modules.ModuleDependantRegistry,
 	) error {
 		ctx := corectx.NewRequestContext(context.Background())
-		if _, err := moduleSvc.SyncModuleMetadata(ctx, modules); err != nil {
+		if _, err := moduleSvc.SyncModuleMetadata(ctx, loadedMods); err != nil {
+			return err
+		}
+
+		// Here rather than in Init(): a dependant subscribes its handler during its own Init, and
+		// peer init order is nondeterministic, so this is the first point at which every module
+		// that was going to subscribe has done so. A dependant that never did would otherwise
+		// turn every UoM delete into a timeout at the first request rather than an error now.
+		if err := usagecheck.AssertDependantsSubscribed(
+			cqrsBus, dependants, modconstants.EssentialModuleName); err != nil {
 			return err
 		}
 

@@ -67,7 +67,9 @@ func TestEveryConsumedModuleIsDeclaredAsADependency(t *testing.T) {
 		"TaxCalculationExtService":       "accounting",
 		"SettingsRegistrationExtService": "settings",
 		"EffectiveSettingsExtService":    "settings",
-		"UomUsageProbe":                  "essential",
+		// Not a port Sales consumes but one it answers: Essential dispatches a usage check here
+		// before deleting a unit, and Sales subscribes the handler during its own Init.
+		"UsageCheckHandler": "essential",
 	} {
 		if !declared[module] {
 			t.Errorf("Sales binds %s but does not declare %q in Deps(); the loader may start "+

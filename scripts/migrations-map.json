@@ -9,5 +9,6 @@
 	"manufacture": "1004001_manufacture_schema",
 	"inventory": "1005001_inventory_schema",
 	"purchase": "1006001_purchase_schema",
-	"sales": "1007001_sales_schema"
+	"sales": "1007001_sales_schema",
+	"notification": "1008001_notification_schema"
 }

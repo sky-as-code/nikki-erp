@@ -123,6 +123,14 @@
 			"dest_schema": "accounting_tax",
 			"key_map": { "tax_id": "id" },
 			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "rate_uom",
+			"label": { "en-US": "Unit of measure" },
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": { "rate_uom_id": "id" },
+			"on_delete": "SET NULL"
 		}
 	]
 }

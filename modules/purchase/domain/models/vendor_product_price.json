@@ -42,6 +42,7 @@
 			"label": "fields.purchase_uom_id",
 			"data_type": "ulid",
 			"required_for_create": true,
+			"db_nullable": true,
 			"description": {
 				"en-US": "The unit the vendor quotes in, which need not be the unit stock is counted in: a supplier sells by the carton while the warehouse counts bottles.\n\nRequired, because a price without its unit is not a price — 220,000 per carton and 220,000 per bottle are entirely different offers. It must share a UoM category with the product's inventory unit (BR-PRICE-UOM-003), checked through Essential's conversion port; otherwise the converted quantity would be a number in the wrong dimension."
 			}
@@ -138,5 +139,24 @@
 		"core.basemodel.archivable_model",
 		"core.basemodel.auditable_model",
 		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "purchase_uom",
+			"label": { "en-US": "Unit of measure" },
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": { "purchase_uom_id": "id" },
+			"on_delete": "SET NULL"
+		},
+		{
+			"edge": "product_variant",
+			"label": { "en-US": "Product variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "product_variant_id": "id" },
+			"on_delete": "RESTRICT"
+		}
 	]
 }

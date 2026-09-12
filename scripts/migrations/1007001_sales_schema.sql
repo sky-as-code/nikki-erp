@@ -268,7 +268,7 @@ CREATE TABLE "sales_order_lines" (
   "product_variant_id" character varying NULL,
   "product_code_snapshot" character varying NULL,
   "product_name_snapshot" character varying NULL,
-  "uom_id" character varying NOT NULL,
+  "uom_id" character varying NULL,
   "ordered_quantity" numeric NOT NULL,
   "requires_fulfillment" boolean NOT NULL,
   "fulfilled_quantity" numeric NOT NULL,
@@ -291,7 +291,9 @@ CREATE TABLE "sales_order_lines" (
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_order_lines_tid_order_lineno_ukey" UNIQUE ("sales_order_id", "line_number"),
-  CONSTRAINT "sales_order_lines_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT "sales_order_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "sales_order_lines_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "sales_order_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_order_lines_tid_uom_idx" to table: "sales_order_lines"
 CREATE INDEX "sales_order_lines_tid_uom_idx" ON "sales_order_lines" ("uom_id");
@@ -400,7 +402,7 @@ CREATE TABLE "sales_combo_components" (
   "sales_combo_id" character varying NOT NULL,
   "product_variant_id" character varying NOT NULL,
   "quantity" numeric NOT NULL,
-  "uom_id" character varying NOT NULL,
+  "uom_id" character varying NULL,
   "is_required" boolean NOT NULL,
   "selection_group" character varying NULL,
   "is_archived" boolean NOT NULL,
@@ -409,7 +411,9 @@ CREATE TABLE "sales_combo_components" (
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_combo_comps_tid_combo_variant_ukey" UNIQUE ("sales_combo_id", "product_variant_id"),
-  CONSTRAINT "sales_combo_components_sales_combo_id_fkey" FOREIGN KEY ("sales_combo_id") REFERENCES "sales_combos" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT "sales_combo_components_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "sales_combo_components_sales_combo_id_fkey" FOREIGN KEY ("sales_combo_id") REFERENCES "sales_combos" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "sales_combo_components_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_combo_comps_tid_uom_idx" to table: "sales_combo_components"
 CREATE INDEX "sales_combo_comps_tid_uom_idx" ON "sales_combo_components" ("uom_id");
@@ -509,7 +513,7 @@ CREATE TABLE "sales_order_fulfillment_items" (
   "fulfillment_id" character varying NOT NULL,
   "sales_order_line_id" character varying NOT NULL,
   "product_variant_id" character varying NOT NULL,
-  "uom_id" character varying NOT NULL,
+  "uom_id" character varying NULL,
   "ordered_qty" numeric NOT NULL,
   "fulfilled_qty" numeric NOT NULL,
   "refunded_qty" numeric NOT NULL,
@@ -521,7 +525,9 @@ CREATE TABLE "sales_order_fulfillment_items" (
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_order_fulfillment_items_fulfillment_id_fkey" FOREIGN KEY ("fulfillment_id") REFERENCES "sales_order_fulfillments" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_order_fulfillment_items_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+  CONSTRAINT "sales_order_fulfillment_items_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "sales_order_fulfillment_items_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "sales_order_fulfillment_items_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_fulfil_items_tid_fulfil_idx" to table: "sales_order_fulfillment_items"
 CREATE INDEX "sales_fulfil_items_tid_fulfil_idx" ON "sales_order_fulfillment_items" ("fulfillment_id");
@@ -674,7 +680,7 @@ CREATE TABLE "sales_order_line_components" (
   "product_code_snapshot" character varying NULL,
   "product_name_snapshot" character varying NULL,
   "quantity" numeric NOT NULL,
-  "uom_id" character varying NOT NULL,
+  "uom_id" character varying NULL,
   "allocated_net_amount" numeric NOT NULL,
   "allocated_tax_amount" numeric NOT NULL,
   "is_archived" boolean NOT NULL,
@@ -683,7 +689,9 @@ CREATE TABLE "sales_order_line_components" (
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_ol_components_tid_line_seq_ukey" UNIQUE ("sales_order_line_id", "sequence"),
-  CONSTRAINT "sales_order_line_components_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT "sales_order_line_components_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "sales_order_line_components_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "sales_order_line_components_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_ol_components_tid_uom_idx" to table: "sales_order_line_components"
 CREATE INDEX "sales_ol_components_tid_uom_idx" ON "sales_order_line_components" ("uom_id");
@@ -781,7 +789,9 @@ CREATE TABLE "sales_pricelist_items" (
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_pricelist_items_sales_pricelist_id_fkey" FOREIGN KEY ("sales_pricelist_id") REFERENCES "sales_pricelists" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT "sales_pricelist_items_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "sales_pricelist_items_sales_pricelist_id_fkey" FOREIGN KEY ("sales_pricelist_id") REFERENCES "sales_pricelists" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "sales_pricelist_items_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_pl_items_tid_cat_idx" to table: "sales_pricelist_items"
 CREATE INDEX "sales_pl_items_tid_cat_idx" ON "sales_pricelist_items" ("product_category_id");
@@ -946,7 +956,9 @@ CREATE TABLE "sales_quotation_lines" (
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_quotation_lines_tid_quot_lineno_ukey" UNIQUE ("sales_quotation_id", "line_number"),
-  CONSTRAINT "sales_quotation_lines_sales_quotation_id_fkey" FOREIGN KEY ("sales_quotation_id") REFERENCES "sales_quotations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT "sales_quotation_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "sales_quotation_lines_sales_quotation_id_fkey" FOREIGN KEY ("sales_quotation_id") REFERENCES "sales_quotations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "sales_quotation_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_quotation_lines_tid_variant_idx" to table: "sales_quotation_lines"
 CREATE INDEX "sales_quotation_lines_tid_variant_idx" ON "sales_quotation_lines" ("product_variant_id");

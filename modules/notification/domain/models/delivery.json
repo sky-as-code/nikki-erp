@@ -1,0 +1,102 @@
+{
+	"name": "notification_delivery",
+	"label": "notification_delivery.label",
+	"table_name": "notification_deliveries",
+	"should_build_db": true,
+	"default_search_fields": ["channel_name", "delivery_status"],
+
+	"search_indexes": [
+		{
+			"index_name": "notif_delivs_recip_channel",
+			"fields": ["notification_recipient_id", "channel_name"]
+		}
+	],
+
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "notification_recipient_id",
+			"label": "fields.notification_recipient_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "channel_name",
+			"label": "fields.channel_name",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The channel this attempt went out on. A plain string rather than an enum because channels are registered in code and the set grows without a schema change (BR 5)."
+			}
+		},
+		{
+			"name": "delivery_status",
+			"label": "fields.delivery_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["pending", "processing", "sent", "failed", "skipped"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "TRANSPORT STATE ONLY, never read state (BR 26). 'sent' means the channel accepted the message — for web, that it was written to a live stream — and says nothing about whether anyone has looked at it."
+			}
+		},
+		{
+			"name": "skip_reason",
+			"label": "fields.skip_reason",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"description": {
+				"en-US": "Why a 'skipped' delivery was skipped: the channel was disabled, or the notification had already expired (BR 14, BR 28). A skipped channel never fails the notification."
+			}
+		},
+		{
+			"name": "attempt_count",
+			"label": "fields.attempt_count",
+			"data_type": { "type": "int32", "min": 0, "max": 1000000 },
+			"required_for_create": true
+		},
+		{
+			"name": "last_attempt_at",
+			"label": "fields.last_attempt_at",
+			"data_type": "datetime"
+		},
+		{
+			"name": "sent_at",
+			"label": "fields.sent_at",
+			"data_type": "datetime"
+		},
+		{
+			"name": "last_error_code",
+			"label": "fields.last_error_code",
+			"data_type": { "type": "string", "min": 1, "max": 100 }
+		},
+		{
+			"name": "last_error_message",
+			"label": "fields.last_error_message",
+			"data_type": { "type": "string", "min": 1, "max": 2000 },
+			"description": {
+				"en-US": "Enough to debug the failure. Never a credential or an access token (BR 33)."
+			}
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model"],
+
+	"edges_to": [
+		{
+			"edge": "recipient",
+			"label": { "en-US": "Notification Recipient" },
+			"type": "many:one",
+			"dest_schema": "notification_recipient",
+			"key_map": { "notification_recipient_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

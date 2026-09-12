@@ -204,6 +204,14 @@
 			"dest_schema": "inventory_location",
 			"key_map": { "scrap_location_id": "id" },
 			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "base_uom",
+			"label": { "en-US": "Unit of measure" },
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": { "base_uom_id": "id" },
+			"on_delete": "SET NULL"
 		}
 	]
 }

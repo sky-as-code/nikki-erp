@@ -1,15 +1,18 @@
 package services
 
 import (
+	"strings"
+
 	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
-	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 )
 
 // validateUomCreate enforces the invariants that apply to a brand-new UoM.
@@ -27,7 +30,9 @@ func validateUomCreate(repo models.UomSearcher) composable.ValidateExtraFn {
 
 // validateUomUpdate enforces the create-time invariants plus the historical-data-integrity
 // rules that only apply once a record exists.
-func validateUomUpdate(repo models.UomSearcher) composable.ValidateExtraFn {
+func validateUomUpdate(
+	repo models.UomSearcher, usageDispatcher *usagecheck.Dispatcher,
+) composable.ValidateExtraFn {
 	return func(
 		ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
@@ -37,7 +42,9 @@ func validateUomUpdate(repo models.UomSearcher) composable.ValidateExtraFn {
 		params := inputModel.GetFieldData()
 		uom, found := models.NewUomFrom(params), models.NewUomFrom(foundModel.GetFieldData())
 
-		assertImmutableWhileInUse(ctx, params, found, vErrs)
+		if err := assertImmutableWhileInUse(ctx, usageDispatcher, params, found, vErrs); err != nil {
+			return err
+		}
 		// An update is partial: validate the resulting record, not just the submitted fields.
 		merged := mergeUomForValidation(uom, found)
 		assertFactorMatchesUomType(merged, vErrs)
@@ -139,48 +146,76 @@ func assertSingleReferenceUom(
 // assertImmutableWhileInUse enforces BR-UOM-ESS-020 and UOM-ESS-INV-10. Changing the factor,
 // type or category of a UoM already used by a transaction would reinterpret historical
 // quantities; the supported remedy is to archive the UoM and create a replacement.
+//
+// An error from the check is reported as an error rather than swallowed: the alternative is
+// permitting an edit on the strength of an answer nobody gave.
 func assertImmutableWhileInUse(
-	ctx corectx.Context, params dmodel.DynamicFields, found *models.Uom, vErrs *ft.ClientErrors,
-) {
-	inUse, by := isUomInUse(ctx, found)
-	if !inUse {
-		return
-	}
+	ctx corectx.Context, dispatcher *usagecheck.Dispatcher,
+	params dmodel.DynamicFields, found *models.Uom, vErrs *ft.ClientErrors,
+) error {
+	// Nothing immutable was submitted, so there is no reason to ask anybody.
+	immutableFields := make([]string, 0, 3)
 	for _, field := range []string{models.UomFieldFactor, models.UomFieldUomType, models.UomFieldCategoryId} {
-		if _, submitted := params[field]; !submitted {
-			continue
+		if _, submitted := params[field]; submitted {
+			immutableFields = append(immutableFields, field)
 		}
+	}
+	if len(immutableFields) == 0 {
+		return nil
+	}
+
+	inUse, by, err := isUomInUse(ctx, dispatcher, found)
+	if err != nil {
+		return err
+	}
+	if !inUse {
+		return nil
+	}
+
+	for _, field := range immutableFields {
 		vErrs.Append(*ft.NewBusinessViolation(field, "uom.immutable_while_in_use",
 			"this UoM is already used by "+by+" transactions; "+
 				"archive it and create a replacement instead"))
 	}
+	return nil
 }
 
-// isUomInUse reports whether any consuming module's transactions reference this UoM, and which.
+// isUomInUse reports whether any consuming module's records reference this UoM, and which.
 //
-// Essential cannot answer this from its own tables: the transactions live in Purchase, Stock and
-// whatever lands next, and importing them here would invert the dependency the ports exist to keep
-// one way. Consumers register a probe (interfaces/uom/usage.go, per doc 01) and this asks each in
-// turn.
+// Essential cannot answer this from its own tables: the references live in Sales, Purchase,
+// Inventory and Accounting, and importing them here would invert the dependency the module
+// boundary exists to keep one way. The question goes out over the command bus to the modules
+// Essential lists as its dependants, and each answers about its own data.
 //
-// A probe that FAILS is treated as "in use". It knows only that it does not know, and permitting
-// the edit on that basis could reinterpret quantities already recorded — which is the one outcome
-// BR-UOM-ESS-020 exists to prevent. Refusing an edit that might have been fine is recoverable;
-// silently changing what a historical document means is not.
+// A module that FAILS to answer counts as "in use". It knows only that it does not know, and
+// permitting the edit on that basis could reinterpret quantities already recorded — the one
+// outcome BR-UOM-ESS-020 exists to prevent. Refusing an edit that might have been fine is
+// recoverable; silently changing what a historical document means is not.
 //
-// With no probes registered the answer is false, which is correct for a deployment that has no
-// consuming module: nothing can be referencing the unit.
-func isUomInUse(ctx corectx.Context, found *models.Uom) (bool, string) {
+// With no dependants the answer is false, which is correct for a binary that loads no consuming
+// module: nothing can be referencing the unit.
+func isUomInUse(
+	ctx corectx.Context, dispatcher *usagecheck.Dispatcher, found *models.Uom,
+) (bool, string, error) {
 	if found == nil || found.GetId() == nil {
-		return false, ""
+		return false, "", nil
 	}
-	uomId := string(*found.GetId())
 
-	for _, probe := range itUom.UomUsageProbes() {
-		inUse, err := probe.IsUomInUse(ctx, uomId)
-		if err != nil || inUse {
-			return true, probe.ModuleName()
-		}
+	orgId := ""
+	if found.GetOrgId() != nil {
+		orgId = string(*found.GetOrgId())
 	}
-	return false, ""
+	ref := usagecheck.ResourceRef{
+		ResourceName: usagecheck.ResourceUom,
+		Identifier:   usagecheck.NewIdentifier(string(*found.GetId()), orgId),
+	}
+
+	outcome, err := dispatcher.CheckUsage(ctx, modconstants.EssentialModuleName, []usagecheck.ResourceRef{ref})
+	if err != nil {
+		return false, "", err
+	}
+	if outcome.MayDelete() {
+		return false, "", nil
+	}
+	return true, strings.Join(outcome.BlockingModules(), ", "), nil
 }

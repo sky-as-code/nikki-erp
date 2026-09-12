@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
 // The stock settings of a product line, and the two things about its shape that carry meaning.
@@ -20,21 +22,38 @@ func TestStockProductConfigSchemaParses(t *testing.T) {
 	assert.Equal(t, StockProductConfigSchemaName, schema.Name())
 }
 
-// The unit is held as a plain id, not an edge: the UoM belongs to Essential, and a foreign key
-// across that boundary would couple Inventory's schema to another module's table and make the two
-// undeployable apart.
-func TestStockProductConfigReferencesUomWithoutAnEdge(t *testing.T) {
+// The unit is a real foreign key into Essential's table.
+//
+// This reverses what this test asserted before: the reference used to be a plain id, on the
+// grounds that a cross-module constraint would couple the two schemas. Referential integrity won
+// that argument — an inventory_uom_id naming a unit that no longer exists is a balance counted in
+// nothing, which no amount of module purity buys back. Isolation remains a rule about CODE: the
+// constraint lives in the schema, while reads and writes still cross the boundary only through a
+// port.
+//
+// ON DELETE SET NULL is the policy, so the column must accept NULL from the database while
+// staying required of a client — which is what db_nullable expresses.
+func TestStockProductConfigReferencesUomWithAForeignKey(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
 	schema := StockProductConfigSchemaBuilder().Build()
 
-	_, hasUomField := schema.Fields()[StockProductConfigFieldInventoryUomId]
-	assert.True(t, hasUomField, "the configuration must name the unit its balances are counted in")
+	uomField, hasUomField := schema.Fields()[StockProductConfigFieldInventoryUomId]
+	require.True(t, hasUomField, "the configuration must name the unit its balances are counted in")
+	assert.True(t, uomField.IsRequiredForCreate(), "a client may not create a configuration without it")
+	assert.True(t, uomField.IsNullable(), "ON DELETE SET NULL must be able to clear the column")
 
-	// Asserted against the schema JSON, where edges are declared: the built ModelSchema exposes no
-	// accessor for them.
-	assert.NotContains(t, stockProductConfigSchemaJson, "essential_uom",
-		"a cross-module edge would couple Inventory's schema to Essential's table")
+	var uomEdge *dmodel.ModelRelation
+	for i, relation := range schema.ToRelations() {
+		if relation.DestSchemaName == "essential_uom" {
+			uomEdge = &schema.ToRelations()[i]
+			break
+		}
+	}
+
+	require.NotNil(t, uomEdge, "the unit reference must be a declared edge")
+	assert.Equal(t, dmodel.RelationCascadeSetNull, uomEdge.OnDelete,
+		"deleting a unit must clear the reference, never delete the configuration")
 }
 
 // There is deliberately no is_archived: the configuration lives and dies with its template, and an

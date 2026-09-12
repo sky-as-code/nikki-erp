@@ -1,0 +1,43 @@
+{
+    "type": "object",
+    "required": [
+        "id",
+        "org_id",
+        "notification_id",
+        "recipient_user_id",
+        "stream_seq",
+        "created_at"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "notification_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "recipient_user_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "stream_seq": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "read_at": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        }
+    }
+}

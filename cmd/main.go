@@ -21,7 +21,8 @@ type StartableApp interface {
 	Start()
 	Stop(ctx context.Context)
 	Logger() logging.LoggerService
-	GenSql(module string, dialect string) string
+	GenSql(module string, dialect string, withDeps bool) string
+	GenSqlExcludes(module string) []string
 }
 
 // defaultShutdownGraceSecs matches config.default.yaml. It is used only if the configuration
@@ -39,12 +40,21 @@ func Main(param MainParam) {
 	isCreateSql := flag.Bool("createsql", false, "Generate CREATE SQL for model schemas and write to stdout")
 	module := flag.String("module", "", "Module name (required when -createsql is set)")
 	dialect := flag.String("dialect", "", "SQL dialect (required when -createsql is set)")
+	withDeps := flag.Bool("withdeps", false,
+		"Also emit the tables of the module's dependencies, so a cross-module foreign key has a table to reference")
+	listDepTables := flag.Bool("listdeptables", false,
+		"Print the dependency table names -withdeps adds, one per line, for the caller to exclude from the diff")
 	job := flag.String("job", "", "Run job")
 	jobArgs := flag.String("jobArgs", "", "Job Args")
 	flag.Parse()
 
+	if *listDepTables {
+		runListDepTables(param.CreateAppFn, *module)
+		return
+	}
+
 	if *isCreateSql {
-		runCreateSql(param.CreateAppFn, *module, *dialect)
+		runCreateSql(param.CreateAppFn, *module, *dialect, *withDeps)
 		return
 	}
 
@@ -99,14 +109,24 @@ func Main(param MainParam) {
 	}
 }
 
-func runCreateSql(createAppFn CreateAppFn, module string, dialect string) {
+func runCreateSql(createAppFn CreateAppFn, module string, dialect string, withDeps bool) {
 	if module == "" || dialect == "" {
 		fmt.Fprintln(os.Stderr, "error: -createsql requires both -module and -dialect to have values")
 		os.Exit(1)
 	}
 	app := createAppFn(nil)
-	sql := app.GenSql(module, dialect)
+	sql := app.GenSql(module, dialect, withDeps)
 	fmt.Print(sql)
+}
+
+func runListDepTables(createAppFn CreateAppFn, module string) {
+	if module == "" {
+		fmt.Fprintln(os.Stderr, "error: -listdeptables requires -module to have a value")
+		os.Exit(1)
+	}
+	for _, table := range createAppFn(nil).GenSqlExcludes(module) {
+		fmt.Println(table)
+	}
 }
 
 func runHandleJob(jobName string, jobArgs *string) {

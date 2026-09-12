@@ -132,6 +132,22 @@
 			"dest_schema": "sales_quotation",
 			"key_map": { "sales_quotation_id": "id" },
 			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "uom",
+			"label": { "en-US": "Unit of measure" },
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": { "uom_id": "id" },
+			"on_delete": "SET NULL"
+		},
+		{
+			"edge": "product_variant",
+			"label": { "en-US": "Product variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "product_variant_id": "id" },
+			"on_delete": "RESTRICT"
 		}
 	]
 }

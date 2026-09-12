@@ -8,7 +8,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 	itUomCat "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uomcat"
@@ -18,13 +20,19 @@ import (
 // takes the UoM repository, because a category's Reference UoM is a UoM row it must look at.
 func NewUomCatDomainService(
 	base composable.CrudDomainService, uomRepo itUom.UomRepository,
+	usageDispatcher *usagecheck.Dispatcher,
 ) itUomCat.UomCatDomainService {
-	return &UomCatDomainServiceImpl{CrudDomainService: base, uomRepo: uomRepo}
+	return &UomCatDomainServiceImpl{
+		CrudDomainService: base,
+		uomRepo:           uomRepo,
+		usageDispatcher:   usageDispatcher,
+	}
 }
 
 type UomCatDomainServiceImpl struct {
 	composable.CrudDomainService
-	uomRepo itUom.UomRepository
+	uomRepo         itUom.UomRepository
+	usageDispatcher *usagecheck.Dispatcher
 }
 
 func (this *UomCatDomainServiceImpl) Create(
@@ -40,7 +48,8 @@ func (this *UomCatDomainServiceImpl) Update(
 ) (*itUomCat.UpdateUomCatResult, error) {
 	opts := safe.GetOptional(options, composable.UpdateOptions{})
 	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra,
-		validateUomCatReference(this.uomRepo, assertReferenceUomStableWhileInUse))
+		validateUomCatReference(this.uomRepo,
+			assertReferenceUomStableWhileInUse(this.usageDispatcher, this.uomRepo)))
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
 
@@ -157,11 +166,25 @@ func assertReferenceUomBelongsToCategory(
 
 // assertReferenceUomStableWhileInUse enforces BR-UOM-ESS-021: once a category is in use,
 // repointing its Reference UoM would reinterpret every factor in the category.
+//
+// A closure over the dispatcher and the UoM repository, because answering "is this category in
+// use" now means asking the consuming modules about the units it holds.
 func assertReferenceUomStableWhileInUse(
-	ctx corectx.Context, params dmodel.DynamicFields, found *models.UomCat, vErrs *ft.ClientErrors,
+	dispatcher *usagecheck.Dispatcher, uomRepo itUom.UomRepository,
+) uomCatUpdateCheckFn {
+	return func(
+		ctx corectx.Context, params dmodel.DynamicFields, found *models.UomCat, vErrs *ft.ClientErrors,
+	) {
+		assertReferenceUomStable(ctx, dispatcher, uomRepo, params, found, vErrs)
+	}
+}
+
+func assertReferenceUomStable(
+	ctx corectx.Context, dispatcher *usagecheck.Dispatcher, uomRepo itUom.UomRepository,
+	params dmodel.DynamicFields, found *models.UomCat, vErrs *ft.ClientErrors,
 ) {
 	submitted, isSubmitted := params[models.UomCatFieldReferenceUomId]
-	if !isSubmitted || !isUomCatInUse(ctx, found) {
+	if !isSubmitted || !isUomCatInUse(ctx, dispatcher, uomRepo, found) {
 		return
 	}
 	// Re-submitting the value unchanged is not a change.
@@ -173,10 +196,67 @@ func assertReferenceUomStableWhileInUse(
 		"this UoM Category is already in use; its Reference UoM can no longer be changed"))
 }
 
-// isUomCatInUse reports whether any product or transaction depends on this category.
+// isUomCatInUse reports whether anything depends on this category.
 //
-// TODO: shares the fate of isUomInUse — no module consumes UoM yet. Wire a real probe when
-// stock, purchase or sales land, or BR-UOM-ESS-021 stays structurally declared but inert.
-func isUomCatInUse(_ corectx.Context, _ *models.UomCat) bool {
-	return false
+// No module references a category directly — they reference the UNITS in it — so the question is
+// asked one level down: if any unit of this category is in use by a consuming module, the
+// category is in use. Repointing the reference unit would then rescale every factor in the
+// category, reinterpreting every quantity already recorded in any of its units.
+//
+// A check that cannot be completed counts as "in use", for the same reason it does on the unit
+// itself: refusing an edit that would have been fine is recoverable, and silently rescaling
+// history is not.
+func isUomCatInUse(
+	ctx corectx.Context, dispatcher *usagecheck.Dispatcher,
+	repo models.UomSearcher, found *models.UomCat,
+) bool {
+	if found == nil || found.GetId() == nil {
+		return false
+	}
+	categoryId := string(*found.GetId())
+
+	// MaxCategoryUomsToCheck bounds the fan-out: a category with more units than this is asked
+	// about only the first few, and the rest are assumed in use rather than left unchecked.
+	uoms, err := models.FindCategoryUoms(ctx, repo, categoryId, maxCategoryUomsToCheck)
+	if err != nil {
+		return true
+	}
+	if len(uoms) == 0 {
+		return false
+	}
+	if len(uoms) >= maxCategoryUomsToCheck {
+		return true
+	}
+
+	orgId := ""
+	if found.GetOrgId() != nil {
+		orgId = string(*found.GetOrgId())
+	}
+
+	refs := make([]usagecheck.ResourceRef, 0, len(uoms))
+	for _, uom := range uoms {
+		uomId := models.NewUomFrom(uom).GetId()
+		if uomId == nil {
+			continue
+		}
+		refs = append(refs, usagecheck.ResourceRef{
+			ResourceName: usagecheck.ResourceUom,
+			Identifier:   usagecheck.NewIdentifier(string(*uomId), orgId),
+		})
+	}
+	if len(refs) == 0 {
+		return false
+	}
+
+	// One dispatch carrying every unit, rather than one per unit: the command takes a list
+	// precisely so a question about several resources costs one round trip per module.
+	outcome, err := dispatcher.CheckUsage(ctx, modconstants.EssentialModuleName, refs)
+	if err != nil {
+		return true
+	}
+	return !outcome.MayDelete()
 }
+
+// maxCategoryUomsToCheck caps how many units one category asks about. A category holding more
+// than this is certainly established enough that its reference unit should not be repointed.
+const maxCategoryUomsToCheck = 20

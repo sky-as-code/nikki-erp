@@ -6,6 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
@@ -24,14 +25,18 @@ type productVariantEngineParam struct {
 func registerProductVariantEngine() error {
 	err := deps.RegisterNamed(
 		composable.EngineDependencyName(models.ProductVariantSchemaName),
-		func(param composable.BuildParam, productSvc itProduct.ProductService) composable.DynamicResourceEngineOnion {
+		func(
+			param composable.BuildParam,
+			productSvc itProduct.ProductService,
+			usageDispatcher *usagecheck.Dispatcher,
+		) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.ProductVariantSchemaName,
 				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
 					return repo.NewProductVariantRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewProductVariantDomainService(base)
+					return services.NewProductVariantDomainService(base, usageDispatcher)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					return app.NewProductVariantApplicationService(base, productSvc)

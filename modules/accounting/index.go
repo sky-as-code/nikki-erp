@@ -20,6 +20,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/infra/external"
 	itExt "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/external"
+	acctcqrs "github.com/sky-as-code/nikki-erp/modules/accounting/transport/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/transport/restful"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
@@ -77,6 +78,11 @@ func (*AccountingModule) Init() error {
 		return err
 	}
 	if err := app.InitApplicationServices(); err != nil {
+		return err
+	}
+	// A tax rate version names the unit its fixed amount is charged per, so Essential asks this
+	// module before letting a unit be edited or deleted.
+	if err := acctcqrs.InitCqrsHandlers(); err != nil {
 		return err
 	}
 	return restful.InitRestfulHandlers()

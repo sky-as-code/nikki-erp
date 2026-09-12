@@ -1,0 +1,84 @@
+{
+    "type": "object",
+    "required": [
+        "id",
+        "org_id",
+        "notification_recipient_id",
+        "channel_name",
+        "delivery_status",
+        "attempt_count",
+        "created_at"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "notification_recipient_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "channel_name": {
+            "type": "string",
+            "minLength": 1
+        },
+        "delivery_status": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "processing",
+                "sent",
+                "failed",
+                "skipped"
+            ]
+        },
+        "skip_reason": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "attempt_count": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "last_attempt_at": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "sent_at": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "last_error_code": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "last_error_message": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": [
+                "string",
+                "null"
+            ]
+        }
+    }
+}

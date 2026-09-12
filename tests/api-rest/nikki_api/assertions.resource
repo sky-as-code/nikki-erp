@@ -326,3 +326,21 @@ Response Should Be Selections Malformed Error
     ...    product_template.selections_malformed
     ...    selections must be a list of attribute-value choices    business
     Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Resource In Use Error
+    [Documentation]    Cross-module usage check: a resource another module still references
+    ...    cannot be deleted. The message names the blocking modules, which vary with what the
+    ...    fixtures happen to reference, so only the shape is pinned.
+    [Arguments]    ${resp}    ${field}=id
+    ${schema}=    One Error Schema Message Pattern    ${field}
+    ...    resource_in_use    still used by
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Uom Immutable While In Use Error
+    [Documentation]    BR-UOM-ESS-020: factor, type and category freeze once another module
+    ...    references the unit. The message names the blocking modules, which vary with the
+    ...    data, so only the shape is pinned.
+    [Arguments]    ${resp}    ${field}
+    ${schema}=    One Error Schema Message Pattern    ${field}
+    ...    uom.immutable_while_in_use    already used by
+    Response Should Match Schema    ${resp}    ${schema}    400

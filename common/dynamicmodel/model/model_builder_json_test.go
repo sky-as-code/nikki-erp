@@ -274,6 +274,48 @@ func TestGetField_PanicsWhenAbsent(t *testing.T) {
 	assert.Panics(t, func() { builder.GetField("nope") })
 }
 
+// RESTRICT is what a cross-module reference declares when the parent must not be deleted while
+// anything still points at it, so the JSON path has to carry it through unchanged.
+func TestParseModelJson_EdgeOnDeleteRestrict(t *testing.T) {
+	schema := ParseModelJson(`{
+		"name": "test_edge_restrict",
+		"fields": [{"name": "owner_id", "data_type": "ulid"}],
+		"edges_to": [
+			{
+				"edge": "owner",
+				"type": "many:one",
+				"dest_schema": "iam_user",
+				"key_map": {"owner_id": "id"},
+				"on_delete": "RESTRICT"
+			}
+		]
+	}`).Build()
+
+	toRelations := schema.ToRelations()
+	require.Len(t, toRelations, 1)
+	assert.Equal(t, RelationCascadeRestrict, toRelations[0].OnDelete)
+}
+
+// The JSON file carries the action as a free string, so a misspelling has to be caught here —
+// otherwise it travels all the way to the database as invalid DDL.
+func TestParseModelJson_EdgeOnDeleteRejectsUnknown(t *testing.T) {
+	assert.Panics(t, func() {
+		ParseModelJson(`{
+			"name": "test_edge_bad_action",
+			"fields": [{"name": "owner_id", "data_type": "ulid"}],
+			"edges_to": [
+				{
+					"edge": "owner",
+					"type": "many:one",
+					"dest_schema": "iam_user",
+					"key_map": {"owner_id": "id"},
+					"on_delete": "RESTRCIT"
+				}
+			]
+		}`)
+	})
+}
+
 // registerTestBaseBuilder registers a builder factory and removes it when the test ends,
 // so the package-level registry does not leak between tests.
 func registerTestBaseBuilder(t *testing.T, name string, factory func() *ModelSchemaBuilder) {

@@ -13,6 +13,7 @@ import (
 // on boot. The order below is InventoryModule.RegisterModels' order; keep the two in step.
 func TestProductSchemasRegisterInOrder(t *testing.T) {
 	requireBaseSchemasRegistered(t)
+	requireEssentialSchemasRegistered(t)
 
 	builders := []*dmodel.ModelSchemaBuilder{
 		ProductTypeSchemaBuilder(),

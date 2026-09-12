@@ -6,6 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
@@ -27,14 +28,18 @@ type uomCatEngineParam struct {
 func registerUomCatEngine() error {
 	err := deps.RegisterNamed(
 		composable.EngineDependencyName(models.UomCatSchemaName),
-		func(param composable.BuildParam, uomRepo itUom.UomRepository) composable.DynamicResourceEngineOnion {
+		func(
+			param composable.BuildParam,
+			uomRepo itUom.UomRepository,
+			usageDispatcher *usagecheck.Dispatcher,
+		) composable.DynamicResourceEngineOnion {
 			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.UomCatSchemaName,
 				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
 					return repo.NewUomCatRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewUomCatDomainService(base, uomRepo)
+					return services.NewUomCatDomainService(base, uomRepo, usageDispatcher)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					return app.NewUomCatApplicationService(base)

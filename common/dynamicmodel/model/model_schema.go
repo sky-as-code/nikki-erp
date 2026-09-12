@@ -559,6 +559,11 @@ const (
 	RelationCascadeSetNull    = RelationCascade("SET NULL")
 	RelationCascadeSetDefault = RelationCascade("SET DEFAULT")
 	RelationCascadeCascade    = RelationCascade("CASCADE")
+	// RelationCascadeRestrict refuses the parent delete outright. It differs from NO ACTION in
+	// when the check runs: RESTRICT fires immediately, NO ACTION defers to the end of the
+	// statement and so can be satisfied by a trigger that clears the reference first. For a
+	// cross-module reference the immediate refusal is the intended one.
+	RelationCascadeRestrict = RelationCascade("RESTRICT")
 )
 
 // Sql returns the SQL keyword for this cascade action, defaulting to NO ACTION for the zero value.
@@ -567,6 +572,18 @@ func (this RelationCascade) Sql() string {
 		return string(RelationCascadeNoAction)
 	}
 	return string(this)
+}
+
+// IsValid reports whether this is a referential action PostgreSQL accepts. The JSON model
+// files carry the value as a free string, so an unrecognized one must be caught while the
+// schema is built rather than reaching the database as invalid DDL.
+func (this RelationCascade) IsValid() bool {
+	switch this {
+	case "", RelationCascadeNoAction, RelationCascadeSetNull,
+		RelationCascadeSetDefault, RelationCascadeCascade, RelationCascadeRestrict:
+		return true
+	}
+	return false
 }
 
 // ForeignKeyColumnPair describes one column of a (possibly composite) foreign key.
@@ -645,6 +662,14 @@ type ModelField struct {
 	// Determines the "NOT NULL" constraint for the database column,
 	// and causes the field to be required for create operations.
 	isRequiredForCreate bool
+	// Drops the "NOT NULL" constraint while leaving the field required for create.
+	//
+	// The two are normally the same statement, and this separates them for the one case where
+	// they genuinely differ: a foreign key declared ON DELETE SET NULL. The database must be
+	// able to write NULL into the column when the parent goes away, but a client still may not
+	// omit the field when creating the row. Without this, such a column would have to stop
+	// being required of the API in order to satisfy the constraint.
+	isDbNullable bool
 	// Causes the field to be required for update operations,
 	// but doesn't affect the generated CREATE SQL query.
 	isRequiredForUpdate bool
@@ -829,7 +854,7 @@ func (this *ModelField) ColumnType() string {
 
 // ColumnNullable returns "NOT NULL" if required, else "NULL".
 func (this *ModelField) ColumnNullable() string {
-	if this.isRequiredForCreate {
+	if this.isRequiredForCreate && !this.isDbNullable {
 		return "NOT NULL"
 	}
 	return "NULL"
@@ -837,7 +862,7 @@ func (this *ModelField) ColumnNullable() string {
 
 // IsNullable returns true if the column allows NULL.
 func (this *ModelField) IsNullable() bool {
-	return !this.isRequiredForCreate
+	return !this.isRequiredForCreate || this.isDbNullable
 }
 
 func (this *ModelField) Rules() []*FieldRule {

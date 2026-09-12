@@ -9,6 +9,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	essentialmodels "github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
 // A malformed JSON model file panics the app at start-up; these tests turn that into a test
@@ -92,6 +93,17 @@ func requireBaseSchemasRegistered(t *testing.T) {
 	t.Helper()
 	// Normally done by CoreModule.RegisterModels during app start-up.
 	_ = basemodel.RegisterJsonBaseSchemas()
+}
+
+// requireEssentialSchemasRegistered registers the Essential schemas Inventory's edges point at.
+//
+// Stock movements and balances carry a uom_id constrained by a foreign key into essential_uoms,
+// so finalizing Inventory's relations needs that schema present — the same order the application
+// registers them in, Essential being one of Inventory's declared dependencies.
+func requireEssentialSchemasRegistered(t *testing.T) {
+	t.Helper()
+	_ = dmodel.RegisterSchemaB(essentialmodels.UomCatSchemaBuilder())
+	_ = dmodel.RegisterSchemaB(essentialmodels.UomSchemaBuilder())
 }
 
 func requireField(t *testing.T, schema *dmodel.ModelSchema, fieldName string) *dmodel.ModelField {

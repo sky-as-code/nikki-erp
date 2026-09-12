@@ -20,6 +20,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/language"
 	"github.com/sky-as-code/nikki-erp/modules/core/message"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 )
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
@@ -76,6 +77,8 @@ func (*CoreModule) Init() error {
 		deps.Invoke(config.InitSubModule),
 		deps.Invoke(message.InitSubModule),
 		deps.Invoke(cqrs.InitSubModule),
+		// After cqrs: the dispatcher takes the bus as a constructor dependency.
+		deps.Invoke(usagecheck.InitSubModule),
 		deps.Invoke(authtoken.InitSubModule),
 		deps.Invoke(event.InitSubModule),
 		deps.Invoke(db.InitSubModule),
