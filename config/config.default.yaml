@@ -258,3 +258,24 @@ JOBSCHEDULER:
   # How late an occurrence may be noticed and still run normally. Beyond this it counts as
   # missed and the misfire policy decides.
   MISFIRE_THRESHOLD_SECS: 120
+
+NOTIFICATION:
+  PUBSUB:
+    # Topic prefix for the cross-instance wake-up signals. The signal carries only enough to
+    # route; the receiving instance reads the notification from the database, which stays the
+    # source of truth.
+    STREAM_TOPIC_PREFIX: "coremart.notification.stream"
+  STREAM:
+    # Fallback heartbeat interval for an idle stream, used when an organization has set none.
+    # A gateway's idle/read timeout must stay comfortably above it.
+    HEARTBEAT_INTERVAL_SECS: 20
+    # How far one slow client may fall behind before its stream is closed. Closing is safe: the
+    # client reconnects with after_seq and replays what it missed, which costs far less than an
+    # unbounded per-client buffer.
+    MAX_BUFFERED_EVENTS: 100
+    # Bounds one catch-up read, so a client returning after a long absence cannot ask for an
+    # unbounded backlog in one go.
+    REPLAY_PAGE_SIZE: 200
+  INBOX:
+    DEFAULT_PAGE_SIZE: 20
+    MAX_PAGE_SIZE: 100

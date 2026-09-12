@@ -1,0 +1,123 @@
+{
+	"name": "notification_notification",
+	"label": "notification_notification.label",
+	"table_name": "notification_notifications",
+	"should_build_db": true,
+	"record_label_field": "title",
+	"default_search_fields": ["title", "message", "severity", "source_module"],
+
+	"partial_uniques_strict": [
+		{
+			"index_name": "notif_notifs_org_src_idem",
+			"not_null_fields": ["org_id", "source_module"],
+			"nullable_field": "idempotency_key"
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "notif_notifs_org_created", "fields": ["org_id", "created_at"] }
+	],
+
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "source_module",
+			"label": "fields.source_module",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The module that raised this notification, for example 'sales'. Recorded rather than resolved: Notification never calls back into the source module (BR 30)."
+			}
+		},
+		{
+			"name": "source_resource_name",
+			"label": "fields.source_resource_name",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"description": {
+				"en-US": "The source resource, for example 'sales_order'. Historical metadata only."
+			}
+		},
+		{
+			"name": "source_resource_key",
+			"label": "fields.source_resource_key",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "Identifier of the source record, as JSON so a composite key fits. A SOFT REFERENCE with no foreign key (BR 31): the source record may be archived or deleted later, and the notification must survive it and must never block that deletion."
+			}
+		},
+		{
+			"name": "idempotency_key",
+			"label": "fields.idempotency_key",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"description": {
+				"en-US": "Caller-supplied replay guard, unique per org and source module. THE PARTIAL UNIQUE IS THE MECHANISM: a retried send, or a command bus redelivery carrying the same command id, finds the stored notification instead of raising a second one (BR 11.15, BR 12). Strict rather than loose, because the key is the value being constrained and not a scope: most notifications have none, and a loose index would permit only one such notification per module."
+			}
+		},
+		{
+			"name": "title",
+			"label": "fields.title",
+			"data_type": { "type": "string", "min": 1, "max": 300 },
+			"required_for_create": true
+		},
+		{
+			"name": "message",
+			"label": "fields.message",
+			"data_type": { "type": "string", "min": 1, "max": 4000 },
+			"required_for_create": true
+		},
+		{
+			"name": "severity",
+			"label": "fields.severity",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["info", "success", "warning", "danger"]
+			},
+			"required_for_create": true,
+			"description": {
+				"en-US": "Presentation severity. Defaults to 'info' when the sender omits it (BR 11.4)."
+			}
+		},
+		{
+			"name": "distribution_mode",
+			"label": "fields.distribution_mode",
+			"data_type": { "type": "enum_string", "values": ["all", "explicit"] },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Calculated, never sent by the caller: 'all' when the sender named no channel, 'explicit' when it did (BR 11.5, BR 11.6)."
+			}
+		},
+		{
+			"name": "requested_channels",
+			"label": "fields.requested_channels",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "The channels the sender asked for, meaningful only when distribution_mode is 'explicit'. Null for 'all', which resolves against the organization's enabled channels at send time."
+			}
+		},
+		{
+			"name": "metadata",
+			"label": "fields.metadata",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "Opaque payload passed through to the client untouched."
+			}
+		},
+		{
+			"name": "expires_at",
+			"label": "fields.expires_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "After this instant no NEW external delivery is attempted (BR 28). Expiry never deletes the notification, never marks it read, and never rewrites a delivery that already happened."
+			}
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_readonly_model"]
+}

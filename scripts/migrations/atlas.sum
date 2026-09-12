@@ -1,4 +1,4 @@
-h1:Y6olxEEwPBW3+nnmQfeoRQ/BIGsURDJpAsgzQTQ3EDg=
+h1:NpOzVXw0XfMSgLCpQjmLTfK59KrcAa21dWrmdoQIW7I=
 0001001_essential_schema.sql h1:oq6yUyOONzdMv3WqBQkZ1kQJS0XnAucn7IKjXRWRJJ0=
 0001002_essential_iam.sql h1:luhZkZP7KrhlZpixgyDmDqDU3VMoejNIE8YHK53Rh/Q=
 0001003_essential_seeds.sql h1:4aYcs9CSeKj1eY2+SCFMCOJ3+aalbgD5YRGH33DRr+8=
@@ -29,6 +29,8 @@ h1:Y6olxEEwPBW3+nnmQfeoRQ/BIGsURDJpAsgzQTQ3EDg=
 1006001_purchase_schema.sql h1:IXMJEyrTDXj8jRxwdwgp1aPidnxuYbjb2fZTidPmIpM=
 1006002_purchase_iam.sql h1:fz+Bi4PUWpYVZjcDssGau8xPJWVE+PLrMccUO6gEjBQ=
 1006003_purchase_seeds.sql h1:7DoKKjf0Bjv7xD+m2/t28dp2kBMO1snkX0oID2XX3jk=
-1007001_sales_schema.sql h1:gjFT8jSBPJUNxaL9GTFtf5UFVFQDq4b3xx7l3R9W8Rw=
-1007002_sales_iam.sql h1:jcQ3LjNaYfcmtpm5Oifr9uglh2KNQ/gYjB3d1pRa/98=
-1007003_sales_seeds.sql h1:/jLs0SK8Njz14/hAJQmpG9jtzCiB0z+IKYpld445WV8=
+1007001_sales_schema.sql h1:hr3i8NZuxtieYWeKyCPsphvMLzX90oPLCcFEqrQu7kU=
+1007002_sales_iam.sql h1:XS76ggzpYGQ8G28C3v11XtMBFb5kWKPQ6OEfVmM2nUk=
+1007003_sales_seeds.sql h1:FUmIMMyqrlAfgMVvg46D0diLUKuW4b5rFiDv3S3pVms=
+1008001_notification_schema.sql h1:Qnl/N6WkUEdywwhYFhlPlldff7DrznlEJAXRXpihTx4=
+1008002_notification_iam.sql h1:CsWYq9uEB6GxMsIIL01QJwnogF8bvu+laDCq8SipMXA=

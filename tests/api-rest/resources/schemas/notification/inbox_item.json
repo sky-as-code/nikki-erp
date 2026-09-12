@@ -1,0 +1,75 @@
+{
+    "type": "object",
+    "required": [
+        "notification_id",
+        "stream_seq",
+        "title",
+        "message",
+        "severity",
+        "source_module",
+        "created_at",
+        "is_read"
+    ],
+    "properties": {
+        "notification_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "stream_seq": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "title": {
+            "type": "string",
+            "minLength": 1
+        },
+        "message": {
+            "type": "string",
+            "minLength": 1
+        },
+        "severity": {
+            "type": "string",
+            "enum": [
+                "info",
+                "success",
+                "warning",
+                "danger"
+            ]
+        },
+        "source_module": {
+            "type": "string",
+            "minLength": 1
+        },
+        "source_resource_name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "source_resource_key": {
+            "type": [
+                "object",
+                "null"
+            ]
+        },
+        "metadata": {
+            "type": [
+                "object",
+                "null"
+            ]
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "read_at": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "is_read": {
+            "type": "boolean"
+        }
+    }
+}

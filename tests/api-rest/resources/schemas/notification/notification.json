@@ -1,0 +1,91 @@
+{
+    "type": "object",
+    "required": [
+        "id",
+        "org_id",
+        "source_module",
+        "title",
+        "message",
+        "severity",
+        "distribution_mode",
+        "created_at"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "org_id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "source_module": {
+            "type": "string",
+            "minLength": 1
+        },
+        "source_resource_name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "source_resource_key": {
+            "type": [
+                "object",
+                "null"
+            ]
+        },
+        "idempotency_key": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "title": {
+            "type": "string",
+            "minLength": 1
+        },
+        "message": {
+            "type": "string",
+            "minLength": 1
+        },
+        "severity": {
+            "type": "string",
+            "enum": [
+                "info",
+                "success",
+                "warning",
+                "danger"
+            ]
+        },
+        "distribution_mode": {
+            "type": "string",
+            "enum": [
+                "all",
+                "explicit"
+            ]
+        },
+        "requested_channels": {
+            "type": [
+                "object",
+                "null"
+            ]
+        },
+        "metadata": {
+            "type": [
+                "object",
+                "null"
+            ]
+        },
+        "expires_at": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        }
+    }
+}

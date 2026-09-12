@@ -1,0 +1,78 @@
+{
+	"name": "notification_recipient",
+	"label": "notification_recipient.label",
+	"table_name": "notification_recipients",
+	"should_build_db": true,
+	"default_search_fields": ["recipient_user_id", "stream_seq"],
+
+	"composite_uniques": [
+		{
+			"index_name": "notif_recips_notif_user",
+			"fields": ["notification_id", "recipient_user_id"]
+		}
+	],
+
+	"search_indexes": [
+		{
+			"index_name": "notif_recips_inbox",
+			"fields": ["org_id", "recipient_user_id", "read_at", "stream_seq"]
+		}
+	],
+
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "notification_id",
+			"label": "fields.notification_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "recipient_user_id",
+			"label": "fields.recipient_user_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The user this copy belongs to. One notification sent to three users is three rows, because read state is per person (BR 7)."
+			}
+		},
+		{
+			"name": "stream_seq",
+			"label": "fields.stream_seq",
+			"data_type": { "type": "int64", "min": 1, "max": 9007199254740991 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Monotonic ordering key for this user's stream, drawn from a database sequence. It is the cursor the client replays from after a disconnect (BR-FS 7, BR-FS 10). MONOTONIC BUT NOT GAPLESS: a rolled-back transaction consumes a number, and a client must never wait for a missing one. System-generated, never client input."
+			}
+		},
+		{
+			"name": "read_at",
+			"label": "fields.read_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "NULL means unread. Set once by an explicit mark-read and never overwritten afterwards (BR 20.5), so the first read is what is kept. Receiving on the stream does not set it (BR-FS 14)."
+			}
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_readonly_model"],
+
+	"edges_to": [
+		{
+			"edge": "notification",
+			"label": { "en-US": "Notification" },
+			"type": "many:one",
+			"dest_schema": "notification_notification",
+			"key_map": { "notification_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}
