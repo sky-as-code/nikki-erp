@@ -20,6 +20,14 @@ variable "cwd" {
   type = string
 }
 
+# Tables the generator emits for this module's dependencies (-withdeps). They must be present
+# for a cross-module foreign key to resolve, but they belong to another module's migration, so
+# they are excluded from the diff. db-migrations.sh fills this from -listdeptables.
+variable "dep_tables" {
+  type    = list(string)
+  default = []
+}
+
 data "external_schema" "nikki" {
   program = [
     "go",
@@ -28,6 +36,7 @@ data "external_schema" "nikki" {
     "${var.cwd}main.go",
     "-createsql",
     "-dialect=postgres",
+    "-withdeps",
     "-module=${var.module}"
   ]
 }
@@ -35,4 +44,8 @@ data "external_schema" "nikki" {
 env "nikki" {
   src = data.external_schema.nikki.url
   dev = "docker://postgres/17/test?search_path=public"
+
+  migration {
+    exclude = var.dep_tables
+  }
 }

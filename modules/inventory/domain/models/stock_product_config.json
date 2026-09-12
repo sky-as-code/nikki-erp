@@ -26,6 +26,7 @@
 			"label": "fields.inventory_uom_id",
 			"data_type": "ulid",
 			"required_for_create": true,
+			"db_nullable": true,
 			"description": {
 				"en-US": "The unit this product's stock is counted and stored in. A reference into Essential's UoM master, held as a plain id rather than an edge: the UoM belongs to another module, and a foreign key across that boundary would make Inventory's schema depend on Essential's table. The unit itself, its category, its conversion factors and its rounding all stay in Essential (CR 11.1, PROD-INT-INV-009)."
 			}
@@ -46,6 +47,14 @@
 			"dest_schema": "inventory_product_template",
 			"key_map": { "product_template_id": "id" },
 			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "inventory_uom",
+			"label": { "en-US": "Unit of measure" },
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": { "inventory_uom_id": "id" },
+			"on_delete": "SET NULL"
 		}
 	],
 

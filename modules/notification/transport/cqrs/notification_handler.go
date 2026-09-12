@@ -88,6 +88,7 @@ func mapCommand(command it.SendNotificationCommand) it.SendNotificationRequest {
 		Message:            command.Message,
 		Severity:           command.Severity,
 		Channels:           command.Channels,
+		ChannelArgs:        command.ChannelArgs,
 		SourceModule:       command.SourceModule,
 		SourceResourceName: command.SourceResourceName,
 		SourceResourceKey:  command.SourceResourceKey,

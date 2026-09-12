@@ -180,10 +180,19 @@ func TestLinesCascadeFromTheirParents(t *testing.T) {
 
 	for _, testCase := range testCases {
 		schema := testCase.builder().Build()
-		relations := schema.ToRelations()
-		require.Len(t, relations, 1, "%s", schema.Name())
-		assert.Equal(t, testCase.dest, relations[0].DestSchemaName)
-		assert.Equal(t, dmodel.RelationCascadeCascade, relations[0].OnDelete,
+
+		// The parent edge, not merely the first one: a line also references essential_uom, and
+		// which relation comes first is an ordering detail this rule does not depend on.
+		var parent *dmodel.ModelRelation
+		for i, relation := range schema.ToRelations() {
+			if relation.DestSchemaName == testCase.dest {
+				parent = &schema.ToRelations()[i]
+				break
+			}
+		}
+
+		require.NotNil(t, parent, "%s must reference %s", schema.Name(), testCase.dest)
+		assert.Equal(t, dmodel.RelationCascadeCascade, parent.OnDelete,
 			"%s must cascade from its parent", schema.Name())
 	}
 }

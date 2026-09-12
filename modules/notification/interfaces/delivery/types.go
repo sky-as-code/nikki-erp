@@ -28,6 +28,13 @@ type SendNotificationRequest struct {
 	// invalid rather than a synonym for it (BR 11.7).
 	Channels []string
 
+	// ChannelArgs carries per-channel arguments, keyed by channel name. Each channel reads only
+	// the object stored under its own name and the core reads none of them (BR 5).
+	//
+	// Every key must name an attached channel that this notification actually goes to; both are
+	// checked at send, where the sender is still there to be told.
+	ChannelArgs map[string]map[string]any
+
 	SourceModule       string
 	SourceResourceName *string
 	SourceResourceKey  map[string]any
@@ -47,7 +54,17 @@ type SendNotificationResultData struct {
 	NotificationId   model.Id
 	CreatedAt        string
 	RecipientUserIds []string
+
+	// RecipientIds are the recipient rows just written, in the same order as RecipientUserIds. A
+	// delivery row points at one of these, so the fan-out would otherwise have to read back rows
+	// the send has just created.
+	RecipientIds []model.Id
+
 	ResolvedChannels []string
+
+	// ChannelArgs is what the sender wrote, carried through so the fan-out can hand each channel
+	// its own object without reading the notification back.
+	ChannelArgs map[string]map[string]any
 
 	// Duplicate reports that an existing notification was returned rather than a new one created.
 	// The caller sees success either way; this is for the observability counter (BR 33).

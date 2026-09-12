@@ -46,6 +46,9 @@ type SendNotificationCommand struct {
 	// Channels omitted means every enabled channel; an empty array is rejected (BR 11.7).
 	Channels []string `json:"channels,omitempty"`
 
+	// ChannelArgs holds one argument object per channel, keyed by channel name (BR 5).
+	ChannelArgs map[string]map[string]any `json:"channel_args,omitempty"`
+
 	SourceResourceName *string        `json:"source_resource_name,omitempty"`
 	SourceResourceKey  map[string]any `json:"source_resource_key,omitempty"`
 

@@ -64,6 +64,7 @@ const (
 	NotificationFieldSeverity           = "severity"
 	NotificationFieldDistributionMode   = "distribution_mode"
 	NotificationFieldRequestedChannels  = "requested_channels"
+	NotificationFieldChannelArgs        = "channel_args"
 	NotificationFieldMetadata           = "metadata"
 	NotificationFieldExpiresAt          = "expires_at"
 	NotificationFieldCreatedAt          = basemodel.FieldCreatedAt
@@ -196,6 +197,14 @@ func (this Notification) GetRequestedChannels() map[string]any {
 
 func (this *Notification) SetRequestedChannels(v map[string]any) {
 	this.GetFieldData().SetAny(NotificationFieldRequestedChannels, v)
+}
+
+func (this Notification) GetChannelArgs() map[string]any {
+	return anyMap(this.GetFieldData().GetAny(NotificationFieldChannelArgs))
+}
+
+func (this *Notification) SetChannelArgs(v map[string]any) {
+	this.GetFieldData().SetAny(NotificationFieldChannelArgs, v)
 }
 
 func (this Notification) GetMetadata() map[string]any {

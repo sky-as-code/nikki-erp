@@ -10,6 +10,13 @@ package dynamicengines
 
 import (
 	stdErr "errors"
+
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/notification/app"
+	"github.com/sky-as-code/nikki-erp/modules/notification/domain/services"
+	infraExt "github.com/sky-as-code/nikki-erp/modules/notification/infra/external"
+	it "github.com/sky-as-code/nikki-erp/modules/notification/interfaces/delivery"
 )
 
 // InitDynamicEngines registers every resource onion this module owns.
@@ -19,8 +26,32 @@ import (
 // resolve. Registering all three here means they always are.
 func InitDynamicEngines() error {
 	return stdErr.Join(
+		registerSendNormalizer(),
 		registerRecipientEngine(),
 		registerDeliveryEngine(),
 		registerNotificationEngine(),
+	)
+}
+
+// registerSendNormalizer binds the send rules onto the attached channels.
+//
+// It is here rather than beside the channels themselves because this is the one package that
+// already knows both layers: the rules are domain, the channels are infrastructure, and having the
+// infrastructure import the domain to wire them would point the dependency the wrong way.
+func registerSendNormalizer() error {
+	return deps.Register(
+		func(dispatcher *infraExt.ChannelDispatcher) *services.SendNormalizer {
+			return services.NewSendNormalizer(dispatcher)
+		},
+
+		// The fan-out reaches the channels through the same dispatcher the rules do, so that a
+		// channel accepted when a notification is sent is the one that delivers it.
+		func(
+			dispatcher *infraExt.ChannelDispatcher,
+			deliveries it.DeliveryRepository,
+			logger logging.LoggerService,
+		) *app.ChannelFanOut {
+			return app.NewChannelFanOut(dispatcher, deliveries, logger)
+		},
 	)
 }

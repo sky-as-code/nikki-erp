@@ -33,6 +33,8 @@ type notificationLayerParam struct {
 	Recipients it.RecipientRepository
 	Deliveries it.DeliveryRepository
 	Broker     it.RealtimeNotificationBroker
+	Normalizer *services.SendNormalizer
+	FanOut     *app.ChannelFanOut
 	Logger     logging.LoggerService
 }
 
@@ -50,10 +52,10 @@ func registerNotificationEngine() error {
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
 					return services.NewNotificationDomainService(
-						base, notifications, layers.Recipients, layers.Deliveries)
+						base, notifications, layers.Recipients, layers.Deliveries, layers.Normalizer)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
-					return app.NewNotificationApplicationService(base, layers.Broker, layers.Logger)
+					return app.NewNotificationApplicationService(base, layers.Broker, layers.FanOut, layers.Logger)
 				},
 			}, param)
 		},

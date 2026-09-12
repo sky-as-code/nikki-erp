@@ -19,12 +19,14 @@ func NewNotificationDomainService(
 	notifications it.NotificationRepository,
 	recipients it.RecipientRepository,
 	deliveries it.DeliveryRepository,
+	normalizer *SendNormalizer,
 ) it.NotificationDomainService {
 	return &NotificationDomainServiceImpl{
 		CrudDomainService: base,
 		notifications:     notifications,
 		recipients:        recipients,
 		deliveries:        deliveries,
+		normalizer:        normalizer,
 	}
 }
 
@@ -34,6 +36,7 @@ type NotificationDomainServiceImpl struct {
 	notifications it.NotificationRepository
 	recipients    it.RecipientRepository
 	deliveries    it.DeliveryRepository
+	normalizer    *SendNormalizer
 }
 
 // Send raises one notification for one or more people.
@@ -45,7 +48,7 @@ type NotificationDomainServiceImpl struct {
 func (this *NotificationDomainServiceImpl) Send(
 	ctx corectx.Context, orgId model.Id, request it.SendNotificationRequest,
 ) (*it.SendNotificationResult, error) {
-	normalized, vErrs := NormalizeSend(request)
+	normalized, vErrs := this.normalizer.NormalizeSend(ctx, orgId, request)
 	if len(vErrs) > 0 {
 		return &it.SendNotificationResult{ClientErrors: vErrs}, nil
 	}
@@ -84,7 +87,7 @@ func (this *NotificationDomainServiceImpl) findReplay(
 		Data: it.SendNotificationResultData{
 			NotificationId:   *existingId,
 			RecipientUserIds: idStrings(normalized.RecipientUserIds),
-			ResolvedChannels: channelStrings(normalized.Channels),
+			ResolvedChannels: channelStrings(normalized.ResolvedChannels),
 			Duplicate:        true,
 		},
 	}, nil
@@ -125,7 +128,8 @@ func (this *NotificationDomainServiceImpl) persist(
 		return nil, errors.Wrap(err, "Send")
 	}
 
-	if err := this.insertRecipients(tranxCtx, orgId, *notificationId, normalized); err != nil {
+	recipientIds, err := this.insertRecipients(tranxCtx, orgId, *notificationId, normalized)
+	if err != nil {
 		return nil, err
 	}
 
@@ -139,7 +143,9 @@ func (this *NotificationDomainServiceImpl) persist(
 			NotificationId:   *notificationId,
 			CreatedAt:        model.NewModelDateTime().String(),
 			RecipientUserIds: idStrings(normalized.RecipientUserIds),
-			ResolvedChannels: channelStrings(normalized.Channels),
+			RecipientIds:     recipientIds,
+			ResolvedChannels: channelStrings(normalized.ResolvedChannels),
+			ChannelArgs:      request.ChannelArgs,
 		},
 	}, nil
 }
@@ -167,19 +173,24 @@ func (this *NotificationDomainServiceImpl) recoverFromRace(
 	return replay, nil
 }
 
+// insertRecipients writes one row per person and returns the ids it minted, in the order the
+// recipients were given, so that the fan-out can address them without reading them back.
 func (this *NotificationDomainServiceImpl) insertRecipients(
 	ctx corectx.Context, orgId model.Id, notificationId model.Id, normalized *NormalizedSend,
-) error {
+) ([]model.Id, error) {
+	recipientIds := make([]model.Id, 0, len(normalized.RecipientUserIds))
+
 	for _, userId := range normalized.RecipientUserIds {
 		seq, err := this.recipients.NextStreamSeq(ctx)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		recipientId, err := model.NewId()
 		if err != nil {
-			return errors.Wrap(err, "Send")
+			return nil, errors.Wrap(err, "Send")
 		}
+		recipientIds = append(recipientIds, *recipientId)
 
 		recipient := models.NewRecipient()
 		recipient.SetId(recipientId)
@@ -189,10 +200,10 @@ func (this *NotificationDomainServiceImpl) insertRecipients(
 		recipient.SetStreamSeq(&seq)
 
 		if _, err := this.recipients.Insert(ctx, recipient.GetFieldData()); err != nil {
-			return errors.Wrap(err, "Send")
+			return nil, errors.Wrap(err, "Send")
 		}
 	}
-	return nil
+	return recipientIds, nil
 }
 
 func buildNotification(
@@ -218,6 +229,15 @@ func buildNotification(
 		notification.SetRequestedChannels(map[string]any{
 			"channels": channelStrings(normalized.Channels),
 		})
+	}
+	if len(request.ChannelArgs) > 0 {
+		// Stored whole, exactly as it arrived. Keeping the arguments of a channel that is not a
+		// destination this time costs nothing and leaves the record faithful to what was sent.
+		args := make(map[string]any, len(request.ChannelArgs))
+		for name, channelArgs := range request.ChannelArgs {
+			args[name] = channelArgs
+		}
+		notification.SetChannelArgs(args)
 	}
 	if request.ExpiresAt != nil {
 		if expiresAt, err := model.ParseModelDateTime(*request.ExpiresAt); err == nil {

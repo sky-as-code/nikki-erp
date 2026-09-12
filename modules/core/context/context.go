@@ -132,6 +132,16 @@ func CloneRequestContext(ctx Context) Context {
 	}
 }
 
+// CloneWithInner is CloneRequestContext with the inner context replaced, for a caller that has
+// derived a cancellation or deadline from the request's own context and needs the identity,
+// logger and transaction to travel with it. Passing the bare inner context instead would drop
+// all of those; mutating the original would impose the deadline on the caller's remaining work.
+func CloneWithInner(ctx Context, inner context.Context) Context {
+	clone := CloneRequestContext(ctx).(*RequestContext)
+	clone.Context = inner
+	return clone
+}
+
 // Returns pointer to an instance of RequestContext if it exists, otherwise returns an error.
 func AsRequestContext(echoCtx *echo.Context) (Context, error) {
 	reqCtx, isReqCtx := echoCtx.Request().Context().(Context)

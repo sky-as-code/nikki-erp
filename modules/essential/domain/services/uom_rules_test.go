@@ -104,17 +104,61 @@ func TestMergeUomForValidationLeavesStoredUntouched(t *testing.T) {
 	assert.Equal(t, models.UomTypeBiggerEqual, *stored.GetUomType())
 }
 
-// BR-UOM-ESS-020: factor, type and category freeze once the UoM is used by transactions.
-// isUomInUse is stubbed to false until a consuming module exists, so nothing is rejected
-// yet — this pins which fields the rule guards when the probe goes live.
-func TestAssertImmutableWhileInUseIsInertWithoutConsumers(t *testing.T) {
-	stored := newUomFixture(t, models.UomTypeBiggerEqual, "1000", "0.01")
+// BR-UOM-ESS-020: factor, type and category freeze once a consuming module reports the unit in
+// use. The consuming modules answer over the command bus, so the dispatcher is built here on a
+// bus that replies the way one of them would.
+func TestAssertImmutableWhileInUseBlocksTheFrozenFields(t *testing.T) {
+	stored := newUomFixtureWithId(t, "UOM-1")
 	params := dmodel.DynamicFields{models.UomFieldFactor: "24"}
 	vErrs := &ft.ClientErrors{}
 
-	assertImmutableWhileInUse(nil, params, stored, vErrs)
+	err := assertImmutableWhileInUse(
+		uomTestCtx(), uomDispatcher(t, usageReply{module: "sales", used: true}), params, stored, vErrs)
 
-	assert.Zero(t, vErrs.Count(), "no consuming module reports usage yet")
+	require.NoError(t, err)
+	assertViolation(t, vErrs, "uom.immutable_while_in_use")
+}
+
+func TestAssertImmutableWhileInUsePermitsEditWhenUnused(t *testing.T) {
+	stored := newUomFixtureWithId(t, "UOM-1")
+	params := dmodel.DynamicFields{models.UomFieldFactor: "24"}
+	vErrs := &ft.ClientErrors{}
+
+	err := assertImmutableWhileInUse(
+		uomTestCtx(), uomDispatcher(t, usageReply{module: "sales", used: false}), params, stored, vErrs)
+
+	require.NoError(t, err)
+	assert.Zero(t, vErrs.Count())
+}
+
+// A module that cannot answer must not be read as "not in use": permitting the edit on that
+// basis is what would silently reinterpret a quantity already recorded.
+func TestAssertImmutableWhileInUseRefusesWhenAModuleCannotAnswer(t *testing.T) {
+	stored := newUomFixtureWithId(t, "UOM-1")
+	params := dmodel.DynamicFields{models.UomFieldFactor: "24"}
+	vErrs := &ft.ClientErrors{}
+
+	err := assertImmutableWhileInUse(
+		uomTestCtx(), uomDispatcher(t, usageReply{module: "sales", failure: "database is down"}),
+		params, stored, vErrs)
+
+	require.NoError(t, err)
+	assertViolation(t, vErrs, "uom.immutable_while_in_use")
+}
+
+// Editing a field that is not frozen must not cost a round trip to every consuming module.
+func TestAssertImmutableWhileInUseSkipsTheCheckForUnfrozenFields(t *testing.T) {
+	stored := newUomFixtureWithId(t, "UOM-1")
+	params := dmodel.DynamicFields{"name": "Kilogram"}
+	vErrs := &ft.ClientErrors{}
+	bus := &uomFakeBus{}
+
+	err := assertImmutableWhileInUse(
+		uomTestCtx(), dispatcherOn(t, bus), params, stored, vErrs)
+
+	require.NoError(t, err)
+	assert.Zero(t, vErrs.Count())
+	assert.Zero(t, bus.calls, "nothing frozen was submitted, so nobody is asked")
 }
 
 func newUomFixture(t *testing.T, uomType models.UomType, factor string, rounding string) *models.Uom {
@@ -141,4 +185,50 @@ func assertViolation(t *testing.T, vErrs *ft.ClientErrors, wantErrKey string) {
 	}
 	require.Equal(t, 1, vErrs.Count(), "expected exactly one violation")
 	assert.Equal(t, wantErrKey, (*vErrs)[0].Key)
+}
+
+// The delete guard is the new half of BR-UOM-ESS-020. The foreign keys on uom_id are
+// ON DELETE SET NULL, so without this check the database would accept the delete and blank the
+// unit from every row naming it.
+func TestAssertUomDeletableBlocksAUnitInUse(t *testing.T) {
+	params := dmodel.DynamicFields{models.UomFieldId: "UOM-1", "org_id": "ORG-1"}
+	vErrs := ft.NewClientErrors()
+
+	err := assertUomDeletable(
+		uomTestCtx(), uomDispatcher(t, usageReply{module: "sales", used: true}), params, vErrs)
+
+	require.NoError(t, err)
+	assertViolation(t, vErrs, "resource_in_use")
+}
+
+func TestAssertUomDeletablePermitsAnUnusedUnit(t *testing.T) {
+	params := dmodel.DynamicFields{models.UomFieldId: "UOM-1", "org_id": "ORG-1"}
+	vErrs := ft.NewClientErrors()
+
+	err := assertUomDeletable(
+		uomTestCtx(),
+		uomDispatcher(t,
+			usageReply{module: "sales", used: false},
+			usageReply{module: "inventory", used: false}),
+		params, vErrs)
+
+	require.NoError(t, err)
+	assert.Zero(t, vErrs.Count())
+}
+
+// One module refusing is enough, however many others permit it.
+func TestAssertUomDeletableBlocksWhenAnyModuleReportsUsage(t *testing.T) {
+	params := dmodel.DynamicFields{models.UomFieldId: "UOM-1"}
+	vErrs := ft.NewClientErrors()
+
+	err := assertUomDeletable(
+		uomTestCtx(),
+		uomDispatcher(t,
+			usageReply{module: "sales", used: false},
+			usageReply{module: "accounting", used: true},
+			usageReply{module: "inventory", used: false}),
+		params, vErrs)
+
+	require.NoError(t, err)
+	assertViolation(t, vErrs, "resource_in_use")
 }

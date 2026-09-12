@@ -20,6 +20,7 @@ import (
 func NewNotificationApplicationService(
 	base composable.CrudApplicationService,
 	broker it.RealtimeNotificationBroker,
+	fanOut *ChannelFanOut,
 	logger logging.LoggerService,
 ) it.NotificationApplicationService {
 	domainSvc, ok := base.DomainService().(it.NotificationDomainService)
@@ -30,6 +31,7 @@ func NewNotificationApplicationService(
 		CrudApplicationService: base,
 		domainSvc:              domainSvc,
 		broker:                 broker,
+		fanOut:                 fanOut,
 		logger:                 logger,
 	}
 }
@@ -39,6 +41,7 @@ type NotificationApplicationServiceImpl struct {
 
 	domainSvc it.NotificationDomainService
 	broker    it.RealtimeNotificationBroker
+	fanOut    *ChannelFanOut
 	logger    logging.LoggerService
 }
 
@@ -73,6 +76,9 @@ func (this *NotificationApplicationServiceImpl) SendNotification(
 	// After the commit, never inside it (BR 11.13): an instance woken earlier would look for a
 	// row that its own transaction cannot see yet and find nothing.
 	this.announce(ctx, *orgId, result.Data)
+	if this.fanOut != nil {
+		this.fanOut.Deliver(ctx, *orgId, result.Data)
+	}
 	return result, nil
 }
 
@@ -89,10 +95,27 @@ func (this *NotificationApplicationServiceImpl) announce(
 		return
 	}
 
+	// A notification the web is not a destination for is not pushed to it (BR 11.5-11.8, AC03).
+	// It is still in the inbox, and still readable there: what a channel decides is delivery, not
+	// whether the notification exists (BR 14, BR-FS 22).
+	if !isResolved(data.ResolvedChannels, modconstants.ChannelWeb) {
+		return
+	}
+
 	for _, userId := range data.RecipientUserIds {
 		signal := it.WakeUpSignal{OrgId: orgId, UserId: model.Id(userId)}
 		if err := this.broker.Publish(context.WithoutCancel(ctx), signal); err != nil {
 			this.logger.Error("notification wake-up signal was not published", err)
 		}
 	}
+}
+
+// isResolved reports whether a channel is among the ones this notification goes to.
+func isResolved(resolved []string, name modconstants.ChannelName) bool {
+	for _, candidate := range resolved {
+		if candidate == name.String() {
+			return true
+		}
+	}
+	return false
 }

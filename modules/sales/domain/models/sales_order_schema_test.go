@@ -169,9 +169,9 @@ func TestSnapshotFieldsAllExist(t *testing.T) {
 	}
 }
 
-// uom_id is required on every line, which is what makes the UomUsageProbe necessary: without it
-// Essential would let somebody edit a unit that sales history depends on, and an old receipt would
-// come to mean a different amount of goods.
+// uom_id is required on every line, which is what makes Sales' usage checker necessary: without
+// it Essential would let somebody edit or delete a unit that sales history depends on, and an old
+// receipt would come to mean a different amount of goods.
 func TestSalesOrderLineRequiresUom(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 

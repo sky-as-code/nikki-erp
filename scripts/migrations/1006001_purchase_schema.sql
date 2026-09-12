@@ -1,30 +1,3 @@
--- Create "purchase_agreements" table
-CREATE TABLE "purchase_agreements" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NOT NULL,
-  "code" character varying NOT NULL,
-  "reference" character varying NULL,
-  "agreement_type" character varying NOT NULL,
-  "status" character varying NOT NULL,
-  "vendor_id" character varying NULL,
-  "buyer_id" character varying NOT NULL,
-  "currency_id" character varying NULL,
-  "start_date" date NULL,
-  "end_date" date NULL,
-  "description" character varying NULL,
-  "is_archived" boolean NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "etag" character varying NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "purch_agreements_tid_code_org_id_ukey" UNIQUE ("code", "org_id")
-);
--- Create index "purch_agreements_tid_org_id_idx" to table: "purchase_agreements"
-CREATE INDEX "purch_agreements_tid_org_id_idx" ON "purchase_agreements" ("org_id");
--- Create index "purch_agreements_tid_status_idx" to table: "purchase_agreements"
-CREATE INDEX "purch_agreements_tid_status_idx" ON "purchase_agreements" ("status");
--- Create index "purch_agreements_tid_vendor_id_idx" to table: "purchase_agreements"
-CREATE INDEX "purch_agreements_tid_vendor_id_idx" ON "purchase_agreements" ("vendor_id");
 -- Create "purchase_audit_events" table
 CREATE TABLE "purchase_audit_events" (
   "id" character varying NOT NULL,
@@ -68,35 +41,33 @@ CREATE TABLE "purchase_sourcing_groups" (
 );
 -- Create index "purch_srcgroups_tid_org_id_idx" to table: "purchase_sourcing_groups"
 CREATE INDEX "purch_srcgroups_tid_org_id_idx" ON "purchase_sourcing_groups" ("org_id");
--- Create "purchase_vendor_product_prices" table
-CREATE TABLE "purchase_vendor_product_prices" (
+-- Create "purchase_agreements" table
+CREATE TABLE "purchase_agreements" (
   "id" character varying NOT NULL,
   "org_id" character varying NOT NULL,
-  "vendor_id" character varying NOT NULL,
-  "product_template_id" character varying NOT NULL,
-  "product_variant_id" character varying NULL,
-  "purchase_uom_id" character varying NOT NULL,
-  "currency_id" character varying NOT NULL,
-  "min_quantity" numeric NOT NULL,
-  "unit_price" numeric NOT NULL,
-  "valid_from" timestamptz NULL,
-  "valid_to" timestamptz NULL,
-  "lead_time_days" integer NOT NULL,
-  "sequence" integer NOT NULL,
-  "vendor_product_code" character varying NULL,
-  "vendor_product_name" character varying NULL,
+  "code" character varying NOT NULL,
+  "reference" character varying NULL,
+  "agreement_type" character varying NOT NULL,
+  "status" character varying NOT NULL,
+  "vendor_id" character varying NULL,
+  "buyer_id" character varying NOT NULL,
+  "currency_id" character varying NULL,
+  "start_date" date NULL,
+  "end_date" date NULL,
+  "description" character varying NULL,
   "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
-  PRIMARY KEY ("id")
+  PRIMARY KEY ("id"),
+  CONSTRAINT "purch_agreements_tid_code_org_id_ukey" UNIQUE ("code", "org_id")
 );
--- Create index "purch_vpp_tid_validity_idx" to table: "purchase_vendor_product_prices"
-CREATE INDEX "purch_vpp_tid_validity_idx" ON "purchase_vendor_product_prices" ("valid_from", "valid_to");
--- Create index "purch_vpp_tid_variant_idx" to table: "purchase_vendor_product_prices"
-CREATE INDEX "purch_vpp_tid_variant_idx" ON "purchase_vendor_product_prices" ("product_variant_id");
--- Create index "purch_vpp_tid_vendor_tmpl_idx" to table: "purchase_vendor_product_prices"
-CREATE INDEX "purch_vpp_tid_vendor_tmpl_idx" ON "purchase_vendor_product_prices" ("vendor_id", "product_template_id");
+-- Create index "purch_agreements_tid_org_id_idx" to table: "purchase_agreements"
+CREATE INDEX "purch_agreements_tid_org_id_idx" ON "purchase_agreements" ("org_id");
+-- Create index "purch_agreements_tid_status_idx" to table: "purchase_agreements"
+CREATE INDEX "purch_agreements_tid_status_idx" ON "purchase_agreements" ("status");
+-- Create index "purch_agreements_tid_vendor_id_idx" to table: "purchase_agreements"
+CREATE INDEX "purch_agreements_tid_vendor_id_idx" ON "purchase_agreements" ("vendor_id");
 -- Create "purchase_agreement_lines" table
 CREATE TABLE "purchase_agreement_lines" (
   "id" character varying NOT NULL,
@@ -104,7 +75,7 @@ CREATE TABLE "purchase_agreement_lines" (
   "purchase_agreement_id" character varying NOT NULL,
   "sequence" integer NOT NULL,
   "product_variant_id" character varying NOT NULL,
-  "uom_id" character varying NOT NULL,
+  "uom_id" character varying NULL,
   "quantity" numeric NOT NULL,
   "unit_price" numeric NOT NULL,
   "description" character varying NULL,
@@ -112,7 +83,9 @@ CREATE TABLE "purchase_agreement_lines" (
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "purchase_agreement_lines_purchase_agreement_id_fkey" FOREIGN KEY ("purchase_agreement_id") REFERENCES "purchase_agreements" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT "purchase_agreement_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "purchase_agreement_lines_purchase_agreement_id_fkey" FOREIGN KEY ("purchase_agreement_id") REFERENCES "purchase_agreements" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "purchase_agreement_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "purch_agr_lines_tid_agr_id_seq_idx" to table: "purchase_agreement_lines"
 CREATE INDEX "purch_agr_lines_tid_agr_id_seq_idx" ON "purchase_agreement_lines" ("purchase_agreement_id", "sequence");
@@ -184,7 +157,9 @@ CREATE TABLE "purchase_order_lines" (
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "purchase_order_lines_purchase_order_id_fkey" FOREIGN KEY ("purchase_order_id") REFERENCES "purchase_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT "purchase_order_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "purchase_order_lines_purchase_order_id_fkey" FOREIGN KEY ("purchase_order_id") REFERENCES "purchase_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "purchase_order_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "purch_ord_lines_tid_ord_id_seq_idx" to table: "purchase_order_lines"
 CREATE INDEX "purch_ord_lines_tid_ord_id_seq_idx" ON "purchase_order_lines" ("purchase_order_id", "sequence");
@@ -192,3 +167,34 @@ CREATE INDEX "purch_ord_lines_tid_ord_id_seq_idx" ON "purchase_order_lines" ("pu
 CREATE INDEX "purch_ord_lines_tid_pvar_id_idx" ON "purchase_order_lines" ("product_variant_id");
 -- Create index "purch_ord_lines_tid_vpp_id_idx" to table: "purchase_order_lines"
 CREATE INDEX "purch_ord_lines_tid_vpp_id_idx" ON "purchase_order_lines" ("vendor_product_price_id");
+-- Create "purchase_vendor_product_prices" table
+CREATE TABLE "purchase_vendor_product_prices" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "vendor_id" character varying NOT NULL,
+  "product_template_id" character varying NOT NULL,
+  "product_variant_id" character varying NULL,
+  "purchase_uom_id" character varying NULL,
+  "currency_id" character varying NOT NULL,
+  "min_quantity" numeric NOT NULL,
+  "unit_price" numeric NOT NULL,
+  "valid_from" timestamptz NULL,
+  "valid_to" timestamptz NULL,
+  "lead_time_days" integer NOT NULL,
+  "sequence" integer NOT NULL,
+  "vendor_product_code" character varying NULL,
+  "vendor_product_name" character varying NULL,
+  "is_archived" boolean NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "purchase_vendor_product_prices_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "purchase_vendor_product_prices_purchase_uom_id_fkey" FOREIGN KEY ("purchase_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+);
+-- Create index "purch_vpp_tid_validity_idx" to table: "purchase_vendor_product_prices"
+CREATE INDEX "purch_vpp_tid_validity_idx" ON "purchase_vendor_product_prices" ("valid_from", "valid_to");
+-- Create index "purch_vpp_tid_variant_idx" to table: "purchase_vendor_product_prices"
+CREATE INDEX "purch_vpp_tid_variant_idx" ON "purchase_vendor_product_prices" ("product_variant_id");
+-- Create index "purch_vpp_tid_vendor_tmpl_idx" to table: "purchase_vendor_product_prices"
+CREATE INDEX "purch_vpp_tid_vendor_tmpl_idx" ON "purchase_vendor_product_prices" ("vendor_id", "product_template_id");

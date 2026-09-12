@@ -176,6 +176,7 @@ CREATE TABLE "accounting_tax_rate_versions" (
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "acc_tx_rate_tid_tax_ver_ukey" UNIQUE ("tax_id", "version_no", "org_id"),
+  CONSTRAINT "accounting_tax_rate_versions_rate_uom_id_fkey" FOREIGN KEY ("rate_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "accounting_tax_rate_versions_tax_id_fkey" FOREIGN KEY ("tax_id") REFERENCES "accounting_taxes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "acc_tx_rate_tid_eff_idx" to table: "accounting_tax_rate_versions"

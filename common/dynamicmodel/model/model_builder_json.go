@@ -48,6 +48,7 @@ type fieldJsonDto struct {
 	RequiredForCreate bool   `json:"required_for_create"`
 	RequiredForUpdate bool   `json:"required_for_update"`
 	RequiredWith      string `json:"required_with"`
+	DbNullable        bool   `json:"db_nullable"`
 
 	NoUpdate      bool `json:"no_update"`
 	Unique        bool `json:"unique"`
@@ -304,6 +305,9 @@ func applyFieldFlags(field *FieldBuilder, dto *fieldJsonDto) {
 	}
 	if dto.RequiredForCreate {
 		field.RequiredForCreate()
+	}
+	if dto.DbNullable {
+		field.DbNullable()
 	}
 	if dto.RequiredForUpdate {
 		field.RequiredForUpdate()

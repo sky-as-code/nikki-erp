@@ -27,9 +27,11 @@ import (
 
 // InitExternal binds every port Purchase consumes, and registers what Purchase offers back.
 func InitExternal() error {
-	// Purchase is the first module to hold UoM references, so this is what turns Essential's
-	// unit-in-use guard from an assumption into an enforced rule.
-	RegisterUomUsageProbe()
+	// Purchase holds UoM references on order lines, agreement lines and vendor prices, so
+	// Essential asks this module before letting a unit be edited or deleted.
+	if err := deps.Invoke(RegisterUsageCheckers); err != nil {
+		return err
+	}
 
 	return stdErr.Join(
 		deps.Register(func(uomSvc itUom.UomConversionAppService) itExt.UomExtService {

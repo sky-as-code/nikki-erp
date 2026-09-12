@@ -401,7 +401,8 @@ CREATE TABLE "inventory_stock_moves" (
   CONSTRAINT "inventory_stock_moves_destination_location_id_fkey" FOREIGN KEY ("destination_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_moves_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_moves_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_moves_transfer_id_fkey" FOREIGN KEY ("transfer_id") REFERENCES "inventory_stock_transfers" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+  CONSTRAINT "inventory_stock_moves_transfer_id_fkey" FOREIGN KEY ("transfer_id") REFERENCES "inventory_stock_transfers" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "inventory_stock_moves_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "invty_stock_moves_origin_move_id_idx" to table: "inventory_stock_moves"
 CREATE INDEX "invty_stock_moves_origin_move_id_idx" ON "inventory_stock_moves" ("origin_move_id");
@@ -453,7 +454,8 @@ CREATE TABLE "inventory_stock_move_lines" (
   CONSTRAINT "inventory_stock_move_lines_move_id_fkey" FOREIGN KEY ("move_id") REFERENCES "inventory_stock_moves" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_move_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_move_lines_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_move_lines_transfer_id_fkey" FOREIGN KEY ("transfer_id") REFERENCES "inventory_stock_transfers" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+  CONSTRAINT "inventory_stock_move_lines_transfer_id_fkey" FOREIGN KEY ("transfer_id") REFERENCES "inventory_stock_transfers" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "inventory_stock_move_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "invty_stock_mvlines_move_id_idx" to table: "inventory_stock_move_lines"
 CREATE INDEX "invty_stock_mvlines_move_id_idx" ON "inventory_stock_move_lines" ("move_id");
@@ -465,13 +467,14 @@ CREATE INDEX "invty_stock_mvlines_trf_id_idx" ON "inventory_stock_move_lines" ("
 CREATE TABLE "inventory_stock_product_configs" (
   "id" character varying NOT NULL,
   "product_template_id" character varying NOT NULL,
-  "inventory_uom_id" character varying NOT NULL,
+  "inventory_uom_id" character varying NULL,
   "org_id" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_stk_prod_cfgs_tid_ptpl_id_ukey" UNIQUE ("product_template_id", "org_id"),
+  CONSTRAINT "inventory_stock_product_configs_inventory_uom_id_fkey" FOREIGN KEY ("inventory_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_product_configs_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "inventory_stock_quants" table
@@ -500,6 +503,7 @@ CREATE TABLE "inventory_stock_quants" (
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_stock_quants_tid_pvar_loc_lot_pkg_own_ukey" UNIQUE ("product_variant_id", "location_id", "lot_ref", "package_ref", "owner_ref", "org_id"),
+  CONSTRAINT "inventory_stock_quants_base_uom_id_fkey" FOREIGN KEY ("base_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_quants_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_quants_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
@@ -535,6 +539,7 @@ CREATE TABLE "inventory_stock_scraps" (
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_stock_scraps_number_org_id_ukey" UNIQUE ("scrap_number", "org_id"),
+  CONSTRAINT "inventory_stock_scraps_base_uom_id_fkey" FOREIGN KEY ("base_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_scraps_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_scraps_scrap_location_id_fkey" FOREIGN KEY ("scrap_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_scraps_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,

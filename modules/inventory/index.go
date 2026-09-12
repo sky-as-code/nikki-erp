@@ -7,8 +7,10 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
@@ -50,6 +52,22 @@ func (*InventoryModule) Deps() []string {
 	}
 }
 
+// Dependants implements InCodeModuleDependants: the modules referencing a product variant, which
+// Inventory asks before deleting one. The variant is the referenced thing throughout — never the
+// template — because the variant is what downstream documents actually name.
+//
+// "vendingmachine" ships only in the coremart binary. It is listed anyway, because the list
+// belongs to Inventory and states who references its products wherever Inventory runs; the
+// registry skips a dependant this binary did not load. See docs/problems/inventory/001 for why
+// that makes an absent dependant indistinguishable from a misspelled one.
+func (*InventoryModule) Dependants() []string {
+	return []string{
+		"sales",
+		"purchase",
+		"vendingmachine",
+	}
+}
+
 // IsInternal implements InCodeModule.
 func (*InventoryModule) IsInternal() bool {
 	return false
@@ -72,6 +90,11 @@ func (*InventoryModule) Init() error {
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}
+	// Inventory holds a uom_id on every stock movement and balance, so Essential asks this
+	// module before letting a unit be edited or deleted.
+	if err := deps.Invoke(services.RegisterUsageCheckers); err != nil {
+		return err
+	}
 	return restful.InitRestfulHandlers()
 }
 
@@ -86,7 +109,16 @@ func (*InventoryModule) OnAppStarted() error {
 		transfers itStock.StockTransferMovementService,
 		cronjobs job.CronjobRegistry,
 		logger logging.LoggerService,
+		cqrsBus cqrs.CqrsBus,
+		dependants *modules.ModuleDependantRegistry,
 	) error {
+		// Here rather than in Init(): a dependant subscribes its usage handler during its own
+		// Init, and peer init order is nondeterministic, so this is the first point at which
+		// every module that was going to subscribe has done so.
+		if err := usagecheck.AssertDependantsSubscribed(
+			cqrsBus, dependants, modconstants.InventoryModuleName); err != nil {
+			return err
+		}
 		return app.NewReservationExpiryJobs(transfers, logger).RegisterJobs(cronjobs)
 	})
 }

@@ -42,6 +42,7 @@
 			"label": "fields.uom_id",
 			"data_type": "ulid",
 			"required_for_create": true,
+			"db_nullable": true,
 			"description": {
 				"en-US": "The unit the agreed quantity and price are expressed in. A plain ulid — the unit belongs to Essential, which also owns the conversion factors."
 			}
@@ -84,6 +85,22 @@
 			"dest_schema": "purchase_agreement",
 			"key_map": { "purchase_agreement_id": "id" },
 			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "uom",
+			"label": { "en-US": "Unit of measure" },
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": { "uom_id": "id" },
+			"on_delete": "SET NULL"
+		},
+		{
+			"edge": "product_variant",
+			"label": { "en-US": "Product variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "product_variant_id": "id" },
+			"on_delete": "RESTRICT"
 		}
 	],
 

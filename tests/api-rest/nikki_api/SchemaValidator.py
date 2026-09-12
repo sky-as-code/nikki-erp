@@ -53,6 +53,32 @@ class SchemaValidator:
             "additionalItems": False,
         }
 
+    def one_error_schema_message_pattern(self, field, key, message_pattern, type="business"):
+        """Single-item error array whose message is matched by regex rather than pinned.
+
+        For an error whose message is assembled at run time - "still used by sales, purchase"
+        names whichever modules answered - where pinning the whole string would assert the order
+        modules happen to be listed in rather than the rule under test.
+        """
+        return {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["field", "key", "message", "type"],
+                "properties": {
+                    "field": {"type": "string", "enum": [field]},
+                    "key": {"type": "string", "enum": [key]},
+                    "message": {"type": "string", "pattern": message_pattern},
+                    "type": {"type": "string", "enum": [type]},
+                    "vars": {"type": "object"},
+                },
+                "additionalProperties": False,
+            },
+            "additionalItems": False,
+        }
+
     def one_error_schema_no_field(self, key, message, type="validation", vars_schema=None):
         """Single-item error array without a ``field`` property (optionally pinning ``vars``)."""
         return {

@@ -247,6 +247,14 @@
 			"dest_schema": "inventory_location",
 			"key_map": { "destination_location_id": "id" },
 			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "uom",
+			"label": { "en-US": "Unit of measure" },
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": { "uom_id": "id" },
+			"on_delete": "SET NULL"
 		}
 	]
 }

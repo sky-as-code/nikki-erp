@@ -98,7 +98,13 @@ func (this *Application) Stop(ctx context.Context) {
 	}
 }
 
-func (this *Application) GenSql(moduleName string, dialect string) string {
+// GenSql renders the module's CREATE TABLE statements. withDeps additionally renders the
+// tables of every module in the dependency closure, which a cross-module foreign key needs:
+// the constraint names a table this module does not own, and Atlas cannot diff a reference
+// to a table absent from the schema it is given. The dependency tables are emitted first
+// (ForEachOrder is dependency-ordered) and the caller excludes them from the diff, so they
+// exist for the constraint to resolve against without being proposed as new tables.
+func (this *Application) GenSql(moduleName string, dialect string, withDeps bool) string {
 	registeredCount, err := this.registerModelsUpTo(moduleName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to register models: %v\n", err)
@@ -117,7 +123,13 @@ func (this *Application) GenSql(moduleName string, dialect string) string {
 	}
 
 	prefix := this.buildModuleMap()[moduleName].(modules.DynamicModule).ModelPrefix() + "_"
-	queries, err := orm.GenCreateSql(registry, dialect, prefix)
+	genPrefix := prefix
+	if withDeps {
+		// No prefix filter: take everything registered, which registerModelsUpTo limited to
+		// this module plus its transitive dependencies.
+		genPrefix = ""
+	}
+	queries, err := orm.GenCreateSql(registry, dialect, genPrefix)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to generate create SQL: %v\n", err)
 		os.Exit(1)
@@ -132,6 +144,31 @@ func (this *Application) GenSql(moduleName string, dialect string) string {
 		os.Exit(1)
 	}
 	return strings.Join(queries, ";\n")
+}
+
+// GenSqlExcludes lists the table names GenSql(withDeps=true) emits that moduleName does not
+// own, for the caller to hand to Atlas as diff exclusions. Without them a dependency's tables
+// read as new tables this module should create, and the generated migration would duplicate
+// tables another module's migration already creates.
+func (this *Application) GenSqlExcludes(moduleName string) []string {
+	if _, err := this.registerModelsUpTo(moduleName); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to register models: %v\n", err)
+		os.Exit(1)
+	}
+
+	prefix := this.buildModuleMap()[moduleName].(modules.DynamicModule).ModelPrefix() + "_"
+	excluded := make([]string, 0)
+	err := dmodel.GetSchemaRegistry().ForEachOrder(func(schemaName string, schema *dmodel.ModelSchema) error {
+		if !strings.HasPrefix(schemaName, prefix) && schema.TableName() != "" {
+			excluded = append(excluded, schema.TableName())
+		}
+		return nil
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to list dependency tables: %v\n", err)
+		os.Exit(1)
+	}
+	return excluded
 }
 
 // registerModelsUpTo registers models for moduleName and its transitive dependencies only
@@ -240,11 +277,37 @@ func (this *Application) initModules() error {
 		return err
 	}
 
+	// Before any module initializes: a module's Init may subscribe the handler that answers a
+	// usage check, and the registry is what tells it whom those checks will be sent to.
+	if err := this.registerDependants(); err != nil {
+		return err
+	}
+
 	if err := this.registerModelInOrder(moduleMap, depGraph); err != nil {
 		return err
 	}
 
 	return this.initializeInOrder(moduleMap, depGraph)
+}
+
+// registerDependants builds the "who references my resources" registry and puts it in the
+// container. A module naming itself or repeating a name is a mistake in the list and fails
+// startup; a name this binary did not load is legitimate (the same list ships in every binary)
+// and is only logged, because an absent module and a misspelled one look identical otherwise.
+func (this *Application) registerDependants() error {
+	registry, err := modules.NewModuleDependantRegistry(this.modules)
+	if err != nil {
+		return errors.Wrap(err, "failed to build the module dependant registry")
+	}
+
+	for _, owner := range registry.OwnersWithAbsentDependants() {
+		this.logger.Warnf("module %s declares dependant(s) not loaded in this binary: %s; "+
+			"usage checks will skip them", owner, strings.Join(registry.AbsentDependants(owner), ", "))
+	}
+
+	return deps.Register(func() *modules.ModuleDependantRegistry {
+		return registry
+	})
 }
 
 func (this *Application) buildModuleMap() map[string]modules.InCodeModule {

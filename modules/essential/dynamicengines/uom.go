@@ -6,6 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
@@ -20,24 +21,33 @@ type uomEngineParam struct {
 	Engine composable.DynamicResourceEngineOnion `name:"dynengine_essential_uom"`
 }
 
+// uomBuildParam is composable.BuildParam plus what the UoM's own rules need. Embedding rather
+// than extending BuildParam keeps the platform's parameter list free of one module's
+// dependencies; dig fills both halves the same way.
+type uomBuildParam struct {
+	composable.BuildParam
+
+	UsageDispatcher *usagecheck.Dispatcher
+}
+
 // registerUomEngine declares the UoM onion and publishes its typed layers. The repository is
 // what the UoM Category onion and the conversion service inject to read UoM rows.
 func registerUomEngine() error {
 	err := deps.RegisterNamed(
 		composable.EngineDependencyName(models.UomSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
+		func(param uomBuildParam) composable.DynamicResourceEngineOnion {
 			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.UomSchemaName,
 				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
 					return repo.NewUomRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewUomDomainService(base)
+					return services.NewUomDomainService(base, param.UsageDispatcher)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					return app.NewUomApplicationService(base)
 				},
-			}, param)
+			}, param.BuildParam)
 		},
 	)
 	return stdErr.Join(err, deps.Register(

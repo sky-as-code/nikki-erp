@@ -5,9 +5,11 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/notification/constants"
 	"github.com/sky-as-code/nikki-erp/modules/notification/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/notification/interfaces/delivery"
+	itExt "github.com/sky-as-code/nikki-erp/modules/notification/interfaces/external"
 )
 
 // NormalizedSend is a send request after the rules of BR 11 have been applied to it: the fields
@@ -19,25 +21,42 @@ type NormalizedSend struct {
 	Severity         models.Severity
 	DistributionMode models.DistributionMode
 
-	// Channels is what was asked for. It is resolved against the organization's configuration
-	// separately, because that needs the settings and this does not.
+	// Channels is what was asked for, and is nil under distribution mode "all": the sender named
+	// nothing, so there is nothing to record as requested.
 	Channels []modconstants.ChannelName
+
+	// ResolvedChannels is what the notification will actually be delivered to -- the requested
+	// channels under mode "explicit", and the organization's enabled ones under mode "all".
+	ResolvedChannels []modconstants.ChannelName
 
 	IdempotencyKey *string
 }
 
-// registeredChannels is the channel registry of BR 5, kept in code rather than in a table: adding
-// a channel means writing an adapter, which a row could not do on its own.
+// ChannelRegistry is what the normalizer needs to know about the attached channels (BR 5).
 //
-// Phase 1 registers only the web channel. A name outside this set is rejected rather than ignored
-// (BR 11.8), so that a sender's typo surfaces at the call instead of silently delivering nowhere.
-var registeredChannels = map[modconstants.ChannelName]bool{
-	modconstants.ChannelWeb: true,
+// It is an interface here, and satisfied by the dispatcher, so that these rules can be tested
+// against a set of channels made up for the test rather than whichever ones happen to be wired.
+type ChannelRegistry interface {
+	Names() []modconstants.ChannelName
+	IsRegistered(name string) bool
+	EnabledFor(ctx corectx.Context, orgId model.Id) []modconstants.ChannelName
+	ValidateArgs(
+		ctx corectx.Context,
+		args map[string]itExt.ChannelArgs,
+		requested []modconstants.ChannelName,
+	) ft.ClientErrors
 }
 
-// IsRegisteredChannel reports whether a channel name is one the system knows.
-func IsRegisteredChannel(name string) bool {
-	return registeredChannels[modconstants.ChannelName(name)]
+// SendNormalizer applies BR 11's rules.
+//
+// It holds the registry rather than reading a package-level one, because which channels exist is a
+// property of how the application was assembled, not of this file.
+type SendNormalizer struct {
+	channels ChannelRegistry
+}
+
+func NewSendNormalizer(channels ChannelRegistry) *SendNormalizer {
+	return &SendNormalizer{channels: channels}
 }
 
 // NormalizeSend applies BR 11's rules and collects every problem it finds.
@@ -45,7 +64,12 @@ func IsRegisteredChannel(name string) bool {
 // Every rule is checked before returning rather than failing on the first, because a caller fixing
 // one field at a time against a service that answers one error at a time is a slow way to find out
 // it had three.
-func NormalizeSend(request it.SendNotificationRequest) (*NormalizedSend, ft.ClientErrors) {
+//
+// orgId is needed because resolving "every enabled channel" depends on the organization: the same
+// request can be valid for one and not for another.
+func (this *SendNormalizer) NormalizeSend(
+	ctx corectx.Context, orgId model.Id, request it.SendNotificationRequest,
+) (*NormalizedSend, ft.ClientErrors) {
 	errs := make(ft.ClientErrors, 0)
 
 	recipients := dedupeIds(request.RecipientUserIds)
@@ -77,8 +101,18 @@ func NormalizeSend(request it.SendNotificationRequest) (*NormalizedSend, ft.Clie
 		errs = append(errs, *severityErr)
 	}
 
-	mode, channels, channelErrs := normalizeChannels(request.Channels)
+	mode, channels, channelErrs := this.normalizeChannels(request.Channels)
 	errs = append(errs, channelErrs...)
+
+	// Resolution has to happen before the arguments are checked: under mode "all" the sender named
+	// no channels, so the set the arguments are checked against is the one the organization has
+	// enabled, not one the request carries.
+	resolved := channels
+	if mode == models.DistributionModeAll {
+		resolved = this.channels.EnabledFor(ctx, orgId)
+	}
+
+	errs = append(errs, this.channels.ValidateArgs(ctx, toChannelArgs(request.ChannelArgs), resolved)...)
 
 	if len(errs) > 0 {
 		return nil, errs
@@ -91,8 +125,25 @@ func NormalizeSend(request it.SendNotificationRequest) (*NormalizedSend, ft.Clie
 		Severity:         severity,
 		DistributionMode: mode,
 		Channels:         channels,
+		ResolvedChannels: resolved,
 		IdempotencyKey:   normalizeIdempotencyKey(request.IdempotencyKey),
 	}, nil
+}
+
+// toChannelArgs re-types the request's plain maps as the channels' own argument type. The shape is
+// identical; the named type is what stops the core from treating one channel's arguments as
+// something it may read.
+func toChannelArgs(raw map[string]map[string]any) map[string]itExt.ChannelArgs {
+	if len(raw) == 0 {
+		return nil
+	}
+
+	args := make(map[string]itExt.ChannelArgs, len(raw))
+	for name, values := range raw {
+		args[name] = itExt.ChannelArgs(values)
+	}
+
+	return args
 }
 
 // normalizeSeverity defaults an omitted severity to info (BR 11.4) and rejects an unknown one.
@@ -116,7 +167,7 @@ func normalizeSeverity(raw string) (models.Severity, *ft.ClientErrorItem) {
 // The distinction that matters is nil versus empty: a caller that named no channels wants every
 // enabled one (BR 11.5), while a caller that sent an empty list has asked for delivery to nothing,
 // which is a mistake rather than an instruction (BR 11.7).
-func normalizeChannels(
+func (this *SendNormalizer) normalizeChannels(
 	raw []string,
 ) (models.DistributionMode, []modconstants.ChannelName, ft.ClientErrors) {
 	if raw == nil {
@@ -142,7 +193,7 @@ func normalizeChannels(
 		}
 		seen[trimmed] = true
 
-		if !IsRegisteredChannel(trimmed) {
+		if !this.channels.IsRegistered(trimmed) {
 			errs = append(errs, *ft.NewValidationError(
 				"channels", "err_channel_unknown", "unknown channel: "+trimmed))
 			continue

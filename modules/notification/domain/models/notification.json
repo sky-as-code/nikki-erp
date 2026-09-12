@@ -102,6 +102,14 @@
 			}
 		},
 		{
+			"name": "channel_args",
+			"label": "fields.channel_args",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "Per-channel arguments, keyed by channel name. Opaque here: only the channel named by a key reads inside its own object (BR 5). Stored rather than kept in memory because delivery happens after the commit and may be retried."
+			}
+		},
+		{
 			"name": "metadata",
 			"label": "fields.metadata",
 			"data_type": "jsonmap",
