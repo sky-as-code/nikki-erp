@@ -27,12 +27,6 @@ import (
 
 // InitExternal binds every port Purchase consumes, and registers what Purchase offers back.
 func InitExternal() error {
-	// Purchase holds UoM references on order lines, agreement lines and vendor prices, so
-	// Essential asks this module before letting a unit be edited or deleted.
-	if err := deps.Invoke(RegisterUsageCheckers); err != nil {
-		return err
-	}
-
 	return stdErr.Join(
 		deps.Register(func(uomSvc itUom.UomConversionAppService) itExt.UomExtService {
 			// The upstream service already has exactly the two methods the port declares, so this is

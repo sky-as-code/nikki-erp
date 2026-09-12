@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
@@ -125,20 +124,4 @@ func (this *BillingHandler) IssueEinvoices(
 			Indeterminate: result.Indeterminate,
 		},
 	}, nil
-}
-
-// InitCqrsHandlers subscribes Sales' command handlers.
-//
-// It must run BEFORE the job is registered in OnAppStarted: the scheduler validates that a job's
-// command name is a registered request type, and rejects the registration otherwise.
-func InitCqrsHandlers() error {
-	if err := deps.Register(NewBillingHandler); err != nil {
-		return err
-	}
-	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *BillingHandler) error {
-		return cqrsBus.SubscribeRequests(
-			context.Background(),
-			cqrs.NewHandler(handler.IssueEinvoices),
-		)
-	})
 }

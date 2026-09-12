@@ -78,3 +78,9 @@ var domainServiceFor = func(schemaName string) (composable.CrudDomainService, er
 	}
 	return entry.domSvc, nil
 }
+
+// RepositoryFor exposes the hub lookup to sibling packages that need another resource's
+// repository -- the transport layer's usage-check handler being the one caller today.
+func RepositoryFor(schemaName string) (composable.CrudRepository, error) {
+	return repoFor(schemaName)
+}

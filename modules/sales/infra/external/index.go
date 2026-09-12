@@ -26,13 +26,6 @@ import (
 // InitExternal binds every port Sales consumes and registers what Sales offers back. It runs before
 // the engines are created, because a derived service resolves its ports at construction time.
 func InitExternal() error {
-	// Sales holds a uom_id on several tables, so essential asks this module before letting a
-	// unit be edited or deleted. The subscription must exist before the first such request;
-	// essential's OnAppStarted fails the boot if it does not.
-	if err := deps.Invoke(RegisterUsageCheckers); err != nil {
-		return err
-	}
-
 	if err := deps.Register(
 		// Registration and reading are two ports so the code declaring what may be configured
 		// cannot also read another owner's values. The registry hangs off the TENANT service even

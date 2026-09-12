@@ -1,15 +1,10 @@
-package external
+package cqrs
 
 import (
-	"context"
-
 	"go.bryk.io/pkg/errors"
 
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	essconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
-	invconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/constants"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
@@ -46,33 +41,9 @@ func uomTables() []usagecheck.ReferencingTable {
 // resource engine, so the lookup goes through its registry; resolving at check time rather than
 // at registration keeps that detail from mattering to when the checker is registered.
 func resolveRepository(schemaName string) (usagecheck.RowSearcher, error) {
-	engine, ok := engineFor(schemaName)
+	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
 	if !ok {
 		return nil, errors.Errorf("no resource engine for %s", schemaName)
 	}
 	return engine.ResourceRepository(), nil
-}
-
-// RegisterUsageCheckers subscribes Purchase's answer to usage checks.
-func RegisterUsageCheckers(bus cqrs.CqrsBus) error {
-	registry := usagecheck.NewCheckerRegistry()
-
-	if err := registry.Register(
-		essconstants.EssentialModuleName,
-		usagecheck.ResourceUom,
-		usagecheck.NewTableChecker(resolveRepository, uomTables()...),
-	); err != nil {
-		return err
-	}
-
-	if err := registry.Register(
-		invconstants.InventoryModuleName,
-		usagecheck.ResourceProductVariant,
-		usagecheck.NewTableChecker(resolveRepository, variantTables()...),
-	); err != nil {
-		return err
-	}
-
-	return usagecheck.SubscribeHandler(
-		context.Background(), bus, constants.PurchaseModuleName, registry)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/infra/external"
+	purchasecqrs "github.com/sky-as-code/nikki-erp/modules/purchase/transport/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/transport/restful"
 )
 
@@ -67,6 +68,9 @@ func (*PurchaseModule) Init() error {
 		return err
 	}
 	if err := dynamicengines.InitDomainServices(); err != nil {
+		return err
+	}
+	if err := purchasecqrs.InitCqrsHandlers(); err != nil {
 		return err
 	}
 	return restful.InitRestfulHandlers()

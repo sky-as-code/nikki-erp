@@ -1,15 +1,11 @@
-package services
+package cqrs
 
 import (
-	"context"
-
 	"go.bryk.io/pkg/errors"
 
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	essconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 )
 
 // Inventory's answer to "is this unit of measure still in use", asked before Essential deletes
@@ -35,25 +31,9 @@ func uomTables() []usagecheck.ReferencingTable {
 // check time rather than at registration: the hub is filled while the engines are built, which
 // happens after the checker is registered.
 func resolveRepository(schemaName string) (usagecheck.RowSearcher, error) {
-	repo, err := repoFor(schemaName)
+	repo, err := services.RepositoryFor(schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "no repository for %s", schemaName)
 	}
 	return repo, nil
-}
-
-// RegisterUsageCheckers subscribes Inventory's answer to usage checks.
-func RegisterUsageCheckers(bus cqrs.CqrsBus) error {
-	registry := usagecheck.NewCheckerRegistry()
-
-	if err := registry.Register(
-		essconstants.EssentialModuleName,
-		usagecheck.ResourceUom,
-		usagecheck.NewTableChecker(resolveRepository, uomTables()...),
-	); err != nil {
-		return err
-	}
-
-	return usagecheck.SubscribeHandler(
-		context.Background(), bus, modconstants.InventoryModuleName, registry)
 }

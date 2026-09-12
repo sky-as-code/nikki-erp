@@ -17,6 +17,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/dynamicengines"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
+	invcqrs "github.com/sky-as-code/nikki-erp/modules/inventory/transport/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/transport/restful"
 )
 
@@ -92,7 +93,7 @@ func (*InventoryModule) Init() error {
 	}
 	// Inventory holds a uom_id on every stock movement and balance, so Essential asks this
 	// module before letting a unit be edited or deleted.
-	if err := deps.Invoke(services.RegisterUsageCheckers); err != nil {
+	if err := invcqrs.InitCqrsHandlers(); err != nil {
 		return err
 	}
 	return restful.InitRestfulHandlers()

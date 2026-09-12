@@ -1,15 +1,9 @@
-package external
+package cqrs
 
 import (
-	"context"
-
 	"go.bryk.io/pkg/errors"
 
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	essconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
-	invconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
-	salesconstants "github.com/sky-as-code/nikki-erp/modules/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 )
@@ -63,29 +57,4 @@ func resolveRepository(schemaName string) (usagecheck.RowSearcher, error) {
 		return nil, errors.Wrapf(err, "no repository for %s", schemaName)
 	}
 	return repo, nil
-}
-
-// RegisterUsageCheckers subscribes Sales' answer to usage checks. One subscription serves every
-// upstream resource Sales references; the registry routes by (source module, resource).
-func RegisterUsageCheckers(bus cqrs.CqrsBus) error {
-	registry := usagecheck.NewCheckerRegistry()
-
-	if err := registry.Register(
-		essconstants.EssentialModuleName,
-		usagecheck.ResourceUom,
-		usagecheck.NewTableChecker(resolveRepository, uomTables()...),
-	); err != nil {
-		return err
-	}
-
-	if err := registry.Register(
-		invconstants.InventoryModuleName,
-		usagecheck.ResourceProductVariant,
-		usagecheck.NewTableChecker(resolveRepository, variantTables()...),
-	); err != nil {
-		return err
-	}
-
-	return usagecheck.SubscribeHandler(
-		context.Background(), bus, salesconstants.SalesModuleName, registry)
 }
