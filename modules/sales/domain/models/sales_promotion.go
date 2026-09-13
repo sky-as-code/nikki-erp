@@ -354,3 +354,95 @@ func (this SalesPromotionCondition) GetValueFrom() *decimal.Decimal {
 func (this SalesPromotionCondition) GetValueTo() *decimal.Decimal {
 	return this.GetFieldData().GetDecimal(SalesPromotionConditionFieldValueTo)
 }
+
+// SalesPromotionConditionGroup is one OR-branch of a program's eligibility.
+//
+// Conditions within a group are ANDed and groups are ORed with each other, so a program with no
+// group at all is unconditionally eligible rather than never eligible.
+type SalesPromotionConditionGroup struct {
+	basemodel.DynamicModelBase
+}
+
+func NewSalesPromotionConditionGroupFrom(src dmodel.DynamicFields) *SalesPromotionConditionGroup {
+	return &SalesPromotionConditionGroup{basemodel.NewDynamicModel(src)}
+}
+
+func (this SalesPromotionConditionGroup) GetId() *model.Id {
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
+}
+
+func (this SalesPromotionConditionGroup) GetProgramId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesPromotionConditionGroupFieldProgramId)
+}
+
+// GetSequence is presentation order, not evaluation order: groups are ORed, which does not care.
+// It exists so an operator editing a program sees a stable list.
+func (this SalesPromotionConditionGroup) GetSequence() *int32 {
+	return this.GetFieldData().GetInt32(SalesPromotionConditionGroupFieldSequence)
+}
+
+// SalesPromotionConditionTarget is one member of a set-valued condition.
+//
+// The set-valued operators - in and not_in over variant ids, category ids, channel ids - live in
+// rows here rather than in a column, because a set has no sensible single-column form and JSON
+// would make eligibility a full table scan.
+type SalesPromotionConditionTarget struct {
+	basemodel.DynamicModelBase
+}
+
+func NewSalesPromotionConditionTargetFrom(src dmodel.DynamicFields) *SalesPromotionConditionTarget {
+	return &SalesPromotionConditionTarget{basemodel.NewDynamicModel(src)}
+}
+
+func (this SalesPromotionConditionTarget) GetId() *model.Id {
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
+}
+
+func (this SalesPromotionConditionTarget) GetConditionId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesPromotionConditionTargetFieldConditionId)
+}
+
+// GetTargetType says what kind of thing GetTargetId names. It is part of the identity of the
+// target, not a hint: ids from two different modules could collide, and the pair is what actually
+// identifies the record.
+func (this SalesPromotionConditionTarget) GetTargetType() *string {
+	return this.GetFieldData().GetString(SalesPromotionConditionTargetFieldTargetType)
+}
+
+// GetTargetId names a record that may belong to another module, with no foreign key and no edge:
+// a constraint across that boundary would make retiring a product fail on promotion data. A target
+// whose record is gone simply stops matching.
+func (this SalesPromotionConditionTarget) GetTargetId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesPromotionConditionTargetFieldTargetId)
+}
+
+// SalesPromotionCompatibility is an explicit directive about one pair of programs.
+//
+// The relation is symmetric in meaning - if A cannot combine with B then B cannot combine with A -
+// but stored one-directionally, so a reader looks the pair up both ways round rather than
+// requiring two rows that could disagree with each other.
+type SalesPromotionCompatibility struct {
+	basemodel.DynamicModelBase
+}
+
+func NewSalesPromotionCompatibilityFrom(src dmodel.DynamicFields) *SalesPromotionCompatibility {
+	return &SalesPromotionCompatibility{basemodel.NewDynamicModel(src)}
+}
+
+func (this SalesPromotionCompatibility) GetId() *model.Id {
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
+}
+
+func (this SalesPromotionCompatibility) GetProgramAId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesPromotionCompatibilityFieldProgramAId)
+}
+
+func (this SalesPromotionCompatibility) GetProgramBId() *model.Id {
+	return this.GetFieldData().GetModelId(SalesPromotionCompatibilityFieldProgramBId)
+}
+
+// GetCompatibility is resolved in a fixed order: an explicit denied row wins always, then an
+// explicit allowed row permits, then the program's stack_policy decides.
+func (this SalesPromotionCompatibility) GetCompatibility() *string {
+	return this.GetFieldData().GetString(SalesPromotionCompatibilityFieldCompatibility)
+}

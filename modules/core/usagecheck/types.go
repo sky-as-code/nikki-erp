@@ -44,6 +44,21 @@ func RequestTypeFor(dependantModule string) cqrs.RequestType {
 const (
 	ResourceUom            = "uom"
 	ResourceProductVariant = "product_variant"
+
+	// Owned by Inventory, alongside the variant.
+	ResourceWarehouse         = "warehouse"
+	ResourceInventoryLocation = "inventory_location"
+
+	// Owned by Sales.
+	//
+	// Nothing dispatches these three yet: Sales declares no Dependants() and calls no
+	// AssertDependantsSubscribed, so a checker registered against them answers a question that is
+	// never asked. That is deliberate - registering them now means the owner side becomes a
+	// one-line change on Sales' side alone, and until then deleting a sales point still succeeds.
+	// Do not read a registered checker as protection: the OWNER decides when to ask.
+	ResourceSalesPoint  = "sales_point"
+	ResourceSalesOrder  = "sales_order"
+	ResourceFulfillment = "fulfillment"
 )
 
 // IdentifierKeyId and IdentifierKeyOrgId are the identifier entries a checker reads.

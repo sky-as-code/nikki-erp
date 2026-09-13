@@ -152,7 +152,7 @@ func (this *RestEngineImpl) AddRoute(def RouteDefinition) RestEngine {
 // repeats the path/query/body/org assembly the built-in ones get for free.
 func (this *RestEngineImpl) wrapHandler(def RouteDefinition) echo.HandlerFunc {
 	return func(echoCtx *echo.Context) error {
-		if def.ActionType == ActionTypeUpload {
+		if def.ActionType.IsUpload() {
 			return def.HandlerFn(echoCtx, nil)
 		}
 		payload, err := bindPayload(echoCtx, this.schema(), def.ActionType)
