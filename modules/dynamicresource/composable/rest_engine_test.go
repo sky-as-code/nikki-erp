@@ -3,6 +3,7 @@ package composable
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/labstack/echo/v5"
@@ -128,6 +129,33 @@ func TestAddRouteSkipsBindingForUpload(t *testing.T) {
 
 	recorder := serveWithContext(t, restEngine, memberContext(),
 		httptest.NewRequest(http.MethodPost, "/cmp_org_resource/rec_1/upload", nil))
+
+	assert.Equal(t, http.StatusOK, recorder.Code)
+	assert.True(t, called)
+}
+
+// A multipart UPDATE is the same contract on PATCH: the engine binds nothing and the handler reads
+// the form. A resource whose create takes a file must be able to take one on update too, at the
+// same path its JSON update uses.
+func TestAddRouteSkipsBindingForUploadPatch(t *testing.T) {
+	restEngine, _ := newRestEngine(newOrgSchema())
+	called := false
+	restEngine.AddRoute(RouteDefinition{
+		Path: ":id", ActionType: ActionTypeUploadPatch,
+		HandlerFn: func(echoCtx *echo.Context, payload map[string]any) error {
+			called = true
+			assert.Nil(t, payload, "the handler reads the multipart form itself")
+			return echoCtx.NoContent(http.StatusOK)
+		},
+	})
+
+	// A body that is NOT valid JSON: binding it would fail the request before the handler runs,
+	// which is the whole reason this action type exists rather than reusing ActionTypeUpdatePatch.
+	request := httptest.NewRequest(
+		http.MethodPatch, "/cmp_org_resource/rec_1", strings.NewReader("--boundary\r\n"))
+	request.Header.Set("Content-Type", "multipart/form-data; boundary=boundary")
+
+	recorder := serveWithContext(t, restEngine, memberContext(), request)
 
 	assert.Equal(t, http.StatusOK, recorder.Code)
 	assert.True(t, called)

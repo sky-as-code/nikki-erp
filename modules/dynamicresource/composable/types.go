@@ -68,7 +68,21 @@ const (
 	// ActionTypeUpload is a multipart POST. The REST engine does not bind its body: the handler
 	// reads the form itself and receives a nil payload.
 	ActionTypeUpload = ActionType("Upload")
+
+	// ActionTypeUploadPatch is ActionTypeUpload against an existing record: a multipart PATCH.
+	//
+	// It exists because a resource whose create accepts a file must be able to accept one on
+	// update too, at the same ":id" path its JSON update uses. Serving that through
+	// ActionTypeUpdatePatch instead would make the engine attempt a JSON bind of a multipart body,
+	// which bindPayload reports as a 400 before the handler ever runs.
+	ActionTypeUploadPatch = ActionType("UploadPatch")
 )
+
+// IsUpload reports whether the engine leaves this action's body to the handler. Both multipart
+// types do; every other type is bound before the handler is called.
+func (this ActionType) IsUpload() bool {
+	return this == ActionTypeUpload || this == ActionTypeUploadPatch
+}
 
 func (this ActionType) String() string {
 	return string(this)
@@ -77,7 +91,8 @@ func (this ActionType) String() string {
 func (this ActionType) IsValid() bool {
 	switch this {
 	case ActionTypeCreate, ActionTypeDelete, ActionTypeRead,
-		ActionTypeUpdatePatch, ActionTypeUpdateReplace, ActionTypeGeneric, ActionTypeUpload:
+		ActionTypeUpdatePatch, ActionTypeUpdateReplace, ActionTypeGeneric,
+		ActionTypeUpload, ActionTypeUploadPatch:
 		return true
 	}
 	return false
@@ -92,7 +107,7 @@ func (this ActionType) HttpMethod() string {
 		return http.MethodDelete
 	case ActionTypeRead:
 		return http.MethodGet
-	case ActionTypeUpdatePatch:
+	case ActionTypeUpdatePatch, ActionTypeUploadPatch:
 		return http.MethodPatch
 	case ActionTypeUpdateReplace:
 		return http.MethodPut

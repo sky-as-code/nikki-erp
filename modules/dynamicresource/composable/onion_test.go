@@ -158,4 +158,15 @@ func TestActionTypeHttpMethod(t *testing.T) {
 	assert.Empty(t, ActionType("bogus").HttpMethod())
 	assert.False(t, ActionTypeUpload.HasRequestBody())
 	assert.True(t, ActionTypeGeneric.HasRequestBody())
+
+	// A multipart update is a PATCH whose body the engine must NOT bind: binding a multipart body
+	// as JSON fails the request with a 400 before the handler is reached.
+	assert.Equal(t, "PATCH", ActionTypeUploadPatch.HttpMethod())
+	assert.False(t, ActionTypeUploadPatch.HasRequestBody())
+	assert.True(t, ActionTypeUploadPatch.IsValid())
+
+	assert.True(t, ActionTypeUpload.IsUpload())
+	assert.True(t, ActionTypeUploadPatch.IsUpload())
+	assert.False(t, ActionTypeUpdatePatch.IsUpload(), "a JSON patch is bound by the engine")
+	assert.False(t, ActionTypeCreate.IsUpload())
 }
