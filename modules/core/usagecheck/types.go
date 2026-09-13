@@ -49,6 +49,11 @@ const (
 	ResourceWarehouse         = "warehouse"
 	ResourceInventoryLocation = "inventory_location"
 
+	// ResourceStockQuant is a balance another module may name directly rather than looking it up
+	// from a place — a vending slot stores the id of the balance it holds, so the row is that
+	// slot's contents and deleting it would leave the slot pointing at nothing.
+	ResourceStockQuant = "stock_quant"
+
 	// Owned by Sales.
 	//
 	// Nothing dispatches these three yet: Sales declares no Dependants() and calls no
