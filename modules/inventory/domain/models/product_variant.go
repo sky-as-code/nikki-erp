@@ -76,25 +76,25 @@ const (
 
 	// Computed fields copied from the owning template on read. No database column: each is declared
 	// in product_variant.json as a related computed field and filled by the engine.
-	ProductVariantFieldTemplateName                = "template_name"
-	ProductVariantFieldTemplateShortName           = "template_short_name"
-	ProductVariantFieldTemplateDescription         = "template_description"
-	ProductVariantFieldTemplateSalesDescription    = "template_sales_description"
-	ProductVariantFieldTemplatePurchaseDescription = "template_purchase_description"
-	ProductVariantFieldTemplateCategoryId          = "template_category_id"
-	ProductVariantFieldTemplateBrandId             = "template_brand_id"
-	ProductVariantFieldTemplateProductTypeId       = "template_product_type_id"
-	ProductVariantFieldTemplateStatus              = "template_status"
-	ProductVariantFieldTemplateSaleOk              = "template_sale_ok"
-	ProductVariantFieldTemplatePurchaseOk          = "template_purchase_ok"
+	ProductVariantFieldTemplateName                = "product_template_name"
+	ProductVariantFieldTemplateShortName           = "product_template_short_name"
+	ProductVariantFieldTemplateDescription         = "product_template_description"
+	ProductVariantFieldTemplateSalesDescription    = "product_template_sales_description"
+	ProductVariantFieldTemplatePurchaseDescription = "product_template_purchase_description"
+	ProductVariantFieldTemplateCategoryId          = "product_template_category_id"
+	ProductVariantFieldTemplateBrandId             = "product_template_brand_id"
+	ProductVariantFieldTemplateProductTypeId       = "product_template_product_type_id"
+	ProductVariantFieldTemplateStatus              = "product_template_status"
+	ProductVariantFieldTemplateSaleOk              = "product_template_sale_ok"
+	ProductVariantFieldTemplatePurchaseOk          = "product_template_purchase_ok"
 
 	// Pricing read model. Constants rather than literals because Sales reads these across a module
 	// boundary, where a literal would survive a rename here and silently resolve to nothing.
-	ProductVariantFieldTemplateBaseSalesPrice  = "template_base_sales_price"
+	ProductVariantFieldTemplateBaseSalesPrice  = "product_template_base_sales_price"
 	ProductVariantFieldSalesPriceExtraTotal    = "sales_price_extra_total"
 	ProductVariantFieldEffectiveBaseSalesPrice = "effective_base_sales_price"
 
-	ProductVariantEdgeTemplate = "template"
+	ProductVariantEdgeTemplate = "product_template"
 
 	// EmptyCombinationKey is the combination of a template with no variant-generating attributes.
 	// Such a template still gets exactly one concrete variant, which transactions reference.

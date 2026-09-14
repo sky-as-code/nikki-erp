@@ -66,6 +66,10 @@ func (this *referenceResolver) assertTargetsServed() ([]referenceTarget, *ft.Cli
 				map[string]any{"schema": column.relation.DestSchemaName}))
 			continue
 		}
+		if err := assertReferenceTargetLabel(column.field.Name(), schema, label); err != nil {
+			cErrs.Append(*err)
+			continue
+		}
 		_, hasOrg := schema.Field(basemodel.FieldOrgId)
 		targets = append(targets, referenceTarget{
 			field:       column.field.Name(),
@@ -80,6 +84,25 @@ func (this *referenceResolver) assertTargetsServed() ([]referenceTarget, *ft.Cli
 		return nil, cErrs
 	}
 	return targets, nil
+}
+
+// assertReferenceTargetLabel refuses a referenced schema whose record label has no column.
+//
+// Resolving a reference means looking a record up *by* its label — `WHERE <label> IN (...)`,
+// pushed to the database — and, when nothing matches, writing that label into a new record. A
+// virtual label supports neither: it is filled after the read, so no query can filter on it and
+// no create can set it. The model builder allows such a label because displaying one is fine;
+// this is where the half that needs a column is enforced, at mapping time, so an import names
+// the problem before it reads a single row rather than matching nothing at run time.
+func assertReferenceTargetLabel(
+	columnField string, schema *dmodel.ModelSchema, label *dmodel.ModelField,
+) *ft.ClientErrorItem {
+	if label.IsPersisted() {
+		return nil
+	}
+	return ft.NewValidationError(columnField, ErrImportMappingInvalid,
+		"the referenced resource's record label is computed, so records cannot be looked up by it",
+		map[string]any{"schema": schema.Name(), "label_field": label.Name()})
 }
 
 // resolve rewrites every reference cell of rows in place and returns the rows that still

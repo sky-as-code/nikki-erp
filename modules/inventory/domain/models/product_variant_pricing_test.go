@@ -53,7 +53,7 @@ func TestEffectiveBaseSalesPriceSumsTheTemplatePriceAndTheExtras(t *testing.T) {
 	require.True(t, ok)
 	require.Len(t, args, 2, "exactly two operands: the template price and the extras")
 
-	assert.Equal(t, []string{"template_base_sales_price", "sales_price_extra_total"},
+	assert.Equal(t, []string{"product_template_base_sales_price", "sales_price_extra_total"},
 		coalescedFieldNames(t, args))
 }
 
@@ -83,7 +83,7 @@ func coalescedFieldNames(t *testing.T, args []any) []string {
 // field is not stored. All three fields in the chain must be virtual, not just the last.
 func TestTheWholePricingChainIsComputedOnRead(t *testing.T) {
 	for _, name := range []string{
-		"template_base_sales_price",
+		"product_template_base_sales_price",
 		"sales_price_extra_total",
 		"effective_base_sales_price",
 	} {
