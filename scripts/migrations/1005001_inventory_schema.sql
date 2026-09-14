@@ -62,7 +62,6 @@ CREATE TABLE "inventory_locations" (
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "invty_locs_tid_code_org_id_ukey" UNIQUE ("code", "org_id"),
   CONSTRAINT "inventory_locations_parent_location_id_fkey" FOREIGN KEY ("parent_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_locations_storage_category_id_fkey" FOREIGN KEY ("storage_category_id") REFERENCES "inventory_storage_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_locations_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
@@ -73,6 +72,14 @@ CREATE INDEX "invty_locs_barcode_idx" ON "inventory_locations" ("barcode");
 CREATE INDEX "invty_locs_parent_location_id_idx" ON "inventory_locations" ("parent_location_id");
 -- Create index "invty_locs_warehouse_id_idx" to table: "inventory_locations"
 CREATE INDEX "invty_locs_warehouse_id_idx" ON "inventory_locations" ("warehouse_id");
+-- Create index "invty_locs_tid_code_org_id_ukey_null" to table: "inventory_locations"
+-- Codes with no warehouse (the virtual vendor/customer/transit/scrap/loss counterparties) stay
+-- unique per org under the plain (code, org_id) key.
+CREATE UNIQUE INDEX "invty_locs_tid_code_org_id_ukey_null" ON "inventory_locations" ("code", "org_id") WHERE ("warehouse_id" IS NULL);
+-- Create index "invty_locs_tid_code_org_id_wh_id_ukey_notnull" to table: "inventory_locations"
+-- Warehouse-owned codes (e.g. every warehouse's own 'Stock') are unique per warehouse, not per
+-- org, so the same code can be reused across a company's warehouses.
+CREATE UNIQUE INDEX "invty_locs_tid_code_org_id_wh_id_ukey_notnull" ON "inventory_locations" ("code", "org_id", "warehouse_id") WHERE ("warehouse_id" IS NOT NULL);
 -- Create "inventory_product_attributes" table
 CREATE TABLE "inventory_product_attributes" (
   "id" character varying NOT NULL,
@@ -170,6 +177,7 @@ CREATE TABLE "inventory_product_templates" (
   "product_type_id" character varying NOT NULL,
   "category_id" character varying NOT NULL,
   "brand_id" character varying NULL,
+  "uom_id" character varying NULL,
   "sale_ok" boolean NULL,
   "purchase_ok" boolean NULL,
   "description" jsonb NULL,
@@ -192,7 +200,8 @@ CREATE TABLE "inventory_product_templates" (
   PRIMARY KEY ("id"),
   CONSTRAINT "inventory_product_templates_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "inventory_brands" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_product_templates_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_product_templates_product_type_id_fkey" FOREIGN KEY ("product_type_id") REFERENCES "inventory_product_types" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+  CONSTRAINT "inventory_product_templates_product_type_id_fkey" FOREIGN KEY ("product_type_id") REFERENCES "inventory_product_types" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "inventory_product_templates_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_prod_tpls_tid_src_sys_ext_id_ukey" to table: "inventory_product_templates"
 CREATE UNIQUE INDEX "invty_prod_tpls_tid_src_sys_ext_id_ukey" ON "inventory_product_templates" ("source_system", "external_id") WHERE (external_id IS NOT NULL);

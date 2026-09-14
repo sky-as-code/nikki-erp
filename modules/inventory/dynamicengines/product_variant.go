@@ -41,6 +41,9 @@ func registerProductVariantEngine() error {
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					return app.NewProductVariantApplicationService(base, productSvc)
 				},
+				// Resolved lazily, per call: the attribute-value onion is registered by this same
+				// pass, so looking it up while building this one would depend on registration order.
+				ComputedFunctions: newVariantComputedFunctions(composable.LookupSourceOnion),
 			}, param)
 		},
 	)

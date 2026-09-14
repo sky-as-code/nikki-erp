@@ -526,7 +526,13 @@ func validateComputedFields(schema *ModelSchema) error {
 }
 
 // assertVirtualFieldNotIndexed rejects a virtual field named by anything that needs a column to
-// point at: an index, a uniqueness constraint, an exclusive group, or a record label.
+// point at: an index, a uniqueness constraint, or an exclusive group.
+//
+// The record label is deliberately not among them. It is read, never written or indexed, and the
+// most useful label a resource has is often derived — a variant's is its template name plus its
+// attribute values, which exists in no column. What the label still has to support is lookup by
+// value, which the resource import resolver performs; see `assertReferenceTargetLabel` there for
+// the half of that contract this relaxation moved rather than removed.
 func assertVirtualFieldNotIndexed(schema *ModelSchema, name string) error {
 	groups := map[string][][]string{"exclusive group": schema.exclusiveRequiredFieldGroups}
 	for _, param := range schema.compositeUniques {
@@ -548,11 +554,6 @@ func assertVirtualFieldNotIndexed(schema *ModelSchema, name string) error {
 				}
 			}
 		}
-	}
-	if schema.recordLabelField == name || schema.recordSubLabelField == name {
-		return errors.Errorf(
-			"field %q: a virtual field cannot be the record label; clients read that column directly",
-			name)
 	}
 	return nil
 }

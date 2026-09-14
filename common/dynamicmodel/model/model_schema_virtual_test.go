@@ -245,20 +245,27 @@ func TestVirtualField_RequiredWithPanicsAtBuild(t *testing.T) {
 	})
 }
 
-func TestVirtualField_AsRecordLabelPanicsAtBuild(t *testing.T) {
+// A record label is read, never written or indexed, and the most useful label a resource has is
+// often derived — a product variant's is its template name plus its attribute values, which
+// exists in no column. Lookup *by* label still needs one, but that is the resource import
+// resolver's contract to enforce, against the schemas it actually resolves references into.
+func TestVirtualField_MayBeTheRecordLabel(t *testing.T) {
 	withStubComputedParser(t)
-	assert.Panics(t, func() {
-		ParseModelJson(`{
-			"name": "test_virtual_label",
-			"table_name": "test_virtual_labels",
-			"record_label_field": "bad",
-			"fields": [
-				{"name": "id", "data_type": "ulid", "primary_key": true, "use_type_default": true},
-				{"name": "bad", "data_type": {"type": "string", "min": 0, "max": 10}, ` +
-			computedFieldJson + `}
-			]
-		}`).Build()
-	})
+	schema := ParseModelJson(`{
+		"name": "test_virtual_label",
+		"table_name": "test_virtual_labels",
+		"record_label_field": "derived",
+		"fields": [
+			{"name": "id", "data_type": "ulid", "primary_key": true, "use_type_default": true},
+			{"name": "derived", "data_type": {"type": "string", "min": 0, "max": 10}, ` +
+		computedFieldJson + `}
+		]
+	}`).Build()
+
+	assert.Equal(t, "derived", schema.RecordLabelField())
+	label, ok := schema.Field("derived")
+	require.True(t, ok)
+	assert.False(t, label.IsPersisted(), "the label stays virtual; it gains no column by being one")
 }
 
 func TestVirtualField_InIndexOrConstraintPanicsAtBuild(t *testing.T) {
