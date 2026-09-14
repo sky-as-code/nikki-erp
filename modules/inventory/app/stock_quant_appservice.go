@@ -3,7 +3,6 @@ package app
 import (
 	"go.bryk.io/pkg/errors"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
@@ -39,39 +38,6 @@ func NewStockQuantApplicationService(base composable.CrudApplicationService) itS
 type StockQuantApplicationServiceImpl struct {
 	composable.CrudApplicationService
 	quantSvc *services.StockQuantDomainServiceImpl
-}
-
-func (this *StockQuantApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd itStock.CreateStockQuantCommand,
-) (*itStock.CreateStockQuantResult, error) {
-	if _, cErrs := this.AssertAction(ctx, composable.PermissionCreate, cmd); cErrs != nil {
-		return &itStock.CreateStockQuantResult{ClientErrors: *cErrs}, nil
-	}
-	return &itStock.CreateStockQuantResult{ClientErrors: *quantNotWritable()}, nil
-}
-
-func (this *StockQuantApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd itStock.UpdateStockQuantCommand,
-) (*itStock.UpdateStockQuantResult, error) {
-	if _, cErrs := this.AssertAction(ctx, composable.PermissionUpdate, cmd); cErrs != nil {
-		return &itStock.UpdateStockQuantResult{ClientErrors: *cErrs}, nil
-	}
-	return &itStock.UpdateStockQuantResult{ClientErrors: *quantNotWritable()}, nil
-}
-
-func (this *StockQuantApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd itStock.DeleteStockQuantCommand,
-) (*itStock.DeleteStockQuantResult, error) {
-	if _, cErrs := this.AssertAction(ctx, composable.PermissionDelete, cmd); cErrs != nil {
-		return &itStock.DeleteStockQuantResult{ClientErrors: *cErrs}, nil
-	}
-	return &itStock.DeleteStockQuantResult{ClientErrors: *quantNotWritable()}, nil
-}
-
-func quantNotWritable() *ft.ClientErrors {
-	vErrs := ft.NewClientErrors()
-	services.AssertQuantNotClientWritable(vErrs)
-	return vErrs
 }
 
 // The counting operations write to a resource whose CRUD is refused above, which is not a

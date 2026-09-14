@@ -50,6 +50,13 @@ func AllCrudActions() []CrudAction {
 	}
 }
 
+func ReadCrudActions() []CrudAction {
+	return []CrudAction{
+		CrudActionGetById, CrudActionGetByUnique, CrudActionSearch, CrudActionExists,
+		CrudActionGetSchema, CrudActionComputeField, CrudActionImport,
+	}
+}
+
 // ActionType classifies a route for the REST engine, which maps it to an HTTP method and
 // decides how the request payload is bound.
 type ActionType string
