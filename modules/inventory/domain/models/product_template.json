@@ -4,7 +4,7 @@
 	"table_name": "inventory_product_templates",
 	"should_build_db": true,
 	"record_label_field": "name",
-	"default_search_fields": ["name", "short_name", "status", "sale_ok", "purchase_ok"],
+	"default_search_fields": ["name", "base_sales_price", "variant_count", "uom_name"],
 	"partial_uniques_strict": [
 		{ "index_name": "invty_prod_tpls_tid_src_sys_ext_id", "not_null_fields": ["source_system"], "nullable_field": "external_id" }
 	],
@@ -160,7 +160,7 @@
 			"data_type": { "type": "langjson", "min": 0, "max": 200 },
 			"computed": { "kind": "related", "is_stored": false, "field": "uom.name" },
 			"description": {
-				"en-US": "The unit's name, read through the edge. Flattened here because a variant listing needs it and a related computed field may not cross two edges: the variant reaches this field, not uom.name itself."
+				"en-US": "The unit's name, read through the edge. A variant listing reaches the same value through its own related field (product_template.uom.name) or through this one; both resolve to the unit's name column."
 			}
 		},
 		{

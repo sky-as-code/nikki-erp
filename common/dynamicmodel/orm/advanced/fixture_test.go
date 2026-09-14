@@ -113,6 +113,8 @@ func variantSchema() *dmodel.ModelSchema {
 		Field(decimalField("price")).
 		Field(dmodel.DefineField().Name("is_archived").DataType(dmodel.FieldDataTypeBoolean())).
 		Field(stringField("template_code").Computed(false, computed.Related("template.code"))).
+		Field(stringField("template_uom_name").Computed(false, computed.Related("template.uom.name"))).
+		Field(stringField("template_uom_alias").Computed(false, computed.Related("template.uom_name"))).
 		EdgeTo(dmodel.Edge("template").ManyToOne(schemaTemplate, dmodel.DynamicFields{"template_id": "id"})).
 		Build()
 }

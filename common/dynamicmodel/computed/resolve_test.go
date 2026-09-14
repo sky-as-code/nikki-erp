@@ -135,7 +135,7 @@ func TestFinalize_InvalidDefinitionsRejected(t *testing.T) {
 		"unknown leaf": dmodel.DefineField().Name("bad").
 			DataType(dmodel.FieldDataTypeString(0, 100)).
 			Computed(false, computed.Related("template.nope")),
-		"path too deep": dmodel.DefineField().Name("bad").
+		"unknown relation on second hop": dmodel.DefineField().Name("bad").
 			DataType(dmodel.FieldDataTypeString(0, 100)).
 			Computed(false, computed.Related("template.brand.name")),
 		"bare field path": dmodel.DefineField().Name("bad").

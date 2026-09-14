@@ -4,7 +4,7 @@
 	"table_name": "inventory_product_variants",
 	"should_build_db": true,
 	"record_label_field": "display_name",
-	"default_search_fields": ["product_template_name", "sku", "product_template_base_sales_price", "on_hand_quantity"],
+	"default_search_fields": ["product_template_name", "sku", "product_template_base_sales_price", "on_hand_quantity", "product_template_uom_name"],
 	"composite_uniques": [{ "index_name": "invty_prod_variants_tid_ptpl_id_comb_key", "fields": ["product_template_id", "combination_key"] }],
 	"partial_uniques_strict": [
 		{ "index_name": "invty_prod_variants_tid_src_sys_ext_id", "not_null_fields": ["source_system"], "nullable_field": "external_id" }
@@ -236,6 +236,15 @@
 			"computed": { "kind": "related", "is_stored": false, "field": "product_template.uom_id" },
 			"description": {
 				"en-US": "The owning template's unit, read through the edge rather than copied.\n\nThe id, not the name: the name lives on essential_uom, two edges from here, and a related field walks exactly one edge to a physical column. Listings therefore show the id until the name is denormalized onto the template or resolved by a function field."
+			}
+		},
+		{
+			"name": "product_template_uom_name",
+			"label": "fields.product_template_uom_name",
+			"data_type": { "type": "langjson", "min": 0, "max": 200 },
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.uom.name" },
+			"description": {
+				"en-US": "The owning template's unit name, read two edges away: the template, then its unit. A related path may chain to-one edges; the first hop is batched per page and the remainder is projected on that read."
 			}
 		},
 		{
