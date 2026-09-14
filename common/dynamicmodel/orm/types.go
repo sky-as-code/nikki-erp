@@ -66,6 +66,43 @@ type SqlExistsManyData struct {
 	Args []any
 }
 
+// ToOneEdgeProjection describes how a to-one edge was projected: flat "<path>.<leaf>" columns
+// on the root row, with the destination primary keys always present so a NULL key marks an
+// absent relation.
+type ToOneEdgeProjection struct {
+	DestSchemaName string
+	// PkAliases are the flat column aliases carrying the destination primary keys.
+	PkAliases []string
+	// Leaves maps flat column alias -> destination field name (primary keys included).
+	Leaves map[string]string
+}
+
+// ToManyEdgeProjection describes a to-many edge projected as one jsonb array column whose
+// elements are objects keyed by destination field name.
+type ToManyEdgeProjection struct {
+	DestSchemaName string
+	ColumnAlias    string
+	// Leaves lists the destination field names present in every element.
+	Leaves []string
+}
+
+// NestedProjection is the decoding plan for a graph query that projected edge fields in a
+// single statement. Keys are edge paths: "template", "template.uom", "quants".
+type NestedProjection struct {
+	ToOne  map[string]ToOneEdgeProjection
+	ToMany map[string]ToManyEdgeProjection
+}
+
+// NestedProjectionCapable is implemented by a QueryBuilder that projects edge fields inside the
+// root SELECT (joins for to-one edges, jsonb aggregation for to-many ones) instead of expecting
+// the repository to issue follow-up reads per row. A repository probes for it and, when present,
+// passes the full column list to SqlSelectGraph and folds the flat row with the returned plan.
+type NestedProjectionCapable interface {
+	PlanNestedProjection(
+		schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, columns []SelectColumn,
+	) (*NestedProjection, *ft.ClientErrors, error)
+}
+
 type QueryBuilder interface {
 	// SqlCreateTable returns DDL strings: [0] = CREATE TABLE, [1..] = CREATE UNIQUE INDEX per PartialUnique.
 	SqlCreateTable(schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry) ([]string, *ft.ClientErrors, error)
