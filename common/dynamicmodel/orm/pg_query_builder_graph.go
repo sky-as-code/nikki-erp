@@ -602,11 +602,20 @@ func pathInSelectColumns(path string, columns []SelectColumn) bool {
 type graphSelectCtx struct {
 	planner  *joinPlanner
 	language *model.LanguageCode
+	// resolver, when set, is asked first so an enhanced builder can answer paths the planner
+	// cannot (computed fields, deeper edge chains). See advanced_api.go.
+	resolver GraphRefResolver
 }
 
 func (this *PgQueryBuilder) prepareColNameForGraph(
 	ctx *graphSelectCtx, schema *dmodel.ModelSchema, fieldName string,
 ) (*dmodel.ModelField, string, error) {
+	if ctx != nil && ctx.resolver != nil {
+		field, ref, ok, err := ctx.resolver.ResolveFilterRef(fieldName)
+		if err != nil || ok {
+			return field, ref, err
+		}
+	}
 	if ctx == nil || ctx.planner == nil {
 		return this.prepareColName(schema, fieldName)
 	}

@@ -323,6 +323,16 @@ func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.Rep
 	if vErr := this.validateGetOneColumnsAndFilter(param.Fields, param.Filter); vErr != nil {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: ft.ClientErrors{*vErr}}, nil
 	}
+	plan, planErrs, err := this.nestedProjectionPlan(param.Fields)
+	if err != nil {
+		return nil, err
+	}
+	if len(planErrs) > 0 {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: planErrs}, nil
+	}
+	if plan != nil {
+		return this.getOneWithProjectedEdges(ctx, param, plan)
+	}
 	if this.hasNestedOrEdgeColumns(param.Fields) {
 		return this.getOneWithNestedColumns(ctx, param)
 	}
@@ -815,6 +825,18 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 	// leak back to the caller.
 	param.Graph = this.injectIsArchivedIntoGraph(param.Graph, param.IncludeArchived)
 
+	// A builder that projects edges inside the root statement takes precedence over the per-row
+	// hydration path: one query per page instead of one per row per edge.
+	plan, planErrs, err := this.nestedProjectionPlan(param.Fields)
+	if err != nil {
+		return nil, err
+	}
+	if len(planErrs) > 0 {
+		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: planErrs}, nil
+	}
+	if plan != nil {
+		return this.searchWithProjectedEdges(ctx, param, plan)
+	}
 	if this.hasNestedOrEdgeColumns(param.Fields) {
 		return this.searchWithNestedColumns(ctx, param)
 	}
@@ -1589,6 +1611,12 @@ func (this *BaseDynamicRepositoryImpl) validateSelectColumns(columns []string) *
 			continue
 		}
 		if strings.Contains(col, ".") {
+			// A builder that projects edges itself validates dotted paths (and allows deeper
+			// ones) when it plans the projection; the {edge}.{field} rule only binds the
+			// per-row hydration path.
+			if this.projectsNestedEdges() {
+				continue
+			}
 			if _, err := this.parseNestedColumn(col); err != nil {
 				return err
 			}
