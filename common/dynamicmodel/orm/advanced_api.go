@@ -167,14 +167,18 @@ func ClientErrorsUnknownField(field string) ft.ClientErrors { return clientError
 func ClientErrorsVirtualFieldUnavailable(field string) ft.ClientErrors {
 	return clientErrorsVirtualFieldUnavailable(field)
 }
-func ClientErrorsFieldNotSortable(field string) ft.ClientErrors { return clientErrorsFieldNotSortable(field) }
+func ClientErrorsFieldNotSortable(field string) ft.ClientErrors {
+	return clientErrorsFieldNotSortable(field)
+}
 func ClientErrorsTooManySqlComputedFields(limit int) ft.ClientErrors {
 	return clientErrorsTooManySqlComputedFields(limit)
 }
 func ClientErrorsInvalidSelectAggregate(token string) ft.ClientErrors {
 	return clientErrorsInvalidSelectAggregate(token)
 }
-func ClientErrorsRegistryRequiredForGraph() ft.ClientErrors { return clientErrorsRegistryRequiredForGraph() }
+func ClientErrorsRegistryRequiredForGraph() ft.ClientErrors {
+	return clientErrorsRegistryRequiredForGraph()
+}
 func ClientErrorsUnsupportedRelationInGraph(edge string, relType dmodel.RelationType) ft.ClientErrors {
 	return clientErrorsUnsupportedRelationInGraph(edge, relType)
 }

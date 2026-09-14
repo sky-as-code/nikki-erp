@@ -105,3 +105,27 @@ func TestF4_PlanNestedProjectionTypesComputedLeavesByDeclaredField(t *testing.T)
 	_, hasUomHop := plan.ToOne["template.uom"]
 	assert.False(t, hasUomHop, "the join behind a related field is an implementation detail, not a projected hop")
 }
+
+func TestF4_TwoHopRelatedOnRootFiltersThroughBothJoins(t *testing.T) {
+	fx := newFixture(t)
+	graph := dmodel.NewSearchGraph().And(
+		*dmodel.NewSearchNode().NewCondition("template_uom_name", dmodel.Equals, "kg"),
+		*dmodel.NewSearchNode().NewCondition("template_uom_alias", dmodel.Contains, "k"),
+	).OrderBy("template_uom_name", dmodel.Asc)
+	sql := advSelect(t, fx, schemaVariant, graph, orm.SqlSelectGraphOpts{Columns: cols("id", "template_uom_name")})
+
+	assert.Contains(t, sql, `LEFT JOIN "adv_templates" AS t1 ON t0."template_id" = t1."id" LEFT JOIN "adv_uoms" AS t2 ON t1."uom_id" = t2."id"`)
+	assert.Equal(t, 2, strings.Count(sql, "LEFT JOIN"), "both related fields share the same two joins")
+	assert.Contains(t, sql, `WHERE (t2."name" = E'kg' AND t2."name" ILIKE E'%k%')`)
+	assert.Contains(t, sql, `ORDER BY t2."name" ASC`)
+	assert.True(t, strings.HasPrefix(sql, `SELECT t0."id" FROM`), "on the root the related field stays Go-filled")
+}
+
+func TestF4_TwoHopRelatedProjectedInsideNestedEdge(t *testing.T) {
+	fx := newFixture(t)
+	// A quant's template is a to-one edge; the template's own two-hop related field (via the
+	// variant fixture shape) is exercised through variant -> template.uom_name, which itself is
+	// one hop on the template: the deeper chain is covered by the root test above.
+	sql := advSelect(t, fx, schemaQuant, nil, orm.SqlSelectGraphOpts{Columns: cols("id", "template.uom_name")})
+	assert.Contains(t, sql, `t2."name" AS "template.uom_name"`)
+}

@@ -2,6 +2,7 @@ package computed
 
 import (
 	"fmt"
+	"strings"
 
 	"go.bryk.io/pkg/errors"
 
@@ -116,9 +117,40 @@ func copyLeaves(read RelatedRead, rows []dmodel.DynamicFields, byKey map[string]
 			continue
 		}
 		for fieldName, leaf := range read.Leaves {
-			row[fieldName] = source[leaf]
+			if value, ok := lookupLeaf(source, leaf); ok {
+				row[fieldName] = value
+			}
 		}
 	}
+}
+
+// lookupLeaf reads a leaf off a source row. A dotted leaf ("uom.name") walks the nested records
+// the source read projected for its own to-one edges; a hop that is absent or nil leaves the
+// field unset, the same "unknown" a missing source row produces.
+func lookupLeaf(source dmodel.DynamicFields, leaf string) (any, bool) {
+	segments := strings.Split(leaf, ".")
+	var current any = source
+	for _, segment := range segments {
+		record, ok := asRecord(current)
+		if !ok {
+			return nil, false
+		}
+		current, ok = record[segment]
+		if !ok || current == nil {
+			return nil, false
+		}
+	}
+	return current, true
+}
+
+func asRecord(value any) (map[string]any, bool) {
+	switch typed := value.(type) {
+	case dmodel.DynamicFields:
+		return typed, true
+	case map[string]any:
+		return typed, true
+	}
+	return nil, false
 }
 
 func (this *EvalPlan) applyExpressions(rows []dmodel.DynamicFields) error {

@@ -8,10 +8,14 @@ type Limits struct {
 	MaxExpressionNestingDepth int
 	// MaxComputedDependencyDepth bounds a computed-field-depends-on-computed-field chain.
 	MaxComputedDependencyDepth int
-	// MaxRelatedPathDepth bounds the edge-chain length of a related path. The current phase
-	// evaluates a single forward to-one hop, so values above 1 are reserved for later phases.
+	// MaxRelatedPathDepth bounds the edge-chain length of a related path after a derived leaf
+	// has been flattened into it ("template.uom.name" is two). The first hop is a batched read;
+	// the rest is a nested field path on that read, which the repository projects in the same
+	// statement, so the cost of a longer chain is one more join, not one more query.
 	MaxRelatedPathDepth int
-	// MaxComputedFieldsPerRequest bounds how many computed fields one read may evaluate.
+	// MaxComputedFieldsPerRequest bounds how many computed fields one read may evaluate. Related
+	// fields cost one batched read per edge however many of them a schema declares, so a schema
+	// that flattens a dozen template_* fields onto a variant stays well inside this bound.
 	MaxComputedFieldsPerRequest int
 	// MaxFilterNestingDepth bounds how deep an SQL-kind filter (and/or tree) may nest.
 	MaxFilterNestingDepth int
@@ -24,8 +28,8 @@ func DefaultLimits() Limits {
 	return Limits{
 		MaxExpressionNestingDepth:      10,
 		MaxComputedDependencyDepth:     5,
-		MaxRelatedPathDepth:            1,
-		MaxComputedFieldsPerRequest:    15,
+		MaxRelatedPathDepth:            2,
+		MaxComputedFieldsPerRequest:    30,
 		MaxFilterNestingDepth:          5,
 		MaxSqlComputedFieldsPerRequest: 10,
 	}
