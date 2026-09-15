@@ -234,6 +234,7 @@ type CreateSalesOrderLine struct {
 	ProductVariantId string          `json:"product_variant_id"`
 	UomId            string          `json:"uom_id"`
 	Quantity         decimal.Decimal `json:"quantity"`
+	SourceLocationId string          `json:"source_location_id"`
 
 	// EstimatedPrice is the unit price the caller displayed to the customer. Recorded so a device
 	// showing a stale price can be found; Sales prices the line regardless of what it says.

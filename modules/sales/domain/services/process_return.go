@@ -233,6 +233,7 @@ func runInventoryStep(
 			ProductVariantId: stringOf(orderLine, models.SalesOrderLineFieldProductVariantId),
 			UomId:            stringOf(orderLine, models.SalesOrderLineFieldUomId),
 			Quantity:         decimalOf(line, models.SalesReturnLineFieldQuantity),
+			SourceLocationId: stringOf(orderLine, models.SalesOrderLineFieldSourceLocationId),
 		})
 	}
 

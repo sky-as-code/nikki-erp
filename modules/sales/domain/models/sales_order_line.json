@@ -241,6 +241,14 @@
 			"description": {
 				"en-US": "The combo definition this line instantiates, set on combo parent lines. Nullable elsewhere. A plain ulid rather than an edge: the combo may be archived or redefined after the sale, and the line must keep meaning what it meant without depending on the definition still existing in its original form."
 			}
+		},
+		{
+			"name": "source_location_id",
+			"label": "fields.source_location_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The exact inventory location this line's goods come from, for a target whose stock sits in addressable places rather than one pool — a vending slot being the case that needs it. Empty means the fulfillment's single target location applies, which is every other target. A plain ulid with no edge and no foreign key, like sales_combo_id above: the row belongs to Inventory, and a constraint across that boundary would couple the two modules' migrations."
+			}
 		}
 	],
 

@@ -71,6 +71,7 @@ type CreateOrderLine struct {
 	ProductVariantId string
 	UomId            string
 	Quantity         decimal.Decimal
+	SourceLocationId string
 
 	// UnitPrice is the fallback when no pricelist item matches.
 	UnitPrice decimal.Decimal
@@ -490,6 +491,8 @@ func writeOrderLines(
 			models.SalesOrderLineFieldProductVariantId: line.ProductVariantId,
 			models.SalesOrderLineFieldUomId:            line.UomId,
 			models.SalesOrderLineFieldOrderedQuantity:  line.Quantity,
+
+			models.SalesOrderLineFieldSourceLocationId: line.SourceLocationId,
 
 			// True until the product port can say otherwise. See the column's own note.
 			models.SalesOrderLineFieldRequiresFulfillment: true,

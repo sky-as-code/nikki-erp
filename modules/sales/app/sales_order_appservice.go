@@ -71,6 +71,7 @@ func (this *SalesOrderExtServiceImpl) CreateOrder(
 			UomId:            line.UomId,
 			Quantity:         line.Quantity,
 			EstimatedPrice:   line.EstimatedPrice,
+			SourceLocationId: line.SourceLocationId,
 		})
 	}
 

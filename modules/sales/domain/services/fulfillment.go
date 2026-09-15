@@ -146,6 +146,7 @@ func outstandingLines(
 			ProductVariantId: stringOf(record, models.SalesOrderLineFieldProductVariantId),
 			UomId:            stringOf(record, models.SalesOrderLineFieldUomId),
 			Quantity:         remaining,
+			SourceLocationId: stringOf(record, models.SalesOrderLineFieldSourceLocationId),
 		})
 	}
 	return outstanding, nil
