@@ -30,8 +30,9 @@ import (
 
 // StartGatewayPaymentParams is what opening a collection needs.
 type StartGatewayPaymentParams struct {
-	SalesBillId     string
-	PaymentMethodId string
+	SalesBillId      string
+	PaymentMethodId  string
+	PaymentProfileId string
 
 	// Amount is optional: zero means the whole of what the bill still owes. A client naming an
 	// amount is partially settling a bill, and may never name more than is outstanding.
@@ -147,12 +148,13 @@ func StartGatewayPayment(
 	}
 
 	opened, err := orders.CreatePayment(ctx, itExt.CreateGatewayPaymentCommand{
-		OrgId:           stringOf(bill, models.SalesPaymentFieldOrgId),
-		PaymentMethodId: params.PaymentMethodId,
-		Amount:          params.Amount,
-		Content:         params.Content,
-		SalesPaymentId:  recorded.SalesPaymentId,
-		SalesBillId:     params.SalesBillId,
+		OrgId:            stringOf(bill, models.SalesPaymentFieldOrgId),
+		PaymentMethodId:  params.PaymentMethodId,
+		PaymentProfileId: params.PaymentProfileId,
+		Amount:           params.Amount,
+		Content:          params.Content,
+		SalesPaymentId:   recorded.SalesPaymentId,
+		SalesBillId:      params.SalesBillId,
 	})
 	if err != nil {
 		return nil, nil, err

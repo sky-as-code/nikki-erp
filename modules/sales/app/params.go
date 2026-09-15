@@ -24,11 +24,12 @@ import (
 const paramRecordId = "id"
 
 const (
-	paramCode            = "code"
-	paramSoldToPartyId   = "sold_to_party_id"
-	paramBillToPartyId   = "bill_to_party_id"
-	paramPayerPartyId    = "payer_party_id"
-	paramPaymentMethodId = "payment_method_id"
+	paramCode             = "code"
+	paramSoldToPartyId    = "sold_to_party_id"
+	paramBillToPartyId    = "bill_to_party_id"
+	paramPayerPartyId     = "payer_party_id"
+	paramPaymentMethodId  = "payment_method_id"
+	paramPaymentProfileId = "payment_profile_id"
 
 	// Read by the fulfillment and availability actions.
 	paramItems            = "items"
