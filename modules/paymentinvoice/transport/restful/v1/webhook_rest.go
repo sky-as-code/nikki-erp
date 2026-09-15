@@ -346,7 +346,7 @@ func (this *WebhookRest) mposProfileConfig(
 		return nil, true
 	}
 
-	configs, err := this.orders.ProfileConfigsByMethod(ctx, models.PaymentProfileMethodMpos)
+	configs, err := this.orders.ProfileConfigs(ctx)
 	if err != nil {
 		this.logger.Errorf("paymentinvoice: reading the mPOS payment profiles failed: %s", err.Error())
 		return nil, false

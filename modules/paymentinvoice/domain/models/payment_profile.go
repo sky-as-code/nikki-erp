@@ -8,35 +8,19 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-)
-
-// PaymentProfileMethod is the gateway a profile holds credentials for.
-//
-// The first three values are byte-identical to the AdapterCode constants in payment_method.go on
-// purpose: a profile is resolved to an adapter by this value alone, and a translation table
-// between the two would be one more place for them to drift apart.
-type PaymentProfileMethod string
-
-const (
-	PaymentProfileMethodMomo   = PaymentProfileMethod(AdapterCodeMomo)
-	PaymentProfileMethodVietQr = PaymentProfileMethod(AdapterCodeVietQr)
-	PaymentProfileMethodMpos   = PaymentProfileMethod(AdapterCodeMpos)
-
-	// PaymentProfileMethodMbbank is accepted by the schema because the service this module
-	// supersedes stored profiles under it, and a profile that cannot be written back is a
-	// profile that cannot be migrated. No adapter answers to it yet.
-	PaymentProfileMethodMbbank = PaymentProfileMethod("mbbank")
 )
 
 const (
 	PaymentProfileSchemaName = "paymentinvoice_payment_profile"
 
-	PaymentProfileFieldId     = basemodel.FieldId
-	PaymentProfileFieldName   = "name"
-	PaymentProfileFieldMethod = "method"
-	PaymentProfileFieldOrgId  = "org_id"
+	PaymentProfileFieldId              = basemodel.FieldId
+	PaymentProfileFieldCode            = "code"
+	PaymentProfileFieldName            = "name"
+	PaymentProfileFieldPaymentMethodId = "payment_method_id"
+	PaymentProfileFieldOrgId           = "org_id"
 
 	// PaymentProfileFieldConfig holds the plain, readable credentials. It is deliberately not a
 	// schema field and therefore has no database column: it only carries data in from requests
@@ -85,27 +69,16 @@ func (this PaymentProfile) GetName() *string {
 	return this.GetFieldData().GetString(PaymentProfileFieldName)
 }
 
+func (this PaymentProfile) GetCode() *string {
+	return this.GetFieldData().GetString(PaymentProfileFieldCode)
+}
+
 func (this *PaymentProfile) SetName(v *string) {
 	this.GetFieldData().SetString(PaymentProfileFieldName, v)
 }
 
-func (this PaymentProfile) GetMethod() *PaymentProfileMethod {
-	raw := this.GetFieldData().GetString(PaymentProfileFieldMethod)
-	if raw == nil {
-		return nil
-	}
-	method := PaymentProfileMethod(*raw)
-
-	return &method
-}
-
-func (this *PaymentProfile) SetMethod(v *PaymentProfileMethod) {
-	if v == nil {
-		this.GetFieldData().SetString(PaymentProfileFieldMethod, nil)
-		return
-	}
-	raw := string(*v)
-	this.GetFieldData().SetString(PaymentProfileFieldMethod, &raw)
+func (this PaymentProfile) GetPaymentMethodId() *model.Id {
+	return this.GetFieldData().GetModelId(PaymentProfileFieldPaymentMethodId)
 }
 
 // GetConfig returns the plain credentials. It is reached through GetAny because the field is not

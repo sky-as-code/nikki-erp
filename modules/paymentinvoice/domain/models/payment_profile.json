@@ -4,9 +4,19 @@
 	"table_name": "paymentinvoice_payment_profiles",
 	"should_build_db": true,
 	"record_label_field": "name",
+	"composite_uniques": [
+		{ "index_name": "payinv_pay_profiles_org_code", "fields": ["org_id", "code"] }
+	],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"no_update": true
+		},
 		{
 			"name": "name",
 			"label": "fields.name",
@@ -18,15 +28,12 @@
 			}
 		},
 		{
-			"name": "method",
+			"name": "payment_method_id",
 			"label": "fields.method",
-			"data_type": {
-				"type": "enum_string",
-				"values": ["momo", "vietqr", "mpos", "mbbank"]
-			},
+			"data_type": "ulid",
 			"required_for_create": true,
 			"description": {
-				"en-US": "Which gateway these credentials are for. The first three values are byte-identical to the adapter codes in payment_method.go, so a profile resolves to an adapter without a translation table in between; mbbank is carried over from the service this module supersedes and has no adapter here yet."
+				"en-US": "The payment method this merchant account collects through. The method owns the gateway adapter; profiles only supply its credentials."
 			}
 		},
 		{
@@ -47,7 +54,7 @@
 	],
 
 	"search_indexes": [
-		{ "index_name": "payinv_pay_profiles_method", "fields": ["method"] },
+		{ "index_name": "payinv_pay_profiles_method", "fields": ["payment_method_id"] },
 		{ "index_name": "payinv_pay_profiles_org", "fields": ["org_id"] }
 	],
 

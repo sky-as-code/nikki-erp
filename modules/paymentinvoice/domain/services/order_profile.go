@@ -54,12 +54,10 @@ func (this *OrderDomainService) loadProfileForCreate(
 	// The profile names the gateway its credentials belong to, and the method names the adapter
 	// that will be called. If they disagree, the payment would be sent to one gateway signed with
 	// another's secret — refused at best, and at worst accepted against the wrong account.
-	adapterCode := derefString(method.GetAdapterCode())
-	if profileMethod := profile.GetMethod(); profileMethod == nil || string(*profileMethod) != adapterCode {
+	if profileMethodId := profile.GetPaymentMethodId(); profileMethodId == nil || string(*profileMethodId) != string(*method.GetId()) {
 		appendFieldViolation(vErrs, models.OrderFieldPaymentProfileId,
 			"paymentinvoice.payment_profile_method_mismatch",
-			"payment profile '"+profileId+"' holds credentials for a different gateway than "+
-				"payment method '"+derefString(method.GetCode())+"' is served by")
+			"payment profile '"+profileId+"' belongs to a different payment method")
 		return nil, nil
 	}
 
@@ -131,10 +129,10 @@ func (this *OrderDomainService) ProfileConfigForOrderCode(
 // that body has to be found before anything inside it can be read. Which of them matches is the
 // caller's question, because only the adapter knows what a merchant id is called in its own
 // credentials — which is why this hands back the configs rather than doing the matching.
-func (this *OrderDomainService) ProfileConfigsByMethod(
-	ctx corectx.Context, method models.PaymentProfileMethod,
+func (this *OrderDomainService) ProfileConfigs(
+	ctx corectx.Context,
 ) ([]map[string]any, error) {
-	profiles, err := this.profiles.FindActiveByMethod(ctx, method)
+	profiles, err := this.profiles.FindActive(ctx)
 	if err != nil {
 		return nil, err
 	}
