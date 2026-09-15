@@ -52,6 +52,8 @@ func insertBill(
 		models.SalesBillFieldTaxTotal:      totals.tax,
 		models.SalesBillFieldTotalAmount:   totals.total,
 		basemodel.FieldOrgId:               orgId,
+		// Direct repository inserts bypass the resource service's model defaults.
+		basemodel.FieldIsArchived: false,
 	})
 	return err
 }

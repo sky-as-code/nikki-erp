@@ -425,6 +425,8 @@ func writeDraftOrder(
 			models.SalesOrderFieldGrandTotal:    decimal.Zero,
 
 			basemodel.FieldOrgId: orgId,
+			// Direct repository inserts do not apply the archivable model's default.
+			basemodel.FieldIsArchived: false,
 		}
 		if params.CustomerReference != "" {
 			fields[models.SalesOrderFieldCustomerReference] = params.CustomerReference
@@ -523,7 +525,8 @@ func writeOrderLines(
 
 			models.SalesOrderLineFieldPricingSource: string(models.SalesOrderPricingSourceCatalogue),
 
-			basemodel.FieldOrgId: orgId,
+			basemodel.FieldOrgId:      orgId,
+			basemodel.FieldIsArchived: false,
 		}
 		if line.ProductCode != "" {
 			fields[models.SalesOrderLineFieldProductCodeSnapshot] = line.ProductCode
@@ -578,6 +581,7 @@ func writeOrderLineAllocations(
 				models.SalesOrderLineAllocationFieldSourceLocationId: allocation.LocationId,
 				models.SalesOrderLineAllocationFieldQuantity:         allocation.Quantity,
 				basemodel.FieldOrgId:                                 orgId,
+				basemodel.FieldIsArchived:                            false,
 			}
 			if _, err := engineRepo.Insert(ctx, fields); err != nil {
 				return err
