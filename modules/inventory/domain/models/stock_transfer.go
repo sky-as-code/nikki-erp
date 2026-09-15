@@ -176,12 +176,12 @@ func (this *StockTransfer) SetSourceType(v *string) {
 	this.GetFieldData().SetString(StockTransferFieldSourceType, v)
 }
 
-func (this StockTransfer) GetSourceId() *model.Id {
-	return this.GetFieldData().GetModelId(StockTransferFieldSourceId)
+func (this StockTransfer) GetSourceId() *string {
+	return this.GetFieldData().GetString(StockTransferFieldSourceId)
 }
 
-func (this *StockTransfer) SetSourceId(v *model.Id) {
-	this.GetFieldData().SetModelId(StockTransferFieldSourceId, v)
+func (this *StockTransfer) SetSourceId(v *string) {
+	this.GetFieldData().SetString(StockTransferFieldSourceId, v)
 }
 
 func (this StockTransfer) GetExpiresAt() *model.ModelDateTime {

@@ -201,10 +201,10 @@
 		{
 			"name": "source_id",
 			"label": "fields.source_id",
-			"data_type": "ulid",
+			"data_type": { "type": "string", "min": 1, "max": 255 },
 			"no_update": true,
 			"description": {
-				"en-US": "The id of the demand named by source_type — for 'sales_fulfillment', the Sales fulfillment id. A plain identifier with no edge: the row belongs to another module and a foreign key across that boundary would couple the two schemas' migrations. Immutable alongside the type that qualifies it."
+				"en-US": "The opaque key of the demand named by source_type. Sales uses a fulfillment id for a single target, or fulfillmentId:locationId for a slot-specific hold. It is not necessarily a ULID and must be preserved exactly for reservation retries and releases. No cross-module foreign key. Immutable alongside the type that qualifies it."
 			}
 		},
 		{
