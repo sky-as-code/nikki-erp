@@ -74,6 +74,21 @@ func enumValuesOf(t *testing.T, field *dmodel.ModelField) []string {
 	}
 }
 
+// Warehouse is a nullable scope: codes are unique within each warehouse and among unassigned
+// locations in the same tenant/org. Building the schema also validates the partial unique fields.
+func TestLocationCodeUniqueWithinNullableWarehouse(t *testing.T) {
+	requireBaseSchemasRegistered(t)
+
+	schema := InventoryLocationSchemaBuilder().Build()
+	uniques := schema.PartialUniquesLoose()
+	require.Len(t, uniques, 1)
+	assert.Equal(t, "invty_locs_tid_code_org_wh_id", uniques[0].IndexName)
+	assert.Equal(t, []string{"code", "org_id"}, uniques[0].NotNullFields)
+	assert.Equal(t, "warehouse_id", uniques[0].NullableField)
+	assert.Empty(t, schema.PartialUniquesStrict())
+	assert.False(t, requireField(t, schema, "warehouse_id").IsRequiredForCreate())
+}
+
 // Vendor, customer, inventory-loss and shared transit locations belong to no warehouse, so the
 // column must stay nullable for them to exist at all.
 func TestLocationWarehouseIdIsNullable(t *testing.T) {

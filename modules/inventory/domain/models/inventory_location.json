@@ -5,7 +5,9 @@
 	"should_build_db": true,
 	"record_label_field": "name",
 	"default_search_fields": ["code", "name", "location_usage", "purpose", "complete_path", "status"],
-	"composite_uniques": [{ "index_name": "invty_locs_tid_code_org_id", "fields": ["code", "org_id"] }],
+	"partial_uniques_loose": [
+		{ "index_name": "invty_locs_tid_code_org_wh_id", "not_null_fields": ["code", "org_id"], "nullable_field": "warehouse_id" }
+	],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
