@@ -220,6 +220,19 @@ func runInventoryStep(
 		if !boolOrTrue(line, models.SalesReturnLineFieldRequiresInventoryReturn) {
 			continue
 		}
+		sourceLocationId := ""
+		if fulfillmentItemId := stringOf(line, models.SalesReturnLineFieldFulfillmentItemId); fulfillmentItemId != "" {
+			fulfillmentItem, err := loadRecord(ctx, models.SalesOrderFulfillmentItemSchemaName,
+				models.SalesOrderFulfillmentItemFieldId, fulfillmentItemId)
+			if err != nil {
+				return "", err
+			}
+			if fulfillmentItem != nil {
+				sourceLocationId = stringOf(fulfillmentItem,
+					models.SalesOrderFulfillmentItemFieldSourceLocationId)
+			}
+		}
+
 		orderLine, err := loadRecord(ctx, models.SalesOrderLineSchemaName,
 			models.SalesOrderLineFieldId, stringOf(line, models.SalesReturnLineFieldSalesOrderLineId))
 		if err != nil {
@@ -233,7 +246,7 @@ func runInventoryStep(
 			ProductVariantId: stringOf(orderLine, models.SalesOrderLineFieldProductVariantId),
 			UomId:            stringOf(orderLine, models.SalesOrderLineFieldUomId),
 			Quantity:         decimalOf(line, models.SalesReturnLineFieldQuantity),
-			SourceLocationId: stringOf(orderLine, models.SalesOrderLineFieldSourceLocationId),
+			SourceLocationId: sourceLocationId,
 		})
 	}
 

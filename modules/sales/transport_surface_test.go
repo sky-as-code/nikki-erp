@@ -15,12 +15,13 @@ import (
 // These tests hold one IAM row per schema, a translation for every label, and a route for every
 // engine. They parse files rather than querying a database so they run in CI with no infrastructure.
 
-// junctionSchemas are the schemas that intentionally get no engine, no route and no IAM row. A _rel
-// row is configured through its owner's capabilities; exposing it as a CRUD resource would let a
-// client rewrite a channel's payment mapping without the validation that mapping requires.
-var junctionSchemas = map[string]bool{
+// internalSchemas are persisted child records intentionally absent from the public CRUD surface.
+// Junction rows are configured through their owner's capabilities, while line allocations are
+// written only by CreateOrder; exposing either would let a client contradict its parent record.
+var internalSchemas = map[string]bool{
 	"sales_channel_payment_rel":        true,
 	"sales_channel_fulfillment_method": true,
+	"sales_order_line_allocation":      true,
 }
 
 // Every registered schema is served by an engine, except the declared junctions. A schema with no
@@ -33,10 +34,9 @@ func TestEverySchemaHasAnEngineOrIsADeclaredJunction(t *testing.T) {
 	}
 
 	for _, schemaName := range registeredSchemaNames(t) {
-		if junctionSchemas[schemaName] {
+		if internalSchemas[schemaName] {
 			if engines[schemaName] {
-				t.Errorf("%s is declared a junction but has an engine; a _rel row is configured "+
-					"through its owner's capabilities, not as a CRUD resource", schemaName)
+				t.Errorf("%s is internal but appears in the public engine list", schemaName)
 			}
 			continue
 		}

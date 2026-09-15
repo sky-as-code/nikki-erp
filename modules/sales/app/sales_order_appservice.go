@@ -66,12 +66,20 @@ func (this *SalesOrderExtServiceImpl) CreateOrder(
 
 	lines := make([]services.CreateOrderLine, 0, len(command.Lines))
 	for _, line := range command.Lines {
+		allocations := make([]services.CreateOrderLineAllocation, 0, len(line.Allocations))
+		for _, allocationCmd := range line.Allocations {
+			allocations = append(allocations, services.CreateOrderLineAllocation{
+				LocationId: allocationCmd.SourceLocationId,
+				Quantity:   allocationCmd.Quantity,
+			})
+		}
+
 		lines = append(lines, services.CreateOrderLine{
 			ProductVariantId: line.ProductVariantId,
 			UomId:            line.UomId,
 			Quantity:         line.Quantity,
 			EstimatedPrice:   line.EstimatedPrice,
-			SourceLocationId: line.SourceLocationId,
+			Allocations:      allocations,
 		})
 	}
 

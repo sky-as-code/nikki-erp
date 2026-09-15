@@ -39,7 +39,6 @@ const (
 	SalesOrderLineFieldPricingSource            = "pricing_source"
 	SalesOrderLineFieldSourcePromotionProgramId = "source_promotion_program_id"
 	SalesOrderLineFieldSalesComboId             = "sales_combo_id"
-	SalesOrderLineFieldSourceLocationId         = "source_location_id"
 
 	SalesOrderLineEdgeSalesOrder = "sales_order"
 )
@@ -264,14 +263,6 @@ func (this SalesOrderLine) GetSalesComboId() *model.Id {
 
 func (this *SalesOrderLine) SetSalesComboId(id *model.Id) {
 	this.GetFieldData().SetModelId(SalesOrderLineFieldSalesComboId, id)
-}
-
-func (this SalesOrderLine) GetSourceLocationId() *model.Id {
-	return this.GetFieldData().GetModelId(SalesOrderLineFieldSourceLocationId)
-}
-
-func (this *SalesOrderLine) SetSourceLocationId(id *model.Id) {
-	this.GetFieldData().SetModelId(SalesOrderLineFieldSourceLocationId, id)
 }
 
 // RemainingFulfillable is how much of this line has still to be handed over. Clamped at zero rather

@@ -194,6 +194,7 @@ func (*SalesModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.SalesChannelFulfillmentMethodSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesOrderSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesOrderLineSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesOrderLineAllocationSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesOrderLineComponentSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesOrderAdjustmentSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesOrderEventSchemaBuilder()),

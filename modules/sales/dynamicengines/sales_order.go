@@ -115,6 +115,41 @@ func registerSalesOrderLineEngine() error {
 	return err
 }
 
+// Allocations are an internal child of an order line. The create-order service writes them in the
+// same transaction as their line, so this engine exists to provide its repository and domain
+// service, not to expose a client CRUD surface.
+type salesOrderLineAllocationEngineParam struct {
+	dig.In
+
+	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_line_allocation"`
+}
+
+func registerSalesOrderLineAllocationEngine() error {
+	err := deps.RegisterNamed(
+		composable.EngineDependencyName(models.SalesOrderLineAllocationSchemaName),
+		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
+			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+				SchemaName:  models.SalesOrderLineAllocationSchemaName,
+				CrudActions: readOnlyCrudActions(),
+				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+					return repo.NewSalesOrderLineAllocationRepository(base)
+				},
+				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+					return services.NewSalesOrderLineAllocationDomainService(base)
+				},
+			}, param)
+		},
+	)
+	return stdErr.Join(err, deps.Register(
+		func(p salesOrderLineAllocationEngineParam) itOrder.SalesOrderLineAllocationRepository {
+			return p.Engine.Repository().(itOrder.SalesOrderLineAllocationRepository)
+		},
+		func(p salesOrderLineAllocationEngineParam) itOrder.SalesOrderLineAllocationDomainService {
+			return p.Engine.DomainService().(itOrder.SalesOrderLineAllocationDomainService)
+		},
+	))
+}
+
 // readOnlyCrudActions is the allow-list for the resources an order writes about itself. It is
 // checked in the application layer, so it holds for an in-process caller as well as for a route:
 // a component, an adjustment or an event that a client could write directly could contradict the

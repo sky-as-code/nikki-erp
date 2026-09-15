@@ -440,6 +440,7 @@
 	"sales_order_fulfillment.label": "Order Fulfillment",
 	"sales_order_fulfillment_item.label": "Order Fulfillment Item",
 	"sales_order_line.label": "Order Line",
+	"sales_order_line_allocation.label": "Order Line Allocation",
 	"sales_order_line_component.label": "Line Component",
 	"sales_order_sections_adjustments": "Price adjustments",
 	"sales_order_sections_events": "History",

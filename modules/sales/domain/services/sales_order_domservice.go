@@ -67,6 +67,37 @@ func NewSalesOrderLineDomainService(
 	return &SalesOrderLineDomainServiceImpl{CrudDomainService: base}
 }
 
+// SalesOrderLineAllocationDomainServiceImpl derives the allocation resource. It deliberately
+// only validates one allocation here: verifying that all allocations add up to their parent line
+// requires the complete input set and will be done by the order-creation flow.
+type SalesOrderLineAllocationDomainServiceImpl struct {
+	composable.CrudDomainService
+}
+
+var _ itOrder.SalesOrderLineAllocationDomainService = (*SalesOrderLineAllocationDomainServiceImpl)(nil)
+
+func NewSalesOrderLineAllocationDomainService(
+	base composable.CrudDomainService,
+) *SalesOrderLineAllocationDomainServiceImpl {
+	return &SalesOrderLineAllocationDomainServiceImpl{CrudDomainService: base}
+}
+
+func (this *SalesOrderLineAllocationDomainServiceImpl) Create(
+	ctx corectx.Context, params composable.CreateCommand, options ...composable.CreateOptions,
+) (*composable.CreateResult, error) {
+	quantity := decimalField(params, models.SalesOrderLineAllocationFieldQuantity)
+	if quantity.IsPositive() {
+		return this.CrudDomainService.Create(ctx, params, options...)
+	}
+
+	vErrs := ft.NewClientErrors()
+	vErrs.Append(*ft.NewBusinessViolation(
+		models.SalesOrderLineAllocationFieldQuantity,
+		"sales_order_line_allocation.quantity_not_positive",
+		"an allocation must supply more than zero"))
+	return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
+}
+
 // Create writes a line, refusing one whose quantities break the invariant. The check runs on
 // create as well as update because a line can be born broken: ordered_quantity 0, or a fulfilled
 // quantity above it, would otherwise surface only when something computed a refund from it.

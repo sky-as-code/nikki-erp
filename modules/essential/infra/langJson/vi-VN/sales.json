@@ -440,6 +440,7 @@
 	"sales_order_fulfillment.label": "Giao hàng đơn bán",
 	"sales_order_fulfillment_item.label": "Chi tiết giao hàng đơn bán",
 	"sales_order_line.label": "Dòng đơn hàng",
+	"sales_order_line_allocation.label": "Phân bổ vị trí dòng đơn hàng",
 	"sales_order_line_component.label": "Thành phần dòng đơn hàng",
 	"sales_order_sections_adjustments": "Điều chỉnh giá",
 	"sales_order_sections_events": "Lịch sử",
