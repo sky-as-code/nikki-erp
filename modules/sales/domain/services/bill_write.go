@@ -1,11 +1,14 @@
 package services
 
 import (
+	"fmt"
+
 	"github.com/shopspring/decimal"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
@@ -40,7 +43,7 @@ func insertBill(
 	if err != nil {
 		return err
 	}
-	_, err = engineRepo.Insert(ctx, dmodel.DynamicFields{
+	result, err := engineRepo.Insert(ctx, dmodel.DynamicFields{
 		models.SalesBillFieldId:            billId,
 		models.SalesBillFieldBillNumber:    billNumber,
 		models.SalesBillFieldSalesOrderId:  orderId,
@@ -55,7 +58,7 @@ func insertBill(
 		// Direct repository inserts bypass the resource service's model defaults.
 		basemodel.FieldIsArchived: false,
 	})
-	return err
+	return billInsertError(result, err)
 }
 
 func insertBillLine(
@@ -70,7 +73,7 @@ func insertBillLine(
 	if err != nil {
 		return err
 	}
-	_, err = engineRepo.Insert(ctx, dmodel.DynamicFields{
+	result, err := engineRepo.Insert(ctx, dmodel.DynamicFields{
 		models.SalesBillLineFieldId:                   string(*id),
 		models.SalesBillLineFieldSalesBillId:          billId,
 		models.SalesBillLineFieldSalesOrderLineId:     orderLineId,
@@ -80,5 +83,38 @@ func insertBillLine(
 		models.SalesBillLineFieldAllocatedTotalAmount: total,
 		basemodel.FieldOrgId:                          orgId,
 	})
-	return err
+	return billInsertError(result, err)
+}
+
+// Repository constraint failures can arrive as ClientErrors with a nil Go error.
+// Return an error so the enclosing transaction stops and rolls back.
+func billInsertError(result *dyn.OpResult[int], err error) error {
+	if err != nil {
+		return err
+	}
+	if result == nil {
+		return fmt.Errorf("bill insert returned no result")
+	}
+	if err := result.ClientErrors.ToError(); err != nil {
+		return err
+	}
+	if !result.HasData || result.Data != 1 {
+		return fmt.Errorf("bill insert did not create one row")
+	}
+	return nil
+}
+
+type billAllocation struct {
+	lineId                    string
+	quantity, net, tax, total decimal.Decimal
+}
+
+func insertBillAllocations(ctx corectx.Context, billId, orgId string, allocations []billAllocation) error {
+	for _, entry := range allocations {
+		if err := insertBillLine(ctx, billId, entry.lineId, orgId,
+			entry.quantity, entry.net, entry.tax, entry.total); err != nil {
+			return err
+		}
+	}
+	return nil
 }

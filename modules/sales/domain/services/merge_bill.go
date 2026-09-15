@@ -262,10 +262,6 @@ func writeMergedBill(
 	totals := &billTotals{}
 	for _, lineId := range order {
 		entry := byLine[lineId]
-		if err := insertBillLine(ctx, targetId, lineId, orgId,
-			entry.quantity, entry.net, entry.tax, entry.total); err != nil {
-			return decimal.Zero, err
-		}
 		totals.add(entry.net, entry.tax, entry.total)
 	}
 
@@ -274,6 +270,13 @@ func writeMergedBill(
 	if err := insertBill(ctx, targetId, orderId, orgId, currency,
 		mergedBillNumberOf(sources), totals); err != nil {
 		return decimal.Zero, err
+	}
+	for _, lineId := range order {
+		entry := byLine[lineId]
+		if err := insertBillLine(ctx, targetId, lineId, orgId,
+			entry.quantity, entry.net, entry.tax, entry.total); err != nil {
+			return decimal.Zero, err
+		}
 	}
 	return totals.total, nil
 }
