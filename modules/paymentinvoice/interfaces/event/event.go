@@ -40,10 +40,6 @@ const (
 type PaymentSettledEvent struct {
 	Type PaymentSettledType `json:"type"`
 
-	// TenantId travels ON THE EVENT because the subscriber runs in its own goroutine with no request
-	// context: it is the only way it learns whose data to read. Empty in a single-tenant build.
-	TenantId string `json:"tenant_id,omitempty"`
-
 	OrgId string `json:"org_id,omitempty"`
 
 	// OrderId is the identifier the ordering system was given and stores. OrderPk is this module's

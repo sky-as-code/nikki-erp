@@ -2,8 +2,10 @@ package event
 
 import (
 	"context"
+	"encoding/json"
 	stdErrors "errors"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
@@ -13,9 +15,11 @@ import (
 	"go.bryk.io/pkg/errors"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/core/message/transports"
 )
@@ -26,6 +30,13 @@ const (
 	MetaCorrelationId       = "correlation_id"
 	MetaReplyTopic          = "reply_topic"
 	MetaNoReply             = "no_reply"
+
+	// MetaDomainConstraints carries the publisher's domain constraints to the subscriber, which
+	// consumes on a goroutine that has no request behind it. The name and the JSON encoding match
+	// what the CQRS bus already puts on its own messages (cqrs.MetaDomainConstraints), so the two
+	// buses scope a handler the same way; see EventDelivery for why this belongs on the message
+	// rather than inside each event's payload.
+	MetaDomainConstraints = "domain_constraints"
 )
 
 type EventBusParams struct {
@@ -78,6 +89,7 @@ func (bus *EventBusImpl) PublishRequest(ctx context.Context, request EventReques
 	msg.Metadata.Set(MetaCorrelationId, request.correlationId)
 	msg.Metadata.Set(MetaReplyTopic, request.replyTopic)
 	msg.Metadata.Set(MetaNoReply, "false")
+	setDomainConstraints(ctx, msg)
 
 	// Publish the event
 	err = bus.publisher.Publish(request.eventTopic, msg)
@@ -145,9 +157,22 @@ func (bus *EventBusImpl) subscribeReply(ctx context.Context, request EventReques
 	return replyChan, errChan
 }
 
-func (bus *EventBusImpl) SubscribeRequest(ctx context.Context, request EventRequest, result any) (requestChan chan any, err error) {
+// SubscribeEvent delivers one EventDelivery per message on the topic.
+//
+// prototype is a TYPE, not a buffer: a fresh value of its type is allocated for every message, so a
+// subscriber may hold on to what it receives and hand it to a handler. The method this replaced
+// decoded every message into that one value and handed the same pointer out repeatedly, which is
+// why each of its callers had to copy the struct — and its slices and maps — before using it.
+func (bus *EventBusImpl) SubscribeEvent(
+	ctx context.Context, request EventRequest, prototype any,
+) (deliveryChan chan EventDelivery, err error) {
+	// Only a panic is converted here. Assigning unconditionally, as the rest of this file does,
+	// would overwrite the "already subscribed" error below with nil and return a nil channel to a
+	// caller that was told nothing went wrong.
 	defer func() {
-		err = ft.RecoverPanicFailedTo(recover(), "publish reply")
+		if recovered := recover(); recovered != nil {
+			err = ft.RecoverPanicFailedTo(recovered, "subscribe to event topic")
+		}
 	}()
 
 	if _, exists := bus.subscriptions.Load(request.eventTopic); exists {
@@ -159,7 +184,7 @@ func (bus *EventBusImpl) SubscribeRequest(ctx context.Context, request EventRequ
 
 	bus.subscriptions.Store(request.eventTopic, msgChan)
 
-	requestChan = make(chan any, 10)
+	deliveryChan = make(chan EventDelivery, 10)
 
 	go func() {
 		defer func() {
@@ -174,27 +199,84 @@ func (bus *EventBusImpl) SubscribeRequest(ctx context.Context, request EventRequ
 			case msg, ok := <-msgChan:
 				if !ok {
 					bus.subscriptions.Delete(request.eventTopic)
-					close(requestChan)
+					close(deliveryChan)
 					return
 				}
 				msg.Ack()
-				err := bus.marshaler.Unmarshal(msg, result)
-				if err != nil {
+
+				payload := newPayloadOf(prototype)
+				if err := bus.marshaler.Unmarshal(msg, payload); err != nil {
 					bus.logger.Error("event bus unmarshal failed",
 						fmt.Errorf("topic %s: %w", request.eventTopic, err))
 					continue
 				}
 
-				requestChan <- result
+				deliveryChan <- EventDelivery{
+					Payload:     payload,
+					Constraints: bus.domainConstraintsOf(msg, request.eventTopic),
+				}
 			case <-ctx.Done():
 				bus.subscriptions.Delete(request.eventTopic)
-				close(requestChan)
+				close(deliveryChan)
 				return
 			}
 		}
 	}()
 
-	return requestChan, nil
+	return deliveryChan, nil
+}
+
+// domainConstraintsOf reads the publisher's scope back off a message.
+//
+// Unreadable constraints are logged and dropped rather than failing the message: the event itself
+// decoded fine, and a handler that runs unscoped fails loudly on its first query, whereas a message
+// silently discarded here would look like an event that was never published.
+func (bus *EventBusImpl) domainConstraintsOf(msg *message.Message, topic string) dmodel.DynamicFields {
+	encoded := msg.Metadata.Get(MetaDomainConstraints)
+	if encoded == "" {
+		return nil
+	}
+
+	constraints := dmodel.DynamicFields{}
+	if err := json.Unmarshal([]byte(encoded), &constraints); err != nil {
+		bus.logger.Error("event bus domain constraints decode failed",
+			fmt.Errorf("topic %s: %w", topic, err))
+		return nil
+	}
+	return constraints
+}
+
+// setDomainConstraints stamps the publisher's scope onto an outgoing message.
+//
+// ctx is a plain context.Context because that is what the bus takes, but the constraints live in
+// the inner context's values either way, so this reads them from a corectx.Context and from the
+// detached background context a publisher derived from one.
+func setDomainConstraints(ctx context.Context, msg *message.Message) {
+	constraints, ok := ctx.Value(corectx.CtxKeyDomainConstraints).(dmodel.DynamicFields)
+	if !ok || len(constraints) == 0 {
+		return
+	}
+
+	encoded, err := json.Marshal(constraints)
+	if err != nil {
+		// Nothing useful to do with this: the constraints are a map of scalars, so a failure here
+		// means a caller put something exotic in them. The subscriber is left unscoped and says so
+		// on its first query, which is louder than failing the publish of an event describing a
+		// write that already committed.
+		return
+	}
+	msg.Metadata.Set(MetaDomainConstraints, string(encoded))
+}
+
+// newPayloadOf allocates a value of the prototype's type for one message to decode into.
+func newPayloadOf(prototype any) any {
+	protoType := reflect.TypeOf(prototype)
+	if protoType == nil || protoType.Kind() != reflect.Ptr {
+		// Not a pointer, so there is nothing to allocate into and nothing the caller could read back
+		// either. Handed straight to the unmarshaler, which reports it far better than a panic here.
+		return prototype
+	}
+	return reflect.New(protoType.Elem()).Interface()
 }
 
 // PublishReply publishes a reply to the specified reply topic
