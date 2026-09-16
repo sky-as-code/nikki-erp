@@ -9,6 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	c "github.com/sky-as-code/nikki-erp/modules/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
@@ -28,8 +29,12 @@ func NewSalesPointApplicationServiceImpl() it.SalesPointAppService {
 func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 	ctx corectx.Context, command it.CreateSalesPointCommand,
 ) (*it.CreateSalesPointResult, error) {
-	if cErrs := assertPermission(ctx, composable.PermissionCreate,
-		c.SalesPointResource, c.ResourceScopeOrg); cErrs != nil {
+	if command.OrgId == "" {
+		return pointRejection("sales_point.org_required",
+			"a sales point always belongs to one org"), nil
+	}
+	if cErrs := assertPermissionInOrg(ctx, composable.PermissionCreate,
+		c.SalesPointResource, c.ResourceScopeOrg, model.Id(command.OrgId)); cErrs != nil {
 		return &it.CreateSalesPointResult{ClientErrors: *cErrs}, nil
 	}
 	// A point that can hand goods over must say where its stock is. The schema cannot express the
@@ -95,6 +100,7 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 	}
 	fields := dmodel.DynamicFields{
 		models.SalesPointFieldId:             string(*id),
+		models.SalesPointFieldOrgId:          command.OrgId,
 		models.SalesPointFieldSalesChannelId: channelId,
 		models.SalesPointFieldName:           command.Name,
 		models.SalesPointFieldStatus:         string(models.SalesPointStatusActive),
@@ -162,8 +168,11 @@ func (this *SalesPointApplicationServiceImpl) ActivateSalesPoint(
 func (this *SalesPointApplicationServiceImpl) DeleteSalesPoint(
 	ctx corectx.Context, command it.SalesPointCommand,
 ) (*it.DeleteSalesPointResult, error) {
-	if cErrs := assertPermission(ctx, composable.PermissionDelete,
-		c.SalesPointResource, c.ResourceScopeOrg); cErrs != nil {
+	cErrs, err := assertSalesPointPermission(ctx, composable.PermissionDelete, command.SalesPointId)
+	if err != nil {
+		return nil, err
+	}
+	if cErrs != nil {
 		return &it.DeleteSalesPointResult{ClientErrors: *cErrs}, nil
 	}
 
@@ -194,8 +203,11 @@ func (this *SalesPointApplicationServiceImpl) mutate(
 	ctx corectx.Context, command it.SalesPointCommand, permission string,
 	run func(*services.SalesPointDomainServiceImpl) (*dyn.OpResult[dyn.MutateResultData], error),
 ) (*it.SalesPointMutationResult, error) {
-	if cErrs := assertPermission(ctx, permission,
-		c.SalesPointResource, c.ResourceScopeOrg); cErrs != nil {
+	cErrs, err := assertSalesPointPermission(ctx, permission, command.SalesPointId)
+	if err != nil {
+		return nil, err
+	}
+	if cErrs != nil {
 		return &it.SalesPointMutationResult{ClientErrors: *cErrs}, nil
 	}
 	service, err := salesPointService()
@@ -235,6 +247,27 @@ func (this *SalesPointApplicationServiceImpl) resolveChannel(
 
 func salesPointService() (*services.SalesPointDomainServiceImpl, error) {
 	return services.SalesPointService()
+}
+
+// assertSalesPointPermission authorizes against the persisted point's own org, since a mutation
+// names an existing record rather than one the caller is about to create.
+func assertSalesPointPermission(
+	ctx corectx.Context, action, salesPointId string,
+) (*ft.ClientErrors, error) {
+	point, err := loadSalesPoint(ctx, salesPointId)
+	if err != nil {
+		return nil, err
+	}
+	if point == nil {
+		return &ft.ClientErrors{*ft.NewNotFoundError("id")}, nil
+	}
+	orgId := point.GetModelId(models.SalesPointFieldOrgId)
+	if orgId == nil || *orgId == "" {
+		return &ft.ClientErrors{*ft.NewInsufficientPermissionsError([]string{
+			reguard.BuildExpression(action, c.SalesPointResource, c.ResourceScopeOrg, nil),
+		})}, nil
+	}
+	return assertPermissionInOrg(ctx, action, c.SalesPointResource, c.ResourceScopeOrg, *orgId), nil
 }
 
 func loadSalesPoint(ctx corectx.Context, salesPointId string) (dmodel.DynamicFields, error) {

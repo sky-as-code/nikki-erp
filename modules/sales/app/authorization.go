@@ -8,6 +8,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
@@ -25,6 +26,20 @@ func assertPermission(
 		ResourceCode: resourceCode,
 		Scope:        scope,
 	})
+}
+
+// assertPermissionInOrg checks an org-scoped entitlement against the org the record belongs to.
+//
+// Naming the org is what makes a bare "action:resource:org" grant answer at all:
+// CandidateExpressions drops every org candidate when Perm.OrgId is nil, so an org-scoped check
+// made without it matches only a tenant or omnipotent grant and refuses everyone else - while
+// reporting the very expression the caller already holds.
+func assertPermissionInOrg(
+	ctx corectx.Context, actionCode string, resourceCode string,
+	scope c.ResourceScope, orgId model.Id,
+) *ft.ClientErrors {
+	return reguard.AssertPermission(ctx,
+		reguard.PermFor(actionCode, resourceCode, scope).InOrg(&orgId))
 }
 
 // The in-process order API authorizes against persisted ownership, not the caller's

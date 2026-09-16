@@ -14,6 +14,13 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
 )
 
+func salesChannelOrgRequired() *ft.ClientErrors {
+	vErrs := ft.NewClientErrors()
+	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName,
+		"sales_channel.org_required", "a sales channel always belongs to one org"))
+	return vErrs
+}
+
 type SalesChannelApplicationServiceImpl struct{}
 
 func NewSalesChannelApplicationServiceImpl() it.SalesChannelAppService {
@@ -26,8 +33,11 @@ func NewSalesChannelApplicationServiceImpl() it.SalesChannelAppService {
 func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 	ctx corectx.Context, command it.RegisterSalesChannelCommand,
 ) (*it.RegisterSalesChannelResult, error) {
-	if cErrs := assertPermission(ctx, composable.PermissionCreate,
-		c.SalesChannelResource, c.ResourceScopeOrg); cErrs != nil {
+	if command.OrgId == "" {
+		return &it.RegisterSalesChannelResult{ClientErrors: *salesChannelOrgRequired()}, nil
+	}
+	if cErrs := assertPermissionInOrg(ctx, composable.PermissionCreate,
+		c.SalesChannelResource, c.ResourceScopeOrg, model.Id(command.OrgId)); cErrs != nil {
 		return &it.RegisterSalesChannelResult{ClientErrors: *cErrs}, nil
 	}
 
@@ -78,6 +88,7 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 	}
 	created, err := channelSvc.Create(ctx, dmodel.DynamicFields{
 		models.SalesChannelFieldId:              string(*id),
+		models.SalesChannelFieldOrgId:           command.OrgId,
 		models.SalesChannelFieldCode:            code,
 		models.SalesChannelFieldName:            command.Name,
 		models.SalesChannelFieldDescription:     command.Description,
@@ -100,8 +111,11 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 func (this *SalesChannelApplicationServiceImpl) ResolveSalesChannelByCode(
 	ctx corectx.Context, query it.ResolveSalesChannelQuery,
 ) (*it.ResolveSalesChannelResult, error) {
-	if cErrs := assertPermission(ctx, composable.PermissionRead,
-		c.SalesChannelResource, c.ResourceScopeOrg); cErrs != nil {
+	if query.OrgId == "" {
+		return &it.ResolveSalesChannelResult{ClientErrors: *salesChannelOrgRequired()}, nil
+	}
+	if cErrs := assertPermissionInOrg(ctx, composable.PermissionRead,
+		c.SalesChannelResource, c.ResourceScopeOrg, model.Id(query.OrgId)); cErrs != nil {
 		return &it.ResolveSalesChannelResult{ClientErrors: *cErrs}, nil
 	}
 
