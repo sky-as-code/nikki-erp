@@ -233,6 +233,9 @@ func assertMethodPermitted(
 	if err != nil {
 		return nil, err
 	}
+	if enabled != nil && enabled.ClientErrors.Count() > 0 {
+		return &enabled.ClientErrors, nil
+	}
 	if enabled == nil || !enabled.HasData || !enabled.Data {
 		return refuse(ReasonMethodNotAllowedForChannel,
 			"this payment method is not enabled for the sales channel of this bill"), nil
