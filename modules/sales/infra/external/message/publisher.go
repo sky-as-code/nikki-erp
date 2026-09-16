@@ -9,6 +9,8 @@ import (
 
 	"go.bryk.io/pkg/errors"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
 
 	itMessage "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/message"
@@ -45,7 +47,32 @@ type wireEvent struct {
 	OccurredAt    int64  `json:"occurred_at"`
 	OrgId         string `json:"org_id"`
 
+	// Scope is what the publishing context was scoped by - in a multi-tenant deployment, the tenant
+	// whose outbox row this is. It sits on the ENVELOPE, once, rather than inside each event type's
+	// payload: a consumer subscribes on a goroutine with no request behind it, so every event that
+	// crosses this broker needs it, and an event type that had to remember to carry it is an event
+	// type that will eventually forget.
+	//
+	// The internal event bus carries the same thing in message metadata (coreEvent.EventDelivery).
+	// It cannot here: this broker's messages are raw bytes with nowhere to put metadata.
+	//
+	// Omitted entirely in a single-tenant build, where there is nothing to scope by.
+	Scope dmodel.DynamicFields `json:"scope,omitempty"`
+
 	Payload map[string]any `json:"payload"`
+}
+
+// scopeOf reads the publishing context's scope.
+//
+// A plain context.Context is enough: the constraints live in the inner context's values, so this
+// sees them whether it is handed a corectx.Context or the detached context the sweep derives from
+// one.
+func scopeOf(ctx context.Context) dmodel.DynamicFields {
+	constraints, ok := ctx.Value(corectx.CtxKeyDomainConstraints).(dmodel.DynamicFields)
+	if !ok || len(constraints) == 0 {
+		return nil
+	}
+	return constraints
 }
 
 // Publish sends one event. Encoding and broker failures both return an error and the row stays
@@ -61,6 +88,7 @@ func (this *AppPublisher) Publish(
 		SchemaVersion: event.SchemaVersion,
 		OccurredAt:    event.OccurredAt,
 		OrgId:         event.OrgId,
+		Scope:         scopeOf(ctx),
 		Payload:       event.Payload,
 	})
 	if err != nil {

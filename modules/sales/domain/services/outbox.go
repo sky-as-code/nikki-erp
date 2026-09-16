@@ -20,6 +20,41 @@ import (
 // its own, so called outside one it silently degrades to the commit-then-publish race the outbox
 // exists to avoid. Nothing here touches the broker — the row is the handoff and app/ drains it.
 
+// OutboxDrain publishes whatever is waiting in the outbox, now.
+//
+// It is a package-level hook rather than an injected dependency for the same reason the cron
+// scoping strategy is (modules/core/job.SetSweepScoper): the writers here are package functions
+// with no container behind them, and draining is a deployment concern, not one any single write
+// path should have to be handed.
+type OutboxDrain func(ctx corectx.Context)
+
+// outboxDrain is nil until app/ installs one, and a nil drain is a working system: the cron sweep
+// is what guarantees delivery, so a build that never installs this is simply the slower one.
+var outboxDrain OutboxDrain
+
+// SetOutboxDrain installs the drain, from the module's OnAppStarted.
+func SetOutboxDrain(drain OutboxDrain) {
+	if drain != nil {
+		outboxDrain = drain
+	}
+}
+
+// DrainOutboxNow asks for the events just written to go out without waiting for the next sweep.
+//
+// It returns immediately; the drain itself is somebody else's goroutine.
+//
+// A call from inside a transaction does nothing, deliberately rather than as a guard against
+// misuse: the rows are not committed yet, so a drain reading through that same transaction would
+// publish an event whose write may still roll back. That is the commit-then-publish race the outbox
+// exists to avoid, arriving from the other direction. Those events wait for the sweep, which is the
+// guarantee in every case anyway.
+func DrainOutboxNow(ctx corectx.Context) {
+	if outboxDrain == nil || ctx.GetDbTranx() != nil {
+		return
+	}
+	outboxDrain(ctx)
+}
+
 // RecordEventParams is one integration event to publish.
 type RecordEventParams struct {
 	// EventType is one of the constants in domain/models, named after what happened rather than what
