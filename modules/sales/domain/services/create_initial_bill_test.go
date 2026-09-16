@@ -23,22 +23,18 @@ func orderLineRecord(id, final, tax, quantity string) dmodel.DynamicFields {
 	}
 }
 
-// allocationsOf is what writeInitialAllocations computes, without the writes: the same three calls
-// against the same inputs, so the test pins the apportionment rather than the loop around it.
+// allocationsOf exercises the production allocation calculation without database writes.
 func allocationsOf(
 	order dmodel.DynamicFields, lines []dmodel.DynamicFields, scale int32,
 ) (net, tax, total map[string]decimal.Decimal) {
-	inputs := make([]AllocationInput, 0, len(lines))
-	for index, line := range lines {
-		inputs = append(inputs, AllocationInput{
-			Key:       stringOf(line, models.SalesOrderLineFieldId),
-			Reference: decimalOf(line, models.SalesOrderLineFieldFinalAmount),
-			Tiebreak:  int32(index),
-		})
+	allocations, _ := initialAllocations(order, lines, SalesPolicy{RoundingScale: scale})
+	net = make(map[string]decimal.Decimal)
+	tax = make(map[string]decimal.Decimal)
+	total = make(map[string]decimal.Decimal)
+	for _, entry := range allocations {
+		net[entry.lineId], tax[entry.lineId], total[entry.lineId] = entry.net, entry.tax, entry.total
 	}
-	return AllocateAcrossBills(decimalOf(order, models.SalesOrderFieldSubtotal), inputs, scale),
-		AllocateAcrossBills(decimalOf(order, models.SalesOrderFieldTaxTotal), inputs, scale),
-		AllocateAcrossBills(decimalOf(order, models.SalesOrderFieldGrandTotal), inputs, scale)
+	return net, tax, total
 }
 
 func sumOf(shares map[string]decimal.Decimal) decimal.Decimal {

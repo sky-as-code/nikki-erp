@@ -1,6 +1,9 @@
 package services
 
 import (
+	"fmt"
+
+	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -67,37 +70,39 @@ func (this *ProductVariantDomainServiceImpl) GetPricingBasis(
 	}, nil
 }
 
-// readPricingVariants fetches only the fields pricing needs. Naming them explicitly is required,
-// not an optimisation: effective_base_sales_price is a COMPUTED field, projected only when asked
-// for by name, and reading the whole record leaves it empty so the price silently falls back to the
-// catalogue.
+// readPricingVariants uses the domain read pipeline: the repository only reads physical columns,
+// while the computed-field decorator evaluates the effective price and category from the template.
 func (this *ProductVariantDomainServiceImpl) readPricingVariants(
 	ctx corectx.Context, variantIds []string,
 ) ([]dmodel.DynamicFields, error) {
 	graph := &dmodel.SearchGraph{}
 	graph.And(
-		*dmodel.NewSearchNode().NewCondition(models.ProductVariantFieldId, dmodel.In, variantIds),
+		*dmodel.NewSearchNode().NewCondition(models.ProductVariantFieldId, dmodel.In,
+			array.Map(variantIds, func(id string) any { return id })...),
 	)
 
-	page, err := searchRows(ctx, models.ProductVariantSchemaName, dyn.SearchQuery{
-		Graph: graph,
-		Page:  0,
-		Size:  len(variantIds),
-		Fields: []string{
+	page, err := this.Search(ctx, dmodel.DynamicFields{
+		"graph": graph,
+		"page":  0,
+		"size":  len(variantIds),
+		"fields": []string{
 			models.ProductVariantFieldId,
 			models.ProductVariantFieldProductTemplateId,
 			models.ProductVariantFieldTemplateCategoryId,
 			models.ProductVariantFieldEffectiveBaseSalesPrice,
 			models.ProductVariantFieldCost,
 		},
-	}, "GetPricingBasis")
+	})
 	if err != nil {
 		return nil, err
 	}
 	if page == nil {
-		return nil, nil
+		return nil, fmt.Errorf("GetPricingBasis: variant search returned no result")
 	}
-	return page.Items, nil
+	if err := page.ClientErrors.ToError(); err != nil {
+		return nil, err
+	}
+	return page.Data.Items, nil
 }
 
 // resolveCategoryPaths walks each starting category out to its root, level by level across the
@@ -143,7 +148,8 @@ func (this *ProductVariantDomainServiceImpl) readCategoryParents(
 ) (map[string]string, error) {
 	graph := &dmodel.SearchGraph{}
 	graph.And(
-		*dmodel.NewSearchNode().NewCondition(models.ProductCategoryFieldId, dmodel.In, categoryIds),
+		*dmodel.NewSearchNode().NewCondition(models.ProductCategoryFieldId, dmodel.In,
+			array.Map(categoryIds, func(id string) any { return id })...),
 	)
 
 	page, err := searchRows(ctx, models.ProductCategorySchemaName, dyn.SearchQuery{

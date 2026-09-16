@@ -124,7 +124,7 @@ func (this *PaymentProfileDomainService) FindById(
 	return profile, nil
 }
 
-// FindActiveByMethod returns every profile of one gateway that has not been archived, credentials
+// FindActive returns every usable profile, credentials decrypted.
 // decrypted.
 //
 // It serves the callbacks that identify themselves by a merchant account rather than by an order —
@@ -132,27 +132,20 @@ func (this *PaymentProfileDomainService) FindById(
 // decrypt that body has to be found before anything in it can be read. Archived profiles are left
 // out: an account withdrawn from use must not be able to settle new payments, and including it
 // would make archiving a label rather than a control.
-func (this *PaymentProfileDomainService) FindActiveByMethod(
-	ctx corectx.Context, method models.PaymentProfileMethod,
+func (this *PaymentProfileDomainService) FindActive(
+	ctx corectx.Context,
 ) ([]*models.PaymentProfile, error) {
 	engine, err := engineFor(models.PaymentProfileSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	graph := &dmodel.SearchGraph{}
-	graph.And(
-		*dmodel.NewSearchNode().NewCondition(
-			models.PaymentProfileFieldMethod, dmodel.Equals, string(method)),
-	)
-
 	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
-		Graph: graph,
-		Page:  0,
-		Size:  paymentProfilePageSize,
+		Page: 0,
+		Size: paymentProfilePageSize,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "PaymentProfileDomainService.FindActiveByMethod")
+		return nil, errors.Wrap(err, "PaymentProfileDomainService.FindActive")
 	}
 	if found == nil || !found.HasData {
 		return nil, nil
@@ -162,7 +155,7 @@ func (this *PaymentProfileDomainService) FindActiveByMethod(
 	for _, item := range found.Data.Items {
 		profile := models.NewPaymentProfileFrom(item)
 		if err := this.DecryptConfig(profile); err != nil {
-			return nil, errors.Wrap(err, "PaymentProfileDomainService.FindActiveByMethod")
+			return nil, errors.Wrap(err, "PaymentProfileDomainService.FindActive")
 		}
 		profiles = append(profiles, profile)
 	}

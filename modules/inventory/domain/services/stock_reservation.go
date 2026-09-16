@@ -230,12 +230,13 @@ func reserveOneMove(
 func applyReservation(
 	ctx corectx.Context, operation *transferOperationContext, allocation Allocation, move models.StockMove,
 ) error {
+	moveId := derefString(move.GetId())
 	if err := addToQuantReserved(ctx, operation.QuantRepo, allocation.QuantId, allocation.Quantity); err != nil {
-		return err
+		return errors.Wrapf(err, "applyReservation: move '%s'", moveId)
 	}
 
 	line := dmodel.DynamicFields{
-		models.StockMoveLineFieldMoveId:                derefString(move.GetId()),
+		models.StockMoveLineFieldMoveId:                moveId,
 		models.StockMoveLineFieldTransferId:            derefString(move.GetTransferId()),
 		models.StockMoveLineFieldProductVariantId:      derefString(move.GetProductVariantId()),
 		models.StockMoveLineFieldQuantity:              allocation.Quantity.String(),
@@ -248,8 +249,27 @@ func applyReservation(
 		models.StockMoveLineFieldOwnerRef:              allocation.OwnerRef,
 		models.StockMoveLineFieldOrgId:                 derefString(move.GetOrgId()),
 	}
-	_, err := operation.MoveLineSvc.Create(ctx, line)
-	return errors.Wrap(err, "applyReservation")
+	created, err := operation.MoveLineSvc.Create(ctx, line)
+	if err != nil {
+		return errors.Wrapf(err, "applyReservation: move '%s'", moveId)
+	}
+	// A refused create arrives as client errors on a nil error. Swallowed, it would leave the quant
+	// holding a reservation no line points at, and nothing would ever release it.
+	if created == nil || created.ClientErrors.Count() > 0 {
+		return errors.Errorf(
+			"failed to record the reservation of %s from stock quant '%s' for move '%s': %v",
+			allocation.Quantity.String(), allocation.QuantId, moveId, clientErrorsOf(created))
+	}
+	return nil
+}
+
+// clientErrorsOf renders the refusal carried by a mutation result, for an error message that has to
+// say WHY a write the caller believed in did not happen.
+func clientErrorsOf[TData any](result *dyn.OpResult[TData]) any {
+	if result == nil {
+		return "no result"
+	}
+	return result.ClientErrors
 }
 
 // addToQuantReserved adds a delta to a balance's reserved quantity. Callers must already hold the
@@ -278,12 +298,54 @@ func addToQuantReserved(
 			"releasing %s from stock quant '%s' would drive its reserved quantity negative", delta.String(), quantId)
 	}
 
-	_, err = quantEngine.Update(ctx, dmodel.DynamicFields{
+	updated, err := quantEngine.Update(ctx, dmodel.DynamicFields{
 		models.StockQuantFieldId:               quantId,
-		models.StockQuantFieldReservedQuantity: next.String(),
+		// The decimal itself, not its text: a repository write goes straight to the query builder,
+		// which refuses a string for a numeric column ("invalid data type, must be a numeric").
+		// Only writes that pass through a domain service get a string parsed for them.
+		models.StockQuantFieldReservedQuantity: next,
 		basemodel.FieldEtag:                    derefString(quant.GetEtag()),
 	})
-	return errors.Wrap(err, "addToQuantReserved")
+	if err != nil {
+		return errors.Wrap(err, "addToQuantReserved")
+	}
+	if updated == nil || updated.ClientErrors.Count() > 0 {
+		return errors.Errorf(
+			"failed to write the reserved quantity of stock quant '%s': %v",
+			quantId, clientErrorsOf(updated))
+	}
+
+	return assertQuantReserved(ctx, quantEngine, quantId, next)
+}
+
+// assertQuantReserved re-reads the balance and refuses to report success unless the number actually
+// stored is the one that was written.
+//
+// The read is not paranoia. Update reports a refusal as client errors on a nil error, and the SQL
+// layer never checks how many rows its statement touched, so a write whose WHERE matched nothing
+// is indistinguishable from one that landed. A reservation lost that way stays invisible until
+// validate consumes a move line the balance never reserved and drives its reserved quantity
+// negative - a failure that names the wrong operation, in the wrong request, minutes later.
+func assertQuantReserved(
+	ctx corectx.Context, quantEngine composable.CrudRepository, quantId model.Id, expected decimal.Decimal,
+) error {
+	found, err := quantEngine.FindByKeys(ctx, dmodel.DynamicFields{
+		models.StockQuantFieldId: quantId,
+	})
+	if err != nil {
+		return errors.Wrap(err, "assertQuantReserved")
+	}
+	if found == nil || !found.HasData {
+		return errors.Errorf("stock quant '%s' vanished right after its reservation was written", quantId)
+	}
+
+	stored := orZero(models.NewStockQuantFrom(found.Data).GetReservedQuantity())
+	if !stored.Equal(expected) {
+		return errors.Errorf(
+			"writing the reserved quantity of stock quant '%s' changed nothing: it holds %s, expected %s",
+			quantId, stored.String(), expected.String())
+	}
+	return nil
 }
 
 // reservedForMove sums the move lines already standing against a move, which is how much of its

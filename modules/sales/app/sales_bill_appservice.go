@@ -306,11 +306,12 @@ func (this *SalesBillApplicationServiceImpl) runStartGatewayPayment(
 	// could only ever agree with it or be wrong. amount stays optional - omitted means the whole
 	// outstanding balance.
 	result, vErrs, err := services.StartGatewayPayment(ctx, services.StartGatewayPaymentParams{
-		SalesBillId:     readStringParam(params, paramRecordId),
-		PaymentMethodId: readStringParam(params, paramPaymentMethodId),
-		Amount:          readDecimalParam(params, "amount"),
-		Content:         readStringParam(params, "content"),
-		IdempotencyKey:  readStringParam(params, "idempotency_key"),
+		SalesBillId:      readStringParam(params, paramRecordId),
+		PaymentMethodId:  readStringParam(params, paramPaymentMethodId),
+		PaymentProfileId: readStringParam(params, paramPaymentProfileId),
+		Amount:           readDecimalParam(params, "amount"),
+		Content:          readStringParam(params, "content"),
+		IdempotencyKey:   readStringParam(params, "idempotency_key"),
 	}, this.paymentMethods, this.paymentOrders, this.channelPayments, policy)
 	if err != nil {
 		return nil, err

@@ -304,30 +304,43 @@ func ensureQuantForDimension(
 		return derefString(models.NewStockQuantFrom(found[0]).GetId()), nil
 	}
 
-	_, err = operation.QuantRepo.Insert(ctx, dmodel.DynamicFields{
+	// The id is generated here because the insert goes through the repository: it fills created_at
+	// and etag for a direct caller, but never the primary key, which the schema's auto_generated
+	// flag would only produce inside a resource service's create pipeline.
+	newId, err := model.NewId()
+	if err != nil {
+		return "", errors.Wrap(err, "ensureQuantForDimension")
+	}
+
+	created, err := operation.QuantRepo.Insert(ctx, dmodel.DynamicFields{
+		models.StockQuantFieldId:               *newId,
 		models.StockQuantFieldProductVariantId: dimension.ProductVariantId,
 		models.StockQuantFieldLocationId:       dimension.LocationId,
 		models.StockQuantFieldLotRef:           dimension.LotRef,
 		models.StockQuantFieldPackageRef:       dimension.PackageRef,
 		models.StockQuantFieldOwnerRef:         dimension.OwnerRef,
-		models.StockQuantFieldOnHandQuantity:   "0",
-		models.StockQuantFieldReservedQuantity: "0",
+		models.StockQuantFieldOnHandQuantity:   decimal.Zero,
+		models.StockQuantFieldReservedQuantity: decimal.Zero,
 		models.StockQuantFieldIncomingDate:     time.Now().UTC(),
 		models.StockQuantFieldOrgId:            dimension.OrgId,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "ensureQuantForDimension")
 	}
+	// A refused insert arrives as client errors on a nil error, and an insert that wrote no row
+	// reports HasData false. Either way the id below would name a balance that does not exist.
+	if created == nil || created.ClientErrors.Count() > 0 {
+		return "", errors.Errorf(
+			"failed to create the stock balance of variant '%s' at location '%s': %v",
+			dimension.ProductVariantId, dimension.LocationId, clientErrorsOf(created))
+	}
+	if !created.HasData {
+		return "", errors.Errorf(
+			"creating the stock balance of variant '%s' at location '%s' wrote no row",
+			dimension.ProductVariantId, dimension.LocationId)
+	}
 
-	// Re-read to get the id the insert generated, by the same unique dimension.
-	found, err = models.FindQuantForDimension(ctx, operation.QuantRepo, dimension)
-	if err != nil {
-		return "", err
-	}
-	if len(found) == 0 {
-		return "", errors.New("a stock balance could not be read back after being created")
-	}
-	return derefString(models.NewStockQuantFrom(found[0]).GetId()), nil
+	return *newId, nil
 }
 
 // applyQuantDelta adds to a balance's on-hand and reserved figures in one write. It is the only
@@ -361,13 +374,24 @@ func applyQuantDelta(
 			"validating would drive stock quant '%s' to a negative reserved quantity", quantId)
 	}
 
-	_, err = operation.QuantRepo.Update(ctx, dmodel.DynamicFields{
+	// The decimals themselves, not their text: a repository write reaches the query builder
+	// directly, and it refuses a string for a numeric column.
+	updated, err := operation.QuantRepo.Update(ctx, dmodel.DynamicFields{
 		models.StockQuantFieldId:               quantId,
-		models.StockQuantFieldOnHandQuantity:   nextOnHand.String(),
-		models.StockQuantFieldReservedQuantity: nextReserved.String(),
+		models.StockQuantFieldOnHandQuantity:   nextOnHand,
+		models.StockQuantFieldReservedQuantity: nextReserved,
 		basemodel.FieldEtag:                    derefString(quant.GetEtag()),
 	})
-	return errors.Wrap(err, "applyQuantDelta")
+	if err != nil {
+		return errors.Wrap(err, "applyQuantDelta")
+	}
+	// A refused write arrives as client errors on a nil error. Swallowed here it would report goods
+	// as moved while the balance they moved between never changed.
+	if updated == nil || updated.ClientErrors.Count() > 0 {
+		return errors.Errorf(
+			"failed to move %s in stock quant '%s': %v", onHandDelta.String(), quantId, clientErrorsOf(updated))
+	}
+	return nil
 }
 
 // stampLineExecuted marks a move line as a recorded movement rather than a reservation.

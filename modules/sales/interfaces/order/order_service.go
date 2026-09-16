@@ -231,13 +231,19 @@ type CreateSalesOrderCommand struct {
 // CreateSalesOrderLine is one product and how much of it. No authoritative price: see the command
 // above.
 type CreateSalesOrderLine struct {
-	ProductVariantId string          `json:"product_variant_id"`
-	UomId            string          `json:"uom_id"`
-	Quantity         decimal.Decimal `json:"quantity"`
+	ProductVariantId string                          `json:"product_variant_id"`
+	UomId            string                          `json:"uom_id"`
+	Quantity         decimal.Decimal                 `json:"quantity"`
+	Allocations      []CreateSaleOrderLineAllocation `json:"allocations"`
 
 	// EstimatedPrice is the unit price the caller displayed to the customer. Recorded so a device
 	// showing a stale price can be found; Sales prices the line regardless of what it says.
 	EstimatedPrice *decimal.Decimal `json:"estimated_price,omitempty"`
+}
+
+type CreateSaleOrderLineAllocation struct {
+	Quantity         decimal.Decimal
+	SourceLocationId string
 }
 
 type SalesOrderData struct {

@@ -4,6 +4,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	c "github.com/sky-as-code/nikki-erp/modules/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
@@ -11,6 +12,23 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
+
+// assertChannelPaymentPermission authorizes against the channel's own org: every entry point here
+// names an existing channel, so the check must resolve it before it can answer, exactly like a
+// mutation on a persisted sales point does.
+func assertChannelPaymentPermission(
+	ctx corectx.Context, action string, channel dmodel.DynamicFields,
+) *ft.ClientErrors {
+	orgId := channel.GetModelId(models.SalesChannelFieldOrgId)
+	if orgId == nil || *orgId == "" {
+		vErrs := ft.NewClientErrors()
+		vErrs.Append(*ft.NewInsufficientPermissionsError([]string{
+			reguard.BuildExpression(action, c.SalesChannelResource, c.ResourceScopeOrg, nil),
+		}))
+		return vErrs
+	}
+	return assertPermissionInOrg(ctx, action, c.SalesChannelResource, c.ResourceScopeOrg, *orgId)
+}
 
 // ChannelPaymentApplicationServiceImpl configures which payment methods a sales channel accepts.
 // It holds the paymentinvoice port because listing merges against it and enabling validates against
@@ -36,18 +54,17 @@ func NewChannelPaymentApplicationServiceImpl(
 func (this *ChannelPaymentApplicationServiceImpl) ListChannelPaymentMethods(
 	ctx corectx.Context, query it.ListChannelPaymentMethodsQuery,
 ) (*it.ListChannelPaymentMethodsResult, error) {
-	if cErrs := assertPermission(ctx, composable.PermissionRead,
-		c.SalesChannelResource, c.ResourceScopeOrg); cErrs != nil {
-		return &it.ListChannelPaymentMethodsResult{ClientErrors: *cErrs}, nil
-	}
-
-	channelId, cErrs, err := this.resolveChannelId(ctx, query.SalesChannelId, query.SalesChannelCode)
+	channel, cErrs, err := this.resolveChannel(ctx, query.SalesChannelId, query.SalesChannelCode)
 	if err != nil {
 		return nil, err
 	}
 	if cErrs != nil {
 		return &it.ListChannelPaymentMethodsResult{ClientErrors: *cErrs}, nil
 	}
+	if cErrs := assertChannelPaymentPermission(ctx, composable.PermissionRead, channel); cErrs != nil {
+		return &it.ListChannelPaymentMethodsResult{ClientErrors: *cErrs}, nil
+	}
+	channelId := stringOf(channel, models.SalesChannelFieldId)
 
 	// An upstream failure is fatal: the local mappings are a filter over the master list, not the
 	// list itself, so falling back to them would render a plausible but wrong screen.
@@ -111,10 +128,6 @@ func (this *ChannelPaymentApplicationServiceImpl) ListChannelPaymentMethods(
 func (this *ChannelPaymentApplicationServiceImpl) EnableChannelPaymentMethod(
 	ctx corectx.Context, command it.ChannelPaymentMethodCommand,
 ) (*it.ChannelPaymentMutationResult, error) {
-	if cErrs := assertPermission(ctx, c.ActionEnablePaymentMethod,
-		c.SalesChannelResource, c.ResourceScopeOrg); cErrs != nil {
-		return &it.ChannelPaymentMutationResult{ClientErrors: *cErrs}, nil
-	}
 	if command.PaymentMethodId == "" {
 		return paymentRejection("sales_channel.payment_method_required",
 			"enabling a payment method requires its id"), nil
@@ -125,6 +138,9 @@ func (this *ChannelPaymentApplicationServiceImpl) EnableChannelPaymentMethod(
 		return nil, err
 	}
 	if cErrs != nil {
+		return &it.ChannelPaymentMutationResult{ClientErrors: *cErrs}, nil
+	}
+	if cErrs := assertChannelPaymentPermission(ctx, c.ActionEnablePaymentMethod, channel); cErrs != nil {
 		return &it.ChannelPaymentMutationResult{ClientErrors: *cErrs}, nil
 	}
 
@@ -166,16 +182,12 @@ func (this *ChannelPaymentApplicationServiceImpl) EnableChannelPaymentMethod(
 func (this *ChannelPaymentApplicationServiceImpl) DisableChannelPaymentMethod(
 	ctx corectx.Context, command it.ChannelPaymentMethodCommand,
 ) (*it.ChannelPaymentMutationResult, error) {
-	if cErrs := assertPermission(ctx, c.ActionDisablePaymentMethod,
-		c.SalesChannelResource, c.ResourceScopeOrg); cErrs != nil {
-		return &it.ChannelPaymentMutationResult{ClientErrors: *cErrs}, nil
-	}
 	if command.PaymentMethodId == "" {
 		return paymentRejection("sales_channel.payment_method_required",
 			"disabling a payment method requires its id"), nil
 	}
 
-	channelId, cErrs, err := this.resolveChannelId(ctx,
+	channel, cErrs, err := this.resolveChannel(ctx,
 		command.SalesChannelId, command.SalesChannelCode)
 	if err != nil {
 		return nil, err
@@ -183,6 +195,10 @@ func (this *ChannelPaymentApplicationServiceImpl) DisableChannelPaymentMethod(
 	if cErrs != nil {
 		return &it.ChannelPaymentMutationResult{ClientErrors: *cErrs}, nil
 	}
+	if cErrs := assertChannelPaymentPermission(ctx, c.ActionDisablePaymentMethod, channel); cErrs != nil {
+		return &it.ChannelPaymentMutationResult{ClientErrors: *cErrs}, nil
+	}
+	channelId := stringOf(channel, models.SalesChannelFieldId)
 
 	service := this.mappings
 	result, err := service.Disable(ctx, channelId, command.PaymentMethodId)
@@ -201,12 +217,7 @@ func (this *ChannelPaymentApplicationServiceImpl) DisableChannelPaymentMethod(
 func (this *ChannelPaymentApplicationServiceImpl) IsPaymentMethodEnabledForChannel(
 	ctx corectx.Context, query it.IsPaymentMethodEnabledQuery,
 ) (*it.IsPaymentMethodEnabledResult, error) {
-	if cErrs := assertPermission(ctx, composable.PermissionRead,
-		c.SalesChannelResource, c.ResourceScopeOrg); cErrs != nil {
-		return &it.IsPaymentMethodEnabledResult{ClientErrors: *cErrs}, nil
-	}
-
-	channelId, cErrs, err := this.resolveChannelId(ctx,
+	channel, cErrs, err := this.resolveChannel(ctx,
 		query.SalesChannelId, query.SalesChannelCode)
 	if err != nil {
 		return nil, err
@@ -214,6 +225,10 @@ func (this *ChannelPaymentApplicationServiceImpl) IsPaymentMethodEnabledForChann
 	if cErrs != nil {
 		return &it.IsPaymentMethodEnabledResult{HasData: true, Data: false}, nil
 	}
+	if cErrs := assertChannelPaymentPermission(ctx, composable.PermissionRead, channel); cErrs != nil {
+		return &it.IsPaymentMethodEnabledResult{ClientErrors: *cErrs}, nil
+	}
+	channelId := stringOf(channel, models.SalesChannelFieldId)
 
 	service := this.mappings
 	isEnabled, err := service.IsEnabled(ctx, channelId, query.PaymentMethodId)
@@ -258,16 +273,6 @@ func (this *ChannelPaymentApplicationServiceImpl) resolveChannel(
 		return nil, channelNotFound("no sales channel with code '" + code + "'"), nil
 	}
 	return found[0], nil, nil
-}
-
-func (this *ChannelPaymentApplicationServiceImpl) resolveChannelId(
-	ctx corectx.Context, channelId string, channelCode string,
-) (string, *ft.ClientErrors, error) {
-	channel, cErrs, err := this.resolveChannel(ctx, channelId, channelCode)
-	if err != nil || cErrs != nil {
-		return "", cErrs, err
-	}
-	return stringOf(channel, models.SalesChannelFieldId), nil, nil
 }
 
 func channelNotFound(message string) *ft.ClientErrors {

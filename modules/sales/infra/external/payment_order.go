@@ -40,11 +40,12 @@ func (this *paymentOrderAdapter) CreatePayment(
 	}
 
 	created, err := this.orders.CreatePayment(ctx, itOrder.CreatePaymentCommand{
-		OrgId:           cmd.OrgId,
-		Amount:          cmd.Amount,
-		PaymentMethodId: cmd.PaymentMethodId,
-		Source:          salesOrderSource,
-		Content:         contentPtr,
+		OrgId:            cmd.OrgId,
+		Amount:           cmd.Amount,
+		PaymentMethodId:  cmd.PaymentMethodId,
+		PaymentProfileId: cmd.PaymentProfileId,
+		Source:           salesOrderSource,
+		Content:          contentPtr,
 
 		// No ReturnUrl: that field asks paymentinvoice to POST the outcome back over HTTP, which is
 		// how the vending machines are told. Sales is in the same process and hears the settlement

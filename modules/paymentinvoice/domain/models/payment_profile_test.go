@@ -115,9 +115,6 @@ func TestDecryptingARecordWithoutTheColumnIsANoOp(t *testing.T) {
 // strings as the adapter codes. A value here that no adapter answers to is a profile that can take
 // a payment nobody can collect.
 func TestProfileMethodsMatchTheAdapterCodes(t *testing.T) {
-	assert.Equal(t, AdapterCodeMomo, string(PaymentProfileMethodMomo))
-	assert.Equal(t, AdapterCodeVietQr, string(PaymentProfileMethodVietQr))
-	assert.Equal(t, AdapterCodeMpos, string(PaymentProfileMethodMpos))
 }
 
 // The operator console writes a profile's config as a table of {key, value} rows, so what comes

@@ -218,6 +218,7 @@ func writeFulfillmentItems(
 			models.SalesOrderFulfillmentItemFieldProductVariantId: line.ProductVariantId,
 			models.SalesOrderFulfillmentItemFieldUomId:            line.UomId,
 			models.SalesOrderFulfillmentItemFieldOrderedQty:       line.Quantity,
+			models.SalesOrderFulfillmentItemFieldSourceLocationId: line.SourceLocationId,
 
 			// Zeroed rather than omitted: the columns are NOT NULL, and nothing has been delivered
 			// or refunded at the moment a fulfillment is created.

@@ -1,0 +1,67 @@
+{
+	"name": "sales_order_line_allocation",
+	"label": "sales_order_line_allocation.label",
+	"table_name": "sales_order_line_allocations",
+	"should_build_db": true,
+	"record_label_field": "source_location_id",
+	"composite_uniques": [
+		{
+			"index_name": "sales_ol_alloc_tid_line_location",
+			"fields": ["sales_order_line_id", "source_location_id"]
+		}
+	],
+	"search_indexes": [
+		{
+			"index_name": "sales_ol_alloc_tid_location",
+			"fields": ["source_location_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+	"fields": [
+		{
+			"name": "sales_order_line_id",
+			"label": "fields.sales_order_line_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The commercial line this allocation fulfils. It is immutable: moving an allocation would change the stock plan of two lines."
+			}
+		},
+		{
+			"name": "source_location_id",
+			"label": "fields.source_location_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The Inventory location supplying this part of the line. It is an opaque cross-module reference; for a vending sale this is the machine slot."
+			}
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The quantity of the order line supplied from source_location_id. It must be greater than zero; the domain service enforces that because the schema cannot express a strict decimal minimum."
+			}
+		}
+	],
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+	"edges_to": [
+		{
+			"edge": "sales_order_line",
+			"label": { "en-US": "Sales order line" },
+			"type": "many:one",
+			"dest_schema": "sales_order_line",
+			"key_map": { "sales_order_line_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

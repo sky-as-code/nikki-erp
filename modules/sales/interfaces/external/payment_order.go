@@ -40,8 +40,9 @@ type CreateGatewayPaymentCommand struct {
 	// will not guess which organization a multi-org caller means.
 	OrgId string
 
-	PaymentMethodId string
-	Amount          decimal.Decimal
+	PaymentMethodId  string
+	PaymentProfileId string
+	Amount           decimal.Decimal
 
 	// Content is what the payer sees on their statement.
 	Content string

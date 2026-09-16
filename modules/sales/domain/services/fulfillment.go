@@ -126,6 +126,24 @@ func outstandingLines(
 		return nil, err
 	}
 
+	allocationMap := make(map[string][]models.SalesOrderLineAllocation, len(lineRecords))
+	for _, lineRecord := range lineRecords {
+		lineId := stringOf(lineRecord, models.SalesOrderLineFieldId)
+		allocationRecords, err := searchBy(ctx,
+			models.SalesOrderLineAllocationSchemaName,
+			models.SalesOrderLineAllocationFieldSalesOrderLineId,
+			lineId)
+		if err != nil {
+			return nil, err
+		}
+
+		allocations := make([]models.SalesOrderLineAllocation, 0, len(allocationRecords))
+		for _, allocationRecord := range allocationRecords {
+			allocations = append(allocations, *models.NewSalesOrderLineAllocationFrom(allocationRecord))
+		}
+		allocationMap[lineId] = allocations
+	}
+
 	outstanding := make([]itExt.FulfillmentLine, 0, len(lineRecords))
 	for _, record := range lineRecords {
 		ordered := decimalOf(record, models.SalesOrderLineFieldOrderedQuantity)
@@ -141,12 +159,16 @@ func outstandingLines(
 			continue
 		}
 
-		outstanding = append(outstanding, itExt.FulfillmentLine{
-			SalesOrderLineId: stringOf(record, models.SalesOrderLineFieldId),
-			ProductVariantId: stringOf(record, models.SalesOrderLineFieldProductVariantId),
-			UomId:            stringOf(record, models.SalesOrderLineFieldUomId),
-			Quantity:         remaining,
-		})
+		allocations := allocationMap[stringOf(record, models.SalesOrderLineFieldId)]
+		for _, allocation := range allocations {
+			outstanding = append(outstanding, itExt.FulfillmentLine{
+				SalesOrderLineId: stringOf(record, models.SalesOrderLineFieldId),
+				ProductVariantId: stringOf(record, models.SalesOrderLineFieldProductVariantId),
+				UomId:            stringOf(record, models.SalesOrderLineFieldUomId),
+				Quantity:         *allocation.GetQuantity(),
+				SourceLocationId: *allocation.GetSourceLocationId(),
+			})
+		}
 	}
 	return outstanding, nil
 }
@@ -232,7 +254,7 @@ func writeFulfillmentRequest(
 				}
 			}
 
-			// Announced inside the same transaction as the request, so a consumer can never be told
+		// Announced inside the same transaction as the request, so a consumer can never be told
 			// goods were asked for by a request that then rolled back.
 			_, err = RecordEvent(tranxCtx, RecordEventParams{
 				EventType:   models.EventSalesFulfillmentRequested,

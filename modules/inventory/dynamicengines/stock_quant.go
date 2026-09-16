@@ -6,6 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
@@ -24,14 +25,17 @@ type stockQuantEngineParam struct {
 func registerStockQuantEngine() error {
 	err := deps.RegisterNamed(
 		composable.EngineDependencyName(models.StockQuantSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
+		func(
+			param composable.BuildParam,
+			usageDispatcher *usagecheck.Dispatcher,
+		) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.StockQuantSchemaName,
 				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
 					return repo.NewStockQuantRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewStockQuantDomainService(base)
+					return services.NewStockQuantDomainService(base, usageDispatcher)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					return app.NewStockQuantApplicationService(base)

@@ -77,7 +77,7 @@ func (this *StockTransferDomainServiceImpl) writeTransferMoves(
 	transferId string,
 	moves []itStock.TransferMoveRequest,
 ) error {
-	engine, err := repoFor(models.StockMoveSchemaName)
+	engine, err := domainServiceFor(models.StockMoveSchemaName)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (this *StockTransferDomainServiceImpl) writeTransferMoves(
 			fields[models.StockMoveFieldSourceItemId] = move.SourceItemId
 		}
 
-		if _, err := engine.Insert(ctx, fields); err != nil {
+		if _, err := engine.Create(ctx, fields); err != nil {
 			return errors.Wrapf(err, "creating move %d of transfer '%s'", index+1, transferId)
 		}
 	}

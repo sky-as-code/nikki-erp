@@ -33,6 +33,7 @@ func BuildAllEngines() error {
 		deps.Invoke(func(p salesComboComponentEngineParam) {}),
 		deps.Invoke(func(p salesOrderEngineParam) {}),
 		deps.Invoke(func(p salesOrderLineEngineParam) {}),
+		deps.Invoke(func(p salesOrderLineAllocationEngineParam) {}),
 		deps.Invoke(func(p salesOrderLineComponentEngineParam) {}),
 		deps.Invoke(func(p salesOrderAdjustmentEngineParam) {}),
 		deps.Invoke(func(p salesOrderEventEngineParam) {}),

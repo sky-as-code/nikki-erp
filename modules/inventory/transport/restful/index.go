@@ -215,7 +215,7 @@ func initStockOperationTypeV1(route *echo.Group) error {
 func initStockQuantV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockQuantRest) error {
 		return composable.NewRestEngine(models.StockQuantSchemaName, rest).
-			AddCrudRoutes().
+			AddCrudRoutes(composable.ReadCrudActions()...).
 			AddRoute(composable.RouteDefinition{Path: ":id/enter_count", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.EnterCount}).
 			AddRoute(composable.RouteDefinition{Path: ":id/reset_count", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ResetCount}).
 			AddRoute(composable.RouteDefinition{Path: ":id/apply_adjustment", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ApplyAdjustment}).
@@ -261,7 +261,7 @@ func initStockMoveV1(route *echo.Group) error {
 func initStockMoveLineV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockMoveLineRest) error {
 		return composable.NewRestEngine(models.StockMoveLineSchemaName, rest).
-			AddCrudRoutes().
+			AddCrudRoutes(composable.ReadCrudActions()...).
 			RegisterRoutes(route)
 	})
 }

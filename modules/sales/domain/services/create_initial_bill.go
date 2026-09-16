@@ -46,15 +46,15 @@ func CreateInitialBill(
 	}
 
 	orgId := stringOf(order, basemodel.FieldOrgId)
-	totals, err := writeInitialAllocations(ctx, string(*billId), orgId, order, lines, policy)
-	if err != nil {
-		return "", err
-	}
+	allocations, totals := initialAllocations(order, lines, policy)
 
 	err = insertBill(ctx, string(*billId), orderId, orgId,
 		stringOf(order, models.SalesOrderFieldCurrencyCode),
 		initialBillNumberOf(string(*billId)), totals)
 	if err != nil {
+		return "", err
+	}
+	if err := insertBillAllocations(ctx, string(*billId), orgId, allocations); err != nil {
 		return "", err
 	}
 	return string(*billId), nil
@@ -107,7 +107,7 @@ func initialBillNumberOf(billId string) string {
 	return "BILL-" + billId
 }
 
-// writeInitialAllocations writes one allocation per order line and returns the bill's totals.
+// initialAllocations calculates the lines and totals before the parent bill is inserted.
 //
 // The three money columns are ALLOCATED, not copied. Pricing rounds the grand total once, as a
 // whole (pricing/engine.go step 8), so the line amounts can sum to a hundredth either side of it;
@@ -115,13 +115,11 @@ func initialBillNumberOf(billId string) string {
 // check. Allocate spreads each order total across the lines in proportion to what they already
 // hold and gives the residual to one line deterministically, so the allocations sum to the order
 // EXACTLY.
-func writeInitialAllocations(
-	ctx corectx.Context,
-	billId, orgId string,
+func initialAllocations(
 	order dmodel.DynamicFields,
 	lines []dmodel.DynamicFields,
 	policy SalesPolicy,
-) (*billTotals, error) {
+) ([]billAllocation, *billTotals) {
 	inputs := make([]AllocationInput, 0, len(lines))
 	for index, line := range lines {
 		inputs = append(inputs, AllocationInput{
@@ -138,6 +136,7 @@ func writeInitialAllocations(
 	total := AllocateAcrossBills(
 		decimalOf(order, models.SalesOrderFieldGrandTotal), inputs, policy.RoundingScale)
 
+	allocations := make([]billAllocation, 0, len(lines))
 	totals := &billTotals{}
 	for _, line := range lines {
 		lineId := stringOf(line, models.SalesOrderLineFieldId)
@@ -145,13 +144,11 @@ func writeInitialAllocations(
 		// Every line gets a row, including one allocated zero: the initial bill is the statement of
 		// what was sold, and a free item omitted from it would make the bill disagree with the order
 		// about what the customer bought.
-		err := insertBillLine(ctx, billId, lineId, orgId,
-			decimalOf(line, models.SalesOrderLineFieldOrderedQuantity),
-			net[lineId], tax[lineId], total[lineId])
-		if err != nil {
-			return nil, err
-		}
+		allocations = append(allocations, billAllocation{
+			lineId: lineId, quantity: decimalOf(line, models.SalesOrderLineFieldOrderedQuantity),
+			net: net[lineId], tax: tax[lineId], total: total[lineId],
+		})
 		totals.add(net[lineId], tax[lineId], total[lineId])
 	}
-	return totals, nil
+	return allocations, totals
 }

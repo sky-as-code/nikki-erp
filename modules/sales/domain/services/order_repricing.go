@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"sort"
 	"time"
 
@@ -321,8 +322,14 @@ func writeOrderTotals(
 		update[models.SalesOrderFieldTaxSnapshot] = basketTax.Snapshot
 	}
 
-	_, err = engineRepo.Update(ctx, update)
-	return err
+	written, err := engineRepo.Update(ctx, update)
+	if err != nil {
+		return err
+	}
+	if written == nil {
+		return fmt.Errorf("order totals update returned no result")
+	}
+	return written.ClientErrors.ToError()
 }
 
 // resolveTaxForInput asks Accounting for the tax on the basket about to be priced, using pre-pricing

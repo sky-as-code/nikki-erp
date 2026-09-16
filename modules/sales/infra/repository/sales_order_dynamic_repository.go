@@ -21,6 +21,16 @@ type SalesOrderLineRepositoryImpl struct {
 	composable.CrudRepository
 }
 
+func NewSalesOrderLineAllocationRepository(
+	base composable.CrudRepository,
+) itOrder.SalesOrderLineAllocationRepository {
+	return &SalesOrderLineAllocationRepositoryImpl{CrudRepository: base}
+}
+
+type SalesOrderLineAllocationRepositoryImpl struct {
+	composable.CrudRepository
+}
+
 func NewSalesOrderLineComponentRepository(base composable.CrudRepository) itOrder.SalesOrderLineComponentRepository {
 	return &SalesOrderLineComponentRepositoryImpl{CrudRepository: base}
 }

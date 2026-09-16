@@ -58,7 +58,10 @@ type SalesPointAppService interface {
 }
 
 type RegisterSalesChannelCommand struct {
-	Code            string `json:"code"`
+	Code string `json:"code"`
+	// OrgId is the organization the channel is registered under. Required: a channel always
+	// belongs to one org.
+	OrgId           string `json:"org_id"`
 	Name            string `json:"name"`
 	Description     string `json:"description"`
 	ManagedByModule string `json:"managed_by_module"`
@@ -77,6 +80,8 @@ type RegisterSalesChannelResult struct {
 
 type ResolveSalesChannelQuery struct {
 	Code string `json:"code"`
+	// OrgId is the organization the caller is resolving the channel on behalf of.
+	OrgId string `json:"org_id"`
 }
 
 type ResolvedSalesChannel struct {

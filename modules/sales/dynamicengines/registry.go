@@ -47,6 +47,7 @@ func InitDynamicEngines() error {
 		registerSalesComboComponentEngine(),
 		registerSalesOrderEngine(),
 		registerSalesOrderLineEngine(),
+		registerSalesOrderLineAllocationEngine(),
 		registerSalesOrderLineComponentEngine(),
 		registerSalesOrderAdjustmentEngine(),
 		registerSalesOrderEventEngine(),

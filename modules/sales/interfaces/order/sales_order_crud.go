@@ -77,6 +77,18 @@ type SalesOrderLineDomainService interface {
 	composable.CrudDomainService
 }
 
+// SalesOrderLineAllocationRepository reads the persisted location split of an order line.
+type SalesOrderLineAllocationRepository interface {
+	composable.CrudRepository
+}
+
+// SalesOrderLineAllocationDomainService guards the allocation's single-row invariants. The
+// cross-row check that allocations add up to the line quantity belongs to the create-order flow,
+// where the whole allocation set is available.
+type SalesOrderLineAllocationDomainService interface {
+	composable.CrudDomainService
+}
+
 // SalesOrderLineApplicationService is the authorized surface the REST handler serves.
 type SalesOrderLineApplicationService interface {
 	composable.CrudApplicationService

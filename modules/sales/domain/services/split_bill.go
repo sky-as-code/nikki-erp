@@ -275,6 +275,7 @@ func writeSplitParts(
 	// Each source allocation is apportioned across the parts in proportion to the quantity each part
 	// takes of that line. One allocator call per line, so the residual lands on exactly one part per
 	// line rather than being spread and re-rounded.
+	allocations := make(map[string][]billAllocation, len(billIds))
 	perBill := make(map[string]*billTotals, len(billIds))
 	for _, billId := range billIds {
 		perBill[billId] = &billTotals{}
@@ -310,10 +311,9 @@ func writeSplitParts(
 				// clutter the bill with lines the customer did not buy.
 				continue
 			}
-			if err := insertBillLine(ctx, billId, lineId, orgId,
-				quantity, net[billId], tax[billId], total[billId]); err != nil {
-				return nil, decimal.Zero, err
-			}
+			allocations[billId] = append(allocations[billId], billAllocation{
+				lineId: lineId, quantity: quantity, net: net[billId], tax: tax[billId], total: total[billId],
+			})
 			perBill[billId].add(net[billId], tax[billId], total[billId])
 		}
 	}
@@ -323,6 +323,9 @@ func writeSplitParts(
 		totals := perBill[billId]
 		if err := insertBill(ctx, billId, orderId, orgId, currency,
 			billNumberOf(source, index), totals); err != nil {
+			return nil, decimal.Zero, err
+		}
+		if err := insertBillAllocations(ctx, billId, orgId, allocations[billId]); err != nil {
 			return nil, decimal.Zero, err
 		}
 		grandTotal = grandTotal.Add(totals.total)

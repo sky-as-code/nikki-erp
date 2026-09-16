@@ -72,6 +72,8 @@ type CreateOrderLine struct {
 	UomId            string
 	Quantity         decimal.Decimal
 
+	Allocations []CreateOrderLineAllocation
+
 	// UnitPrice is the fallback when no pricelist item matches.
 	UnitPrice decimal.Decimal
 
@@ -82,6 +84,11 @@ type CreateOrderLine struct {
 
 	ProductCode string
 	ProductName string
+}
+
+type CreateOrderLineAllocation struct {
+	LocationId string
+	Quantity   decimal.Decimal
 }
 
 type CreateOrderResult struct {
@@ -418,6 +425,8 @@ func writeDraftOrder(
 			models.SalesOrderFieldGrandTotal:    decimal.Zero,
 
 			basemodel.FieldOrgId: orgId,
+			// Direct repository inserts do not apply the archivable model's default.
+			basemodel.FieldIsArchived: false,
 		}
 		if params.CustomerReference != "" {
 			fields[models.SalesOrderFieldCustomerReference] = params.CustomerReference
@@ -456,7 +465,11 @@ func writeDraftOrder(
 		}); err != nil {
 			return err
 		}
-		return writeOrderLines(tranxCtx, orderId, orgId, params.Lines)
+		lineIds, err := writeOrderLines(tranxCtx, orderId, orgId, params.Lines)
+		if err != nil {
+			return err
+		}
+		return writeOrderLineAllocations(tranxCtx, lineIds, orgId, params.Lines)
 	})
 	if err != nil {
 		return "", "", err
@@ -466,24 +479,26 @@ func writeDraftOrder(
 
 func writeOrderLines(
 	ctx corectx.Context, orderId, orgId string, lines []CreateOrderLine,
-) error {
+) ([]string, error) {
 	if len(lines) == 0 {
 		// An order with zero lines is a valid draft. Confirming one is what is refused.
-		return nil
+		return nil, nil
 	}
 
 	engineRepo, err := repoFor(models.SalesOrderLineSchemaName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	lineIds := make([]string, 0, len(lines))
 	for index, line := range lines {
 		id, err := model.NewId()
 		if err != nil {
-			return err
+			return nil, err
 		}
+		lineId := string(*id)
 		fields := dmodel.DynamicFields{
-			models.SalesOrderLineFieldId:               string(*id),
+			models.SalesOrderLineFieldId:               lineId,
 			models.SalesOrderLineFieldSalesOrderId:     orderId,
 			models.SalesOrderLineFieldLineNumber:       int32(index + 1),
 			models.SalesOrderLineFieldLineType:         string(models.SalesOrderLineTypeProduct),
@@ -510,7 +525,8 @@ func writeOrderLines(
 
 			models.SalesOrderLineFieldPricingSource: string(models.SalesOrderPricingSourceCatalogue),
 
-			basemodel.FieldOrgId: orgId,
+			basemodel.FieldOrgId:      orgId,
+			basemodel.FieldIsArchived: false,
 		}
 		if line.ProductCode != "" {
 			fields[models.SalesOrderLineFieldProductCodeSnapshot] = line.ProductCode
@@ -522,7 +538,54 @@ func writeOrderLines(
 			fields[models.SalesOrderLineFieldEstimatedPrice] = *line.EstimatedPrice
 		}
 		if _, err := engineRepo.Insert(ctx, fields); err != nil {
-			return err
+			return nil, err
+		}
+		lineIds = append(lineIds, lineId)
+	}
+	return lineIds, nil
+}
+
+// writeOrderLineAllocations persists the requested stock split after its parent lines exist.
+// lineIds and lines intentionally share an index: writeOrderLines creates the line at index i
+// before this function writes the allocations of input line i, so an allocation never has to
+// rediscover its parent by variant (which would be ambiguous for duplicate variants).
+func writeOrderLineAllocations(
+	ctx corectx.Context, lineIds []string, orgId string, lines []CreateOrderLine,
+) error {
+	hasAllocations := false
+	for _, line := range lines {
+		if len(line.Allocations) > 0 {
+			hasAllocations = true
+			break
+		}
+	}
+	if !hasAllocations {
+		return nil
+	}
+
+	engineRepo, err := repoFor(models.SalesOrderLineAllocationSchemaName)
+	if err != nil {
+		return err
+	}
+
+	for lineIndex, line := range lines {
+		for _, allocation := range line.Allocations {
+			id, err := model.NewId()
+			if err != nil {
+				return err
+			}
+
+			fields := dmodel.DynamicFields{
+				models.SalesOrderLineAllocationFieldId:               string(*id),
+				models.SalesOrderLineAllocationFieldSalesOrderLineId: lineIds[lineIndex],
+				models.SalesOrderLineAllocationFieldSourceLocationId: allocation.LocationId,
+				models.SalesOrderLineAllocationFieldQuantity:         allocation.Quantity,
+				basemodel.FieldOrgId:                                 orgId,
+				basemodel.FieldIsArchived:                            false,
+			}
+			if _, err := engineRepo.Insert(ctx, fields); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
