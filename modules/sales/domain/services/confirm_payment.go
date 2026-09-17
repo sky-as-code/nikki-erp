@@ -131,19 +131,45 @@ func ConfirmPayment(
 //
 // Settlement is deliberately a second step rather than part of the write above: a bill is settled by
 // the total of its captured payments, not by any one of them, and a split tender is only finished
-// when its last leg lands.
+// when its last leg lands. A second step, but not a second transaction — see below.
+//
+// # Why one transaction
+//
+// Three writes happen under here: the payment is marked captured, the outbox row announcing it is
+// inserted, and the bill is closed. RecordEvent's contract is that it runs inside the caller's
+// transaction, and until this wrapper existed there was none: each write committed on its own, so a
+// process that died between the first and the second left a payment recorded as captured with
+// nothing saying it had to be announced. The outbox sweep cannot recover that — there is no row for
+// it to find — and it is exactly the failure the outbox is there to prevent.
+//
+// Nothing here talks to anything but the database, which is what makes one transaction affordable:
+// no broker and no HTTP call is held open while the rows are locked. The publish itself is asked for
+// by the CALLER once this has returned and committed (see event_handlers).
 func ConfirmPaymentAndSettle(
 	ctx corectx.Context, params ConfirmPaymentParams,
 ) (*ConfirmPaymentResult, error) {
-	result, err := ConfirmPayment(ctx, params)
-	if err != nil || result == nil || !result.Applied {
-		return result, err
-	}
-	if result.Status != string(models.SalesPaymentStatusCaptured) {
-		return result, nil
-	}
+	var result *ConfirmPaymentResult
 
-	if _, _, err := SettleBillIfPaid(ctx, result.SalesBillId); err != nil {
+	err := withTransaction(ctx, models.SalesPaymentSchemaName, func(tranxCtx corectx.Context) error {
+		var err error
+
+		result, err = ConfirmPayment(tranxCtx, params)
+		if err != nil || result == nil || !result.Applied {
+			// A replay or a verdict for an order Sales never opened. Returned as nil so the
+			// transaction commits rather than rolls back: nothing was written, and an error here
+			// would answer a caller that has nothing to fix — the convention withTransaction
+			// documents.
+			return err
+		}
+		if result.Status != string(models.SalesPaymentStatusCaptured) {
+			return nil
+		}
+
+		_, _, err = SettleBillIfPaid(tranxCtx, result.SalesBillId)
+		return err
+	})
+	if err != nil {
+		// The transaction rolled back, so the result describes writes that no longer exist.
 		return nil, err
 	}
 	return result, nil

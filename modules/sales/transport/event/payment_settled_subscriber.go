@@ -4,6 +4,7 @@ package eventtransport
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
@@ -49,30 +50,10 @@ type PaymentSettledSubscriber struct {
 	handlers itEvent.PaymentSettledHandlerRegistry
 }
 
-// clonePaymentSettledEvent copies the event out of the shared decode buffer.
-//
-// SubscribeRequest decodes every message into ONE struct that it reuses, so a handler holding the
-// pointer would see its fields change under it when the next message arrives. The metadata map is
-// copied too, not just the struct: the shared struct's map header would otherwise still point at a
-// map the next decode overwrites.
-func clonePaymentSettledEvent(event *itEvent.PaymentSettledEvent) itEvent.PaymentSettledEvent {
-	out := *event
-
-	if event.Metadata != nil {
-		metadata := make(map[string]any, len(event.Metadata))
-		for key, value := range event.Metadata {
-			metadata[key] = value
-		}
-		out.Metadata = metadata
-	}
-	return out
-}
-
 func (this *PaymentSettledSubscriber) Register(ctx context.Context) error {
-	shared := &itEvent.PaymentSettledEvent{}
 	req := coreEvent.NewEventRequest("", this.topic, "", nil)
 
-	eventChan, err := this.bus.SubscribeRequest(ctx, *req, shared)
+	deliveries, err := this.bus.SubscribeEvent(ctx, *req, &itEvent.PaymentSettledEvent{})
 	if err != nil {
 		return err
 	}
@@ -80,20 +61,52 @@ func (this *PaymentSettledSubscriber) Register(ctx context.Context) error {
 	this.logger.Info("sales payment settled subscriber registered",
 		logging.Attr{"topic": this.topic})
 
-	go this.consume(ctx, shared, eventChan)
+	go this.consume(ctx, deliveries)
 
 	return nil
 }
 
 func (this *PaymentSettledSubscriber) consume(
-	rootCtx context.Context, shared *itEvent.PaymentSettledEvent, eventChan chan any,
+	rootCtx context.Context, deliveries chan coreEvent.EventDelivery,
 ) {
-	for range eventChan {
-		event := clonePaymentSettledEvent(shared)
+	for delivery := range deliveries {
+		event, ok := delivery.Payload.(*itEvent.PaymentSettledEvent)
+		if !ok {
+			// The bus decoded into the prototype this subscriber gave it, so this cannot happen
+			// without the bus having changed underneath. Logged rather than asserted, because a
+			// panic here would stop every later verdict.
+			this.logger.Warn("sales payment settled event had an unexpected payload type", nil)
+			continue
+		}
+
 		bg, cancel := context.WithTimeout(rootCtx, handleTimeout)
-		this.handle(corectx.NewRequestContext(bg), event)
+		this.dispatch(corectx.NewRequestContext(bg), delivery, *event)
 		cancel()
 	}
+}
+
+// dispatch re-establishes the publisher's scope before handling, and contains a panic that would
+// otherwise take the whole process down with it.
+//
+// The context this consumer builds descends from context.Background(), set once when Register ran
+// at boot, so it names no tenant and no organization. ScopeContext puts back what the publishing
+// request was scoped by; it does nothing on a single-tenant build, where there was nothing to carry.
+//
+// The recover is a backstop, not the fix: a handler that still panics for some other reason must
+// not stop every later verdict behind it in this sequential consumer loop.
+func (this *PaymentSettledSubscriber) dispatch(
+	ctx corectx.Context, delivery coreEvent.EventDelivery, event itEvent.PaymentSettledEvent,
+) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			this.logger.Error("sales payment settled handler panicked",
+				fmt.Errorf("%v", recovered))
+		}
+	}()
+
+	delivery.ScopeContext(ctx)
+
+	this.handle(ctx, event)
 }
 
 // handle dispatches one verdict, and swallows a handler failure by design.

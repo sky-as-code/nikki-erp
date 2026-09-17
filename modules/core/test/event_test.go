@@ -146,7 +146,7 @@ func TestRedisEventBusSubscribe(t *testing.T) {
 		nil,
 	)
 
-	requestChan, err := eventBus.SubscribeRequest(ctx, *eventRequest, result)
+	deliveries, err := eventBus.SubscribeEvent(ctx, *eventRequest, result)
 	if err != nil {
 		t.Fatalf("failed to subscribe to event: %v", err)
 	}
@@ -155,10 +155,10 @@ func TestRedisEventBusSubscribe(t *testing.T) {
 	go func() {
 		for {
 			select {
-			case request := <-requestChan:
-				if request != nil {
-					fmt.Printf("Received request: %v (at %s)\n",
-						request, time.Now().Format("15:04:05"))
+			case delivery := <-deliveries:
+				if delivery.Payload != nil {
+					fmt.Printf("Received request: %v (constraints %v) (at %s)\n",
+						delivery.Payload, delivery.Constraints, time.Now().Format("15:04:05"))
 				}
 			case <-time.After(10 * time.Minute): // Timeout after 10 minutes
 				fmt.Println("Subscription timed out after 10 minutes")

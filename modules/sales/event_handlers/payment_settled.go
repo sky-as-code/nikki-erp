@@ -54,6 +54,17 @@ func (this *paymentSettledHandler) Handle(
 		return nil
 	}
 
+	// Asked for here, at the caller, rather than inside the domain call — the whole point of the
+	// outbox is that nothing reaches the broker until the write behind it is durable, so the request
+	// to publish belongs where the write is known to be finished. Inside ConfirmPaymentAndSettle it
+	// would sit next to the writes themselves, and would be publishing mid-transaction the moment
+	// that call is given the transaction it is still missing.
+	//
+	// It only removes the wait: delivery is guaranteed by the outbox sweep either way. This is the
+	// path a vending machine's customer is standing in, and a minute of it is spent in front of a
+	// machine that looks broken.
+	services.DrainOutboxNow(ctx)
+
 	this.logger.Info("sales: payment settled",
 		logging.Attr{
 			"sales_payment_id": result.SalesPaymentId,

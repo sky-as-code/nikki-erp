@@ -195,3 +195,29 @@ func FindChannelPaymentMapping(
 	)
 	return searchAll(ctx, repo, graph, 2, "FindChannelPaymentMapping")
 }
+
+const MaxPaymentMethodsPerPoint = 100
+
+func FindPaymentMethodsOfPoint(
+	ctx corectx.Context, repo SalesSearcher, salesPointId string,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(
+			SalesPointPaymentRelFieldSalesPointId, dmodel.Equals, salesPointId),
+	)
+	return searchAll(ctx, repo, graph, MaxPaymentMethodsPerPoint, "FindPaymentMethodsOfPoint")
+}
+
+func FindPointPaymentMapping(
+	ctx corectx.Context, repo SalesSearcher, salesPointId string, paymentMethodId string,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(
+			SalesPointPaymentRelFieldSalesPointId, dmodel.Equals, salesPointId),
+		*dmodel.NewSearchNode().NewCondition(
+			SalesPointPaymentRelFieldPaymentMethodId, dmodel.Equals, paymentMethodId),
+	)
+	return searchAll(ctx, repo, graph, 2, "FindPointPaymentMapping")
+}

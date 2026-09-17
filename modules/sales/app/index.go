@@ -13,6 +13,7 @@ func InitApplicationServices() error {
 		deps.Register(NewSalesChannelApplicationServiceImpl),
 		deps.Register(NewSalesPointApplicationServiceImpl),
 		deps.Register(NewChannelPaymentApplicationServiceImpl),
+		deps.Register(NewPointPaymentApplicationServiceImpl),
 
 		// The in-process selling port. Registered here rather than in infra/external because it is
 		// an application service: it authorizes, and every caller of it is subject to that check.
@@ -22,5 +23,7 @@ func InitApplicationServices() error {
 		// it asserts nothing and is therefore a domain service, registered from here because this
 		// is where Sales publishes what other modules may reach.
 		deps.Register(services.NewPricingRuleSetExtService),
+
+		deps.Register(services.NewPointPaymentMethodExtService),
 	)
 }

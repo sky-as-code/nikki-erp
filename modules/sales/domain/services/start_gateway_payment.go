@@ -30,9 +30,8 @@ import (
 
 // StartGatewayPaymentParams is what opening a collection needs.
 type StartGatewayPaymentParams struct {
-	SalesBillId      string
-	PaymentMethodId  string
-	PaymentProfileId string
+	SalesBillId     string
+	PaymentMethodId string
 
 	// Amount is optional: zero means the whole of what the bill still owes. A client naming an
 	// amount is partially settling a bill, and may never name more than is outstanding.
@@ -76,6 +75,7 @@ const (
 	ReasonMethodHasNoGateway    = "sales_payment.method_has_no_gateway"
 	ReasonGatewayRefusedOrder   = "sales_payment.gateway_refused"
 	ReasonGatewayOrderNotOpened = "sales_payment.gateway_order_not_opened"
+	ReasonMethodNotAtPoint      = "sales_payment.method_not_accepted_at_point"
 )
 
 // StartGatewayPayment opens a collection with the provider and records the payment awaiting it.
@@ -85,6 +85,7 @@ func StartGatewayPayment(
 	methods itExt.PaymentMethodExtService,
 	orders itExt.PaymentOrderExtService,
 	channelPayments itChannel.ChannelPaymentAppService,
+	pointPayments *PointPaymentDomainServiceImpl,
 	policy SalesPolicy,
 ) (*StartGatewayPaymentResult, *ft.ClientErrors, error) {
 	if orders == nil {
@@ -132,6 +133,11 @@ func StartGatewayPayment(
 		return nil, vErrs, err
 	}
 
+	profileId, vErrs, err := paymentProfileOfBill(ctx, bill, params.PaymentMethodId, pointPayments)
+	if err != nil || vErrs != nil {
+		return nil, vErrs, err
+	}
+
 	// The payment is written first, and deliberately: it is the record that a collection was
 	// attempted. Opening the order first and dying before the write would leave money collectable
 	// against a bill with nothing awaiting it, which no sweep could then reconcile.
@@ -150,7 +156,7 @@ func StartGatewayPayment(
 	opened, err := orders.CreatePayment(ctx, itExt.CreateGatewayPaymentCommand{
 		OrgId:            stringOf(bill, models.SalesPaymentFieldOrgId),
 		PaymentMethodId:  params.PaymentMethodId,
-		PaymentProfileId: params.PaymentProfileId,
+		PaymentProfileId: profileId,
 		Amount:           params.Amount,
 		Content:          params.Content,
 		SalesPaymentId:   recorded.SalesPaymentId,
@@ -341,4 +347,49 @@ func refusal(field, reason, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(field, reason, message))
 	return vErrs
+}
+
+func paymentProfileOfBill(
+	ctx corectx.Context,
+	bill dmodel.DynamicFields,
+	paymentMethodId string,
+	pointPayments *PointPaymentDomainServiceImpl,
+) (string, *ft.ClientErrors, error) {
+	refuse := func(message string) *ft.ClientErrors {
+		vErrs := ft.NewClientErrors()
+		vErrs.Append(*ft.NewBusinessViolation(
+			"payment_method_id", ReasonMethodNotAtPoint, message))
+		return vErrs
+	}
+
+	if pointPayments == nil {
+		return "", refuse(
+			"sales point payment mappings are unavailable, so no account can be resolved"), nil
+	}
+
+	order, err := loadRecord(ctx, models.SalesOrderSchemaName, models.SalesOrderFieldId,
+		stringOf(bill, models.SalesBillFieldSalesOrderId))
+	if err != nil {
+		return "", nil, err
+	}
+	if order == nil {
+		return "", refuse(
+			"this bill's sales order no longer exists, so its selling place cannot be resolved"), nil
+	}
+
+	salesPointId := stringOf(order, models.SalesOrderFieldSalesPointId)
+	if salesPointId == "" {
+		return "", refuse("this bill's sales order names no selling place"), nil
+	}
+
+	mapping, err := pointPayments.FindMapping(ctx, salesPointId, paymentMethodId)
+	if err != nil {
+		return "", nil, err
+	}
+	if mapping == nil {
+		return "", refuse(
+			"this payment method is not accepted at the selling place of this bill"), nil
+	}
+
+	return stringOf(mapping, models.SalesPointPaymentRelFieldPaymentProfileId), nil, nil
 }

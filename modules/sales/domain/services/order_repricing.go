@@ -148,8 +148,21 @@ func buildPricingInput(
 		return pricing.Input{}, err
 	}
 
+	at := time.Now()
+	orgId := stringOf(orderRecord, basemodel.FieldOrgId)
+
+	// Read here rather than carried on the order: a rule edited after the draft was written must
+	// change what the draft costs.
+	pricelistItems, err := loadEnginePricelistItems(ctx, orgId,
+		stringOf(orderRecord, models.SalesOrderFieldSalesPointId),
+		stringOf(orderRecord, models.SalesOrderFieldSalesChannelId), at)
+	if err != nil {
+		return pricing.Input{}, err
+	}
+
 	return pricing.Input{
 		Lines:           lines,
+		PricelistItems:  pricelistItems,
 		ManualDiscounts: manual,
 		Context: pricing.Context{
 			CurrencyScale: policy.RoundingScale,

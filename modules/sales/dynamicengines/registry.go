@@ -20,6 +20,7 @@ import (
 // payment method.
 var junctionSchemas = []string{
 	models.SalesChannelPaymentRelSchemaName,
+	models.SalesPointPaymentRelSchemaName,
 	models.SalesChannelFulfillmentMethodSchemaName,
 }
 

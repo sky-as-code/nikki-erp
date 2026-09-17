@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/sales/app"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/sales/infra/repository"
 	itBilling "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/billing"
 	itChannel "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
@@ -40,6 +41,7 @@ func registerSalesBillEngine() error {
 			methods itExt.PaymentMethodExtService,
 			orders itExt.PaymentOrderExtService,
 			channels itChannel.ChannelPaymentAppService,
+			pointPayments *services.PointPaymentDomainServiceImpl,
 		) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesBillSchemaName,
@@ -47,7 +49,8 @@ func registerSalesBillEngine() error {
 					return repo.NewSalesBillRepository(base)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
-					return app.NewSalesBillApplicationService(base, settings, dLock, methods, orders, channels)
+					return app.NewSalesBillApplicationService(
+						base, settings, dLock, methods, orders, channels, pointPayments)
 				},
 			}, param)
 		},

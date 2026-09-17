@@ -26,10 +26,6 @@ const (
 type PaymentSettledEvent struct {
 	Type PaymentSettledType `json:"type"`
 
-	// TenantId travels on the event because the subscriber runs in its own goroutine with no request
-	// context. Empty in a single-tenant build.
-	TenantId string `json:"tenant_id,omitempty"`
-
 	OrgId string `json:"org_id,omitempty"`
 
 	OrderId string `json:"order_id"`

@@ -308,7 +308,7 @@ func priceReturnLines(
 			continue
 		}
 
-		refund, tax := refundAmountFor(line, requested.Quantity, policy.RoundingScale)
+		refund, tax := refundAmountFor(line, claimed, policy.RoundingScale)
 		// A refund-only line never asks Inventory for anything, whatever the product's basis says:
 		// the goods never reached the customer, so there is nothing for them to bring back.
 		requiresInventoryReturn := RequiresInventoryReturn(basis) && !refundOnly

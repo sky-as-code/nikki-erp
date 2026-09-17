@@ -161,9 +161,14 @@ func (*SalesModule) OnAppStarted() error {
 			corectx.NewRequestContext(context.Background()), settingsSvc); err != nil {
 			return err
 		}
-		if err := app.NewOutboxJobs(publisher, logger).RegisterJobs(cronjobs); err != nil {
+		outbox := app.NewOutboxJobs(publisher, logger)
+		if err := outbox.RegisterJobs(cronjobs); err != nil {
 			return err
 		}
+		// Lets a write path ask for its event to go out at once rather than on the next tick. The
+		// sweep registered above is still what guarantees delivery; without this installation the
+		// module works exactly as before, only slower.
+		services.SetOutboxDrain(outbox.DrainNow)
 		// The backstop for a settlement announcement that was lost: the event bus acknowledges
 		// before it dispatches, so without this a paid bill could stay open forever.
 		if err := app.NewPaymentReconJobs(orders, invoicing, logger).RegisterJobs(cronjobs); err != nil {
@@ -191,6 +196,7 @@ func (*SalesModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.SalesChannelSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesPointSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesChannelPaymentRelSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SalesPointPaymentRelSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesChannelFulfillmentMethodSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesOrderSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SalesOrderLineSchemaBuilder()),

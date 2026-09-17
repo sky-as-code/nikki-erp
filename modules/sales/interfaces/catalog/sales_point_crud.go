@@ -44,11 +44,19 @@ type SalesPointApplicationService interface {
 	Activate(ctx corectx.Context, cmd SalesPointLifecycleCommand) (*SalesPointLifecycleResult, error)
 	Archive(ctx corectx.Context, cmd SalesPointLifecycleCommand) (*SalesPointLifecycleResult, error)
 	Unarchive(ctx corectx.Context, cmd SalesPointLifecycleCommand) (*SalesPointLifecycleResult, error)
+
+	PaymentMethods(ctx corectx.Context, query PointPaymentMethodsQuery) (*dyn.OpResult[any], error)
+	EnablePaymentMethod(ctx corectx.Context, cmd PointPaymentMethodCommand) (*PointPaymentMethodResult, error)
+	DisablePaymentMethod(ctx corectx.Context, cmd PointPaymentMethodCommand) (*PointPaymentMethodResult, error)
 }
 
 type (
 	SalesPointLifecycleCommand = composable.UpdateCommand
 	SalesPointLifecycleResult  = composable.MutateResult
+
+	PointPaymentMethodsQuery  = composable.GetByIdQuery
+	PointPaymentMethodCommand = composable.UpdateCommand
+	PointPaymentMethodResult  = composable.MutateResult
 )
 
 type (
