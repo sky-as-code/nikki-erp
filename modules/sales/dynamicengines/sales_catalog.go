@@ -112,7 +112,10 @@ type salesPointEngineParam struct {
 func registerSalesPointEngine() error {
 	err := deps.RegisterNamed(
 		composable.EngineDependencyName(models.SalesPointSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
+		func(
+			param composable.BuildParam,
+			pointPayments itChannel.PointPaymentAppService,
+		) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesPointSchemaName,
 				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
@@ -122,7 +125,7 @@ func registerSalesPointEngine() error {
 					return services.NewSalesPointDomainService(base)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
-					return app.NewSalesPointCrudApplicationService(base)
+					return app.NewSalesPointCrudApplicationService(base, pointPayments)
 				},
 			}, param)
 		},

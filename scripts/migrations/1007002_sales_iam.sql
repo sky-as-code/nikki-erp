@@ -85,6 +85,8 @@ BEGIN
 		('01M3SALES0000000000000000G', 'Set archived status', 'set_archived', 'Archive a sales point, or bring an archived one back', '01M3SALES00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M3SALES0000000000000000H', 'Suspend', 'suspend', 'Stop a sales point taking new orders, leaving returns and refunds working', '01M3SALES00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M3SALES0000000000000000J', 'Activate', 'activate', 'Return a suspended sales point to service', '01M3SALES00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPOINTPAY00000000A', 'Enable payment method', 'enable_payment_method', 'Allow a payment method to be collected at this sales point, and name the merchant account it settles into', '01M3SALES00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALESPOINTPAY00000000B', 'Disable payment method', 'disable_payment_method', 'Stop new payments using a method at this sales point, leaving historical ones untouched', '01M3SALES00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Sales Order
 		('01M3SALES0000000000000000N', 'Create', 'create', NULL, '01M3SALES0000000000000000K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M3SALES0000000000000000P', 'Update', 'update', NULL, '01M3SALES0000000000000000K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),

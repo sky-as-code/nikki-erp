@@ -732,6 +732,19 @@ CREATE INDEX "sales_payments_tid_method_idx" ON "sales_payments" ("payment_metho
 CREATE INDEX "sales_payments_tid_pmtorder_idx" ON "sales_payments" ("payment_order_id");
 -- Create index "sales_payments_tid_status_idx" to table: "sales_payments"
 CREATE INDEX "sales_payments_tid_status_idx" ON "sales_payments" ("status");
+-- Create "sales_point_payment_rel" table
+CREATE TABLE "sales_point_payment_rel" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "sales_point_id" character varying NOT NULL,
+  "payment_method_id" character varying NOT NULL,
+  "payment_profile_id" character varying NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_point_payment_rel_tid_point_method_ukey" UNIQUE ("sales_point_id", "payment_method_id"),
+  CONSTRAINT "sales_point_payment_rel_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
 -- Create "sales_pricelists" table
 CREATE TABLE "sales_pricelists" (
   "id" character varying NOT NULL,

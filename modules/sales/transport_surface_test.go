@@ -20,6 +20,7 @@ import (
 // written only by CreateOrder; exposing either would let a client contradict its parent record.
 var internalSchemas = map[string]bool{
 	"sales_channel_payment_rel":        true,
+	"sales_point_payment_rel":          true,
 	"sales_channel_fulfillment_method": true,
 	"sales_order_line_allocation":      true,
 }

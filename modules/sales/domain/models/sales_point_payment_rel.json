@@ -1,0 +1,59 @@
+{
+	"name": "sales_point_payment_rel",
+	"label": "sales_point_payment_rel.label",
+	"table_name": "sales_point_payment_rel",
+	"should_build_db": true,
+	"record_label_field": "payment_method_id",
+	"default_search_fields": ["payment_method_id", "payment_profile_id"],
+	"composite_uniques": [
+		{
+			"index_name": "sales_point_payment_rel_tid_point_method",
+			"fields": ["sales_point_id", "payment_method_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "sales_point_id",
+			"label": "fields.sales_point_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The selling place this mapping enables a payment method at. Immutable for the same reason the channel mapping is: moving a mapping between points is disabling it on one and enabling it on the other, and doing it as an update would skip the validation the enable path runs."
+			}
+		},
+		{
+			"name": "payment_method_id",
+			"label": "fields.payment_method_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The paymentinvoice payment method this point accepts. A plain identifier with no edge and no foreign key, as on sales_channel_payment_rel: the row it names belongs to another module. The mapping narrows the channel rather than widening it - a method not enabled on the point's channel is refused at payment time whatever this table says, so the enable path refuses to write one."
+			}
+		},
+		{
+			"name": "payment_profile_id",
+			"label": "fields.payment_profile_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The merchant account this method's money lands in at this point - a payment profile owned by the Payment & Invoice module. A plain identifier with no edge, for the same boundary reason as the method. Optional: a method that settles no money through a gateway names no account."
+			}
+		}
+	],
+
+	"edges_to": [
+		{
+			"edge": "sales_point",
+			"label": { "en-US": "Sales point" },
+			"type": "many:one",
+			"dest_schema": "sales_point",
+			"key_map": { "sales_point_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model"]
+}

@@ -161,6 +161,21 @@ func (this *SalesBillRest) StartGatewayPayment(echoCtx *echo.Context, payload ma
 // The channel's payment-method routes. They were served by the legacy engine loop until the bill
 // migration made ChannelPaymentAppService injectable.
 
+func (this *SalesPointRest) PaymentMethods(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "list sales point payment methods", payload,
+		this.pointSvc.PaymentMethods, composable.Identity[any])
+}
+
+func (this *SalesPointRest) EnablePaymentMethod(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "enable sales point payment method", payload,
+		this.pointSvc.EnablePaymentMethod, composable.MutateResponse)
+}
+
+func (this *SalesPointRest) DisablePaymentMethod(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "disable sales point payment method", payload,
+		this.pointSvc.DisablePaymentMethod, composable.MutateResponse)
+}
+
 func (this *SalesChannelRest) PaymentMethods(echoCtx *echo.Context, payload map[string]any) error {
 	return composable.ServeAction(echoCtx, "list channel payment methods", payload,
 		this.channelSvc.PaymentMethods, composable.Identity[any])

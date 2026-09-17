@@ -33,6 +33,8 @@ type SalesBillApplicationServiceImpl struct {
 	// The channel mapping gate answers "does this channel accept this method"; paymentMethods
 	// answers "is the method usable at all". Both are consulted before money moves.
 	channelPayments itChannel.ChannelPaymentAppService
+
+	pointPayments *services.PointPaymentDomainServiceImpl
 }
 
 func NewSalesBillApplicationService(
@@ -42,6 +44,7 @@ func NewSalesBillApplicationService(
 	methods itExt.PaymentMethodExtService,
 	orders itExt.PaymentOrderExtService,
 	channels itChannel.ChannelPaymentAppService,
+	pointPayments *services.PointPaymentDomainServiceImpl,
 ) itBilling.SalesBillApplicationService {
 	return &SalesBillApplicationServiceImpl{
 		CrudApplicationService: base,
@@ -50,6 +53,7 @@ func NewSalesBillApplicationService(
 		paymentMethods:         methods,
 		paymentOrders:          orders,
 		channelPayments:        channels,
+		pointPayments:          pointPayments,
 	}
 }
 
@@ -306,13 +310,12 @@ func (this *SalesBillApplicationServiceImpl) runStartGatewayPayment(
 	// could only ever agree with it or be wrong. amount stays optional - omitted means the whole
 	// outstanding balance.
 	result, vErrs, err := services.StartGatewayPayment(ctx, services.StartGatewayPaymentParams{
-		SalesBillId:      readStringParam(params, paramRecordId),
-		PaymentMethodId:  readStringParam(params, paramPaymentMethodId),
-		PaymentProfileId: readStringParam(params, paramPaymentProfileId),
-		Amount:           readDecimalParam(params, "amount"),
-		Content:          readStringParam(params, "content"),
-		IdempotencyKey:   readStringParam(params, "idempotency_key"),
-	}, this.paymentMethods, this.paymentOrders, this.channelPayments, policy)
+		SalesBillId:     readStringParam(params, paramRecordId),
+		PaymentMethodId: readStringParam(params, paramPaymentMethodId),
+		Amount:          readDecimalParam(params, "amount"),
+		Content:         readStringParam(params, "content"),
+		IdempotencyKey:  readStringParam(params, "idempotency_key"),
+	}, this.paymentMethods, this.paymentOrders, this.channelPayments, this.pointPayments, policy)
 	if err != nil {
 		return nil, err
 	}

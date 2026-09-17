@@ -26,6 +26,7 @@ import (
 func InitJunctionRepositories() error {
 	return stdErr.Join(
 		registerChannelPaymentRelRepository(),
+		registerPointPaymentRelRepository(),
 		registerChannelFulfillmentMethodRepository(),
 	)
 }
@@ -41,6 +42,17 @@ func registerChannelPaymentRelRepository() error {
 	// Forced like the onions are: the mapping service is reached through this constructor alone, and
 	// a channel's payment routes would otherwise resolve it on the first request rather than at boot.
 	return stdErr.Join(err, deps.Invoke(func(_ *services.ChannelPaymentDomainServiceImpl) {}))
+}
+
+func registerPointPaymentRelRepository() error {
+	err := deps.Register(func(param composable.BuildParam) (*services.PointPaymentDomainServiceImpl, error) {
+		repo, err := newJunctionRepository(param, models.SalesPointPaymentRelSchemaName)
+		if err != nil {
+			return nil, err
+		}
+		return services.NewPointPaymentDomainService(repo), nil
+	})
+	return stdErr.Join(err, deps.Invoke(func(_ *services.PointPaymentDomainServiceImpl) {}))
 }
 
 // The channel-to-method mapping is read through the resource hub by the fulfillment method

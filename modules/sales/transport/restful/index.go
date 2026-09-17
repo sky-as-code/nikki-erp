@@ -193,6 +193,17 @@ func initSalesPointV1(route *echo.Group) error {
 			AddRoute(composable.RouteDefinition{
 				Path: ":id/unarchive", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Unarchive,
 			}).
+			AddRoute(composable.RouteDefinition{
+				Path: ":id/payment_methods", ActionType: composable.ActionTypeRead, HandlerFn: rest.PaymentMethods,
+			}).
+			AddRoute(composable.RouteDefinition{
+				Path:       ":id/enable_payment_method",
+				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.EnablePaymentMethod,
+			}).
+			AddRoute(composable.RouteDefinition{
+				Path:       ":id/disable_payment_method",
+				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.DisablePaymentMethod,
+			}).
 			RegisterRoutes(route)
 	})
 }
