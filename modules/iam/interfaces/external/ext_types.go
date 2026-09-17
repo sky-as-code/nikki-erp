@@ -4,6 +4,8 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	essentialConstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	essentialSettings "github.com/sky-as-code/nikki-erp/modules/essential/domain/settings"
+	essentialCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
+	essentialLanguage "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 	// iamModels "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	// itGrp "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/group"
@@ -36,15 +38,43 @@ type OrgSettingsInitExtService interface {
 	InitOrgSettings(ctx corectx.Context, cmd InitOwnerSettingsCommand) (*InitOwnerSettingsResult, error)
 }
 
-// UserSettingsExtService seeds a new user's preferences and reads an existing user's.
+// UserSettingsExtService seeds a new user's preferences.
+//
+// Reading them back is not here: the user-context endpoint wants every level folded together, not
+// the user's own layer alone, so it goes through EffectiveSettingsExtService instead.
 type UserSettingsExtService interface {
 	// InitUserPreferences copies the tenant's settings onto the new user, inside the creating
 	// transaction on the same reasoning as InitOrgSettings.
 	InitUserPreferences(ctx corectx.Context, cmd InitOwnerSettingsCommand) (*InitOwnerSettingsResult, error)
+}
 
-	// GetUserPreferences reads the acting user's own preferences, which the user-context endpoint
-	// reports to the frontend as account settings.
-	GetUserPreferences(ctx corectx.Context, query GetSettingsQuery) (*GetSettingsResult, error)
+// EffectiveSettingsExtService is iam's port onto the Settings module's level-agnostic read.
+//
+// The user-context endpoint needs one consolidated answer to "what settings apply to this user",
+// folded across tenant, org and user, rather than three reads it would have to fold itself.
+// Narrowed to that single read on the same reasoning as SettingsRegistrationExtService: a port that
+// could also write would hand that reach to every holder of it.
+type EffectiveSettingsExtService interface {
+	GetEffectiveSettings(
+		ctx corectx.Context, query GetEffectiveSettingsQuery,
+	) (*GetEffectiveSettingsResult, error)
+}
+
+// LanguageExtService resolves the iso code a settings value carries into the formatting rules the
+// frontend renders numbers and dates with.
+type LanguageExtService interface {
+	GetLanguageByIsoCode(
+		ctx corectx.Context, query GetLanguageByIsoCodeQuery,
+	) (*GetLanguageByIsoCodeResult, error)
+}
+
+// CurrencyExtService resolves the organization's configured currency into what it takes to render
+// an amount in it.
+//
+// By code rather than by id because essential's `default_currency` setting stores the alphabetic
+// code -- unlike accounting's own `org_default_currency`, which stores an id.
+type CurrencyExtService interface {
+	GetCurrencyByCode(ctx corectx.Context, query GetCurrencyByCodeQuery) (*GetCurrencyByCodeResult, error)
 }
 
 // The names below are Essential's, re-exported here so that iam's transport layer does not import
@@ -56,6 +86,11 @@ const (
 
 	SettingThemeMode = essentialSettings.UserSettingThemeMode
 	SettingLanguage  = essentialSettings.UserSettingLanguage
+
+	// SettingSystemLanguage and SettingDefaultCurrency are org-level: the language an organization
+	// produces its shared documents in, and the currency it denominates amounts in.
+	SettingSystemLanguage  = essentialSettings.OrgSettingSystemLanguage
+	SettingDefaultCurrency = essentialSettings.OrgSettingDefaultCurrency
 
 	ThemeModeAuto = essentialSettings.ThemeModeAuto
 )
@@ -72,6 +107,14 @@ type InitOwnerSettingsResult = itSettings.InitOwnerSettingsResult
 type GetSettingsQuery = itSettings.GetSettingsQuery
 type GetSettingsResult = itSettings.GetSettingsResult
 type SettingItem = itSettings.SettingItem
+type GetEffectiveSettingsQuery = itSettings.GetEffectiveSettingsQuery
+type GetEffectiveSettingsResult = itSettings.GetEffectiveSettingsResult
+
+type GetLanguageByIsoCodeQuery = essentialLanguage.GetLanguageByIsoCodeQuery
+type GetLanguageByIsoCodeResult = essentialLanguage.GetLanguageByIsoCodeResult
+
+type GetCurrencyByCodeQuery = essentialCurrency.GetCurrencyByCodeQuery
+type GetCurrencyByCodeResult = essentialCurrency.GetCurrencyByCodeResult
 
 // const (
 // 	UserStatusInvited = iamModels.UserStatusInvited

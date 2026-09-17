@@ -107,7 +107,7 @@ func TestOrgSettingsSchema_DeclaresTheOrganizationConventions(t *testing.T) {
 	schema := OrgSettingsSchemaBuilder().Build()
 
 	assert.ElementsMatch(t,
-		[]string{OrgSettingSystemLocale, OrgSettingSystemTimezone, OrgSettingDefaultCurrency},
+		[]string{OrgSettingSystemLanguage, OrgSettingSystemTimezone, OrgSettingDefaultCurrency},
 		schema.FieldNames())
 	assert.Empty(t, schema.PrimaryKeys(),
 		"a settings schema must not declare should_build_db: settings owns the only tables")

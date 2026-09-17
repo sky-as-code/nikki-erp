@@ -4,9 +4,9 @@
 
 	"fields": [
 		{
-			"name": "system_locale",
-			"label": "essential.settings.systemLocale",
-			"description": "settings_desc.system_locale",
+			"name": "system_language",
+			"label": "essential.settings.systemLanguage",
+			"description": "settings_desc.system_language",
 			"data_type": {
 				"type": "enum_string",
 				"values": ["en-US", "vi-VN"]

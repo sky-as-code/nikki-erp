@@ -22,20 +22,26 @@ import (
 type userRestParams struct {
 	dig.In
 
-	UserSvc      it.UserAppService
-	UserPrefsSvc itExt.UserSettingsExtService
+	UserSvc     it.UserAppService
+	SettingsSvc itExt.EffectiveSettingsExtService
+	LanguageSvc itExt.LanguageExtService
+	CurrencySvc itExt.CurrencyExtService
 }
 
 func NewUserRest(params userRestParams) *UserRest {
 	return &UserRest{
-		UserSvc:      params.UserSvc,
-		UserPrefsSvc: params.UserPrefsSvc,
+		UserSvc:     params.UserSvc,
+		SettingsSvc: params.SettingsSvc,
+		LanguageSvc: params.LanguageSvc,
+		CurrencySvc: params.CurrencySvc,
 	}
 }
 
 type UserRest struct {
-	UserSvc      it.UserAppService
-	UserPrefsSvc itExt.UserSettingsExtService
+	UserSvc     it.UserAppService
+	SettingsSvc itExt.EffectiveSettingsExtService
+	LanguageSvc itExt.LanguageExtService
+	CurrencySvc itExt.CurrencyExtService
 }
 
 func (this UserRest) CreateUser(echoCtx *echo.Context) (err error) {
@@ -156,87 +162,133 @@ func idToStringPtr(id *model.Id) *string {
 	return util.ToPtr(string(*id))
 }
 
-// accountSettings reports the acting user's own preferences to the frontend.
+// accountSettings reports the settings the acting user's session runs on.
 //
-// theme_mode and language come from the settings module, which holds the user's stored choice and
-// falls back to the schema's declared default when they have never set one. The remaining entries
-// are still literals: timezone and the locale's formatting rules have no store behind them yet, so
-// they are left exactly as they were rather than being invented here.
+// Every value is read through the Settings module's consolidated read rather than level by level:
+// one call answers "what applies to this user", already folded across tenant, org and user. This
+// handler then resolves the two references in that answer -- a language iso code and a currency
+// code -- against Essential's catalogues, so the frontend receives records rather than codes it
+// would have to look up itself.
+//
+// It stays fail-soft throughout. The user context is what the whole application boots from, so a
+// settings or catalogue read that fails degrades the entry rather than the session: a user who
+// cannot load their currency should still be able to work.
 func (this UserRest) accountSettings(reqCtx corectx.Context) map[string]any {
 	settings := map[string]any{
-		"language":            defaultLanguage(),
+		"language":            fallbackLanguage(),
 		"timezone":            "Asia/Ho_Chi_Minh",
 		"supported_languages": itExt.SupportedLanguages(),
 		"theme_mode":          itExt.ThemeModeAuto,
 	}
 
-	result, err := this.UserPrefsSvc.GetUserPreferences(reqCtx, itExt.GetSettingsQuery{
-		ModuleKey: itExt.EssentialModuleKey,
-	})
-	// The user context is what the whole application boots from, so a settings read that fails must
-	// not take the session down with it: the defaults above are serviceable, and a user who cannot
-	// load their theme should still be able to work.
+	result, err := this.SettingsSvc.GetEffectiveSettings(reqCtx, itExt.GetEffectiveSettingsQuery{})
 	if err != nil || result == nil || !result.HasData {
 		return settings
 	}
+	values := result.Data.Values
 
-	for _, item := range result.Data.Items {
-		if item.Value == nil {
-			continue
-		}
-		switch item.Name {
-		case itExt.SettingThemeMode:
-			settings["theme_mode"] = item.Value
-		case itExt.SettingLanguage:
-			if isoCode, ok := item.Value.(string); ok {
-				settings["language"] = languageOf(isoCode)
-			}
-		}
+	if mode, ok := values[essentialKey(itExt.SettingThemeMode)].(string); ok {
+		settings["theme_mode"] = mode
+	}
+	if language := this.resolveLanguage(reqCtx, values); language != nil {
+		settings["language"] = *language
+	}
+	if currency := this.resolveCurrency(reqCtx, values); currency != nil {
+		settings["currency"] = currency
 	}
 	return settings
 }
 
-// defaultLanguage is the locale used until the user has chosen one.
-//
-// It is not a business default: BR §53 is explicit that vi-VN must not be hardcoded as one. It is
-// the display locale of last resort, and the moment the user stores a language this is replaced by
-// languageOf.
-func defaultLanguage() itCore.Language {
-	return languageOf("vi-VN")
+// essentialKey names a setting the way GetEffectiveSettings keys it.
+func essentialKey(name string) string {
+	return itExt.EssentialModuleKey + "." + name
 }
 
-// languageOf builds the formatting rules the frontend needs for a locale.
+// resolveLanguage reads the acting user's display language out of the effective settings and
+// resolves it against essential_languages.
 //
-// The rules are per-locale literals because there is no language store to read them from yet: the
-// essential_language table holds no rows the user context can resolve against. Adding a locale to
-// SupportedLanguages therefore needs an entry here too, which is what the default branch guards.
-func languageOf(isoCode string) itCore.Language {
-	switch isoCode {
-	case "en-US":
-		return itCore.Language{
-			Id:                 util.ToPtr("01JZYF7DT3ASR4PXAX4HP4BVH0A"),
-			Name:               util.ToPtr("English"),
-			IsoCode:            util.ToPtr(model.LanguageCode("en-US")),
-			Direction:          util.ToPtr("ltr"),
-			DecimalSeparator:   util.ToPtr("."),
-			ThousandsSeparator: util.ToPtr(","),
-			DateFormat:         util.ToPtr("MM/dd/yyyy"),
-			TimeFormat:         util.ToPtr("HH:mm:ss"),
-			ShortTimeFormat:    util.ToPtr("HH:mm"),
-			FirstDayOfWeek:     util.ToPtr("sunday"),
+// The fallback chain -- the user's own language, then the organization's system_language -- is
+// deliberately the same one essential/app.NewUserLocaleResolver walks, so that the language a list
+// is sorted in is the language the frontend formats it in. Keep the two in step; they are separate
+// because that resolver yields a language code for the search layer while this needs the whole
+// formatting record.
+func (this UserRest) resolveLanguage(ctx corectx.Context, values map[string]any) *itCore.Language {
+	for _, key := range []string{
+		essentialKey(itExt.SettingLanguage),
+		essentialKey(itExt.SettingSystemLanguage),
+	} {
+		isoCode, ok := values[key].(string)
+		if !ok || !array.Contains(itExt.SupportedLanguages(), isoCode) {
+			continue
 		}
-	default:
-		return itCore.Language{
-			Id:                 util.ToPtr("01JZYF7DT3ASR4PXAX4HP4BVGZ"),
-			Name:               util.ToPtr("Tiếng Việt"),
-			IsoCode:            util.ToPtr(model.LanguageCode("vi-VN")),
-			Direction:          util.ToPtr("ltr"),
-			DecimalSeparator:   util.ToPtr("."),
-			ThousandsSeparator: util.ToPtr(","),
-			DateFormat:         util.ToPtr("dd/MM/yyyy"),
-			TimeFormat:         util.ToPtr("HH:mm:ss"),
-			ShortTimeFormat:    util.ToPtr("HH:mm"),
-			FirstDayOfWeek:     util.ToPtr("monday"),
+		if language := this.loadLanguage(ctx, isoCode); language != nil {
+			return language
 		}
+	}
+	return nil
+}
+
+func (this UserRest) loadLanguage(ctx corectx.Context, isoCode string) *itCore.Language {
+	found, err := this.LanguageSvc.GetLanguageByIsoCode(ctx, itExt.GetLanguageByIsoCodeQuery{
+		IsoCode: isoCode,
+	})
+	if err != nil || found == nil || !found.HasData {
+		return nil
+	}
+	record := found.Data
+	return &itCore.Language{
+		Id:                 record.GetId(),
+		Name:               record.GetName(),
+		IsoCode:            util.ToPtr(model.LanguageCode(util.ValueOrZeroOf(record.GetIsoCode()))),
+		Direction:          record.GetDirection(),
+		DecimalSeparator:   record.GetDecimalSeparator(),
+		ThousandsSeparator: record.GetThousandsSeparator(),
+		DateFormat:         record.GetDateFormat(),
+		TimeFormat:         record.GetTimeFormat(),
+		ShortTimeFormat:    record.GetShortTimeFormat(),
+		FirstDayOfWeek:     record.GetFirstDayOfWeek(),
+	}
+}
+
+// resolveCurrency resolves the organization's default_currency, which stores an alphabetic code.
+//
+// An absent or unresolvable currency omits the key rather than guessing one. There is no safe
+// default currency: a guessed one silently reinterprets every amount on screen.
+func (this UserRest) resolveCurrency(ctx corectx.Context, values map[string]any) map[string]any {
+	code, ok := values[essentialKey(itExt.SettingDefaultCurrency)].(string)
+	if !ok || code == "" {
+		return nil
+	}
+	found, err := this.CurrencySvc.GetCurrencyByCode(ctx, itExt.GetCurrencyByCodeQuery{Code: code})
+	if err != nil || found == nil || !found.HasData {
+		return nil
+	}
+	return map[string]any{
+		"code":   found.Data.Code,
+		"symbol": found.Data.Symbol,
+		// The currency catalogue seeds no symbols -- a wrong symbol on money is worse than none --
+		// so the frontend renders the code whenever symbol is empty.
+		"decimal_places": found.Data.DecimalPlaces,
+	}
+}
+
+// fallbackLanguage is the display language of last resort, used only when the settings read fails
+// outright or names a language essential_languages cannot resolve.
+//
+// It is a literal because the response must always carry a language: the frontend formats every
+// number and date from it, and a session that booted without one would render nothing at all. It is
+// en-US rather than any business-chosen language -- BR §53 is explicit that vi-VN must not be
+// hardcoded as a default -- and it is replaced the moment a real record resolves.
+func fallbackLanguage() itCore.Language {
+	return itCore.Language{
+		Name:               util.ToPtr("English"),
+		IsoCode:            util.ToPtr(model.LanguageCode(model.DefaultLanguageCode)),
+		Direction:          util.ToPtr("ltr"),
+		DecimalSeparator:   util.ToPtr("."),
+		ThousandsSeparator: util.ToPtr(","),
+		DateFormat:         util.ToPtr("MM/dd/yyyy"),
+		TimeFormat:         util.ToPtr("HH:mm:ss"),
+		ShortTimeFormat:    util.ToPtr("HH:mm"),
+		FirstDayOfWeek:     util.ToPtr("sunday"),
 	}
 }

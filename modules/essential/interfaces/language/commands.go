@@ -57,6 +57,19 @@ func (GetLanguageQuery) CqrsRequestType() cqrs.RequestType { return getLanguageQ
 
 type GetLanguageResult = dyn.OpResult[models.Language]
 
+// GetLanguageByIsoCodeQuery resolves a language by the BCP47 code every consumer names it with.
+//
+// It is not a cqrs request: the only caller is another module reading the acting user's formatting
+// rules, which is a lookup rather than a user-issued query.
+type GetLanguageByIsoCodeQuery struct {
+	IsoCode string
+}
+
+// GetLanguageByIsoCodeResult carries the whole record rather than a narrowed projection: a caller
+// formatting numbers and dates wants every field, and this table is global reference data with
+// nothing org- or tenant-scoped to withhold.
+type GetLanguageByIsoCodeResult = dyn.OpResult[models.Language]
+
 type GetLanguageJsonQuery struct {
 	LanguageCode string `json:"language_code" query:"language_code"`
 	ModuleName   string `json:"module_name" query:"module_name"`

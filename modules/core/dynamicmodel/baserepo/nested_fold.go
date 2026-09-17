@@ -57,7 +57,7 @@ func (this *BaseDynamicRepositoryImpl) searchWithProjectedEdges(
 	ctx corectx.Context, param dyn.RepoSearchParam, plan *orm.NestedProjection,
 ) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error) {
 	merged := this.injectTenantIntoGraph(ctx, param.Graph)
-	columns := this.ensurePrimaryKeyColumns(param.Fields)
+	columns := this.ensureSystemColumns(param.Fields)
 	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language, columns)
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func (this *BaseDynamicRepositoryImpl) getOneWithProjectedEdges(
 	}
 	graph = this.injectTenantIntoGraph(ctx, graph)
 	rows, scanErrs, err := this.runProjectedScan(ctx, graph, dyn.RepoSearchParam{
-		Fields: this.ensurePrimaryKeyColumns(param.Fields), Page: 0, Size: 1,
+		Fields: this.ensureSystemColumns(param.Fields), Page: 0, Size: 1,
 	}, plan)
 	if err != nil {
 		return nil, err
