@@ -23,7 +23,8 @@ import (
 
 // SettleBillResult is what a settlement attempt concluded.
 type SettleBillResult struct {
-	SalesBillId string
+	SalesBillId  string
+	SalesOrderId string
 
 	Status        string
 	PaymentStatus string
@@ -45,6 +46,22 @@ type SettleBillResult struct {
 func SettleBillIfPaid(
 	ctx corectx.Context, billId string,
 ) (*SettleBillResult, *ft.ClientErrors, error) {
+	result, vErrs, err := settleBillIfPaid(ctx, billId)
+	if err != nil || vErrs != nil || result == nil {
+		return result, vErrs, err
+	}
+
+	if result.SalesOrderId != "" {
+		if _, err := SyncOrderPaymentStatus(ctx, result.SalesOrderId); err != nil {
+			return nil, nil, err
+		}
+	}
+	return result, nil, nil
+}
+
+func settleBillIfPaid(
+	ctx corectx.Context, billId string,
+) (*SettleBillResult, *ft.ClientErrors, error) {
 	bill, err := loadRecord(ctx, models.SalesBillSchemaName, models.SalesBillFieldId, billId)
 	if err != nil {
 		return nil, nil, err
@@ -55,6 +72,8 @@ func SettleBillIfPaid(
 			"no bill exists with id '"+billId+"'"))
 		return nil, vErrs, nil
 	}
+
+	orderId := stringOf(bill, models.SalesBillFieldSalesOrderId)
 
 	captured, err := capturedTotalOf(ctx, billId)
 	if err != nil {
@@ -69,6 +88,7 @@ func SettleBillIfPaid(
 		// records when the money arrived, and rewriting it would move the date of a completed sale.
 		return &SettleBillResult{
 			SalesBillId:   billId,
+			SalesOrderId:  orderId,
 			Status:        string(models.SalesBillStatusSettled),
 			PaymentStatus: paymentStatus,
 			CapturedTotal: captured,
@@ -81,6 +101,7 @@ func SettleBillIfPaid(
 	if !current.IsOpen() {
 		return &SettleBillResult{
 			SalesBillId:   billId,
+			SalesOrderId:  orderId,
 			Status:        stringOf(bill, models.SalesBillFieldStatus),
 			PaymentStatus: paymentStatus,
 			CapturedTotal: captured,
@@ -115,6 +136,7 @@ func SettleBillIfPaid(
 	}
 	return &SettleBillResult{
 		SalesBillId:   billId,
+		SalesOrderId:  orderId,
 		Status:        status,
 		PaymentStatus: paymentStatus,
 		CapturedTotal: captured,
