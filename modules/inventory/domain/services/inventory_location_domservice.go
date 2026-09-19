@@ -154,6 +154,13 @@ func (this *InventoryLocationDomainServiceImpl) Suspend(
 			"the location is part of an operation still in progress; finish or cancel it first",
 		), nil
 	}
+	// Suspending takes the stock here out of the warehouse's sellable pool without moving it,
+	// which is exactly what a reservation counting on that stock cannot survive.
+	if vErrs, err := assertLocationNotBackingReservations(ctx, *location); err != nil {
+		return nil, err
+	} else if vErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
+	}
 
 	if err := this.writeStatus(ctx, locationId, models.InventoryLocationStatusSuspended); err != nil {
 		return nil, err
@@ -214,6 +221,11 @@ func (this *InventoryLocationDomainServiceImpl) Move(
 	} else if vErrs.Count() > 0 {
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
+	if vErrs, err := this.assertMoveKeepsReservationsBacked(ctx, *location, newParentId); err != nil {
+		return nil, err
+	} else if vErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
+	}
 
 	err = withLocationTransaction(ctx, func(tranxCtx corectx.Context) error {
 		if err := this.writeParent(tranxCtx, locationId, newParentId); err != nil {
@@ -265,6 +277,12 @@ func (this *InventoryLocationDomainServiceImpl) assertArchivable(
 		appendLocationViolation(vErrs, "inventory_location.has_children",
 			"archive or move the locations underneath this one first")
 	}
+
+	backing, err := assertLocationNotBackingReservations(ctx, location)
+	if err != nil {
+		return vErrs, err
+	}
+	vErrs.ConcatPtr(backing)
 
 	if isSystemGenerated(location) {
 		warehouseUsable, err := this.isOwningWarehouseUsable(ctx, location)
@@ -405,4 +423,23 @@ func assertSystemLocationUnchanged(
 		}
 	}
 	return vErrs
+}
+
+// assertMoveKeepsReservationsBacked refuses to re-parent a location into another warehouse while
+// the warehouse it leaves needs the stock it holds. A move within the same warehouse changes no
+// eligibility and is never refused for this.
+func (this *InventoryLocationDomainServiceImpl) assertMoveKeepsReservationsBacked(
+	ctx corectx.Context, location models.InventoryLocation, newParentId string,
+) (*ft.ClientErrors, error) {
+	if newParentId == "" {
+		return ft.NewClientErrors(), nil
+	}
+	parent, parentErrs, err := this.loadLocation(ctx, newParentId)
+	if err != nil || parentErrs.Count() > 0 {
+		return ft.NewClientErrors(), err
+	}
+	if derefId(parent.GetWarehouseId()) == derefId(location.GetWarehouseId()) {
+		return ft.NewClientErrors(), nil
+	}
+	return assertLocationNotBackingReservations(ctx, location)
 }

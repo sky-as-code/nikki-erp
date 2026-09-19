@@ -48,6 +48,14 @@ const (
 	SalesOrderFieldCompletedAt                  = "completed_at"
 	SalesOrderFieldTaxSnapshot                  = "tax_snapshot"
 	SalesOrderFieldCancelledAt                  = "cancelled_at"
+	SalesOrderFieldAutoConfirmOrder             = "auto_confirm_order"
+	SalesOrderFieldAutoConfirmRefund            = "auto_confirm_refund"
+	SalesOrderFieldConfirmationNote             = "confirmation_note"
+	SalesOrderFieldCancellationNote             = "cancellation_note"
+	SalesOrderFieldRefundNote                   = "refund_note"
+	SalesOrderFieldValidUntil                   = "valid_until"
+	SalesOrderFieldExpiredAt                    = "expired_at"
+	SalesOrderFieldIsExpired                    = "is_expired"
 
 	SalesOrderEdgeSalesChannel = "sales_channel"
 	SalesOrderEdgeSalesPoint   = "sales_point"
@@ -388,4 +396,37 @@ func (this SalesOrder) GetRequestedTargetOutletId() *model.Id {
 
 func (this *SalesOrder) SetRequestedTargetOutletId(value *model.Id) {
 	this.GetFieldData().SetModelId(SalesOrderFieldRequestedTargetOutletId, value)
+}
+
+// AutoConfirmedNote is the exact confirmation_note and refund_note the system writes when it
+// confirms on the channel's behalf. A literal rather than a flag: the audit trail records that
+// the actor was the system, and a reader of the note sees the same words every time.
+const AutoConfirmedNote = "Auto Confirmed"
+
+func (this SalesOrder) GetAutoConfirmOrder() *bool {
+	return this.GetFieldData().GetBool(SalesOrderFieldAutoConfirmOrder)
+}
+
+func (this SalesOrder) GetAutoConfirmRefund() *bool {
+	return this.GetFieldData().GetBool(SalesOrderFieldAutoConfirmRefund)
+}
+
+func (this SalesOrder) GetConfirmationNote() *string {
+	return this.GetFieldData().GetString(SalesOrderFieldConfirmationNote)
+}
+
+func (this SalesOrder) GetCancellationNote() *string {
+	return this.GetFieldData().GetString(SalesOrderFieldCancellationNote)
+}
+
+func (this SalesOrder) GetRefundNote() *string {
+	return this.GetFieldData().GetString(SalesOrderFieldRefundNote)
+}
+
+func (this SalesOrder) GetValidUntil() *model.ModelDateTime {
+	return this.GetFieldData().GetModelDateTime(SalesOrderFieldValidUntil)
+}
+
+func (this SalesOrder) GetExpiredAt() *model.ModelDateTime {
+	return this.GetFieldData().GetModelDateTime(SalesOrderFieldExpiredAt)
 }

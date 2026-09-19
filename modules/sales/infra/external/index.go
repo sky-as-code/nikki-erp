@@ -53,6 +53,10 @@ func InitExternal() error {
 			// not, and rounding. Sales supplies the commercial base and stores the snapshot.
 			return tax
 		},
+		func(reservations itStock.WarehouseReservationService) itExt.WarehouseReservationExtService {
+			// A hand-over: the port is Inventory's own contract, aliased on this side.
+			return reservations
+		},
 		func(publisher pubsub.Publisher) itMessage.IntegrationEventPublisher {
 			// An adapter, not a hand-over: the broker takes bytes on a topic, and nothing above this
 			// layer knows integration events are JSON.

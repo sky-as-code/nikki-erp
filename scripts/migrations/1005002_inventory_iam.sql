@@ -425,3 +425,34 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
+
+-- Warehouse-level stock reservations (CR-INV-SALES-WH-RESERVATION). Read-only as a resource:
+-- rows are written only by the reservation operations, which are seeded as their own actions.
+-- Reserve and check are collection-level; release and consume act on one reservation. There is
+-- no action for protecting a paid reservation, because only the paying module's port may do it.
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_resources'
+	) THEN
+		INSERT INTO "iam_resources" (
+			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
+		) VALUES
+		('01M3WHRSV00000000000000001', 'Stock Reservation', 'inventory_stock_reservation', 'A quantity of one variant committed at one warehouse to one demand line, with no location chosen', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_actions'
+	) THEN
+		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
+		('01M3WHRSVACT00000000000001', 'Read', 'read', NULL, '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3WHRSVACT00000000000002', 'Reserve warehouse stock', 'reserve_warehouse_stock', 'Commit quantities of variants at a warehouse to a demand, all lines or none', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3WHRSVACT00000000000003', 'Check warehouse availability', 'check_warehouse_availability', 'Read how much of a variant a warehouse can still commit, without promising it', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3WHRSVACT00000000000004', 'Release reservation', 'release_reservation', 'Give back the unconsumed remainder of a reservation. Moves no stock', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3WHRSVACT00000000000005', 'Consume reservation', 'consume_reservation', 'Record goods that physically left stock against a reservation, from the locations actually used', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;

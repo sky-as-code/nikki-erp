@@ -198,7 +198,29 @@ func reserveOneMove(
 		return decimal.Zero, nil
 	}
 
-	// The lock, then the arithmetic. Never the other way around.
+	// The warehouse guard first, then the quant lock, then the arithmetic. Never another order.
+	// A transfer hold may claim only what the warehouse has not already committed at warehouse
+	// level: a balance free of transfer holds can still be the stock a reservation is counting on.
+	scope, guarded, err := warehouseScopeOfLocation(ctx,
+		derefString(move.GetOrgId()), derefString(move.GetProductVariantId()), derefString(move.GetSourceLocationId()))
+	if err != nil {
+		return decimal.Zero, err
+	}
+	if guarded {
+		now, err := lockWarehouseScopes(ctx, []GuardKey{scope})
+		if err != nil {
+			return decimal.Zero, err
+		}
+		warehouseAvailable, err := warehouseAvailableAt(ctx, scope, now)
+		if err != nil {
+			return decimal.Zero, err
+		}
+		outstanding = capToWarehouseAvailability(outstanding, warehouseAvailable)
+		if outstanding.LessThanOrEqual(decimal.Zero) {
+			return decimal.Zero, nil
+		}
+	}
+
 	locked, err := LockQuantsForUpdate(ctx, operation.QuantRepo.GetBaseRepo(), QuantLockKey{
 		OrgId:            derefString(move.GetOrgId()),
 		ProductVariantId: derefString(move.GetProductVariantId()),

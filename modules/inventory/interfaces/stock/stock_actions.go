@@ -34,6 +34,11 @@ type (
 	ApplyFulfillmentResultCommand = dmodel.DynamicFields
 
 	DoScrapCommand = dmodel.DynamicFields
+
+	ReserveWarehouseStockCommand      = dmodel.DynamicFields
+	CheckWarehouseAvailabilityCommand = dmodel.DynamicFields
+	ConsumeReservationCommand         = dmodel.DynamicFields
+	ReleaseReservationCommand         = dmodel.DynamicFields
 )
 
 type (
@@ -86,3 +91,14 @@ type StockTransferActionService interface {
 type StockScrapActionService interface {
 	DoScrap(ctx corectx.Context, cmd DoScrapCommand) (*DoScrapResult, error)
 }
+
+// StockReservationActionService is the authorized surface of the warehouse reservation
+// operations a client may call. Both answer an untyped result: a reserve returns the rows it
+// wrote and a check returns a report, neither of which is a resource mutation.
+type StockReservationActionService interface {
+	ReserveWarehouseStock(ctx corectx.Context, cmd ReserveWarehouseStockCommand) (*dyn.OpResult[any], error)
+	CheckWarehouseAvailability(ctx corectx.Context, query CheckWarehouseAvailabilityCommand) (*dyn.OpResult[any], error)
+	ConsumeReservation(ctx corectx.Context, cmd ConsumeReservationCommand) (*dyn.OpResult[any], error)
+	ReleaseReservation(ctx corectx.Context, cmd ReleaseReservationCommand) (*dyn.OpResult[any], error)
+}
+

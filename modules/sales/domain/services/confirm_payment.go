@@ -172,6 +172,13 @@ func ConfirmPaymentAndSettle(
 		// The transaction rolled back, so the result describes writes that no longer exist.
 		return nil, err
 	}
+	// After the commit and outside it: protecting the order's holds reaches Inventory, and a
+	// network call inside the settlement transaction would hold it open for the wait.
+	if result != nil && result.Applied && result.Status == string(models.SalesPaymentStatusCaptured) {
+		if err := NotifyOrderPaid(ctx, result.SalesBillId, result.SalesPaymentId); err != nil {
+			return nil, err
+		}
+	}
 	return result, nil
 }
 

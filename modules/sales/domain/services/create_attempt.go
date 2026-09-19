@@ -118,6 +118,11 @@ func CreateAttempt(
 func createAttemptUnderLock(
 	ctx corectx.Context, params CreateAttemptParams, fulfillment dmodel.DynamicFields,
 ) (*CreateAttemptResult, *ft.ClientErrors, error) {
+	// The order behind the fulfillment must be paid, alive and inside its deadline before a
+	// machine is told to hand anything over (CR-INV-SALES-WH-RESERVATION §9.2).
+	if vErrs, err := assertOrderDispensable(ctx, stringOf(fulfillment, models.SalesOrderFulfillmentFieldSalesOrderId)); err != nil || vErrs != nil {
+		return nil, vErrs, err
+	}
 	if vErrs := assertAttemptable(fulfillment, params, time.Now().UTC()); vErrs != nil {
 		return nil, vErrs, nil
 	}

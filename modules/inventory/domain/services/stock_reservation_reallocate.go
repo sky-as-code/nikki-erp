@@ -149,6 +149,25 @@ func lockBothSides(
 
 	sortQuantLockKeys(keys)
 
+	// The warehouse guards of every scope on both sides, before any quant lock, so a reallocation
+	// queues with reservations and other movements on the same scopes instead of racing them.
+	guards := make([]GuardKey, 0, len(keys))
+	for _, key := range keys {
+		scope, guarded, err := warehouseScopeOfLocation(ctx,
+			string(key.OrgId), string(key.ProductVariantId), string(key.LocationId))
+		if err != nil {
+			return err
+		}
+		if guarded {
+			guards = append(guards, scope)
+		}
+	}
+	if len(guards) > 0 {
+		if _, err := lockWarehouseScopes(ctx, guards); err != nil {
+			return err
+		}
+	}
+
 	seen := make(map[QuantLockKey]bool, len(keys))
 	for _, key := range keys {
 		if seen[key] {

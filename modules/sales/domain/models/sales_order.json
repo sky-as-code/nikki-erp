@@ -450,6 +450,110 @@
 			"description": {
 				"en-US": "When the sale was called off. Mutually exclusive with completed_at in practice, though not enforced by the schema: the status state machine is what prevents an order being both, and duplicating that rule as a constraint would give two places to keep in agreement."
 			}
+		},
+		{
+			"name": "auto_confirm_order",
+			"label": "fields.auto_confirm_order",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"no_update": true,
+			"description": {
+				"en-US": "The channel's auto_confirm_order as it was when this order was created, frozen here. It decides two things for this order: whether the draft was confirmed at once, and whether a paid order may be cancelled by the customer with a refund raised for what was collected (CR-INV-SALES-WH-RESERVATION §6.1, §8.1). The channel changing its mind later never reaches an order already created."
+			}
+		},
+		{
+			"name": "auto_confirm_refund",
+			"label": "fields.auto_confirm_refund",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"no_update": true,
+			"description": {
+				"en-US": "The channel's auto_confirm_refund at create, frozen here. Every refund request of this order follows this copy, never the channel's current setting."
+			}
+		},
+		{
+			"name": "confirmation_note",
+			"label": "fields.confirmation_note",
+			"data_type": { "type": "string", "min": 0, "max": 2000 },
+			"no_update": true,
+			"description": {
+				"en-US": "The note recorded by the confirm that succeeded, written by that action alone: a user's own words, or exactly 'Auto Confirmed' when the system confirmed the draft. Not editable through a plain update, and never overwritten by a retried confirm."
+			}
+		},
+		{
+			"name": "cancellation_note",
+			"label": "fields.cancellation_note",
+			"data_type": { "type": "string", "min": 0, "max": 2000 },
+			"no_update": true,
+			"description": {
+				"en-US": "The note the caller gave when cancelling, or null when none was given. Never filled in by the system and never copied from another note: an automatic cancellation records its reason in the audit trail instead."
+			}
+		},
+		{
+			"name": "refund_note",
+			"label": "fields.refund_note",
+			"data_type": { "type": "string", "min": 0, "max": 2000 },
+			"no_update": true,
+			"description": {
+				"en-US": "The note of the most recently confirmed refund request of this order, a projection for the order's own page. Each request keeps its own confirmation_note; this one moves forward with every successful confirm and erases none of that history."
+			}
+		},
+		{
+			"name": "valid_until",
+			"label": "fields.valid_until",
+			"data_type": "datetime",
+			"no_update": true,
+			"description": {
+				"en-US": "The payment deadline, in UTC, set at create and never extended: an order not successfully paid by this moment is expired, and from then on the customer may only cancel it. Null means no deadline. It is passed unchanged to the stock reservation as reserved_until, so the goods are held for exactly as long as the customer may still pay, and it is kept for audit after payment even though it no longer binds."
+			}
+		},
+		{
+			"name": "expired_at",
+			"label": "fields.expired_at",
+			"data_type": "datetime",
+			"no_update": true,
+			"description": {
+				"en-US": "When expiry was written to the row, so a late payment callback can see the order was already past saving. The expiry itself takes effect on the clock, not on this column: is_expired is derived and every gate checks the deadline directly, so this being null never means the order is still open."
+			}
+		},
+		{
+			"name": "is_expired",
+			"label": "fields.is_expired",
+			"data_type": "boolean",
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"case": {
+						"when": [
+							{ "if": { "op": "is_not_null", "args": [{ "field": "expired_at" }] }, "then": { "value": true } },
+							{
+								"if": {
+									"op": "and",
+									"args": [
+										{ "op": "is_not_null", "args": [{ "field": "valid_until" }] },
+										{ "op": "lte", "args": [{ "field": "valid_until" }, { "function": "now" }] },
+										{
+											"op": "or",
+											"args": [
+												{ "op": "eq", "args": [{ "field": "payment_status" }, { "value": "unpaid" }] },
+												{ "op": "eq", "args": [{ "field": "payment_status" }, { "value": "partially_paid" }] }
+											]
+										}
+									]
+								},
+								"then": { "value": true }
+							}
+						],
+						"else": { "value": false }
+					}
+				}
+			},
+			"description": {
+				"en-US": "Whether the payment deadline has passed without a successful payment. Derived on every read, never stored, so it cannot lag the clock. A partial payment does not save the order; a later refund on a paid order does not expire it, because the paid latch is on payment_status and refund states are not unpaid ones."
+			}
 		}
 	],
 	"extend_after": [

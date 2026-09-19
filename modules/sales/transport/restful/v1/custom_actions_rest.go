@@ -225,6 +225,11 @@ func (this *SalesReturnRest) CreateReturn(echoCtx *echo.Context, payload map[str
 		this.returnSvc.CreateReturn, composable.Identity[any])
 }
 
+func (this *SalesReturnRest) Confirm(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "confirm refund request", payload,
+		this.returnSvc.Confirm, composable.Identity[any])
+}
+
 func (this *SalesReturnRest) Process(echoCtx *echo.Context, payload map[string]any) error {
 	return composable.ServeAction(echoCtx, "process return", payload,
 		this.returnSvc.Process, composable.Identity[any])

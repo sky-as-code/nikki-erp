@@ -40,6 +40,9 @@ const (
 	SalesReturnFieldRequestedAt            = "requested_at"
 	SalesReturnFieldCompletedAt            = "completed_at"
 	SalesReturnFieldCancelledAt            = "cancelled_at"
+	SalesReturnFieldConfirmationNote       = "confirmation_note"
+	SalesReturnFieldConfirmedAt            = "confirmed_at"
+	SalesReturnFieldLockedRefundAmount     = "locked_refund_amount"
 	SalesReturnFieldCreatedAt              = basemodel.FieldCreatedAt
 	SalesReturnFieldUpdatedAt              = basemodel.FieldUpdatedAt
 	SalesReturnFieldEtag                   = basemodel.FieldEtag
@@ -297,4 +300,16 @@ func (this SalesReturnLine) RefundQuantityRequested() decimal.Decimal {
 		return *value
 	}
 	return decimal.Zero
+}
+
+func (this SalesReturn) GetConfirmationNote() *string {
+	return this.GetFieldData().GetString(SalesReturnFieldConfirmationNote)
+}
+
+func (this SalesReturn) GetConfirmedAt() *model.ModelDateTime {
+	return this.GetFieldData().GetModelDateTime(SalesReturnFieldConfirmedAt)
+}
+
+func (this SalesReturn) GetLockedRefundAmount() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(SalesReturnFieldLockedRefundAmount)
 }

@@ -91,6 +91,12 @@ func (this *StockQuantDomainServiceImpl) ApplyAdjustment(
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	var result *dyn.OpResult[dyn.MutateResultData]
 	err := withQuantTransaction(ctx, func(tranxCtx corectx.Context) error {
+		// The warehouse guard is taken from the balance's own coordinates before the row lock, so
+		// a downward count queues with reservations on the same scope instead of racing them.
+		if err := lockGuardOfQuant(tranxCtx, quantId); err != nil {
+			return err
+		}
+
 		locked, quant, vErrs, err := lockQuantById(tranxCtx, quantId)
 		if err != nil || vErrs.Count() > 0 {
 			result = clientErrorResult(vErrs)
@@ -105,6 +111,9 @@ func (this *StockQuantDomainServiceImpl) ApplyAdjustment(
 		return nil
 	})
 
+	if refused := protectionResultOf(err); refused != nil {
+		return refused, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -302,6 +311,25 @@ func lockQuantById(
 		return nil, nil, vErrs, nil
 	}
 	return locked, quant, vErrs, nil
+}
+
+// lockGuardOfQuant reads a balance's coordinates and takes its warehouse guard. Nothing else is
+// read from the row here: lockQuantById re-reads it under the row lock, which is the read that
+// counts.
+func lockGuardOfQuant(ctx corectx.Context, quantId string) error {
+	row, err := findRecord(ctx, models.StockQuantSchemaName, models.StockQuantFieldId, quantId)
+	if err != nil || row == nil {
+		return err
+	}
+	scope, guarded, err := warehouseScopeOfLocation(ctx,
+		stringOf(row, models.StockQuantFieldOrgId),
+		stringOf(row, models.StockQuantFieldProductVariantId),
+		stringOf(row, models.StockQuantFieldLocationId))
+	if err != nil || !guarded {
+		return err
+	}
+	_, err = lockWarehouseScopes(ctx, []GuardKey{scope})
+	return err
 }
 
 func lockQuantRow(

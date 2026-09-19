@@ -114,6 +114,13 @@ func (this *WarehouseDomainServiceImpl) Suspend(
 		return warehouseViolationResult(
 			"warehouse.already_suspended", "the warehouse is already suspended"), nil
 	}
+	// A suspended warehouse's stock is no longer eligible, so a reservation in force on it would
+	// lose its backing silently.
+	if vErrs, err := assertWarehouseHasNoEffectiveReservations(ctx, derefId(warehouse.GetOrgId()), warehouseId); err != nil {
+		return nil, err
+	} else if vErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
+	}
 
 	if err := this.WriteStatus(ctx, warehouseId, models.WarehouseStatusSuspended); err != nil {
 		return nil, err
@@ -235,6 +242,18 @@ func (this *WarehouseDomainServiceImpl) assertArchivable(
 	if children > 0 {
 		appendWarehouseViolation(vErrs, "warehouse.has_children",
 			"archive the warehouses underneath this one first")
+	}
+
+	warehouse, warehouseErrs, err := this.loadWarehouse(ctx, warehouseId)
+	if err != nil {
+		return vErrs, err
+	}
+	if warehouseErrs.Count() == 0 {
+		reserved, err := assertWarehouseHasNoEffectiveReservations(ctx, derefId(warehouse.GetOrgId()), warehouseId)
+		if err != nil {
+			return vErrs, err
+		}
+		vErrs.ConcatPtr(reserved)
 	}
 
 	relations, err := this.countUnarchivedSupplyRelations(ctx, warehouseId)

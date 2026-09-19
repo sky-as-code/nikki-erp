@@ -63,6 +63,31 @@ func (this *SalesReturnApplicationServiceImpl) CreateReturn(
 	return this.runCreateReturn(ctx, cmd)
 }
 
+// Confirm approves a draft refund request and dispatches it. Its own permission, like process:
+// approving a refund is the power to send money out of the business.
+func (this *SalesReturnApplicationServiceImpl) Confirm(
+	ctx corectx.Context, cmd itReturns.ReturnActionCommand,
+) (*dyn.OpResult[any], error) {
+	if cErrs, err := assertRecordAction(this, ctx, PermissionConfirmReturn, cmd); cErrs != nil || err != nil {
+		return anyFailure(cErrs, err)
+	}
+	result, vErrs, err := services.ConfirmRefundRequest(ctx, services.ConfirmRefundRequestParams{
+		SalesReturnId: readStringParam(cmd, paramRecordId),
+		RefundNote:    readStringParam(cmd, "refund_note"),
+	}, this.orderLock, services.RefundProcessingDeps{
+		Fulfillment:   this.orderFulfillment,
+		Invoicing:     this.invoicingProvider,
+		PaymentOrders: this.paymentOrders,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if vErrs != nil {
+		return &dyn.OpResult[any]{ClientErrors: *vErrs}, nil
+	}
+	return &dyn.OpResult[any]{Data: result, HasData: true}, nil
+}
+
 func (this *SalesReturnApplicationServiceImpl) Process(
 	ctx corectx.Context, cmd itReturns.ReturnActionCommand,
 ) (*dyn.OpResult[any], error) {

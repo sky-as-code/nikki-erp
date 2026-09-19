@@ -39,6 +39,9 @@ type ApplyVoucherResult struct {
 func ApplyVoucher(
 	ctx corectx.Context, params ApplyVoucherParams,
 ) (*ApplyVoucherResult, *ft.ClientErrors, error) {
+	if vErrs, err := assertOrderNotExpiredById(ctx, params.SalesOrderId); err != nil || vErrs != nil {
+		return nil, vErrs, err
+	}
 	code, vErrs, err := resolveCodeByString(ctx, params.Code)
 	if err != nil || vErrs != nil {
 		return nil, vErrs, err

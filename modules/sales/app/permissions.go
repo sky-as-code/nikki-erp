@@ -63,6 +63,7 @@ const (
 const (
 	PermissionCreateReturn  = "create"
 	PermissionProcessReturn = "process_return"
+	PermissionConfirmReturn = "confirm_return"
 	PermissionCancelReturn  = "update"
 )
 

@@ -45,6 +45,9 @@ func (this *StockScrapDomainServiceImpl) DoScrap(
 		return nil
 	})
 
+	if refused := protectionResultOf(err); refused != nil {
+		return refused, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +106,32 @@ func assertScrappableStock(
 	engine, err := repoFor(models.StockQuantSchemaName)
 	if err != nil {
 		return vErrs, err
+	}
+
+	// The warehouse guard before the quant lock, and the warehouse figure beside the balance's
+	// own: a balance may be free of transfer holds and still be what backs a warehouse
+	// reservation, in which case scrapping it would leave that reservation with nothing.
+	scope, guarded, err := warehouseScopeOfLocation(ctx,
+		derefString(scrap.GetOrgId()), derefString(scrap.GetProductVariantId()), derefString(scrap.GetSourceLocationId()))
+	if err != nil {
+		return vErrs, err
+	}
+	if guarded {
+		now, err := lockWarehouseScopes(ctx, []GuardKey{scope})
+		if err != nil {
+			return vErrs, err
+		}
+		warehouseAvailable, err := warehouseAvailableAt(ctx, scope, now)
+		if err != nil {
+			return vErrs, err
+		}
+		if warehouseAvailable.LessThan(quantity) {
+			vErrs.Append(*ft.NewBusinessViolation(
+				models.StockScrapSchemaName, ReasonProtectionViolation,
+				"the warehouse can spare only "+warehouseAvailable.String()+" beyond its reservations, which is less than the "+
+					quantity.String()+" requested"))
+			return vErrs, nil
+		}
 	}
 
 	locked, err := LockQuantsForUpdate(ctx, engine.GetBaseRepo(), QuantLockKey{

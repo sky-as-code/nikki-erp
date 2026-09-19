@@ -2,6 +2,7 @@ package dynamicengines
 
 import (
 	stdErr "errors"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
 
 	"go.uber.org/dig"
 
@@ -47,6 +48,8 @@ func registerSalesOrderEngine() error {
 			basis itExt.ProductPricingBasisExtService,
 			parties itExt.PartyExtService,
 			reservations itExt.FulfillmentReservationExtService,
+			paymentOrders itExt.PaymentOrderExtService,
+			invoicing itInvoicing.InvoicingExtService,
 		) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesOrderSchemaName,
@@ -58,7 +61,8 @@ func registerSalesOrderEngine() error {
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					return app.NewSalesOrderCrudApplicationService(
-						base, tax, settings, dLock, products, fulfillment, basis, reservations, parties)
+						base, tax, settings, dLock, products, fulfillment, basis, reservations, parties,
+						paymentOrders, invoicing)
 				},
 			}, param)
 		},

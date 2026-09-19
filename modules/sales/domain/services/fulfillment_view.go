@@ -46,6 +46,11 @@ type FulfillmentItemView struct {
 	// consume or release exactly the hold its result concerns.
 	InventorySourceId string
 
+	// InventoryReservationRef is the warehouse reservation holding this item, when the goods are
+	// held at warehouse level rather than at a slot. An executor reporting a dispense consumes
+	// it, naming the slot the goods actually left from.
+	InventoryReservationRef string
+
 	OrderedQty   decimal.Decimal
 	FulfilledQty decimal.Decimal
 	RefundedQty  decimal.Decimal
@@ -118,6 +123,8 @@ func ViewOrderFulfillments(
 				FulfillableQty:    fulfillable,
 				SourceLocationId:  sourceLocationId,
 				InventorySourceId: inventorySourceId,
+				InventoryReservationRef: stringOf(itemRecord,
+					models.SalesOrderFulfillmentItemFieldInventoryReservationRef),
 			})
 		}
 
@@ -315,6 +322,8 @@ func ViewFulfillment(ctx corectx.Context, fulfillmentId string) (*FulfillmentVie
 			FulfillableQty:    fulfillable,
 			SourceLocationId:  sourceLocationId,
 			InventorySourceId: inventorySourceId,
+			InventoryReservationRef: stringOf(itemRecord,
+				models.SalesOrderFulfillmentItemFieldInventoryReservationRef),
 		})
 	}
 

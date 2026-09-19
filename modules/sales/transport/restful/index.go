@@ -478,6 +478,9 @@ func initSalesReturnV1(route *echo.Group) error {
 				Path: "create_return", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.CreateReturn,
 			}).
 			AddRoute(composable.RouteDefinition{
+				Path: ":id/confirm", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Confirm,
+			}).
+			AddRoute(composable.RouteDefinition{
 				Path: ":id/process", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Process,
 			}).
 			AddRoute(composable.RouteDefinition{

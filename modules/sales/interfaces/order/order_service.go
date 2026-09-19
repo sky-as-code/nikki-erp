@@ -98,6 +98,10 @@ type FulfillmentItemView struct {
 	// reporting a physical result quotes it so the right hold is consumed or released: with stock
 	// held at several slots there is no longer one hold per fulfillment to guess at.
 	InventorySourceId string `json:"inventory_source_id,omitempty"`
+
+	// InventoryReservationRef is the warehouse reservation holding this item, when the goods are
+	// held at warehouse level. Empty on the older slot-held shape.
+	InventoryReservationRef string `json:"inventory_reservation_ref,omitempty"`
 }
 
 type FulfillmentView struct {
@@ -222,6 +226,10 @@ type CreateSalesOrderCommand struct {
 	// method resolves the target to the selling point itself.
 	TargetOutletId string `json:"target_outlet_id"`
 
+	// ValidUntil is the payment deadline as an RFC 3339 UTC timestamp, settable only here. Empty
+	// means the order does not expire.
+	ValidUntil string `json:"valid_until"`
+
 	// EstimatedTotalPrice is what the caller's own calculation came to. It does not breach the
 	// no-prices rule above: it is recorded for reconciliation and never charged, so a caller sending
 	// it cannot sell at a price the business did not set.
@@ -253,6 +261,14 @@ type SalesOrderData struct {
 
 	// AlreadyExisted tells a caller its retry was recognised rather than a new order created.
 	AlreadyExisted bool `json:"already_existed"`
+
+	// The automatic confirm the channel's snapshot asked for: whether one was attempted, whether
+	// it succeeded, the bill it raised, and why it was refused when it was. The draft exists
+	// either way.
+	AutoConfirmAttempted bool            `json:"auto_confirm_attempted"`
+	AutoConfirmed        bool            `json:"auto_confirmed"`
+	InitialBillId        string          `json:"initial_bill_id"`
+	AutoConfirmErrors    ft.ClientErrors `json:"auto_confirm_errors,omitempty"`
 }
 
 type CreateSalesOrderResult struct {
@@ -263,11 +279,17 @@ type CreateSalesOrderResult struct {
 
 type SalesOrderCommand struct {
 	SalesOrderId string `json:"sales_order_id"`
+
+	// ConfirmationNote is recorded on the order by the confirm that succeeds; optional.
+	ConfirmationNote string `json:"confirmation_note"`
 }
 
 type CancelSalesOrderCommand struct {
 	SalesOrderId string `json:"sales_order_id"`
 	Reason       string `json:"reason"`
+
+	// CancellationNote is stored only when given; the system never fills it in.
+	CancellationNote string `json:"cancellation_note"`
 }
 
 // ConfirmedOrderData reports what confirming produced, including the delivery half of a kiosk sale.

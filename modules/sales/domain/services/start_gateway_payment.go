@@ -118,6 +118,12 @@ func StartGatewayPayment(
 		}
 	}
 
+	// An order past its payment deadline takes no new payment: the goods it held are gone and the
+	// customer may only cancel.
+	if vErrs, err := assertOrderNotExpiredById(ctx, stringOf(bill, models.SalesBillFieldSalesOrderId)); err != nil || vErrs != nil {
+		return nil, vErrs, err
+	}
+
 	// The money is resolved from the BILL, never taken from the caller. A client that believes it
 	// owes less than it does must not be able to make that true by saying so, and a currency it
 	// names could only agree with the bill or be wrong.

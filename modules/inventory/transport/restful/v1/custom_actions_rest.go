@@ -147,3 +147,19 @@ func (this *StockTransferRest) ReallocateReservation(echoCtx *echo.Context, payl
 func (this *StockTransferRest) ApplyFulfillmentResult(echoCtx *echo.Context, payload map[string]any) error {
 	return composable.ServeAction(echoCtx, "apply fulfillment result", payload, this.stockTransferSvc.ApplyFulfillmentResult, composable.Identity[any])
 }
+
+func (this *StockReservationRest) ReserveWarehouseStock(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "reserve warehouse stock", payload, this.stockReservationSvc.ReserveWarehouseStock, composable.Identity[any])
+}
+
+func (this *StockReservationRest) CheckWarehouseAvailability(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "check warehouse availability", payload, this.stockReservationSvc.CheckWarehouseAvailability, composable.Identity[any])
+}
+
+func (this *StockReservationRest) ConsumeReservation(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "consume reservation", payload, this.stockReservationSvc.ConsumeReservation, composable.Identity[any])
+}
+
+func (this *StockReservationRest) ReleaseReservation(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "release reservation", payload, this.stockReservationSvc.ReleaseReservation, composable.Identity[any])
+}

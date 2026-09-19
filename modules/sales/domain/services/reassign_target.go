@@ -130,6 +130,9 @@ func reassignUnderLock(
 	fulfillment dmodel.DynamicFields,
 	reservations itExt.FulfillmentReservationExtService,
 ) (*ReassignTargetResult, *ft.ClientErrors, error) {
+	if vErrs, err := assertOrderNotExpiredById(ctx, stringOf(fulfillment, models.SalesOrderFulfillmentFieldSalesOrderId)); err != nil || vErrs != nil {
+		return nil, vErrs, err
+	}
 	orgId := stringOf(fulfillment, basemodel.FieldOrgId)
 	fromOutletId := stringOf(fulfillment, models.SalesOrderFulfillmentFieldTargetOutletId)
 

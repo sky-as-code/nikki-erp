@@ -842,3 +842,19 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
+
+-- Confirming a refund request is business approval, distinct from processing it: it records the
+-- confirmer's note, locks the amount against the order's other pending requests and only then
+-- dispatches. Its own action, because approving money out is not the same power as raising the
+-- request (CR-INV-SALES-WH-RESERVATION §6.3).
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_actions'
+	) THEN
+		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
+		('01M3SALESRFCONFIRM0000001', 'Confirm refund request', 'confirm_return', 'Approve a refund request, record the note and dispatch the refund', '01M3SALES00000000000000076', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;

@@ -21,6 +21,8 @@ const (
 	SalesChannelFieldStatus                     = "status"
 	SalesChannelFieldIsSystem                   = "is_system"
 	SalesChannelFieldDefaultFulfillmentMethodId = "default_fulfillment_method_id"
+	SalesChannelFieldAutoConfirmOrder           = "auto_confirm_order"
+	SalesChannelFieldAutoConfirmRefund          = "auto_confirm_refund"
 
 	SalesChannelEdgeSalesPoints = "sales_points"
 )
@@ -132,4 +134,12 @@ func (this SalesChannel) GetDefaultFulfillmentMethodId() *model.Id {
 
 func (this *SalesChannel) SetDefaultFulfillmentMethodId(id *model.Id) {
 	this.GetFieldData().SetModelId(SalesChannelFieldDefaultFulfillmentMethodId, id)
+}
+
+func (this SalesChannel) GetAutoConfirmOrder() *bool {
+	return this.GetFieldData().GetBool(SalesChannelFieldAutoConfirmOrder)
+}
+
+func (this SalesChannel) GetAutoConfirmRefund() *bool {
+	return this.GetFieldData().GetBool(SalesChannelFieldAutoConfirmRefund)
 }

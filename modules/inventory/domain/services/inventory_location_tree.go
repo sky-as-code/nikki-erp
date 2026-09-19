@@ -279,26 +279,5 @@ func (this *InventoryLocationDomainServiceImpl) countOperationTypesUsing(
 func (this *InventoryLocationDomainServiceImpl) isOwningWarehouseUsable(
 	ctx corectx.Context, location models.InventoryLocation,
 ) (bool, error) {
-	warehouseId := derefId(location.GetWarehouseId())
-	if warehouseId == "" {
-		return false, nil
-	}
-
-	engine, err := repoFor(models.WarehouseSchemaName)
-	if err != nil {
-		return false, err
-	}
-	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
-		models.WarehouseFieldId: warehouseId,
-	})
-	if err != nil {
-		return false, errors.Wrap(err, "isOwningWarehouseUsable")
-	}
-	if found == nil || !found.HasData {
-		return false, nil
-	}
-
-	warehouse := models.NewWarehouseFrom(found.Data)
-	archived := warehouse.GetIsArchived() != nil && *warehouse.GetIsArchived()
-	return !archived && derefString(warehouse.GetStatus()) == models.WarehouseStatusActive, nil
+	return isWarehouseUsable(ctx, derefId(location.GetWarehouseId()))
 }

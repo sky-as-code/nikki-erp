@@ -3,6 +3,7 @@ package services
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
@@ -125,6 +126,11 @@ func releaseEveryHold(
 	fulfillmentId string,
 	reservations itExt.FulfillmentReservationExtService,
 ) error {
+	// The warehouse holds first: a fulfillment carries one shape or the other, and releasing a
+	// hold that does not exist is success on both sides.
+	if err := releaseWarehouseHolds(ctx, orgOfFulfillment(ctx, fulfillmentId), fulfillmentId); err != nil {
+		return err
+	}
 	if reservations == nil {
 		return nil
 	}
@@ -182,4 +188,15 @@ func clearReservationRefs(ctx corectx.Context, fulfillmentId string) error {
 		}
 	}
 	return nil
+}
+
+// orgOfFulfillment reads the org a fulfillment belongs to, or empty when the row is gone; a
+// release with no org releases nothing at the warehouse, which is the safe reading.
+func orgOfFulfillment(ctx corectx.Context, fulfillmentId string) string {
+	record, err := loadRecord(ctx, models.SalesOrderFulfillmentSchemaName,
+		models.SalesOrderFulfillmentFieldId, fulfillmentId)
+	if err != nil || record == nil {
+		return ""
+	}
+	return stringOf(record, basemodel.FieldOrgId)
 }

@@ -1,40 +1,41 @@
--- Create "sales_promotion_compatibilities" table
-CREATE TABLE "sales_promotion_compatibilities" (
+-- Create "sales_channel_payment_rel" table
+CREATE TABLE "sales_channel_payment_rel" (
   "id" character varying NOT NULL,
   "org_id" character varying NOT NULL,
-  "program_a_id" character varying NOT NULL,
-  "program_b_id" character varying NOT NULL,
-  "compatibility" character varying NOT NULL,
+  "sales_channel_id" character varying NOT NULL,
+  "payment_method_id" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_channel_payment_rel_tid_chan_method_ukey" UNIQUE ("sales_channel_id", "payment_method_id")
+);
+-- Create "sales_integration_outbox" table
+CREATE TABLE "sales_integration_outbox" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "event_id" character varying NOT NULL,
+  "aggregate_id" character varying NOT NULL,
+  "event_type" character varying NOT NULL,
+  "schema_version" character varying NOT NULL,
+  "payload" jsonb NOT NULL,
+  "occurred_at" timestamptz NOT NULL,
+  "published_at" timestamptz NULL,
+  "attempt_count" integer NULL,
+  "last_error" character varying NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_promo_compat_tid_pair_ukey" UNIQUE ("program_a_id", "program_b_id")
+  CONSTRAINT "sales_outbox_tid_eventid_ukey" UNIQUE ("event_id")
 );
--- Create index "sales_promo_compat_tid_b_idx" to table: "sales_promotion_compatibilities"
-CREATE INDEX "sales_promo_compat_tid_b_idx" ON "sales_promotion_compatibilities" ("program_b_id");
--- Create "sales_order_events" table
-CREATE TABLE "sales_order_events" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NOT NULL,
-  "sales_order_id" character varying NOT NULL,
-  "entity_type" character varying NOT NULL,
-  "entity_id" character varying NOT NULL,
-  "action" character varying NOT NULL,
-  "actor_id" character varying NULL,
-  "from_status" character varying NULL,
-  "to_status" character varying NULL,
-  "reason" character varying NULL,
-  "metadata" jsonb NULL,
-  "created_at" timestamptz NOT NULL,
-  PRIMARY KEY ("id")
-);
--- Create index "sales_order_evts_tid_actor_idx" to table: "sales_order_events"
-CREATE INDEX "sales_order_evts_tid_actor_idx" ON "sales_order_events" ("actor_id");
--- Create index "sales_order_evts_tid_entity_idx" to table: "sales_order_events"
-CREATE INDEX "sales_order_evts_tid_entity_idx" ON "sales_order_events" ("entity_type", "entity_id");
--- Create index "sales_order_evts_tid_order_idx" to table: "sales_order_events"
-CREATE INDEX "sales_order_evts_tid_order_idx" ON "sales_order_events" ("sales_order_id");
+-- Create index "sales_outbox_tid_aggregate_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_aggregate_idx" ON "sales_integration_outbox" ("aggregate_id");
+-- Create index "sales_outbox_tid_occurred_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_occurred_idx" ON "sales_integration_outbox" ("occurred_at");
+-- Create index "sales_outbox_tid_published_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_published_idx" ON "sales_integration_outbox" ("published_at");
+-- Create index "sales_outbox_tid_type_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_type_idx" ON "sales_integration_outbox" ("event_type");
 -- Create "sales_billing_instructions" table
 CREATE TABLE "sales_billing_instructions" (
   "id" character varying NOT NULL,
@@ -92,33 +93,6 @@ CREATE INDEX "sales_billing_attempts_tid_instr_idx" ON "sales_billing_issuance_a
 CREATE INDEX "sales_billing_attempts_tid_provreq_idx" ON "sales_billing_issuance_attempts" ("provider_request_id");
 -- Create index "sales_billing_attempts_tid_status_idx" to table: "sales_billing_issuance_attempts"
 CREATE INDEX "sales_billing_attempts_tid_status_idx" ON "sales_billing_issuance_attempts" ("status");
--- Create "sales_integration_outbox" table
-CREATE TABLE "sales_integration_outbox" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NOT NULL,
-  "event_id" character varying NOT NULL,
-  "aggregate_id" character varying NOT NULL,
-  "event_type" character varying NOT NULL,
-  "schema_version" character varying NOT NULL,
-  "payload" jsonb NOT NULL,
-  "occurred_at" timestamptz NOT NULL,
-  "published_at" timestamptz NULL,
-  "attempt_count" integer NULL,
-  "last_error" character varying NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "etag" character varying NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_outbox_tid_eventid_ukey" UNIQUE ("event_id")
-);
--- Create index "sales_outbox_tid_aggregate_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_aggregate_idx" ON "sales_integration_outbox" ("aggregate_id");
--- Create index "sales_outbox_tid_occurred_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_occurred_idx" ON "sales_integration_outbox" ("occurred_at");
--- Create index "sales_outbox_tid_published_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_published_idx" ON "sales_integration_outbox" ("published_at");
--- Create index "sales_outbox_tid_type_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_type_idx" ON "sales_integration_outbox" ("event_type");
 -- Create "sales_channels" table
 CREATE TABLE "sales_channels" (
   "id" character varying NOT NULL,
@@ -130,6 +104,8 @@ CREATE TABLE "sales_channels" (
   "status" character varying NOT NULL,
   "is_system" boolean NOT NULL,
   "default_fulfillment_method_id" character varying NULL,
+  "auto_confirm_order" boolean NOT NULL,
+  "auto_confirm_refund" boolean NOT NULL,
   "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
@@ -137,17 +113,43 @@ CREATE TABLE "sales_channels" (
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_channels_code_ukey" UNIQUE ("code")
 );
--- Create "sales_channel_payment_rel" table
-CREATE TABLE "sales_channel_payment_rel" (
+-- Create "sales_order_events" table
+CREATE TABLE "sales_order_events" (
   "id" character varying NOT NULL,
   "org_id" character varying NOT NULL,
-  "sales_channel_id" character varying NOT NULL,
-  "payment_method_id" character varying NOT NULL,
+  "sales_order_id" character varying NOT NULL,
+  "entity_type" character varying NOT NULL,
+  "entity_id" character varying NOT NULL,
+  "action" character varying NOT NULL,
+  "actor_id" character varying NULL,
+  "from_status" character varying NULL,
+  "to_status" character varying NULL,
+  "reason" character varying NULL,
+  "metadata" jsonb NULL,
+  "created_at" timestamptz NOT NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "sales_order_evts_tid_actor_idx" to table: "sales_order_events"
+CREATE INDEX "sales_order_evts_tid_actor_idx" ON "sales_order_events" ("actor_id");
+-- Create index "sales_order_evts_tid_entity_idx" to table: "sales_order_events"
+CREATE INDEX "sales_order_evts_tid_entity_idx" ON "sales_order_events" ("entity_type", "entity_id");
+-- Create index "sales_order_evts_tid_order_idx" to table: "sales_order_events"
+CREATE INDEX "sales_order_evts_tid_order_idx" ON "sales_order_events" ("sales_order_id");
+-- Create "sales_promotion_compatibilities" table
+CREATE TABLE "sales_promotion_compatibilities" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "program_a_id" character varying NOT NULL,
+  "program_b_id" character varying NOT NULL,
+  "compatibility" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_channel_payment_rel_tid_chan_method_ukey" UNIQUE ("sales_channel_id", "payment_method_id")
+  CONSTRAINT "sales_promo_compat_tid_pair_ukey" UNIQUE ("program_a_id", "program_b_id")
 );
+-- Create index "sales_promo_compat_tid_b_idx" to table: "sales_promotion_compatibilities"
+CREATE INDEX "sales_promo_compat_tid_b_idx" ON "sales_promotion_compatibilities" ("program_b_id");
 -- Create "sales_points" table
 CREATE TABLE "sales_points" (
   "id" character varying NOT NULL,
@@ -210,6 +212,13 @@ CREATE TABLE "sales_orders" (
   "completed_at" timestamptz NULL,
   "tax_snapshot" jsonb NULL,
   "cancelled_at" timestamptz NULL,
+  "auto_confirm_order" boolean NOT NULL,
+  "auto_confirm_refund" boolean NOT NULL,
+  "confirmation_note" character varying NULL,
+  "cancellation_note" character varying NULL,
+  "refund_note" character varying NULL,
+  "valid_until" timestamptz NULL,
+  "expired_at" timestamptz NULL,
   "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
@@ -670,6 +679,23 @@ CREATE INDEX "sales_order_adjs_tid_line_idx" ON "sales_order_adjustments" ("sale
 CREATE INDEX "sales_order_adjs_tid_return_idx" ON "sales_order_adjustments" ("sales_return_id");
 -- Create index "sales_order_adjs_tid_source_idx" to table: "sales_order_adjustments"
 CREATE INDEX "sales_order_adjs_tid_source_idx" ON "sales_order_adjustments" ("source_type", "source_id");
+-- Create "sales_order_line_allocations" table
+CREATE TABLE "sales_order_line_allocations" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "sales_order_line_id" character varying NOT NULL,
+  "source_location_id" character varying NOT NULL,
+  "quantity" numeric NOT NULL,
+  "is_archived" boolean NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_ol_alloc_tid_line_location_ukey" UNIQUE ("sales_order_line_id", "source_location_id"),
+  CONSTRAINT "sales_order_line_allocations_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- Create index "sales_ol_alloc_tid_location_idx" to table: "sales_order_line_allocations"
+CREATE INDEX "sales_ol_alloc_tid_location_idx" ON "sales_order_line_allocations" ("source_location_id");
 -- Create "sales_order_line_components" table
 CREATE TABLE "sales_order_line_components" (
   "id" character varying NOT NULL,
@@ -994,6 +1020,9 @@ CREATE TABLE "sales_returns" (
   "failure_reason" character varying NULL,
   "requested_at" timestamptz NULL,
   "completed_at" timestamptz NULL,
+  "confirmation_note" character varying NULL,
+  "confirmed_at" timestamptz NULL,
+  "locked_refund_amount" numeric NULL,
   "cancelled_at" timestamptz NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_returns_return_number_ukey" UNIQUE ("return_number"),

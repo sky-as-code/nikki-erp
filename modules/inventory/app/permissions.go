@@ -42,3 +42,13 @@ const (
 )
 
 const PermissionDoScrap = "do_scrap"
+
+// Warehouse-level reservations. Reserve and check are collection-level operations on the
+// reservation resource; release and consume act on one reservation. Protect has no permission
+// because it is never reachable from a client: only the paying module's port calls it.
+const (
+	PermissionReserveWarehouseStock      = "reserve_warehouse_stock"
+	PermissionCheckWarehouseAvailability = "check_warehouse_availability"
+	PermissionReleaseReservation         = "release_reservation"
+	PermissionConsumeReservation         = "consume_reservation"
+)

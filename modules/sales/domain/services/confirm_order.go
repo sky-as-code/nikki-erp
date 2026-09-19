@@ -96,11 +96,36 @@ const (
 	ReasonLockUnavailable  = "sales_order.locked"
 )
 
-// ConfirmOrder commits a draft order. Returns ClientErrors for every refusal a caller could fix; a
-// contended lock is one of them, since the caller may simply try again.
+// ConfirmOrderOptions carries what a confirm records beyond the order id.
+type ConfirmOrderOptions struct {
+	// ConfirmationNote is the confirmer's note, optional. Automatic overrides it with exactly
+	// AutoConfirmedNote, so the audit trail reads the same for every system confirm.
+	ConfirmationNote string
+	Automatic        bool
+}
+
+// ConfirmOrder commits a draft order with no note. See ConfirmOrderWith.
 func ConfirmOrder(
 	ctx corectx.Context,
 	orderId string,
+	dLock lock.DistributedLock,
+	taxSvc itExt.TaxCalculationExtService,
+	fulfillment itExt.FulfillmentExtService,
+	basisSvc itExt.ProductPricingBasisExtService,
+	policy SalesPolicy,
+	methods *SalesFulfillmentMethodDomainServiceImpl,
+	reservations itExt.FulfillmentReservationExtService,
+) (*ConfirmOrderResult, *ft.ClientErrors, error) {
+	return ConfirmOrderWith(ctx, orderId, ConfirmOrderOptions{}, dLock, taxSvc, fulfillment, basisSvc, policy, methods, reservations)
+}
+
+// ConfirmOrderWith commits a draft order. Returns ClientErrors for every refusal a caller could
+// fix; a contended lock is one of them, since the caller may simply try again. Manual and
+// automatic confirms run exactly the same validation and steps; only the note differs.
+func ConfirmOrderWith(
+	ctx corectx.Context,
+	orderId string,
+	opts ConfirmOrderOptions,
 	dLock lock.DistributedLock,
 	taxSvc itExt.TaxCalculationExtService,
 	fulfillment itExt.FulfillmentExtService,
@@ -134,7 +159,7 @@ func ConfirmOrder(
 
 	// Read AFTER acquiring the lock: a record read while queuing describes the world as it was
 	// before the other holder finished.
-	return confirmUnderLock(ctx, orderId, taxSvc, fulfillment, basisSvc, policy, methods, reservations)
+	return confirmUnderLock(ctx, orderId, opts, taxSvc, fulfillment, basisSvc, policy, methods, reservations)
 }
 
 // confirmLockKeyOf builds the key from the id rather than the order number, which is a
@@ -146,6 +171,7 @@ func confirmLockKeyOf(orderId string) string {
 func confirmUnderLock(
 	ctx corectx.Context,
 	orderId string,
+	opts ConfirmOrderOptions,
 	taxSvc itExt.TaxCalculationExtService,
 	fulfillment itExt.FulfillmentExtService,
 	basisSvc itExt.ProductPricingBasisExtService,
@@ -173,6 +199,11 @@ func confirmUnderLock(
 	}
 
 	if vErrs, err := assertConfirmable(ctx, record); err != nil || vErrs != nil {
+		return nil, vErrs, err
+	}
+	// An order past its payment deadline may only be cancelled: confirming it would hold stock
+	// for a customer who can no longer pay.
+	if vErrs, err := assertOrderNotExpired(ctx, record); err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}
 
@@ -205,7 +236,11 @@ func confirmUnderLock(
 	// order with no bill is a sale nobody can pay, and an announcement of a confirmation that then
 	// rolled back is what the outbox exists to prevent.
 	confirmedAt := time.Now().UTC()
-	initialBillId, err := stampConfirmed(ctx, orderId, record, confirmedAt, policy)
+	note := normaliseNote(opts.ConfirmationNote)
+	if opts.Automatic {
+		note = models.AutoConfirmedNote
+	}
+	initialBillId, err := stampConfirmed(ctx, orderId, record, confirmedAt, policy, note)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -416,10 +451,10 @@ func redeemOrderVouchers(
 // rolled back is exactly the failure the outbox exists to prevent.
 func stampConfirmed(
 	ctx corectx.Context, orderId string, record dmodel.DynamicFields, at time.Time,
-	policy SalesPolicy,
+	policy SalesPolicy, note string,
 ) (billId string, err error) {
 	err = withTransaction(ctx, models.SalesOrderSchemaName, func(tranxCtx corectx.Context) error {
-		billId, err = stampConfirmedInTranx(tranxCtx, orderId, record, at, policy)
+		billId, err = stampConfirmedInTranx(tranxCtx, orderId, record, at, policy, note)
 		return err
 	})
 	if err != nil {
@@ -430,7 +465,7 @@ func stampConfirmed(
 
 func stampConfirmedInTranx(
 	ctx corectx.Context, orderId string, record dmodel.DynamicFields, at time.Time,
-	policy SalesPolicy,
+	policy SalesPolicy, note string,
 ) (string, error) {
 	engineRepo, err := repoFor(models.SalesOrderSchemaName)
 	if err != nil {
@@ -450,6 +485,9 @@ func stampConfirmedInTranx(
 		models.SalesOrderFieldStatus:        string(models.SalesOrderStatusConfirmed),
 		models.SalesOrderFieldConfirmedAt:   model.ModelDateTime(at),
 		models.SalesOrderFieldInitialBillId: billId,
+	}
+	if note != "" {
+		update[models.SalesOrderFieldConfirmationNote] = note
 	}
 
 	if _, err := engineRepo.Update(ctx, update); err != nil {

@@ -101,7 +101,8 @@ func CreateKioskFulfillment(
 		return nil, nil, err
 	}
 	if fulfillmentId == "" {
-		fulfillmentId, itemIds, expiresAt, err = writeFulfillment(ctx, orderId, orgId, resolved, lines)
+		fulfillmentId, itemIds, expiresAt, err = writeFulfillment(ctx, orderId, orgId, resolved, lines,
+			dateTimeOf(order, models.SalesOrderFieldValidUntil))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -143,13 +144,17 @@ func writeFulfillment(
 	orderId, orgId string,
 	resolved *ResolvedFulfillmentMethod,
 	lines []itExt.FulfillmentLine,
+	validUntil *model.ModelDateTime,
 ) (fulfillmentId string, itemIds []string, expiresAt *model.ModelDateTime, err error) {
 	id, err := model.NewId()
 	if err != nil {
 		return "", nil, nil, err
 	}
 	fulfillmentId = string(*id)
-	expiresAt = reservationDeadline(resolved.ReservationTtlMinutes, time.Now().UTC())
+	// The order's own payment deadline when it has one, passed through unchanged; the method's
+	// TTL otherwise. A paid order's hold is protected afterwards, which is what makes a deadline
+	// on a hold safe to carry at all.
+	expiresAt = holdDeadline(validUntil, resolved.ReservationTtlMinutes, time.Now().UTC())
 
 	itemIds = make([]string, len(lines))
 	for index := range lines {
@@ -254,6 +259,18 @@ func reserveFulfillment(
 	expiresAt *model.ModelDateTime,
 	reservations itExt.FulfillmentReservationExtService,
 ) (bool, *ft.ClientErrors, error) {
+	// With the warehouse port installed the goods are held at the warehouse behind the target,
+	// all lines or none, and no slot is chosen until they actually leave. The per-location
+	// grouping below is the older path, kept for a build without the port.
+	if port := warehouseHolds; port != nil {
+		vErrs, err := reserveAtWarehouse(ctx, fulfillmentId, orgId, resolved, lines, itemIds, expiresAt, firstSourceRevision, port)
+		if err != nil || vErrs != nil {
+			releaseAfterFailedReserve(ctx, fulfillmentId, reservations)
+			return false, vErrs, err
+		}
+		return true, nil, nil
+	}
+
 	if reservations == nil {
 		// No port bound. The fulfillment stands unreserved rather than failing the confirm, matching
 		// how the goods-issue path treats an absent inventory port.
