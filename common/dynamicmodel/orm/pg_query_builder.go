@@ -1446,6 +1446,12 @@ func (this *PgQueryBuilder) orderExprs(
 func (this *PgQueryBuilder) resolveOrderField(
 	ctx *graphSelectCtx, schema *dmodel.ModelSchema, fieldName string,
 ) (*dmodel.ModelField, string, error) {
+	if ctx != nil && ctx.resolver != nil {
+		field, ref, ok, err := ctx.resolver.ResolveOrderRef(fieldName)
+		if err != nil || ok {
+			return field, ref, err
+		}
+	}
 	if ctx == nil || ctx.planner == nil {
 		return this.prepareColName(schema, fieldName)
 	}

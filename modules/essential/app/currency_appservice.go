@@ -37,6 +37,12 @@ func (this *CurrencyApplicationServiceImpl) GetCurrency(
 	return this.currencySvc.GetCurrency(ctx, query)
 }
 
+func (this *CurrencyApplicationServiceImpl) GetCurrencyByCode(
+	ctx corectx.Context, query itCurrency.GetCurrencyByCodeQuery,
+) (*itCurrency.GetCurrencyByCodeResult, error) {
+	return this.currencySvc.GetCurrencyByCode(ctx, query)
+}
+
 func (this *CurrencyApplicationServiceImpl) Round(
 	ctx corectx.Context, query itCurrency.RoundQuery,
 ) (*itCurrency.RoundResult, error) {

@@ -10,6 +10,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm/advanced"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/database/dialects"
@@ -65,7 +66,10 @@ func InitSubModule(params InitParams) error {
 		deps.Register(func() (orm.DbClient, error) {
 			return dialects.InitDbClient(entDriverOpts)
 		}),
-		deps.Register(orm.NewPgQueryBuilder),
+		// The advanced builder is the one QueryBuilder every repository receives: computed-field
+		// filters, single-statement edge projection. orm.NewPgQueryBuilder stays as the reference
+		// implementation it embeds.
+		deps.Register(advanced.NewAdvancedPgQueryBuilder),
 		deps.Register(func() *EntClientOptions {
 			return &EntClientOptions{
 				Driver:       driver,

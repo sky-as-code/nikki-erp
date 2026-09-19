@@ -323,6 +323,16 @@ func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.Rep
 	if vErr := this.validateGetOneColumnsAndFilter(param.Fields, param.Filter); vErr != nil {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: ft.ClientErrors{*vErr}}, nil
 	}
+	plan, planErrs, err := this.nestedProjectionPlan(param.Fields)
+	if err != nil {
+		return nil, err
+	}
+	if len(planErrs) > 0 {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: planErrs}, nil
+	}
+	if plan != nil {
+		return this.getOneWithProjectedEdges(ctx, param, plan)
+	}
 	if this.hasNestedOrEdgeColumns(param.Fields) {
 		return this.getOneWithNestedColumns(ctx, param)
 	}
@@ -333,7 +343,7 @@ func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.Rep
 	graph = this.injectTenantIntoGraph(ctx, graph)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(
 		this.schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-			Columns: orm.ToSelectColumns(this.ensurePrimaryKeyColumns(param.Fields)),
+			Columns: orm.ToSelectColumns(this.ensureSystemColumns(param.Fields)),
 		})
 	if err != nil {
 		return nil, err
@@ -343,7 +353,7 @@ func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.Rep
 	}
 
 	this.logQuery(*sqlQuery)
-	mainColumns := this.ensurePrimaryKeyColumns(param.Fields)
+	mainColumns := this.ensureSystemColumns(param.Fields)
 	rows, err := this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(this.schema, mainColumns))
 	if err != nil {
 		return nil, err
@@ -815,6 +825,18 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 	// leak back to the caller.
 	param.Graph = this.injectIsArchivedIntoGraph(param.Graph, param.IncludeArchived)
 
+	// A builder that projects edges inside the root statement takes precedence over the per-row
+	// hydration path: one query per page instead of one per row per edge.
+	plan, planErrs, err := this.nestedProjectionPlan(param.Fields)
+	if err != nil {
+		return nil, err
+	}
+	if len(planErrs) > 0 {
+		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: planErrs}, nil
+	}
+	if plan != nil {
+		return this.searchWithProjectedEdges(ctx, param, plan)
+	}
 	if this.hasNestedOrEdgeColumns(param.Fields) {
 		return this.searchWithNestedColumns(ctx, param)
 	}
@@ -823,7 +845,7 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 	size := param.Size
 	var total int
 	total, countClientErrs, err := this.countRowsMatchingGraph(
-		ctx, merged, param.Language, this.ensurePrimaryKeyColumns(param.Fields))
+		ctx, merged, param.Language, this.ensureSystemColumns(param.Fields))
 	if err != nil {
 		return nil, err
 	}
@@ -833,7 +855,7 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 		}, nil
 	}
 	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, dyn.RepoSearchParam{
-		Fields:   this.ensurePrimaryKeyColumns(param.Fields),
+		Fields:   this.ensureSystemColumns(param.Fields),
 		Page:     param.Page,
 		Size:     param.Size,
 		Language: param.Language,
@@ -1589,6 +1611,12 @@ func (this *BaseDynamicRepositoryImpl) validateSelectColumns(columns []string) *
 			continue
 		}
 		if strings.Contains(col, ".") {
+			// A builder that projects edges itself validates dotted paths (and allows deeper
+			// ones) when it plans the projection; the {edge}.{field} rule only binds the
+			// per-row hydration path.
+			if this.projectsNestedEdges() {
+				continue
+			}
 			if _, err := this.parseNestedColumn(col); err != nil {
 				return err
 			}
@@ -1719,7 +1747,16 @@ func (this *BaseDynamicRepositoryImpl) removeNilFilterFields(filter dmodel.Dynam
 	}
 }
 
-func (this *BaseDynamicRepositoryImpl) ensurePrimaryKeyColumns(columns []string) []string {
+// ensureSystemColumns adds the columns a read must carry whatever the caller asked for.
+//
+// Primary keys, so a row can be addressed. Etag, so a row read from a list can be written back
+// under an optimistic-concurrency check: a client editing a record it searched for has only the
+// projection to work from, and no client asks for etag -- the field picker hides it as a system
+// field, deliberately. Without this, such an update either overwrites a concurrent one silently or
+// has to re-read the record first, reintroducing the race it is meant to close.
+//
+// An empty list means SELECT *, which already carries both.
+func (this *BaseDynamicRepositoryImpl) ensureSystemColumns(columns []string) []string {
 	if len(columns) == 0 {
 		return columns
 	}
@@ -1729,6 +1766,10 @@ func (this *BaseDynamicRepositoryImpl) ensurePrimaryKeyColumns(columns []string)
 	}
 	for _, key := range this.schema.PrimaryKeys() {
 		set[key] = struct{}{}
+	}
+	// Not every schema extends versioned_model, and one that does not has no etag column to select.
+	if this.schema.IsVersioningKey(basemodel.FieldEtag) {
+		set[basemodel.FieldEtag] = struct{}{}
 	}
 	return mapKeysSorted(set)
 }

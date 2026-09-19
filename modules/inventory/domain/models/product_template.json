@@ -4,7 +4,7 @@
 	"table_name": "inventory_product_templates",
 	"should_build_db": true,
 	"record_label_field": "name",
-	"default_search_fields": ["name", "short_name", "status", "sale_ok", "purchase_ok"],
+	"default_search_fields": ["name", "base_sales_price", "variant_count", "uom_name"],
 	"partial_uniques_strict": [
 		{ "index_name": "invty_prod_tpls_tid_src_sys_ext_id", "not_null_fields": ["source_system"], "nullable_field": "external_id" }
 	],
@@ -41,6 +41,14 @@
 			"name": "brand_id",
 			"label": "fields.brand_id",
 			"data_type": "ulid"
+		},
+		{
+			"name": "uom_id",
+			"label": "fields.uom_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "Unit the product is counted and sold in. Nullable: templates predating this field carry none, and the variant flattens whatever is here for its listings."
+			}
 		},
 		{
 			"name": "sale_ok",
@@ -147,6 +155,15 @@
 			"required_for_create": true
 		},
 		{
+			"name": "uom_name",
+			"label": "fields.uom_name",
+			"data_type": { "type": "langjson", "min": 0, "max": 200 },
+			"computed": { "kind": "related", "is_stored": false, "field": "uom.name" },
+			"description": {
+				"en-US": "The unit's name, read through the edge. A variant listing reaches the same value through its own related field (product_template.uom.name) or through this one; both resolve to the unit's name column."
+			}
+		},
+		{
 			"name": "variant_count",
 			"label": "fields.variant_count",
 			"data_type": { "type": "int64", "min": 0, "max": 1000000000 },
@@ -222,6 +239,14 @@
 			"dest_schema": "inventory_brand",
 			"key_map": { "brand_id": "id" },
 			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "uom",
+			"label": { "en-US": "Unit of measure" },
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": { "uom_id": "id" },
+			"on_delete": "NO ACTION"
 		}
 	],
 
@@ -229,7 +254,7 @@
 		{
 			"edge": "variants",
 			"label": { "en-US": "Variants" },
-			"existing": { "src_schema": "inventory_product_variant", "src_edge": "template" }
+			"existing": { "src_schema": "inventory_product_variant", "src_edge": "product_template" }
 		}
 	]
 }

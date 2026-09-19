@@ -64,10 +64,12 @@ func TestVariantHasNoStoredDisplayName(t *testing.T) {
 
 	schema := ProductVariantSchemaBuilder().Build()
 
-	for _, fieldName := range []string{"display_name", "variant_name"} {
-		_, ok := schema.Fields()[fieldName]
-		assert.Falsef(t, ok, "%q must be computed, never stored", fieldName)
+	if field, ok := schema.Fields()["display_name"]; assert.True(t, ok, "display_name must exist") {
+		assert.True(t, field.IsComputed(), "display_name must be computed, never stored")
+		assert.False(t, field.IsPersisted(), "display_name must occupy no column")
 	}
+	_, ok := schema.Fields()["variant_name"]
+	assert.False(t, ok, "variant_name must be computed, never stored")
 }
 
 // A single variant is the template's only concrete product by definition, so no flag marks it.

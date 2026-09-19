@@ -23,7 +23,7 @@ const (
 // presents data to everyone working in it — which locale, which clock, which currency — so they
 // belong to the organization rather than to the person reading the screen.
 const (
-	OrgSettingSystemLocale    = "system_locale"
+	OrgSettingSystemLanguage  = "system_language"
 	OrgSettingSystemTimezone  = "system_timezone"
 	OrgSettingDefaultCurrency = "default_currency"
 )
@@ -43,7 +43,7 @@ const (
 // There is no fallback language, which is what makes this list load-bearing rather than advisory.
 //
 // The same list is spelled out as the enum values of `language` in user_settings.json and of
-// `system_locale` in org_settings.json. The duplication is deliberate — the JSON is the schema and
+// `system_language` in org_settings.json. The duplication is deliberate — the JSON is the schema and
 // this is what Go code validates against — and the smoke tests assert the two stay equal.
 var SupportedLanguages = []string{"en-US", "vi-VN"}
 
@@ -90,7 +90,7 @@ func UserSettingsSchemaBuilder() *dmodel.ModelSchemaBuilder {
 // organization's is what a shared report is stamped with, the user's is how that report is shown
 // to the person reading it.
 //
-// system_locale is an enum where system_timezone is not, on the same reasoning as the user-level
+// system_language is an enum where system_timezone is not, on the same reasoning as the user-level
 // schema: the supported locale set is exactly the set of translations the application ships.
 //
 // default_currency is free text rather than a reference to essential_currency: a settings schema

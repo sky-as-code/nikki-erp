@@ -31,7 +31,7 @@ ${SETTING_LANGUAGE}         language
 ${SETTING_TIMEZONE}         timezone
 
 # Essential's organization-level settings: an organization's own conventions.
-${SETTING_SYSTEM_LOCALE}       system_locale
+${SETTING_SYSTEM_LANGUAGE}     system_language
 ${SETTING_SYSTEM_TIMEZONE}     system_timezone
 ${SETTING_DEFAULT_CURRENCY}    default_currency
 

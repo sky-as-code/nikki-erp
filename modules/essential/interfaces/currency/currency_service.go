@@ -7,6 +7,7 @@ import (
 )
 
 type GetCurrencyResult = dyn.OpResult[GetCurrencyResultData]
+type GetCurrencyByCodeResult = dyn.OpResult[GetCurrencyResultData]
 type RoundResult = dyn.OpResult[RoundResultData]
 type AssertUsableResult = dyn.OpResult[struct{}]
 
@@ -21,6 +22,10 @@ type CurrencyRepository interface {
 // repositories.
 type CurrencyLookupService interface {
 	GetCurrency(ctx corectx.Context, query GetCurrencyQuery) (*GetCurrencyResult, error)
+
+	// GetCurrencyByCode resolves the alphabetic code a setting or an import file carries, for
+	// callers that hold a code rather than an id.
+	GetCurrencyByCode(ctx corectx.Context, query GetCurrencyByCodeQuery) (*GetCurrencyByCodeResult, error)
 }
 
 // CurrencyDomainService is the full capability, implemented inside Essential: the CRUD of the

@@ -26,6 +26,15 @@ type GetCurrencyQuery struct {
 	Id model.Id
 }
 
+// GetCurrencyByCodeQuery fetches a single currency by its ISO 4217 alphabetic code.
+//
+// It exists alongside the id lookup because not every currency reference in the product is an id:
+// the `default_currency` org setting stores a code, being free text a tenant types rather than a
+// foreign key. HasData false means no currency carries that code.
+type GetCurrencyByCodeQuery struct {
+	Code string
+}
+
 // GetCurrencyResultData exposes the parts of a currency a consuming module may legitimately
 // depend on: enough to validate a reference, render an amount, and round one correctly.
 //

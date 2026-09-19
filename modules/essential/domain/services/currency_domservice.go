@@ -118,14 +118,39 @@ func (this *CurrencyDomainServiceImpl) AssertUsable(
 }
 
 // loadCurrency fetches one currency by id, returning nil when it does not exist.
+// GetCurrencyByCode resolves an alphabetic code, for callers holding a code rather than an id --
+// the `default_currency` org setting chiefly, which stores free text.
+func (this *CurrencyDomainServiceImpl) GetCurrencyByCode(
+	ctx corectx.Context, query itCurrency.GetCurrencyByCodeQuery,
+) (*itCurrency.GetCurrencyByCodeResult, error) {
+	found, err := this.loadCurrencyBy(ctx, dmodel.DynamicFields{models.CurrencyFieldCode: query.Code})
+	if err != nil {
+		return nil, errors.Wrap(err, "get currency by code")
+	}
+	if found == nil {
+		return &itCurrency.GetCurrencyByCodeResult{HasData: false}, nil
+	}
+
+	return &itCurrency.GetCurrencyByCodeResult{
+		Data:    toResultData(found),
+		HasData: true,
+	}, nil
+}
+
 func (this *CurrencyDomainServiceImpl) loadCurrency(
 	ctx corectx.Context, currencyId model.Id,
 ) (*models.Currency, error) {
-	found, err := this.Repository().GetOne(ctx, dyn.RepoGetOneParam{
-		Filter: dmodel.DynamicFields{models.CurrencyFieldId: currencyId},
-	})
+	return this.loadCurrencyBy(ctx, dmodel.DynamicFields{models.CurrencyFieldId: currencyId})
+}
+
+// loadCurrencyBy reads at most one currency. Both callers filter on a unique column, so a filter
+// that matches at all matches exactly once.
+func (this *CurrencyDomainServiceImpl) loadCurrencyBy(
+	ctx corectx.Context, filter dmodel.DynamicFields,
+) (*models.Currency, error) {
+	found, err := this.Repository().GetOne(ctx, dyn.RepoGetOneParam{Filter: filter})
 	if err != nil {
-		return nil, errors.Wrap(err, "loadCurrency")
+		return nil, errors.Wrap(err, "loadCurrencyBy")
 	}
 	if !found.HasData {
 		return nil, nil

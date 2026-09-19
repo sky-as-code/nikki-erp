@@ -16,7 +16,7 @@ Test Tags         settings    levels    org
 Read Org Settings Returns Every Declared Setting
     ${resp}=    Get Settings At Level    ${SETTINGS_ORG_API}
     Response Status Should Be    ${resp}    200
-    Find Setting Item    ${resp}    ${SETTING_SYSTEM_LOCALE}
+    Find Setting Item    ${resp}    ${SETTING_SYSTEM_LANGUAGE}
     Find Setting Item    ${resp}    ${SETTING_SYSTEM_TIMEZONE}
     Find Setting Item    ${resp}    ${SETTING_DEFAULT_CURRENCY}
 
@@ -62,12 +62,12 @@ An Org Setting Write Leaves The Others Untouched
     ...    msg=A partial save changed an org setting it did not name.
 
 An Org Locale Outside The Supported Set Is Refused
-    [Documentation]    system_locale is an enum of exactly the locales the application ships
+    [Documentation]    system_language is an enum of exactly the languages the application ships
     ...    translations for. There is no fallback language, so an unsupported locale would render
     ...    every key of every shared document as its raw namespace:key.
     [Tags]    negative
     ${resp}=    Set Settings At Level    ${SETTINGS_ORG_API}
-    ...    ${{ [{'name': 'system_locale', 'value': 'xx-XX'}] }}    expected_status=any
+    ...    ${{ [{'name': 'system_language', 'value': 'xx-XX'}] }}    expected_status=any
     Should Be True    400 <= ${resp.status_code} < 500
     ...    msg=An unsupported locale must be refused.
 

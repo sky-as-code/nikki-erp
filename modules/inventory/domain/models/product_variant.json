@@ -3,8 +3,8 @@
 	"label": "inventory_product_variant.label",
 	"table_name": "inventory_product_variants",
 	"should_build_db": true,
-	"record_label_field": "sku",
-	"default_search_fields": ["template_name", "sku", "combination_key", "status"],
+	"record_label_field": "display_name",
+	"default_search_fields": ["product_template_name", "sku", "product_template_base_sales_price", "on_hand_quantity", "product_template_uom_name"],
 	"composite_uniques": [{ "index_name": "invty_prod_variants_tid_ptpl_id_comb_key", "fields": ["product_template_id", "combination_key"] }],
 	"partial_uniques_strict": [
 		{ "index_name": "invty_prod_variants_tid_src_sys_ext_id", "not_null_fields": ["source_system"], "nullable_field": "external_id" }
@@ -143,90 +143,126 @@
 		},
 
 		{
-			"name": "template_name",
-			"label": "fields.template_name",
+			"name": "product_template_name",
+			"label": "fields.product_template_name",
 			"data_type": { "type": "langjson", "min": 1, "max": 200 },
-			"computed": { "kind": "related", "is_stored": false, "field": "template.name" },
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.name" },
 			"description": {
 				"en-US": "Copied from the owning template when the variant is read. Computed rather than stored: the name lives on the template, so a second copy here would go stale the moment the template is renamed."
 			}
 		},
 		{
-			"name": "template_short_name",
-			"label": "fields.template_short_name",
+			"name": "product_template_short_name",
+			"label": "fields.product_template_short_name",
 			"data_type": { "type": "langjson", "min": 0, "max": 100 },
-			"computed": { "kind": "related", "is_stored": false, "field": "template.short_name" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.short_name" }
 		},
 		{
-			"name": "template_description",
-			"label": "fields.template_description",
+			"name": "product_template_description",
+			"label": "fields.product_template_description",
 			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"computed": { "kind": "related", "is_stored": false, "field": "template.description" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.description" }
 		},
 		{
-			"name": "template_sales_description",
-			"label": "fields.template_sales_description",
+			"name": "product_template_sales_description",
+			"label": "fields.product_template_sales_description",
 			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"computed": { "kind": "related", "is_stored": false, "field": "template.sales_description" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.sales_description" }
 		},
 		{
-			"name": "template_purchase_description",
-			"label": "fields.template_purchase_description",
+			"name": "product_template_purchase_description",
+			"label": "fields.product_template_purchase_description",
 			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"computed": { "kind": "related", "is_stored": false, "field": "template.purchase_description" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.purchase_description" }
 		},
 		{
-			"name": "template_category_id",
-			"label": "fields.template_category_id",
+			"name": "product_template_category_id",
+			"label": "fields.product_template_category_id",
 			"data_type": "ulid",
-			"computed": { "kind": "related", "is_stored": false, "field": "template.category_id" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.category_id" }
 		},
 		{
-			"name": "template_brand_id",
-			"label": "fields.template_brand_id",
+			"name": "product_template_brand_id",
+			"label": "fields.product_template_brand_id",
 			"data_type": "ulid",
-			"computed": { "kind": "related", "is_stored": false, "field": "template.brand_id" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.brand_id" }
 		},
 		{
-			"name": "template_product_type_id",
-			"label": "fields.template_product_type_id",
+			"name": "product_template_product_type_id",
+			"label": "fields.product_template_product_type_id",
 			"data_type": "ulid",
-			"computed": { "kind": "related", "is_stored": false, "field": "template.product_type_id" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.product_type_id" }
 		},
 		{
-			"name": "template_status",
-			"label": "fields.template_status",
+			"name": "product_template_status",
+			"label": "fields.product_template_status",
 			"data_type": {
 				"type": "enum_string",
 				"values": ["draft", "active", "discontinued"]
 			},
-			"computed": { "kind": "related", "is_stored": false, "field": "template.status" },
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.status" },
 			"description": {
 				"en-US": "The template's lifecycle, distinct from this variant's own status: an active variant of a discontinued template is a real and meaningful state."
 			}
 		},
 		{
-			"name": "template_sale_ok",
-			"label": "fields.template_sale_ok",
+			"name": "product_template_sale_ok",
+			"label": "fields.product_template_sale_ok",
 			"data_type": "boolean",
-			"computed": { "kind": "related", "is_stored": false, "field": "template.sale_ok" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.sale_ok" }
 		},
 		{
-			"name": "template_purchase_ok",
-			"label": "fields.template_purchase_ok",
+			"name": "product_template_purchase_ok",
+			"label": "fields.product_template_purchase_ok",
 			"data_type": "boolean",
-			"computed": { "kind": "related", "is_stored": false, "field": "template.purchase_ok" },
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.purchase_ok" },
 			"description": {
 				"en-US": "Whether this product line may be bought, copied from the template. It sits on the template because 'we buy this product' is a decision about the product line rather than about one colour of it. Purchase reads it here so that validating a line costs one read instead of two (D4)."
 			}
 		},
 		{
-			"name": "template_base_sales_price",
-			"label": "fields.template_base_sales_price",
+			"name": "product_template_base_sales_price",
+			"label": "fields.product_template_base_sales_price",
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
-			"computed": { "kind": "related", "is_stored": false, "field": "template.base_sales_price" },
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.base_sales_price" },
 			"description": {
-				"en-US": "The owning template's base sales price, read through the edge rather than copied — the same treatment as template_name and for the same reason. Exposed as its own field because effective_base_sales_price below is built from it, and because a caller comparing the two wants to see what the variant added."
+				"en-US": "The owning template's base sales price, read through the edge rather than copied — the same treatment as product_template_name and for the same reason. Exposed as its own field because effective_base_sales_price below is built from it, and because a caller comparing the two wants to see what the variant added."
+			}
+		},
+		{
+			"name": "product_template_uom_id",
+			"label": "fields.product_template_uom_id",
+			"data_type": "ulid",
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.uom_id" },
+			"description": {
+				"en-US": "The owning template's unit, read through the edge rather than copied.\n\nThe id, not the name: the name lives on essential_uom, two edges from here, and a related field walks exactly one edge to a physical column. Listings therefore show the id until the name is denormalized onto the template or resolved by a function field."
+			}
+		},
+		{
+			"name": "product_template_uom_name",
+			"label": "fields.product_template_uom_name",
+			"data_type": { "type": "langjson", "min": 0, "max": 200 },
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.uom.name" },
+			"description": {
+				"en-US": "The owning template's unit name, read two edges away: the template, then its unit. A related path may chain to-one edges; the first hop is batched per page and the remainder is projected on that read."
+			}
+		},
+		{
+			"name": "display_name",
+			"label": "fields.display_name",
+			"data_type": { "type": "string", "min": 0, "max": 400 },
+			"computed": { "kind": "function", "is_stored": false, "function": "inventory.variant_display_name" },
+			"description": {
+				"en-US": "How a variant is named to a person: the template name followed by its attribute values, as \"Coca Cola (No sugar, Big)\".\n\nA function field rather than a declarative one because the values are three edges away (attribute_values, template_attribute_value, attribute_value) and no declarative kind crosses more than one. The implementation fetches the whole page in one query."
+			}
+		},
+		{
+			"name": "attribute_summary",
+			"label": "fields.attributes",
+			"data_type": { "type": "string", "array": true, "min": 0, "max": 400 },
+			"computed": { "kind": "function", "is_stored": false, "function": "inventory.variant_attribute_summary" },
+			"description": {
+				"en-US": "The variant's attributes as name/value pairs, for a listing that shows each as its own pill. Same three-edge walk as display_name and filled by the same batched read."
 			}
 		},
 		{
@@ -255,7 +291,7 @@
 				"expression": {
 					"op": "add",
 					"args": [
-						{ "function": "coalesce", "args": [{ "field": "template_base_sales_price" }, { "value": 0.0 }] },
+						{ "function": "coalesce", "args": [{ "field": "product_template_base_sales_price" }, { "value": 0.0 }] },
 						{ "function": "coalesce", "args": [{ "field": "sales_price_extra_total" }, { "value": 0.0 }] }
 					]
 				}
@@ -325,7 +361,7 @@
 
 	"edges_to": [
 		{
-			"edge": "template",
+			"edge": "product_template",
 			"label": { "en-US": "Product template" },
 			"type": "many:one",
 			"dest_schema": "inventory_product_template",

@@ -246,3 +246,68 @@ BEGIN
 		ON CONFLICT DO NOTHING;
 	END IF;
 END $$;
+
+-- ---------------------------------------------------------------------------
+-- The languages the application ships translations for.
+-- ---------------------------------------------------------------------------
+
+-- essential_languages ships empty, which is why every consumer that needed a language's formatting
+-- rules carried its own literal copy of them -- iam's user_rest.languageOf, chiefly. These rows are
+-- what lets that copy go away: the user-context endpoint resolves the acting user's language
+-- against this table instead of a switch statement that had to be edited in step with
+-- SupportedLanguages, and silently disagreed with it.
+--
+-- The Vietnamese separators here are deliberately NOT the ones the old literal carried. It had
+-- decimal '.' and thousands ',', which is the English convention; Vietnamese is the other way round
+-- (1.234.567). VND is quoted in whole units, so the thousands separator is the only one most users
+-- ever see, and the old value made every amount on a Vietnamese screen wrong.
+--
+-- Ids are fixed and readable rather than generated, matching the currency seed above, so the same
+-- language carries the same id in every deployment. ON CONFLICT DO NOTHING makes a re-run a no-op.
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'essential_languages'
+	) THEN
+		INSERT INTO "essential_languages" (
+			"id", "name", "iso_code", "direction", "decimal_separator", "thousands_separator", "date_format", "time_format", "short_time_format", "first_day_of_week", "created_at", "etag"
+		) VALUES
+		('01KZQC0000LANGUAGE0000EN00', 'English', 'en-US', 'ltr', '.', ',', 'MM/dd/yyyy', 'HH:mm:ss', 'HH:mm', 'sunday', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZQC0000LANGUAGE0000VI00', 'Tiếng Việt', 'vi-VN', 'ltr', ',', '.', 'dd/MM/yyyy', 'HH:mm:ss', 'HH:mm', 'monday', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT DO NOTHING;
+	END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------
+-- Rename the org setting system_locale -> system_language.
+-- ---------------------------------------------------------------------------
+
+-- The stored value lives in settings_records.name, so renaming the Go constant and the JSON schema
+-- is not enough on its own: an organization that had already chosen a language would keep a row
+-- under a name the schema no longer declares, and silently read as unset.
+--
+-- The DELETE guards the (module_key, name, owner_id) unique key. An owner holding both names can
+-- only have got there by a partial run of this migration, and the new name is the one to keep --
+-- without this, the UPDATE would abort the whole migration on a constraint violation.
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'settings_records'
+	) THEN
+		DELETE FROM "settings_records" AS stale
+		WHERE stale."module_key" = 'essential' AND stale."name" = 'system_locale'
+			AND EXISTS (
+				SELECT 1 FROM "settings_records" AS renamed
+				WHERE renamed."module_key" = 'essential' AND renamed."name" = 'system_language'
+					AND renamed."owner_id" = stale."owner_id"
+			);
+
+		UPDATE "settings_records"
+		SET "name" = 'system_language'
+		WHERE "module_key" = 'essential' AND "name" = 'system_locale';
+	END IF;
+END $$;

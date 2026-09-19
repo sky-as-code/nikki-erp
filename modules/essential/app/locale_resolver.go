@@ -38,12 +38,12 @@ func NewUserLocaleResolver(settingsSvc itExt.EffectiveSettingsExtService) dyn.Lo
 			return defaultLocale()
 		}
 
-		// The user's own language first. Falling back to the organization's system_locale keeps a
+		// The user's own language first. Falling back to the organization's system_language keeps a
 		// user who never chose one reading in the language their organization works in, which is a
 		// better guess than the application default -- but only a fallback, never an override.
 		for _, key := range []string{
 			effectiveKey(settings.UserSettingLanguage),
-			effectiveKey(settings.OrgSettingSystemLocale),
+			effectiveKey(settings.OrgSettingSystemLanguage),
 		} {
 			if code := supportedLanguageOf(result.Data.Values[key]); code != nil {
 				return code

@@ -7,6 +7,7 @@ type LanguageDomainService interface {
 	DeleteLanguage(ctx corectx.Context, cmd DeleteLanguageCommand) (*DeleteLanguageResult, error)
 	LanguageExists(ctx corectx.Context, query LanguageExistsQuery) (*LanguageExistsResult, error)
 	GetLanguage(ctx corectx.Context, query GetLanguageQuery) (*GetLanguageResult, error)
+	GetLanguageByIsoCode(ctx corectx.Context, query GetLanguageByIsoCodeQuery) (*GetLanguageByIsoCodeResult, error)
 	SearchLanguages(ctx corectx.Context, query SearchLanguagesQuery) (*SearchLanguagesResult, error)
 	UpdateLanguage(ctx corectx.Context, cmd UpdateLanguageCommand) (*UpdateLanguageResult, error)
 }
@@ -16,6 +17,7 @@ type LanguageAppService interface {
 	DeleteLanguage(ctx corectx.Context, cmd DeleteLanguageCommand) (*DeleteLanguageResult, error)
 	LanguageExists(ctx corectx.Context, query LanguageExistsQuery) (*LanguageExistsResult, error)
 	GetLanguage(ctx corectx.Context, query GetLanguageQuery) (*GetLanguageResult, error)
+	GetLanguageByIsoCode(ctx corectx.Context, query GetLanguageByIsoCodeQuery) (*GetLanguageByIsoCodeResult, error)
 	GetLanguageJson(ctx corectx.Context, query GetLanguageJsonQuery) (*GetLanguageJsonResult, error)
 	SearchLanguages(ctx corectx.Context, query SearchLanguagesQuery) (*SearchLanguagesResult, error)
 	UpdateLanguage(ctx corectx.Context, cmd UpdateLanguageCommand) (*UpdateLanguageResult, error)

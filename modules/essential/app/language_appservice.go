@@ -31,6 +31,12 @@ func (this *LanguageApplicationServiceImpl) GetLanguage(ctx corectx.Context, que
 	return this.languageSvc.GetLanguage(ctx, query)
 }
 
+func (this *LanguageApplicationServiceImpl) GetLanguageByIsoCode(
+	ctx corectx.Context, query it.GetLanguageByIsoCodeQuery,
+) (*it.GetLanguageByIsoCodeResult, error) {
+	return this.languageSvc.GetLanguageByIsoCode(ctx, query)
+}
+
 func (this *LanguageApplicationServiceImpl) GetLanguageJson(ctx corectx.Context, query it.GetLanguageJsonQuery) (*it.GetLanguageJsonResult, error) {
 	_ = ctx
 	byModule := langjson.ByLanguageCodeAndModule[query.LanguageCode]
