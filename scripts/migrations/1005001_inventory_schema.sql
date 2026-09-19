@@ -14,6 +14,33 @@ CREATE TABLE "inventory_storage_categories" (
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_stor_cats_tid_code_org_id_ukey" UNIQUE ("code", "org_id")
 );
+-- Create "inventory_integration_outbox" table
+CREATE TABLE "inventory_integration_outbox" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "event_id" character varying NOT NULL,
+  "aggregate_id" character varying NOT NULL,
+  "event_type" character varying NOT NULL,
+  "schema_version" character varying NOT NULL,
+  "payload" jsonb NOT NULL,
+  "occurred_at" timestamptz NOT NULL,
+  "published_at" timestamptz NULL,
+  "attempt_count" integer NULL,
+  "last_error" character varying NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "invty_outbox_eventid_ukey" UNIQUE ("event_id")
+);
+-- Create index "invty_outbox_aggregate_idx" to table: "inventory_integration_outbox"
+CREATE INDEX "invty_outbox_aggregate_idx" ON "inventory_integration_outbox" ("aggregate_id");
+-- Create index "invty_outbox_occurred_idx" to table: "inventory_integration_outbox"
+CREATE INDEX "invty_outbox_occurred_idx" ON "inventory_integration_outbox" ("occurred_at");
+-- Create index "invty_outbox_published_idx" to table: "inventory_integration_outbox"
+CREATE INDEX "invty_outbox_published_idx" ON "inventory_integration_outbox" ("published_at");
+-- Create index "invty_outbox_type_idx" to table: "inventory_integration_outbox"
+CREATE INDEX "invty_outbox_type_idx" ON "inventory_integration_outbox" ("event_type");
 -- Create "inventory_warehouses" table
 CREATE TABLE "inventory_warehouses" (
   "id" character varying NOT NULL,
@@ -70,16 +97,12 @@ CREATE TABLE "inventory_locations" (
 CREATE INDEX "invty_locs_barcode_idx" ON "inventory_locations" ("barcode");
 -- Create index "invty_locs_parent_location_id_idx" to table: "inventory_locations"
 CREATE INDEX "invty_locs_parent_location_id_idx" ON "inventory_locations" ("parent_location_id");
+-- Create index "invty_locs_tid_code_org_wh_id_ukey_notnull" to table: "inventory_locations"
+CREATE UNIQUE INDEX "invty_locs_tid_code_org_wh_id_ukey_notnull" ON "inventory_locations" ("code", "org_id", "warehouse_id") WHERE (warehouse_id IS NOT NULL);
+-- Create index "invty_locs_tid_code_org_wh_id_ukey_null" to table: "inventory_locations"
+CREATE UNIQUE INDEX "invty_locs_tid_code_org_wh_id_ukey_null" ON "inventory_locations" ("code", "org_id") WHERE (warehouse_id IS NULL);
 -- Create index "invty_locs_warehouse_id_idx" to table: "inventory_locations"
 CREATE INDEX "invty_locs_warehouse_id_idx" ON "inventory_locations" ("warehouse_id");
--- Create index "invty_locs_tid_code_org_id_ukey_null" to table: "inventory_locations"
--- Codes with no warehouse (the virtual vendor/customer/transit/scrap/loss counterparties) stay
--- unique per org under the plain (code, org_id) key.
-CREATE UNIQUE INDEX "invty_locs_tid_code_org_id_ukey_null" ON "inventory_locations" ("code", "org_id") WHERE ("warehouse_id" IS NULL);
--- Create index "invty_locs_tid_code_org_id_wh_id_ukey_notnull" to table: "inventory_locations"
--- Warehouse-owned codes (e.g. every warehouse's own 'Stock') are unique per warehouse, not per
--- org, so the same code can be reused across a company's warehouses.
-CREATE UNIQUE INDEX "invty_locs_tid_code_org_id_wh_id_ukey_notnull" ON "inventory_locations" ("code", "org_id", "warehouse_id") WHERE ("warehouse_id" IS NOT NULL);
 -- Create "inventory_product_attributes" table
 CREATE TABLE "inventory_product_attributes" (
   "id" character varying NOT NULL,
@@ -522,6 +545,45 @@ CREATE INDEX "invty_stock_quants_loc_id_pvar_id_idx" ON "inventory_stock_quants"
 CREATE INDEX "invty_stock_quants_next_count_date_idx" ON "inventory_stock_quants" ("next_count_date");
 -- Create index "invty_stock_quants_pvar_id_loc_id_idx" to table: "inventory_stock_quants"
 CREATE INDEX "invty_stock_quants_pvar_id_loc_id_idx" ON "inventory_stock_quants" ("product_variant_id", "location_id");
+-- Create "inventory_stock_reservations" table
+CREATE TABLE "inventory_stock_reservations" (
+  "id" character varying NOT NULL,
+  "warehouse_id" character varying NOT NULL,
+  "product_variant_id" character varying NOT NULL,
+  "base_uom_id" character varying NOT NULL,
+  "quantity" numeric NOT NULL,
+  "consumed_quantity" numeric NOT NULL,
+  "released_quantity" numeric NOT NULL,
+  "reserved_until" timestamptz NULL,
+  "status" character varying NOT NULL,
+  "source_module" character varying NOT NULL,
+  "source_type" character varying NOT NULL,
+  "source_id" character varying NOT NULL,
+  "source_line_id" character varying NOT NULL,
+  "source_revision" integer NOT NULL,
+  "idempotency_key" character varying NOT NULL,
+  "request_fingerprint" character varying NOT NULL,
+  "release_reason" character varying NULL,
+  "released_at" timestamptz NULL,
+  "expiry_recorded_at" timestamptz NULL,
+  "org_id" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "invty_stock_rsv_source_line_rev_org_ukey" UNIQUE ("source_module", "source_type", "source_id", "source_line_id", "source_revision", "org_id"),
+  CONSTRAINT "inventory_stock_reservations_base_uom_id_fkey" FOREIGN KEY ("base_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "inventory_stock_reservations_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "inventory_stock_reservations_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT
+);
+-- Create index "invty_stock_rsv_org_idem_key_idx" to table: "inventory_stock_reservations"
+CREATE INDEX "invty_stock_rsv_org_idem_key_idx" ON "inventory_stock_reservations" ("org_id", "idempotency_key");
+-- Create index "invty_stock_rsv_scope_status_until_idx" to table: "inventory_stock_reservations"
+CREATE INDEX "invty_stock_rsv_scope_status_until_idx" ON "inventory_stock_reservations" ("org_id", "warehouse_id", "product_variant_id", "status", "reserved_until");
+-- Create index "invty_stock_rsv_source_idx" to table: "inventory_stock_reservations"
+CREATE INDEX "invty_stock_rsv_source_idx" ON "inventory_stock_reservations" ("source_module", "source_type", "source_id");
+-- Create index "invty_stock_rsv_until_id_idx" to table: "inventory_stock_reservations"
+CREATE INDEX "invty_stock_rsv_until_id_idx" ON "inventory_stock_reservations" ("reserved_until", "id");
 -- Create "inventory_stock_scraps" table
 CREATE TABLE "inventory_stock_scraps" (
   "id" character varying NOT NULL,
@@ -560,6 +622,19 @@ CREATE INDEX "invty_stock_scraps_pvar_id_idx" ON "inventory_stock_scraps" ("prod
 CREATE INDEX "invty_stock_scraps_status_idx" ON "inventory_stock_scraps" ("status");
 -- Create index "invty_stock_scraps_trf_id_idx" to table: "inventory_stock_scraps"
 CREATE INDEX "invty_stock_scraps_trf_id_idx" ON "inventory_stock_scraps" ("transfer_id");
+-- Create "inventory_warehouse_product_guards" table
+CREATE TABLE "inventory_warehouse_product_guards" (
+  "id" character varying NOT NULL,
+  "warehouse_id" character varying NOT NULL,
+  "product_variant_id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "invty_wh_prod_guards_wh_pvar_org_ukey" UNIQUE ("warehouse_id", "product_variant_id", "org_id"),
+  CONSTRAINT "inventory_warehouse_product_guards_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "inventory_warehouse_product_guards_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
 -- Create "inventory_warehouse_supply_relations" table
 CREATE TABLE "inventory_warehouse_supply_relations" (
   "id" character varying NOT NULL,

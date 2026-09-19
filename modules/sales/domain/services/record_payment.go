@@ -111,6 +111,9 @@ func RecordPayment(
 		}
 	}
 
+	if vErrs, err := assertOrderNotExpiredById(ctx, stringOf(bill, models.SalesBillFieldSalesOrderId)); err != nil || vErrs != nil {
+		return nil, vErrs, err
+	}
 	if vErrs, err := assertPaymentAcceptable(
 		ctx, bill, params, methods, channelPayments, policy,
 	); err != nil || vErrs != nil {

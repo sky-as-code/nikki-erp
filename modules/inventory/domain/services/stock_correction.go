@@ -37,6 +37,16 @@ type CorrectionRequest struct {
 
 	// IsInventoryAdjustment separates a count correction from a scrap in movement history.
 	IsInventoryAdjustment bool
+
+	// OperationTypeId and OperationCode let a caller record the movement under a type other than
+	// the seeded correction type: a consumed reservation is a real issue to a customer, not a
+	// correction, and history should say so. Both empty means the correction type.
+	OperationTypeId string
+	OperationCode   string
+
+	// IdempotencyKey, when set, is stamped on the generated transfer so a retried caller can find
+	// the movement it already made instead of making it twice.
+	IdempotencyKey string
 }
 
 // CorrectionResult reports what the correction generated, so the caller can record the link back.
@@ -114,7 +124,7 @@ func prepareCorrectionTransfer(
 ) (*transferOperationContext, *ft.ClientErrors, error) {
 	vErrs := ft.NewClientErrors()
 
-	operationType, err := findCorrectionOperationType(ctx, request.OrgId)
+	operationType, err := resolveMovementOperationType(ctx, request)
 	if err != nil {
 		return nil, vErrs, err
 	}
@@ -155,15 +165,19 @@ func insertCorrectionTransfer(
 	request CorrectionRequest,
 	operationType models.StockOperationType,
 ) (string, error) {
-	transferNumber, err := generateTransferNumber(correctionOperationCode)
+	operationCode := request.OperationCode
+	if operationCode == "" {
+		operationCode = correctionOperationCode
+	}
+	transferNumber, err := generateTransferNumber(operationCode)
 	if err != nil {
 		return "", err
 	}
 
-	_, err = operation.TransferRepo.Insert(ctx, dmodel.DynamicFields{
+	header := dmodel.DynamicFields{
 		models.StockTransferFieldTransferNumber:        transferNumber,
 		models.StockTransferFieldOperationTypeId:       derefString(operationType.GetId()),
-		models.StockTransferFieldOperationCode:         correctionOperationCode,
+		models.StockTransferFieldOperationCode:         operationCode,
 		models.StockTransferFieldSourceLocationId:      request.SourceLocationId,
 		models.StockTransferFieldDestinationLocationId: request.DestinationLocationId,
 		models.StockTransferFieldStatus:                models.StockTransferStatusDraft,
@@ -175,7 +189,11 @@ func insertCorrectionTransfer(
 		models.StockTransferFieldOriginReference: request.OriginReference,
 		models.StockTransferFieldNote:            request.Note,
 		models.StockTransferFieldOrgId:           request.OrgId,
-	})
+	}
+	if request.IdempotencyKey != "" {
+		header[models.StockTransferFieldIdempotencyKey] = request.IdempotencyKey
+	}
+	_, err = operation.TransferRepo.Insert(ctx, header)
 	if err != nil {
 		return "", errors.Wrap(err, "insertCorrectionTransfer")
 	}
@@ -340,6 +358,30 @@ func FindLocationByType(
 		return nil, nil
 	}
 	return models.NewInventoryLocationFrom(found.Data.Items[0]), nil
+}
+
+// resolveMovementOperationType picks the operation type a generated movement is recorded under:
+// the one the caller named, else the seeded correction type.
+func resolveMovementOperationType(
+	ctx corectx.Context, request CorrectionRequest,
+) (*models.StockOperationType, error) {
+	if request.OperationTypeId == "" {
+		return findCorrectionOperationType(ctx, request.OrgId)
+	}
+	engine, err := repoFor(models.StockOperationTypeSchemaName)
+	if err != nil {
+		return nil, err
+	}
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{
+		models.StockOperationTypeFieldId: request.OperationTypeId,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "resolveMovementOperationType")
+	}
+	if found == nil || !found.HasData {
+		return nil, nil
+	}
+	return models.NewStockOperationTypeFrom(found.Data), nil
 }
 
 // findCorrectionOperationType resolves the seeded internal operation type corrections run through.

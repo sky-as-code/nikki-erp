@@ -37,6 +37,7 @@ const (
 	ProductTemplateFieldName                = "name"
 	ProductTemplateFieldShortName           = "short_name"
 	ProductTemplateFieldProductTypeId       = "product_type_id"
+	ProductTemplateFieldUomId               = "uom_id"
 	ProductTemplateFieldCategoryId          = "category_id"
 	ProductTemplateFieldBrandId             = "brand_id"
 	ProductTemplateFieldSaleOk              = "sale_ok"

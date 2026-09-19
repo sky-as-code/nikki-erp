@@ -65,6 +65,9 @@ func (this *StockTransferDomainServiceImpl) Validate(
 		return err
 	})
 
+	if refused := protectionResultOf(err); refused != nil {
+		return refused, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -142,6 +145,20 @@ func executeOneMove(
 		return nil, err
 	}
 
+	// The warehouse guard first, then the quants: every path that changes a scope's stock takes
+	// them in this order. A source outside any warehouse has no scope to guard.
+	scope, guarded, err := warehouseScopeOfLocation(ctx,
+		derefString(move.GetOrgId()), derefString(move.GetProductVariantId()), derefString(move.GetSourceLocationId()))
+	if err != nil {
+		return nil, err
+	}
+	var now time.Time
+	if guarded {
+		if now, err = lockWarehouseScopes(ctx, []GuardKey{scope}); err != nil {
+			return nil, err
+		}
+	}
+
 	// Lock the source balances before any is read or written, so the whole move sees one consistent
 	// picture and no other request can interleave.
 	if _, err := LockQuantsForUpdate(
@@ -164,6 +181,19 @@ func executeOneMove(
 			return nil, err
 		}
 		processed = processed.Add(quantity)
+	}
+
+	// After the goods left: the warehouse must still cover what it has committed. A move that
+	// consumed its own hold lowered both sides; a scrap, a downward count or an issue nobody
+	// reserved lowered only the stock, and is refused here so the transaction rolls it back.
+	if guarded && processed.IsPositive() {
+		vErrs, err := assertNoBackingShortfall(ctx, scope, now)
+		if err != nil {
+			return nil, err
+		}
+		if vErrs.Count() > 0 {
+			return nil, &ProtectionViolation{Errors: vErrs}
+		}
 	}
 
 	next := models.StockMoveStatusDone

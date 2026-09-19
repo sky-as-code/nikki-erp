@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/shopspring/decimal"
+	"time"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -52,7 +53,16 @@ type CreateOrderParams struct {
 	// reconciliation and never charged; nil means the client did not send one.
 	EstimatedTotalPrice *decimal.Decimal
 
+	// ValidUntil is the payment deadline, settable only at create and never extended. Nil means
+	// the order does not expire.
+	ValidUntil *time.Time
+
 	OrgId string
+
+	// The channel's automation flags, read by CreateOrder from the channel it resolved and copied
+	// onto the draft. Unexported: a caller cannot choose its own automation.
+	autoConfirmOrder  bool
+	autoConfirmRefund bool
 }
 
 // CreateOrderFulfillment is the client's delivery request. Empty means "use the defaults", which
@@ -101,6 +111,10 @@ type CreateOrderResult struct {
 	// AlreadyExisted marks the idempotent replay path: success is returned either way, this says
 	// whether anything was written.
 	AlreadyExisted bool
+
+	// AutoConfirmOrder is the channel's setting as snapshotted onto the draft. The caller confirms
+	// the draft it just got back when this is set; create itself never inserts a confirmed order.
+	AutoConfirmOrder bool
 }
 
 // The refusal reasons create can produce.
@@ -126,8 +140,13 @@ func CreateOrder(
 		return nil, vErrs, err
 	}
 	channelId := stringOf(channel, models.SalesChannelFieldId)
+	params.autoConfirmOrder = boolOf(channel, models.SalesChannelFieldAutoConfirmOrder)
+	params.autoConfirmRefund = boolOf(channel, models.SalesChannelFieldAutoConfirmRefund)
 
 	if vErrs := assertLinesRequestable(params.Lines); vErrs != nil {
+		return nil, vErrs, nil
+	}
+	if vErrs := assertValidUntilInFuture(params.ValidUntil, time.Now().UTC()); vErrs != nil {
 		return nil, vErrs, nil
 	}
 
@@ -199,10 +218,11 @@ func CreateOrder(
 	}
 
 	return &CreateOrderResult{
-		SalesOrderId:   orderId,
-		OrderNumber:    orderNumber,
-		SalesChannelId: channelId,
-		Pricing:        priced,
+		SalesOrderId:     orderId,
+		OrderNumber:      orderNumber,
+		SalesChannelId:   channelId,
+		Pricing:          priced,
+		AutoConfirmOrder: params.autoConfirmOrder,
 	}, nil, nil
 }
 
@@ -437,6 +457,14 @@ func writeDraftOrder(
 		if params.IdempotencyKey != "" {
 			fields[models.SalesOrderFieldIdempotencyKey] = params.IdempotencyKey
 		}
+		if params.ValidUntil != nil {
+			fields[models.SalesOrderFieldValidUntil] = model.ModelDateTime(params.ValidUntil.UTC())
+		}
+
+		// The channel's two automation flags are copied here, once: every later decision about
+		// this order reads the copy, so the channel changing its mind never reaches it.
+		fields[models.SalesOrderFieldAutoConfirmOrder] = params.autoConfirmOrder
+		fields[models.SalesOrderFieldAutoConfirmRefund] = params.autoConfirmRefund
 		if params.EstimatedTotalPrice != nil {
 			fields[models.SalesOrderFieldEstimatedTotalPrice] = *params.EstimatedTotalPrice
 		}

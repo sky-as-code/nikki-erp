@@ -160,6 +160,18 @@ func outstandingLines(
 		}
 
 		allocations := allocationMap[stringOf(record, models.SalesOrderLineFieldId)]
+		if len(allocations) == 0 {
+			// A line without a requested stock split owes its whole remainder from wherever the
+			// target sources it: the warehouse hold needs no location, and the location path falls
+			// back to the target's own location (see groupItemsByLocation).
+			outstanding = append(outstanding, itExt.FulfillmentLine{
+				SalesOrderLineId: stringOf(record, models.SalesOrderLineFieldId),
+				ProductVariantId: stringOf(record, models.SalesOrderLineFieldProductVariantId),
+				UomId:            stringOf(record, models.SalesOrderLineFieldUomId),
+				Quantity:         remaining,
+			})
+			continue
+		}
 		for _, allocation := range allocations {
 			outstanding = append(outstanding, itExt.FulfillmentLine{
 				SalesOrderLineId: stringOf(record, models.SalesOrderLineFieldId),
@@ -254,7 +266,7 @@ func writeFulfillmentRequest(
 				}
 			}
 
-		// Announced inside the same transaction as the request, so a consumer can never be told
+			// Announced inside the same transaction as the request, so a consumer can never be told
 			// goods were asked for by a request that then rolled back.
 			_, err = RecordEvent(tranxCtx, RecordEventParams{
 				EventType:   models.EventSalesFulfillmentRequested,

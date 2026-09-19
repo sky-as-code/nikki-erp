@@ -1,6 +1,7 @@
 package app
 
 import (
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
@@ -86,7 +87,12 @@ func (this *SalesOrderExtServiceImpl) CreateOrder(
 	}
 
 	policy := services.ResolveSalesPolicy(ctx, this.settings)
+	validUntil, vErrs := readOptionalDateTimeParam(dmodel.DynamicFields{"valid_until": command.ValidUntil}, "valid_until")
+	if vErrs != nil {
+		return &it.CreateSalesOrderResult{ClientErrors: *vErrs}, nil
+	}
 	created, vErrs, err := services.CreateOrder(ctx, services.CreateOrderParams{
+		ValidUntil:        validUntil,
 		SalesPointId:      command.SalesPointId,
 		CurrencyCode:      command.CurrencyCode,
 		IdempotencyKey:    command.IdempotencyKey,
@@ -109,15 +115,31 @@ func (this *SalesOrderExtServiceImpl) CreateOrder(
 		return &it.CreateSalesOrderResult{ClientErrors: *vErrs}, nil
 	}
 
-	return &it.CreateSalesOrderResult{
-		HasData: true,
-		Data: it.SalesOrderData{
-			SalesOrderId:   created.SalesOrderId,
-			OrderNumber:    created.OrderNumber,
-			SalesChannelId: created.SalesChannelId,
-			AlreadyExisted: created.AlreadyExisted,
-		},
-	}, nil
+	data := it.SalesOrderData{
+		SalesOrderId:   created.SalesOrderId,
+		OrderNumber:    created.OrderNumber,
+		SalesChannelId: created.SalesChannelId,
+		AlreadyExisted: created.AlreadyExisted,
+	}
+	// The draft is saved first; the channel's snapshot then decides whether it confirms itself.
+	// A caller that confirms afterwards anyway finds the work done and gets the same bill back.
+	if created.AutoConfirmOrder && !created.AlreadyExisted {
+		confirmed, confirmErrs, err := services.ConfirmOrderWith(ctx, created.SalesOrderId,
+			services.ConfirmOrderOptions{Automatic: true},
+			this.dLock, this.tax, this.fulfillment, this.basis, policy,
+			salesFulfillmentMethodService(), this.reservations)
+		if err != nil {
+			return nil, err
+		}
+		data.AutoConfirmAttempted = true
+		if confirmErrs != nil {
+			data.AutoConfirmErrors = *confirmErrs
+		} else {
+			data.AutoConfirmed = true
+			data.InitialBillId = confirmed.InitialBillId
+		}
+	}
+	return &it.CreateSalesOrderResult{HasData: true, Data: data}, nil
 }
 
 func (this *SalesOrderExtServiceImpl) ConfirmOrder(
@@ -131,7 +153,8 @@ func (this *SalesOrderExtServiceImpl) ConfirmOrder(
 	}
 
 	policy := services.ResolveSalesPolicy(ctx, this.settings)
-	confirmed, vErrs, err := services.ConfirmOrder(ctx, command.SalesOrderId,
+	confirmed, vErrs, err := services.ConfirmOrderWith(ctx, command.SalesOrderId,
+		services.ConfirmOrderOptions{ConfirmationNote: command.ConfirmationNote},
 		this.dLock, this.tax, this.fulfillment, this.basis, policy,
 		salesFulfillmentMethodService(), this.reservations)
 	if err != nil {
@@ -177,8 +200,13 @@ func (this *SalesOrderExtServiceImpl) CancelOrder(
 		return &it.CancelSalesOrderResult{ClientErrors: *cErrs}, nil
 	}
 
-	cancelled, vErrs, err := services.CancelOrder(
-		ctx, command.SalesOrderId, command.Reason, this.dLock, this.reservations)
+	cancelled, vErrs, err := services.CancelOrderWith(ctx, command.SalesOrderId,
+		services.CancelOrderOptions{
+			Reason:           command.Reason,
+			CancellationNote: command.CancellationNote,
+			Policy:           services.ResolveSalesPolicy(ctx, this.settings),
+		},
+		this.dLock, this.reservations)
 	if err != nil {
 		return nil, err
 	}
@@ -326,6 +354,8 @@ func (this *SalesOrderExtServiceImpl) ViewFulfillment(
 			FulfillableQty:    item.FulfillableQty,
 			SourceLocationId:  item.SourceLocationId,
 			InventorySourceId: item.InventorySourceId,
+
+			InventoryReservationRef: item.InventoryReservationRef,
 		})
 	}
 

@@ -36,6 +36,7 @@ func InitRestfulHandlers() error {
 		v1.NewStockMoveDependencyRest,
 		v1.NewStockScrapRest,
 		v1.NewStockProductConfigRest,
+		v1.NewStockReservationRest,
 	)
 	return stdErr.Join(err, initInventoryV1())
 }
@@ -69,6 +70,7 @@ func initInventoryV1() error {
 			initStockMoveDependencyV1(routeV1),
 			initStockScrapV1(routeV1),
 			initStockProductConfigV1(routeV1),
+			initStockReservationV1(routeV1),
 		)
 	})
 }
@@ -287,6 +289,27 @@ func initStockProductConfigV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockProductConfigRest) error {
 		return composable.NewRestEngine(models.StockProductConfigSchemaName, rest).
 			AddCrudRoutes().
+			RegisterRoutes(route)
+	})
+}
+
+// initStockReservationV1 serves the reads only: a reservation is written by its operations, which
+// register as custom routes as they land, never by the built-in create, update or delete.
+func initStockReservationV1(route *echo.Group) error {
+	return deps.Invoke(func(rest *v1.StockReservationRest) error {
+		return composable.NewRestEngine(models.StockReservationSchemaName, rest).
+			AddCrudRoutes(
+				composable.CrudActionGetById,
+				composable.CrudActionGetByUnique,
+				composable.CrudActionSearch,
+				composable.CrudActionExists,
+				composable.CrudActionGetSchema,
+				composable.CrudActionComputeField,
+			).
+			AddRoute(composable.RouteDefinition{Path: "reserve_warehouse_stock", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ReserveWarehouseStock}).
+			AddRoute(composable.RouteDefinition{Path: "check_warehouse_availability", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.CheckWarehouseAvailability}).
+			AddRoute(composable.RouteDefinition{Path: ":id/consume", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ConsumeReservation}).
+			AddRoute(composable.RouteDefinition{Path: ":id/release", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ReleaseReservation}).
 			RegisterRoutes(route)
 	})
 }

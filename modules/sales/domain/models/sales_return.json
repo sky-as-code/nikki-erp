@@ -258,6 +258,39 @@
 			}
 		},
 		{
+			"name": "confirmation_note",
+			"label": "fields.confirmation_note",
+			"data_type": { "type": "string", "min": 0, "max": 2000 },
+			"no_update": true,
+			"description": {
+				"en-US": "The note recorded when this request was confirmed: a user's own words, or exactly 'Auto Confirmed' when the order's snapshot confirmed it automatically. Written by the confirm action alone and never overwritten by a retry. The order's refund_note is a projection of the latest of these."
+			}
+		},
+		{
+			"name": "confirmed_at",
+			"label": "fields.confirmed_at",
+			"data_type": "datetime",
+			"no_update": true,
+			"description": {
+				"en-US": "When the request was confirmed, which is business approval and not money moved: the refund is dispatched after this and succeeds only when the payment provider says so."
+			}
+		},
+		{
+			"name": "locked_refund_amount",
+			"label": "fields.locked_refund_amount",
+			"data_type": {
+				"type": "decimal",
+				"min": "0",
+				"max": "999999999999",
+				"scale": 4
+			},
+			"default_value": "0",
+			"no_update": true,
+			"description": {
+				"en-US": "The part of the order's refundable money this request has claimed while it is pending, so two requests raised at once cannot both be promised the same amount. Set at confirm, cleared when the refund settles or the request is cancelled. The quantity side of the same protection is on the return lines."
+			}
+		},
+		{
 			"name": "cancelled_at",
 			"label": "fields.cancelled_at",
 			"data_type": "datetime",

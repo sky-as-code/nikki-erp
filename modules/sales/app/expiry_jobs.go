@@ -74,6 +74,14 @@ func (this *ExpiryJobs) Sweep(ctx corectx.Context) error {
 			len(orders.ReleasedVoucherCodeIds))
 	}
 
+	// Bookkeeping for the payment deadline: every gate already decides expiry on the clock, so
+	// this only writes expired_at where no request has yet noticed.
+	if expired, err := services.ExpireUnpaidOrders(ctx, now, expiryPageSize); err != nil {
+		this.logError("sales expiry: stamping unpaid orders past their deadline failed", err)
+	} else if expired > 0 {
+		this.logInfo("sales expiry: stamped unpaid orders past their deadline", expired, 0)
+	}
+
 	quotations, err := services.ExpireLapsedQuotations(ctx, now, expiryPageSize)
 	if err != nil {
 		this.logError("sales expiry: expiring lapsed quotations failed", err)

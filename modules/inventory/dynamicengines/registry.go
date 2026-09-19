@@ -42,7 +42,24 @@ func InitDynamicEngines() error {
 		registerStockMoveDependencyEngine(),
 		registerStockScrapEngine(),
 		registerStockProductConfigEngine(),
+		registerWarehouseProductGuardEngine(),
+		registerStockReservationEngine(),
+		registerInventoryIntegrationOutboxEngine(),
 	)
+}
+
+// readOnlyCrudActions withholds the built-in writes from a resource whose rows are derived or
+// engine-written. Bulk import is withheld too: importing a reservation or an outbox row would be
+// a write by another name.
+func readOnlyCrudActions() []composable.CrudAction {
+	return []composable.CrudAction{
+		composable.CrudActionGetById,
+		composable.CrudActionGetByUnique,
+		composable.CrudActionSearch,
+		composable.CrudActionExists,
+		composable.CrudActionGetSchema,
+		composable.CrudActionComputeField,
+	}
 }
 
 // buildOnion builds one onion with the module-wide rules applied and installs it into the
@@ -69,5 +86,7 @@ func SchemaNames() []string {
 		models.StockOperationTypeSchemaName, models.StockQuantSchemaName, models.StockTransferSchemaName,
 		models.StockMoveSchemaName, models.StockMoveLineSchemaName, models.StockMoveDependencySchemaName,
 		models.StockScrapSchemaName, models.StockProductConfigSchemaName,
+		models.WarehouseProductGuardSchemaName, models.StockReservationSchemaName,
+		models.InventoryIntegrationOutboxSchemaName,
 	}
 }

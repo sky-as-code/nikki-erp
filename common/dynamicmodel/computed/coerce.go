@@ -108,9 +108,18 @@ func coerceBool(value any) (bool, error) {
 	return false, errors.Errorf("value %v (%T) is not a boolean", value, value)
 }
 
+// Date/time columns reach the evaluator as model.ModelDateTime (or a pointer to it) once a row
+// has been loaded, so the wrapper is unwrapped through its GoTime accessor rather than imported.
 func coerceTime(value any) (time.Time, error) {
-	if v, ok := value.(time.Time); ok {
+	switch v := value.(type) {
+	case time.Time:
 		return v, nil
+	case *time.Time:
+		if v != nil {
+			return *v, nil
+		}
+	case interface{ GoTime() time.Time }:
+		return v.GoTime(), nil
 	}
 	return time.Time{}, errors.Errorf("value %v (%T) is not a date/time", value, value)
 }

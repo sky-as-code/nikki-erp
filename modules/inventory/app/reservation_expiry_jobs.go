@@ -37,19 +37,23 @@ const (
 	expiryPageSize = 200
 )
 
-// ReservationExpiryJobs releases holds whose time has run out.
+// ReservationExpiryJobs releases holds whose time has run out. For the warehouse-level
+// reservations it is bookkeeping only: their expiry already counts in every availability figure
+// the moment the clock passes it, and this sweep merely records it.
 type ReservationExpiryJobs struct {
-	transfers itStock.StockTransferMovementService
-	logger    logging.LoggerService
+	transfers    itStock.StockTransferMovementService
+	reservations itStock.WarehouseReservationService
+	logger       logging.LoggerService
 
 	// now is injected so a test can drive the clock.
 	now func() time.Time
 }
 
 func NewReservationExpiryJobs(
-	transfers itStock.StockTransferMovementService, logger logging.LoggerService,
+	transfers itStock.StockTransferMovementService, reservations itStock.WarehouseReservationService,
+	logger logging.LoggerService,
 ) *ReservationExpiryJobs {
-	return &ReservationExpiryJobs{transfers: transfers, logger: logger, now: time.Now}
+	return &ReservationExpiryJobs{transfers: transfers, reservations: reservations, logger: logger, now: time.Now}
 }
 
 func (this *ReservationExpiryJobs) RegisterJobs(registry job.CronjobRegistry) error {
@@ -65,6 +69,16 @@ func (this *ReservationExpiryJobs) Sweep(ctx corectx.Context) error {
 	}
 	if released > 0 && this.logger != nil {
 		this.logger.Infof("released %d lapsed stock reservation(s)", released)
+	}
+	if this.reservations == nil {
+		return nil
+	}
+	expired, err := this.reservations.ExpireLapsedWarehouseReservations(ctx, this.now().UTC(), expiryPageSize)
+	if err != nil {
+		return err
+	}
+	if expired > 0 && this.logger != nil {
+		this.logger.Infof("recorded expiry of %d lapsed warehouse reservation(s)", expired)
 	}
 	return nil
 }

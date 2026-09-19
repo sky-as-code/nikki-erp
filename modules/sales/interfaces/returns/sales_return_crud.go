@@ -27,6 +27,9 @@ type SalesReturnApplicationService interface {
 	// to refund.
 	CreateReturn(ctx corectx.Context, cmd ReturnActionCommand) (*dyn.OpResult[any], error)
 
+	// Confirm approves a draft refund request, records the note, and dispatches it.
+	Confirm(ctx corectx.Context, cmd ReturnActionCommand) (*dyn.OpResult[any], error)
+
 	// Process carries its own permission rather than update, because it moves money out of the
 	// business.
 	Process(ctx corectx.Context, cmd ReturnActionCommand) (*dyn.OpResult[any], error)

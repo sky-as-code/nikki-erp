@@ -74,6 +74,26 @@
 			"description": {
 				"en-US": "The fulfillment method orders on this channel use when neither the order nor its sales point names one. Null means the channel has no default, which makes an order that names none of the three a refusal rather than a guess. Must be one of the channel's allowed methods (sales_channel_fulfillment_methods) and not archived: a default outside the allowed set would refuse every order the channel took."
 			}
+		},
+		{
+			"name": "auto_confirm_order",
+			"label": "fields.auto_confirm_order",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"description": {
+				"en-US": "Whether an order created on this channel is confirmed at once, by the system calling ConfirmOrder on the draft it just saved. The draft is always written first: an order is never inserted as confirmed. Snapshotted onto each order at create (CR-INV-SALES-WH-RESERVATION §6.1), where the copy also decides whether a paid order may be cancelled by the customer."
+			}
+		},
+		{
+			"name": "auto_confirm_refund",
+			"label": "fields.auto_confirm_refund",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false,
+			"description": {
+				"en-US": "Whether a refund request raised for an order of this channel is confirmed and dispatched at once, or waits for someone with the right to confirm it. Snapshotted onto each order at create; a later change here never reaches an existing order."
+			}
 		}
 	],
 

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/shopspring/decimal"
 	"time"
 
 	"go.bryk.io/pkg/errors"
@@ -41,21 +42,61 @@ type CancelOrderResult struct {
 	// does not cancel them, and a caller believing otherwise would stop chasing money that is still
 	// committed against a sale nobody will complete.
 	Pending []string
+
+	// RefundRequestId is the refund request raised for what a paid order had collected, and
+	// RefundStatus where it stands: draft awaiting a confirmer, or already confirmed and
+	// dispatched when the order's snapshot says refunds confirm themselves.
+	RefundRequestId string
+	RefundStatus    string
+}
+
+// CancelOrderOptions carries what a cancel records and may do beyond the order id.
+type CancelOrderOptions struct {
+	Reason string
+
+	// CancellationNote is stored only when the caller gave one; the system never fills it in.
+	CancellationNote string
+
+	// SystemInitiated marks a cancel the system decided (stock could not be held after payment),
+	// which may cancel a paid order whatever its snapshot says.
+	SystemInitiated bool
+
+	// Policy and RefundDeps are what raising and dispatching the refund of a paid order needs.
+	Policy     SalesPolicy
+	RefundDeps RefundProcessingDeps
 }
 
 const (
-	ReasonAlreadyCancelled = "sales_order.already_cancelled"
-	ReasonRequiresRefund   = "sales_order.requires_refund"
-	ReasonRequiresReturn   = "sales_order.requires_return"
-	ReasonNotCancellable   = "sales_order.not_cancellable"
+	ReasonAlreadyCancelled      = "sales_order.already_cancelled"
+	ReasonRequiresRefund        = "sales_order.requires_refund"
+	ReasonRequiresReturn        = "sales_order.requires_return"
+	ReasonNotCancellable        = "sales_order.not_cancellable"
+	ReasonFulfillmentInProgress = "sales_order.fulfillment_in_progress"
 )
 
-// CancelOrder cancels an order if its state allows it, under the same distributed lock as confirm:
-// cancel releases voucher redemptions on another table, and a cancel interleaved with a confirm
-// could release a reservation the confirm had just redeemed.
+// CancelOrder cancels an order with a reason and nothing else. See CancelOrderWith.
 func CancelOrder(
 	ctx corectx.Context,
 	orderId, reason string,
+	dLock lock.DistributedLock,
+	reservations itExt.FulfillmentReservationExtService,
+) (*CancelOrderResult, *ft.ClientErrors, error) {
+	return CancelOrderWith(ctx, orderId, CancelOrderOptions{Reason: reason}, dLock, reservations)
+}
+
+// CancelOrderWith cancels an order if its state allows it, under the same distributed lock as
+// confirm: cancel releases voucher redemptions on another table, and a cancel interleaved with a
+// confirm could release a reservation the confirm had just redeemed.
+//
+// A paid order is accepted when its snapshot says the channel confirms orders automatically, or
+// when the system itself is cancelling (CR-INV-SALES-WH-RESERVATION §8.1): a refund request is
+// raised for what was collected and, per the order's other snapshot, confirmed at once or left
+// for a confirmer. An order whose kiosk may still be dispensing is refused until the attempt has
+// reported: releasing that stock or refunding those goods would be guessing.
+func CancelOrderWith(
+	ctx corectx.Context,
+	orderId string,
+	opts CancelOrderOptions,
 	dLock lock.DistributedLock,
 	reservations itExt.FulfillmentReservationExtService,
 ) (*CancelOrderResult, *ft.ClientErrors, error) {
@@ -78,12 +119,13 @@ func CancelOrder(
 	}
 	defer func() { _ = dLock.Release(ctx, key) }()
 
-	return cancelUnderLock(ctx, orderId, reason, reservations)
+	return cancelUnderLock(ctx, orderId, opts, reservations)
 }
 
 func cancelUnderLock(
 	ctx corectx.Context,
-	orderId, reason string,
+	orderId string,
+	opts CancelOrderOptions,
 	reservations itExt.FulfillmentReservationExtService,
 ) (*CancelOrderResult, *ft.ClientErrors, error) {
 	record, err := loadRecord(ctx, models.SalesOrderSchemaName, models.SalesOrderFieldId, orderId)
@@ -94,11 +136,37 @@ func cancelUnderLock(
 		return nil, OrderNotFoundErrors(orderId), nil
 	}
 
-	if vErrs := assertCancellable(record); vErrs != nil {
+	if vErrs := assertCancellableWith(record, opts); vErrs != nil {
 		return nil, vErrs, nil
 	}
 
 	fromStatus := stringOf(record, models.SalesOrderFieldStatus)
+	reason := opts.Reason
+
+	if fromStatus != string(models.SalesOrderStatusDraft) {
+		outstanding, err := hasOutstandingAttempt(ctx, orderId)
+		if err != nil {
+			return nil, nil, err
+		}
+		if outstanding {
+			vErrs := ft.NewClientErrors()
+			vErrs.Append(*ft.NewBusinessViolation("fulfillment_status", ReasonFulfillmentInProgress,
+				"a kiosk may still be dispensing this order; wait for its result before cancelling"))
+			return nil, vErrs, nil
+		}
+	}
+
+	// The refund request for a paid order is raised while the order is still returnable, before
+	// the status moves. A cancel that then fails leaves a draft request beside a live order, which
+	// an operator can see and drop; the other order would leave a cancelled order with money and
+	// no request at all.
+	refundId, refundStatus := "", ""
+	if isPaid(record) {
+		refundId, refundStatus, err = raiseCancellationRefund(ctx, record, opts)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
 
 	// Vouchers go back BEFORE the status moves, so a failure to release leaves the order cancellable
 	// again rather than cancelled with a use still held against it.
@@ -116,8 +184,22 @@ func cancelUnderLock(
 	}
 
 	cancelledAt := time.Now().UTC()
-	if err := stampCancelled(ctx, orderId, record, fromStatus, reason, cancelledAt); err != nil {
+	if err := stampCancelled(ctx, orderId, record, fromStatus, reason, normaliseNote(opts.CancellationNote), cancelledAt); err != nil {
 		return nil, nil, err
+	}
+
+	// Confirmed and dispatched at once when the order's snapshot says so; the confirm runs under
+	// this same lock, and its own dispatch reports the gateway's answer rather than assuming one.
+	if refundId != "" && boolOf(record, models.SalesOrderFieldAutoConfirmRefund) {
+		confirmed, vErrs, err := confirmRefundRequestUnderLock(ctx, ConfirmRefundRequestParams{
+			SalesReturnId: refundId, Automatic: true,
+		}, opts.RefundDeps)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vErrs == nil && confirmed != nil {
+			refundStatus = confirmed.Status
+		}
 	}
 
 	return &CancelOrderResult{
@@ -127,7 +209,114 @@ func cancelUnderLock(
 		ReleasedVoucherIds:     released,
 		ReleasedFulfillmentIds: releasedFulfillments,
 		Pending:                pendingCancelSteps(fromStatus, reservations),
+		RefundRequestId:        refundId,
+		RefundStatus:           refundStatus,
 	}, nil, nil
+}
+
+// isPaid is the paid latch: paid or overpaid, and nothing a later refund does moves it back.
+func isPaid(record dmodel.DynamicFields) bool {
+	switch stringOf(record, models.SalesOrderFieldPaymentStatus) {
+	case string(models.SalesOrderPaymentStatusPaid), string(models.SalesOrderPaymentStatusOverpaid),
+		string(models.SalesOrderPaymentStatusRefunded), string(models.SalesOrderPaymentStatusPartiallyRefunded):
+		return true
+	}
+	return false
+}
+
+// hasOutstandingAttempt reports whether any fulfillment of the order has an attempt awaiting its
+// result: a machine that may still hand goods over.
+func hasOutstandingAttempt(ctx corectx.Context, orderId string) (bool, error) {
+	fulfillments, err := FulfillmentsOfOrder(ctx, orderId)
+	if err != nil {
+		return false, err
+	}
+	for _, fulfillment := range fulfillments {
+		attempts, err := attemptsOfFulfillment(ctx, stringOf(fulfillment, models.SalesOrderFulfillmentFieldId))
+		if err != nil {
+			return false, err
+		}
+		for _, attempt := range attempts {
+			if models.NewSalesFulfillmentAttemptFrom(attempt).IsOutstanding() {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+// raiseCancellationRefund raises a refund-only request for what a paid order still owes: every
+// line's ordered quantity less what was handed over and what earlier requests already claimed.
+// Delivered goods are not refunded here; they go through the ordinary return.
+func raiseCancellationRefund(
+	ctx corectx.Context, order dmodel.DynamicFields, opts CancelOrderOptions,
+) (refundId, refundStatus string, err error) {
+	orderId := stringOf(order, models.SalesOrderFieldId)
+	lines, err := searchBy(ctx, models.SalesOrderLineSchemaName, models.SalesOrderLineFieldSalesOrderId, orderId)
+	if err != nil {
+		return "", "", err
+	}
+	claimed, err := refundOnlyClaimsOf(ctx, orderId)
+	if err != nil {
+		return "", "", err
+	}
+
+	requests := make([]CreateReturnLine, 0, len(lines))
+	for _, line := range lines {
+		lineId := stringOf(line, models.SalesOrderLineFieldId)
+		owed := decimalOf(line, models.SalesOrderLineFieldOrderedQuantity).
+			Sub(decimalOf(line, models.SalesOrderLineFieldFulfilledQuantity)).
+			Sub(claimed[lineId])
+		if !owed.IsPositive() {
+			continue
+		}
+		requests = append(requests, CreateReturnLine{SalesOrderLineId: lineId, RequestedQty: owed})
+	}
+	if len(requests) == 0 {
+		return "", "", nil
+	}
+
+	created, vErrs, err := createReturnUnderLock(ctx, CreateReturnParams{
+		SalesOrderId: orderId,
+		Reason:       "Cancelled before delivery: " + opts.Reason,
+		RefundReason: models.SalesRefundReasonCustomerRequested,
+		ReturnType:   models.SalesReturnTypeRefundOnly,
+		Lines:        requests,
+	}, order, opts.Policy)
+	if err != nil {
+		return "", "", err
+	}
+	if vErrs != nil && vErrs.Count() > 0 {
+		// Nothing refundable was found (an unpaid balance, a line already claimed). The cancel
+		// still stands; what was collected is reconciled through the ordinary refund path.
+		return "", "", nil
+	}
+	return created.SalesReturnId, created.Status, nil
+}
+
+// refundOnlyClaimsOf sums, per order line, what refund requests not yet cancelled have already
+// asked for, so a retried cancel never claims the same goods twice.
+func refundOnlyClaimsOf(ctx corectx.Context, orderId string) (map[string]decimal.Decimal, error) {
+	claims := map[string]decimal.Decimal{}
+	returns, err := searchBy(ctx, models.SalesReturnSchemaName, models.SalesReturnFieldSalesOrderId, orderId)
+	if err != nil {
+		return nil, err
+	}
+	for _, salesReturn := range returns {
+		if stringOf(salesReturn, models.SalesReturnFieldStatus) == string(models.SalesReturnStatusCancelled) {
+			continue
+		}
+		lines, err := searchBy(ctx, models.SalesReturnLineSchemaName, models.SalesReturnLineFieldSalesReturnId,
+			stringOf(salesReturn, models.SalesReturnFieldId))
+		if err != nil {
+			return nil, err
+		}
+		for _, line := range lines {
+			lineId := stringOf(line, models.SalesReturnLineFieldSalesOrderLineId)
+			claims[lineId] = claims[lineId].Add(decimalOf(line, models.SalesReturnLineFieldRequestedQty))
+		}
+	}
+	return claims, nil
 }
 
 // pendingCancelSteps: a draft has nothing to undo; saying so for a confirmed order stops a caller
@@ -153,9 +342,15 @@ func pendingCancelSteps(
 	return pending
 }
 
-// assertCancellable: the two refusals name the workflow to use instead, so an operator is not left
-// with a paid order and no next step.
+// assertCancellable: the refusals name the workflow to use instead, so an operator is not left
+// with a paid order and no next step. A paid order passes when the order's own snapshot allows
+// it or the system is cancelling; a partly delivered one passes on the same condition, with only
+// the undelivered part refunded.
 func assertCancellable(record dmodel.DynamicFields) *ft.ClientErrors {
+	return assertCancellableWith(record, CancelOrderOptions{})
+}
+
+func assertCancellableWith(record dmodel.DynamicFields, opts CancelOrderOptions) *ft.ClientErrors {
 	refuse := func(field, reason, message string) *ft.ClientErrors {
 		vErrs := ft.NewClientErrors()
 		vErrs.Append(*ft.NewBusinessViolation(field, reason, message))
@@ -174,22 +369,30 @@ func assertCancellable(record dmodel.DynamicFields) *ft.ClientErrors {
 			"a completed order cannot be cancelled; raise a return instead")
 	}
 
+	paidCancelAllowed := opts.SystemInitiated || boolOf(record, models.SalesOrderFieldAutoConfirmOrder)
+
 	// Money first: a paid order is the case that costs real money to get wrong.
 	paymentStatus := stringOf(record, models.SalesOrderFieldPaymentStatus)
 	switch paymentStatus {
 	case string(models.SalesOrderPaymentStatusPaid),
 		string(models.SalesOrderPaymentStatusPartiallyPaid),
 		string(models.SalesOrderPaymentStatusOverpaid):
-		return refuse("payment_status", ReasonRequiresRefund,
-			"this order has been paid and cannot be cancelled on its own; it needs a refund")
+		if !paidCancelAllowed {
+			return refuse("payment_status", ReasonRequiresRefund,
+				"this order has been paid and cannot be cancelled on its own; it needs a refund")
+		}
 	}
 
 	fulfillmentStatus := stringOf(record, models.SalesOrderFieldFulfillmentStatus)
 	switch fulfillmentStatus {
-	case string(models.SalesOrderFulfillmentStatusFulfilled),
-		string(models.SalesOrderFulfillmentStatusPartiallyFulfilled):
+	case string(models.SalesOrderFulfillmentStatusFulfilled):
 		return refuse("fulfillment_status", ReasonRequiresReturn,
 			"goods have been delivered against this order; it needs a return, not a cancellation")
+	case string(models.SalesOrderFulfillmentStatusPartiallyFulfilled):
+		if !paidCancelAllowed {
+			return refuse("fulfillment_status", ReasonRequiresReturn,
+				"goods have been delivered against this order; it needs a return, not a cancellation")
+		}
 	}
 
 	return nil
@@ -236,16 +439,16 @@ func releaseOrderVouchers(ctx corectx.Context, orderId string) ([]string, error)
 // releasing stock and reversing money for a live sale.
 func stampCancelled(
 	ctx corectx.Context, orderId string, record dmodel.DynamicFields,
-	fromStatus, reason string, at time.Time,
+	fromStatus, reason, note string, at time.Time,
 ) error {
 	return withTransaction(ctx, models.SalesOrderSchemaName, func(tranxCtx corectx.Context) error {
-		return stampCancelledInTranx(tranxCtx, orderId, record, fromStatus, reason, at)
+		return stampCancelledInTranx(tranxCtx, orderId, record, fromStatus, reason, note, at)
 	})
 }
 
 func stampCancelledInTranx(
 	ctx corectx.Context, orderId string, record dmodel.DynamicFields,
-	fromStatus, reason string, at time.Time,
+	fromStatus, reason, note string, at time.Time,
 ) error {
 	orgId := stringOf(record, basemodel.FieldOrgId)
 	if err := WriteSalesAuditEvent(ctx, SalesAuditEntry{
@@ -264,9 +467,12 @@ func stampCancelledInTranx(
 	// The status change and its announcement, as one step. previous_stage carries what it came FROM,
 	// because what a consumer must undo depends on it: cancelling a draft releases nothing, a
 	// confirmed sale releases a reservation.
-	return TransitionOrderStage(ctx, record, string(models.SalesOrderStatusCancelled),
-		dmodel.DynamicFields{
-			models.SalesOrderFieldCancelledAt: model.ModelDateTime(at),
-		},
+	extra := dmodel.DynamicFields{
+		models.SalesOrderFieldCancelledAt: model.ModelDateTime(at),
+	}
+	if note != "" {
+		extra[models.SalesOrderFieldCancellationNote] = note
+	}
+	return TransitionOrderStage(ctx, record, string(models.SalesOrderStatusCancelled), extra,
 		StageEventExtras{Reason: reason, OccurredAt: at})
 }

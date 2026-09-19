@@ -9,6 +9,7 @@ package sales
 import (
 	"context"
 	stdErr "errors"
+	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -154,9 +155,21 @@ func (*SalesModule) OnAppStarted() error {
 		invoicing itInvoicing.InvoicingExtService,
 		scheduler itExt.SchedulerExtService,
 		reservations itExt.FulfillmentReservationExtService,
+		warehouse itExt.WarehouseReservationExtService,
+		fulfillment itExt.FulfillmentExtService,
+		dLock lock.DistributedLock,
 		cronjobs job.CronjobRegistry,
 		logger logging.LoggerService,
 	) error {
+		// Warehouse-level holds for kiosk sales, and the protection of a paid order's holds after
+		// every settlement path. Both are package hooks for the same reason the outbox drain is.
+		services.SetWarehouseReservationPort(warehouse)
+		services.SetPaidOrderProtector(func(ctx corectx.Context, billId, paymentReference string) error {
+			_, err := services.ProtectPaidOrder(ctx, billId, paymentReference, dLock, reservations,
+				services.ResolveSalesPolicy(ctx, effective),
+				services.RefundProcessingDeps{Fulfillment: fulfillment, Invoicing: invoicing, PaymentOrders: orders})
+			return err
+		})
 		if err := registerOrgSettings(
 			corectx.NewRequestContext(context.Background()), settingsSvc); err != nil {
 			return err

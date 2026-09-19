@@ -39,6 +39,7 @@ func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
 		models.StockMoveDependencySchemaName:           v1.StockMoveDependencyEngineName,
 		models.StockScrapSchemaName:                    v1.StockScrapEngineName,
 		models.StockProductConfigSchemaName:            v1.StockProductConfigEngineName,
+		models.StockReservationSchemaName:              v1.StockReservationEngineName,
 	} {
 		assert.Equal(t, composable.EngineDependencyName(schemaName), engineName, schemaName)
 	}

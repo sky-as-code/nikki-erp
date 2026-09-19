@@ -135,6 +135,10 @@ func assertDiscountable(
 		vErrs.Append(*ft.NewBusinessViolation("status", ReasonOrderNotDiscountable,
 			"an order in status '"+status+"' is frozen; correct it with a return or a refund"))
 	}
+	if isOrderExpiredNow(order) {
+		vErrs.Append(*ft.NewBusinessViolation("valid_until", ReasonOrderExpired,
+			"this order's payment deadline has passed; it can only be cancelled"))
+	}
 
 	// A line-level override must name a line of THIS order. The engine is pure and takes its input on
 	// trust, so it would silently ignore a foreign line id, leaving an override that appears granted

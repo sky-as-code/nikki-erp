@@ -16,6 +16,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/dynamicengines"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/external"
+	itMessage "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/message"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 	invcqrs "github.com/sky-as-code/nikki-erp/modules/inventory/transport/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/transport/restful"
@@ -88,6 +90,10 @@ func (*InventoryModule) Version() semver.SemVer {
 //
 // The superseded ./legacy implementation is deliberately not initialized; see ./legacy/README.md.
 func (*InventoryModule) Init() error {
+	// Ports bind first: a derived service resolves its ports at construction.
+	if err := external.InitExternal(); err != nil {
+		return err
+	}
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}
@@ -96,7 +102,11 @@ func (*InventoryModule) Init() error {
 	if err := invcqrs.InitCqrsHandlers(); err != nil {
 		return err
 	}
-	return restful.InitRestfulHandlers()
+	if err := restful.InitRestfulHandlers(); err != nil {
+		return err
+	}
+	// REST resolves every served onion; the guard and the outbox are served by nobody.
+	return dynamicengines.BuildInternalEngines()
 }
 
 // OnAppStarted registers the reservation expiry sweep and checks that every resource the
@@ -108,6 +118,8 @@ func (*InventoryModule) OnAppStarted() error {
 	}
 	return deps.Invoke(func(
 		transfers itStock.StockTransferMovementService,
+		reservations itStock.WarehouseReservationService,
+		publisher itMessage.IntegrationEventPublisher,
 		cronjobs job.CronjobRegistry,
 		logger logging.LoggerService,
 		cqrsBus cqrs.CqrsBus,
@@ -120,7 +132,14 @@ func (*InventoryModule) OnAppStarted() error {
 			cqrsBus, dependants, modconstants.InventoryModuleName); err != nil {
 			return err
 		}
-		return app.NewReservationExpiryJobs(transfers, logger).RegisterJobs(cronjobs)
+		outbox := app.NewOutboxJobs(publisher, logger)
+		if err := outbox.RegisterJobs(cronjobs); err != nil {
+			return err
+		}
+		// Lets a write path ask for its event to go out at once rather than on the next tick; the
+		// sweep registered above is still what guarantees delivery.
+		services.SetOutboxDrain(outbox.DrainNow)
+		return app.NewReservationExpiryJobs(transfers, reservations, logger).RegisterJobs(cronjobs)
 	})
 }
 
@@ -196,5 +215,13 @@ func (*InventoryModule) RegisterModels() error {
 		// Stock's per-product settings; references the product template. The UoM it names lives in
 		// Essential and is held as a plain id, so nothing from that module must be registered first.
 		dmodel.RegisterSchemaB(models.StockProductConfigSchemaBuilder()),
+
+		// Warehouse-level commitments. The reservation references the warehouse and the variant
+		// above; the guard is its lock target and references the same two.
+		dmodel.RegisterSchemaB(models.WarehouseProductGuardSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.StockReservationSchemaBuilder()),
+
+		// The outbox has no edges: an integration event must outlive the record it describes.
+		dmodel.RegisterSchemaB(models.InventoryIntegrationOutboxSchemaBuilder()),
 	)
 }

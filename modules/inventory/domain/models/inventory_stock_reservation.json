@@ -1,0 +1,331 @@
+{
+	"name": "inventory_stock_reservation",
+	"label": "inventory_stock_reservation.label",
+	"table_name": "inventory_stock_reservations",
+	"should_build_db": true,
+	"default_search_fields": ["status", "effective_status", "quantity", "remaining_quantity", "reserved_until", "source_module", "source_type", "source_id"],
+	"composite_uniques": [{
+		"index_name": "invty_stock_rsv_source_line_rev_org",
+		"fields": ["source_module", "source_type", "source_id", "source_line_id", "source_revision", "org_id"]
+	}],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "warehouse_id",
+			"label": "fields.warehouse_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The warehouse the goods are held at. Deliberately the ONLY place named: a reservation commits a quantity of the warehouse's eligible stock, not a location, slot, lot or quant, because which shelf or kiosk slot serves the customer is decided at picking time (CR-INV-SALES-WH-RESERVATION §4). Immutable: a demand that moves to another warehouse is a new reservation under a new source_revision, never an edit of this one."
+			}
+		},
+		{
+			"name": "product_variant_id",
+			"label": "fields.product_variant_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The concrete variant held. Never a template: a template does not identify a physical article. Named product_variant_id to match every other stock schema; the CR's 'product' always means the variant."
+			}
+		},
+		{
+			"name": "base_uom_id",
+			"label": "fields.base_uom_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Unit every quantity on this row is expressed in - the variant's base unit, so the figures line up with the quants they are checked against. A caller's own unit is converted before the row is written."
+			}
+		},
+		{
+			"name": "quantity",
+			"label": "fields.quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "How much was held when the reservation was made, in the base unit, strictly positive. The zero floor is the storage bound; the service refuses zero. Immutable: consumption and release are recorded in their own columns so the original promise stays readable."
+			}
+		},
+		{
+			"name": "consumed_quantity",
+			"label": "fields.consumed_quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "How much has actually left stock against this reservation, raised only together with a done stock move in the same transaction. There is no way to raise it without a movement: a consumed figure the ledger cannot back would be a phantom issue."
+			}
+		},
+		{
+			"name": "released_quantity",
+			"label": "fields.released_quantity",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "How much was given back deliberately, by a release or by expiry being materialized. consumed + released never exceeds quantity."
+			}
+		},
+		{
+			"name": "remaining_quantity",
+			"label": "fields.remaining_quantity",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"op": "subtract",
+					"args": [
+						{
+							"op": "subtract",
+							"args": [
+								{ "function": "coalesce", "args": [{ "field": "quantity" }, { "value": 0.0 }] },
+								{ "function": "coalesce", "args": [{ "field": "consumed_quantity" }, { "value": 0.0 }] }
+							]
+						},
+						{ "function": "coalesce", "args": [{ "field": "released_quantity" }, { "value": 0.0 }] }
+					]
+				}
+			},
+			"description": {
+				"en-US": "quantity - consumed - released: what the reservation still holds if it is in force. NOT the effective commitment - a lapsed reservation keeps a remaining figure for the record while committing nothing; see effective_reserved_quantity."
+			}
+		},
+		{
+			"name": "reserved_until",
+			"label": "fields.reserved_until",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the hold lapses, in UTC; null means it does not lapse on a timer. The interval is half-open: at exactly this instant the reservation is already expired. Expiry takes effect in every availability calculation the moment the clock passes it, whether or not anything has yet written that fact to the row - no job or timer is trusted for that. Cleared to null once the order behind it is paid, so a paid customer's goods stay held until they are consumed or the order is cancelled."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["active", "consumed", "released"]
+			},
+			"required_for_create": true,
+			"default_value": "active",
+			"description": {
+				"en-US": "Stored lifecycle, set only by the system: active on create, consumed when the whole quantity has left stock, released when the whole remainder was given back. Expiry is NOT a stored value here, because a row cannot flip itself at the deadline and a stale status would over-commit stock; it is derived as effective_status. A reservation is transactional data with a lifecycle, so there is no archive."
+			}
+		},
+		{
+			"name": "effective_status",
+			"label": "fields.effective_status",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["active", "consumed", "released", "expired"]
+			},
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"case": {
+						"when": [
+							{
+								"if": {
+									"op": "and",
+									"args": [
+										{ "op": "eq", "args": [{ "field": "status" }, { "value": "active" }] },
+										{ "op": "is_not_null", "args": [{ "field": "reserved_until" }] },
+										{ "op": "lte", "args": [{ "field": "reserved_until" }, { "function": "now" }] }
+									]
+								},
+								"then": { "value": "expired" }
+							}
+						],
+						"else": { "field": "status" }
+					}
+				}
+			},
+			"description": {
+				"en-US": "The status a reader should act on: 'expired' when the row is stored active but its deadline has passed, otherwise the stored status. Derived on every read rather than stored, so it can never lag the clock."
+			}
+		},
+		{
+			"name": "effective_reserved_quantity",
+			"label": "fields.effective_reserved_quantity",
+			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"case": {
+						"when": [
+							{
+								"if": {
+									"op": "and",
+									"args": [
+										{ "op": "eq", "args": [{ "field": "status" }, { "value": "active" }] },
+										{
+											"op": "or",
+											"args": [
+												{ "op": "is_null", "args": [{ "field": "reserved_until" }] },
+												{ "op": "gt", "args": [{ "field": "reserved_until" }, { "function": "now" }] }
+											]
+										}
+									]
+								},
+								"then": { "field": "remaining_quantity" }
+							}
+						],
+						"else": { "value": 0.0 }
+					}
+				}
+			},
+			"description": {
+				"en-US": "What this reservation actually commits right now: the remainder while it is active and in force, zero once consumed, released or lapsed. This is the figure warehouse availability subtracts. For display; the services recompute it under a lock with the database clock, which is the value that decides a reserve."
+			}
+		},
+		{
+			"name": "source_module",
+			"label": "fields.source_module",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The module whose demand this serves ('sales'). Stamped by the calling port, never taken from a client, so no caller can act on another module's holds."
+			}
+		},
+		{
+			"name": "source_type",
+			"label": "fields.source_type",
+			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What kind of demand it is within that module, e.g. sales_order_fulfillment. Together with source_module, source_id and source_line_id it is how a caller finds its holds back without storing reservation ids."
+			}
+		},
+		{
+			"name": "source_id",
+			"label": "fields.source_id",
+			"data_type": { "type": "string", "min": 1, "max": 255 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The demand's identifier, opaque to Inventory and stored verbatim. Not a foreign key: the record lives in another module and a hold must outlive changes there."
+			}
+		},
+		{
+			"name": "source_line_id",
+			"label": "fields.source_line_id",
+			"data_type": { "type": "string", "min": 0, "max": 255 },
+			"required_for_create": true,
+			"default_value": "",
+			"no_update": true,
+			"description": {
+				"en-US": "The demand's line this row holds for - one reservation per source line per warehouse. Empty string, never null, because it is part of the unique key and SQL does not constrain null rows against each other."
+			}
+		},
+		{
+			"name": "source_revision",
+			"label": "fields.source_revision",
+			"data_type": { "type": "int32", "min": 1, "max": 1000000 },
+			"required_for_create": true,
+			"default_value": 1,
+			"no_update": true,
+			"description": {
+				"en-US": "Which version of the demand this serves. A demand that is re-reserved after its point of sale changed, or after its first hold lapsed, comes back under the next revision, so a retry of the old request can never be confused with the new need."
+			}
+		},
+		{
+			"name": "idempotency_key",
+			"label": "fields.idempotency_key",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The caller's key for the reserve request that created this row. Every row of one multi-line request shares it, which is why it is indexed rather than unique: the hard duplicate guard is the source line key. A replay with the same key is answered from these rows; the same key with a different request_fingerprint is a conflict."
+			}
+		},
+		{
+			"name": "request_fingerprint",
+			"label": "fields.request_fingerprint",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "A hash of the reserve request's business payload, immutable, so a retry under the same key can be told apart from a different request wearing the same key."
+			}
+		},
+		{
+			"name": "release_reason",
+			"label": "fields.release_reason",
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": {
+				"en-US": "Why the remainder was given back: the caller's reason, or 'expired' when expiry was materialized."
+			}
+		},
+		{
+			"name": "released_at",
+			"label": "fields.released_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When the release took effect. For an expiry this is the deadline itself, not the moment the row was updated - see expiry_recorded_at."
+			}
+		},
+		{
+			"name": "expiry_recorded_at",
+			"label": "fields.expiry_recorded_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When expiry was actually written to the row, which may be well after reserved_until. Kept apart from released_at so an audit can see how long the bookkeeping lagged without that lag ever having affected availability."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		}
+	],
+
+	"search_indexes": [
+		{ "index_name": "invty_stock_rsv_scope_status_until", "fields": ["org_id", "warehouse_id", "product_variant_id", "status", "reserved_until"] },
+		{ "index_name": "invty_stock_rsv_until_id", "fields": ["reserved_until", "id"] },
+		{ "index_name": "invty_stock_rsv_org_idem_key", "fields": ["org_id", "idempotency_key"] },
+		{ "index_name": "invty_stock_rsv_source", "fields": ["source_module", "source_type", "source_id"] }
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "warehouse",
+			"label": { "en-US": "Warehouse" },
+			"type": "many:one",
+			"dest_schema": "inventory_warehouse",
+			"key_map": { "warehouse_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "product_variant",
+			"label": { "en-US": "Product variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "product_variant_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "base_uom",
+			"label": { "en-US": "Unit of measure" },
+			"type": "many:one",
+			"dest_schema": "essential_uom",
+			"key_map": { "base_uom_id": "id" },
+			"on_delete": "RESTRICT"
+		}
+	]
+}

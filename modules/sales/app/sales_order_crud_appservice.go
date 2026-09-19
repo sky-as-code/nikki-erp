@@ -3,6 +3,7 @@ package app
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
@@ -11,7 +12,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services/pricing"
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/order"
+	"time"
 )
 
 // The sales order's authorized surface.
@@ -37,6 +40,10 @@ type SalesOrderCrudApplicationServiceImpl struct {
 	fulfillmentReservations itExt.FulfillmentReservationExtService
 
 	partyPort itExt.PartyExtService
+
+	// The refund ports, for the cancel of a paid order that raises and may dispatch a refund.
+	paymentOrders itExt.PaymentOrderExtService
+	invoicing     itInvoicing.InvoicingExtService
 }
 
 // SalesOrderApplicationServiceImpl is the receiver name the moved bodies use.
@@ -52,6 +59,8 @@ func NewSalesOrderCrudApplicationService(
 	basis itExt.ProductPricingBasisExtService,
 	reservations itExt.FulfillmentReservationExtService,
 	parties itExt.PartyExtService,
+	paymentOrders itExt.PaymentOrderExtService,
+	invoicing itInvoicing.InvoicingExtService,
 ) itOrder.SalesOrderApplicationService {
 	return &SalesOrderCrudApplicationServiceImpl{
 		CrudApplicationService:  base,
@@ -64,6 +73,8 @@ func NewSalesOrderCrudApplicationService(
 		pricingBasis:            basis,
 		fulfillmentReservations: reservations,
 		partyPort:               parties,
+		paymentOrders:           paymentOrders,
+		invoicing:               invoicing,
 	}
 }
 
@@ -340,6 +351,11 @@ func (this *SalesOrderApplicationServiceImpl) runCreateOrder(
 
 		EstimatedTotalPrice: readOptionalDecimalParam(params, "estimated_total_price"),
 	}
+	validUntil, vErrs := readOptionalDateTimeParam(params, "valid_until")
+	if vErrs != nil {
+		return &dyn.OpResult[any]{ClientErrors: *vErrs}, nil
+	}
+	request.ValidUntil = validUntil
 
 	result, vErrs, err := services.CreateOrder(ctx, request, this.taxCalculation, this.productVariants, this.pricingBasis, policy)
 	if err != nil {
@@ -365,7 +381,42 @@ func (this *SalesOrderApplicationServiceImpl) runCreateOrder(
 		data["grand_total"] = result.Pricing.GrandTotal
 	}
 
+	// The draft is saved and announced; only now, and only when its snapshot says so, is it
+	// confirmed, through the same action a user would call. A refused auto-confirm leaves the
+	// draft and reports why beside it: the create succeeded, the confirm did not.
+	if result.AutoConfirmOrder && !result.AlreadyExisted {
+		data["auto_confirm"] = this.autoConfirm(ctx, result.SalesOrderId, policy)
+	}
+
 	return &dyn.OpResult[any]{HasData: true, Data: data}, nil
+}
+
+// autoConfirm confirms a freshly created draft on the channel's behalf and reports the outcome.
+func (this *SalesOrderApplicationServiceImpl) autoConfirm(
+	ctx corectx.Context, orderId string, policy services.SalesPolicy,
+) map[string]any {
+	confirmed, vErrs, err := services.ConfirmOrderWith(ctx, orderId,
+		services.ConfirmOrderOptions{Automatic: true},
+		this.orderLock, this.taxCalculation, this.orderFulfillment, this.pricingBasis,
+		policy, services.FulfillmentMethodService(), this.fulfillmentReservations)
+	if err != nil {
+		return map[string]any{"attempted": true, "confirmed": false, "error": err.Error()}
+	}
+	if vErrs != nil {
+		return map[string]any{"attempted": true, "confirmed": false, "client_errors": *vErrs}
+	}
+	outcome := map[string]any{
+		"attempted":       true,
+		"confirmed":       true,
+		"status":          confirmed.Status,
+		"initial_bill_id": confirmed.InitialBillId,
+		"pending":         confirmed.Pending,
+	}
+	if view, err := services.LoadConfirmedOrderView(ctx, orderId, confirmed.InitialBillId); err == nil && view != nil {
+		outcome["order"] = view.Order
+		outcome["initial_bill"] = view.Bill
+	}
+	return outcome
 }
 
 // readOrderLines skips a line whose shape is not a map rather than erroring; the validation that
@@ -400,8 +451,10 @@ func (this *SalesOrderApplicationServiceImpl) runConfirmOrder(
 ) (*dyn.OpResult[any], error) {
 	policy := services.ResolveSalesPolicy(ctx, this.effectiveSettings)
 
-	result, vErrs, err := services.ConfirmOrder(ctx,
-		readStringParam(params, paramRecordId), this.orderLock, this.taxCalculation, this.orderFulfillment, this.pricingBasis,
+	result, vErrs, err := services.ConfirmOrderWith(ctx,
+		readStringParam(params, paramRecordId),
+		services.ConfirmOrderOptions{ConfirmationNote: readStringParam(params, "confirmation_note")},
+		this.orderLock, this.taxCalculation, this.orderFulfillment, this.pricingBasis,
 		policy, services.FulfillmentMethodService(), this.fulfillmentReservations)
 	if err != nil {
 		return nil, err
@@ -443,9 +496,14 @@ func (this *SalesOrderApplicationServiceImpl) runConfirmOrder(
 func (this *SalesOrderApplicationServiceImpl) runCancelOrder(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[any], error) {
-	result, vErrs, err := services.CancelOrder(ctx,
+	result, vErrs, err := services.CancelOrderWith(ctx,
 		readStringParam(params, paramRecordId),
-		readStringParam(params, "reason"),
+		services.CancelOrderOptions{
+			Reason:           readStringParam(params, "reason"),
+			CancellationNote: readStringParam(params, "cancellation_note"),
+			Policy:           services.ResolveSalesPolicy(ctx, this.effectiveSettings),
+			RefundDeps:       this.refundDeps(),
+		},
 		this.orderLock, this.fulfillmentReservations)
 	if err != nil {
 		return nil, err
@@ -463,8 +521,19 @@ func (this *SalesOrderApplicationServiceImpl) runCancelOrder(
 			"released_voucher_ids":     result.ReleasedVoucherIds,
 			"released_fulfillment_ids": result.ReleasedFulfillmentIds,
 			"pending":                  result.Pending,
+			"refund_request_id":        result.RefundRequestId,
+			"refund_status":            result.RefundStatus,
 		},
 	}, nil
+}
+
+// refundDeps bundles the ports a cancel needs to raise and dispatch a paid order's refund.
+func (this *SalesOrderApplicationServiceImpl) refundDeps() services.RefundProcessingDeps {
+	return services.RefundProcessingDeps{
+		Fulfillment:   this.orderFulfillment,
+		Invoicing:     this.invoicing,
+		PaymentOrders: this.paymentOrders,
+	}
 }
 
 // processGrantManualDiscount records an operator override and reprices.
@@ -953,4 +1022,21 @@ func refundViolation(message string) *ft.ClientErrors {
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.SalesReturnSchemaName, reasonRefundMalformed, message))
 	return vErrs
+}
+
+// readOptionalDateTimeParam reads an RFC 3339 UTC timestamp, or nil when absent.
+func readOptionalDateTimeParam(params dmodel.DynamicFields, field string) (*time.Time, *ft.ClientErrors) {
+	raw := readStringParam(params, field)
+	if raw == "" {
+		return nil, nil
+	}
+	parsed, err := model.ParseModelDateTime(raw)
+	if err != nil {
+		vErrs := ft.NewClientErrors()
+		vErrs.Append(*ft.NewBusinessViolation(field, "sales_order."+field+"_malformed",
+			"'"+field+"' must be an RFC 3339 UTC timestamp ending in Z"))
+		return nil, vErrs
+	}
+	goTime := parsed.GoTime().UTC()
+	return &goTime, nil
 }
