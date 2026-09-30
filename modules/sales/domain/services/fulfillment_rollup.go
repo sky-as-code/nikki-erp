@@ -39,12 +39,14 @@ func SyncOrderFulfillmentRollup(ctx corectx.Context, orderId string) error {
 	if err != nil || order == nil {
 		return err
 	}
-	if stringOf(order, models.SalesOrderFieldFulfillmentStatus) == status {
-		return nil
+	if stringOf(order, models.SalesOrderFieldFulfillmentStatus) != status {
+		if err := writeChanges(ctx, models.SalesOrderSchemaName, order, dmodel.DynamicFields{
+			models.SalesOrderFieldFulfillmentStatus: status,
+		}); err != nil {
+			return err
+		}
 	}
-	return writeChanges(ctx, models.SalesOrderSchemaName, order, dmodel.DynamicFields{
-		models.SalesOrderFieldFulfillmentStatus: status,
-	})
+	return SyncOrderStage(ctx, orderId)
 }
 
 // deliveredByOrderLine totals what the fulfillment tables say reached the customer, keyed by order

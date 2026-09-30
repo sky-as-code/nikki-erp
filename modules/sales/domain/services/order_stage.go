@@ -6,6 +6,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
@@ -190,4 +191,80 @@ func stageOrNil(stage string) any {
 		return nil
 	}
 	return stage
+}
+
+func SyncOrderStage(ctx corectx.Context, orderId string) error {
+	if ctx.GetDbTranx() != nil {
+		return syncOrderStage(ctx, orderId)
+	}
+	return withTransaction(ctx, models.SalesOrderSchemaName, func(tranxCtx corectx.Context) error {
+		return syncOrderStage(tranxCtx, orderId)
+	})
+}
+
+func syncOrderStage(ctx corectx.Context, orderId string) error {
+	order, err := loadRecord(ctx, models.SalesOrderSchemaName, models.SalesOrderFieldId, orderId)
+	if err != nil || order == nil {
+		return err
+	}
+	current := stringOf(order, models.SalesOrderFieldStatus)
+	if current != string(models.SalesOrderStatusConfirmed) && current != string(models.SalesOrderStatusProcessing) {
+		return nil
+	}
+	paymentStatus := stringOf(order, models.SalesOrderFieldPaymentStatus)
+	fulfillmentStatus := stringOf(order, models.SalesOrderFieldFulfillmentStatus)
+
+	next := DeriveOrderStatus(current, paymentStatus, fulfillmentStatus)
+	if next == current {
+		settled, err := fulfillmentsSettled(ctx, orderId)
+		if err != nil {
+			return err
+		}
+		if settled {
+			next = settledOrderStage(current, paymentStatus, fulfillmentStatus)
+		}
+	}
+	if next == current {
+		return nil
+	}
+
+	now := model.ModelDateTime(time.Now().UTC())
+	extra := dmodel.DynamicFields{}
+	reason := "delivered and paid"
+	if next == string(models.SalesOrderStatusCancelled) {
+		extra[models.SalesOrderFieldCancelledAt] = now
+		reason = "nothing was delivered and the payment was refunded"
+	} else {
+		extra[models.SalesOrderFieldCompletedAt] = now
+	}
+	return TransitionOrderStage(ctx, order, next, extra, StageEventExtras{Reason: reason})
+}
+
+func fulfillmentsSettled(ctx corectx.Context, orderId string) (bool, error) {
+	fulfillments, err := FulfillmentsOfOrder(ctx, orderId)
+	if err != nil || len(fulfillments) == 0 {
+		return false, err
+	}
+	for _, record := range fulfillments {
+		if !models.NewSalesOrderFulfillmentFrom(record).IsTerminal() {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func settledOrderStage(current, paymentStatus, fulfillmentStatus string) string {
+	refunded := paymentStatus == string(models.SalesOrderPaymentStatusRefunded)
+	partiallyRefunded := paymentStatus == string(models.SalesOrderPaymentStatusPartiallyRefunded)
+	switch models.SalesOrderFulfillmentStatus(fulfillmentStatus) {
+	case models.SalesOrderFulfillmentStatusPending:
+		if refunded {
+			return string(models.SalesOrderStatusCancelled)
+		}
+	case models.SalesOrderFulfillmentStatusPartiallyFulfilled:
+		if refunded || partiallyRefunded {
+			return string(models.SalesOrderStatusCompleted)
+		}
+	}
+	return current
 }
