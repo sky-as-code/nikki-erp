@@ -55,6 +55,11 @@ func ProtectPaidOrder(
 	if orderId == "" {
 		return nil, nil
 	}
+	release, err := acquireOrderLock(ctx, dLock, orderId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 	order, err := loadRecord(ctx, models.SalesOrderSchemaName, models.SalesOrderFieldId, orderId)
 	if err != nil || order == nil {
 		return nil, err
@@ -66,8 +71,8 @@ func ProtectPaidOrder(
 		return nil, nil
 	}
 	if stringOf(order, models.SalesOrderFieldStatus) == string(models.SalesOrderStatusCancelled) {
-		// Money for a sale already called off: recorded by the settlement, handled by the refund
-		// workflow. Nothing here may reopen it.
+		// Money for a sale already called off: the settlement that recorded it raised the refund
+		// (refundCancelledOrderUnderLock). Nothing here may reopen it or hold its stock again.
 		return nil, nil
 	}
 
@@ -128,6 +133,7 @@ func ProtectPaidOrder(
 		if vErrs != nil {
 			reason = describeFirstViolation(vErrs)
 		}
+		release()
 		cancelled, cancelErrs, err := CancelOrderWith(ctx, orderId, CancelOrderOptions{
 			Reason:          reason,
 			SystemInitiated: true,

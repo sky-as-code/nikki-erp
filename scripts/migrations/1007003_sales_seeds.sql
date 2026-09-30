@@ -25,7 +25,7 @@ BEGIN
 		INSERT INTO "sales_channels" (
 			"id", "org_id", "code", "name", "description", "managed_by_module", "status", "is_system", "is_archived", "created_at", "updated_at", "etag", "auto_confirm_order", "auto_confirm_refund"
 		) VALUES
-		('01M3SC00000000000000000001', '01JWNY20G23KD4RV5VWYABQYHD', 'vdmc', 'Vending Machine', 'Unattended kiosks selling directly to walk-up customers', 'vending_machine_new', 'active', true, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, false, false),
+		('01M3SC00000000000000000001', '01JWNY20G23KD4RV5VWYABQYHD', 'vdmc', 'Vending Machine', 'Unattended kiosks selling directly to walk-up customers', 'vending_machine_new', 'active', true, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, true, true),
 		('01M3SC00000000000000000002', '01JWNY20G23KD4RV5VWYABQYHD', 'bo', 'Back Office', 'Sales recorded by staff on behalf of a customer', NULL, 'active', true, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, false, false),
 		('01M3SC00000000000000000003', '01JWNY20G23KD4RV5VWYABQYHD', 'pos01', 'Point of Sale - Ha Noi', 'Staffed checkout lanes in a physical store', NULL, 'active', false, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, false, false),
 		('01M3SC00000000000000000004', '01JWNY20G23KD4RV5VWYABQYHD', 'pos02', 'Point of Sale - Ho Chi Minh', 'Staffed checkout lanes in a physical store', NULL, 'active', false, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, false, false),

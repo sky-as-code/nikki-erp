@@ -9,6 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
 	it "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/order"
 )
 
@@ -35,6 +36,9 @@ type SalesOrderExtServiceImpl struct {
 
 	fulfillment  itExt.FulfillmentExtService
 	reservations itExt.FulfillmentReservationExtService
+
+	paymentOrders itExt.PaymentOrderExtService
+	invoicing     itInvoicing.InvoicingExtService
 }
 
 func NewSalesOrderExtService(
@@ -45,15 +49,19 @@ func NewSalesOrderExtService(
 	basis itExt.ProductPricingBasisExtService,
 	fulfillment itExt.FulfillmentExtService,
 	reservations itExt.FulfillmentReservationExtService,
+	paymentOrders itExt.PaymentOrderExtService,
+	invoicing itInvoicing.InvoicingExtService,
 ) it.SalesOrderExtService {
 	return &SalesOrderExtServiceImpl{
-		dLock:        dLock,
-		settings:     settings,
-		tax:          tax,
-		products:     products,
-		basis:        basis,
-		fulfillment:  fulfillment,
-		reservations: reservations,
+		dLock:         dLock,
+		settings:      settings,
+		tax:           tax,
+		products:      products,
+		basis:         basis,
+		fulfillment:   fulfillment,
+		reservations:  reservations,
+		paymentOrders: paymentOrders,
+		invoicing:     invoicing,
 	}
 }
 
@@ -137,6 +145,19 @@ func (this *SalesOrderExtServiceImpl) CreateOrder(
 		} else {
 			data.AutoConfirmed = true
 			data.InitialBillId = confirmed.InitialBillId
+			data.Pending = confirmed.Pending
+			if confirmed.KioskFulfillment != nil {
+				data.FulfillmentId = confirmed.KioskFulfillment.FulfillmentId
+				data.FulfillmentStatus = confirmed.KioskFulfillment.Status
+			}
+			view, err := services.LoadConfirmedOrderView(ctx, confirmed.SalesOrderId, confirmed.InitialBillId)
+			if err != nil {
+				return nil, err
+			}
+			if view != nil {
+				data.Order = view.Order
+				data.InitialBill = view.Bill
+			}
 		}
 	}
 	return &it.CreateSalesOrderResult{HasData: true, Data: data}, nil
@@ -205,6 +226,11 @@ func (this *SalesOrderExtServiceImpl) CancelOrder(
 			Reason:           command.Reason,
 			CancellationNote: command.CancellationNote,
 			Policy:           services.ResolveSalesPolicy(ctx, this.settings),
+			RefundDeps: services.RefundProcessingDeps{
+				Fulfillment:   this.fulfillment,
+				Invoicing:     this.invoicing,
+				PaymentOrders: this.paymentOrders,
+			},
 		},
 		this.dLock, this.reservations)
 	if err != nil {
@@ -220,6 +246,9 @@ func (this *SalesOrderExtServiceImpl) CancelOrder(
 			SalesOrderId:           cancelled.SalesOrderId,
 			Status:                 cancelled.Status,
 			ReleasedFulfillmentIds: cancelled.ReleasedFulfillmentIds,
+			Pending:                cancelled.Pending,
+			RefundRequestId:        cancelled.RefundRequestId,
+			RefundStatus:           cancelled.RefundStatus,
 		},
 	}, nil
 }

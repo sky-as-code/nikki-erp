@@ -4,6 +4,7 @@ import (
 	"time"
 
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 
@@ -41,6 +42,8 @@ const (
 	// fiscalReconMinAge is longer: issuing a document is slower than settling a payment, and a
 	// request still in flight must not be asked about as though it were lost.
 	fiscalReconMinAge = 30 * time.Minute
+
+	refundReconMinAge = 10 * time.Minute
 )
 
 // PaymentReconJobs settles the payments whose verdict was never announced, and resolves the fiscal
@@ -50,9 +53,11 @@ const (
 // and the reply was lost. Neither can be resolved by waiting, and both are safe to ask about
 // repeatedly — which is what lets one sweep cover them.
 type PaymentReconJobs struct {
-	orders    itExt.PaymentOrderExtService
-	invoicing itInvoicing.InvoicingExtService
-	logger    logging.LoggerService
+	orders      itExt.PaymentOrderExtService
+	invoicing   itInvoicing.InvoicingExtService
+	fulfillment itExt.FulfillmentExtService
+	dLock       lock.DistributedLock
+	logger      logging.LoggerService
 
 	// now is injected so a test can drive the clock.
 	now func() time.Time
@@ -61,10 +66,13 @@ type PaymentReconJobs struct {
 func NewPaymentReconJobs(
 	orders itExt.PaymentOrderExtService,
 	invoicing itInvoicing.InvoicingExtService,
+	fulfillment itExt.FulfillmentExtService,
+	dLock lock.DistributedLock,
 	logger logging.LoggerService,
 ) *PaymentReconJobs {
 	return &PaymentReconJobs{
-		orders: orders, invoicing: invoicing, logger: logger, now: time.Now,
+		orders: orders, invoicing: invoicing, fulfillment: fulfillment, dLock: dLock,
+		logger: logger, now: time.Now,
 	}
 }
 
@@ -80,6 +88,7 @@ func (this *PaymentReconJobs) RegisterJobs(registry job.CronjobRegistry) error {
 func (this *PaymentReconJobs) Sweep(ctx corectx.Context) error {
 	// Always runs, whatever the payments did: the two are independent failures of the same kind.
 	defer this.sweepFiscal(ctx)
+	defer this.sweepRefunds(ctx)
 
 	result, err := services.ReconcileStalePayments(
 		ctx, this.orders, this.now().UTC(), paymentReconMinAge, paymentReconPageSize)
@@ -132,4 +141,23 @@ func (this *PaymentReconJobs) sweepFiscal(ctx corectx.Context) {
 	this.logger.Infof(
 		"sales fiscal reconciliation: examined %d, resolved %d, still unanswered %d",
 		result.Examined, result.Resolved, result.Unresolved)
+}
+
+func (this *PaymentReconJobs) sweepRefunds(ctx corectx.Context) {
+	result, err := services.ReconcileStaleRefunds(ctx, this.dLock, services.RefundProcessingDeps{
+		Fulfillment: this.fulfillment, Invoicing: this.invoicing, PaymentOrders: this.orders,
+	}, this.now().UTC(), refundReconMinAge, paymentReconPageSize)
+	if err != nil {
+		if this.logger != nil {
+			this.logger.Error("sales refund reconciliation: sweep failed", err)
+		}
+		return
+	}
+
+	if this.logger == nil || (result.Retried == 0 && result.RetryFailed == 0 && result.CancelledRefunds == 0) {
+		return
+	}
+	this.logger.Infof(
+		"sales refund reconciliation: retried %d, failed %d, refunds raised for cancelled orders %d",
+		result.Retried, result.RetryFailed, result.CancelledRefunds)
 }

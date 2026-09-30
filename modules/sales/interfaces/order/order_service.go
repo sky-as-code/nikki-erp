@@ -269,6 +269,12 @@ type SalesOrderData struct {
 	AutoConfirmed        bool            `json:"auto_confirmed"`
 	InitialBillId        string          `json:"initial_bill_id"`
 	AutoConfirmErrors    ft.ClientErrors `json:"auto_confirm_errors,omitempty"`
+
+	FulfillmentId     string         `json:"fulfillment_id"`
+	FulfillmentStatus string         `json:"fulfillment_status"`
+	Order             map[string]any `json:"order,omitempty"`
+	InitialBill       map[string]any `json:"initial_bill,omitempty"`
+	Pending           []string       `json:"pending"`
 }
 
 type CreateSalesOrderResult struct {
@@ -337,6 +343,10 @@ type CancelledOrderData struct {
 
 	// ReleasedFulfillmentIds are the deliveries whose held stock went back to the sellable pool.
 	ReleasedFulfillmentIds []string `json:"released_fulfillment_ids"`
+
+	Pending         []string `json:"pending"`
+	RefundRequestId string   `json:"refund_request_id"`
+	RefundStatus    string   `json:"refund_status"`
 }
 
 type CancelSalesOrderResult struct {

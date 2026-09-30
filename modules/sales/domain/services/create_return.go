@@ -79,6 +79,8 @@ type CreateReturnParams struct {
 	// dispense passes refund_only, because the goods never reached the customer and Inventory has
 	// already dealt with them.
 	ReturnType models.SalesReturnType
+
+	AllowCancelledOrder bool
 }
 
 type CreateReturnResult struct {
@@ -175,7 +177,7 @@ func createReturnUnderLock(
 	order dmodel.DynamicFields,
 	policy SalesPolicy,
 ) (*CreateReturnResult, *ft.ClientErrors, error) {
-	if vErrs := assertOrderReturnable(order); vErrs != nil {
+	if vErrs := assertOrderReturnable(order, params.AllowCancelledOrder); vErrs != nil {
 		return nil, vErrs, nil
 	}
 	if len(params.Lines) == 0 {
@@ -222,8 +224,11 @@ func createReturnUnderLock(
 
 // assertOrderReturnable refuses an order that never became a sale: neither a draft nor a cancelled
 // one has goods with the customer or money in the business.
-func assertOrderReturnable(order dmodel.DynamicFields) *ft.ClientErrors {
+func assertOrderReturnable(order dmodel.DynamicFields, allowCancelled bool) *ft.ClientErrors {
 	status := stringOf(order, models.SalesOrderFieldStatus)
+	if allowCancelled && status == string(models.SalesOrderStatusCancelled) {
+		return nil
+	}
 	switch status {
 	case string(models.SalesOrderStatusConfirmed),
 		string(models.SalesOrderStatusProcessing),

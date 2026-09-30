@@ -163,11 +163,18 @@ func (*SalesModule) OnAppStarted() error {
 	) error {
 		// Warehouse-level holds for kiosk sales, and the protection of a paid order's holds after
 		// every settlement path. Both are package hooks for the same reason the outbox drain is.
+		refundDeps := services.RefundProcessingDeps{Fulfillment: fulfillment, Invoicing: invoicing, PaymentOrders: orders}
 		services.SetWarehouseReservationPort(warehouse)
+		services.SetOrderPaymentHooks(services.OrderPaymentHooks{
+			Lock: dLock,
+			Policy: func(ctx corectx.Context) services.SalesPolicy {
+				return services.ResolveSalesPolicy(ctx, effective)
+			},
+			RefundDeps: refundDeps,
+		})
 		services.SetPaidOrderProtector(func(ctx corectx.Context, billId, paymentReference string) error {
 			_, err := services.ProtectPaidOrder(ctx, billId, paymentReference, dLock, reservations,
-				services.ResolveSalesPolicy(ctx, effective),
-				services.RefundProcessingDeps{Fulfillment: fulfillment, Invoicing: invoicing, PaymentOrders: orders})
+				services.ResolveSalesPolicy(ctx, effective), refundDeps)
 			return err
 		})
 		if err := registerOrgSettings(
@@ -184,7 +191,7 @@ func (*SalesModule) OnAppStarted() error {
 		services.SetOutboxDrain(outbox.DrainNow)
 		// The backstop for a settlement announcement that was lost: the event bus acknowledges
 		// before it dispatches, so without this a paid bill could stay open forever.
-		if err := app.NewPaymentReconJobs(orders, invoicing, logger).RegisterJobs(cronjobs); err != nil {
+		if err := app.NewPaymentReconJobs(orders, invoicing, fulfillment, dLock, logger).RegisterJobs(cronjobs); err != nil {
 			return err
 		}
 		if err := app.NewExpiryJobs(effective, reservations, logger).RegisterJobs(cronjobs); err != nil {

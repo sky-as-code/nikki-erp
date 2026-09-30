@@ -148,9 +148,19 @@ func ConfirmPayment(
 func ConfirmPaymentAndSettle(
 	ctx corectx.Context, params ConfirmPaymentParams,
 ) (*ConfirmPaymentResult, error) {
+	orderId, err := orderIdOfPayment(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	release, err := acquireOrderLock(ctx, orderPaymentHooks.Lock, orderId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
 	var result *ConfirmPaymentResult
 
-	err := withTransaction(ctx, models.SalesPaymentSchemaName, func(tranxCtx corectx.Context) error {
+	err = withTransaction(ctx, models.SalesPaymentSchemaName, func(tranxCtx corectx.Context) error {
 		var err error
 
 		result, err = ConfirmPayment(tranxCtx, params)
@@ -172,6 +182,12 @@ func ConfirmPaymentAndSettle(
 		// The transaction rolled back, so the result describes writes that no longer exist.
 		return nil, err
 	}
+	if result != nil && result.Applied && result.Status == string(models.SalesPaymentStatusCaptured) {
+		if _, err := refundCancelledOrderUnderLock(ctx, orderId); err != nil {
+			return nil, err
+		}
+	}
+	release()
 	// After the commit and outside it: protecting the order's holds reaches Inventory, and a
 	// network call inside the settlement transaction would hold it open for the wait.
 	if result != nil && result.Applied && result.Status == string(models.SalesPaymentStatusCaptured) {
@@ -180,6 +196,19 @@ func ConfirmPaymentAndSettle(
 		}
 	}
 	return result, nil
+}
+
+func orderIdOfPayment(ctx corectx.Context, params ConfirmPaymentParams) (string, error) {
+	payment, err := findPaymentAwaitingSettlement(ctx, params)
+	if err != nil || payment == nil {
+		return "", err
+	}
+	bill, err := loadRecord(ctx, models.SalesBillSchemaName, models.SalesBillFieldId,
+		stringOf(payment, models.SalesPaymentFieldSalesBillId))
+	if err != nil || bill == nil {
+		return "", err
+	}
+	return stringOf(bill, models.SalesBillFieldSalesOrderId), nil
 }
 
 // paymentStatusFor maps a verdict onto the payment's own vocabulary.
