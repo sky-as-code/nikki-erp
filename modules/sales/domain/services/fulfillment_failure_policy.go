@@ -194,11 +194,24 @@ func raiseAutomaticRefund(
 		return nil, nil
 	}
 
-	return &FailurePolicyRefund{
+	refund := &FailurePolicyRefund{
 		RefundId:     created.SalesReturnId,
 		RefundStatus: created.RefundStatus,
 		Quantity:     total,
-	}, nil
+	}
+	if !boolOf(order, models.SalesOrderFieldAutoConfirmRefund) {
+		return refund, nil
+	}
+	confirmed, cErrs, err := confirmRefundRequestUnderLock(ctx, ConfirmRefundRequestParams{
+		SalesReturnId: created.SalesReturnId, Automatic: true,
+	}, orderPaymentHooks.RefundDeps)
+	if err != nil {
+		return nil, err
+	}
+	if cErrs == nil && confirmed != nil && confirmed.Processing != nil && confirmed.Processing.RefundStatus != "" {
+		refund.RefundStatus = confirmed.Processing.RefundStatus
+	}
+	return refund, nil
 }
 
 // existingFulfillmentRefund finds a refund already raised against this fulfillment, so a second pass
