@@ -251,16 +251,18 @@ func priceReturnLines(
 	vErrs := ft.NewClientErrors()
 	priced := make([]CreateReturnResultLine, 0, len(params.Lines))
 	seen := make(map[string]bool, len(params.Lines))
+	claimedByLine := make(map[string]decimal.Decimal, len(params.Lines))
 	refundOnly := returnTypeOf(params) == models.SalesReturnTypeRefundOnly
 
 	for _, requested := range params.Lines {
-		if seen[requested.SalesOrderLineId] {
+		lineKey := requested.SalesOrderLineId + "\x1f" + requested.FulfillmentItemId
+		if seen[lineKey] {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesReturnLineFieldSalesOrderLineId,
 				ReasonReturnLineDuplicate,
 				"line "+requested.SalesOrderLineId+" is named twice; combine the quantities"))
 			continue
 		}
-		seen[requested.SalesOrderLineId] = true
+		seen[lineKey] = true
 
 		// A refund-only line asks for money against goods that never arrived, so its GOODS quantity
 		// is legitimately zero; what must be positive there is the requested refund quantity.
@@ -305,13 +307,15 @@ func priceReturnLines(
 		}
 		allowed := ReturnableQuantity(basis)
 
-		if requested.Quantity.GreaterThan(allowed) {
+		claimedGoods := claimedByLine[requested.SalesOrderLineId].Add(requested.Quantity)
+		if claimedGoods.GreaterThan(allowed) {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesReturnLineFieldQuantity,
 				ReasonReturnQuantityExceedsReturnable,
 				"line "+requested.SalesOrderLineId+" has "+allowed.String()+
-					" returnable, and "+requested.Quantity.String()+" was asked for"))
+					" returnable, and "+claimedGoods.String()+" was asked for"))
 			continue
 		}
+		claimedByLine[requested.SalesOrderLineId] = claimedGoods
 
 		refund, tax := refundAmountFor(line, claimed, policy.RoundingScale)
 		// A refund-only line never asks Inventory for anything, whatever the product's basis says:

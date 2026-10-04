@@ -1071,7 +1071,6 @@ CREATE TABLE "sales_return_lines" (
   "refund_tax_amount" numeric NOT NULL,
   "requires_inventory_return" boolean NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_return_lines_tid_uniq_ukey" UNIQUE ("sales_return_id", "sales_order_line_id"),
   CONSTRAINT "sales_return_lines_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "sales_return_lines_sales_return_id_fkey" FOREIGN KEY ("sales_return_id") REFERENCES "sales_returns" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
@@ -1079,6 +1078,10 @@ CREATE TABLE "sales_return_lines" (
 CREATE INDEX "sales_return_lines_tid_ordline_idx" ON "sales_return_lines" ("sales_order_line_id");
 -- Create index "sales_return_lines_tid_return_idx" to table: "sales_return_lines"
 CREATE INDEX "sales_return_lines_tid_return_idx" ON "sales_return_lines" ("sales_return_id");
+-- Create index "sales_return_lines_tid_uniq_ukey_notnull" to table: "sales_return_lines"
+CREATE UNIQUE INDEX "sales_return_lines_tid_uniq_ukey_notnull" ON "sales_return_lines" ("sales_return_id", "sales_order_line_id", "fulfillment_item_id") WHERE (fulfillment_item_id IS NOT NULL);
+-- Create index "sales_return_lines_tid_uniq_ukey_null" to table: "sales_return_lines"
+CREATE UNIQUE INDEX "sales_return_lines_tid_uniq_ukey_null" ON "sales_return_lines" ("sales_return_id", "sales_order_line_id") WHERE (fulfillment_item_id IS NULL);
 -- Create "sales_voucher_codes" table
 CREATE TABLE "sales_voucher_codes" (
   "id" character varying NOT NULL,
