@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"sort"
 	"strings"
+	"time"
 
 	"go.bryk.io/pkg/errors"
 
@@ -290,6 +291,11 @@ func convertJsonValue(dest *dmodel.ModelSchema, fieldName string, value any) (an
 	}
 	if number, isNumber := value.(json.Number); isNumber {
 		value = number.String()
+	}
+	if text, isText := value.(string); isText && field.DataType().String() == dmodel.FieldDataTypeNameModelDateTime {
+		if parsed, err := time.Parse(time.RFC3339Nano, text); err == nil {
+			value = parsed.UTC().Format(time.RFC3339Nano)
+		}
 	}
 	converted, err := field.DataType().TryConvert(value, field.DataType().Options())
 	if err != nil {

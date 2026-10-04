@@ -248,5 +248,8 @@ func SyncOrderPaymentStatus(ctx corectx.Context, orderId string) (string, error)
 		models.SalesOrderFieldId:            orderId,
 		models.SalesOrderFieldPaymentStatus: status,
 	})
-	return status, err
+	if err != nil {
+		return status, err
+	}
+	return status, SyncOrderStage(ctx, orderId)
 }

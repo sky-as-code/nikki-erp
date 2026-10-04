@@ -83,7 +83,9 @@ func writeChanges(
 		update[key] = value
 	}
 	update[basemodel.FieldId] = stringOf(record, basemodel.FieldId)
-	update[basemodel.FieldEtag] = stringOf(record, basemodel.FieldEtag)
+	if _, versioned := record[basemodel.FieldEtag]; versioned {
+		update[basemodel.FieldEtag] = stringOf(record, basemodel.FieldEtag)
+	}
 
 	_, err = repo.Update(ctx, update)
 	return errors.Wrap(err, "writeChanges")

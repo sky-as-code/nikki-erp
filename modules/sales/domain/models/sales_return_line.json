@@ -22,13 +22,14 @@
 			]
 		}
 	],
-	"composite_uniques": [
+	"partial_uniques_loose": [
 		{
 			"index_name": "sales_return_lines_tid_uniq",
-			"fields": [
+			"not_null_fields": [
 				"sales_return_id",
 				"sales_order_line_id"
-			]
+			],
+			"nullable_field": "fulfillment_item_id"
 		}
 	],
 	"extend_before": [
@@ -53,7 +54,7 @@
 			"required_for_create": true,
 			"no_update": true,
 			"description": {
-				"en-US": "The original order line whose goods are coming back. Unique within the return: one order line appears at most once per return, so returning the same line twice means two returns, each with its own quantity checked against what is still returnable."
+				"en-US": "The original order line whose goods are coming back. Unique within the return per fulfillment item: an order line split across several slots is refunded one line per fulfillment item, so each item's refunded_qty is credited on its own; otherwise one order line appears at most once per return, and returning the same line twice means two returns, each with its own quantity checked against what is still returnable."
 			}
 		},
 		{

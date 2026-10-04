@@ -123,6 +123,9 @@ func createAttemptUnderLock(
 	if vErrs, err := assertOrderDispensable(ctx, stringOf(fulfillment, models.SalesOrderFulfillmentFieldSalesOrderId)); err != nil || vErrs != nil {
 		return nil, vErrs, err
 	}
+	if replayed, err := replayOutstandingAttempt(ctx, params); err != nil || replayed != nil {
+		return replayed, nil, err
+	}
 	if vErrs := assertAttemptable(fulfillment, params, time.Now().UTC()); vErrs != nil {
 		return nil, vErrs, nil
 	}
@@ -210,6 +213,32 @@ func assertAttemptable(
 			"this fulfillment's stock reservation has expired; reserve again before attempting")
 	}
 	return nil
+}
+
+func replayOutstandingAttempt(
+	ctx corectx.Context, params CreateAttemptParams,
+) (*CreateAttemptResult, error) {
+	if params.ExecutorOutletId == "" {
+		return nil, nil
+	}
+	attempts, err := attemptsOfFulfillment(ctx, params.FulfillmentId)
+	if err != nil {
+		return nil, err
+	}
+	for _, record := range attempts {
+		if !models.NewSalesFulfillmentAttemptFrom(record).IsOutstanding() {
+			continue
+		}
+		if stringOf(record, models.SalesFulfillmentAttemptFieldExecutorOutletId) != params.ExecutorOutletId {
+			return nil, nil
+		}
+		return &CreateAttemptResult{
+			AttemptId:             stringOf(record, models.SalesFulfillmentAttemptFieldId),
+			AttemptNo:             int32Of(record, models.SalesFulfillmentAttemptFieldAttemptNo),
+			ExternalCorrelationId: stringOf(record, models.SalesFulfillmentAttemptFieldExternalCorrelationId),
+		}, nil
+	}
+	return nil, nil
 }
 
 // assertNoOutstandingAttempt is the single-flight guard. Two executors acting on one reservation

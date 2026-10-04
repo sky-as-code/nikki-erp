@@ -21,10 +21,12 @@ import (
 //
 // 	draft                       -> cancel directly, nothing to undo
 // 	confirmed, unpaid, unfilled -> cancel, release the stock reservation and pending payments
-// 	paid                        -> REFUSED. A paid order needs a refund, not a cancellation.
+// 	paid                        -> REFUSED unless the order's auto_confirm_order snapshot allows it
+// 	                               or the system cancels; then cancel and raise a refund request.
 // 	fulfilled                   -> REFUSED. Goods are with the customer; that is a return.
 //
-// The two refusals are the point, and both are reported as a redirection to the right workflow.
+// The refusals are reported as a redirection to the right workflow. Money that arrives after the
+// cancel is refunded by the settlement that records it (refundCancelledOrderUnderLock).
 // Nothing is ever deleted: a cancelled order keeps its lines, adjustments, events and payments.
 
 type CancelOrderResult struct {
