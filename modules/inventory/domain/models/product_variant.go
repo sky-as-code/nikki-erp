@@ -64,7 +64,8 @@ const (
 	ProductVariantFieldSku               = "sku"
 	ProductVariantFieldPrimaryBarcode    = "primary_barcode"
 	ProductVariantFieldIsMaterialized    = "is_materialized"
-	ProductVariantFieldVariantImageId    = "variant_image_id"
+	ProductVariantFieldVariantImageKey   = "variant_image_key"
+	ProductVariantFieldVariantImage      = "variant_image"
 	ProductVariantFieldCost              = "cost"
 	ProductVariantFieldWeight            = "weight"
 	ProductVariantFieldLength            = "length"
@@ -162,14 +163,14 @@ func (this *ProductVariant) SetIsMaterialized(v *bool) {
 	this.GetFieldData().SetBool(ProductVariantFieldIsMaterialized, v)
 }
 
-// GetVariantImageId is an override; nil means fall back to the template's default image, not
+// GetVariantImageKey is an override; nil means fall back to the template's default image, not
 // "no image".
-func (this ProductVariant) GetVariantImageId() *model.Id {
-	return this.GetFieldData().GetModelId(ProductVariantFieldVariantImageId)
+func (this ProductVariant) GetVariantImageKey() *string {
+	return this.GetFieldData().GetString(ProductVariantFieldVariantImageKey)
 }
 
-func (this *ProductVariant) SetVariantImageId(v *model.Id) {
-	this.GetFieldData().SetModelId(ProductVariantFieldVariantImageId, v)
+func (this *ProductVariant) SetVariantImageKey(v *string) {
+	this.GetFieldData().SetString(ProductVariantFieldVariantImageKey, v)
 }
 
 func (this ProductVariant) GetCost() *decimal.Decimal {
