@@ -6,22 +6,30 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // NewProductTemplateApplicationService is handed the composable default by the template onion.
-func NewProductTemplateApplicationService(base composable.CrudApplicationService) itProduct.ProductTemplateApplicationService {
+func NewProductTemplateApplicationService(
+	base composable.CrudApplicationService, storage filestorage.FileStorageAdapter,
+) itProduct.ProductTemplateApplicationService {
 	productSvc, ok := base.DomainService().(itProduct.ProductService)
 	if !ok {
 		panic(errors.New("the product template onion must be built with NewProductTemplateDomainService"))
 	}
-	return &ProductTemplateApplicationServiceImpl{CrudApplicationService: base, productSvc: productSvc}
+	return &ProductTemplateApplicationServiceImpl{
+		fileBackedApplicationService: newFileBackedApplicationService(
+			base, storage, services.ProductTemplateFileFields()),
+		productSvc: productSvc,
+	}
 }
 
 type ProductTemplateApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	fileBackedApplicationService
 	productSvc itProduct.ProductService
 }
 

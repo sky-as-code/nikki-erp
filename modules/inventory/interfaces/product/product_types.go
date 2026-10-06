@@ -33,13 +33,13 @@ type EffectiveProduct struct {
 	Sku     string
 	Barcode string
 
-	// ImageId, Weight and the dimensions fall back to the template when the variant does not
+	// ImageKey, Weight and the dimensions fall back to the template when the variant does not
 	// override them. Null on the variant means "inherit", not "none".
-	ImageId string
-	Weight  *decimal.Decimal
-	Length  *decimal.Decimal
-	Width   *decimal.Decimal
-	Height  *decimal.Decimal
+	ImageKey string
+	Weight   *decimal.Decimal
+	Length   *decimal.Decimal
+	Width    *decimal.Decimal
+	Height   *decimal.Decimal
 
 	TemplateStatus string
 	VariantStatus  string
@@ -73,7 +73,7 @@ func (this EffectiveProduct) ToFieldMap() map[string]any {
 		"template_name":       this.Name,
 		"sku":                 this.Sku,
 		"barcode":             this.Barcode,
-		"image_id":            this.ImageId,
+		"image_key":           this.ImageKey,
 		"product_type_id":     this.ProductTypeId,
 		"category_id":         this.CategoryId,
 		"brand_id":            this.BrandId,

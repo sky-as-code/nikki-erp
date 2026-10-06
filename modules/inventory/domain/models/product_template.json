@@ -78,9 +78,9 @@
 			"data_type": { "type": "langjson", "min": 0, "max": 4000 }
 		},
 		{
-			"name": "default_image_id",
-			"label": "fields.default_image_id",
-			"data_type": "ulid",
+			"name": "default_image_key",
+			"label": "fields.default_image_key",
+			"data_type": { "type": "string", "min": 1, "max": 3000 },
 			"description": {
 				"en-US": "Shared fallback image. A variant with no image of its own renders this one."
 			}

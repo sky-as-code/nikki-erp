@@ -13,6 +13,7 @@ type ProductVariantRepository interface {
 type ProductVariantApplicationService interface {
 	composable.CrudApplicationService
 	ProductVariantActionService
+	FileFieldsService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a
