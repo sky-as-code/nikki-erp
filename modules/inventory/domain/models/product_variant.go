@@ -58,22 +58,23 @@ func WrapArchiveSource(s string) *ArchiveSource {
 const (
 	ProductVariantSchemaName = "inventory_product_variant"
 
-	ProductVariantFieldId                = basemodel.FieldId
-	ProductVariantFieldProductTemplateId = "product_template_id"
-	ProductVariantFieldCombinationKey    = "combination_key"
-	ProductVariantFieldSku               = "sku"
-	ProductVariantFieldPrimaryBarcode    = "primary_barcode"
-	ProductVariantFieldIsMaterialized    = "is_materialized"
-	ProductVariantFieldVariantImageKey   = "variant_image_key"
-	ProductVariantFieldVariantImage      = "variant_image"
-	ProductVariantFieldCost              = "cost"
-	ProductVariantFieldWeight            = "weight"
-	ProductVariantFieldLength            = "length"
-	ProductVariantFieldWidth             = "width"
-	ProductVariantFieldHeight            = "height"
-	ProductVariantFieldStatus            = "status"
-	ProductVariantFieldArchiveSource     = "archive_source"
-	ProductVariantFieldOrgId             = "org_id"
+	ProductVariantFieldId                  = basemodel.FieldId
+	ProductVariantFieldProductTemplateId   = "product_template_id"
+	ProductVariantFieldCombinationKey      = "combination_key"
+	ProductVariantFieldSku                 = "sku"
+	ProductVariantFieldPrimaryBarcode      = "primary_barcode"
+	ProductVariantFieldIsMaterialized      = "is_materialized"
+	ProductVariantFileVariantImage         = "variant_image"
+	ProductVariantFieldVariantImageUrl     = "variant_image_url"
+	ProductVariantFieldVariantImageFileKey = "variant_image_file_key"
+	ProductVariantFieldCost                = "cost"
+	ProductVariantFieldWeight              = "weight"
+	ProductVariantFieldLength              = "length"
+	ProductVariantFieldWidth               = "width"
+	ProductVariantFieldHeight              = "height"
+	ProductVariantFieldStatus              = "status"
+	ProductVariantFieldArchiveSource       = "archive_source"
+	ProductVariantFieldOrgId               = "org_id"
 
 	// Computed fields copied from the owning template on read. No database column: each is declared
 	// in product_variant.json as a related computed field and filled by the engine.
@@ -163,14 +164,14 @@ func (this *ProductVariant) SetIsMaterialized(v *bool) {
 	this.GetFieldData().SetBool(ProductVariantFieldIsMaterialized, v)
 }
 
-// GetVariantImageKey is an override; nil means fall back to the template's default image, not
+// GetVariantImageFileKey is an override; nil means fall back to the template's default image, not
 // "no image".
-func (this ProductVariant) GetVariantImageKey() *string {
-	return this.GetFieldData().GetString(ProductVariantFieldVariantImageKey)
+func (this ProductVariant) GetVariantImageFileKey() *string {
+	return this.GetFieldData().GetString(ProductVariantFieldVariantImageFileKey)
 }
 
-func (this *ProductVariant) SetVariantImageKey(v *string) {
-	this.GetFieldData().SetString(ProductVariantFieldVariantImageKey, v)
+func (this *ProductVariant) SetVariantImageFileKey(v *string) {
+	this.GetFieldData().SetString(ProductVariantFieldVariantImageFileKey, v)
 }
 
 func (this ProductVariant) GetCost() *decimal.Decimal {

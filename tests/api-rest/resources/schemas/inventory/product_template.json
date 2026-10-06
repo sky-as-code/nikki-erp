@@ -46,10 +46,10 @@
         "purchase_description": {
             "type": ["object", "null"]
         },
-        "default_image_key": {
+        "default_image_file_key": {
             "type": ["string", "null"]
         },
-        "default_image": {
+        "default_image_url": {
             "type": ["string", "null"]
         },
         "default_weight": {

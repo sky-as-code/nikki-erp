@@ -13,9 +13,9 @@ const (
 func ProductTemplateFileFields() []filefield.FileField {
 	return []filefield.FileField{
 		{
-			KeyField:     models.ProductTemplateFieldDefaultImageKey,
-			UrlField:     models.ProductTemplateFieldDefaultImage,
-			UploadField:  models.ProductTemplateFieldDefaultImage,
+			Name:         models.ProductTemplateFileDefaultImage,
+			KeyField:     models.ProductTemplateFieldDefaultImageFileKey,
+			UrlField:     models.ProductTemplateFieldDefaultImageUrl,
 			KeyPrefix:    productTemplateKeyPrefix,
 			MaxSize:      filefield.MaxImageSize,
 			AllowedMimes: &filefield.ImageMimes,
@@ -26,9 +26,9 @@ func ProductTemplateFileFields() []filefield.FileField {
 func ProductVariantFileFields() []filefield.FileField {
 	return []filefield.FileField{
 		{
-			KeyField:     models.ProductVariantFieldVariantImageKey,
-			UrlField:     models.ProductVariantFieldVariantImage,
-			UploadField:  models.ProductVariantFieldVariantImage,
+			Name:         models.ProductVariantFileVariantImage,
+			KeyField:     models.ProductVariantFieldVariantImageFileKey,
+			UrlField:     models.ProductVariantFieldVariantImageUrl,
 			KeyPrefix:    productVariantKeyPrefix,
 			MaxSize:      filefield.MaxImageSize,
 			AllowedMimes: &filefield.ImageMimes,

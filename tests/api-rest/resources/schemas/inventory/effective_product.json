@@ -38,7 +38,7 @@
         "barcode": {
             "type": "string"
         },
-        "image": {
+        "image_url": {
             "type": "string"
         },
         "weight": {

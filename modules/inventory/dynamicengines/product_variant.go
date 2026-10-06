@@ -74,8 +74,10 @@ func registerProductVariantEngine() error {
 		// The org-scoped read, for a caller that reaches this port with no user permission of its
 		// own and so must supply the org itself rather than have it asserted from the caller's
 		// membership.
-		func(domain itProduct.ProductVariantDomainService) itProduct.ProductVariantService {
-			return services.NewProductVariantService(domain)
+		func(
+			domain itProduct.ProductVariantDomainService, storage filestorage.FileStorageAdapter,
+		) itProduct.ProductVariantService {
+			return app.NewProductVariantReadService(domain, storage)
 		},
 	))
 }

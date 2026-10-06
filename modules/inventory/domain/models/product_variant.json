@@ -57,8 +57,8 @@
 			}
 		},
 		{
-			"name": "variant_image_key",
-			"label": "fields.variant_image_key",
+			"name": "variant_image_file_key",
+			"label": "fields.variant_image_file_key",
 			"data_type": { "type": "string", "min": 1, "max": 3000 },
 			"description": {
 				"en-US": "Overrides the template's default image. Null means fall back to the template rather than 'no image'."

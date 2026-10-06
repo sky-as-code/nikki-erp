@@ -34,7 +34,7 @@ type EffectiveProductView struct {
 	Barcode string `json:"barcode,omitempty"`
 
 	ImageKey string `json:"-"`
-	Image    string `json:"image,omitempty"`
+	ImageUrl string `json:"image_url,omitempty"`
 	Weight   string `json:"weight,omitempty"`
 	Length   string `json:"length,omitempty"`
 	Width    string `json:"width,omitempty"`
