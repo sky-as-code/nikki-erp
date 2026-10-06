@@ -87,13 +87,13 @@ func TestEffectiveProductImageFallback(t *testing.T) {
 		"a variant with no image shows the template's")
 
 	withOverride := newVariant()
-	withOverride.SetVariantImageKey(strPtr("01VARIANTIMAGE"))
+	withOverride.SetVariantImageFileKey(strPtr("01VARIANTIMAGE"))
 	assert.Equal(t, "01VARIANTIMAGE",
 		BuildEffectiveProduct(template, withOverride, nil).ImageKey,
 		"a variant image overrides the template's")
 
 	cleared := newVariant()
-	cleared.SetVariantImageKey(nil)
+	cleared.SetVariantImageFileKey(nil)
 	assert.Equal(t, "01TEMPLATEIMAGE",
 		BuildEffectiveProduct(template, cleared, nil).ImageKey,
 		"clearing the override returns to the template image")
@@ -159,7 +159,7 @@ func TestEffectiveProductSelectability(t *testing.T) {
 func TestEffectiveProductFieldMapKeepsConsumerKeys(t *testing.T) {
 	fields := BuildEffectiveProduct(newTemplate(), newVariant(), []string{"Black"}).ToFieldMap()
 
-	for _, key := range []string{"id", "name", "sku", "barcode", "image_key", "status", "is_archived"} {
+	for _, key := range []string{"id", "name", "sku", "barcode", "image_file_key", "status", "is_archived"} {
 		assert.Containsf(t, fields, key, "consumers read %q from the product snapshot", key)
 	}
 	// The variant is the concrete product, so "id" must be the variant's.
@@ -191,7 +191,7 @@ func newTemplate() *models.ProductTemplate {
 	template.SetBrandId(strPtr("01BRAND"))
 	template.SetSaleOk(boolPtr(true))
 	template.SetPurchaseOk(boolPtr(true))
-	template.SetDefaultImageKey(strPtr("01TEMPLATEIMAGE"))
+	template.SetDefaultImageFileKey(strPtr("01TEMPLATEIMAGE"))
 	weight := decimal.RequireFromString("1.5")
 	template.SetDefaultWeight(&weight)
 	status := models.ProductTemplateStatusActive

@@ -73,7 +73,7 @@ func (this EffectiveProduct) ToFieldMap() map[string]any {
 		"template_name":       this.Name,
 		"sku":                 this.Sku,
 		"barcode":             this.Barcode,
-		"image_key":           this.ImageKey,
+		"image_file_key":      this.ImageKey,
 		"product_type_id":     this.ProductTypeId,
 		"category_id":         this.CategoryId,
 		"brand_id":            this.BrandId,

@@ -31,7 +31,7 @@ Schema Declares The Fallback Fields
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    FOR    ${field}    IN    default_image_key    default_weight    default_length
+    FOR    ${field}    IN    default_image_file_key    default_weight    default_length
     ...    default_width    default_height
         Dictionary Should Contain Key    ${fields}    ${field}
     END

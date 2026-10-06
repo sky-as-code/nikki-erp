@@ -30,10 +30,10 @@
         "is_materialized": {
             "type": "boolean"
         },
-        "variant_image_key": {
+        "variant_image_file_key": {
             "type": ["string", "null"]
         },
-        "variant_image": {
+        "variant_image_url": {
             "type": ["string", "null"]
         },
         "weight": {

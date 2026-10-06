@@ -18,14 +18,15 @@ type productVariantRestParams struct {
 }
 
 func NewProductVariantRest(params productVariantRestParams) *ProductVariantRest {
-	rest := &ProductVariantRest{}
+	svc := params.Engine.ApplicationService().(itProduct.ProductVariantApplicationService)
+	rest := &ProductVariantRest{fileRest: newFileRest("product variant", svc), productVariantSvc: svc}
 	rest.SetApplicationService(params.Engine.ApplicationService())
-	rest.productVariantSvc = params.Engine.ApplicationService().(itProduct.ProductVariantApplicationService)
 	return rest
 }
 
 // ProductVariantRest serves the built-in CRUD of the product_variant resource.
 type ProductVariantRest struct {
 	composable.CrudRestBase
+	fileRest
 	productVariantSvc itProduct.ProductVariantApplicationService
 }

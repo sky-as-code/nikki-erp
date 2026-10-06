@@ -55,7 +55,7 @@ func (this *ProductVariantApplicationServiceImpl) GetEffective(
 		if err != nil {
 			return nil, errors.Wrap(err, "GetEffective: failed to presign the image")
 		}
-		view.Image = url
+		view.ImageUrl = url
 	}
 	return anyResult(view), nil
 }

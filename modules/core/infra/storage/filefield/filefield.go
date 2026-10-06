@@ -14,29 +14,30 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/upload"
 )
 
-const (
-	PresignedUrlTtl = time.Hour
-	UploadParamKey  = "__file_uploads"
-	ClearParamKey   = "fields"
-)
+const PresignedUrlTtl = time.Hour
 
 var ImageMimes = []string{"image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"}
 
 const MaxImageSize = 10 << 20
 
 type FileField struct {
+	Name         string
 	KeyField     string
 	UrlField     string
-	UploadField  string
 	KeyPrefix    string
 	MaxSize      int64
 	AllowedMimes *[]string
 	MimeField    string
 }
 
-type PendingUpload struct {
-	Field FileField
-	File  *multipart.FileHeader
+func FindFileField(fields []FileField, name string) (FileField, bool) {
+	for _, field := range fields {
+		if field.Name == name {
+			return field, true
+		}
+	}
+
+	return FileField{}, false
 }
 
 func PresignFileFields(
@@ -72,128 +73,21 @@ func PresignPage(
 	return nil
 }
 
-func ReadClearFileParams(params dmodel.DynamicFields, allowed []FileField) ([]FileField, *ft.ClientErrors) {
-	raw, present := params[ClearParamKey]
-	if !present || raw == nil {
-		return resolveClearFileFields(nil, allowed)
-	}
-
-	rawList, ok := raw.([]any)
-	if !ok {
-		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewValidationError(ClearParamKey, "file.err_clear_fields_not_a_list",
-			"'fields' must be a list of file field names"))
-		return nil, vErrs
-	}
-
-	names := make([]string, 0, len(rawList))
-	for _, item := range rawList {
-		name, ok := item.(string)
-		if !ok {
-			vErrs := ft.NewClientErrors()
-			vErrs.Append(*ft.NewValidationError(ClearParamKey, "file.err_clear_field_not_a_string",
-				"every entry of 'fields' must be a field name"))
-			return nil, vErrs
-		}
-		names = append(names, name)
-	}
-
-	return resolveClearFileFields(names, allowed)
-}
-
-func resolveClearFileFields(requested []string, allowed []FileField) ([]FileField, *ft.ClientErrors) {
-	vErrs := ft.NewClientErrors()
-	if len(requested) == 0 {
-		vErrs.Append(*ft.NewValidationError(ClearParamKey, "file.err_clear_fields_required",
-			"name at least one file field to clear"))
-		return nil, vErrs
-	}
-
-	byUrlField := make(map[string]FileField, len(allowed))
-	for _, field := range allowed {
-		byUrlField[field.UrlField] = field
-	}
-
-	seen := make(map[string]bool, len(requested))
-	resolved := make([]FileField, 0, len(requested))
-	for _, name := range requested {
-		field, known := byUrlField[name]
-		if !known {
-			vErrs.Append(*ft.NewValidationError(name, "file.err_clear_field_unknown",
-				"'"+name+"' is not a file field of this resource"))
-			continue
-		}
-		if seen[name] {
-			continue
-		}
-		seen[name] = true
-		resolved = append(resolved, field)
-	}
-
-	if vErrs.Count() > 0 {
-		return nil, vErrs
-	}
-
-	return resolved, vErrs
-}
-
-func StoreUploads(
-	ctx corectx.Context, storage filestorage.FileStorageAdapter, params dmodel.DynamicFields,
-) ([]string, *ft.ClientErrors, error) {
-	raw, present := params[UploadParamKey]
-	delete(params, UploadParamKey)
-
-	vErrs := ft.NewClientErrors()
-	if !present || raw == nil {
-		return nil, vErrs, nil
-	}
-
-	uploads, ok := raw.([]PendingUpload)
-	if !ok {
-		return nil, vErrs, errors.New("the upload parameter carries something other than bound files")
-	}
-
-	stored := make([]string, 0, len(uploads))
-	for _, pending := range uploads {
-		key, mime, err := storeOne(ctx, storage, pending, vErrs)
-		if err != nil {
-			RemoveObjects(ctx, storage, stored)
-			return nil, vErrs, err
-		}
-		if key == "" {
-			continue
-		}
-
-		stored = append(stored, key)
-		params.SetString(pending.Field.KeyField, &key)
-		if pending.Field.MimeField != "" {
-			params.SetString(pending.Field.MimeField, &mime)
-		}
-	}
-
-	if vErrs.Count() > 0 {
-		RemoveObjects(ctx, storage, stored)
-		return nil, vErrs, nil
-	}
-
-	return stored, vErrs, nil
-}
-
-func storeOne(
+func StoreFile(
 	ctx corectx.Context, storage filestorage.FileStorageAdapter,
-	pending PendingUpload, vErrs *ft.ClientErrors,
+	field FileField, file *multipart.FileHeader, vErrs *ft.ClientErrors,
 ) (string, string, error) {
-	key, err := objectkey.BuildFromFileHeader(pending.Field.KeyPrefix, pending.File)
+	key, err := objectkey.BuildFromFileHeader(field.KeyPrefix, file)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to name the object for '%s'", pending.Field.UploadField)
+		return "", "", errors.Wrapf(err, "failed to name the object for '%s'", field.Name)
 	}
 
 	before := vErrs.Count()
 	prepared, err := upload.Prepare(&upload.PrepareParam{
-		FieldName:    pending.Field.UploadField,
-		FileHeader:   pending.File,
-		MaxSize:      pending.Field.MaxSize,
-		AllowedMimes: pending.Field.AllowedMimes,
+		FieldName:    field.Name,
+		FileHeader:   file,
+		MaxSize:      field.MaxSize,
+		AllowedMimes: field.AllowedMimes,
 	}, vErrs)
 	if err != nil {
 		return "", "", err
@@ -203,13 +97,13 @@ func storeOne(
 			return "", "", nil
 		}
 
-		return "", "", errors.Errorf("failed to prepare the upload of '%s'", pending.Field.UploadField)
+		return "", "", errors.Errorf("failed to prepare the upload of '%s'", field.Name)
 	}
 	defer prepared.Close()
 
 	if err := storage.Put(ctx.InnerContext(), key, prepared.Reader,
 		filestorage.NewPutOptions(prepared.MimeType, prepared.Size)); err != nil {
-		return "", "", errors.Wrapf(err, "failed to store '%s'", pending.Field.UploadField)
+		return "", "", errors.Wrapf(err, "failed to store '%s'", field.Name)
 	}
 
 	return key, prepared.MimeType, nil
@@ -219,4 +113,22 @@ func RemoveObjects(ctx corectx.Context, storage filestorage.FileStorageAdapter, 
 	for _, key := range keys {
 		_ = storage.Remove(ctx.InnerContext(), key)
 	}
+}
+
+func ManagedFieldViolations(names []string, fields []FileField) *ft.ClientErrors {
+	vErrs := ft.NewClientErrors()
+	named := make(map[string]bool, len(names))
+	for _, name := range names {
+		named[name] = true
+	}
+	for _, field := range fields {
+		for _, column := range []string{field.KeyField, field.MimeField} {
+			if column != "" && named[column] {
+				vErrs.Append(*ft.NewBusinessViolation(column, "file.err_field_managed",
+					"'"+column+"' is set through files/"+field.Name+", not through create or update"))
+			}
+		}
+	}
+
+	return vErrs
 }

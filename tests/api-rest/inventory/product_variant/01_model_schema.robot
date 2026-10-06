@@ -56,7 +56,7 @@ Schema Declares The Overridable Fallback Fields
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    FOR    ${field}    IN    variant_image_key    weight    length    width    height
+    FOR    ${field}    IN    variant_image_file_key    weight    length    width    height
         Dictionary Should Contain Key    ${fields}    ${field}
     END
 

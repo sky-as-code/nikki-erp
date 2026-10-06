@@ -1,7 +1,7 @@
 package filefield
 
 import (
-	"encoding/json"
+	"mime/multipart"
 	"strings"
 
 	"github.com/labstack/echo/v5"
@@ -13,28 +13,28 @@ import (
 
 const (
 	maxUploadMemory = 8 << 20
+	PathParamField  = "field"
+	FormPartFile    = "file"
 	queryParamOrgId = "org_id"
 )
 
-func BindUploadParams(echoCtx *echo.Context, fields []FileField) (dmodel.DynamicFields, *ft.ClientErrors, error) {
+func BindFileUpload(echoCtx *echo.Context) (dmodel.DynamicFields, *multipart.FileHeader, *ft.ClientErrors) {
 	vErrs := ft.NewClientErrors()
 	params := dmodel.DynamicFields{}
-
 	if id := echoCtx.Param("id"); id != "" {
 		params[basemodel.FieldId] = id
 	}
 
 	contentType := echoCtx.Request().Header.Get(echo.HeaderContentType)
 	if !strings.HasPrefix(contentType, "multipart/form-data") {
-		bindJsonBody(echoCtx, params)
-		mergeOrgId(echoCtx, params)
-		return params, vErrs, nil
+		vErrs.Append(*ft.NewValidationError("body", "file.err_multipart_required",
+			"the request body must be a multipart form with a 'file' part"))
+		return nil, nil, vErrs
 	}
-
 	if err := echoCtx.Request().ParseMultipartForm(maxUploadMemory); err != nil {
 		vErrs.Append(*ft.NewValidationError("body", "file.err_malformed_multipart",
 			"the request body is not a readable multipart form"))
-		return nil, vErrs, nil
+		return nil, nil, vErrs
 	}
 
 	form := echoCtx.Request().MultipartForm
@@ -44,56 +44,26 @@ func BindUploadParams(echoCtx *echo.Context, fields []FileField) (dmodel.Dynamic
 		}
 	}
 
-	byUploadField := make(map[string]FileField, len(fields))
-	for _, field := range fields {
-		byUploadField[field.UploadField] = field
-	}
-
-	uploads := make([]PendingUpload, 0, len(fields))
+	var file *multipart.FileHeader
 	for name, headers := range form.File {
-		field, known := byUploadField[name]
-		if !known {
-			vErrs.Append(*ft.NewValidationError(name, "file.err_upload_field_unknown",
-				"'"+name+"' is not a file field of this resource"))
+		if name != FormPartFile {
+			vErrs.Append(*ft.NewValidationError(name, "file.err_upload_part_unknown",
+				"'"+name+"' is not accepted; send the file as the 'file' part"))
 			continue
 		}
-		if len(headers) == 0 {
-			continue
+		if len(headers) > 0 {
+			file = headers[0]
 		}
-		uploads = append(uploads, PendingUpload{Field: field, File: headers[0]})
 	}
-
 	if vErrs.Count() > 0 {
-		return nil, vErrs, nil
-	}
-	if len(uploads) > 0 {
-		params[UploadParamKey] = uploads
-	}
-	mergeOrgId(echoCtx, params)
-
-	return params, vErrs, nil
-}
-
-func mergeOrgId(echoCtx *echo.Context, params dmodel.DynamicFields) {
-	if existing, ok := params[queryParamOrgId].(string); ok && existing != "" {
-		return
-	}
-	if orgId := echoCtx.QueryParam(queryParamOrgId); orgId != "" {
-		params[queryParamOrgId] = orgId
-	}
-}
-
-func bindJsonBody(echoCtx *echo.Context, params dmodel.DynamicFields) {
-	body := echoCtx.Request().Body
-	if body == nil {
-		return
+		return nil, nil, vErrs
 	}
 
-	decoded := map[string]any{}
-	if err := json.NewDecoder(body).Decode(&decoded); err != nil {
-		return
+	if existing, ok := params[queryParamOrgId].(string); !ok || existing == "" {
+		if orgId := echoCtx.QueryParam(queryParamOrgId); orgId != "" {
+			params[queryParamOrgId] = orgId
+		}
 	}
-	for name, value := range decoded {
-		params[name] = value
-	}
+
+	return params, file, vErrs
 }
