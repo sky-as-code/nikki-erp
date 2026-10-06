@@ -211,6 +211,7 @@
 	"search.joinedByOr": "Condition joined by OR",
 	"search.matchAllOfTheseConditions": "All of these conditions must be met",
 	"search.noConditions": "No conditions yet. Pick a field above to add one.",
+	"search.noResults": "No results found",
 	"search.operator.contains": "contains",
 	"search.operator.endsWith": "ends with",
 	"search.operator.equals": "is",

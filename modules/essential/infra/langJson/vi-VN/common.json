@@ -211,6 +211,7 @@
 	"search.joinedByOr": "Điều kiện nối bằng HOẶC",
 	"search.matchAllOfTheseConditions": "Phải thỏa mãn tất cả các điều kiện sau",
 	"search.noConditions": "Chưa có điều kiện nào. Chọn một trường ở trên để thêm.",
+	"search.noResults": "Không tìm thấy kết quả",
 	"search.operator.contains": "chứa",
 	"search.operator.endsWith": "kết thúc bằng",
 	"search.operator.equals": "là",
