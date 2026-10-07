@@ -12,6 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/inventory/infra/repository"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/event"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
@@ -25,7 +26,11 @@ type productTemplateEngineParam struct {
 func registerProductTemplateEngine() error {
 	err := deps.RegisterNamed(
 		composable.EngineDependencyName(models.ProductTemplateSchemaName),
-		func(param composable.BuildParam, storage filestorage.FileStorageAdapter) composable.DynamicResourceEngineOnion {
+		func(
+			param composable.BuildParam,
+			storage filestorage.FileStorageAdapter,
+			catalogPublisher itEvent.CatalogChangedEventPublisher,
+		) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.ProductTemplateSchemaName,
 				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
@@ -35,7 +40,7 @@ func registerProductTemplateEngine() error {
 					return services.NewProductTemplateDomainService(base)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
-					return app.NewProductTemplateApplicationService(base, storage)
+					return app.NewProductTemplateApplicationService(base, catalogPublisher, storage)
 				},
 			}, param)
 		},

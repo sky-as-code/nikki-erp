@@ -13,6 +13,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/inventory/infra/repository"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/event"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
@@ -31,6 +32,7 @@ func registerProductVariantEngine() error {
 			productSvc itProduct.ProductService,
 			usageDispatcher *usagecheck.Dispatcher,
 			storage filestorage.FileStorageAdapter,
+			catalogPublisher itEvent.CatalogChangedEventPublisher,
 		) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.ProductVariantSchemaName,
@@ -41,7 +43,7 @@ func registerProductVariantEngine() error {
 					return services.NewProductVariantDomainService(base, usageDispatcher)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
-					return app.NewProductVariantApplicationService(base, productSvc, storage)
+					return app.NewProductVariantApplicationService(base, catalogPublisher, productSvc, storage)
 				},
 				// Resolved lazily, per call: the attribute-value onion is registered by this same
 				// pass, so looking it up while building this one would depend on registration order.

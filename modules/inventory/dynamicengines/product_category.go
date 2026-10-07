@@ -11,6 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/inventory/infra/repository"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/event"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
@@ -24,7 +25,9 @@ type productCategoryEngineParam struct {
 func registerProductCategoryEngine() error {
 	err := deps.RegisterNamed(
 		composable.EngineDependencyName(models.ProductCategorySchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
+		func(
+			param composable.BuildParam, catalogPublisher itEvent.CatalogChangedEventPublisher,
+		) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.ProductCategorySchemaName,
 				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
@@ -34,7 +37,7 @@ func registerProductCategoryEngine() error {
 					return services.NewProductCategoryDomainService(base)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
-					return app.NewProductCategoryApplicationService(base)
+					return app.NewProductCategoryApplicationService(base, catalogPublisher)
 				},
 			}, param)
 		},

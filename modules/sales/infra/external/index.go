@@ -15,6 +15,7 @@ import (
 	itInvoice "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/invoice"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
 	itMethod "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/paymentmethod"
+	salesEvent "github.com/sky-as-code/nikki-erp/modules/sales/infra/external/event"
 	salesInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/infra/external/invoicing"
 	salesMessage "github.com/sky-as-code/nikki-erp/modules/sales/infra/external/message"
 	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
@@ -62,6 +63,7 @@ func InitExternal() error {
 			// layer knows integration events are JSON.
 			return salesMessage.NewPublisher(publisher)
 		},
+		salesEvent.NewPricingChangedEventPublisher,
 		func(variants itProduct.ProductVariantDomainService) itExt.ProductVariantExtService {
 			// An adapter, not a hand-over: inventory publishes a general reader and Sales needs one
 			// narrow judgement. Passing the reader through would let a caller read a variant's

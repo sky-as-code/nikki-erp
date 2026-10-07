@@ -3,19 +3,22 @@ package app
 import (
 	"go.bryk.io/pkg/errors"
 
+	"github.com/samber/lo"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/event"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // NewProductTemplateApplicationService is handed the composable default by the template onion.
 func NewProductTemplateApplicationService(
-	base composable.CrudApplicationService, storage filestorage.FileStorageAdapter,
+	base composable.CrudApplicationService, catalogChangedPub itEvent.CatalogChangedEventPublisher, storage filestorage.FileStorageAdapter,
 ) itProduct.ProductTemplateApplicationService {
 	productSvc, ok := base.DomainService().(itProduct.ProductService)
 	if !ok {
@@ -24,13 +27,15 @@ func NewProductTemplateApplicationService(
 	return &ProductTemplateApplicationServiceImpl{
 		fileBackedApplicationService: newFileBackedApplicationService(
 			base, storage, services.ProductTemplateFileFields()),
-		productSvc: productSvc,
+		productSvc:        productSvc,
+		catalogChangedPub: catalogChangedPub,
 	}
 }
 
 type ProductTemplateApplicationServiceImpl struct {
 	fileBackedApplicationService
-	productSvc itProduct.ProductService
+	productSvc        itProduct.ProductService
+	catalogChangedPub itEvent.CatalogChangedEventPublisher
 }
 
 // GenerateVariants brings the template's variants in step with its attribute configuration. The
@@ -97,4 +102,81 @@ func (this *ProductTemplateApplicationServiceImpl) ResolveSelection(
 		return &itProduct.ResolveSelectionResult{}, nil
 	}
 	return anyResult(itProduct.NewResolveProductSelectionView(result.Data)), nil
+}
+
+func (this *ProductTemplateApplicationServiceImpl) Create(
+	ctx corectx.Context, cmd composable.CreateCommand,
+) (*composable.CreateResult, error) {
+	res, err := this.fileBackedApplicationService.Create(ctx, cmd)
+	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
+		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductTemplate, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
+	}
+
+	return res, err
+}
+
+func (this *ProductTemplateApplicationServiceImpl) Update(
+	ctx corectx.Context, cmd composable.UpdateCommand,
+) (*composable.MutateResult, error) {
+	res, err := this.fileBackedApplicationService.Update(ctx, cmd)
+	if err == nil && res.ClientErrors.Count() == 0 {
+		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductTemplate, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
+	}
+
+	return res, err
+}
+
+func (this *ProductTemplateApplicationServiceImpl) Delete(
+	ctx corectx.Context, cmd composable.DeleteCommand,
+) (*composable.MutateResult, error) {
+	res, err := this.CrudApplicationService.Delete(ctx, cmd)
+	if err == nil && res.ClientErrors.Count() == 0 {
+		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductTemplate, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
+	}
+
+	return res, err
+}
+
+func (this *ProductTemplateApplicationServiceImpl) SetArchived(
+	ctx corectx.Context, cmd composable.SetArchivedCommand,
+) (*composable.MutateResult, error) {
+	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
+	if err == nil && res.ClientErrors.Count() == 0 {
+		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductTemplate, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
+	}
+
+	return res, err
+}
+
+func (this *ProductTemplateApplicationServiceImpl) UploadFile(
+	ctx corectx.Context, cmd itProduct.UploadFileCommand,
+) (*itProduct.FileFieldResult, error) {
+	res, err := this.fileBackedApplicationService.UploadFile(ctx, cmd)
+	if err == nil && res.ClientErrors.Count() == 0 {
+		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductTemplate, lo.FromPtr(cmd.Params.GetString(basemodel.FieldOrgId)), string(cmd.RecordId))
+	}
+
+	return res, err
+}
+
+func (this *ProductTemplateApplicationServiceImpl) ReplaceFile(
+	ctx corectx.Context, cmd itProduct.UploadFileCommand,
+) (*itProduct.FileFieldResult, error) {
+	res, err := this.fileBackedApplicationService.ReplaceFile(ctx, cmd)
+	if err == nil && res.ClientErrors.Count() == 0 {
+		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductTemplate, lo.FromPtr(cmd.Params.GetString(basemodel.FieldOrgId)), string(cmd.RecordId))
+	}
+
+	return res, err
+}
+
+func (this *ProductTemplateApplicationServiceImpl) DeleteFile(
+	ctx corectx.Context, cmd itProduct.DeleteFileCommand,
+) (*itProduct.FileFieldResult, error) {
+	res, err := this.fileBackedApplicationService.DeleteFile(ctx, cmd)
+	if err == nil && res.ClientErrors.Count() == 0 {
+		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductTemplate, lo.FromPtr(cmd.Params.GetString(basemodel.FieldOrgId)), string(cmd.RecordId))
+	}
+
+	return res, err
 }
