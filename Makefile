@@ -9,7 +9,10 @@ ifndef cwd
 cwd := $(dir $(lastword $(MAKEFILE_LIST)))
 endif
 
-.PHONY: build build-mods build-static build-dynamic clean ent-init ent-gen ent-current ent-hash ent-migration ent-apply infra-up infra-down nikki test-api-rest test-api-rest-deps
+.PHONY: build build-mods build-static build-dynamic clean \
+	db-init db-gen db-current db-hash db-migration db-apply db-revert db-infra-apply \
+	infra-up infra-down infra-swarm-up infra-swarm-down infra-swarm-svc install-tools gen-sql run \
+	test-api-rest test-api-rest-deps cert-ca cert-client cert-server-nikki keypair-jwt-nikki
 
 
 # START: Go builds
@@ -19,6 +22,7 @@ clean:
 	@rm -rf dist
 	@echo "Clean completed"
 
+# Production build: static binary (modules linked in with staticmods) into dist/.
 build-static: clean
 	@echo "Building static binary..."
 	GOOS=$(goos) GOARCH=$(goarch) go build -tags staticmods -work -o dist/$(outfile) main.go
@@ -55,13 +59,14 @@ build: build-dynamic
 # START: ORM & Database
 migration_dir := file://${cwd}scripts/migrations
 
-ent-init:
+# Legacy: db-init and db-gen generate infra/ent/ code. Do not use; model schemas are JSON now.
+db-init:
 	@if [ -z "$(module)" ]; then \
-		echo "Error: module folder is required. Usage: make ent-init module=<module_name> name=<schema_name>"; \
+		echo "Error: module folder is required. Usage: make db-init module=<module_name> name=<schema_name>"; \
 		exit 1; \
 	fi
 	@if [ -z "$(name)" ]; then \
-		echo "Error: Entity name (in PascalCase) is required. Usage: make ent-init module=<module_name> name=<schema_name>"; \
+		echo "Error: Entity name (in PascalCase) is required. Usage: make db-init module=<module_name> name=<schema_name>"; \
 		exit 1; \
 	fi
 	@module_path="./modules/$(module)/infra/ent/schema"; \
@@ -69,9 +74,9 @@ ent-init:
 	go run -mod=mod entgo.io/ent/cmd/ent new $(name) --target $$module_path; \
 	printf "package ent\n\n//go:generate go run -mod=mod entgo.io/ent/cmd/ent generate ./schema\n" > "./modules/$(module)/infra/ent/generate.go"
 
-ent-gen:
+db-gen:
 	@if [ -z "$(module)" ]; then \
-		echo "Error: module parameter is required. Usage: make ent-gen module=<module_name>"; \
+		echo "Error: module parameter is required. Usage: make db-gen module=<module_name>"; \
 		exit 1; \
 	fi
 	@if [ ! -d "./modules/$(module)/infra/ent" ]; then \
@@ -81,7 +86,7 @@ ent-gen:
 	@echo "Generating ent code for module '$(module)'..."
 	go generate ./modules/$(module)/infra/ent
 
-ent-current:
+db-current:
 	@echo "Generating script of current state to '$(migration_dir)'..."
 	atlas migrate diff current_state.tmp \
 		--dir "$(migration_dir)" \
@@ -89,25 +94,30 @@ ent-current:
 		--config file://${cwd}scripts/atlas.hcl \
 		--env local
 
-ent-hash:
+# Re-hash atlas.sum after a migration file changed.
+db-hash:
 	@echo "Hashing migrations in '$(migration_dir)'..."
 	@atlas migrate hash --dir "$(migration_dir)"
 
-ent-migration:
+# Generate the module's migration SQL into $(cwd)scripts/migrations: run from the repo root for the
+# multi-tenant tree, from nikkierp/ for the single-tenant tree.
+db-migration:
 	@if [ -z "$(module)" ]; then \
-		echo "Error: module parameter is required. Usage: make ent-migration module=<module_name>"; \
+		echo "Error: module parameter is required. Usage: make db-migration module=<module_name>"; \
 		exit 1; \
 	fi
 
 	"${cwd}scripts/db-migrations.sh" "$(module)" '${cwd}'
 
-ent-apply:
+# Apply pending migrations to local postgres.
+db-apply:
 	@echo "Applying migration files in '$(migration_dir)'..."
 	atlas migrate apply \
 		--dir "$(migration_dir)" \
 		--url "postgres://nikki_admin:nikki_password@localhost:5432/nikki_erp?search_path=public&sslmode=disable"
 
-ent-revert:
+# Roll back the latest applied migration file.
+db-revert:
 	@echo "Undoing the LATEST APPLIED migration file in '$(migration_dir)'..."
 	atlas migrate down \
 		--dir "$(migration_dir)" \
@@ -115,16 +125,18 @@ ent-revert:
 		--config file://${cwd}scripts/atlas.hcl \
 		--env local
 
-ent-infra-apply:
-	make infra-down && make infra-up && make ent-hash && make ent-apply
+db-infra-apply:
+	make infra-down && make infra-up && make db-hash && make db-apply
 
 # END: ORM & Database
 
 # START: Local development
 
+# Start local infra (docker compose); allow 10-20s for initialization.
 infra-up:
 	"${cwdnikki}scripts/infra-up.sh" "${cwd}scripts/docker/docker-compose.local.yml" "${cwd}config"
 
+# Stop local infra AND delete its volumes (down -v): local data is lost.
 infra-down:
 	docker compose -f "${cwd}scripts/docker/docker-compose.local.yml" down -v
 
@@ -147,12 +159,11 @@ install-tools:
 
 gen-sql:
 	@[ -f config/local.env ] || cp config/local.env.sample config/local.env
-	@[ -f config/config.yaml ] || cp config/config.default.yaml config/config.yaml
-	go run -tags=staticmods *.go -createsql -dialect=postgres -module=$(module)
+	go run -tags=staticmods $(cwd)*.go -createsql -dialect=postgres -module=$(module)
 
-nikki:
+run:
 	@[ -f config/local.env ] || cp config/local.env.sample config/local.env
-	APP_ENV=$(env) WORKING_DIR="$(cwd)" GENERAL_LOG_LEVEL="debug" go run -tags=staticmods *.go $(ARGS)
+	APP_ENV=$(env) WORKING_DIR="$(cwd)" GENERAL_LOG_LEVEL="debug" go run -tags=staticmods $(cwd)*.go $(ARGS)
 
 # END: Local development
 
@@ -180,12 +191,14 @@ test-api-rest:
 		$(robot_args) \
 		"$$target"
 
+# Run once: install the API-test requirements.
 test-api-rest-deps:
 	pip install -r "$(cwdnikki)tests/api-rest/requirements.txt"
 # END: API testing
 
 # START: Certificate
 
+# Local PKI: cert-ca (root, client and server CA), cert-client, cert-server-nikki. Run by a human, not an agent.
 cert-ca:
 	@set -euo pipefail; \
 	echo "==> Root CA"; \

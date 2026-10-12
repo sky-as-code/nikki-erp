@@ -9,6 +9,7 @@ package sales
 import (
 	"context"
 	stdErr "errors"
+
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
@@ -69,7 +70,7 @@ func (*SalesModule) Deps() []string {
 
 		// The electronic-invoice job is registered with the scheduler at boot, so the scheduler must
 		// have built its engines before Sales starts.
-		"jobscheduler",
+		// "jobscheduler",
 
 		// The reprice action resolves accounting's tax port eagerly at Init, so accounting must
 		// have registered its service before Sales starts. Without naming it here the loader
@@ -153,7 +154,7 @@ func (*SalesModule) OnAppStarted() error {
 		effective itExt.EffectiveSettingsExtService,
 		orders itExt.PaymentOrderExtService,
 		invoicing itInvoicing.InvoicingExtService,
-		scheduler itExt.SchedulerExtService,
+		// scheduler itExt.SchedulerExtService,
 		reservations itExt.FulfillmentReservationExtService,
 		warehouse itExt.WarehouseReservationExtService,
 		fulfillment itExt.FulfillmentExtService,
@@ -200,8 +201,10 @@ func (*SalesModule) OnAppStarted() error {
 		// Registered with the scheduler rather than the in-process cron, unlike the sweeps above:
 		// issuing produces a legal document through a third party, so a run that failed has to be
 		// visibly failed and retried on a policy someone can see, which a cron loop does not offer.
-		return registerEinvoiceJob(
-			corectx.NewRequestContext(context.Background()), scheduler, logger)
+		// return registerEinvoiceJob(
+		// 	corectx.NewRequestContext(context.Background()), scheduler, logger)
+
+		return nil
 	})
 }
 
