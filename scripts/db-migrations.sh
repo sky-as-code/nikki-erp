@@ -25,6 +25,7 @@ else
 	migration_path_tmp_url="$migration_path_tmp"
 fi
 
+mkdir -p "$migration_path_tmp"
 echo "Clearing '${migration_path_tmp}' before generating migration..."
 find "$migration_path_tmp" -mindepth 1 -delete
 
