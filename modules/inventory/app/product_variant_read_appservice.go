@@ -5,7 +5,6 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filefield"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
@@ -40,7 +39,7 @@ func (this *ProductVariantReadServiceImpl) SearchProductVariants(
 
 	fields := services.ProductVariantFileFields()
 	for _, variant := range result.Data.Items {
-		if err := filefield.PresignFileFields(ctx, this.storage, variant.GetFieldData(), fields); err != nil {
+		if err := services.PresignFileFields(ctx, this.storage, variant.GetFieldData(), fields); err != nil {
 			return nil, errors.Wrap(err, "SearchProductVariants")
 		}
 	}
