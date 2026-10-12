@@ -6,7 +6,6 @@ import (
 	"github.com/samber/lo"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filefield"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
@@ -57,7 +56,7 @@ func (this *ProductVariantApplicationServiceImpl) GetEffective(
 
 	view := itProduct.NewEffectiveProductView(result.Data.Product)
 	if view.ImageKey != "" {
-		url, err := this.storage.GeneratePresignedUrl(ctx.InnerContext(), view.ImageKey, filefield.PresignedUrlTtl)
+		url, err := this.storage.GeneratePresignedUrl(ctx.InnerContext(), view.ImageKey, services.PresignedUrlTtl)
 		if err != nil {
 			return nil, errors.Wrap(err, "GetEffective: failed to presign the image")
 		}

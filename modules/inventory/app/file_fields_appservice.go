@@ -7,9 +7,9 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filefield"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
@@ -17,11 +17,11 @@ type fileBackedApplicationService struct {
 	composable.CrudApplicationService
 
 	storage filestorage.FileStorageAdapter
-	fields  []filefield.FileField
+	fields  []services.FileField
 }
 
 func newFileBackedApplicationService(
-	base composable.CrudApplicationService, storage filestorage.FileStorageAdapter, fields []filefield.FileField,
+	base composable.CrudApplicationService, storage filestorage.FileStorageAdapter, fields []services.FileField,
 ) fileBackedApplicationService {
 	return fileBackedApplicationService{CrudApplicationService: base, storage: storage, fields: fields}
 }
@@ -33,7 +33,7 @@ func (this *fileBackedApplicationService) GetById(
 	if err != nil || result == nil || !result.HasData {
 		return result, err
 	}
-	if err := filefield.PresignFileFields(ctx, this.storage, result.Data.Item, this.fields); err != nil {
+	if err := services.PresignFileFields(ctx, this.storage, result.Data.Item, this.fields); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -46,7 +46,7 @@ func (this *fileBackedApplicationService) GetOne(
 	if err != nil || result == nil || !result.HasData {
 		return result, err
 	}
-	if err := filefield.PresignFileFields(ctx, this.storage, result.Data.Item, this.fields); err != nil {
+	if err := services.PresignFileFields(ctx, this.storage, result.Data.Item, this.fields); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -59,7 +59,7 @@ func (this *fileBackedApplicationService) Search(
 	if err != nil || result == nil || !result.HasData {
 		return result, err
 	}
-	if err := filefield.PresignPage(ctx, this.storage, result.Data.Items, this.fields); err != nil {
+	if err := services.PresignPage(ctx, this.storage, result.Data.Items, this.fields); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -68,7 +68,7 @@ func (this *fileBackedApplicationService) Search(
 func (this *fileBackedApplicationService) Create(
 	ctx corectx.Context, cmd composable.CreateCommand,
 ) (*composable.CreateResult, error) {
-	if vErrs := filefield.ManagedFieldViolations(fieldNames(cmd), this.fields); vErrs.Count() > 0 {
+	if vErrs := services.ManagedFieldViolations(fieldNames(cmd), this.fields); vErrs.Count() > 0 {
 		return &composable.CreateResult{ClientErrors: *vErrs}, nil
 	}
 	return this.CrudApplicationService.Create(ctx, cmd)
@@ -77,7 +77,7 @@ func (this *fileBackedApplicationService) Create(
 func (this *fileBackedApplicationService) Update(
 	ctx corectx.Context, cmd composable.UpdateCommand,
 ) (*composable.MutateResult, error) {
-	if vErrs := filefield.ManagedFieldViolations(fieldNames(cmd), this.fields); vErrs.Count() > 0 {
+	if vErrs := services.ManagedFieldViolations(fieldNames(cmd), this.fields); vErrs.Count() > 0 {
 		return &composable.MutateResult{ClientErrors: *vErrs}, nil
 	}
 	return this.CrudApplicationService.Update(ctx, cmd)
@@ -94,7 +94,7 @@ func (this *fileBackedApplicationService) CreateBulk(
 			}
 		}
 	}
-	if vErrs := filefield.ManagedFieldViolations(names, this.fields); vErrs.Count() > 0 {
+	if vErrs := services.ManagedFieldViolations(names, this.fields); vErrs.Count() > 0 {
 		return &composable.BulkCreateResult{ClientErrors: *vErrs}, nil
 	}
 	return this.CrudApplicationService.CreateBulk(ctx, cmd)
@@ -107,7 +107,7 @@ func (this *fileBackedApplicationService) Import(
 	for _, column := range cmd.Mapping.Columns {
 		names = append(names, column.Target)
 	}
-	if vErrs := filefield.ManagedFieldViolations(names, this.fields); vErrs.Count() > 0 {
+	if vErrs := services.ManagedFieldViolations(names, this.fields); vErrs.Count() > 0 {
 		return &composable.BulkCreateResult{ClientErrors: *vErrs}, nil
 	}
 	return this.CrudApplicationService.Import(ctx, cmd)
@@ -138,7 +138,7 @@ func (this *fileBackedApplicationService) storeFile(
 		return mutateFailure(cErrs, nil)
 	}
 	if cmd.File == nil {
-		return mutateFailure(newFileViolation(filefield.FormPartFile, "file.err_file_required",
+		return mutateFailure(newFileViolation("file", "file.err_file_required",
 			"a 'file' part is required"), nil)
 	}
 
@@ -154,7 +154,7 @@ func (this *fileBackedApplicationService) storeFile(
 	}
 
 	vErrs := ft.NewClientErrors()
-	newKey, mime, err := filefield.StoreFile(ctx, this.storage, field, cmd.File, vErrs)
+	newKey, mime, err := services.StoreFile(ctx, this.storage, field, cmd.File, vErrs)
 	if err != nil {
 		return nil, err
 	}
@@ -170,12 +170,12 @@ func (this *fileBackedApplicationService) storeFile(
 
 	result, err := this.CrudApplicationService.Update(ctx, update)
 	if err != nil || result == nil || result.ClientErrors.Count() > 0 {
-		filefield.RemoveObjects(ctx, this.storage, []string{newKey})
+		services.RemoveObjects(ctx, this.storage, []string{newKey})
 		return result, err
 	}
 
 	if oldKey != "" {
-		filefield.RemoveObjects(ctx, this.storage, []string{oldKey})
+		services.RemoveObjects(ctx, this.storage, []string{oldKey})
 	}
 	return result, nil
 }
@@ -217,14 +217,14 @@ func (this *fileBackedApplicationService) DeleteFile(
 		return result, err
 	}
 
-	filefield.RemoveObjects(ctx, this.storage, []string{oldKey})
+	services.RemoveObjects(ctx, this.storage, []string{oldKey})
 	return result, nil
 }
 
-func (this *fileBackedApplicationService) resolveField(name string) (filefield.FileField, *ft.ClientErrors) {
-	field, known := filefield.FindFileField(this.fields, name)
+func (this *fileBackedApplicationService) resolveField(name string) (services.FileField, *ft.ClientErrors) {
+	field, known := services.FindFileField(this.fields, name)
 	if !known {
-		return field, newFileViolation(filefield.PathParamField, "file.err_field_unknown",
+		return field, newFileViolation("field", "file.err_field_unknown",
 			"'"+name+"' is not a file field of this resource")
 	}
 	return field, nil
@@ -277,7 +277,7 @@ func fileUpdateParams(params dmodel.DynamicFields, current dmodel.DynamicFields)
 	return update
 }
 
-func storedKey(record dmodel.DynamicFields, field filefield.FileField) string {
+func storedKey(record dmodel.DynamicFields, field services.FileField) string {
 	if key := record.GetString(field.KeyField); key != nil {
 		return *key
 	}
