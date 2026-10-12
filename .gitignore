@@ -21,6 +21,7 @@ __debug_bin*
 
 # env file
 *.env
+.env.local
 
 # Temporary SQL file for local development only
 *.tmp.sql

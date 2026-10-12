@@ -158,11 +158,11 @@ install-tools:
 # curl -sSf https://atlasgo.sh | sh
 
 gen-sql:
-	@[ -f config/local.env ] || cp config/local.env.sample config/local.env
+	@[ -f config/.env.local ] || cp config/.env.local.sample config/.env.local
 	go run -tags=staticmods $(cwd)*.go -createsql -dialect=postgres -module=$(module)
 
 run:
-	@[ -f config/local.env ] || cp config/local.env.sample config/local.env
+	@[ -f config/.env.local ] || cp config/.env.local.sample config/.env.local
 	APP_ENV=$(env) WORKING_DIR="$(cwd)" GENERAL_LOG_LEVEL="debug" go run -tags=staticmods $(cwd)*.go $(ARGS)
 
 # END: Local development

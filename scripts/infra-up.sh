@@ -34,7 +34,7 @@ if [ -z "$ACCESS_KEY" ] || [ -z "$SECRET_KEY" ]; then
 	exit 1
 fi
 
-env_file="${config_dir}/local.env"
+env_file="${config_dir}/.env.local"
 sample_file="${env_file}.sample"
 
 if [ ! -f "$env_file" ]; then

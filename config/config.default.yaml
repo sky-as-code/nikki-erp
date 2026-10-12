@@ -43,7 +43,7 @@ CORE:
     # Hex-encoded 32-byte AES key that sensitive field values are encrypted with before they are
     # written to the database — today, the gateway credentials of a paymentinvoice payment profile.
     # Left empty here because this file is committed and embedded into the binary: supply it
-    # through config/local.env, or through CORE_ENCRYPTION_EAS_32_BYTES_KEY_FILE in a deployed
+    # through config/.env.local, or through CORE_ENCRYPTION_EAS_32_BYTES_KEY_FILE in a deployed
     # environment. A deployment that leaves it empty can neither store nor read a payment profile's
     # credentials, and is warned about it at boot.
     EAS_32_BYTES_KEY: ""
@@ -132,7 +132,7 @@ CORE:
     MAX_ROWS: 10000
   TOKEN:
     # Secret key for JWT token signing and verification
-    # IMPORTANT: Override this in local.env or production environment
+    # IMPORTANT: Override this in .env.local or production environment
     # DO NOT commit real secret keys to version control
     SECRET_KEY: "your-secret-key-here-change-in-production"
     # Token expiry time in hours
@@ -171,7 +171,7 @@ PAYMENTINVOICE:
   #
   # The SECRET_KEY values and the passwords below are credentials and are deliberately left
   # empty here. This file is committed and embedded into the binary. Supply them per
-  # environment through config/local.env for local work, or through the {KEY}_FILE
+  # environment through config/.env.local for local work, or through the {KEY}_FILE
   # secret-file convention in a deployed environment.
   MOMO:
     ENABLED: false

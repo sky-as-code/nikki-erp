@@ -98,6 +98,6 @@ const DefaultPaymentSettledEventTopic = "nikkierp.paymentinvoice.events.payment_
 // without being re-encrypted, and neither side can be rotated into a state where it cannot read
 // what the other wrote.
 //
-// It is a credential: supply it through config/local.env or the {KEY}_FILE secret-file convention,
+// It is a credential: supply it through config/.env.local or the {KEY}_FILE secret-file convention,
 // never in config.default.yaml, which is committed and embedded into the binary.
 const PaymentProfileEncryptionKey core.ConfigName = "CORE.ENCRYPTION.EAS_32_BYTES_KEY"

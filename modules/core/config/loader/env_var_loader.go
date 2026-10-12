@@ -12,7 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
-var localEnvPath = filepath.Join("config", "local.env")
+var localEnvPath = filepath.Join("config", ".env.local")
 
 func NewEnvVarConfigLoader(nextLoader ConfigLoader, logger logging.LoggerService) *EnvVarConfigLoader {
 	return &EnvVarConfigLoader{
@@ -52,10 +52,10 @@ func (this *EnvVarConfigLoader) loadLocalEnvFile() error {
 	workDir := env.Cwd()
 	err := godotenv.Load(filepath.Join(workDir, localEnvPath))
 	if err != nil && strings.Contains(err.Error(), "no such file") {
-		this.logger.Warnf("Skipped loading env files because config/local.env doesn't exist. " +
-			"Note that local.env file is excluded from Git commits, you must create it yourself " +
+		this.logger.Warnf("Skipped loading env files because config/.env.local doesn't exist. " +
+			"Note that .env.local file is excluded from Git commits, you must create it yourself " +
 			"for local development to store passwords and other secrets")
 		return nil
 	}
-	return errors.Wrap(err, "failed to load local.env file")
+	return errors.Wrap(err, "failed to load .env.local file")
 }
