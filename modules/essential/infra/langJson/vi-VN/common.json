@@ -53,6 +53,7 @@
 	"datatable.relatedResources": "Tài nguyên liên quan",
 	"datatable.selected": "Đã chọn {{count}}",
 	"datatable.view": "Hiển thị",
+	"datatable.viewAll": "Xem tất cả",
 	"datatable.viewSettings": "Cài đặt hiển thị",
 	"debug.form_errors": "Debug - Lỗi form",
 	"err_action_not_supported": "Tài nguyên này không hỗ trợ hành động được yêu cầu",

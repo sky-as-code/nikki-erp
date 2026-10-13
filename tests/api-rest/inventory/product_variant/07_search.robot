@@ -57,6 +57,17 @@ Search With Nonexist Field Fails
     ...    expected_status=any
     Response Should Be Nonexist Fields Error    ${resp}    bla_bla_field
 
+Search With Wildcard And Edge Columns Succeeds
+    [Documentation]    `*` is expanded server-side, so desired_fields names real columns a
+    ...    table can render, never the token itself.
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['*', 'product_template.name']} }}
+    Response Should Be Search Success    ${resp}    ${VARIANT_SCHEMA}    size=50    page=0
+    ${desired}=    Set Variable    ${resp.json()}[desired_fields]
+    Should Not Contain    ${desired}    *
+    Should Contain    ${desired}    sku
+    Should Contain    ${desired}    product_template.name
+
 Search Selecting Two-Hop Related Field Succeeds
     [Documentation]    product_template_uom_name is a related computed field whose path crosses
     ...    two edges (product_template, then uom). The query builder projects it through the

@@ -43,7 +43,7 @@ func (this *ProductVariantDomainServiceImpl) Create(
 	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, validateVariantCreate(this.Repository()))
+	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, checkCreateCombination(this.Repository()))
 	return this.CrudDomainService.Create(ctx, params, opts)
 }
 
@@ -51,7 +51,10 @@ func (this *ProductVariantDomainServiceImpl) Update(
 	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, validateVariantUpdate(this.Repository()))
+	submittedTemplateId := ""
+	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, captureSubmittedTemplateId(&submittedTemplateId))
+	opts.ValidateExtra = composable.ChainValidateExtra(
+		opts.ValidateExtra, validateVariantUpdate(this.Repository(), &submittedTemplateId))
 	return this.CrudDomainService.Update(ctx, params, opts)
 }
 

@@ -29,6 +29,9 @@ type CrudRepository interface {
 
 	// FindByKeys fetches the single record identified by the given primary or unique keys.
 	FindByKeys(ctx corectx.Context, keys dmodel.DynamicFields) (*dyn.OpResult[dmodel.DynamicFields], error)
+	// KeyExist tells whether a record matching every given key exists, reading no column; use it
+	// instead of FindByKeys when the row itself is not needed.
+	KeyExist(ctx corectx.Context, keys dmodel.DynamicFields) (*dyn.OpResult[bool], error)
 
 	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[dmodel.DynamicFields], error)
 	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*SearchResult, error)
@@ -127,6 +130,12 @@ func (this *DefaultCrudRepositoryImpl) Search(
 	ctx corectx.Context, param dyn.RepoSearchParam,
 ) (*SearchResult, error) {
 	return this.dynamicRepo.Search(ctx, param)
+}
+
+func (this *DefaultCrudRepositoryImpl) KeyExist(
+	ctx corectx.Context, keys dmodel.DynamicFields,
+) (*dyn.OpResult[bool], error) {
+	return baserepo.KeyExist(ctx, this.dynamicRepo, keys)
 }
 
 func (this *DefaultCrudRepositoryImpl) Exists(

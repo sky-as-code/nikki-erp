@@ -7,6 +7,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	it "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
 
@@ -92,6 +93,12 @@ func (this *computedFieldService) Search(
 func (this *computedFieldService) GetById(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.SingleResultData[dmodel.DynamicFields]], error) {
+	// No projection on a detail read means `*`, written out here rather than left to the domain
+	// service: an empty request makes the eval plan skip computed fields that depend on an
+	// SQL-computed one, which `*` must return.
+	if len(requestedFieldNames(params)) == 0 {
+		params[paramComputedFields] = corecrud.NormalizeFieldsWildcard(this.Schema(), []string{corecrud.FieldsWildcard})
+	}
 	return this.getOneComputed(ctx, params, this.DynamicResourceService.GetById)
 }
 

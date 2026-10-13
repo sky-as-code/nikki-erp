@@ -53,6 +53,7 @@
 	"datatable.relatedResources": "Related resources",
 	"datatable.selected": "{{count}} selected",
 	"datatable.view": "View",
+	"datatable.viewAll": "View all",
 	"datatable.viewSettings": "View settings",
 	"debug.form_errors": "Debug - Form errors",
 	"err_action_not_supported": "This resource does not support the requested action",

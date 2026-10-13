@@ -60,7 +60,7 @@ func UiSearch[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 				query.Fields = []string{basemodel.FieldId}
 			}
 		}
-		desiredFields = query.Fields
+		desiredFields = ExpandFieldsWildcard(param.Schema, query.Fields)
 
 		// TODO: Determine masked fields with field-level permission
 		// maskedFields = []string{}

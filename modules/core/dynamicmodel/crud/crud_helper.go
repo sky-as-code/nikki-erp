@@ -570,6 +570,7 @@ func getOneWithArchived[
 		}
 	}()
 
+	param.Query.Fields = NormalizeFieldsWildcard(param.DbRepoGetter.GetBaseRepo().Schema(), param.Query.Fields)
 	querySchema := getOneSchema()
 	sanitized, cErrs := querySchema.ValidateStruct(param.Query)
 	if cErrs.Count() > 0 {
@@ -616,6 +617,7 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 		}
 	}()
 
+	param.Query.Fields = NormalizeFieldsWildcard(param.DbRepoGetter.GetBaseRepo().Schema(), param.Query.Fields)
 	sanitized, cErrs := param.Query.GetSchema().ValidateStruct(param.Query)
 
 	if cErrs.Count() > 0 {
@@ -658,7 +660,9 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 		ComputedContext: sanitizedQuery.Context,
 	})
 	if err == nil && result != nil {
-		setDefaultDesiredFields[TDomain, TDomainPtr](result, sanitizedQuery, param.Query.GetSchema())
+		desiredQuery := sanitizedQuery
+		desiredQuery.Fields = ExpandFieldsWildcard(dynamicRepo.Schema(), sanitizedQuery.Fields)
+		setDefaultDesiredFields[TDomain, TDomainPtr](result, desiredQuery, param.Query.GetSchema())
 	}
 	return result, errors.Wrap(err, "Search")
 }

@@ -152,8 +152,9 @@ func TestSingleRowActionRefusesARecordOfAnotherOrg(t *testing.T) {
 	require.NoError(t, err)
 	assert.Positive(t, result.ClientErrors.Count())
 	assert.Zero(t, domSvc.calls, "the update must not run against a row of another org")
-	assert.Equal(t, "org_mine", repo.fetchedKeys[basemodel.FieldOrgId], "the org travels with the id in the key set")
-	assert.Equal(t, "rec_1", repo.fetchedKeys["id"])
+	assert.Equal(t, "org_mine", repo.existKeys[basemodel.FieldOrgId], "the org travels with the id in the key set")
+	assert.Equal(t, "rec_1", repo.existKeys["id"])
+	assert.Nil(t, repo.fetchedKeys, "the check asks whether the row exists; it never reads it")
 }
 
 func TestSingleRowActionRunsWhenTheRecordIsInTheOrg(t *testing.T) {

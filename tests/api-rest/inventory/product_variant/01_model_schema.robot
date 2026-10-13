@@ -38,14 +38,15 @@ Schema Declares No Inherited Fields
     END
 
 Schema Declares The Inherited Fields As Virtual
-    [Documentation]    The template's values still reach a variant read — as template_*
+    [Documentation]    The template's values still reach a variant read — as product_template_*
     ...    fields marked virtual, so they are served from the join rather than stored. That
     ...    is the difference between inheriting a value and duplicating it.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    FOR    ${field}    IN    template_name    template_category_id    template_brand_id
-    ...    template_product_type_id    template_status    template_sale_ok
+    FOR    ${field}    IN    product_template_name    product_template_category_id
+    ...    product_template_brand_id    product_template_product_type_id    product_template_status
+    ...    product_template_sale_ok    product_template_purchase_ok    product_template_base_sales_price
         Dictionary Should Contain Key    ${fields}    ${field}
     END
 
@@ -68,28 +69,31 @@ Schema Declares No Default Variant Flag
     Response Status Should Be    ${resp}    200
     Dictionary Should Not Contain Key    ${resp.json()}[fields]    is_default_variant
 
-Schema Declares No Display Name Field
+Schema Declares Display Name As Computed And Never Stored
     [Documentation]    BR §5.5 / AC-PROD-013: display_name is computed as template name plus
-    ...    attribute values and served by the effective-product endpoint, never stored.
+    ...    attribute values on every read, never stored.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
     Response Status Should Be    ${resp}    200
-    Dictionary Should Not Contain Key    ${resp.json()}[fields]    display_name
+    ${field}=    Set Variable    ${resp.json()}[fields][display_name]
+    Should Be Equal    ${field}[is_computed]    ${True}
+    Should Be Equal    ${field}[is_persisted]    ${False}
+    Should Be Equal    ${field}[is_virtual]    ${True}
 
-Schema Declares Sku As The Record Label
-    [Documentation]    The variant has no name of its own, so the relation picker falls back
-    ...    to the SKU rather than rendering a raw ULID.
+Schema Declares Display Name As The Record Label
+    [Documentation]    The variant has no name of its own; its computed display name (template
+    ...    name plus attribute values) is what a relation picker shows instead of a raw ULID.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
     Response Status Should Be    ${resp}    200
-    Should Be Equal    ${resp.json()}[record_label_field]    sku
+    Should Be Equal    ${resp.json()}[record_label_field]    display_name
 
 Schema Marks Template Fields Computed But Not System
-    [Documentation]    A template_* field is copied from the template on read, so it is
+    [Documentation]    A product_template_* field is copied from the template on read, so it is
     ...    computed and unpersisted. It is deliberately NOT a system field: it carries
     ...    business meaning and must stay available to a client's column picker. Folding
     ...    "no column" into "system field" is what used to hide these from the field list.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
     Response Status Should Be    ${resp}    200
-    ${field}=    Set Variable    ${resp.json()}[fields][template_name]
+    ${field}=    Set Variable    ${resp.json()}[fields][product_template_name]
     Should Be Equal    ${field}[is_computed]    ${True}
     Should Be Equal    ${field}[is_persisted]    ${False}
     Should Be Equal    ${field}[is_virtual]    ${True}
@@ -113,7 +117,7 @@ Schema Marks The Template Edge An Edge Model
     ...    what is_edge_model tells a client that must not offer it as a selectable column.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
     Response Status Should Be    ${resp}    200
-    ${field}=    Set Variable    ${resp.json()}[fields][template]
+    ${field}=    Set Variable    ${resp.json()}[fields][product_template]
     Should Be Equal    ${field}[is_edge_model]    ${True}
     Should Be Equal    ${field}[is_computed]    ${True}
     Should Be Equal    ${field}[is_persisted]    ${False}

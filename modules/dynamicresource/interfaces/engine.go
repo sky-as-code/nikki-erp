@@ -146,6 +146,9 @@ type DynamicResourceRepository interface {
 
 	// FindByKeys fetches the single record identified by the given primary or unique keys.
 	FindByKeys(ctx corectx.Context, keys dmodel.DynamicFields) (*dyn.OpResult[dmodel.DynamicFields], error)
+	// KeyExist tells whether a record matching every given key exists, reading no column; use it
+	// instead of FindByKeys when the row itself is not needed.
+	KeyExist(ctx corectx.Context, keys dmodel.DynamicFields) (*dyn.OpResult[bool], error)
 
 	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[dmodel.DynamicFields], error)
 	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error)

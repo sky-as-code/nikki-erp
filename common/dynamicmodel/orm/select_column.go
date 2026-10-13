@@ -55,7 +55,7 @@ func selectColumnStripDistinctPrefix(col SelectColumn) string {
 // joinPlanningPath returns a dotted path used for graph join discovery, or empty when the token is not a plain field path.
 func (this SelectColumn) joinPlanningPath() string {
 	raw := strings.TrimSpace(this.rawString())
-	if raw == "" {
+	if raw == "" || raw == string(SelectAllColumns) {
 		return ""
 	}
 	inner := selectColumnStripDistinctPrefix(this)

@@ -222,3 +222,30 @@ func TestOrgScopeDoesNotBypassThePermissionCheck(t *testing.T) {
 	assert.Positive(t, result.ClientErrors.Count(), "a denied caller is still denied")
 	assert.Nil(t, seen)
 }
+
+// A row of another org answers "not found". The check only asks whether {id, org_id} exists; it
+// never reads the row, which would project every column and render every computed field.
+func TestAssertRecordInOrgRefusesARecordOfAnotherOrgWithoutReadingIt(t *testing.T) {
+	repo := &stubRepository{found: false}
+	engine := newPipelineEngine(repo)
+
+	cErrs, err := engine.assertRecordInOrg(memberContext(), it.ActionGetById,
+		dmodel.DynamicFields{"id": "rec_1"}, model.Id("org_mine"))
+
+	require.NoError(t, err)
+	require.NotNil(t, cErrs)
+	assert.Positive(t, cErrs.Count())
+	assert.Equal(t, dmodel.DynamicFields{"id": "rec_1", basemodel.FieldOrgId: "org_mine"}, repo.existKeys)
+	assert.Nil(t, repo.fetchedKeys)
+}
+
+func TestAssertRecordInOrgAcceptsARecordOfTheOrg(t *testing.T) {
+	repo := &stubRepository{found: true}
+	engine := newPipelineEngine(repo)
+
+	cErrs, err := engine.assertRecordInOrg(memberContext(), it.ActionGetById,
+		dmodel.DynamicFields{"id": "rec_1"}, model.Id("org_mine"))
+
+	require.NoError(t, err)
+	assert.Nil(t, cErrs)
+}

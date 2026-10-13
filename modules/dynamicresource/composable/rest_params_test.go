@@ -70,6 +70,25 @@ func TestSearchParsesPagingFieldsGraphAndArchivedFlag(t *testing.T) {
 	assert.NotNil(t, domSvc.seen["graph"])
 }
 
+// The token reaches the service so the query builder can render `t0.*`; the plain schema has no
+// computed field to add and its own columns are covered by `*`.
+func TestReadsNormalizeTheFieldsWildcardBeforeTheService(t *testing.T) {
+	domSvc, restEngine := newCrudRest(newPlainSchema())
+
+	for name, target := range map[string]string{
+		"search":    "/cmp_plain_resource?fields=*&fields=peer.name",
+		"get_by_id": "/cmp_plain_resource/rec_1?fields=*,peer.name",
+	} {
+		t.Run(name, func(t *testing.T) {
+			recorder := serveWithContext(t, restEngine, ownerContext(),
+				httptest.NewRequest(http.MethodGet, target, nil))
+
+			assert.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
+			assert.Equal(t, []string{"*", "peer.name"}, domSvc.seen["fields"])
+		})
+	}
+}
+
 func TestSearchRejectsAMalformedGraphWith400(t *testing.T) {
 	domSvc, restEngine := newCrudRest(newPlainSchema())
 

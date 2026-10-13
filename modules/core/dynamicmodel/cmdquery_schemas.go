@@ -77,10 +77,15 @@ func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			RequiredAlways())
 }
 
+// searchFieldsItemRegex keeps the usual two-character minimum for a field name while letting the
+// single-character `*` (all fields) through; the length rule is lowered to 1 for that alone.
+var searchFieldsItemRegex = regexp.MustCompile(`^(\*|[\s\S]{2,})$`)
+
 func DefineFieldSearchFields() *dmodel.FieldBuilder {
 	return dmodel.DefineField().
 		Name(basemodel.FieldFields).
-		DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_FIELDS_LENGTH_MIN, model.MODEL_RULE_FIELDS_LENGTH_MAX).ArrayType()).
+		DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_FIELDS_LENGTH_MAX,
+			dmodel.FieldDataTypeStringOpts{Regex: searchFieldsItemRegex}).ArrayType()).
 		Rule(dmodel.FieldRuleArrayLength(0, 50))
 }
 

@@ -90,6 +90,12 @@ func (this *computedFieldService) Search(
 func (this *computedFieldService) GetById(
 	ctx corectx.Context, query GetByIdQuery,
 ) (*GetOneResult, error) {
+	// No projection on a detail read means `*`, written out here rather than left to the domain
+	// service: an empty request makes the eval plan skip computed fields that depend on an
+	// SQL-computed one, which `*` must return.
+	if len(requestedFieldNames(query)) == 0 {
+		query[fieldNameFields] = corecrud.NormalizeFieldsWildcard(this.Schema(), []string{corecrud.FieldsWildcard})
+	}
 	return this.getOneComputed(ctx, query, this.CrudDomainService.GetById)
 }
 

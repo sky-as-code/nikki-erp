@@ -38,6 +38,10 @@ type DbTxClient interface {
 // SelectColumn is a select-list token for graph queries: plain field path, DISTINCT::field, or aggregates.
 type SelectColumn string
 
+// SelectAllColumns stands for the root table's own columns, rendered as `t0.*` (or `*` without
+// joins), so a caller can add computed fields and edge paths without listing every column.
+const SelectAllColumns SelectColumn = "*"
+
 // SqlSelectGraphOpts holds optional parameters for SqlSelectGraph.
 type SqlSelectGraphOpts struct {
 	// Columns limits which columns to fetch; empty means all columns (*).

@@ -72,3 +72,27 @@ func TestEnsureSystemColumns_DoesNotDuplicateAnExplicitEtag(t *testing.T) {
 
 	assert.ElementsMatch(t, []string{"id", "sku", basemodel.FieldEtag}, columns)
 }
+
+// `*` renders as `t0.*`, which already carries the keys and etag; adding them would project them
+// twice.
+func TestEnsureSystemColumns_LeavesWildcardSelectionAlone(t *testing.T) {
+	repo := versionedRepo(t)
+
+	assert.Equal(t, []string{"*", "sku"}, repo.ensureSystemColumns([]string{"*", "sku"}))
+}
+
+func TestSelectFieldsForSchema_TypesEveryReadableFieldUnderWildcard(t *testing.T) {
+	repo := virtualRepo(t)
+
+	fields := repo.selectFieldsForSchema(repo.schema, []string{"*"})
+
+	assert.Contains(t, fields, "sku")
+	assert.Contains(t, fields, "peer_name", "a virtual scalar filled after the read is still typed")
+	assert.NotContains(t, fields, "*")
+}
+
+func TestValidateSelectColumns_AcceptsWildcard(t *testing.T) {
+	repo := virtualRepo(t)
+
+	assert.Nil(t, repo.validateSelectColumns([]string{"*", "peer_name"}))
+}

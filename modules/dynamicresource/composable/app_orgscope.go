@@ -174,21 +174,26 @@ func (this *DefaultApplicationServiceImpl) AssertRecordInOrg(
 		return nil, nil
 	}
 
-	vErrs := ft.ClientErrors{}
-	found, err := this.FetchByKeys(ctx, dmodel.DynamicFields{
+	keys := dmodel.DynamicFields{
 		basemodel.FieldId:    recordId,
 		basemodel.FieldOrgId: string(orgId),
-	}, &vErrs)
+	}
+	vErrs := ft.ClientErrors{}
+	if !this.assertKeysAreWellFormed(keys, &vErrs) {
+		return &vErrs, nil
+	}
+	// Existence is all this check needs; reading the row would project every column and render
+	// every SQL-computed field for nothing.
+	exists, err := this.domSvc.Repository().KeyExist(ctx, keys)
 	if err != nil {
 		return nil, errors.Wrap(err, "AssertRecordInOrg")
 	}
-	if vErrs.Count() > 0 {
-		return &vErrs, nil
+	if exists.ClientErrors.Count() > 0 {
+		return &exists.ClientErrors, nil
 	}
-	if found == nil {
-		notFound := ft.ClientErrors{}
-		notFound.Append(*ft.NewAnonymousNotFoundError())
-		return &notFound, nil
+	if !exists.Data {
+		vErrs.Append(*ft.NewAnonymousNotFoundError())
+		return &vErrs, nil
 	}
 	return nil, nil
 }

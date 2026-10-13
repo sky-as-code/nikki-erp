@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
@@ -990,6 +991,12 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 				}
 				continue
 			}
+			if col == allColumns {
+				for _, column := range this.schema.Columns() {
+					mainSet[column.Name()] = struct{}{}
+				}
+				continue
+			}
 			mainSet[col] = struct{}{}
 			continue
 		}
@@ -1597,8 +1604,15 @@ func (this *BaseDynamicRepositoryImpl) validateKeyMap(keys dmodel.DynamicFields)
 // Shared by GetOne and Search so the two accept exactly the same projections. They diverged
 // before: GetOne validated up front while Search let the ORM reject a bad field later, with a
 // different error and only after the query had been built.
+// allColumns is the `fields` entry standing for the root's own columns; the query builder renders
+// it as `t0.*`, so it is passed through rather than expanded here.
+const allColumns = string(orm.SelectAllColumns)
+
 func (this *BaseDynamicRepositoryImpl) validateSelectColumns(columns []string) *ft.ClientErrorItem {
 	for _, col := range columns {
+		if col == allColumns {
+			continue
+		}
 		field, hasField := this.schema.Field(col)
 		if hasField && field.IsEdgeModel() {
 			if _, ok := this.relationByEdge(col); !ok {
@@ -1755,9 +1769,9 @@ func (this *BaseDynamicRepositoryImpl) removeNilFilterFields(filter dmodel.Dynam
 // field, deliberately. Without this, such an update either overwrites a concurrent one silently or
 // has to re-read the record first, reintroducing the race it is meant to close.
 //
-// An empty list means SELECT *, which already carries both.
+// An empty list means SELECT *, which already carries both, and so does `*` among other entries.
 func (this *BaseDynamicRepositoryImpl) ensureSystemColumns(columns []string) []string {
-	if len(columns) == 0 {
+	if len(columns) == 0 || slices.Contains(columns, allColumns) {
 		return columns
 	}
 	set := make(map[string]struct{})
@@ -1935,17 +1949,12 @@ func (this *BaseDynamicRepositoryImpl) selectFieldsForSchema(
 		return nil
 	}
 	cols := columns
-	colLen := len(cols)
-	if colLen == 0 {
+	if len(cols) == 0 || slices.Contains(cols, allColumns) {
 		// ReadableFields, so the scanner can still type-convert a virtual scalar that a service
-		// fills after the read when the caller named no fields at all.
-		readable := schema.ReadableFields()
-		cols = make([]string, 0, len(readable))
-		for _, field := range readable {
-			cols = append(cols, field.Name())
-		}
+		// fills after the read when the caller named no fields at all, or only `*`.
+		cols = append(slices.Clone(cols), readableFieldNames(schema)...)
 	}
-	out := make(map[string]*dmodel.ModelField, colLen)
+	out := make(map[string]*dmodel.ModelField, len(cols))
 	for _, col := range cols {
 		field := resolveSchemaFieldByColumn(schema, col)
 		if field != nil {

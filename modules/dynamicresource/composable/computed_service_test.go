@@ -163,6 +163,21 @@ func TestComputedServiceUntouchedWhenNothingComputedRequested(t *testing.T) {
 	assert.Equal(t, []string{"id", "template_id"}, base.gotParams["fields"])
 }
 
+// A detail read without `fields` is `*`: the token and every computed field go down, so the eval
+// plan treats it like an explicit wildcard rather than an empty request.
+func TestComputedServiceGetByIdWithoutFieldsSendsTheWildcard(t *testing.T) {
+	base, recorder, service := buildDecoratorFixture(t)
+	base.single = dmodel.DynamicFields{"id": "v1", "template_id": "t1"}
+	recorder.sourceRows = []dmodel.DynamicFields{{"id": "t1", "name": "Widget"}}
+
+	result, err := service.GetById(nil, dmodel.DynamicFields{})
+	require.NoError(t, err)
+
+	assert.Contains(t, base.gotParams["fields"], "*")
+	assert.Contains(t, base.gotParams["fields"], "template_name")
+	assert.Equal(t, "Widget", result.Data.Item["template_name"])
+}
+
 func TestComputedServiceGetByIdFillsSingleRecord(t *testing.T) {
 	base, recorder, service := buildDecoratorFixture(t)
 	base.single = dmodel.DynamicFields{"id": "v1", "template_id": "t1"}

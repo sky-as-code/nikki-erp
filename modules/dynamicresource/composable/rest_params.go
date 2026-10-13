@@ -13,6 +13,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 )
 
@@ -239,7 +240,7 @@ func getByIdParams(echoCtx *echo.Context, schema *dmodel.ModelSchema) (dmodel.Dy
 	params[basemodel.FieldId] = echoCtx.Param("id")
 	mergeOrgId(echoCtx, schema, params, ActionTypeRead)
 	if fields := readCsvQuery(echoCtx, queryParamFields); len(fields) > 0 {
-		params[queryParamFields] = fields
+		params[queryParamFields] = corecrud.NormalizeFieldsWildcard(schema, fields)
 	}
 	return params, nil
 }
@@ -263,7 +264,7 @@ func searchParams(echoCtx *echo.Context, schema *dmodel.ModelSchema) (dmodel.Dyn
 	mergeOrgId(echoCtx, schema, params, ActionTypeRead)
 
 	if fields := readCsvQuery(echoCtx, queryParamFields); len(fields) > 0 {
-		params[queryParamFields] = fields
+		params[queryParamFields] = corecrud.NormalizeFieldsWildcard(schema, fields)
 	}
 	if page, ok := readIntQuery(echoCtx, queryParamPage); ok {
 		params[queryParamPage] = page

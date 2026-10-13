@@ -84,12 +84,12 @@ Create Defaults To Active And Materialized
 
 Create Inherits The Template Fields
     [Documentation]    BR §7.6 / AC-PROD-032: the template's name and classification reach a
-    ...    variant read through the virtual template_* fields, without being stored on it.
+    ...    variant read through the virtual product_template_* fields, without being stored on it.
     ...    A consumer must never have to join the two halves itself.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_variant.json    200
-    Should Not Be Empty    ${item}[template_name]
+    Should Not Be Empty    ${item}[product_template_name]
     ...    msg=A variant must inherit its template's name rather than storing one
     Set Global Variable    ${PRODUCT_VARIANT_ETAG}    ${item}[etag]
 

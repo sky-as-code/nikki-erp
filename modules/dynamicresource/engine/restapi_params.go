@@ -13,6 +13,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	it "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 )
@@ -283,7 +284,7 @@ func (this *DynamicRestApiImpl) getByIdParams(echoCtx *echo.Context) (dmodel.Dyn
 	params[basemodel.FieldId] = echoCtx.Param("id")
 	this.mergeOrgId(echoCtx, params, it.ActionGetById)
 	if fields := readCsvQuery(echoCtx, queryParamFields); len(fields) > 0 {
-		params[queryParamFields] = fields
+		params[queryParamFields] = corecrud.NormalizeFieldsWildcard(this.engine.Schema(), fields)
 	}
 	return params, nil
 }
@@ -295,7 +296,7 @@ func (this *DynamicRestApiImpl) searchParams(echoCtx *echo.Context) (dmodel.Dyna
 	this.mergeOrgId(echoCtx, params, it.ActionSearch)
 
 	if fields := readCsvQuery(echoCtx, queryParamFields); len(fields) > 0 {
-		params[queryParamFields] = fields
+		params[queryParamFields] = corecrud.NormalizeFieldsWildcard(this.engine.Schema(), fields)
 	}
 	if page, ok := readIntQuery(echoCtx, queryParamPage); ok {
 		params[queryParamPage] = page

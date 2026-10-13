@@ -101,6 +101,7 @@ type stubRepository struct {
 	CrudRepository
 	schema      *dmodel.ModelSchema
 	fetchedKeys dmodel.DynamicFields
+	existKeys   dmodel.DynamicFields
 	record      dmodel.DynamicFields
 	found       bool
 
@@ -137,6 +138,11 @@ func (this *stubRepository) FindByKeys(
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	this.fetchedKeys = keys
 	return &dyn.OpResult[dmodel.DynamicFields]{Data: this.record, HasData: this.found}, nil
+}
+
+func (this *stubRepository) KeyExist(_ corectx.Context, keys dmodel.DynamicFields) (*dyn.OpResult[bool], error) {
+	this.existKeys = keys
+	return &dyn.OpResult[bool]{Data: this.found, HasData: true}, nil
 }
 
 // fakeDomainService records what reaches it and answers success, so the application layer can
