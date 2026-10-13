@@ -2,6 +2,7 @@ package v1
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
@@ -21,7 +22,7 @@ type DeleteLanguageResponse = httpserver.RestDeleteResponse2
 type GetLanguageRequest = it.GetLanguageQuery
 type GetLanguageResponse = dmodel.DynamicFields
 type GetLanguageJsonRequest = it.GetLanguageJsonQuery
-type GetLanguageJsonResponse = map[string]any
+type GetLanguageJsonResponse = model.LanguageTranslationItem
 type SearchLanguagesRequest = it.SearchLanguagesQuery
 type SearchLanguagesResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
 type LanguageExistsRequest = it.LanguageExistsQuery

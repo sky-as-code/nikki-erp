@@ -29,35 +29,24 @@ mkdir -p "$migration_path_tmp"
 echo "Clearing '${migration_path_tmp}' before generating migration..."
 find "$migration_path_tmp" -mindepth 1 -delete
 
-# A cross-module foreign key names a table this module does not own, so the schema handed to
-# atlas must contain that table or the constraint cannot resolve. The generator emits the whole
-# dependency closure (-withdeps, set in atlas.hcl); these are the tables it added, excluded from
-# the diff so they are not proposed as new tables belonging to this module's migration.
-dep_tables=()
-while IFS= read -r dep_table; do
-	[ -n "$dep_table" ] && dep_tables+=("$dep_table")
-done < <(cd "$cwd" && go run -tags staticmods main.go -listdeptables -module="$module")
-
-# Repeating --var for a list-typed variable is how atlas builds a list from the command line.
-exclude_args=()
-for dep_table in "${dep_tables[@]}"; do
-	exclude_args+=(--var "dep_tables=$dep_table")
-done
-echo "Excluding ${#dep_tables[@]} dependency table(s) from the diff..."
+# A cross-module foreign key names a table this module does not own, so atlas must know that
+# table or the constraint cannot resolve. The dependency closure's tables go in as a baseline
+# migration: atlas replays it, treats those tables as already existing, and diffs only this
+# module's tables against the full schema (-withdeps, set in atlas.hcl). Excluding them from the
+# diff instead does not work: atlas drops every foreign key that references an excluded table.
+baseline_file="${migration_path_tmp}/00000000000000_deps.sql"
+(cd "$cwd" && go run -tags staticmods main.go -createsql -dialect=postgres -onlydeps -module="$module") 	> "$baseline_file"
+echo "Wrote $(grep -c '^CREATE TABLE' "$baseline_file" || true) dependency table(s) as the diff baseline..."
+atlas migrate hash --dir "file://${migration_path_tmp_url}"
 
 # Atlas takes dirs and the config as file:// URLs, the shell needs plain paths for the same locations.
-atlas migrate diff tmp \
-	--dir "file://${migration_path_tmp_url}" \
-	--config "file://${script_path_url}/atlas.hcl" \
-	--env nikki \
-	--var module="$module" \
-	--var cwd="$cwd" \
-	"${exclude_args[@]}"
+atlas migrate diff tmp 	--dir "file://${migration_path_tmp_url}" 	--config "file://${script_path_url}/atlas.hcl" 	--env nikki 	--var module="$module" 	--var cwd="$cwd"
 
+# Only the generated file; the baseline belongs to the dependencies' own migrations.
 sql_files=()
 while IFS= read -r sql_file; do
 	sql_files+=("$sql_file")
-done < <(find "$migration_path_tmp" -maxdepth 1 -type f -name '*.sql' | sort)
+done < <(find "$migration_path_tmp" -maxdepth 1 -type f -name '*_tmp.sql' | sort)
 
 if [ "${#sql_files[@]}" -eq 0 ]; then
 	echo "No schema changes detected for module '${module}'; nothing to copy." >&2

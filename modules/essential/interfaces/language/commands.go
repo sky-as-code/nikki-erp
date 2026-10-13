@@ -2,6 +2,7 @@ package language
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -75,7 +76,7 @@ type GetLanguageJsonQuery struct {
 	ModuleName   string `json:"module_name" query:"module_name"`
 }
 
-type GetLanguageJsonResult = dyn.OpResult[map[string]any]
+type GetLanguageJsonResult = dyn.OpResult[model.LanguageTranslationItem]
 
 var searchLanguagesQueryType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "search"}
 

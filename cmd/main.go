@@ -22,7 +22,7 @@ type StartableApp interface {
 	Stop(ctx context.Context)
 	Logger() logging.LoggerService
 	GenSql(module string, dialect string, withDeps bool) string
-	GenSqlExcludes(module string) []string
+	GenDepsSql(module string, dialect string) string
 }
 
 // defaultShutdownGraceSecs matches config.default.yaml. It is used only if the configuration
@@ -42,19 +42,14 @@ func Main(param MainParam) {
 	dialect := flag.String("dialect", "", "SQL dialect (required when -createsql is set)")
 	withDeps := flag.Bool("withdeps", false,
 		"Also emit the tables of the module's dependencies, so a cross-module foreign key has a table to reference")
-	listDepTables := flag.Bool("listdeptables", false,
-		"Print the dependency table names -withdeps adds, one per line, for the caller to exclude from the diff")
+	onlyDeps := flag.Bool("onlydeps", false,
+		"With -createsql: emit only the dependency closure's tables, as the baseline a migration is diffed against")
 	job := flag.String("job", "", "Run job")
 	jobArgs := flag.String("jobArgs", "", "Job Args")
 	flag.Parse()
 
-	if *listDepTables {
-		runListDepTables(param.CreateAppFn, *module)
-		return
-	}
-
 	if *isCreateSql {
-		runCreateSql(param.CreateAppFn, *module, *dialect, *withDeps)
+		runCreateSql(param.CreateAppFn, *module, *dialect, *withDeps, *onlyDeps)
 		return
 	}
 
@@ -109,24 +104,17 @@ func Main(param MainParam) {
 	}
 }
 
-func runCreateSql(createAppFn CreateAppFn, module string, dialect string, withDeps bool) {
+func runCreateSql(createAppFn CreateAppFn, module string, dialect string, withDeps bool, onlyDeps bool) {
 	if module == "" || dialect == "" {
 		fmt.Fprintln(os.Stderr, "error: -createsql requires both -module and -dialect to have values")
 		os.Exit(1)
 	}
 	app := createAppFn(nil)
-	sql := app.GenSql(module, dialect, withDeps)
-	fmt.Print(sql)
-}
-
-func runListDepTables(createAppFn CreateAppFn, module string) {
-	if module == "" {
-		fmt.Fprintln(os.Stderr, "error: -listdeptables requires -module to have a value")
-		os.Exit(1)
+	if onlyDeps {
+		fmt.Print(app.GenDepsSql(module, dialect))
+		return
 	}
-	for _, table := range createAppFn(nil).GenSqlExcludes(module) {
-		fmt.Println(table)
-	}
+	fmt.Print(app.GenSql(module, dialect, withDeps))
 }
 
 func runHandleJob(jobName string, jobArgs *string) {

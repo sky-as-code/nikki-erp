@@ -43,6 +43,10 @@ func RequestTypeFor(dependantModule string) cqrs.RequestType {
 // resource until someone notices.
 const (
 	ResourceUom            = "uom"
+
+	// Owned by IAM. Every org-owned record of another module names it through org_id.
+	ResourceOrg = "org"
+
 	ResourceProductVariant = "product_variant"
 
 	// Owned by Inventory, alongside the variant.

@@ -3,6 +3,7 @@ package modules
 import (
 	"context"
 
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 )
 
@@ -81,6 +82,16 @@ type InCodeModuleAppStarted interface {
 // and a resource whose consumer is absent has no consumer to ask.
 type InCodeModuleDependants interface {
 	Dependants() []string
+}
+
+// InCodeModuleRegisterLanguage is optional: a module returns its own translations, per language
+// code (e.g. "en-US"). Essential collects them in OnAppStarted and serves them under the module's
+// Name(), so a module ships its translations without touching essential.
+//
+// A language essential already embeds for that module, or one registered twice, fails startup:
+// every translation has exactly one source.
+type InCodeModuleRegisterLanguage interface {
+	RegisterLanguage() model.LanguageTranslation
 }
 
 // InCodeModuleAppStopping is an optional hook, the counterpart to InCodeModuleAppStarted,

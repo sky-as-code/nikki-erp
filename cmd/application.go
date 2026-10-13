@@ -10,7 +10,6 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules"
 	apptraitconstants "github.com/sky-as-code/nikki-erp/modules/apptrait/constants"
@@ -96,79 +95,6 @@ func (this *Application) Stop(ctx context.Context) {
 		}
 		this.logger.Debugf("Invoked OnAppStopping() on module %s", mod.Name())
 	}
-}
-
-// GenSql renders the module's CREATE TABLE statements. withDeps additionally renders the
-// tables of every module in the dependency closure, which a cross-module foreign key needs:
-// the constraint names a table this module does not own, and Atlas cannot diff a reference
-// to a table absent from the schema it is given. The dependency tables are emitted first
-// (ForEachOrder is dependency-ordered) and the caller excludes them from the diff, so they
-// exist for the constraint to resolve against without being proposed as new tables.
-func (this *Application) GenSql(moduleName string, dialect string, withDeps bool) string {
-	registeredCount, err := this.registerModelsUpTo(moduleName)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to register models: %v\n", err)
-		os.Exit(1)
-	}
-
-	registry := dmodel.GetSchemaRegistry()
-	if err := registry.FinalizeRelations(); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to finalize schema relations: %v\n", err)
-		os.Exit(1)
-	}
-
-	if err := orm.ValidateRelations(registry); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to validate relations: %v\n", err)
-		os.Exit(1)
-	}
-
-	prefix := this.buildModuleMap()[moduleName].(modules.DynamicModule).ModelPrefix() + "_"
-	genPrefix := prefix
-	if withDeps {
-		// No prefix filter: take everything registered, which registerModelsUpTo limited to
-		// this module plus its transitive dependencies.
-		genPrefix = ""
-	}
-	queries, err := orm.GenCreateSql(registry, dialect, genPrefix)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to generate create SQL: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Schemas registered but none matched the prefix: ModelPrefix() is wrong for this module.
-	if len(queries) == 0 && registeredCount > 0 {
-		fmt.Fprintf(os.Stderr,
-			"module '%s' registered %d schema(s) but none match '%s'; "+
-				"fix ModelPrefix() in the module's index.go\n",
-			moduleName, registeredCount, prefix)
-		os.Exit(1)
-	}
-	return strings.Join(queries, ";\n")
-}
-
-// GenSqlExcludes lists the table names GenSql(withDeps=true) emits that moduleName does not
-// own, for the caller to hand to Atlas as diff exclusions. Without them a dependency's tables
-// read as new tables this module should create, and the generated migration would duplicate
-// tables another module's migration already creates.
-func (this *Application) GenSqlExcludes(moduleName string) []string {
-	if _, err := this.registerModelsUpTo(moduleName); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to register models: %v\n", err)
-		os.Exit(1)
-	}
-
-	prefix := this.buildModuleMap()[moduleName].(modules.DynamicModule).ModelPrefix() + "_"
-	excluded := make([]string, 0)
-	err := dmodel.GetSchemaRegistry().ForEachOrder(func(schemaName string, schema *dmodel.ModelSchema) error {
-		if !strings.HasPrefix(schemaName, prefix) && schema.TableName() != "" {
-			excluded = append(excluded, schema.TableName())
-		}
-		return nil
-	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to list dependency tables: %v\n", err)
-		os.Exit(1)
-	}
-	return excluded
 }
 
 // registerModelsUpTo registers models for moduleName and its transitive dependencies only

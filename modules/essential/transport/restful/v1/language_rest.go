@@ -74,7 +74,7 @@ func (this LanguageRest) GetLanguageJson(echoCtx *echo.Context) (err error) {
 	}()
 	return httpserver.ServeRequest2(echoCtx, this.svc.GetLanguageJson,
 		func(request GetLanguageJsonRequest) it.GetLanguageJsonQuery { return it.GetLanguageJsonQuery(request) },
-		func(data map[string]any) GetLanguageJsonResponse { return data },
+		func(data model.LanguageTranslationItem) GetLanguageJsonResponse { return data },
 		httpserver.JsonOk)
 }
 
