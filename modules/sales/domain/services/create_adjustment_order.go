@@ -159,6 +159,14 @@ func writeAdjustmentOrder(
 		models.SalesOrderFieldSalesPointId:   stringOf(original, models.SalesOrderFieldSalesPointId),
 		models.SalesOrderFieldCurrencyCode:   stringOf(original, models.SalesOrderFieldCurrencyCode),
 
+		models.SalesOrderFieldCustomerIdentityMode: stringOf(original, models.SalesOrderFieldCustomerIdentityMode),
+		models.SalesOrderFieldAutoConfirmOrder:     boolOf(original, models.SalesOrderFieldAutoConfirmOrder),
+		models.SalesOrderFieldAutoConfirmRefund:    boolOf(original, models.SalesOrderFieldAutoConfirmRefund),
+
+		models.SalesOrderFieldPaymentStatus:     string(models.SalesOrderPaymentStatusUnpaid),
+		models.SalesOrderFieldFulfillmentStatus: string(models.SalesOrderFulfillmentStatusFulfilled),
+		models.SalesOrderFieldInvoiceStatus:     string(models.SalesOrderInvoiceStatusNotRequested),
+
 		models.SalesOrderFieldSubtotal:      totals.subtotal,
 		models.SalesOrderFieldDiscountTotal: totals.discount,
 		models.SalesOrderFieldTaxTotal:      totals.tax,
@@ -168,7 +176,8 @@ func writeAdjustmentOrder(
 		// orders even if the supersession check above were somehow bypassed.
 		models.SalesOrderFieldIdempotencyKey: "adj:" + stringOf(salesReturn, models.SalesReturnFieldId),
 
-		basemodel.FieldOrgId: orgId,
+		basemodel.FieldOrgId:      orgId,
+		basemodel.FieldIsArchived: false,
 	}
 
 	// The parties and the customer carry over: the same person kept the goods.
@@ -289,6 +298,8 @@ func writeAdjustmentOrderLines(
 			models.SalesOrderLineFieldLineNumber:   int32(index + 1),
 
 			models.SalesOrderLineFieldOrderedQuantity: line.quantity,
+			models.SalesOrderLineFieldRequiresFulfillment: boolOf(
+				line.original, models.SalesOrderLineFieldRequiresFulfillment),
 
 			// Nothing has come back from THIS order, and the goods are already with the customer.
 			models.SalesOrderLineFieldReturnedQuantity:  decimal.Zero,
@@ -308,7 +319,8 @@ func writeAdjustmentOrderLines(
 			models.SalesOrderLineFieldTaxAmount:      amounts.tax,
 			models.SalesOrderLineFieldFinalAmount:    amounts.final,
 
-			basemodel.FieldOrgId: orgId,
+			basemodel.FieldOrgId:      orgId,
+			basemodel.FieldIsArchived: false,
 		}
 
 		// The descriptive fields carry over verbatim: a receipt for what the customer kept must name
