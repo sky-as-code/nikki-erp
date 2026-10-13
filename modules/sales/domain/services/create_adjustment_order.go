@@ -144,6 +144,7 @@ func writeAdjustmentOrder(
 
 	fields := dmodel.DynamicFields{
 		models.SalesOrderFieldId:             adjustmentId,
+		models.SalesOrderFieldOrderNumber:    "SO-" + adjustmentId,
 		models.SalesOrderFieldAdjustsOrderId: stringOf(original, models.SalesOrderFieldId),
 
 		// Confirmed, not draft: the sale it describes already happened and was paid for. A draft
