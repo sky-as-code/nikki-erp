@@ -171,6 +171,15 @@ const (
 	LanguageCodeRef = LanguageCode("$ref")
 )
 
+// Map from keys to translation texts
+type LanguageTranslationItem map[string]string
+
+// Map from language code to translation items
+type LanguageTranslation map[LanguageCode]LanguageTranslationItem
+
+// Map from module name to language translation
+type LanguagePack map[string]LanguageTranslation
+
 var langCodeRules = []val.Rule{
 	val.NotEmpty,
 	val.By(func(value any) error {

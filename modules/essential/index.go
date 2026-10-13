@@ -22,6 +22,7 @@ import (
 	external "github.com/sky-as-code/nikki-erp/modules/essential/infra/external"
 	repo "github.com/sky-as-code/nikki-erp/modules/essential/infra/repository"
 	itExt "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/external"
+	itLang "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 	"github.com/sky-as-code/nikki-erp/modules/essential/transport"
 )
@@ -128,6 +129,7 @@ func (*EssentialModule) OnAppStarted() error {
 	return deps.Invoke(func(
 		loadedMods []modules.InCodeModule,
 		moduleSvc it.ModuleAppService,
+		langSvc itLang.LanguageAppService,
 		settingsSvc itExt.SettingsRegistrationExtService,
 		effectiveSvc itExt.EffectiveSettingsExtService,
 		cqrsBus cqrs.CqrsBus,
@@ -135,6 +137,9 @@ func (*EssentialModule) OnAppStarted() error {
 	) error {
 		ctx := corectx.NewRequestContext(context.Background())
 		if _, err := moduleSvc.SyncModuleMetadata(ctx, loadedMods); err != nil {
+			return err
+		}
+		if err := registerModuleLanguages(langSvc, loadedMods); err != nil {
 			return err
 		}
 

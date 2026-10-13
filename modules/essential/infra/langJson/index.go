@@ -3,10 +3,13 @@ package langjson
 import (
 	"embed"
 	"encoding/json"
+	"maps"
 	"path"
 	"strings"
 
 	"go.bryk.io/pkg/errors"
+
+	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
 //go:embed en-US vi-VN
@@ -19,26 +22,26 @@ const CommonModuleName = "common"
 // ModuleLabelKeyPrefix selects keys to bubble up from non-common modules into the common module.
 const ModuleLabelKeyPrefix = "module.label"
 
-// ByLanguageCodeAndModule maps locale (e.g. en-US) to module file stem (e.g. common) to the JSON object at file root.
-var ByLanguageCodeAndModule map[string]map[string]map[string]any
+// EmbeddedPack holds the translations essential embeds, keyed by module file stem (e.g. common),
+// then by locale (e.g. en-US). Modules that ship their own register them with the language
+// application service instead.
+var EmbeddedPack model.LanguagePack
 
 func init() {
-	loaded, err := loadEmbeddedLangJson()
+	loaded, err := loadEmbeddedPack()
 	if err != nil {
 		panic(errors.Wrap(err, "langjson: load embedded language json"))
 	}
-	ByLanguageCodeAndModule = loaded
+	EmbeddedPack = loaded
 }
 
-func loadEmbeddedLangJson() (map[string]map[string]map[string]any, error) {
-	out := make(map[string]map[string]map[string]any)
-	locales := []string{"en-US", "vi-VN"}
-	for _, locale := range locales {
+func loadEmbeddedPack() (model.LanguagePack, error) {
+	out := make(model.LanguagePack)
+	for _, locale := range []model.LanguageCode{model.LanguageCodeEnUs, model.LanguageCodeViVn} {
 		entries, err := langFiles.ReadDir(locale)
 		if err != nil {
 			return nil, errors.Wrap(err, locale)
 		}
-		modules := make(map[string]map[string]any)
 		for _, entry := range entries {
 			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
 				continue
@@ -48,35 +51,49 @@ func loadEmbeddedLangJson() (map[string]map[string]map[string]any, error) {
 			if err != nil {
 				return nil, errors.Wrap(err, relPath)
 			}
-			var root map[string]any
-			if err := json.Unmarshal(raw, &root); err != nil {
+			var item model.LanguageTranslationItem
+			if err := json.Unmarshal(raw, &item); err != nil {
 				return nil, errors.Wrap(err, relPath)
 			}
-			moduleKey := strings.TrimSuffix(entry.Name(), ".json")
-			modules[moduleKey] = root
+			moduleName := strings.TrimSuffix(entry.Name(), ".json")
+			if out[moduleName] == nil {
+				out[moduleName] = make(model.LanguageTranslation)
+			}
+			out[moduleName][locale] = item
 		}
-		out[locale] = modules
 	}
 	return out, nil
 }
 
-// MergedCommonMessages returns "common" module's messages, merged with
-// every "module.label.*" key found in the other modules of the same locale.
-// Returns nil when the locale has no "common" module.
-func MergedCommonMessages(byModule map[string]map[string]any) map[string]any {
-	base, hasCommon := byModule[CommonModuleName]
-	if !hasCommon {
-		return nil
-	}
-	for moduleName, data := range byModule {
-		if moduleName == CommonModuleName {
-			continue
+// HasLanguage reports whether any module in pack has a translation for langCode.
+func HasLanguage(pack model.LanguagePack, langCode model.LanguageCode) bool {
+	for _, translation := range pack {
+		if _, ok := translation[langCode]; ok {
+			return true
 		}
-		for key, value := range data {
-			if strings.HasPrefix(key, ModuleLabelKeyPrefix) {
-				base[key] = value
+	}
+	return false
+}
+
+// MergedCommonMessages returns a copy of the "common" item, overlaid with every "module.label.*" key
+// found in the langCode item of each other module in packs. It copies because common is the shared
+// embedded map: merging into it would leak one request's overlay into every later one.
+func MergedCommonMessages(
+	common model.LanguageTranslationItem, langCode model.LanguageCode, packs ...model.LanguagePack,
+) model.LanguageTranslationItem {
+	merged := make(model.LanguageTranslationItem, len(common))
+	maps.Copy(merged, common)
+	for _, pack := range packs {
+		for moduleName, translation := range pack {
+			if moduleName == CommonModuleName {
+				continue
+			}
+			for key, value := range translation[langCode] {
+				if strings.HasPrefix(key, ModuleLabelKeyPrefix) {
+					merged[key] = value
+				}
 			}
 		}
 	}
-	return base
+	return merged
 }
