@@ -45,7 +45,9 @@ const (
 	ProductTemplateFieldDescription         = "description"
 	ProductTemplateFieldSalesDescription    = "sales_description"
 	ProductTemplateFieldPurchaseDescription = "purchase_description"
-	ProductTemplateFieldDefaultImageId      = "default_image_id"
+	ProductTemplateFileDefaultImage         = "default_image"
+	ProductTemplateFieldDefaultImageUrl     = "default_image_url"
+	ProductTemplateFieldDefaultImageFileKey = "default_image_file_key"
 	ProductTemplateFieldBaseSalesPrice      = "base_sales_price"
 	ProductTemplateFieldDefaultWeight       = "default_weight"
 	ProductTemplateFieldDefaultLength       = "default_length"
@@ -164,12 +166,12 @@ func (this *ProductTemplate) SetPurchaseDescription(v *model.LangJson) {
 	this.GetFieldData().SetLangJson(ProductTemplateFieldPurchaseDescription, v)
 }
 
-func (this ProductTemplate) GetDefaultImageId() *model.Id {
-	return this.GetFieldData().GetModelId(ProductTemplateFieldDefaultImageId)
+func (this ProductTemplate) GetDefaultImageFileKey() *string {
+	return this.GetFieldData().GetString(ProductTemplateFieldDefaultImageFileKey)
 }
 
-func (this *ProductTemplate) SetDefaultImageId(v *model.Id) {
-	this.GetFieldData().SetModelId(ProductTemplateFieldDefaultImageId, v)
+func (this *ProductTemplate) SetDefaultImageFileKey(v *string) {
+	this.GetFieldData().SetString(ProductTemplateFieldDefaultImageFileKey, v)
 }
 
 func (this ProductTemplate) GetBaseSalesPrice() *decimal.Decimal {

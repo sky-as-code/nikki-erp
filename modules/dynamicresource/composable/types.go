@@ -83,12 +83,14 @@ const (
 	// ActionTypeUpdatePatch instead would make the engine attempt a JSON bind of a multipart body,
 	// which bindPayload reports as a 400 before the handler ever runs.
 	ActionTypeUploadPatch = ActionType("UploadPatch")
+
+	ActionTypeUploadReplace = ActionType("UploadReplace")
 )
 
-// IsUpload reports whether the engine leaves this action's body to the handler. Both multipart
-// types do; every other type is bound before the handler is called.
+// IsUpload reports whether the engine leaves this action's body to the handler. Every multipart
+// type does; every other type is bound before the handler is called.
 func (this ActionType) IsUpload() bool {
-	return this == ActionTypeUpload || this == ActionTypeUploadPatch
+	return this == ActionTypeUpload || this == ActionTypeUploadPatch || this == ActionTypeUploadReplace
 }
 
 func (this ActionType) String() string {
@@ -99,7 +101,7 @@ func (this ActionType) IsValid() bool {
 	switch this {
 	case ActionTypeCreate, ActionTypeDelete, ActionTypeRead,
 		ActionTypeUpdatePatch, ActionTypeUpdateReplace, ActionTypeGeneric,
-		ActionTypeUpload, ActionTypeUploadPatch:
+		ActionTypeUpload, ActionTypeUploadPatch, ActionTypeUploadReplace:
 		return true
 	}
 	return false
@@ -116,7 +118,7 @@ func (this ActionType) HttpMethod() string {
 		return http.MethodGet
 	case ActionTypeUpdatePatch, ActionTypeUploadPatch:
 		return http.MethodPatch
-	case ActionTypeUpdateReplace:
+	case ActionTypeUpdateReplace, ActionTypeUploadReplace:
 		return http.MethodPut
 	}
 	return ""

@@ -119,6 +119,9 @@ func initProductTemplateV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductTemplateRest) error {
 		return composable.NewRestEngine(models.ProductTemplateSchemaName, rest).
 			AddCrudRoutes().
+			AddRoute(composable.RouteDefinition{Path: ":id/files/:field", ActionType: composable.ActionTypeUpload, HandlerFn: rest.UploadFile}).
+			AddRoute(composable.RouteDefinition{Path: ":id/files/:field", ActionType: composable.ActionTypeUploadReplace, HandlerFn: rest.ReplaceFile}).
+			AddRoute(composable.RouteDefinition{Path: ":id/files/:field", ActionType: composable.ActionTypeDelete, HandlerFn: rest.DeleteFile}).
 			AddRoute(composable.RouteDefinition{Path: ":id/generate_variants", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.GenerateVariants}).
 			AddRoute(composable.RouteDefinition{Path: "resolve_selection", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ResolveSelection}).
 			RegisterRoutes(route)
@@ -145,6 +148,9 @@ func initProductVariantV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductVariantRest) error {
 		return composable.NewRestEngine(models.ProductVariantSchemaName, rest).
 			AddCrudRoutes().
+			AddRoute(composable.RouteDefinition{Path: ":id/files/:field", ActionType: composable.ActionTypeUpload, HandlerFn: rest.UploadFile}).
+			AddRoute(composable.RouteDefinition{Path: ":id/files/:field", ActionType: composable.ActionTypeUploadReplace, HandlerFn: rest.ReplaceFile}).
+			AddRoute(composable.RouteDefinition{Path: ":id/files/:field", ActionType: composable.ActionTypeDelete, HandlerFn: rest.DeleteFile}).
 			AddRoute(composable.RouteDefinition{Path: ":id/effective", ActionType: composable.ActionTypeRead, HandlerFn: rest.GetEffective}).
 			RegisterRoutes(route)
 	})

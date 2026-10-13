@@ -8,6 +8,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 
+	invEvent "github.com/sky-as-code/nikki-erp/modules/inventory/infra/external/event"
 	invMessage "github.com/sky-as-code/nikki-erp/modules/inventory/infra/external/message"
 	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/external"
 	itMessage "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/message"
@@ -22,6 +23,7 @@ func InitExternal() error {
 			// layer knows integration events are JSON.
 			return invMessage.NewPublisher(publisher)
 		},
+		invEvent.NewCatalogChangedEventPublisher,
 		func(uomSvc itUom.UomConversionAppService) itExt.UomConversionExtService {
 			// A hand-over: the upstream service already has exactly the method the port declares.
 			return uomSvc

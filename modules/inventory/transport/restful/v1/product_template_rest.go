@@ -18,14 +18,15 @@ type productTemplateRestParams struct {
 }
 
 func NewProductTemplateRest(params productTemplateRestParams) *ProductTemplateRest {
-	rest := &ProductTemplateRest{}
+	svc := params.Engine.ApplicationService().(itProduct.ProductTemplateApplicationService)
+	rest := &ProductTemplateRest{fileRest: newFileRest("product template", svc), productTemplateSvc: svc}
 	rest.SetApplicationService(params.Engine.ApplicationService())
-	rest.productTemplateSvc = params.Engine.ApplicationService().(itProduct.ProductTemplateApplicationService)
 	return rest
 }
 
 // ProductTemplateRest serves the built-in CRUD of the product_template resource.
 type ProductTemplateRest struct {
 	composable.CrudRestBase
+	fileRest
 	productTemplateSvc itProduct.ProductTemplateApplicationService
 }
