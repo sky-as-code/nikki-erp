@@ -2,6 +2,7 @@ package services
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -10,6 +11,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
@@ -20,14 +22,18 @@ func NewOrganizationDomainServiceImpl(
 	orgRepo it.OrganizationRepository,
 	cqrsBus cqrs.CqrsBus,
 	settingsSvc itExt.OrgSettingsInitExtService,
+	usageDispatcher *usagecheck.Dispatcher,
 ) it.OrganizationDomainService {
-	return &OrganizationDomainServiceImpl{cqrsBus: cqrsBus, orgRepo: orgRepo, settingsSvc: settingsSvc}
+	return &OrganizationDomainServiceImpl{
+		cqrsBus: cqrsBus, orgRepo: orgRepo, settingsSvc: settingsSvc, usageDispatcher: usageDispatcher,
+	}
 }
 
 type OrganizationDomainServiceImpl struct {
-	cqrsBus     cqrs.CqrsBus
-	orgRepo     it.OrganizationRepository
-	settingsSvc itExt.OrgSettingsInitExtService
+	cqrsBus         cqrs.CqrsBus
+	orgRepo         it.OrganizationRepository
+	settingsSvc     itExt.OrgSettingsInitExtService
+	usageDispatcher *usagecheck.Dispatcher
 }
 
 // CreateOrg creates the organization and seeds its settings in one transaction.
@@ -98,9 +104,19 @@ func (this *OrganizationDomainServiceImpl) initOrgSettings(
 	return nil
 }
 
+// DeleteOrg refuses to remove an organization another module still holds records for. The
+// org_id foreign keys are ON DELETE RESTRICT, so the database would refuse too; this names which
+// modules block.
 func (this *OrganizationDomainServiceImpl) DeleteOrg(
 	ctx corectx.Context, cmd it.DeleteOrgCommand, options ...corecrud.ServiceDeleteOptions,
 ) (*it.DeleteOrgResult, error) {
+	vErrs := ft.NewClientErrors()
+	if err := AssertOrgDeletable(ctx, this.usageDispatcher, string(cmd.Id), vErrs); err != nil {
+		return nil, err
+	}
+	if vErrs.Count() > 0 {
+		return &it.DeleteOrgResult{ClientErrors: *vErrs}, nil
+	}
 	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:                 "delete organization",

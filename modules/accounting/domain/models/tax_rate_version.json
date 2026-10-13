@@ -67,7 +67,7 @@
 			"label": "fields.rate_uom_id",
 			"data_type": "ulid",
 			"description": {
-				"en-US": "The unit fixed_amount is charged per. Deliberately carries no edge to essential_uoms: an FK would couple the two schemas across a module boundary, so the id is validated through the UoM port instead."
+				"en-US": "The unit fixed_amount is charged per."
 			}
 		},
 		{
