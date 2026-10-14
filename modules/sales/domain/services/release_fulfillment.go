@@ -52,14 +52,17 @@ func ReleaseOrderFulfillments(
 	releasedIds = make([]string, 0, len(fulfillments))
 	for _, record := range fulfillments {
 		fulfillment := models.NewSalesOrderFulfillmentFrom(record)
+		fulfillmentId := stringOf(record, models.SalesOrderFulfillmentFieldId)
 		if fulfillment.IsTerminal() {
 			// Already completed or cancelled. A completed fulfillment's stock has left the building
 			// and there is nothing to give back; releasing against it would be a no-op that
 			// nonetheless reads, in the result, as if goods returned.
+			if err := releaseWarehouseHolds(ctx, orgOfFulfillment(ctx, fulfillmentId), fulfillmentId); err != nil {
+				return nil, err
+			}
 			continue
 		}
 
-		fulfillmentId := stringOf(record, models.SalesOrderFulfillmentFieldId)
 		// The refusal is deliberately not propagated. Inventory answering "no such reservation"
 		// means the hold is gone, which is the end state this asked for; any other refusal still
 		// must not keep an order the customer cancelled in a state they cannot leave.
