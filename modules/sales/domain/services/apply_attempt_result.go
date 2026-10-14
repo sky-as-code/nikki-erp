@@ -486,6 +486,20 @@ func settleFulfillmentAfterResult(
 	if err := setFulfillmentStatus(ctx, fulfillmentId, status); err != nil {
 		return nil, err
 	}
+	if refund != nil {
+		if err := SettleFulfillmentAfterRefund(ctx, fulfillmentId); err != nil {
+			return nil, err
+		}
+		settled, err := loadRecord(ctx, models.SalesOrderFulfillmentSchemaName,
+			models.SalesOrderFulfillmentFieldId, fulfillmentId)
+		if err != nil {
+			return nil, err
+		}
+		if settled != nil {
+			status = models.FulfillmentStatus(
+				stringOf(settled, models.SalesOrderFulfillmentFieldFulfillmentStatus))
+		}
+	}
 
 	attempt, err := loadRecord(ctx, models.SalesFulfillmentAttemptSchemaName,
 		models.SalesFulfillmentAttemptFieldId, attemptId)
