@@ -258,14 +258,39 @@ func assertSourcesInWarehouse(
 		if err != nil {
 			return err
 		}
+		warehouseId, err := warehouseOfLocation(ctx, location)
+		if err != nil {
+			return err
+		}
 		if location == nil ||
 			stringOf(location, models.InventoryLocationFieldOrgId) != derefId(reservation.GetOrgId()) ||
-			stringOf(location, models.InventoryLocationFieldWarehouseId) != derefId(reservation.GetWarehouseId()) {
+			warehouseId != derefId(reservation.GetWarehouseId()) {
 			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonLocationWarehouseMismatch,
 				"location '"+string(source.LocationId)+"' does not belong to the reservation's warehouse"))
 		}
 	}
 	return nil
+}
+
+func warehouseOfLocation(ctx corectx.Context, location dmodel.DynamicFields) (string, error) {
+	seen := map[string]bool{}
+	for location != nil {
+		if warehouseId := stringOf(location, models.InventoryLocationFieldWarehouseId); warehouseId != "" {
+			return warehouseId, nil
+		}
+		parentId := stringOf(location, models.InventoryLocationFieldParentLocationId)
+		if parentId == "" || seen[parentId] {
+			return "", nil
+		}
+		seen[parentId] = true
+
+		parent, err := findRecord(ctx, models.InventoryLocationSchemaName, models.InventoryLocationFieldId, parentId)
+		if err != nil {
+			return "", err
+		}
+		location = parent
+	}
+	return "", nil
 }
 
 // issueActualSources writes one done movement per actual source, from the location the executor
