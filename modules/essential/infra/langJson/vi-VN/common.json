@@ -114,6 +114,7 @@
 	"fields.org_id": "ID tổ chức",
 	"fields.updated_at": "Ngày cập nhật",
 	"form.audit": "Kiểm toán",
+	"form.contact": "Liên hệ",
 	"form.customFields": "Trường dữ liệu tùy chỉnh",
 	"form.generalInformation": "Thông tin chung",
 	"form.newResource": "{{resource}} mới",

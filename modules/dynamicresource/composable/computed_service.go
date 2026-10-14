@@ -1,6 +1,8 @@
 package composable
 
 import (
+	"slices"
+
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/computed"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -73,7 +75,8 @@ func (this *computedFieldService) Update(
 func (this *computedFieldService) Search(
 	ctx corectx.Context, query SearchQuery, options ...corecrud.ServiceSearchOptions,
 ) (*SearchResult, error) {
-	plan, errs := this.prepareRead(query, this.searchProjection(query))
+	projection := this.searchProjection(query)
+	plan, errs := this.prepareRead(query, projection)
 	if errs.Count() > 0 {
 		return &SearchResult{ClientErrors: errs}, nil
 	}
@@ -84,7 +87,21 @@ func (this *computedFieldService) Search(
 	if err := plan.Apply(result.Data.Items, this.evalDeps(ctx)); err != nil {
 		return nil, err
 	}
+	this.hideAppendedOperands(result, projection, plan)
 	return result, nil
+}
+
+// hideAppendedOperands puts DesiredFields back to the projection the caller asked for. The wrapped
+// Search derives DesiredFields from the `fields` it receives, which by then carries the operands
+// prepareRead appended (`uom_id` for a `uom_name` reading `uom.name`); left alone, a client renders
+// each operand as a column nobody requested.
+func (this *computedFieldService) hideAppendedOperands(
+	result *SearchResult, projection []string, plan *computed.EvalPlan,
+) {
+	if len(projection) == 0 || len(plan.ExtraFields) == 0 || result.Data.DesiredFields == nil {
+		return
+	}
+	result.Data.DesiredFields = corecrud.ExpandFieldsWildcard(this.Schema(), projection)
 }
 
 func (this *computedFieldService) GetById(
@@ -140,10 +157,11 @@ func (this *computedFieldService) prepareRead(
 		return plan, errs
 	}
 	if len(projection) > 0 && len(plan.ExtraFields) > 0 {
-		// The operands go on the wire projection so the row carries them; the response still
-		// shows only what the caller asked for, because DesiredFields is taken from `fields`
-		// before this augmentation reaches the client-facing field list.
-		params[fieldNameFields] = append(projection, plan.ExtraFields...)
+		// The operands go on the wire projection so the row carries them; Search takes them back
+		// out of DesiredFields afterwards (hideAppendedOperands).
+		// Concat, not append: projection may be the shared defaultSearchFields, whose spare capacity
+		// an append would write into under concurrent requests.
+		params[fieldNameFields] = slices.Concat(projection, plan.ExtraFields)
 	}
 	return plan, nil
 }

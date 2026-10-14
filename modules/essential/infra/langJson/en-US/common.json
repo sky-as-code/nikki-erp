@@ -114,6 +114,7 @@
 	"fields.org_id": "Organization ID",
 	"fields.updated_at": "Updated at",
 	"form.audit": "Audit",
+	"form.contact": "Contact",
 	"form.customFields": "Custom fields",
 	"form.generalInformation": "General information",
 	"form.newResource": "New {{resource}}",

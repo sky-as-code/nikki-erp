@@ -100,9 +100,7 @@ func (GetUserQuery) GetSchema() *dmodel.ModelSchema {
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
 				ExclusiveRequiredFields(domain.UserFieldId, domain.UserFieldEmail).
-				Field(dmodel.DefineField().
-					Name(basemodel.FieldFields).
-					DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_FIELDS_LENGTH_MIN, model.MODEL_RULE_FIELDS_LENGTH_MAX).ArrayType())).
+				Field(dyn.DefineFieldSearchFields()).
 				Field(dmodel.DefineField().
 					Name(basemodel.FieldId).
 					DataType(dmodel.FieldDataTypeUlid())).
