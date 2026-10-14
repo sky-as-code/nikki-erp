@@ -211,8 +211,12 @@ func (*PaymentInvoiceModule) OnAppStarted() error {
 			CleanAfter: time.Duration(
 				cfg.GetInt(modconstants.OrderCleanAfterHours, defaultCleanAfterHours)) * time.Hour,
 		}, logger)
+		poller := app.NewPendingPoller(orders, notifier, logger)
 
-		return manager.RegisterJobs(cronRegistry)
+		return stdErr.Join(
+			manager.RegisterJobs(cronRegistry),
+			poller.RegisterJobs(cronRegistry),
+		)
 	})
 }
 
