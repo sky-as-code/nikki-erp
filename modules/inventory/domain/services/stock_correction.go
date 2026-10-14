@@ -193,9 +193,12 @@ func insertCorrectionTransfer(
 	if request.IdempotencyKey != "" {
 		header[models.StockTransferFieldIdempotencyKey] = request.IdempotencyKey
 	}
-	_, err = operation.TransferRepo.Insert(ctx, header)
+	inserted, err := operation.TransferRepo.Insert(ctx, header)
 	if err != nil {
 		return "", errors.Wrap(err, "insertCorrectionTransfer")
+	}
+	if inserted == nil || inserted.ClientErrors.Count() > 0 || !inserted.HasData {
+		return "", errors.Errorf("insertCorrectionTransfer: the transfer was not written: %v", clientErrorsOf(inserted))
 	}
 
 	return findTransferByNumber(ctx, operation, request.OrgId, transferNumber)
@@ -205,8 +208,8 @@ func insertCorrectionTransfer(
 func insertCorrectionMove(
 	ctx corectx.Context, operation *transferOperationContext, request CorrectionRequest,
 ) (string, error) {
-	quantity := request.Quantity.String()
-	_, err := operation.MoveRepo.Insert(ctx, dmodel.DynamicFields{
+	quantity := request.Quantity
+	inserted, err := operation.MoveRepo.Insert(ctx, dmodel.DynamicFields{
 		models.StockMoveFieldTransferId:            derefString(operation.Transfer.GetId()),
 		models.StockMoveFieldProductVariantId:      request.ProductVariantId,
 		models.StockMoveFieldDemandQuantity:        quantity,
@@ -219,6 +222,9 @@ func insertCorrectionMove(
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "insertCorrectionMove")
+	}
+	if inserted == nil || inserted.ClientErrors.Count() > 0 || !inserted.HasData {
+		return "", errors.Errorf("insertCorrectionMove: the move was not written: %v", clientErrorsOf(inserted))
 	}
 
 	moves, err := models.FindTransferMoves(
@@ -250,19 +256,20 @@ func insertCorrectionMoveLine(
 	// stock the source is the inventory-loss location, which has never been counted. Creating it at
 	// zero lets the delta take it negative, which is how a virtual counterparty records what it
 	// supplied.
-	if _, err := ensureQuantForDimension(ctx, operation, models.QuantDimension{
+	sourceQuantId, err := ensureQuantForDimension(ctx, operation, models.QuantDimension{
 		OrgId:            request.OrgId,
 		ProductVariantId: request.ProductVariantId,
 		LocationId:       request.SourceLocationId,
 		LotRef:           request.LotRef,
 		PackageRef:       request.PackageRef,
 		OwnerRef:         request.OwnerRef,
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
-	quantity := request.Quantity.String()
-	_, err := operation.MoveLineRepo.Insert(ctx, dmodel.DynamicFields{
+	quantity := request.Quantity
+	inserted, err := operation.MoveLineRepo.Insert(ctx, dmodel.DynamicFields{
 		models.StockMoveLineFieldMoveId:                moveId,
 		models.StockMoveLineFieldTransferId:            derefString(operation.Transfer.GetId()),
 		models.StockMoveLineFieldProductVariantId:      request.ProductVariantId,
@@ -276,7 +283,47 @@ func insertCorrectionMoveLine(
 		models.StockMoveLineFieldOwnerRef:              request.OwnerRef,
 		models.StockMoveLineFieldOrgId:                 request.OrgId,
 	})
-	return errors.Wrap(err, "insertCorrectionMoveLine")
+	if err != nil {
+		return errors.Wrap(err, "insertCorrectionMoveLine")
+	}
+	if inserted == nil || inserted.ClientErrors.Count() > 0 || !inserted.HasData {
+		return errors.Errorf("insertCorrectionMoveLine: the move line was not written: %v", clientErrorsOf(inserted))
+	}
+	return addToQuantReserved(ctx, operation.QuantRepo, sourceQuantId, quantity)
+}
+
+func readyCorrectionTransfer(ctx corectx.Context, operation *transferOperationContext) error {
+	transferId := derefString(operation.Transfer.GetId())
+	failed, err := updateTransferStatus(ctx, operation.TransferRepo, operation.Transfer, models.StockTransferStatusReady)
+	if err != nil {
+		return err
+	}
+	if failed != nil && failed.ClientErrors.Count() > 0 {
+		return errors.Errorf("the correction transfer could not be made ready: %v", failed.ClientErrors)
+	}
+
+	reloaded, err := loadTransferOperation(ctx, transferId)
+	if err != nil {
+		return err
+	}
+	if reloaded == nil {
+		return errors.New("the correction transfer vanished while it was being made ready")
+	}
+	*operation = *reloaded
+	return nil
+}
+
+func assignCorrectionMoves(ctx corectx.Context, operation *transferOperationContext) error {
+	for _, item := range operation.Moves {
+		move := models.NewStockMoveFrom(item)
+		if derefString(move.GetStatus()) != models.StockMoveStatusConfirmed {
+			continue
+		}
+		if err := updateMoveStatus(ctx, operation.MoveRepo, *move, models.StockMoveStatusAssigned); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // reloadCorrectionMoves refreshes the operation's move list after the insert. loadTransferOperation
@@ -301,6 +348,12 @@ func runCorrectionToDone(ctx corectx.Context, operation *transferOperationContex
 		return err
 	}
 	if err := reloadCorrectionMoves(ctx, operation); err != nil {
+		return err
+	}
+	if err := assignCorrectionMoves(ctx, operation); err != nil {
+		return err
+	}
+	if err := readyCorrectionTransfer(ctx, operation); err != nil {
 		return err
 	}
 
