@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	stdErr "errors"
 	"fmt"
+	"math"
 	"math/big"
 	"reflect"
 	"slices"
@@ -1542,6 +1543,7 @@ func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (a
 		}
 		return nil, nil, errors.Errorf("convertValue: field '%s' does not allow NULL", field.Name())
 	}
+	v = integralFloatAsInt(columnCategoryFor(field.ColumnType()), v)
 	if !valueAllowed(columnCategoryFor(field.ColumnType()), v) {
 		return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name(), fieldTypeLabel(field))}, nil
 	}
@@ -1773,6 +1775,21 @@ func isUintKind(kind reflect.Kind) bool {
 
 func isFloatKind(kind reflect.Kind) bool {
 	return kind == reflect.Float32 || kind == reflect.Float64
+}
+
+// integralFloatAsInt narrows a whole-number float to int64 for an integer column. JSON decodes
+// every number as float64, even one written as 3, so without this an integer column could never
+// be compared to a number a client sends in a search graph. A fractional or out-of-range value is
+// returned unchanged and refused by valueAllowed.
+func integralFloatAsInt(cat columnCategory, v reflect.Value) reflect.Value {
+	if cat != columnInt || !isFloatKind(v.Kind()) {
+		return v
+	}
+	number := v.Float()
+	if number != math.Trunc(number) || number >= math.MaxInt64 || number < math.MinInt64 {
+		return v
+	}
+	return reflect.ValueOf(int64(number))
 }
 
 func isBigNumber(value any) bool {

@@ -60,7 +60,7 @@ func (this *BaseDynamicRepositoryImpl) searchWithProjectedEdges(
 ) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error) {
 	merged := this.injectTenantIntoGraph(ctx, param.Graph)
 	columns := this.ensureSystemColumns(param.Fields)
-	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language, columns)
+	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language, columns, param.ComputedContext)
 	if err != nil {
 		return nil, err
 	}

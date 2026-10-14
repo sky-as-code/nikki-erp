@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"encoding/json"
-
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -223,8 +221,8 @@ func applyOrgConstraint(actionName string, params dmodel.DynamicFields, orgId mo
 
 // constrainSearchGraph ANDs an org_id equality onto whatever graph the caller sent.
 //
-// The caller's graph arrives as a decoded map, so it is re-marshalled through SearchNode
-// rather than manipulated in place: SearchNode owns the graph's JSON shape, and rebuilding it
+// The caller's graph arrives as a decoded map, so it is re-marshalled through SearchGraph
+// rather than manipulated in place: SearchGraph owns the graph's JSON shape, and rebuilding it
 // by hand here would fork that shape.
 func constrainSearchGraph(params dmodel.DynamicFields, orgId model.Id) error {
 	orgNode := dmodel.NewSearchNode()
@@ -238,30 +236,16 @@ func constrainSearchGraph(params dmodel.DynamicFields, orgId model.Id) error {
 		return nil
 	}
 
-	callerNode, err := toSearchNode(raw)
+	// The caller's order rides along: a SearchNode cannot carry one, so rebuilding through a
+	// node alone used to drop every sort a client asked for on an org-scoped resource.
+	graph, err := dmodel.AndDecodedGraph(raw, *orgNode)
 	if err != nil {
 		// A malformed graph is the caller's mistake, and searchParams already rejected the
-		// unparseable case. Anything reaching here is a shape the node decoder refuses.
+		// unparseable case. Anything reaching here is a shape the graph decoder refuses.
 		return errors.Wrap(err, "constrainSearchGraph")
 	}
-
-	graph := &dmodel.SearchGraph{}
-	graph.And(*callerNode, *orgNode)
 	params[queryParamGraph] = graph
 	return nil
-}
-
-// toSearchNode reinterprets an already-decoded graph value as a SearchNode.
-func toSearchNode(raw any) (*dmodel.SearchNode, error) {
-	encoded, err := json.Marshal(raw)
-	if err != nil {
-		return nil, errors.Wrap(err, "toSearchNode.Marshal")
-	}
-	node := dmodel.NewSearchNode()
-	if err := json.Unmarshal(encoded, node); err != nil {
-		return nil, errors.Wrap(err, "toSearchNode.Unmarshal")
-	}
-	return node, nil
 }
 
 // singleRecordActions are the built-in actions that identify exactly one existing row by id.

@@ -214,3 +214,18 @@ func TestAssertRecordInOrgIgnoresParamsWithoutId(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, cErrs)
 }
+
+func TestSearchKeepsTheCallersOrderAfterOrgScoping(t *testing.T) {
+	domSvc, appSvc := newAppService(newOrgSchema())
+
+	_, err := appSvc.Search(memberContext(), dmodel.DynamicFields{
+		basemodel.FieldOrgId: "org_mine",
+		fieldNameGraph:       map[string]any{"order": []any{[]any{"name", "desc"}}},
+	})
+
+	require.NoError(t, err)
+	graph, ok := domSvc.seen[fieldNameGraph].(*dmodel.SearchGraph)
+	require.True(t, ok)
+	assert.Equal(t, dmodel.NewSearchOrder("name", dmodel.Desc), graph.GetOrder())
+	assert.Len(t, graph.GetAnd(), 1, "an order-only graph adds no predicate of its own")
+}

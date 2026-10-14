@@ -99,6 +99,25 @@ Search Filtering By Aggregate Computed Field Succeeds
     Search Results Should Contain Id    ${resp}    ${PRODUCT_VARIANT_ID}
 
 
+Search Filtering By Function Computed Field Fails
+    [Documentation]    display_name is filled in Go after the read, so the builder refuses it
+    ...    in a filter or an order instead of silently filtering in memory.
+    [Tags]    negative
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'graph': '{"if":["display_name", "*", "Lead"]}'} }}
+    ...    expected_status=any
+    Response Status Should Be    ${resp}    400
+    Should Contain    ${resp.text}    err_computed_field_not_filterable
+
+Schema Advertises Function Computed Field As Not Filterable
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
+    Response Status Should Be    ${resp}    200
+    Should Be Equal    ${resp.json()}[fields][display_name][is_filterable]    ${False}
+    Should Be Equal    ${resp.json()}[fields][display_name][is_sortable]    ${False}
+    Should Be Equal    ${resp.json()}[fields][product_template][is_filterable]    ${False}
+    Should Be Equal    ${resp.json()}[fields][on_hand_quantity][is_filterable]    ${True}
+    Should Be Equal    ${resp.json()}[fields][sku][is_sortable]    ${True}
+
 *** Keywords ***
 Give Template Under Test A Unit
     [Documentation]    Attaches the shared unit to the template under test (idempotent), so the

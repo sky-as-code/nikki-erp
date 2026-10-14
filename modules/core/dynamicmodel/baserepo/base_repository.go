@@ -488,7 +488,7 @@ func (this *BaseDynamicRepositoryImpl) CountM2m(
 		filter.Merge(constraints)
 	}
 	graph := filterToAndGraph(filter)
-	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph, nil, nil)
+	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -846,7 +846,7 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 	size := param.Size
 	var total int
 	total, countClientErrs, err := this.countRowsMatchingGraph(
-		ctx, merged, param.Language, this.ensureSystemColumns(param.Fields))
+		ctx, merged, param.Language, this.ensureSystemColumns(param.Fields), param.ComputedContext)
 	if err != nil {
 		return nil, err
 	}
@@ -856,10 +856,11 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 		}, nil
 	}
 	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, dyn.RepoSearchParam{
-		Fields:   this.ensureSystemColumns(param.Fields),
-		Page:     param.Page,
-		Size:     param.Size,
-		Language: param.Language,
+		Fields:          this.ensureSystemColumns(param.Fields),
+		Page:            param.Page,
+		Size:            param.Size,
+		Language:        param.Language,
+		ComputedContext: param.ComputedContext,
 	})
 	if err != nil {
 		return nil, err
@@ -892,7 +893,8 @@ func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
 	}
 	merged := this.injectTenantIntoGraph(ctx, param.Graph)
-	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language, plan.MainColumns)
+	total, countClientErrs, err := this.countRowsMatchingGraph(
+		ctx, merged, param.Language, plan.MainColumns, param.ComputedContext)
 	if err != nil {
 		return nil, err
 	}
@@ -902,10 +904,11 @@ func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 		}, nil
 	}
 	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, dyn.RepoSearchParam{
-		Fields:   plan.MainColumns,
-		Page:     param.Page,
-		Size:     param.Size,
-		Language: param.Language,
+		Fields:          plan.MainColumns,
+		Page:            param.Page,
+		Size:            param.Size,
+		Language:        param.Language,
+		ComputedContext: param.ComputedContext,
 	})
 	if err != nil {
 		return nil, err
@@ -1367,17 +1370,21 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByAnyFilter(
 	return this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(schema, columns))
 }
 
+// countRowsMatchingGraph counts what a search would page through. computedCtx must be the same
+// context the page query gets: a filter on an SQL-computed field reading ${ctx.*} renders its
+// subquery in the count too, and fails there when the value is missing.
 func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraph(
 	ctx corectx.Context, graph *dmodel.SearchGraph, language *model.LanguageCode, selectColumns []string,
+	computedCtx map[string]any,
 ) (int, ft.ClientErrors, error) {
-	return this.countRowsMatchingGraphOnSchema(ctx, this.schema, graph, language, selectColumns)
+	return this.countRowsMatchingGraphOnSchema(ctx, this.schema, graph, language, selectColumns, computedCtx)
 }
 
 func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraphOnSchema(
 	ctx corectx.Context, schema *dmodel.ModelSchema, graph *dmodel.SearchGraph, language *model.LanguageCode,
-	selectColumns []string,
+	selectColumns []string, computedCtx map[string]any,
 ) (int, ft.ClientErrors, error) {
-	opts := orm.SqlSelectGraphOpts{Language: language}
+	opts := orm.SqlSelectGraphOpts{Language: language, ComputedContext: computedCtx}
 	if len(selectColumns) > 0 {
 		opts.Columns = orm.ToSelectColumns(selectColumns)
 	}

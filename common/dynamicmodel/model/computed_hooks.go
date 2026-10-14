@@ -50,6 +50,34 @@ func RegisterComputedDescriber(describer ComputedDescriberFn) {
 	computedDescriber = describer
 }
 
+// ComputedSqlRenderableFn reports whether a computed field of a schema renders in SQL, which is
+// what makes it usable in a filter or an order. Registered by the computed package, which owns
+// the finalized plans this answer is derived from.
+type ComputedSqlRenderableFn func(schemaName string, fieldName string) bool
+
+var computedSqlRenderable ComputedSqlRenderableFn
+
+// RegisterComputedSqlRenderable installs the check. Called once, from the computed package's init.
+func RegisterComputedSqlRenderable(check ComputedSqlRenderableFn) {
+	computedSqlRenderable = check
+}
+
+// isQueryable tells a client whether a search on schemaName may filter and order by this field.
+// A column always may; an edge never may as a leaf; a computed field may when it renders in SQL.
+// Without a schema name the computed answer cannot be looked up, so it is the safe false.
+func (this ModelField) isQueryable(schemaName string) bool {
+	if this.IsEdgeModel() {
+		return false
+	}
+	if this.IsPersisted() {
+		return true
+	}
+	if !this.IsComputed() || computedSqlRenderable == nil || schemaName == "" {
+		return false
+	}
+	return computedSqlRenderable(schemaName, this.Name())
+}
+
 // computedDescriptor summarizes this field's computed definition, or nil when it has none or the
 // computed package is not linked in.
 func (this ModelField) computedDescriptor() *ComputedDescriptor {

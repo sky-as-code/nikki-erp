@@ -176,6 +176,13 @@ func (this *exprCompiler) compileUnary(node computed.UnaryExpr) (string, error) 
 }
 
 func (this *exprCompiler) compileFunction(node computed.FunctionExpr) (string, error) {
+	// The same list feeds the schema's is_filterable flag, so the two cannot disagree.
+	// Date/time builtins are absent from it: their Go semantics (calendar arithmetic on the
+	// model wrappers) have no rendering yet.
+	if !computed.IsSqlRenderableFunction(node.Name) {
+		return "", orm.WrapClientErrors(clientErrorsComputedNotFilterable(this.rootPath,
+			fmt.Sprintf("function %q has no SQL rendering", node.Name)))
+	}
 	args := make([]string, len(node.Args))
 	for i, arg := range node.Args {
 		compiled, err := this.compile(arg)
@@ -213,10 +220,8 @@ func (this *exprCompiler) compileFunction(node computed.FunctionExpr) (string, e
 		}
 		return "ROUND(" + args[0] + ")", nil
 	}
-	// Date/time builtins have Go-only semantics (calendar arithmetic on the model wrappers);
-	// compiling them would risk disagreeing with what the evaluator returns.
-	return "", orm.WrapClientErrors(clientErrorsComputedNotFilterable(this.rootPath,
-		fmt.Sprintf("function %q has no SQL rendering", node.Name)))
+	return "", errors.Errorf("computed expression: function %q is listed as SQL-renderable but has no rendering",
+		node.Name)
 }
 
 func (this *exprCompiler) compileCase(node computed.CaseExpr) (string, error) {
