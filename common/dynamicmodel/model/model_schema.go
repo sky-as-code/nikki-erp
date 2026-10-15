@@ -524,7 +524,7 @@ func (this *ModelSchema) ToSimplized() any {
 
 	simplizedFields := make(map[string]any, len(this.Fields()))
 	for name, field := range this.Fields() {
-		simplizedFields[name] = field.ToSimplized()
+		simplizedFields[name] = field.ToSimplizedIn(this.Name())
 	}
 
 	return struct {
@@ -959,7 +959,15 @@ func (this *ModelField) applyFieldRulesForValue(value any) *ft.ClientErrorItem {
 	return nil
 }
 
+// ToSimplized is ToSimplizedIn without a schema: a virtual computed field then reports itself as
+// neither filterable nor sortable, because that answer needs the owning schema's plan.
 func (this ModelField) ToSimplized() any {
+	return this.ToSimplizedIn("")
+}
+
+// ToSimplizedIn is the client-facing summary of a field owned by schemaName.
+func (this ModelField) ToSimplizedIn(schemaName string) any {
+	isQueryable := this.isQueryable(schemaName)
 	return struct {
 		Name                string         `json:"name,omitempty"`
 		Label               model.LangJson `json:"label,omitempty"`
@@ -975,6 +983,8 @@ func (this ModelField) ToSimplized() any {
 		IsVirtual           bool           `json:"is_virtual"`
 		IsComputed          bool           `json:"is_computed"`
 		IsPersisted         bool           `json:"is_persisted"`
+		IsFilterable        bool           `json:"is_filterable"`
+		IsSortable          bool           `json:"is_sortable"`
 		NoUpdate            bool           `json:"no_update"`
 		Rules               []*FieldRule   `json:"rules,omitempty"`
 		DefaultValue        *value         `json:"default_value,omitempty"`
@@ -997,6 +1007,8 @@ func (this ModelField) ToSimplized() any {
 		IsVirtual:           this.IsVirtual(),
 		IsComputed:          this.IsComputed(),
 		IsPersisted:         this.IsPersisted(),
+		IsFilterable:        isQueryable,
+		IsSortable:          isQueryable,
 		NoUpdate:            this.IsNoUpdate(),
 		Rules:               this.Rules(),
 		DefaultValue:        this.Default(),

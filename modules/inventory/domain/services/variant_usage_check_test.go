@@ -83,6 +83,7 @@ func (this *variantOwnerModule) LabelKey() string       { return this.name }
 func (this *variantOwnerModule) Init() error            { return nil }
 func (this *variantOwnerModule) IsInternal() bool       { return false }
 func (this *variantOwnerModule) ModelPrefix() string    { return this.name }
+func (this *variantOwnerModule) HasUi() bool            { return false }
 func (this *variantOwnerModule) Version() semver.SemVer { return *semver.MustParseSemVer("v1.0.0") }
 func (this *variantOwnerModule) Dependants() []string   { return this.dependants }
 

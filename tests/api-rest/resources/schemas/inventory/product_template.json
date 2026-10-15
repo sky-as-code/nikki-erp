@@ -78,6 +78,30 @@
         },
         "is_archived": {
             "type": "boolean"
+        },
+        "uom_id": {
+            "type": ["string", "null"]
+        },
+        "base_sales_price": {
+            "type": ["string", "number", "null"]
+        },
+        "source_system": {
+            "type": "string"
+        },
+        "external_id": {
+            "type": ["string", "null"]
+        },
+        "uom_name": {
+            "type": ["object", "null"]
+        },
+        "variant_count": {
+            "type": ["integer", "null"]
+        },
+        "min_variant_cost": {
+            "type": ["string", "number", "null"]
+        },
+        "max_variant_cost": {
+            "type": ["string", "number", "null"]
         }
     },
     "additionalProperties": false

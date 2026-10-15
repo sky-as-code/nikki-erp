@@ -78,9 +78,7 @@ func (GetOrgQuery) GetSchema() *dmodel.ModelSchema {
 		"iam.get_org_query",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(dmodel.DefineField().
-					Name(basemodel.FieldFields).
-					DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_FIELDS_LENGTH_MIN, model.MODEL_RULE_FIELDS_LENGTH_MAX).ArrayType())).
+				Field(dyn.DefineFieldSearchFields()).
 				ExclusiveRequiredFields(basemodel.FieldId, domain.OrgFieldSlug).
 				Field(dmodel.DefineField().
 					Name(basemodel.FieldId).

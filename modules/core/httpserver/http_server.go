@@ -172,6 +172,11 @@ func (this *HttpServer) startHttps() error {
 				ClientAuth:   clientAuthType,
 				ClientCAs:    caPool,
 				MinVersion:   tls.VersionTLS13,
+				// A config returned here replaces the server's, dropping the `h2` that net/http adds
+				// to it, so it must be repeated. Without ALPN every browser falls back to HTTP/1.1
+				// and its six connections per host, which a few tabs' notification streams exhaust:
+				// every other request then queues until the client times it out.
+				NextProtos: []string{"h2", "http/1.1"},
 			}, nil
 		},
 	}

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
@@ -487,7 +488,7 @@ func (this *BaseDynamicRepositoryImpl) CountM2m(
 		filter.Merge(constraints)
 	}
 	graph := filterToAndGraph(filter)
-	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph, nil, nil)
+	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -845,7 +846,7 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 	size := param.Size
 	var total int
 	total, countClientErrs, err := this.countRowsMatchingGraph(
-		ctx, merged, param.Language, this.ensureSystemColumns(param.Fields))
+		ctx, merged, param.Language, this.ensureSystemColumns(param.Fields), param.ComputedContext)
 	if err != nil {
 		return nil, err
 	}
@@ -855,10 +856,11 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 		}, nil
 	}
 	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, dyn.RepoSearchParam{
-		Fields:   this.ensureSystemColumns(param.Fields),
-		Page:     param.Page,
-		Size:     param.Size,
-		Language: param.Language,
+		Fields:          this.ensureSystemColumns(param.Fields),
+		Page:            param.Page,
+		Size:            param.Size,
+		Language:        param.Language,
+		ComputedContext: param.ComputedContext,
 	})
 	if err != nil {
 		return nil, err
@@ -891,7 +893,8 @@ func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
 	}
 	merged := this.injectTenantIntoGraph(ctx, param.Graph)
-	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language, plan.MainColumns)
+	total, countClientErrs, err := this.countRowsMatchingGraph(
+		ctx, merged, param.Language, plan.MainColumns, param.ComputedContext)
 	if err != nil {
 		return nil, err
 	}
@@ -901,10 +904,11 @@ func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 		}, nil
 	}
 	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, dyn.RepoSearchParam{
-		Fields:   plan.MainColumns,
-		Page:     param.Page,
-		Size:     param.Size,
-		Language: param.Language,
+		Fields:          plan.MainColumns,
+		Page:            param.Page,
+		Size:            param.Size,
+		Language:        param.Language,
+		ComputedContext: param.ComputedContext,
 	})
 	if err != nil {
 		return nil, err
@@ -987,6 +991,12 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 				}
 				for _, edgeCol := range readableFieldNames(destSchema) {
 					edgeLeafSet[col][edgeCol] = struct{}{}
+				}
+				continue
+			}
+			if col == allColumns {
+				for _, column := range this.schema.Columns() {
+					mainSet[column.Name()] = struct{}{}
 				}
 				continue
 			}
@@ -1360,17 +1370,21 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByAnyFilter(
 	return this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(schema, columns))
 }
 
+// countRowsMatchingGraph counts what a search would page through. computedCtx must be the same
+// context the page query gets: a filter on an SQL-computed field reading ${ctx.*} renders its
+// subquery in the count too, and fails there when the value is missing.
 func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraph(
 	ctx corectx.Context, graph *dmodel.SearchGraph, language *model.LanguageCode, selectColumns []string,
+	computedCtx map[string]any,
 ) (int, ft.ClientErrors, error) {
-	return this.countRowsMatchingGraphOnSchema(ctx, this.schema, graph, language, selectColumns)
+	return this.countRowsMatchingGraphOnSchema(ctx, this.schema, graph, language, selectColumns, computedCtx)
 }
 
 func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraphOnSchema(
 	ctx corectx.Context, schema *dmodel.ModelSchema, graph *dmodel.SearchGraph, language *model.LanguageCode,
-	selectColumns []string,
+	selectColumns []string, computedCtx map[string]any,
 ) (int, ft.ClientErrors, error) {
-	opts := orm.SqlSelectGraphOpts{Language: language}
+	opts := orm.SqlSelectGraphOpts{Language: language, ComputedContext: computedCtx}
 	if len(selectColumns) > 0 {
 		opts.Columns = orm.ToSelectColumns(selectColumns)
 	}
@@ -1597,8 +1611,15 @@ func (this *BaseDynamicRepositoryImpl) validateKeyMap(keys dmodel.DynamicFields)
 // Shared by GetOne and Search so the two accept exactly the same projections. They diverged
 // before: GetOne validated up front while Search let the ORM reject a bad field later, with a
 // different error and only after the query had been built.
+// allColumns is the `fields` entry standing for the root's own columns; the query builder renders
+// it as `t0.*`, so it is passed through rather than expanded here.
+const allColumns = string(orm.SelectAllColumns)
+
 func (this *BaseDynamicRepositoryImpl) validateSelectColumns(columns []string) *ft.ClientErrorItem {
 	for _, col := range columns {
+		if col == allColumns {
+			continue
+		}
 		field, hasField := this.schema.Field(col)
 		if hasField && field.IsEdgeModel() {
 			if _, ok := this.relationByEdge(col); !ok {
@@ -1755,9 +1776,9 @@ func (this *BaseDynamicRepositoryImpl) removeNilFilterFields(filter dmodel.Dynam
 // field, deliberately. Without this, such an update either overwrites a concurrent one silently or
 // has to re-read the record first, reintroducing the race it is meant to close.
 //
-// An empty list means SELECT *, which already carries both.
+// An empty list means SELECT *, which already carries both, and so does `*` among other entries.
 func (this *BaseDynamicRepositoryImpl) ensureSystemColumns(columns []string) []string {
-	if len(columns) == 0 {
+	if len(columns) == 0 || slices.Contains(columns, allColumns) {
 		return columns
 	}
 	set := make(map[string]struct{})
@@ -1935,17 +1956,12 @@ func (this *BaseDynamicRepositoryImpl) selectFieldsForSchema(
 		return nil
 	}
 	cols := columns
-	colLen := len(cols)
-	if colLen == 0 {
+	if len(cols) == 0 || slices.Contains(cols, allColumns) {
 		// ReadableFields, so the scanner can still type-convert a virtual scalar that a service
-		// fills after the read when the caller named no fields at all.
-		readable := schema.ReadableFields()
-		cols = make([]string, 0, len(readable))
-		for _, field := range readable {
-			cols = append(cols, field.Name())
-		}
+		// fills after the read when the caller named no fields at all, or only `*`.
+		cols = append(slices.Clone(cols), readableFieldNames(schema)...)
 	}
-	out := make(map[string]*dmodel.ModelField, colLen)
+	out := make(map[string]*dmodel.ModelField, len(cols))
 	for _, col := range cols {
 		field := resolveSchemaFieldByColumn(schema, col)
 		if field != nil {

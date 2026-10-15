@@ -48,6 +48,10 @@ func (*EssentialModule) ModelPrefix() string {
 	return modconstants.EssentialModuleName
 }
 
+func (*EssentialModule) HasUi() bool {
+	return true
+}
+
 // Deps implements NikkiModule.
 func (*EssentialModule) Deps() []string {
 	return []string{

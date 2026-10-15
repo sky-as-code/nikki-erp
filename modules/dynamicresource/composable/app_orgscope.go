@@ -1,8 +1,6 @@
 package composable
 
 import (
-	"encoding/json"
-
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -117,8 +115,8 @@ func (this *DefaultApplicationServiceImpl) schemaHasOrgId() bool {
 // ConstrainSearchToOrg ANDs an org_id equality onto whatever graph the caller sent, so the org
 // the caller named decides which rows a search can reach, not just which rows it asks for.
 //
-// The caller's graph arrives as a decoded map, so it is re-marshalled through SearchNode rather
-// than manipulated in place: SearchNode owns the graph's JSON shape.
+// The caller's graph arrives as a decoded map, so it is re-marshalled through SearchGraph rather
+// than manipulated in place: SearchGraph owns the graph's JSON shape.
 func (this *DefaultApplicationServiceImpl) ConstrainSearchToOrg(
 	params dmodel.DynamicFields, orgId model.Id,
 ) error {
@@ -133,30 +131,16 @@ func (this *DefaultApplicationServiceImpl) ConstrainSearchToOrg(
 		return nil
 	}
 
-	callerNode, err := toSearchNode(raw)
+	// The caller's order rides along: a SearchNode cannot carry one, so rebuilding through a
+	// node alone used to drop every sort a client asked for on an org-scoped resource.
+	graph, err := dmodel.AndDecodedGraph(raw, *orgNode)
 	if err != nil {
 		// A malformed graph is the caller's mistake, and the REST binder already rejected the
-		// unparseable case. Anything reaching here is a shape the node decoder refuses.
+		// unparseable case. Anything reaching here is a shape the graph decoder refuses.
 		return errors.Wrap(err, "ConstrainSearchToOrg")
 	}
-
-	graph := &dmodel.SearchGraph{}
-	graph.And(*callerNode, *orgNode)
 	params[fieldNameGraph] = graph
 	return nil
-}
-
-// toSearchNode reinterprets an already-decoded graph value as a SearchNode.
-func toSearchNode(raw any) (*dmodel.SearchNode, error) {
-	encoded, err := json.Marshal(raw)
-	if err != nil {
-		return nil, errors.Wrap(err, "toSearchNode.Marshal")
-	}
-	node := dmodel.NewSearchNode()
-	if err := json.Unmarshal(encoded, node); err != nil {
-		return nil, errors.Wrap(err, "toSearchNode.Unmarshal")
-	}
-	return node, nil
 }
 
 // AssertRecordInOrg refuses a single-row action whose target row belongs to another org.
@@ -174,21 +158,26 @@ func (this *DefaultApplicationServiceImpl) AssertRecordInOrg(
 		return nil, nil
 	}
 
-	vErrs := ft.ClientErrors{}
-	found, err := this.FetchByKeys(ctx, dmodel.DynamicFields{
+	keys := dmodel.DynamicFields{
 		basemodel.FieldId:    recordId,
 		basemodel.FieldOrgId: string(orgId),
-	}, &vErrs)
+	}
+	vErrs := ft.ClientErrors{}
+	if !this.assertKeysAreWellFormed(keys, &vErrs) {
+		return &vErrs, nil
+	}
+	// Existence is all this check needs; reading the row would project every column and render
+	// every SQL-computed field for nothing.
+	exists, err := this.domSvc.Repository().KeyExist(ctx, keys)
 	if err != nil {
 		return nil, errors.Wrap(err, "AssertRecordInOrg")
 	}
-	if vErrs.Count() > 0 {
-		return &vErrs, nil
+	if exists.ClientErrors.Count() > 0 {
+		return &exists.ClientErrors, nil
 	}
-	if found == nil {
-		notFound := ft.ClientErrors{}
-		notFound.Append(*ft.NewAnonymousNotFoundError())
-		return &notFound, nil
+	if !exists.Data {
+		vErrs.Append(*ft.NewAnonymousNotFoundError())
+		return &vErrs, nil
 	}
 	return nil, nil
 }

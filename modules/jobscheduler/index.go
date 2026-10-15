@@ -48,6 +48,10 @@ func (*JobSchedulerModule) ModelPrefix() string {
 	return constants.JobSchedulerModuleName
 }
 
+func (*JobSchedulerModule) HasUi() bool {
+	return false
+}
+
 // Deps implements NikkiModule.
 //
 // core and apptrait are implicit and must not be listed. The scheduler deliberately depends

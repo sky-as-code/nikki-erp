@@ -36,7 +36,10 @@ func (this *computedBaseService) Search(
 ) (*SearchResult, error) {
 	this.calls++
 	this.gotParams = params
-	return &SearchResult{Data: dyn.PagedResultData[dmodel.DynamicFields]{Items: this.searchPage}, HasData: true}, nil
+	// Like crud.UiSearch, DesiredFields echoes the `fields` this layer received.
+	return &SearchResult{Data: dyn.PagedResultData[dmodel.DynamicFields]{
+		Items: this.searchPage, DesiredFields: requestedFieldNames(params),
+	}, HasData: true}, nil
 }
 
 func (this *computedBaseService) GetById(_ corectx.Context, params GetByIdQuery) (*GetOneResult, error) {
@@ -163,6 +166,21 @@ func TestComputedServiceUntouchedWhenNothingComputedRequested(t *testing.T) {
 	assert.Equal(t, []string{"id", "template_id"}, base.gotParams["fields"])
 }
 
+// A detail read without `fields` is `*`: the token and every computed field go down, so the eval
+// plan treats it like an explicit wildcard rather than an empty request.
+func TestComputedServiceGetByIdWithoutFieldsSendsTheWildcard(t *testing.T) {
+	base, recorder, service := buildDecoratorFixture(t)
+	base.single = dmodel.DynamicFields{"id": "v1", "template_id": "t1"}
+	recorder.sourceRows = []dmodel.DynamicFields{{"id": "t1", "name": "Widget"}}
+
+	result, err := service.GetById(nil, dmodel.DynamicFields{})
+	require.NoError(t, err)
+
+	assert.Contains(t, base.gotParams["fields"], "*")
+	assert.Contains(t, base.gotParams["fields"], "template_name")
+	assert.Equal(t, "Widget", result.Data.Item["template_name"])
+}
+
 func TestComputedServiceGetByIdFillsSingleRecord(t *testing.T) {
 	base, recorder, service := buildDecoratorFixture(t)
 	base.single = dmodel.DynamicFields{"id": "v1", "template_id": "t1"}
@@ -205,6 +223,43 @@ func TestComputedServiceSearchDefaultProjectionCarriesOperands(t *testing.T) {
 	assert.Equal(t, []string{"template_name", "id", "template_id"}, base.gotParams["fields"])
 	assert.Equal(t, 1, recorder.calls)
 	assert.Equal(t, "Widget", result.Data.Items[0]["template_name"])
+}
+
+// The operands appended for evaluation are not columns the caller asked for, so they must not
+// come back in desired_fields, whether the projection was named or defaulted.
+func TestComputedServiceSearchHidesAppendedOperandsFromDesiredFields(t *testing.T) {
+	base, _, service := buildDecoratorFixtureWithDefaults(t, []string{"template_name", "id"})
+	base.searchPage = []dmodel.DynamicFields{{"id": "v1", "template_id": "t1"}}
+
+	defaulted, err := service.Search(nil, dmodel.DynamicFields{})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"template_name", "id"}, defaulted.Data.DesiredFields)
+
+	named, err := service.Search(nil, dmodel.DynamicFields{"fields": []string{"template_name"}})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"template_name"}, named.Data.DesiredFields)
+}
+
+// An FK the caller did select is a column, not an appended operand, so it stays.
+func TestComputedServiceSearchKeepsRequestedForeignKeyInDesiredFields(t *testing.T) {
+	base, _, service := buildDecoratorFixture(t)
+	base.searchPage = []dmodel.DynamicFields{{"id": "v1", "template_id": "t1"}}
+
+	result, err := service.Search(nil, dmodel.DynamicFields{"fields": []string{"template_name", "template_id"}})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"template_name", "template_id"}, result.Data.DesiredFields)
+}
+
+func TestComputedServiceSearchLeavesDefaultSearchFieldsIntact(t *testing.T) {
+	defaults := make([]string, 1, 8)
+	defaults[0] = "template_name"
+	base, _, service := buildDecoratorFixtureWithDefaults(t, defaults)
+	base.searchPage = []dmodel.DynamicFields{{"id": "v1", "template_id": "t1"}}
+
+	_, err := service.Search(nil, dmodel.DynamicFields{})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"template_name", ""}, defaults[:2],
+		"appending operands must not write into the shared default list's spare capacity")
 }
 
 func TestComputedServiceSearchNamedViewSkipsComputed(t *testing.T) {

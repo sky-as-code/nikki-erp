@@ -67,37 +67,81 @@
         "is_archived": {
             "type": "boolean"
         },
-
-        "template_name": {
-            "type": ["object", "null"]
+        "cost": {
+            "type": ["string", "number", "null"]
         },
-        "template_short_name": {
-            "type": ["object", "null"]
+        "source_system": {
+            "type": "string"
         },
-        "template_description": {
-            "type": ["object", "null"]
-        },
-        "template_sales_description": {
-            "type": ["object", "null"]
-        },
-        "template_purchase_description": {
-            "type": ["object", "null"]
-        },
-        "template_category_id": {
+        "external_id": {
             "type": ["string", "null"]
         },
-        "template_brand_id": {
+        "product_template_name": {
+            "type": ["object", "null"]
+        },
+        "product_template_short_name": {
+            "type": ["object", "null"]
+        },
+        "product_template_description": {
+            "type": ["object", "null"]
+        },
+        "product_template_sales_description": {
+            "type": ["object", "null"]
+        },
+        "product_template_purchase_description": {
+            "type": ["object", "null"]
+        },
+        "product_template_category_id": {
             "type": ["string", "null"]
         },
-        "template_product_type_id": {
+        "product_template_brand_id": {
             "type": ["string", "null"]
         },
-        "template_status": {
+        "product_template_product_type_id": {
+            "type": ["string", "null"]
+        },
+        "product_template_status": {
             "type": ["string", "null"],
             "enum": ["draft", "active", "discontinued", null]
         },
-        "template_sale_ok": {
+        "product_template_sale_ok": {
             "type": ["boolean", "null"]
+        },
+        "product_template_purchase_ok": {
+            "type": ["boolean", "null"]
+        },
+        "product_template_base_sales_price": {
+            "type": ["string", "number", "null"]
+        },
+        "product_template_uom_id": {
+            "type": ["string", "null"]
+        },
+        "product_template_uom_name": {
+            "type": ["object", "null"]
+        },
+        "display_name": {
+            "type": ["string", "null"]
+        },
+        "attribute_summary": {
+            "type": ["array", "null"],
+            "items": {
+                "type": "string"
+            }
+        },
+        "sales_price_extra_total": {
+            "type": ["string", "number", "null"]
+        },
+        "effective_base_sales_price": {
+            "type": ["string", "number", "null"]
+        },
+        "on_hand_quantity": {
+            "type": ["string", "number", "null"]
+        },
+        "reserved_quantity": {
+            "type": ["string", "number", "null"]
+        },
+        "available_quantity": {
+            "type": ["string", "number", "null"]
         }
     },
     "additionalProperties": false

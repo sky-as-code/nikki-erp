@@ -167,6 +167,15 @@ func TestNestedFold_ProjectedScanFieldsMapAliasesToDestinationFields(t *testing.
 	assert.False(t, edgeMapped, "an edge field is never a scanned column")
 }
 
+func TestNestedFold_ProjectedScanFieldsTypeRootColumnsUnderWildcard(t *testing.T) {
+	reg := foldRegistry(t)
+	root := reg.Get(foldSchemaPrefix + "quant")
+	fields := projectedScanFields(reg, root, []string{"*", "template.code"}, toOnePlan())
+
+	assert.Equal(t, "note", fields["note"].Name())
+	assert.Equal(t, foldSchemaPrefix+"template", schemaOf(t, reg, "code", fields["template.code"]))
+}
+
 func schemaOf(t *testing.T, reg *dmodel.SchemaRegistry, fieldName string, field *dmodel.ModelField) string {
 	t.Helper()
 	require.NotNil(t, field)

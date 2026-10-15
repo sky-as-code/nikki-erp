@@ -152,8 +152,9 @@ func TestSingleRowActionRefusesARecordOfAnotherOrg(t *testing.T) {
 	require.NoError(t, err)
 	assert.Positive(t, result.ClientErrors.Count())
 	assert.Zero(t, domSvc.calls, "the update must not run against a row of another org")
-	assert.Equal(t, "org_mine", repo.fetchedKeys[basemodel.FieldOrgId], "the org travels with the id in the key set")
-	assert.Equal(t, "rec_1", repo.fetchedKeys["id"])
+	assert.Equal(t, "org_mine", repo.existKeys[basemodel.FieldOrgId], "the org travels with the id in the key set")
+	assert.Equal(t, "rec_1", repo.existKeys["id"])
+	assert.Nil(t, repo.fetchedKeys, "the check asks whether the row exists; it never reads it")
 }
 
 func TestSingleRowActionRunsWhenTheRecordIsInTheOrg(t *testing.T) {
@@ -212,4 +213,19 @@ func TestAssertRecordInOrgIgnoresParamsWithoutId(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Nil(t, cErrs)
+}
+
+func TestSearchKeepsTheCallersOrderAfterOrgScoping(t *testing.T) {
+	domSvc, appSvc := newAppService(newOrgSchema())
+
+	_, err := appSvc.Search(memberContext(), dmodel.DynamicFields{
+		basemodel.FieldOrgId: "org_mine",
+		fieldNameGraph:       map[string]any{"order": []any{[]any{"name", "desc"}}},
+	})
+
+	require.NoError(t, err)
+	graph, ok := domSvc.seen[fieldNameGraph].(*dmodel.SearchGraph)
+	require.True(t, ok)
+	assert.Equal(t, dmodel.NewSearchOrder("name", dmodel.Desc), graph.GetOrder())
+	assert.Len(t, graph.GetAnd(), 1, "an order-only graph adds no predicate of its own")
 }

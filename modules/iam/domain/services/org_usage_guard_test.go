@@ -63,6 +63,7 @@ func (this *orgTestModule) LabelKey() string       { return this.name }
 func (this *orgTestModule) Init() error            { return nil }
 func (this *orgTestModule) IsInternal() bool       { return false }
 func (this *orgTestModule) ModelPrefix() string    { return this.name }
+func (this *orgTestModule) HasUi() bool            { return false }
 func (this *orgTestModule) Version() semver.SemVer { return *semver.MustParseSemVer("v1.0.0") }
 func (this *orgTestModule) Dependants() []string   { return this.dependants }
 

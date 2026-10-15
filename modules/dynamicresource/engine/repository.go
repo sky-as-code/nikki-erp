@@ -102,6 +102,12 @@ func (this *DynamicResourceRepositoryImpl) Search(
 	return this.dynamicRepo.Search(ctx, param)
 }
 
+func (this *DynamicResourceRepositoryImpl) KeyExist(
+	ctx corectx.Context, keys dmodel.DynamicFields,
+) (*dyn.OpResult[bool], error) {
+	return baserepo.KeyExist(ctx, this.dynamicRepo, keys)
+}
+
 func (this *DynamicResourceRepositoryImpl) Exists(
 	ctx corectx.Context, keys []dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.RepoExistsResult], error) {

@@ -97,15 +97,17 @@ Update Reparenting To Another Template Fails
     ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Update Writing A Computed Field Is Refused
-    [Documentation]    template_name is copied from the template on read and has no column of
+    [Documentation]    product_template_name is copied from the template on read and has no column of
     ...    its own. Writing it is reported rather than silently dropped, so a client learns the
     ...    value it sent was never going to be kept.
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'template_name': 'Renamed Via Variant', 'etag': $PRODUCT_VARIANT_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_template_name': 'Renamed Via Variant', 'etag': $PRODUCT_VARIANT_ETAG} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=Writing a computed field must be refused, not quietly ignored
+    Should Not Contain    ${resp.text}    err_etag_mismatched
+    ...    msg=The refusal must come from the computed field, not from a stale etag
 
 Update Writing An Edge Is Refused
     [Documentation]    An edge is hydrated from the peer schema, so echoing a GET response
@@ -113,10 +115,12 @@ Update Writing An Edge Is Refused
     ...    value would never have been stored either way.
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'template': {'id': $PRODUCT_TEMPLATE_ID}, 'etag': $PRODUCT_VARIANT_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_template': {'id': $PRODUCT_TEMPLATE_ID}, 'etag': $PRODUCT_VARIANT_ETAG} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=Writing an edge field must be refused, not quietly ignored
+    Should Not Contain    ${resp.text}    err_etag_mismatched
+    ...    msg=The refusal must come from the edge field, not from a stale etag
 
 Update With Missing Etag Fails
     [Tags]    negative

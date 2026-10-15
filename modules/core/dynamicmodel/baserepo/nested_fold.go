@@ -3,6 +3,7 @@ package baserepo
 import (
 	"bytes"
 	"encoding/json"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -59,7 +60,7 @@ func (this *BaseDynamicRepositoryImpl) searchWithProjectedEdges(
 ) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error) {
 	merged := this.injectTenantIntoGraph(ctx, param.Graph)
 	columns := this.ensureSystemColumns(param.Fields)
-	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language, columns)
+	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language, columns, param.ComputedContext)
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +146,9 @@ func (this *BaseDynamicRepositoryImpl) runProjectedScan(
 func projectedScanFields(
 	registry *dmodel.SchemaRegistry, root *dmodel.ModelSchema, columns []string, plan *orm.NestedProjection,
 ) map[string]*dmodel.ModelField {
+	if slices.Contains(columns, allColumns) {
+		columns = append(slices.Clone(columns), readableFieldNames(root)...)
+	}
 	rootOnly := make([]string, 0, len(columns))
 	for _, col := range columns {
 		if !strings.Contains(col, ".") {

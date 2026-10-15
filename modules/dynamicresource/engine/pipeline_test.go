@@ -38,8 +38,14 @@ type stubRepository struct {
 	it.DynamicResourceRepository
 
 	fetchedKeys dmodel.DynamicFields
+	existKeys   dmodel.DynamicFields
 	record      dmodel.DynamicFields
 	found       bool
+}
+
+func (this *stubRepository) KeyExist(_ corectx.Context, keys dmodel.DynamicFields) (*dyn.OpResult[bool], error) {
+	this.existKeys = keys
+	return &dyn.OpResult[bool]{Data: this.found, HasData: true}, nil
 }
 
 func (this *stubRepository) FindByKeys(

@@ -12,12 +12,14 @@ import (
 const (
 	ModuleMetadataSchemaName = "essential_module_metadata"
 
-	ModuleMetadataFieldId         = basemodel.FieldId
-	ModuleMetadataFieldName       = "name"
-	ModuleMetadataFieldLabel      = "label"
-	ModuleMetadataFieldIsInternal = "is_internal"
-	ModuleMetadataFieldIsOrphaned = "is_orphaned"
-	ModuleMetadataFieldVersion    = "version"
+	ModuleMetadataFieldId          = basemodel.FieldId
+	ModuleMetadataFieldName        = "name"
+	ModuleMetadataFieldLabel       = "label"
+	ModuleMetadataFieldIsInternal  = "is_internal"
+	ModuleMetadataFieldIsOrphaned  = "is_orphaned"
+	ModuleMetadataFieldVersion     = "version"
+	ModuleMetadataFieldHasUi       = "has_ui"
+	ModuleMetadataFieldModelPrefix = "model_prefix"
 )
 
 func ModuleMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -68,6 +70,21 @@ func ModuleMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldVersion)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
 				RequiredForCreate(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(ModuleMetadataFieldHasUi).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldHasUi)).
+				DataType(dmodel.FieldDataTypeBoolean()).
+				RequiredForCreate().
+				Default(false),
+		).
+		Field(
+			// Nullable so rows written before this field existed migrate; startup sync fills it.
+			dmodel.DefineField().
+				Name(ModuleMetadataFieldModelPrefix).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldModelPrefix)).
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)),
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder())
@@ -126,6 +143,22 @@ func (this *ModuleMetadata) SetIsOrphaned(v *bool) {
 	this.GetFieldData().SetBool(ModuleMetadataFieldIsOrphaned, v)
 }
 
+func (this ModuleMetadata) GetHasUi() *bool {
+	return this.GetFieldData().GetBool(ModuleMetadataFieldHasUi)
+}
+
+func (this *ModuleMetadata) SetHasUi(v *bool) {
+	this.GetFieldData().SetBool(ModuleMetadataFieldHasUi, v)
+}
+
+func (this ModuleMetadata) GetModelPrefix() *string {
+	return this.GetFieldData().GetString(ModuleMetadataFieldModelPrefix)
+}
+
+func (this *ModuleMetadata) SetModelPrefix(v *string) {
+	this.GetFieldData().SetString(ModuleMetadataFieldModelPrefix, v)
+}
+
 func (this ModuleMetadata) GetVersion() *semver.SemVer {
 	version := this.GetFieldData().GetString(ModuleMetadataFieldVersion)
 	if version == nil {
@@ -160,6 +193,16 @@ func (this ModuleMetadata) ModifiedFields(other modules.InCodeModule) *ModuleMet
 
 	if this.GetVersion() != nil && *this.GetVersion() != other.Version() {
 		modified.SetVersion(util.ToPtr(other.Version()))
+		count++
+	}
+
+	if this.GetHasUi() == nil || *this.GetHasUi() != other.HasUi() {
+		modified.SetHasUi(util.ToPtr(other.HasUi()))
+		count++
+	}
+
+	if this.GetModelPrefix() == nil || *this.GetModelPrefix() != other.ModelPrefix() {
+		modified.SetModelPrefix(util.ToPtr(other.ModelPrefix()))
 		count++
 	}
 

@@ -46,6 +46,10 @@ func (*IamModule) ModelPrefix() string {
 	return c.IamModuleName
 }
 
+func (*IamModule) HasUi() bool {
+	return true
+}
+
 // Deps implements InCodeModule.
 func (*IamModule) Deps() []string {
 	return []string{

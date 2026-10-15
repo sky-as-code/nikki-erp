@@ -1,6 +1,8 @@
 package baserepo
 
 import (
+	"maps"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -52,6 +54,23 @@ func Exists(
 	ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, keys []dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.RepoExistsResult], error) {
 	return dynamicRepo.Exists(ctx, keys)
+}
+
+// KeyExist tells whether a row matches every given key, e.g. {id, org_id}. It is one
+// `EXISTS (SELECT 1 …)` on the table, tenant-scoped like every read, so a caller that only needs to
+// know a record is there pays for no projection and no computed field. Archived rows count.
+func KeyExist(
+	ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, keys dmodel.DynamicFields,
+) (*dyn.OpResult[bool], error) {
+	// A copy, because a tenant-scoping wrapper merges its key into the maps it is handed.
+	result, err := dynamicRepo.Exists(ctx, []dmodel.DynamicFields{maps.Clone(keys)})
+	if err != nil {
+		return nil, err
+	}
+	if result.ClientErrors.Count() > 0 {
+		return &dyn.OpResult[bool]{ClientErrors: result.ClientErrors}, nil
+	}
+	return &dyn.OpResult[bool]{Data: len(result.Data.Existing) == 1, HasData: true}, nil
 }
 
 func Insert(

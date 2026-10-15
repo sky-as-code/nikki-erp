@@ -36,8 +36,11 @@ func (this *fakeBaseService) Search(
 ) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error) {
 	this.calls++
 	this.gotParams = params
+	// Like crud.UiSearch, DesiredFields echoes the `fields` this layer received.
 	return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{
-		Data:    dyn.PagedResultData[dmodel.DynamicFields]{Items: this.searchPage},
+		Data: dyn.PagedResultData[dmodel.DynamicFields]{
+			Items: this.searchPage, DesiredFields: requestedFieldNames(params),
+		},
 		HasData: true,
 	}, nil
 }
@@ -234,6 +237,31 @@ func TestComputedService_SearchDefaultProjectionCarriesOperands(t *testing.T) {
 		"the FK operand must be appended to the default projection")
 	assert.Equal(t, 1, recorder.calls, "the related read must run for a default projection")
 	assert.Equal(t, "Widget", result.Data.Items[0]["template_name"])
+}
+
+// The operands appended for evaluation are not columns the caller asked for, so they must not
+// come back in desired_fields, whether the projection was named or defaulted.
+func TestComputedService_SearchHidesAppendedOperandsFromDesiredFields(t *testing.T) {
+	base, _, service := buildDecoratorFixtureWithDefaults(t, []string{"template_name", "id"})
+	base.searchPage = []dmodel.DynamicFields{{"id": "v1", "template_id": "t1"}}
+
+	defaulted, err := service.Search(nil, dmodel.DynamicFields{})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"template_name", "id"}, defaulted.Data.DesiredFields)
+
+	named, err := service.Search(nil, dmodel.DynamicFields{"fields": []string{"template_name"}})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"template_name"}, named.Data.DesiredFields)
+}
+
+// An FK the caller did select is a column, not an appended operand, so it stays.
+func TestComputedService_SearchKeepsRequestedForeignKeyInDesiredFields(t *testing.T) {
+	base, _, service := buildDecoratorFixture(t)
+	base.searchPage = []dmodel.DynamicFields{{"id": "v1", "template_id": "t1"}}
+
+	result, err := service.Search(nil, dmodel.DynamicFields{"fields": []string{"template_name", "template_id"}})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"template_name", "template_id"}, result.Data.DesiredFields)
 }
 
 // A named view other than "default" resolves to an id-only row, so it wants no computed field

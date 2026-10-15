@@ -124,3 +124,29 @@ func TestFieldMetadata_RepeatedCallsMerge(t *testing.T) {
 	assert.Equal(t, true, field.Metadata()["allow_override"], "earlier keys survive")
 	assert.Equal(t, "appearance", field.Metadata()["group"], "later keys win")
 }
+
+// A physical column is filterable and sortable on its own; a virtual computed field needs the
+// computed package's plan, which a schema-less ToSimplized cannot look up, so it reports false.
+func TestFieldMetadata_QueryCapabilityFlags(t *testing.T) {
+	schema := ParseModelJson(`{
+		"name": "test_meta_capability",
+		"table_name": "test_meta_capabilities",
+		"fields": [
+			{"name": "id", "data_type": "ulid", "primary_key": true, "use_type_default": true},
+			{"name": "code", "data_type": {"type": "string", "min": 1, "max": 20}}
+		]
+	}`).Build()
+
+	field, ok := schema.Field("code")
+	require.True(t, ok)
+	encoded, err := json.Marshal(field.ToSimplizedIn(schema.Name()))
+	require.NoError(t, err)
+
+	var decoded struct {
+		IsFilterable bool `json:"is_filterable"`
+		IsSortable   bool `json:"is_sortable"`
+	}
+	require.NoError(t, json.Unmarshal(encoded, &decoded))
+	assert.True(t, decoded.IsFilterable)
+	assert.True(t, decoded.IsSortable)
+}

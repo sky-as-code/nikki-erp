@@ -48,6 +48,8 @@ type InCodeModule interface {
 	// ModelPrefix returns the prefix this module's schemas are named with, without a
 	// trailing separator - GenSql appends the "_" itself.
 	ModelPrefix() string
+	// HasUi reports whether the module has a frontend micro-app, so Module Home lists it.
+	HasUi() bool
 }
 
 type DynamicModule interface {
@@ -62,6 +64,8 @@ type DynamicModule interface {
 	// ModelPrefix returns the prefix this module's schemas are named with, without a
 	// trailing separator - GenSql appends the "_" itself.
 	ModelPrefix() string
+	// HasUi reports whether the module has a frontend micro-app, so Module Home lists it.
+	HasUi() bool
 }
 
 type InCodeModuleAppStarted interface {

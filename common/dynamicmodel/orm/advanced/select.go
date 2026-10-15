@@ -14,15 +14,16 @@ import (
 // be present under SELECT DISTINCT (the ORDER BY expressions); they are appended when missing.
 func (this *queryPlan) applySelectColumns(sb *sqlbuilder.SelectBuilder, columns []orm.SelectColumn, extraRefs ...string) error {
 	if len(columns) == 0 {
-		wildcard := "*"
-		if alias := this.join.RootAlias(); alias != "" {
-			wildcard = alias + ".*"
-		}
-		sb.Select(append([]string{wildcard}, extraRefs...)...)
+		sb.Select(append([]string{this.rootWildcard()}, extraRefs...)...)
 		return nil
 	}
 	proj := newProjection()
+	allColumns := false
 	for _, col := range columns {
+		if col == orm.SelectAllColumns {
+			allColumns = true
+			continue
+		}
 		if fn, inner, ok := orm.ParseAllowedAggregate(col); ok {
 			expr, err := this.aggregateSelectExpr(col, fn, inner)
 			if err != nil {
@@ -39,8 +40,14 @@ func (this *queryPlan) applySelectColumns(sb *sqlbuilder.SelectBuilder, columns 
 			return errors.Wrap(err, "applySelectColumns")
 		}
 	}
-	selectCols := make([]string, 0, len(proj.items))
+	selectCols := make([]string, 0, len(proj.items)+1)
+	if allColumns {
+		selectCols = append(selectCols, this.rootWildcard())
+	}
 	for _, item := range proj.items {
+		if allColumns && this.isRootColumnRef(item.expr) {
+			continue
+		}
 		if item.groupKey == "" {
 			selectCols = append(selectCols, item.expr)
 			continue
@@ -59,12 +66,34 @@ func (this *queryPlan) applySelectColumns(sb *sqlbuilder.SelectBuilder, columns 
 		}
 	}
 	for _, ref := range extraRefs {
+		if allColumns && this.isRootColumnRef(ref) {
+			continue
+		}
 		if !containsString(selectCols, ref) {
 			selectCols = append(selectCols, ref)
 		}
 	}
 	sb.Select(selectCols...)
 	return nil
+}
+
+func (this *queryPlan) rootWildcard() string {
+	if alias := this.join.RootAlias(); alias != "" {
+		return alias + ".*"
+	}
+	return "*"
+}
+
+// isRootColumnRef tells whether expr is a bare physical column of the root, which `*` already
+// projects; keeping it would return the column twice. Primary keys registered by edge hops and
+// operands appended for computed fields both arrive this way.
+func (this *queryPlan) isRootColumnRef(expr string) bool {
+	for _, field := range this.root.Columns() {
+		if expr == this.columnRef("", field.Name()) {
+			return true
+		}
+	}
+	return false
 }
 
 // aggregateSelectExpr renders a COUNT|MAX|MIN|AVG|SUM(field) token; COUNT(DISTINCT::field) is

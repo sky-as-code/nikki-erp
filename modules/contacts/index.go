@@ -44,6 +44,10 @@ func (*ContactsModule) ModelPrefix() string {
 	return modconstants.ContactsModuleName
 }
 
+func (*ContactsModule) HasUi() bool {
+	return false
+}
+
 // Deps implements NikkiModule.
 func (*ContactsModule) Deps() []string {
 	return []string{

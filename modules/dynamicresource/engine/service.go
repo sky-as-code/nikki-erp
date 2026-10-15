@@ -209,7 +209,7 @@ func (this *DynamicResourceServiceImpl) GetById(
 	// listed by avatar/name/email/status). Fetching one record by its id is the detail
 	// view, so with no explicit selection it returns the whole record instead.
 	if len(query.Fields) == 0 {
-		query.Fields = columnNames(this.schema)
+		query.Fields = corecrud.NormalizeFieldsWildcard(this.schema, []string{corecrud.FieldsWildcard})
 	}
 
 	result, err := corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[it.DynamicEntity, *it.DynamicEntity]{

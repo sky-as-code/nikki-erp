@@ -358,6 +358,8 @@ func (this *ModuleDomainServiceImpl) syncCreateModule(
 	cmd.SetName(util.ToPtr(installedModule.Name()))
 	cmd.SetIsInternal(util.ToPtr(installedModule.IsInternal()))
 	cmd.SetVersion(util.ToPtr(installedModule.Version()))
+	cmd.SetHasUi(util.ToPtr(installedModule.HasUi()))
+	cmd.SetModelPrefix(util.ToPtr(installedModule.ModelPrefix()))
 
 	result, err := this.CreateModule(ctx, cmd)
 	if err != nil {

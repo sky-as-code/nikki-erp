@@ -127,3 +127,20 @@ func TestApplyOrgConstraintOnlyRewritesSearch(t *testing.T) {
 	_, hasGraph := params[queryParamGraph]
 	assert.False(t, hasGraph)
 }
+
+// A sort is part of what the caller asked for. Rebuilding the graph to add the org condition
+// used to drop it, so every list on an org-scoped resource came back unsorted.
+func TestConstrainSearchGraphKeepsTheCallersOrder(t *testing.T) {
+	for name, raw := range map[string]map[string]any{
+		"with a condition": {"if": []any{"name", "=", "widget"}, "order": []any{[]any{"name", "desc"}}},
+		"order only":       {"order": []any{[]any{"name", "desc"}}},
+	} {
+		params := dmodel.DynamicFields{queryParamGraph: raw}
+
+		require.NoError(t, constrainSearchGraph(params, "org_1"), name)
+
+		graph, ok := params[queryParamGraph].(*dmodel.SearchGraph)
+		require.True(t, ok, name)
+		assert.Equal(t, dmodel.NewSearchOrder("name", dmodel.Desc), graph.GetOrder(), name)
+	}
+}

@@ -47,6 +47,10 @@ func (*InventoryModule) ModelPrefix() string {
 	return modconstants.InventoryModuleName
 }
 
+func (*InventoryModule) HasUi() bool {
+	return true
+}
+
 // Deps implements NikkiModule.
 func (*InventoryModule) Deps() []string {
 	return []string{

@@ -40,6 +40,10 @@ func (*CoreModule) ModelPrefix() string {
 	return coreconstants.CoreModuleName
 }
 
+func (*CoreModule) HasUi() bool {
+	return false
+}
+
 // LabelKey implements NikkiModule.
 func (*CoreModule) LabelKey() string {
 	return "core.moduleLabel"

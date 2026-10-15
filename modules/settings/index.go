@@ -55,6 +55,10 @@ func (*SettingsModule) ModelPrefix() string {
 	return modconstants.SettingsModuleName
 }
 
+func (*SettingsModule) HasUi() bool {
+	return true
+}
+
 // Deps implements NikkiModule.
 //
 // core and essential are implicit and must not be listed. iam is deliberately absent and must stay

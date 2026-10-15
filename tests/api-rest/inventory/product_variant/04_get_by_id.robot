@@ -20,11 +20,33 @@ Get With Columns Succeeds
     Response Status Should Be    ${resp}    200
 
 Get With Edge Columns Succeeds
-    [Documentation]    The `template` edge is how the variant detail page names its parent
+    [Documentation]    The `product_template` edge is how the variant detail page names its parent
     ...    product line instead of showing a ULID.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['sku', 'template.name']} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['sku', 'product_template.name']} }}
     Response Status Should Be    ${resp}    200
+
+Get With Wildcard Columns Succeeds
+    [Documentation]    `*` answers like no `fields` at all: every persisted column and every
+    ...    computed field.
+    ${default}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['*']} }}
+    Response Status Should Be    ${resp}    200
+    Dictionary Should Contain Key    ${resp.json()}[item]    sku
+    Dictionary Should Contain Key    ${resp.json()}[item]    on_hand_quantity
+    Lists Should Be Equal    ${{ sorted($resp.json()['item']) }}    ${{ sorted($default.json()['item']) }}
+
+Get With Wildcard And Edge Columns Succeeds
+    [Documentation]    How the detail page adds the parent's label without enumerating the
+    ...    variant's own fields in the URL.
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['*', 'product_template.name']} }}
+    Response Status Should Be    ${resp}    200
+    ${item}=    Set Variable    ${resp.json()}[item]
+    Dictionary Should Contain Key    ${item}    sku
+    Dictionary Should Contain Key    ${item}[product_template]    name
 
 Get Effective Product Succeeds
     [Documentation]    BR §7.5 / AC-PROD-032: the flattened product a consumer reads instead
