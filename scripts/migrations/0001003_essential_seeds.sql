@@ -311,3 +311,74 @@ BEGIN
 		WHERE "module_key" = 'essential' AND "name" = 'system_locale';
 	END IF;
 END $$;
+
+-- Unit of Measure catalogue.
+--
+-- Ids 01K5INV...UOM0001-0005 are referenced by the inventory, purchase and sales seeds and must keep
+-- their meaning (piece, dozen, carton, kg, g). The carton keeps factor 24 because the purchase and
+-- sales seed lines are priced per carton of 24; changing the factor would silently change their cost.
+-- Factors are exact at the 12-digit scale of essential_uoms.factor (1/60 for a minute, the
+-- international yard-and-pound definitions for imperial units).
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'essential_uomcats'
+	) THEN
+		INSERT INTO "essential_uomcats" ("id", "name", "reference_uom_id", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
+		('01K5INV00000000000UOMCAT01', jsonb_build_object('en-US', 'Unit', 'vi-VN', 'Đơn vị'), '01K5INV000000000000UOM0001', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV00000000000UOMCAT02', jsonb_build_object('en-US', 'Weight', 'vi-VN', 'Khối lượng'), '01K5INV000000000000UOM0004', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS00000000000UOMCAT03', jsonb_build_object('en-US', 'Length', 'vi-VN', 'Chiều dài'), '01K5ESS000000000000UOM0009', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS00000000000UOMCAT04', jsonb_build_object('en-US', 'Volume', 'vi-VN', 'Thể tích'), '01K5ESS000000000000UOM000F', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS00000000000UOMCAT05', jsonb_build_object('en-US', 'Time', 'vi-VN', 'Thời gian'), '01K5ESS000000000000UOM000K', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS00000000000UOMCAT06', jsonb_build_object('en-US', 'Surface', 'vi-VN', 'Diện tích'), '01K5ESS000000000000UOM000Z', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'essential_uoms'
+	) THEN
+		INSERT INTO "essential_uoms" ("id", "name", "symbol", "category_id", "uom_type", "factor", "rounding", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
+		-- Unit, reference unit piece; counted units are whole numbers only
+		('01K5INV000000000000UOM0001', jsonb_build_object('en-US', 'Piece', 'vi-VN', 'Cái'), 'pc', '01K5INV00000000000UOMCAT01', 'reference', 1, 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000P', jsonb_build_object('en-US', 'Pair', 'vi-VN', 'Đôi'), 'pr', '01K5INV00000000000UOMCAT01', 'bigger_equal', 2, 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV000000000000UOM0002', jsonb_build_object('en-US', 'Dozen', 'vi-VN', 'Tá'), 'dz', '01K5INV00000000000UOMCAT01', 'bigger_equal', 12, 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV000000000000UOM0003', jsonb_build_object('en-US', 'Carton', 'vi-VN', 'Thùng'), 'ctn', '01K5INV00000000000UOMCAT01', 'bigger_equal', 24, 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000Q', jsonb_build_object('en-US', 'Gross', 'vi-VN', 'Gross'), 'gross', '01K5INV00000000000UOMCAT01', 'bigger_equal', 144, 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		-- Weight, reference unit kg
+		('01K5INV000000000000UOM0004', jsonb_build_object('en-US', 'Kilogram', 'vi-VN', 'Ki-lô-gam'), 'kg', '01K5INV00000000000UOMCAT02', 'reference', 1, 0.001, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV000000000000UOM0005', jsonb_build_object('en-US', 'Gram', 'vi-VN', 'Gam'), 'g', '01K5INV00000000000UOMCAT02', 'smaller', 0.001, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000R', jsonb_build_object('en-US', 'Milligram', 'vi-VN', 'Mi-li-gam'), 'mg', '01K5INV00000000000UOMCAT02', 'smaller', 0.000001, 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM0006', jsonb_build_object('en-US', 'Tonne', 'vi-VN', 'Tấn'), 't', '01K5INV00000000000UOMCAT02', 'bigger_equal', 1000, 0.001, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM0007', jsonb_build_object('en-US', 'Ounce', 'vi-VN', 'Ao-xơ'), 'oz', '01K5INV00000000000UOMCAT02', 'smaller', 0.028349523125, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM0008', jsonb_build_object('en-US', 'Pound', 'vi-VN', 'Pao'), 'lb', '01K5INV00000000000UOMCAT02', 'smaller', 0.45359237, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		-- Length, reference unit m
+		('01K5ESS000000000000UOM0009', jsonb_build_object('en-US', 'Meter', 'vi-VN', 'Mét'), 'm', '01K5ESS00000000000UOMCAT03', 'reference', 1, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000C', jsonb_build_object('en-US', 'Millimeter', 'vi-VN', 'Mi-li-mét'), 'mm', '01K5ESS00000000000UOMCAT03', 'smaller', 0.001, 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000B', jsonb_build_object('en-US', 'Centimeter', 'vi-VN', 'Xăng-ti-mét'), 'cm', '01K5ESS00000000000UOMCAT03', 'smaller', 0.01, 0.1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000A', jsonb_build_object('en-US', 'Kilometer', 'vi-VN', 'Ki-lô-mét'), 'km', '01K5ESS00000000000UOMCAT03', 'bigger_equal', 1000, 0.001, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000D', jsonb_build_object('en-US', 'Inch', 'vi-VN', 'Inch'), 'in', '01K5ESS00000000000UOMCAT03', 'smaller', 0.0254, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000E', jsonb_build_object('en-US', 'Foot', 'vi-VN', 'Foot'), 'ft', '01K5ESS00000000000UOMCAT03', 'smaller', 0.3048, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000S', jsonb_build_object('en-US', 'Yard', 'vi-VN', 'Yard'), 'yd', '01K5ESS00000000000UOMCAT03', 'smaller', 0.9144, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000T', jsonb_build_object('en-US', 'Mile', 'vi-VN', 'Dặm'), 'mi', '01K5ESS00000000000UOMCAT03', 'bigger_equal', 1609.344, 0.001, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		-- Volume, reference unit L
+		('01K5ESS000000000000UOM000F', jsonb_build_object('en-US', 'Liter', 'vi-VN', 'Lít'), 'L', '01K5ESS00000000000UOMCAT04', 'reference', 1, 0.001, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000G', jsonb_build_object('en-US', 'Milliliter', 'vi-VN', 'Mi-li-lít'), 'mL', '01K5ESS00000000000UOMCAT04', 'smaller', 0.001, 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000V', jsonb_build_object('en-US', 'Centiliter', 'vi-VN', 'Xen-ti-lít'), 'cL', '01K5ESS00000000000UOMCAT04', 'smaller', 0.01, 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000H', jsonb_build_object('en-US', 'Cubic Meter', 'vi-VN', 'Mét khối'), 'm³', '01K5ESS00000000000UOMCAT04', 'bigger_equal', 1000, 0.001, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000X', jsonb_build_object('en-US', 'US Fluid Ounce', 'vi-VN', 'Ao-xơ chất lỏng Mỹ'), 'fl oz', '01K5ESS00000000000UOMCAT04', 'smaller', 0.029573529563, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000J', jsonb_build_object('en-US', 'US Gallon', 'vi-VN', 'Ga-lông Mỹ'), 'gal', '01K5ESS00000000000UOMCAT04', 'bigger_equal', 3.785411784, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000W', jsonb_build_object('en-US', 'Imperial Gallon', 'vi-VN', 'Ga-lông Anh'), 'imp gal', '01K5ESS00000000000UOMCAT04', 'bigger_equal', 4.54609, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		-- Time, reference unit hour; a day is a calendar day, not a working day
+		('01K5ESS000000000000UOM000K', jsonb_build_object('en-US', 'Hour', 'vi-VN', 'Giờ'), 'h', '01K5ESS00000000000UOMCAT05', 'reference', 1, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000N', jsonb_build_object('en-US', 'Minute', 'vi-VN', 'Phút'), 'min', '01K5ESS00000000000UOMCAT05', 'smaller', 0.016666666667, 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000M', jsonb_build_object('en-US', 'Day', 'vi-VN', 'Ngày'), 'day', '01K5ESS00000000000UOMCAT05', 'bigger_equal', 24, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM000Y', jsonb_build_object('en-US', 'Week', 'vi-VN', 'Tuần'), 'wk', '01K5ESS00000000000UOMCAT05', 'bigger_equal', 168, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		-- Surface, reference unit m²
+		('01K5ESS000000000000UOM000Z', jsonb_build_object('en-US', 'Square Meter', 'vi-VN', 'Mét vuông'), 'm²', '01K5ESS00000000000UOMCAT06', 'reference', 1, 0.01, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM0010', jsonb_build_object('en-US', 'Square Centimeter', 'vi-VN', 'Xăng-ti-mét vuông'), 'cm²', '01K5ESS00000000000UOMCAT06', 'smaller', 0.0001, 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5ESS000000000000UOM0011', jsonb_build_object('en-US', 'Hectare', 'vi-VN', 'Héc-ta'), 'ha', '01K5ESS00000000000UOMCAT06', 'bigger_equal', 10000, 0.0001, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;
