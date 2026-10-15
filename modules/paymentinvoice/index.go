@@ -53,6 +53,10 @@ func (*PaymentInvoiceModule) ModelPrefix() string {
 	return modconstants.PaymentInvoiceModuleName
 }
 
+func (*PaymentInvoiceModule) HasUi() bool {
+	return true
+}
+
 func (*PaymentInvoiceModule) Deps() []string {
 	return []string{
 		"dynamicresource",

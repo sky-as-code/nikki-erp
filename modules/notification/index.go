@@ -40,6 +40,10 @@ func (*NotificationModule) ModelPrefix() string {
 	return modconstants.NotificationModuleName
 }
 
+func (*NotificationModule) HasUi() bool {
+	return false
+}
+
 // Deps implements NikkiModule.
 func (*NotificationModule) Deps() []string {
 	return []string{

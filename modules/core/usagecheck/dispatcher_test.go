@@ -115,6 +115,7 @@ func (this *testModule) LabelKey() string       { return this.name }
 func (this *testModule) Init() error            { return nil }
 func (this *testModule) IsInternal() bool       { return false }
 func (this *testModule) ModelPrefix() string    { return this.name }
+func (this *testModule) HasUi() bool            { return false }
 func (this *testModule) Version() semver.SemVer { return *semver.MustParseSemVer("v1.0.0") }
 func (this *testModule) Dependants() []string   { return this.dependants }
 

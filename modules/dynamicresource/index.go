@@ -27,6 +27,10 @@ func (*DynamicResourceModule) ModelPrefix() string {
 	return ModuleName
 }
 
+func (*DynamicResourceModule) HasUi() bool {
+	return false
+}
+
 // LabelKey implements InCodeModule.
 func (*DynamicResourceModule) LabelKey() string {
 	return "dynamicresource.moduleLabel"

@@ -67,6 +67,8 @@ CREATE TABLE "essential_modules" (
   "is_orphaned" boolean NOT NULL,
   "is_internal" boolean NOT NULL,
   "version" character varying NOT NULL,
+  "has_ui" boolean NOT NULL,
+  "model_prefix" character varying NULL,
   "etag" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,

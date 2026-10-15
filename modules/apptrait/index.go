@@ -35,6 +35,10 @@ func (*AppTraitModule) ModelPrefix() string {
 	return c.AppTraitModuleName
 }
 
+func (*AppTraitModule) HasUi() bool {
+	return false
+}
+
 // Deps implements NikkiModule.
 func (*AppTraitModule) Deps() []string {
 	return []string{}
