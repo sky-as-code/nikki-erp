@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -10,6 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	basemodel "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/settings/constants"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
@@ -120,8 +120,7 @@ func validatePayload(
 		field, ok := declared.Field(item.Name)
 		if !ok {
 			// AC-10: a name no schema declares is the caller's error, not a server fault.
-			vErrs.Append(*ft.NewValidationError(item.Name, "settings.unknown_setting",
-				"is not a setting of this module at this level"))
+			vErrs.Append(*coreSettings.UnknownSettingError(item.Name))
 			continue
 		}
 		// The policy in force *before* this write decides whether the caller may write at all.
@@ -147,16 +146,9 @@ func validatePayload(
 			allowOverride = *item.AllowOverride
 			allowOverrideChanged = true
 		}
-		// A nil value clears the setting back to its declared default, which every field accepts.
-		if item.Value != nil {
-			if _, vErr := field.Validate(item.Value, true); vErr != nil {
-				vErrs.Append(*vErr)
-				continue
-			}
-			if vErr := assertWithinDeclaredRange(field, item.Value); vErr != nil {
-				vErrs.Append(*vErr)
-				continue
-			}
+		if vErr := coreSettings.ValidateValue(field, item.Value); vErr != nil {
+			vErrs.Append(*vErr)
+			continue
 		}
 		validated = append(validated, validatedItem{
 			Name:                 item.Name,
@@ -323,77 +315,4 @@ func withSettingsTransaction(ctx corectx.Context, body func(tranxCtx corectx.Con
 		return err
 	}
 	return errors.Wrap(tranx.Commit(), "withSettingsTransaction")
-}
-
-// assertWithinDeclaredRange rejects a numeric value outside its field's declared bounds.
-//
-// This duplicates a check ModelField.Validate is supposed to perform, and does so deliberately.
-// Validate treats a numeric ZERO as an absent value platform-wide — isNilOrEmpty returns true for
-// it — so it returns before the range check and a submitted 0 is stored as a real value. For an
-// ordinary field that is harmless, but a settings value arrives straight from an API caller and is
-// read back as policy: a session timeout of 0 means every session in the tenant expires
-// immediately, locking everyone out through the interface that set it.
-//
-// Scoped to numbers, because zero is the only value the platform helper misreads. Fixing this in
-// isNilOrEmpty would change validation for every numeric field in the product, which is a larger
-// decision than this module should make on its own.
-func assertWithinDeclaredRange(field *dmodel.ModelField, raw any) *ft.ClientErrorItem {
-	number, isNumber := asFloat(raw)
-	if !isNumber {
-		return nil
-	}
-
-	limits, ok := declaredNumericRange(field)
-	if !ok {
-		return nil
-	}
-	if number < limits[0] || number > limits[1] {
-		return ft.NewValidationError(field.Name(), "settings.value_out_of_range",
-			fmt.Sprintf("must be between %v and %v", limits[0], limits[1]))
-	}
-	return nil
-}
-
-// asFloat reports whether a decoded JSON value is a number, in whatever concrete type it arrived
-// as. A JSON body decodes numbers as float64, but a value round-tripped through the model layer
-// can be an int32, so both are accepted.
-func asFloat(raw any) (float64, bool) {
-	switch number := raw.(type) {
-	case float64:
-		return number, true
-	case float32:
-		return float64(number), true
-	case int:
-		return float64(number), true
-	case int32:
-		return float64(number), true
-	case int64:
-		return float64(number), true
-	}
-	return 0, false
-}
-
-// declaredNumericRange reads a field's declared bounds, whatever slice type the data type
-// constructor stored them as.
-func declaredNumericRange(field *dmodel.ModelField) ([2]float64, bool) {
-	raw, ok := field.DataType().Options()[dmodel.FieldDataTypeOptRange]
-	if !ok {
-		return [2]float64{}, false
-	}
-
-	switch limits := raw.(type) {
-	case []int32:
-		if len(limits) == 2 {
-			return [2]float64{float64(limits[0]), float64(limits[1])}, true
-		}
-	case []int64:
-		if len(limits) == 2 {
-			return [2]float64{float64(limits[0]), float64(limits[1])}, true
-		}
-	case []int:
-		if len(limits) == 2 {
-			return [2]float64{float64(limits[0]), float64(limits[1])}, true
-		}
-	}
-	return [2]float64{}, false
 }

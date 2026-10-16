@@ -272,10 +272,10 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'essential_languages'
 	) THEN
 		INSERT INTO "essential_languages" (
-			"id", "name", "iso_code", "direction", "decimal_separator", "thousands_separator", "date_format", "time_format", "short_time_format", "first_day_of_week", "created_at", "etag"
+			"id", "name", "iso_code", "direction", "decimal_separator", "thousands_separator", "date_format", "time_format", "short_time_format", "first_day_of_week", "is_enabled", "created_at", "etag"
 		) VALUES
-		('01KZQC0000LANGUAGE0000EN00', 'English', 'en-US', 'ltr', '.', ',', 'MM/dd/yyyy', 'HH:mm:ss', 'HH:mm', 'sunday', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZQC0000LANGUAGE0000VI00', 'Tiếng Việt', 'vi-VN', 'ltr', ',', '.', 'dd/MM/yyyy', 'HH:mm:ss', 'HH:mm', 'monday', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01KZQC0000LANGUAGE0000EN00', 'English', 'en-US', 'ltr', '.', ',', 'MM/dd/yyyy', 'HH:mm:ss', 'HH:mm', 'sunday', TRUE, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZQC0000LANGUAGE0000VI00', 'Tiếng Việt', 'vi-VN', 'ltr', ',', '.', 'dd/MM/yyyy', 'HH:mm:ss', 'HH:mm', 'monday', TRUE, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT DO NOTHING;
 	END IF;
 END $$;

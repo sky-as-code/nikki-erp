@@ -11,6 +11,7 @@ import (
 // simulate and reverse. The thirteen tax resources are served by the engine itself.
 func InitApplicationServices() error {
 	return stdErr.Join(
+		deps.Register(NewSettingsApplicationServiceImpl),
 		deps.Register(services.NewTaxCalculationDomainServiceImpl),
 		deps.Register(NewTaxCalculationApplicationServiceImpl),
 

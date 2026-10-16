@@ -15,38 +15,6 @@ func (this GetSettingsRequest) ToQuery() it.GetSettingsQuery {
 	return it.GetSettingsQuery{ModuleKey: this.ModuleKey}
 }
 
-// SetSettingsRequest carries only the items the caller changed. An absent item is left untouched
-// rather than cleared, and — because writes are last-write-wins with no version check — sending an
-// unchanged item is how a concurrent edit to a field this caller never touched gets clobbered.
-type SetSettingsRequest struct {
-	ModuleKey string              `param:"module_key"`
-	Items     []SetSettingItemDto `json:"items"`
-}
-
-type SetSettingItemDto struct {
-	Name  string `json:"name"`
-	Value any    `json:"value"`
-
-	// AllowOverride is accepted only from a tenant-level caller; see SetSettingItem. Absent leaves
-	// the stored policy untouched, so an org or user PATCH never has to send it.
-	AllowOverride *bool `json:"allow_override,omitempty"`
-}
-
-func (this SetSettingsRequest) ToCommand() it.SetSettingsCommand {
-	items := make([]it.SetSettingItem, 0, len(this.Items))
-	for _, item := range this.Items {
-		items = append(items, it.SetSettingItem{
-			Name:          item.Name,
-			Value:         item.Value,
-			AllowOverride: item.AllowOverride,
-		})
-	}
-	return it.SetSettingsCommand{
-		ModuleKey: this.ModuleKey,
-		Items:     items,
-	}
-}
-
 // SettingItemResponse is one setting as the UI sees it: the value together with enough of its
 // declaration to render and validate a control without re-reading the schema.
 type SettingItemResponse struct {
@@ -96,14 +64,4 @@ func newSettingItemResponse(item it.SettingItem) SettingItemResponse {
 		response.Field = item.Field.ToSimplized()
 	}
 	return response
-}
-
-type SetSettingsResponse struct {
-	// Updated counts the rows written, including the children an enforced tenant setting fanned
-	// out onto, so a tenant admin can see that the change reached more than one row.
-	Updated int `json:"updated"`
-}
-
-func NewSetSettingsResponse(data it.SetSettingsResultData) SetSettingsResponse {
-	return SetSettingsResponse{Updated: data.Updated}
 }

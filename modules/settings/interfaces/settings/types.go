@@ -7,6 +7,7 @@ package settings
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
 )
 
 // RegisterSchemaCommand asks Settings to record one module's setting definitions for one level.
@@ -93,33 +94,11 @@ type GetEffectiveSettingsResultData struct {
 	Values map[string]any `json:"values"`
 }
 
-// SetSettingsCommand writes a partial set of changed items for one owner at one level.
-//
-// Only the items the caller actually changed belong here. An absent item is left untouched rather
-// than cleared, and — because writes are last-write-wins with no version check — submitting an
-// unchanged item is how a concurrent edit to a field this caller never touched gets clobbered.
-type SetSettingsCommand struct {
-	ModuleKey string
-	Items     []SetSettingItem
-}
-
-type SetSettingItem struct {
-	Name  string
-	Value any
-
-	// AllowOverride, when set, changes whether owners below the tenant may keep their own value.
-	//
-	// Only a tenant owner may send it: the flag is what locks the levels below, so an org or user
-	// setting it would be escalating their own privilege. Nil leaves the stored policy alone,
-	// which is what every non-tenant caller sends.
-	AllowOverride *bool
-}
-
-type SetSettingsResultData struct {
-	// Updated counts the rows written, including the children an enforced tenant setting fanned
-	// out onto.
-	Updated int
-}
+// The write contract is core's, so a feature module can persist its settings without naming this
+// module; these aliases keep this module's own code spelling them as before.
+type SetSettingsCommand = coreSettings.SetSettingsCommand
+type SetSettingItem = coreSettings.SetSettingItem
+type SetSettingsResultData = coreSettings.SetSettingsResultData
 
 // InitOwnerSettingsCommand seeds a newly created organization or user with its own copy of the
 // tenant's settings rows.

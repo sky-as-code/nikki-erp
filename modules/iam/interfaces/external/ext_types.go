@@ -61,11 +61,14 @@ type EffectiveSettingsExtService interface {
 }
 
 // LanguageExtService resolves the iso code a settings value carries into the formatting rules the
-// frontend renders numbers and dates with.
+// frontend renders numbers and dates with, and lists the languages a user may pick.
 type LanguageExtService interface {
 	GetLanguageByIsoCode(
 		ctx corectx.Context, query GetLanguageByIsoCodeQuery,
 	) (*GetLanguageByIsoCodeResult, error)
+	ListEnabledLanguages(
+		ctx corectx.Context, query ListEnabledLanguagesQuery,
+	) (*ListEnabledLanguagesResult, error)
 }
 
 // CurrencyExtService resolves the organization's configured currency into what it takes to render
@@ -95,11 +98,6 @@ const (
 	ThemeModeAuto = essentialSettings.ThemeModeAuto
 )
 
-// SupportedLanguages is the locale set the application ships translations for.
-func SupportedLanguages() []string {
-	return essentialSettings.SupportedLanguages
-}
-
 type RegisterSchemaCommand = itSettings.RegisterSchemaCommand
 type RegisterSchemaResult = itSettings.RegisterSchemaResult
 type InitOwnerSettingsCommand = itSettings.InitOwnerSettingsCommand
@@ -112,6 +110,8 @@ type GetEffectiveSettingsResult = itSettings.GetEffectiveSettingsResult
 
 type GetLanguageByIsoCodeQuery = essentialLanguage.GetLanguageByIsoCodeQuery
 type GetLanguageByIsoCodeResult = essentialLanguage.GetLanguageByIsoCodeResult
+type ListEnabledLanguagesQuery = essentialLanguage.ListEnabledLanguagesQuery
+type ListEnabledLanguagesResult = essentialLanguage.ListEnabledLanguagesResult
 
 type GetCurrencyByCodeQuery = essentialCurrency.GetCurrencyByCodeQuery
 type GetCurrencyByCodeResult = essentialCurrency.GetCurrencyByCodeResult

@@ -39,6 +39,7 @@ CREATE TABLE "essential_languages" (
   "time_format" character varying NOT NULL,
   "short_time_format" character varying NOT NULL,
   "first_day_of_week" character varying NOT NULL,
+  "is_enabled" boolean NULL,
   "etag" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,

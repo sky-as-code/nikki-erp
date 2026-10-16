@@ -55,17 +55,16 @@ func TestUserSettingsSchema_ThemeModeAcceptsAuto(t *testing.T) {
 		"a user who expressed no preference has not asked for either fixed theme")
 }
 
-// The language enum must be exactly the locale set the application ships, because there is no
-// fallback language: an unsupported locale renders every key as its raw namespace:key.
-func TestUserSettingsSchema_LanguageMatchesSupportedLocales(t *testing.T) {
+// The language is a code, not an enum: which codes are allowed is the essential_languages rows
+// marked is_enabled, checked by Essential's settings update rather than frozen into the schema.
+func TestUserSettingsSchema_LanguageIsAFreeCode(t *testing.T) {
 	schema := UserSettingsSchemaBuilder().Build()
 
 	field, ok := schema.Field(UserSettingLanguage)
 	require.True(t, ok)
 
-	values, ok := field.DataType().Options()[dmodel.FieldDataTypeOptEnumValues].([]string)
-	require.True(t, ok, "language must be an enum_string")
-	assert.ElementsMatch(t, SupportedLanguages, values)
+	_, isEnum := field.DataType().Options()[dmodel.FieldDataTypeOptEnumValues]
+	assert.False(t, isEnum, "language must not freeze the allowed codes into the schema")
 
 	// BR §53: vi-VN must not be hardcoded as the business default. The user context falls back to a
 	// display locale, but the schema itself declares no default language.

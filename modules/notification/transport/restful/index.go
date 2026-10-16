@@ -31,6 +31,9 @@ func InitRestfulHandlers() error {
 	if err != nil {
 		return err
 	}
+	if err := initSettingsV1(); err != nil {
+		return err
+	}
 
 	return deps.Invoke(func(route *echo.Group) error {
 		routeV1 := route.Group("/v1/notification")

@@ -7,10 +7,7 @@
 			"name": "system_language",
 			"label": "essential.settings.systemLanguage",
 			"description": "settings_desc.system_language",
-			"data_type": {
-				"type": "enum_string",
-				"values": ["en-US", "vi-VN"]
-			},
+			"data_type": { "type": "string", "min": 5, "max": 10 },
 			"metadata": { "allow_override": true }
 		},
 		{

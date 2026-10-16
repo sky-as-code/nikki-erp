@@ -6,6 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/config"
 	"github.com/sky-as-code/nikki-erp/modules"
 	c "github.com/sky-as-code/nikki-erp/modules/apptrait/constants"
+	"github.com/sky-as-code/nikki-erp/modules/apptrait/external"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	httpserverExt "github.com/sky-as-code/nikki-erp/modules/core/httpserver/external"
@@ -60,6 +61,7 @@ func (*AppTraitModule) Init() error {
 		config.GetDefaultConfigYaml,
 		httpserverExt.NewPermissionExtServiceImpl,
 		requestguard.NewStaticRequestGuardServiceImpl,
+		external.NewSettingsServiceImpl,
 		func() dyn.NewBaseDynamicRepositoryFn {
 			return baserepo.NewBaseDynamicRepository
 		},

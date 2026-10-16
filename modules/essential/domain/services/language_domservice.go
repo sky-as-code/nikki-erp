@@ -59,6 +59,29 @@ func (this *LanguageDomainServiceImpl) GetLanguageByIsoCode(
 	return &it.GetLanguageByIsoCodeResult{Data: found.Data, HasData: true}, nil
 }
 
+// enabledLanguagesLimit bounds the read; a catalogue of locales the product ships translations for
+// stays far below it.
+const enabledLanguagesLimit = 500
+
+func (this *LanguageDomainServiceImpl) ListEnabledLanguages(
+	ctx corectx.Context, query it.ListEnabledLanguagesQuery,
+) (*it.ListEnabledLanguagesResult, error) {
+	graph := dmodel.NewSearchGraph().
+		NewCondition(models.LanguageFieldIsEnabled, dmodel.Equals, true).
+		OrderBy(models.LanguageFieldName)
+	found, err := this.repo.Search(ctx, dyn.RepoSearchParam{Graph: graph, Page: 0, Size: enabledLanguagesLimit})
+	if err != nil {
+		return nil, errors.Wrap(err, "list enabled languages")
+	}
+	if found.ClientErrors.Count() > 0 {
+		return nil, errors.Wrap(found.ClientErrors.ToError(), "list enabled languages")
+	}
+	if !found.HasData {
+		return &it.ListEnabledLanguagesResult{Data: []models.Language{}, HasData: true}, nil
+	}
+	return &it.ListEnabledLanguagesResult{Data: found.Data.Items, HasData: true}, nil
+}
+
 func (this *LanguageDomainServiceImpl) SearchLanguages(ctx corectx.Context, query it.SearchLanguagesQuery) (*it.SearchLanguagesResult, error) {
 	return corecrud.Search[models.Language](ctx, corecrud.SearchParam{
 		Action: "search languages", DbRepoGetter: this.repo, Query: dyn.SearchQuery(query),
