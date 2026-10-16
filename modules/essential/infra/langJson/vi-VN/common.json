@@ -151,7 +151,7 @@
 	"import.unmapped": "(chưa gán)",
 	"import.unsupportedFile": "Chỉ hỗ trợ tệp .xlsx và .csv",
 	"import.updatedRows": "Đã cập nhật",
-	"insufficient_permission_hint": "Tính năng này yêu cầu (các) quyền sau:",
+	"insufficient_permission_hint": "Tính năng này yêu cầu quyền:",
 	"insufficient_permission_title": "Không đủ quyền",
 	"messages.access.denied": "Bạn không có quyền truy cập vào trang này",
 	"messages.delete.confirm": "Xác nhận xóa phần tử",

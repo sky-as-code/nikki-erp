@@ -151,7 +151,7 @@
 	"import.unmapped": "(not mapped)",
 	"import.unsupportedFile": "Only .xlsx and .csv files are supported",
 	"import.updatedRows": "Updated",
-	"insufficient_permission_hint": "This feature requires this/these entitlement/entitlements:",
+	"insufficient_permission_hint": "This feature requires permission:",
 	"insufficient_permission_title": "Insufficient Permission",
 	"messages.access.denied": "You do not have permission to access this page",
 	"messages.delete.confirm": "Delete confirmation",
