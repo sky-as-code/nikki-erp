@@ -19,6 +19,7 @@ const (
 	RoleFieldOwnerGroupId      = "owner_group_id"
 	RoleFieldIsPrivate         = "is_private"
 	RoleFieldIsRequestable     = "is_requestable"
+	RoleFieldIsSystem          = "is_system"
 	RoleFieldIsRequiredAttach  = "is_required_attachment"
 	RoleFieldIsRequiredComment = "is_required_comment"
 	RoleFieldOrgId             = "org_id"

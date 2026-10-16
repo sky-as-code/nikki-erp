@@ -183,6 +183,10 @@ BEGIN
 		('01KNHHJY19X4XW1ZRWD5955TD0', 'Sales Managers - All permissions', 'All permissions in Sales Department', '*:*:orgunit/01K1H8N3L0WX4Q6S8YRKT3D2C1', NULL, NULL, '01KNHHJY19FFBFSXDJSAP7N6Z2', 'orgunit', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C1', false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
 	END IF;
 
+	-- "User" is the system role every person holds. Flagged rather than assigned per user, so the
+	-- permission cache grants it to users who do not exist yet (iam_calc_user_perm).
+	UPDATE "iam_roles" SET "is_system" = TRUE WHERE "id" = '01KZJ5XRJDXSXZY0DKNNE6S086';
+
 	PERFORM iam_rebuild_all_user_perms();
 
 END $$;

@@ -228,14 +228,14 @@ func (this *DefaultApplicationServiceImpl) Exists(
 }
 
 // GetSchema serves the resource schema in the simplified shape the clients cache. Schema
-// metadata belongs to no org, so only the permission is checked.
+// metadata belongs to no org, so read in any org the caller belongs to is enough.
 func (this *DefaultApplicationServiceImpl) GetSchema(
 	ctx corectx.Context, _ GetSchemaQuery,
 ) (*GetSchemaResult, error) {
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionGetSchema); cErrs != nil {
 		return &GetSchemaResult{ClientErrors: *cErrs}, nil
 	}
-	if cErrs := this.AssertPermission(ctx, PermissionRead, nil); cErrs != nil {
+	if cErrs := this.assertReadInAnyOrg(ctx); cErrs != nil {
 		return &GetSchemaResult{ClientErrors: *cErrs}, nil
 	}
 	return &GetSchemaResult{Data: this.Schema().ToSimplized(), HasData: true}, nil
@@ -250,7 +250,7 @@ func (this *DefaultApplicationServiceImpl) ComputeField(
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionComputeField); cErrs != nil {
 		return &ComputeFieldResult{ClientErrors: *cErrs}, nil
 	}
-	if cErrs := this.AssertPermission(ctx, PermissionRead, nil); cErrs != nil {
+	if cErrs := this.assertReadInAnyOrg(ctx); cErrs != nil {
 		return &ComputeFieldResult{ClientErrors: *cErrs}, nil
 	}
 	return this.domSvc.ComputeField(ctx, cmd)

@@ -158,6 +158,12 @@ func (this *UserDomainServiceImpl) CreateUser(
 	if err := this.initUserPreferences(tranxCtx, &result.Data); err != nil {
 		return nil, err
 	}
+	// A new user holds no assignment yet, but does hold every system role: without this rebuild
+	// their cache stays empty, and the inbox, among others, refuses them until something else
+	// happens to rebuild it.
+	if err := this.permRepo.RebuildUserPermission(tranxCtx, *result.Data.GetId()); err != nil {
+		return nil, errors.Wrap(err, "create user")
+	}
 	return result, errors.Wrap(tranx.Commit(), "create user")
 }
 

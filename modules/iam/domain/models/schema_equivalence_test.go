@@ -77,6 +77,12 @@ func roleSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 				RequiredForCreate(),
 		).
 		Field(
+			dmodel.DefineField().Name(RoleFieldIsSystem).
+				DataType(dmodel.FieldDataTypeBoolean()).
+				Default(false).
+				Description(model.LangJson{"en-US": "Held by every user of the tenant, with no assignment row"}),
+		).
+		Field(
 			dmodel.DefineField().Name(RoleFieldIsRequiredAttach).
 				DataType(dmodel.FieldDataTypeBoolean()).
 				Default(false),

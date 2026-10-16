@@ -95,30 +95,8 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
-	-- The "User" role is the system role every person is meant to hold, yet nothing assigned it:
-	-- the permission cache (iam_calc_user_perm) is built from iam_role_user_assignments and
-	-- iam_group_user_rel alone, so a grant on an unassigned role reaches nobody, and the inbox
-	-- refused every seeded account at login. Assigned here, where the first grant that depends on
-	-- it lives. A user created later still needs the assignment -- see docs/problems/iam.
-	IF EXISTS (
-		SELECT FROM information_schema.tables
-		WHERE table_schema = 'public' AND table_name = 'iam_role_user_assignments'
-	) THEN
-		INSERT INTO "iam_role_user_assignments" (
-			"id", "created_at", "role_id", "receiver_user_id", "approver_id", "role_request_id", "expires_at"
-		) VALUES
-		('01M3NOTIF00000000000000051', NOW(), '01KZJ5XRJDXSXZY0DKNNE6S086', '01JWNMZ36QHC7CQQ748H9NQ6J6', '01JWNMZ36QHC7CQQ748H9NQ6J6', NULL, NULL), -- Admin Owner
-		('01M3NOTIF00000000000000052', NOW(), '01KZJ5XRJDXSXZY0DKNNE6S086', '01JWNXT3EY7FG47VDJTEPTDC98', '01JWNMZ36QHC7CQQ748H9NQ6J6', NULL, NULL), -- Nguyen Van An
-		('01M3NOTIF00000000000000053', NOW(), '01KZJ5XRJDXSXZY0DKNNE6S086', '01JWNXXTF8958VVYAV33MVVMDN', '01JWNMZ36QHC7CQQ748H9NQ6J6', NULL, NULL), -- Tran Thi Binh
-		('01M3NOTIF00000000000000054', NOW(), '01KZJ5XRJDXSXZY0DKNNE6S086', '01JZQFDH0N51Q3BFQFMFFGSCSV', '01JWNMZ36QHC7CQQ748H9NQ6J6', NULL, NULL), -- Le Van Cuong
-		('01M3NOTIF00000000000000055', NOW(), '01KZJ5XRJDXSXZY0DKNNE6S086', '01JZQFF9QEXH71P2CG9Y9MY8MM', '01JWNMZ36QHC7CQQ748H9NQ6J6', NULL, NULL), -- Pham Thi Dung
-		('01M3NOTIF00000000000000056', NOW(), '01KZJ5XRJDXSXZY0DKNNE6S086', '01JZQFFDKY8T4JB8R6NSY1331J', '01JWNMZ36QHC7CQQ748H9NQ6J6', NULL, NULL), -- Hoang Van Em
-		('01M3NOTIF00000000000000057', NOW(), '01KZJ5XRJDXSXZY0DKNNE6S086', '01JZQFGVKZCTV7S310W0BDMWCS', '01JWNMZ36QHC7CQQ748H9NQ6J6', NULL, NULL), -- Dang Thi Phuong
-		('01M3NOTIF00000000000000058', NOW(), '01KZJ5XRJDXSXZY0DKNNE6S086', '01JZQFY6EXRG0959Z95Y2EM3AM', '01JWNMZ36QHC7CQQ748H9NQ6J6', NULL, NULL), -- Vo Van Giang
-		('01M3NOTIF00000000000000059', NOW(), '01KZJ5XRJDXSXZY0DKNNE6S086', '01JZQFZFK6GM2D5X6MYHWH6FND', '01JWNMZ36QHC7CQQ748H9NQ6J6', NULL, NULL)  -- Bui Thi Hoa
-		ON CONFLICT ("id") DO NOTHING;
-	END IF;
-
+	-- The "User" role grants above reach every user through iam_roles.is_system (set in 1001004),
+	-- not through per-user assignments: the cache function grants a system role to all users.
 	-- Seeded grants reach the cache only through a rebuild, and the one in 1001004 ran before
 	-- this file's rows existed.
 	PERFORM iam_rebuild_all_user_perms();

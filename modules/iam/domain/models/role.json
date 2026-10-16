@@ -46,6 +46,14 @@
 			"required_for_create": true
 		},
 		{
+			"name": "is_system",
+			"data_type": "boolean",
+			"default_value": false,
+			"description": {
+				"en-US": "Held by every user of the tenant, with no assignment row"
+			}
+		},
+		{
 			"name": "is_required_attachment",
 			"data_type": "boolean",
 			"default_value": false

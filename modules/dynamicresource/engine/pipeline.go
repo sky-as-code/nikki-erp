@@ -126,9 +126,23 @@ func (this *DynamicResourceEngineImpl) assertPermission(
 		scope = *definition.PermissionScope
 	}
 
-	return requestguard.AssertPermission(ctx,
+	refused := requestguard.AssertPermission(ctx,
 		requestguard.PermFor(definition.Permission, this.ResourceName(), scope).InOrg(orgId),
 	)
+	if refused == nil || orgId != nil || scope != requestguard.ResourceScopeOrg {
+		return refused
+	}
+	// An org-scoped permission on an action that is not confined to an org (get_schema describes a
+	// shape that is the same everywhere): granted in any org the caller belongs to. Checking with no
+	// org matched only tenant grants, so an org-scoped reader could not load the schema of the very
+	// rows they may read.
+	for _, memberOrg := range ctx.GetPermissions().UserOrgIds.ToSlice() {
+		perm := requestguard.PermFor(definition.Permission, this.ResourceName(), scope).InOrg(&memberOrg)
+		if requestguard.AssertPermission(ctx, perm) == nil {
+			return nil
+		}
+	}
+	return refused
 }
 
 // resolveOrgScope enforces the action's org scoping and returns the org the request is confined
