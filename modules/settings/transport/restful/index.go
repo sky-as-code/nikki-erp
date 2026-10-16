@@ -32,18 +32,19 @@ func initSettingsV1() error {
 	})
 }
 
-// registerLevelRoutes exposes read and update once per level. The level is part of the path rather
-// than the payload, so that a caller holding org-level permission cannot reach the tenant level by
-// sending a different value.
+// registerLevelRoutes exposes the read once per level. The level is part of the path rather than a
+// query value, so that a caller holding org-level permission cannot reach the tenant level by
+// sending a different one.
+//
+// There is no write route here. A module writes its own settings at
+// `PATCH /v1/{module_key}/settings/:level`, where it can validate against its own data first, and
+// persists them through core's settings port; a generic write here would let a caller skip that.
 func registerLevelRoutes(routeV1 *echo.Group, settingsRest *v1.SettingsRest) {
 	routeV1.GET("/tenant/:module_key", settingsRest.GetTenantSettings, m.SmokeAuthz())
-	routeV1.PATCH("/tenant/:module_key", settingsRest.SetTenantSettings, m.SmokeAuthz())
 
 	routeV1.GET("/org/:module_key", settingsRest.GetOrgSettings, m.SmokeAuthz())
-	routeV1.PATCH("/org/:module_key", settingsRest.SetOrgSettings, m.SmokeAuthz())
 
 	routeV1.GET("/user/:module_key", settingsRest.GetUserPreferences, m.SmokeAuthz())
-	routeV1.PATCH("/user/:module_key", settingsRest.SetUserPreferences, m.SmokeAuthz())
 }
 
 // registerEngineRoutes exposes every Settings resource engine over HTTP.

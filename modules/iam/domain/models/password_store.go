@@ -24,7 +24,9 @@ const (
 )
 
 const (
-	PasswordStoreSchemaName = "authenticate_password_store"
+	// Named under the module's own prefix: the migration generator selects a module's schemas by
+	// ModelPrefix(), and the earlier "authenticate_" name made every iam regeneration drop this table.
+	PasswordStoreSchemaName = "iam_password_store"
 
 	PasswordStoreFieldId            = basemodel.FieldId
 	PasswordStoreFieldPrincipalType = "principal_type"

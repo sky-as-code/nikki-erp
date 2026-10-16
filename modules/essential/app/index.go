@@ -9,6 +9,7 @@ func InitApplicationServices() error {
 		NewLanguageApplicationServiceImpl,
 		NewModelMetadataApplicationServiceImpl,
 		NewModuleApplicationServiceImpl,
+		NewSettingsApplicationServiceImpl,
 		NewTagServiceImpl,
 		NewUomConversionApplicationServiceImpl,
 	)

@@ -7,8 +7,10 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
+	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
+	itSettings "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/settings"
 	v1 "github.com/sky-as-code/nikki-erp/modules/essential/transport/restful/v1"
 )
 
@@ -52,6 +54,7 @@ func initEssentialV1() error {
 			initModuleV1(routeV1),
 			initTagV1(routeV1),
 			initUomConversionV1(routeV1),
+			initSettingsV1(routeV1),
 		)
 	})
 }
@@ -110,13 +113,14 @@ func initLanguageV1(route *echo.Group) error {
 	return deps.Invoke(func(
 		languageRest *v1.LanguageRest,
 	) {
-		route.DELETE("/languages/:id", languageRest.DeleteLanguage)
+		route.DELETE("/languages/:id", languageRest.DeleteLanguage, m.SmokeAuthz())
 		route.GET("/languages/json", languageRest.GetLanguageJson)
+		route.GET("/languages/enabled", languageRest.ListEnabledLanguages, m.PublicUnauthorized)
 		route.GET("/languages/:id", languageRest.GetLanguage)
 		route.GET("/languages", languageRest.SearchLanguages)
 		route.POST("/languages/exists", languageRest.LanguageExists)
-		route.POST("/languages", languageRest.CreateLanguage)
-		route.PUT("/languages/:id", languageRest.UpdateLanguage)
+		route.POST("/languages", languageRest.CreateLanguage, m.SmokeAuthz())
+		route.PUT("/languages/:id", languageRest.UpdateLanguage, m.SmokeAuthz())
 	})
 }
 
@@ -168,5 +172,12 @@ func initUomConversionV1(route *echo.Group) error {
 	) {
 		route.POST("/uoms/convert", uomConversionRest.Convert, m.SmokeAuthz())
 		route.POST("/uoms/to_reference", uomConversionRest.ToReference, m.SmokeAuthz())
+	})
+}
+
+func initSettingsV1(route *echo.Group) error {
+	return deps.Invoke(func(settingsSvc itSettings.SettingsAppService) {
+		route.PATCH(coreSettings.UpdateSettingsRoutePath, coreSettings.UpdateSettingsHandler(settingsSvc.UpdateSettings),
+			m.SmokeAuthz())
 	})
 }

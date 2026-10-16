@@ -673,7 +673,8 @@ BEGIN
 		('01M3SALES00000000000000095', 'Mark ready', 'mark_ready', 'Confirm the fiscal details and release the instruction for issuance', '01M3SALES00000000000000090', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M3SALES00000000000000096', 'Revert to draft', 'revert_to_draft', 'Take a released instruction back for further correction', '01M3SALES00000000000000090', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M3SALES00000000000000097', 'Cancel', 'cancel', 'Withdraw a buyer''s request to be invoiced, before any document exists', '01M3SALES00000000000000090', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000098', 'Refresh from bill-to', 'refresh_from_bill_to', 'Re-copy the fiscal details from the business partner record', '01M3SALES00000000000000090', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		-- refresh_from_bill_to was seeded here with no route or assert behind it; removed so the seed
+		-- advertises no power the API does not offer. Re-add it alongside the action that checks it.
 
 		-- Attempts: read alone. See the note at the top of this file.
 		('01M3SALES00000000000000099', 'Read', 'read', NULL, '01M3SALES00000000000000091', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
@@ -762,6 +763,10 @@ BEGIN
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		('01M3SALES0000000000000009P', 'Read', 'read', NULL, '01M3SALES0000000000000009M', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		-- Update is what the attempt and reassignment actions assert (see the attempts note below):
+		-- commanding a dispense, recording its result and moving the target all change what this
+		-- delivery owes. Without the row no role built from the seed could do any of them.
+		('01M3SALES0000000000000009Y', 'Update', 'update', 'Command or record a delivery attempt, or move where it is fulfilled from', '01M3SALES0000000000000009M', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M3SALES0000000000000009Q', 'Read', 'read', NULL, '01M3SALES0000000000000009N', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;

@@ -30,6 +30,10 @@ const (
 // rows behind it".
 const PermissionReadProductStock = "read_product_stock"
 
+// PermissionGenerateVariants is its own power rather than update: regenerating can create and
+// archive many variant rows at once, which a role allowed to rename a template need not hold.
+const PermissionGenerateVariants = "generate_variants"
+
 // The movement operations of a transfer.
 const (
 	PermissionConfirm                = "confirm"

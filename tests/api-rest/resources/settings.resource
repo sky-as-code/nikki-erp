@@ -9,6 +9,7 @@ Documentation     Settings-module helpers. The module stores two things: the sch
 ...               not exercise the registration path the product actually uses.
 ...               All keywords expect an authorized session with alias "api".
 Library           Collections
+Library           String
 Resource          ${CURDIR}/../nikki_api/auth.resource
 Resource          ${CURDIR}/../nikki_api/assertions.resource
 Resource          ${CURDIR}/../nikki_api/data.resource
@@ -71,8 +72,13 @@ Get Settings At Level
 Set Settings At Level
     [Documentation]    Writes a partial set of changed items. Only the items named here are
     ...    touched; everything else keeps its stored value.
+    ...
+    ...    The write goes to the owning module's own endpoint, /v1/{module_key}/settings/{level}:
+    ...    Settings serves reads only. ${level_api} is still the read path, so callers name a
+    ...    level the same way for both; its last segment is the level.
     [Arguments]    ${level_api}    ${items}    ${module_key}=${SETTINGS_MODULE_KEY}    ${alias}=api    ${expected_status}=${NONE}
-    ${resp}=    PATCH On Session    ${alias}    ${level_api}/${module_key}
+    ${level}=    Fetch From Right    ${level_api}    /
+    ${resp}=    PATCH On Session    ${alias}    /v1/${module_key}/settings/${level}
     ...    json=${{ {'items': $items} }}    expected_status=${expected_status}
     RETURN    ${resp}
 

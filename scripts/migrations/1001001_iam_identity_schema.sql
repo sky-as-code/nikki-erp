@@ -1,19 +1,3 @@
--- Create "iam_resources" table
-CREATE TABLE "iam_resources" (
-  "id" character varying NOT NULL,
-  "name" character varying NOT NULL,
-  "code" character varying NOT NULL,
-  "description" character varying NULL,
-  "owner_type" character varying NOT NULL,
-  "max_scope" character varying NOT NULL,
-  "min_scope" character varying NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "etag" character varying NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "iam_resources_code_ukey" UNIQUE ("code"),
-  CONSTRAINT "iam_resources_name_ukey" UNIQUE ("name")
-);
 -- Create "iam_attempts" table
 CREATE TABLE "iam_attempts" (
   "id" character varying NOT NULL,
@@ -54,6 +38,22 @@ CREATE TABLE "iam_password_stores" (
   "expires_at" timestamptz NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "iam_pwd_stores_tid_princ_type_princ_id_type_ukey" UNIQUE ("principal_type", "principal_id", "type")
+);
+-- Create "iam_resources" table
+CREATE TABLE "iam_resources" (
+  "id" character varying NOT NULL,
+  "name" character varying NOT NULL,
+  "code" character varying NOT NULL,
+  "description" character varying NULL,
+  "owner_type" character varying NOT NULL,
+  "max_scope" character varying NOT NULL,
+  "min_scope" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "iam_resources_code_ukey" UNIQUE ("code"),
+  CONSTRAINT "iam_resources_name_ukey" UNIQUE ("name")
 );
 -- Create "iam_actions" table
 CREATE TABLE "iam_actions" (
@@ -141,6 +141,7 @@ CREATE TABLE "iam_roles" (
   "owner_user_id" character varying NULL,
   "is_private" boolean NOT NULL,
   "is_requestable" boolean NOT NULL,
+  "is_system" boolean NULL,
   "is_required_attachment" boolean NULL,
   "is_required_comment" boolean NULL,
   "org_id" character varying NULL,

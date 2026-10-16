@@ -87,6 +87,34 @@ WITH role_entitlements AS (
 		LEFT JOIN iam_resources res ON res.id = a.resource_id
 	WHERE (p_user_id IS NULL OR gur.user_id = p_user_id)
 		AND (p_role_id IS NULL OR r.id = p_role_id)
+	UNION ALL
+	-- System roles (iam_roles.is_system): held by every user with no assignment row, so a person
+	-- created tomorrow reads their own inbox without anyone remembering to grant it. Recorded as a
+	-- direct grant whose source is the role itself, which keeps the cache's key and its source_kind
+	-- enum unchanged.
+	SELECT
+		u.id            AS user_id,
+		e.id            AS ent_id,
+		e.expression    AS ent_expression,
+		a.id            AS action_id,
+		res.id          AS resource_id,
+		res.code        AS resource_code,
+		NULL::varchar   AS role_group_assignment_id,
+		NULL::varchar   AS role_user_assignment_id,
+		e.scope,
+		e.org_id,
+		NULL::varchar   AS group_membership_id,
+		e.org_unit_id,
+		'direct'::varchar AS source_kind,
+		r.id              AS source_id,
+		NULL::timestamptz AS expires_at
+	FROM iam_users u
+		JOIN iam_roles r ON r.is_system = TRUE AND r.is_archived = FALSE
+		JOIN iam_entitlements e ON e.role_id = r.id AND e.is_archived = FALSE
+		LEFT JOIN iam_actions a ON a.id = e.action_id AND a.resource_id = e.resource_id
+		LEFT JOIN iam_resources res ON res.id = a.resource_id
+	WHERE (p_user_id IS NULL OR u.id = p_user_id)
+		AND (p_role_id IS NULL OR r.id = p_role_id)
 )
 SELECT * FROM role_entitlements re;
 $$;

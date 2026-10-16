@@ -60,7 +60,7 @@ func InitRestfulHandlers() error {
 		v1.NewSalesManualDiscountRest,
 		v1.NewSalesIntegrationOutboxRest,
 	)
-	return stdErr.Join(err, initSalesV1())
+	return stdErr.Join(err, initSalesV1(), initSettingsV1())
 }
 
 func initSalesV1() error {

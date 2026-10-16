@@ -71,6 +71,13 @@ type GetLanguageByIsoCodeQuery struct {
 // nothing org- or tenant-scoped to withhold.
 type GetLanguageByIsoCodeResult = dyn.OpResult[models.Language]
 
+// ListEnabledLanguagesQuery lists the languages a user may pick, ordered by name. Like
+// GetLanguageByIsoCodeQuery it is a lookup for other modules and the settings write path, not a
+// user-issued cqrs request.
+type ListEnabledLanguagesQuery struct{}
+
+type ListEnabledLanguagesResult = dyn.OpResult[[]models.Language]
+
 type GetLanguageJsonQuery struct {
 	LanguageCode string `json:"language_code" query:"language_code"`
 	ModuleName   string `json:"module_name" query:"module_name"`

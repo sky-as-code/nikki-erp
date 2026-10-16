@@ -174,10 +174,11 @@ func idToStringPtr(id *model.Id) *string {
 // settings or catalogue read that fails degrades the entry rather than the session: a user who
 // cannot load their currency should still be able to work.
 func (this UserRest) accountSettings(reqCtx corectx.Context) map[string]any {
+	enabled := this.enabledLanguageCodes(reqCtx)
 	settings := map[string]any{
 		"language":            fallbackLanguage(),
 		"timezone":            "Asia/Ho_Chi_Minh",
-		"supported_languages": itExt.SupportedLanguages(),
+		"supported_languages": enabled,
 		"theme_mode":          itExt.ThemeModeAuto,
 	}
 
@@ -190,7 +191,7 @@ func (this UserRest) accountSettings(reqCtx corectx.Context) map[string]any {
 	if mode, ok := values[essentialKey(itExt.SettingThemeMode)].(string); ok {
 		settings["theme_mode"] = mode
 	}
-	if language := this.resolveLanguage(reqCtx, values); language != nil {
+	if language := this.resolveLanguage(reqCtx, values, enabled); language != nil {
 		settings["language"] = *language
 	}
 	if currency := this.resolveCurrency(reqCtx, values); currency != nil {
@@ -212,13 +213,15 @@ func essentialKey(name string) string {
 // is sorted in is the language the frontend formats it in. Keep the two in step; they are separate
 // because that resolver yields a language code for the search layer while this needs the whole
 // formatting record.
-func (this UserRest) resolveLanguage(ctx corectx.Context, values map[string]any) *itCore.Language {
+func (this UserRest) resolveLanguage(
+	ctx corectx.Context, values map[string]any, enabled []string,
+) *itCore.Language {
 	for _, key := range []string{
 		essentialKey(itExt.SettingLanguage),
 		essentialKey(itExt.SettingSystemLanguage),
 	} {
 		isoCode, ok := values[key].(string)
-		if !ok || !array.Contains(itExt.SupportedLanguages(), isoCode) {
+		if !ok || !array.Contains(enabled, isoCode) {
 			continue
 		}
 		if language := this.loadLanguage(ctx, isoCode); language != nil {
@@ -226,6 +229,24 @@ func (this UserRest) resolveLanguage(ctx corectx.Context, values map[string]any)
 		}
 	}
 	return nil
+}
+
+// enabledLanguageCodes lists the languages a user may pick. A failed read degrades to the fallback
+// language alone rather than an empty list: the frontend initialises i18n from this list, and an
+// empty one would leave it with nothing to render.
+func (this UserRest) enabledLanguageCodes(ctx corectx.Context) []string {
+	fallback := []string{model.DefaultLanguageCode}
+	found, err := this.LanguageSvc.ListEnabledLanguages(ctx, itExt.ListEnabledLanguagesQuery{})
+	if err != nil || found == nil || !found.HasData || len(found.Data) == 0 {
+		return fallback
+	}
+	codes := make([]string, 0, len(found.Data))
+	for _, language := range found.Data {
+		if code := language.GetIsoCode(); code != nil {
+			codes = append(codes, *code)
+		}
+	}
+	return codes
 }
 
 func (this UserRest) loadLanguage(ctx corectx.Context, isoCode string) *itCore.Language {

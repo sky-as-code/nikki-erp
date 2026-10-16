@@ -8,6 +8,7 @@ import (
 
 func InitApplicationServices() error {
 	err := errors.Join(
+		deps.Register(NewSettingsApplicationServiceImpl),
 		deps.Register(NewAttemptApplicationServiceImpl),
 		deps.Register(NewLoginApplicationServiceImpl),
 		deps.Register(NewPasswordApplicationServiceImpl),

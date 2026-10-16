@@ -17,14 +17,14 @@ An Org May Not Change Its Own Override Policy
     ...    than having the field quietly dropped — a silent drop would let it believe it had
     ...    unlocked a setting the tenant administrator had locked.
     ${resp}=    Set Settings At Level    ${SETTINGS_ORG_API}
-    ...    ${{ [{'name': 'system_timezone', 'value': 'Asia/Ho_Chi_Minh', 'allow_override': True}] }}
+    ...    ${{ [{'name': 'system_timezone', 'value': 'Asia/Ho_Chi_Minh', 'allow_override': True}] }}    expected_status=any
     Response Status Should Be    ${resp}    400
 
 A User May Not Change Their Own Override Policy
     [Documentation]    Same rule one level down. A user is the owner the flag exists to constrain,
     ...    so they are the last actor who may relax it.
     ${resp}=    Set Settings At Level    ${SETTINGS_USER_API}
-    ...    ${{ [{'name': 'timezone', 'value': 'Europe/London', 'allow_override': True}] }}
+    ...    ${{ [{'name': 'timezone', 'value': 'Europe/London', 'allow_override': True}] }}    expected_status=any
     Response Status Should Be    ${resp}    400
 
 Omitting The Flag Leaves The Stored Policy Alone

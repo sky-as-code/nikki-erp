@@ -1,13 +1,15 @@
 package constants
 
+import coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
+
 const SettingsModuleName = "settings"
 
 // Setting levels. A level says which kind of owner a setting belongs to, and is copied from the
 // registered schema onto every record built from it.
 const (
-	LevelTenant = "tenant"
-	LevelOrg    = "org"
-	LevelUser   = "user"
+	LevelTenant = coreSettings.LevelTenant
+	LevelOrg    = coreSettings.LevelOrg
+	LevelUser   = coreSettings.LevelUser
 )
 
 // Owner types. They mirror the levels, but describe the row's actual owner rather than the

@@ -94,4 +94,10 @@ BEGIN
 		('01M3NOTIF00000000000000042', 'User - Mark Own Notifications Read', 'Mark your own notifications as read', 'mark_read:notification_recipient:org', '01M3NOTIF00000000000000023', '01M3NOTIF00000000000000002', '01KZJ5XRJDXSXZY0DKNNE6S086', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
+
+	-- The "User" role grants above reach every user through iam_roles.is_system (set in 1001004),
+	-- not through per-user assignments: the cache function grants a system role to all users.
+	-- Seeded grants reach the cache only through a rebuild, and the one in 1001004 ran before
+	-- this file's rows existed.
+	PERFORM iam_rebuild_all_user_perms();
 END $$;

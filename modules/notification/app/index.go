@@ -1,11 +1,12 @@
 package app
 
+import deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+
 // InitApplicationServices registers what the application layer contributes to the container.
 //
-// It is empty by design: every application service this module has is built by its resource onion
-// in dynamicengines/, because each one needs the composable default the onion constructs. There is
-// nothing left for this to register, and the function exists so the module's Init() reads like
-// every other module's.
+// Every resource application service is built by its resource onion in dynamicengines/, because
+// each one needs the composable default the onion constructs. The settings update is the only
+// service registered here: it belongs to no resource.
 func InitApplicationServices() error {
-	return nil
+	return deps.Register(NewSettingsApplicationServiceImpl)
 }

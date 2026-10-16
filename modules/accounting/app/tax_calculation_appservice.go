@@ -25,8 +25,8 @@ func NewTaxCalculationApplicationServiceImpl(
 func (this *TaxCalculationApplicationServiceImpl) Calculate(
 	ctx corectx.Context, request it.CalculationRequest,
 ) (*it.CalculateResult, error) {
-	if cErrs := assertPermission(ctx, drif.PermissionRead,
-		models.TaxSchemaName, c.ResourceScopeOrg); cErrs != nil {
+	if cErrs := assertPermissionInOrg(ctx, drif.PermissionRead,
+		models.TaxSchemaName, c.ResourceScopeOrg, request.OrgId); cErrs != nil {
 		return &it.CalculateResult{ClientErrors: *cErrs}, nil
 	}
 	if cErrs := validateCalculationRequest(request); cErrs != nil {
@@ -46,8 +46,8 @@ func (this *TaxCalculationApplicationServiceImpl) Simulate(
 ) (*it.SimulateResult, error) {
 	// The simulator has its own entitlement rather than reusing read: it discloses the whole rule
 	// base, not just the rules one order hits.
-	if cErrs := assertPermission(ctx, c.ActionSimulate,
-		models.TaxSchemaName, c.ResourceScopeOrg); cErrs != nil {
+	if cErrs := assertPermissionInOrg(ctx, c.ActionSimulate,
+		models.TaxSchemaName, c.ResourceScopeOrg, request.OrgId); cErrs != nil {
 		return &it.SimulateResult{ClientErrors: *cErrs}, nil
 	}
 	if cErrs := validateCalculationRequest(request); cErrs != nil {
@@ -63,8 +63,8 @@ func (this *TaxCalculationApplicationServiceImpl) Simulate(
 func (this *TaxCalculationApplicationServiceImpl) ReverseFull(
 	ctx corectx.Context, request it.FullReversalRequest,
 ) (*it.ReverseResult, error) {
-	if cErrs := assertPermission(ctx, drif.PermissionRead,
-		models.TaxSchemaName, c.ResourceScopeOrg); cErrs != nil {
+	if cErrs := assertPermissionInOrg(ctx, drif.PermissionRead,
+		models.TaxSchemaName, c.ResourceScopeOrg, request.OrgId); cErrs != nil {
 		return &it.ReverseResult{ClientErrors: *cErrs}, nil
 	}
 	if cErrs := validateReversal(request.TaxDate, len(request.Components)); cErrs != nil {
@@ -77,8 +77,8 @@ func (this *TaxCalculationApplicationServiceImpl) ReverseFull(
 func (this *TaxCalculationApplicationServiceImpl) ReversePartial(
 	ctx corectx.Context, request it.PartialReversalRequest,
 ) (*it.ReverseResult, error) {
-	if cErrs := assertPermission(ctx, drif.PermissionRead,
-		models.TaxSchemaName, c.ResourceScopeOrg); cErrs != nil {
+	if cErrs := assertPermissionInOrg(ctx, drif.PermissionRead,
+		models.TaxSchemaName, c.ResourceScopeOrg, request.OrgId); cErrs != nil {
 		return &it.ReverseResult{ClientErrors: *cErrs}, nil
 	}
 	if cErrs := validateReversal(request.TaxDate, len(request.Components)); cErrs != nil {
@@ -106,7 +106,7 @@ func (this *TaxCalculationApplicationServiceImpl) assertOverrideAllowed(
 	if !overridden {
 		return nil
 	}
-	return assertPermission(ctx, c.ActionOverride, models.TaxSchemaName, c.ResourceScopeOrg)
+	return assertPermissionInOrg(ctx, c.ActionOverride, models.TaxSchemaName, c.ResourceScopeOrg, request.OrgId)
 }
 
 // validateCalculationRequest refuses a request the engine could not answer meaningfully. These

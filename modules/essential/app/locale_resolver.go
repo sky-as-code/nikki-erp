@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/array"
 	cmodel "github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -53,15 +52,19 @@ func NewUserLocaleResolver(settingsSvc itExt.EffectiveSettingsExtService) dyn.Lo
 	}
 }
 
-// supportedLanguageOf accepts a stored setting value only if it is a language the application
-// actually ships translations for, and returns it in canonical BCP47 form.
+// supportedLanguageOf returns a stored setting value in canonical BCP47 form, or nil when it is not
+// a language code at all.
+//
+// It does not re-check that the language is enabled: the settings write path refuses a disabled
+// one, and querying essential_languages here would add a read to every search request. A language
+// disabled after a user stored it only changes which LangJson key a list sorts by.
 //
 // The canonicalization is what makes the jsonb lookup correct: LangJson.SanitizeClone rewrites every
 // key through the same function on write, so a locale that skipped it would look up a key spelled
 // differently from the one stored and silently match nothing.
 func supportedLanguageOf(value any) *cmodel.LanguageCode {
 	code, ok := value.(string)
-	if !ok || !array.Contains(settings.SupportedLanguages, code) {
+	if !ok || code == "" {
 		return nil
 	}
 	canonical, err := cmodel.ToBCP47LanguageCode(code)

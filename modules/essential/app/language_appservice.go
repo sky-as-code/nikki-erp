@@ -28,10 +28,16 @@ type LanguageApplicationServiceImpl struct {
 }
 
 func (this *LanguageApplicationServiceImpl) CreateLanguage(ctx corectx.Context, cmd it.CreateLanguageCommand) (*it.CreateLanguageResult, error) {
+	if cErr := assertLanguagePermission(ctx, actionCreate); cErr != nil {
+		return &it.CreateLanguageResult{ClientErrors: *cErr}, nil
+	}
 	return this.languageSvc.CreateLanguage(ctx, cmd)
 }
 
 func (this *LanguageApplicationServiceImpl) DeleteLanguage(ctx corectx.Context, cmd it.DeleteLanguageCommand) (*it.DeleteLanguageResult, error) {
+	if cErr := assertLanguagePermission(ctx, actionDelete); cErr != nil {
+		return &it.DeleteLanguageResult{ClientErrors: *cErr}, nil
+	}
 	return this.languageSvc.DeleteLanguage(ctx, cmd)
 }
 
@@ -47,6 +53,12 @@ func (this *LanguageApplicationServiceImpl) GetLanguageByIsoCode(
 	ctx corectx.Context, query it.GetLanguageByIsoCodeQuery,
 ) (*it.GetLanguageByIsoCodeResult, error) {
 	return this.languageSvc.GetLanguageByIsoCode(ctx, query)
+}
+
+func (this *LanguageApplicationServiceImpl) ListEnabledLanguages(
+	ctx corectx.Context, query it.ListEnabledLanguagesQuery,
+) (*it.ListEnabledLanguagesResult, error) {
+	return this.languageSvc.ListEnabledLanguages(ctx, query)
 }
 
 func (this *LanguageApplicationServiceImpl) GetLanguageJson(ctx corectx.Context, query it.GetLanguageJsonQuery) (*it.GetLanguageJsonResult, error) {
@@ -119,5 +131,8 @@ func (this *LanguageApplicationServiceImpl) SearchLanguages(ctx corectx.Context,
 }
 
 func (this *LanguageApplicationServiceImpl) UpdateLanguage(ctx corectx.Context, cmd it.UpdateLanguageCommand) (*it.UpdateLanguageResult, error) {
+	if cErr := assertLanguagePermission(ctx, actionUpdate); cErr != nil {
+		return &it.UpdateLanguageResult{ClientErrors: *cErr}, nil
+	}
 	return this.languageSvc.UpdateLanguage(ctx, cmd)
 }

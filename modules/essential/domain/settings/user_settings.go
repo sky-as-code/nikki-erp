@@ -36,17 +36,6 @@ const (
 	ThemeModeAuto  = "auto"
 )
 
-// SupportedLanguages is the set of locales the application ships translations for.
-//
-// A value outside this set is rejected rather than stored: an unsupported locale renders every key
-// as its raw namespace:key, so accepting one would break the interface for the user who chose it.
-// There is no fallback language, which is what makes this list load-bearing rather than advisory.
-//
-// The same list is spelled out as the enum values of `language` in user_settings.json and of
-// `system_language` in org_settings.json. The duplication is deliberate — the JSON is the schema and
-// this is what Go code validates against — and the smoke tests assert the two stay equal.
-var SupportedLanguages = []string{"en-US", "vi-VN"}
-
 // UserSettingsSchemaName is the name Essential registers its user-level settings under. It is not
 // a table: the schema describes values that settings_records stores, and only the settings module
 // owns tables.

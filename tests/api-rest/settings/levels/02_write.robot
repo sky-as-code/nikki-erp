@@ -69,3 +69,19 @@ Writing A Value Outside The Enum Is Refused
     ...    ${{ [{'name': 'theme_mode', 'value': 'ultraviolet'}] }}    expected_status=any
     Should Be True    400 <= ${resp.status_code} < 500
     ...    msg=A value outside the declared enum must be refused.
+
+A Language That Is Not Enabled Is Refused
+    [Documentation]    The allowed languages are the essential_languages rows marked is_enabled,
+    ...    checked by Essential's own settings update. A well-formed code with no enabled row
+    ...    would render every key as its raw namespace:key to the user who picked it.
+    [Tags]    negative
+    ${resp}=    Set Settings At Level    ${SETTINGS_USER_API}
+    ...    ${{ [{'name': $SETTING_LANGUAGE, 'value': 'fr-FR'}] }}    expected_status=any
+    Response Status Should Be    ${resp}    400
+    Should Contain    ${resp.text}    essential.language_not_enabled
+
+An Enabled Language Is Accepted
+    ${resp}=    Set Settings At Level    ${SETTINGS_USER_API}
+    ...    ${{ [{'name': $SETTING_LANGUAGE, 'value': 'vi-VN'}] }}
+    Response Status Should Be    ${resp}    200
+    Set Settings At Level    ${SETTINGS_USER_API}    ${{ [{'name': $SETTING_LANGUAGE, 'value': None}] }}

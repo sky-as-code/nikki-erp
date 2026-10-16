@@ -17,6 +17,7 @@ func InitRestfulHandlers() error {
 	return stdErr.Join(
 		deps.Register(v1.NewTaxCalculationRest),
 		initAccountingV1(),
+		initSettingsV1(),
 	)
 }
 

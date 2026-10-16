@@ -33,6 +33,7 @@ func InitRestfulHandlers() error {
 		initIamDirectoryV1(),
 		initIamAuthorizationV1(),
 		initIamSignInV1(),
+		initSettingsV1(),
 	)
 	return err
 }

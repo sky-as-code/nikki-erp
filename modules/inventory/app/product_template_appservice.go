@@ -43,7 +43,7 @@ type ProductTemplateApplicationServiceImpl struct {
 func (this *ProductTemplateApplicationServiceImpl) GenerateVariants(
 	ctx corectx.Context, cmd itProduct.GenerateTemplateVariantsCommand,
 ) (*itProduct.GenerateTemplateVariantsResult, error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionUpdate, cmd); err != nil || cErrs != nil {
+	if cErrs, err := assertRecordAction(this, ctx, PermissionGenerateVariants, cmd); err != nil || cErrs != nil {
 		return anyFailure(cErrs, err)
 	}
 

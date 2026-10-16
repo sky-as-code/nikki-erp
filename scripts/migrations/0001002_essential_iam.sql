@@ -49,3 +49,31 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
+
+
+-- Languages: the catalogue is public to read (every page, the sign-in page included, renders from
+-- it), so only the writes are actions. Tenant-wide reference data, hence tenant scope only.
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_resources'
+	) THEN
+		INSERT INTO "iam_resources" (
+			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
+		) VALUES
+		('01M51EPZ8K0CA51CB8DX821SM3', 'Language', 'essential_language', 'Languages the application can be shown in', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_actions'
+	) THEN
+		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
+		('01M51EPZ8KZC4XAGSH6VMSQY2J', 'Create', 'create', NULL, '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M51EPZ8K971CG6CDVQR2HM4C', 'Update', 'update', NULL, '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M51EPZ8KAM7Q05W89H7KMFN4', 'Delete', 'delete', NULL, '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+END $$;

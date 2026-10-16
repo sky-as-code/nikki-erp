@@ -10,6 +10,7 @@ import (
 // InitApplicationServices registers the Sales application services in the DI container.
 func InitApplicationServices() error {
 	return errors.Join(
+		deps.Register(NewSettingsApplicationServiceImpl),
 		deps.Register(NewSalesChannelApplicationServiceImpl),
 		deps.Register(NewSalesPointApplicationServiceImpl),
 		deps.Register(NewChannelPaymentApplicationServiceImpl),

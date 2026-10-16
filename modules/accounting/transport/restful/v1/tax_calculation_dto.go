@@ -12,6 +12,10 @@ import (
 // decimal.Decimal, which parses a JSON string exactly; responses emit .String().
 
 type CalculateTaxRequest struct {
+	// OrgId is the org the document belongs to; the permission is asserted there, so an org-scoped
+	// grant answers. Optional: absent, only a tenant-wide grant satisfies the check.
+	OrgId string `json:"org_id"`
+
 	OperationType string `json:"operation_type"`
 
 	// TaxDate is mandatory and never defaulted from the server clock.
@@ -41,6 +45,7 @@ func (this CalculateTaxRequest) ToCommand() it.CalculationRequest {
 	}
 
 	return it.CalculationRequest{
+		OrgId:                  this.OrgId,
 		OperationType:          models.OperationType(this.OperationType),
 		TaxDate:                this.TaxDate,
 		CurrencyCode:           this.CurrencyCode,

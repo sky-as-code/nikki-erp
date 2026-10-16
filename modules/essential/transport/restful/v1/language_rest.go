@@ -120,3 +120,17 @@ func (this LanguageRest) UpdateLanguage(echoCtx *echo.Context) (err error) {
 		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk)
 }
+
+// ListEnabledLanguages serves the languages a user may pick. Public on purpose: the sign-in page
+// offers a language switch before anyone has a session.
+func (this LanguageRest) ListEnabledLanguages(echoCtx *echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST list enabled languages"); e != nil {
+			err = e
+		}
+	}()
+	return httpserver.ServeRequest2(echoCtx, this.svc.ListEnabledLanguages,
+		func(ListEnabledLanguagesRequest) it.ListEnabledLanguagesQuery { return it.ListEnabledLanguagesQuery{} },
+		NewListEnabledLanguagesResponse,
+		httpserver.JsonOk)
+}

@@ -39,6 +39,7 @@ const (
 	LanguageFieldTimeFormat         = "time_format"
 	LanguageFieldShortTimeFormat    = "short_time_format"
 	LanguageFieldFirstDayOfWeek     = "first_day_of_week"
+	LanguageFieldIsEnabled          = "is_enabled"
 )
 
 func LanguageSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -57,7 +58,7 @@ func LanguageSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			dmodel.DefineField().
 				Name(LanguageFieldIsoCode).
 				// Hyphenated BCP47, not the underscore form: every consumer of an iso code speaks
-				// hyphen -- SupportedLanguages, the stored `language` setting, the LangJson document
+				// hyphen -- the stored `language` setting, the LangJson document
 				// keys, ToBCP47LanguageCode, i18next on the frontend. An underscore code could not
 				// have been matched by any of them.
 				DataType(dmodel.FieldDataTypeString(5, 10, dmodel.FieldDataTypeStringOpts{
@@ -118,6 +119,14 @@ func LanguageSchemaBuilder() *dmodel.ModelSchemaBuilder {
 					string(WeekDaySunday),
 				})).
 				RequiredForCreate(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(LanguageFieldIsEnabled).
+				// The set of languages a user may pick. False by default: a language created before its
+				// translations ship would render every key as its raw namespace:key to whoever chose it.
+				DataType(dmodel.FieldDataTypeBoolean()).
+				Default(false),
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder())
@@ -209,4 +218,12 @@ func (this Language) GetFirstDayOfWeek() *string {
 
 func (this *Language) SetFirstDayOfWeek(v *string) {
 	this.GetFieldData().SetString(LanguageFieldFirstDayOfWeek, v)
+}
+
+func (this Language) GetIsEnabled() *bool {
+	return this.GetFieldData().GetBool(LanguageFieldIsEnabled)
+}
+
+func (this *Language) SetIsEnabled(v *bool) {
+	this.GetFieldData().SetBool(LanguageFieldIsEnabled, v)
 }
