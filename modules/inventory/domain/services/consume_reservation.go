@@ -2,6 +2,7 @@ package services
 
 import (
 	"maps"
+	"strconv"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -258,14 +259,39 @@ func assertSourcesInWarehouse(
 		if err != nil {
 			return err
 		}
+		warehouseId, err := warehouseOfLocation(ctx, location)
+		if err != nil {
+			return err
+		}
 		if location == nil ||
 			stringOf(location, models.InventoryLocationFieldOrgId) != derefId(reservation.GetOrgId()) ||
-			stringOf(location, models.InventoryLocationFieldWarehouseId) != derefId(reservation.GetWarehouseId()) {
+			warehouseId != derefId(reservation.GetWarehouseId()) {
 			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonLocationWarehouseMismatch,
 				"location '"+string(source.LocationId)+"' does not belong to the reservation's warehouse"))
 		}
 	}
 	return nil
+}
+
+func warehouseOfLocation(ctx corectx.Context, location dmodel.DynamicFields) (string, error) {
+	seen := map[string]bool{}
+	for location != nil {
+		if warehouseId := stringOf(location, models.InventoryLocationFieldWarehouseId); warehouseId != "" {
+			return warehouseId, nil
+		}
+		parentId := stringOf(location, models.InventoryLocationFieldParentLocationId)
+		if parentId == "" || seen[parentId] {
+			return "", nil
+		}
+		seen[parentId] = true
+
+		parent, err := findRecord(ctx, models.InventoryLocationSchemaName, models.InventoryLocationFieldId, parentId)
+		if err != nil {
+			return "", err
+		}
+		location = parent
+	}
+	return "", nil
 }
 
 // issueActualSources writes one done movement per actual source, from the location the executor
@@ -285,7 +311,13 @@ func issueActualSources(
 		operationCode = models.StockOperationCodeOutgoing
 	}
 
-	var firstRef string
+	type plannedSource struct {
+		source         itStock.ActualSource
+		idempotencyKey string
+		pieces         []Allocation
+	}
+	planned := make([]plannedSource, 0, len(request.ActualSources))
+	refusedBefore := vErrs.Count()
 	for index, source := range request.ActualSources {
 		locked, err := LockQuantsForUpdate(ctx, quantRepo.GetBaseRepo(), QuantLockKey{
 			OrgId:            model.Id(derefId(reservation.GetOrgId())),
@@ -295,7 +327,7 @@ func issueActualSources(
 		if err != nil {
 			return "", err
 		}
-		if available := availableInDimension(locked, source); available.LessThan(source.Quantity) {
+		if available := availableForSource(locked, source); available.LessThan(source.Quantity) {
 			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonActualSourceShort,
 				"location '"+string(source.LocationId)+"' holds "+available.String()+" free, not the "+
 					source.Quantity.String()+" reported as taken"))
@@ -306,33 +338,81 @@ func issueActualSources(
 		if index > 0 {
 			idempotencyKey = request.IdempotencyKey + ":" + string(source.LocationId)
 		}
-		result, cErrs, err := ApplyCorrectionMovement(ctx, CorrectionRequest{
-			OrgId:                 derefId(reservation.GetOrgId()),
-			ProductVariantId:      derefId(reservation.GetProductVariantId()),
-			Quantity:              source.Quantity,
-			SourceLocationId:      string(source.LocationId),
-			DestinationLocationId: destination,
-			LotRef:                source.LotRef,
-			PackageRef:            source.PackageRef,
-			OwnerRef:              source.OwnerRef,
-			OriginReference:       request.OriginReference,
-			Note:                  "reservation " + derefId(reservation.GetId()) + " execution " + request.ExecutionId,
-			OperationTypeId:       operationType,
-			OperationCode:         operationCode,
-			IdempotencyKey:        idempotencyKey,
+		planned = append(planned, plannedSource{
+			source:         source,
+			idempotencyKey: idempotencyKey,
+			pieces:         piecesOfSource(locked, source),
 		})
-		if err != nil {
-			return "", err
-		}
-		if cErrs != nil && cErrs.Count() > 0 {
-			vErrs.ConcatPtr(cErrs)
-			continue
-		}
-		if firstRef == "" {
-			firstRef = result.TransferId
+	}
+	if vErrs.Count() > refusedBefore {
+		return "", nil
+	}
+
+	var firstRef string
+	for _, plan := range planned {
+		for index, piece := range plan.pieces {
+			idempotencyKey := plan.idempotencyKey
+			if index > 0 {
+				idempotencyKey = plan.idempotencyKey + ":" + strconv.Itoa(index)
+			}
+			result, cErrs, err := ApplyCorrectionMovement(ctx, CorrectionRequest{
+				OrgId:                 derefId(reservation.GetOrgId()),
+				ProductVariantId:      derefId(reservation.GetProductVariantId()),
+				Quantity:              piece.Quantity,
+				SourceLocationId:      string(plan.source.LocationId),
+				DestinationLocationId: destination,
+				LotRef:                piece.LotRef,
+				PackageRef:            piece.PackageRef,
+				OwnerRef:              piece.OwnerRef,
+				OriginReference:       request.OriginReference,
+				Note:                  "reservation " + derefId(reservation.GetId()) + " execution " + request.ExecutionId,
+				OperationTypeId:       operationType,
+				OperationCode:         operationCode,
+				IdempotencyKey:        idempotencyKey,
+			})
+			if err != nil {
+				return "", err
+			}
+			if cErrs != nil && cErrs.Count() > 0 {
+				vErrs.ConcatPtr(cErrs)
+				continue
+			}
+			if firstRef == "" {
+				firstRef = result.TransferId
+			}
 		}
 	}
 	return firstRef, nil
+}
+
+func namesDimension(source itStock.ActualSource) bool {
+	return source.LotRef != "" || source.PackageRef != "" || source.OwnerRef != ""
+}
+
+func availableForSource(locked []LockedQuant, source itStock.ActualSource) decimal.Decimal {
+	if namesDimension(source) {
+		return availableInDimension(locked, source)
+	}
+	available := decimal.Zero
+	for _, quant := range locked {
+		if quant.Available().IsPositive() {
+			available = available.Add(quant.Available())
+		}
+	}
+	return available
+}
+
+func piecesOfSource(locked []LockedQuant, source itStock.ActualSource) []Allocation {
+	if namesDimension(source) {
+		return []Allocation{{
+			Quantity:   source.Quantity,
+			LotRef:     source.LotRef,
+			PackageRef: source.PackageRef,
+			OwnerRef:   source.OwnerRef,
+		}}
+	}
+	allocations, _ := AllocateFromQuants(source.Quantity, locked)
+	return allocations
 }
 
 // availableInDimension sums what the locked quants of exactly this lot/package/owner can still

@@ -43,9 +43,13 @@ func SyncFulfillmentRefundQuantities(ctx corectx.Context, fulfillmentId string) 
 		if decimalOf(record, models.SalesOrderFulfillmentItemFieldRefundedQty).Equal(total) {
 			continue
 		}
+		item := models.NewSalesOrderFulfillmentItemFrom(record)
+		item.SetRefundedQty(&total)
+		fulfilled := decimalOf(record, models.SalesOrderFulfillmentItemFieldFulfilledQty)
 		err := writeChanges(ctx, models.SalesOrderFulfillmentItemSchemaName, record,
 			dmodel.DynamicFields{
 				models.SalesOrderFulfillmentItemFieldRefundedQty: total,
+				models.SalesOrderFulfillmentItemFieldItemStatus:  string(deriveItemStatus(*item, fulfilled)),
 			})
 		if err != nil {
 			return err

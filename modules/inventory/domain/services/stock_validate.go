@@ -484,6 +484,12 @@ func closeTransfer(
 		update[models.StockTransferFieldIdempotencyKey] = idempotencyKey
 	}
 
-	_, err := operation.TransferRepo.Update(ctx, update)
-	return errors.Wrap(err, "closeTransfer")
+	updated, err := operation.TransferRepo.Update(ctx, update)
+	if err != nil {
+		return errors.Wrap(err, "closeTransfer")
+	}
+	if updated == nil || updated.ClientErrors.Count() > 0 {
+		return errors.Errorf("closeTransfer: the transfer was not marked done: %v", clientErrorsOf(updated))
+	}
+	return nil
 }

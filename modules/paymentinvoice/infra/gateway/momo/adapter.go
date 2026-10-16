@@ -22,6 +22,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpclient"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	itGateway "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/gateway"
 )
@@ -111,6 +112,8 @@ func (this *Adapter) CreatePayment(
 		"requestId":   payload.RequestId,
 		"requestType": payload.RequestType,
 	}.sign(config.SecretKey)
+
+	logging.Logger().Infof("momo: creating payment for order '%s' with ipnUrl '%s'", payload.OrderId, payload.IpnUrl)
 
 	var response createPaymentResponse
 	raw, err := this.post(ctx, "/create", payload, &response)
