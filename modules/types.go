@@ -50,6 +50,8 @@ type InCodeModule interface {
 	ModelPrefix() string
 	// HasUi reports whether the module has a frontend micro-app, so Module Home lists it.
 	HasUi() bool
+	// Category is the product line the module ships with; Module Home groups modules by it.
+	Category() ModuleCategory
 }
 
 type DynamicModule interface {
@@ -66,7 +68,19 @@ type DynamicModule interface {
 	ModelPrefix() string
 	// HasUi reports whether the module has a frontend micro-app, so Module Home lists it.
 	HasUi() bool
+	// Category is the product line the module ships with; Module Home groups modules by it.
+	Category() ModuleCategory
 }
+
+// ModuleCategory groups modules by the product line they belong to. The repository a module lives in
+// decides it, except a shadow module, which keeps the category of the base it replaces.
+type ModuleCategory string
+
+const (
+	ModuleCategoryFoundation  ModuleCategory = "foundation"
+	ModuleCategoryCoremart    ModuleCategory = "coremart"
+	ModuleCategoryCoreparking ModuleCategory = "coreparking"
+)
 
 type InCodeModuleAppStarted interface {
 	OnAppStarted() error

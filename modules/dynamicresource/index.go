@@ -31,6 +31,10 @@ func (*DynamicResourceModule) HasUi() bool {
 	return false
 }
 
+func (*DynamicResourceModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 // LabelKey implements InCodeModule.
 func (*DynamicResourceModule) LabelKey() string {
 	return "dynamicresource.moduleLabel"

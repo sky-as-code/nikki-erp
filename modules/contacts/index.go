@@ -48,6 +48,10 @@ func (*ContactsModule) HasUi() bool {
 	return false
 }
 
+func (*ContactsModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 // Deps implements NikkiModule.
 func (*ContactsModule) Deps() []string {
 	return []string{

@@ -20,6 +20,8 @@ const (
 	ModuleMetadataFieldVersion     = "version"
 	ModuleMetadataFieldHasUi       = "has_ui"
 	ModuleMetadataFieldModelPrefix = "model_prefix"
+	ModuleMetadataFieldCategory    = "category"
+	ModuleMetadataFieldIsEnabled   = "is_enabled"
 )
 
 func ModuleMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -85,6 +87,27 @@ func ModuleMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Name(ModuleMetadataFieldModelPrefix).
 				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldModelPrefix)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)),
+		).
+		Field(
+			// Nullable for the same reason as model_prefix.
+			dmodel.DefineField().
+				Name(ModuleMetadataFieldCategory).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldCategory)).
+				DataType(dmodel.FieldDataTypeEnumString([]string{
+					string(modules.ModuleCategoryFoundation),
+					string(modules.ModuleCategoryCoremart),
+					string(modules.ModuleCategoryCoreparking),
+				})),
+		).
+		Field(
+			// Always true for now: nothing disables a module yet, so there is no toggle and no sync diff.
+			dmodel.DefineField().
+				Name(ModuleMetadataFieldIsEnabled).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldIsEnabled)).
+				DataType(dmodel.FieldDataTypeBoolean()).
+				RequiredForCreate().
+				NoUpdate().
+				Default(true),
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder())
@@ -159,6 +182,30 @@ func (this *ModuleMetadata) SetModelPrefix(v *string) {
 	this.GetFieldData().SetString(ModuleMetadataFieldModelPrefix, v)
 }
 
+func (this ModuleMetadata) GetCategory() *modules.ModuleCategory {
+	v := this.GetFieldData().GetString(ModuleMetadataFieldCategory)
+	if v == nil {
+		return nil
+	}
+	return util.ToPtr(modules.ModuleCategory(*v))
+}
+
+func (this *ModuleMetadata) SetCategory(v *modules.ModuleCategory) {
+	if v == nil {
+		this.GetFieldData().SetString(ModuleMetadataFieldCategory, nil)
+		return
+	}
+	this.GetFieldData().SetString(ModuleMetadataFieldCategory, util.ToPtr(string(*v)))
+}
+
+func (this ModuleMetadata) GetIsEnabled() *bool {
+	return this.GetFieldData().GetBool(ModuleMetadataFieldIsEnabled)
+}
+
+func (this *ModuleMetadata) SetIsEnabled(v *bool) {
+	this.GetFieldData().SetBool(ModuleMetadataFieldIsEnabled, v)
+}
+
 func (this ModuleMetadata) GetVersion() *semver.SemVer {
 	version := this.GetFieldData().GetString(ModuleMetadataFieldVersion)
 	if version == nil {
@@ -203,6 +250,11 @@ func (this ModuleMetadata) ModifiedFields(other modules.InCodeModule) *ModuleMet
 
 	if this.GetModelPrefix() == nil || *this.GetModelPrefix() != other.ModelPrefix() {
 		modified.SetModelPrefix(util.ToPtr(other.ModelPrefix()))
+		count++
+	}
+
+	if this.GetCategory() == nil || *this.GetCategory() != other.Category() {
+		modified.SetCategory(util.ToPtr(other.Category()))
 		count++
 	}
 

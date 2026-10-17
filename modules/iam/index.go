@@ -50,6 +50,10 @@ func (*IamModule) HasUi() bool {
 	return true
 }
 
+func (*IamModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 // Deps implements InCodeModule.
 func (*IamModule) Deps() []string {
 	return []string{

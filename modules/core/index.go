@@ -44,6 +44,10 @@ func (*CoreModule) HasUi() bool {
 	return false
 }
 
+func (*CoreModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 // LabelKey implements NikkiModule.
 func (*CoreModule) LabelKey() string {
 	return "core.moduleLabel"

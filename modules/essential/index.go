@@ -52,6 +52,10 @@ func (*EssentialModule) HasUi() bool {
 	return true
 }
 
+func (*EssentialModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 // Deps implements NikkiModule.
 func (*EssentialModule) Deps() []string {
 	return []string{

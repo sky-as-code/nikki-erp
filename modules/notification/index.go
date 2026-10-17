@@ -44,6 +44,10 @@ func (*NotificationModule) HasUi() bool {
 	return false
 }
 
+func (*NotificationModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 // Deps implements NikkiModule.
 func (*NotificationModule) Deps() []string {
 	return []string{

@@ -93,3 +93,11 @@ func TestDependantListsAreWellFormed(t *testing.T) {
 
 	assert.NoError(t, err)
 }
+
+// TestEveryModuleIsFoundation pins the category Module Home groups by: every module nikkierp ships
+// is a foundation module, whatever the hosted app later adds on top.
+func TestEveryModuleIsFoundation(t *testing.T) {
+	for _, mod := range (StaticModuleLoader{}).getStaticModules() {
+		assert.Equal(t, modules.ModuleCategoryFoundation, mod.Category(), "module %q", mod.Name())
+	}
+}

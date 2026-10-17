@@ -59,6 +59,10 @@ func (*SettingsModule) HasUi() bool {
 	return true
 }
 
+func (*SettingsModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 // Deps implements NikkiModule.
 //
 // core and essential are implicit and must not be listed. iam is deliberately absent and must stay

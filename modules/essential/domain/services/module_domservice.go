@@ -360,6 +360,8 @@ func (this *ModuleDomainServiceImpl) syncCreateModule(
 	cmd.SetVersion(util.ToPtr(installedModule.Version()))
 	cmd.SetHasUi(util.ToPtr(installedModule.HasUi()))
 	cmd.SetModelPrefix(util.ToPtr(installedModule.ModelPrefix()))
+	cmd.SetCategory(util.ToPtr(installedModule.Category()))
+	cmd.SetIsEnabled(util.ToPtr(true))
 
 	result, err := this.CreateModule(ctx, cmd)
 	if err != nil {
