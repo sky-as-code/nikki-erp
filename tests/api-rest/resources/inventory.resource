@@ -81,10 +81,33 @@ Ensure Product Type Under Test
     Set Global Variable    ${PRODUCT_TYPE_ETAG}    ${etag}
     Set Global Variable    ${PRODUCT_TYPE_CODE}    ${code}
 
+Ensure Root Product Category
+    [Documentation]    The org's root "All" (is_root=true, its own parent). It is seeded, never
+    ...    created through the API, and every parent-less create defaults to it.
+    ${id}=    Get Variable Value    ${ROOT_CATEGORY_ID}    ${EMPTY}
+    IF    $id    RETURN
+    Ensure Inventory Org
+    ${resp}=    GET On Session    api    ${PRODUCT_CATEGORY_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'graph': '{"if": ["is_root", "=", true]}', 'fields': ['id', 'etag', 'name', 'canonical_name', 'parent_category_id', 'is_root']} }}
+    Response Status Should Be    ${resp}    200
+    ${items}=    Set Variable    ${resp.json()}[items]
+    Length Should Be    ${items}    1    msg=Every org holds exactly one root category
+    Set Global Variable    ${ROOT_CATEGORY_ID}    ${items}[0][id]
+    Set Global Variable    ${ROOT_CATEGORY_ETAG}    ${items}[0][etag]
+    Set Global Variable    ${ROOT_CATEGORY_CANONICAL}    ${items}[0][canonical_name]
+
+Get Product Category
+    [Documentation]    Reads one category with its tree fields.
+    [Arguments]    ${id}
+    ${resp}=    GET On Session    api    ${PRODUCT_CATEGORY_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_category.json
+    RETURN    ${item}
+
 Ensure Product Category Under Test
     [Documentation]    The category the product_category suite exercises and every template
-    ...    references. Created as a root category, so 03_update can hang a child off it and
-    ...    exercise the cycle rule against a real two-level tree.
+    ...    references. Created without a parent, so it lands under the org's root "All"; 03_update
+    ...    hangs a child off it and exercises the cycle rule against a real two-level tree.
     ${id}=    Get Variable Value    ${PRODUCT_CATEGORY_ID}    ${EMPTY}
     IF    $id    RETURN
     Ensure Inventory Org

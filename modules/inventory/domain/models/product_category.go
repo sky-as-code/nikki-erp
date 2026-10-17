@@ -16,12 +16,22 @@ const (
 	ProductCategoryFieldCode             = "code"
 	ProductCategoryFieldName             = "name"
 	ProductCategoryFieldParentCategoryId = "parent_category_id"
+	ProductCategoryFieldIsRoot           = "is_root"
+	ProductCategoryFieldCanonicalName    = "canonical_name"
 	ProductCategoryFieldSequence         = "sequence"
 	ProductCategoryFieldDescription      = "description"
 	ProductCategoryFieldOrgId            = "org_id"
 
 	ProductCategoryEdgeParentCategory = "parent_category"
+
+	// ProductCategoryCanonicalSeparator joins the segments of canonical_name.
+	ProductCategoryCanonicalSeparator = " / "
 )
+
+// ProductCategoryRootName is the name every org's root category carries.
+func ProductCategoryRootName() model.LangJson {
+	return model.LangJson{model.LanguageCodeEnUs: "All", model.LanguageCodeViVn: "Tất cả"}
+}
 
 //go:embed product_category.json
 var productCategorySchemaJson string
@@ -58,13 +68,30 @@ func (this *ProductCategory) SetName(v *model.LangJson) {
 	this.GetFieldData().SetLangJson(ProductCategoryFieldName, v)
 }
 
-// GetParentCategoryId is nil for a root category.
+// GetParentCategoryId is the category's own id for the org's root.
 func (this ProductCategory) GetParentCategoryId() *model.Id {
 	return this.GetFieldData().GetModelId(ProductCategoryFieldParentCategoryId)
 }
 
 func (this *ProductCategory) SetParentCategoryId(v *model.Id) {
 	this.GetFieldData().SetModelId(ProductCategoryFieldParentCategoryId, v)
+}
+
+func (this ProductCategory) GetIsRoot() *bool {
+	return this.GetFieldData().GetBool(ProductCategoryFieldIsRoot)
+}
+
+func (this ProductCategory) IsRoot() bool {
+	isRoot := this.GetIsRoot()
+	return isRoot != nil && *isRoot
+}
+
+func (this ProductCategory) GetCanonicalName() *model.LangJson {
+	return this.GetFieldData().GetLangJson(ProductCategoryFieldCanonicalName)
+}
+
+func (this *ProductCategory) SetCanonicalName(v *model.LangJson) {
+	this.GetFieldData().SetLangJson(ProductCategoryFieldCanonicalName, v)
 }
 
 func (this ProductCategory) GetSequence() *int32 {

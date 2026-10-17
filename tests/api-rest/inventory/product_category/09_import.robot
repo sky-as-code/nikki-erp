@@ -98,6 +98,9 @@ Import Creates A Missing Referenced Category When Asked
     Should Be Equal    ${parent}[name][en-US]    Missing Parent ${run}
     ${child}=    Find Category By Code    crt${run}
     Should Be Equal    ${child}[parent_category_id]    ${parent}[id]
+    Ensure Root Product Category
+    Should Be Equal    ${parent}[parent_category_id]    ${ROOT_CATEGORY_ID}
+    ...    msg=A referenced category created by the import has no parent of its own, so it lands under All
     [Teardown]    Delete Categories By Codes    crt${run}    missing_parent_${run}
 
 Create Without Code Derives It From The Name
@@ -274,16 +277,18 @@ Get Category Label
     RETURN    ${resp.json()}[item][name][en-US]
 
 Search Categories By Code
-    [Documentation]    Lists the categories of the org whose code is one of the given codes.
-    ...    The default page is wide enough for the handful of rows a test writes.
+    [Documentation]    Lists the categories of the org whose code is one of the given codes,
+    ...    filtering on the server: an org accumulates categories across runs, so a single
+    ...    unfiltered page cannot be relied on to hold the rows a test wrote.
     [Arguments]    @{codes}
-    ${wanted}=    Create List    @{codes}
-    ${resp}=    GET On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 200} }}
-    Response Status Should Be    ${resp}    200
-    # A comprehension is its own Python scope, so the list goes in through the namespace.
-    ${scope}=    Create Dictionary    wanted=${wanted}    items=${resp.json()}[items]
-    ${found}=    Evaluate    [i for i in items if i.get('code') in wanted]    namespace=${scope}
+    ${found}=    Create List
+    FOR    ${code}    IN    @{codes}
+        ${graph}=    Evaluate    json.dumps({"if": ["code", "=", $code]})    json
+        ${resp}=    GET On Session    api    ${PRODUCT_CATEGORY_API}
+        ...    params=${{ {'org_id': $INV_ORG_ID, 'graph': $graph} }}
+        Response Status Should Be    ${resp}    200
+        ${found}=    Combine Lists    ${found}    ${resp.json()}[items]
+    END
     RETURN    ${found}
 
 Find Category By Code

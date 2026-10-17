@@ -55,8 +55,11 @@ func TestProductCategorySchemaParses(t *testing.T) {
 	assert.Equal(t, ProductCategorySchemaName, schema.Name())
 	assert.Equal(t, "inventory_product_categories", schema.TableName())
 	assert.Equal(t, ProductCategoryFieldName, schema.RecordLabelField())
-	// A root category has no parent, so the self-FK must stay optional.
-	assert.False(t, requireField(t, schema, ProductCategoryFieldParentCategoryId).IsRequiredForCreate())
+	// Every category has a parent; the root points to itself, so the column can be NOT NULL.
+	assert.True(t, requireField(t, schema, ProductCategoryFieldParentCategoryId).IsRequiredForCreate())
+	assert.False(t, requireField(t, schema, ProductCategoryFieldIsRoot).IsRequiredForCreate(),
+		"is_root is the nullable side of the one-root-per-org partial unique index")
+	assert.False(t, requireField(t, schema, ProductCategoryFieldCanonicalName).IsRequiredForCreate())
 }
 
 func TestBrandSchemaParses(t *testing.T) {

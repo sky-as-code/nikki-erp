@@ -31,11 +31,16 @@ func TestPilotModelsDeclareTheDeduplicationKey(t *testing.T) {
 			external := requireField(t, schema, "external_id")
 			assert.False(t, external.IsRequiredForCreate(), "external_id is optional outside import")
 
-			strict := schema.PartialUniquesStrict()
-			require.Len(t, strict, 1)
-			assert.Equal(t, []string{"source_system"}, strict[0].NotNullFields)
-			assert.Equal(t, "external_id", strict[0].NullableField)
-			assert.LessOrEqual(t, len(strict[0].IndexName)+len("_ukey"), 63, "postgres identifier limit")
+			// Other strict keys may exist (the category's one-root-per-org), so find the dedup one.
+			var dedup *dmodel.PartialUniqueParam
+			for _, candidate := range schema.PartialUniquesStrict() {
+				if candidate.NullableField == "external_id" {
+					dedup = &candidate
+				}
+			}
+			require.NotNil(t, dedup, "the strict partial unique key over external_id")
+			assert.Equal(t, []string{"source_system"}, dedup.NotNullFields)
+			assert.LessOrEqual(t, len(dedup.IndexName)+len("_ukey"), 63, "postgres identifier limit")
 		})
 	}
 }

@@ -16,10 +16,11 @@ BEGIN
 		('01K5INV0000000000000TYPE02', 'snack', jsonb_build_object('en-US', 'Snack', 'vi-VN', 'Đồ ăn vặt'), jsonb_build_object('en-US', 'Snack products', 'vi-VN', 'Sản phẩm đồ ăn vặt'), TRUE, TRUE, TRUE, FALSE, FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 
-		-- Product categories
-		INSERT INTO "inventory_product_categories" ("id", "code", "name", "parent_category_id", "sequence", "description", "source_system", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
-		('01K5INV000000000000CAT0001', 'beverages', jsonb_build_object('en-US', 'Beverages', 'vi-VN', 'Đồ uống'), NULL, 1, NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV000000000000CAT0002', 'snacks', jsonb_build_object('en-US', 'Snacks', 'vi-VN', 'Đồ ăn vặt'), NULL, 2, NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		-- Product categories. The org's root "All" points to itself and comes first, so the rows below can reference it.
+		INSERT INTO "inventory_product_categories" ("id", "code", "name", "parent_category_id", "is_root", "canonical_name", "sequence", "description", "source_system", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
+		('01K5INV000000000000CAT0000', 'all', jsonb_build_object('en-US', 'All', 'vi-VN', 'Tất cả'), '01K5INV000000000000CAT0000', TRUE, jsonb_build_object('en-US', 'All', 'vi-VN', 'Tất cả'), 0, jsonb_build_object('en-US', 'Root of the category tree', 'vi-VN', 'Gốc của cây danh mục'), 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV000000000000CAT0001', 'beverages', jsonb_build_object('en-US', 'Beverages', 'vi-VN', 'Đồ uống'), '01K5INV000000000000CAT0000', NULL, jsonb_build_object('en-US', 'All / Beverages', 'vi-VN', 'Tất cả / Đồ uống'), 1, NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV000000000000CAT0002', 'snacks', jsonb_build_object('en-US', 'Snacks', 'vi-VN', 'Đồ ăn vặt'), '01K5INV000000000000CAT0000', NULL, jsonb_build_object('en-US', 'All / Snacks', 'vi-VN', 'Tất cả / Đồ ăn vặt'), 2, NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product attributes

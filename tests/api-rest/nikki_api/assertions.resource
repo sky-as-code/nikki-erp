@@ -289,6 +289,24 @@ Response Should Be Category Cycle Error
     ...    this parent is a descendant of the category, which would create a cycle    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
+Response Should Be Category Root Immutable Error
+    [Documentation]    The org's root category "All" is never renamed, moved, archived or
+    ...    deleted: every category hangs under it and a parent-less create defaults to it.
+    [Arguments]    ${resp}
+    ${schema}=    Same Error Schema    ${{['id']}}
+    ...    product_category.root_immutable
+    ...    the root category cannot be renamed, moved, archived or deleted    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Be Category Server Managed Error
+    [Documentation]    canonical_name and is_root are maintained by the server; a client
+    ...    sending either is refused rather than silently ignored.
+    [Arguments]    ${resp}    ${field}
+    ${schema}=    Same Error Schema    ${{[$field]}}
+    ...    product_category.${field}_server_managed
+    ...    ${field} is maintained by the server and cannot be set    business
+    Response Should Match Schema    ${resp}    ${schema}    400
+
 Response Should Be Duplicate Combination Error
     [Documentation]    BR-PROD-VAR-002: a template holds at most one variant per attribute
     ...    combination. The engine turns the composite unique into a field-level business
