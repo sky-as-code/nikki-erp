@@ -35,6 +35,7 @@ const (
 func ResourceSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ResourceSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", ResourceSchemaName)).
+		RecordLabelField(ResourceFieldName).
 		TableName("iam_resources").
 		DefaultSearchFields("name", "code", "description").
 		ShouldBuildDb().

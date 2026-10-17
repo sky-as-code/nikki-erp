@@ -1,0 +1,123 @@
+{
+	"name": "iam_entitlement",
+	"label": "iam_entitlement.label",
+	"table_name": "iam_entitlements",
+	"should_build_db": true,
+	"default_search_fields": ["name", "description", "expression"],
+	"composite_uniques": [
+		{ "fields": ["role_id", "name"] },
+		{ "fields": ["role_id", "expression"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true
+		},
+		{
+			"name": "description",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "expression",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 100,
+				"regex": "^([a-zA-Z0-9_]+|\\*):([a-zA-Z0-9_]+|\\*):(domain|private|org|org/[a-zA-Z0-9\\-]+|orgunit|orgunit/[a-zA-Z0-9\\-]+)$"
+			},
+			"required_for_create": true,
+			"auto_generated": true
+		},
+		{
+			"name": "action_id",
+			"label": "action",
+			"data_type": "ulid",
+			"no_update": true
+		},
+		{
+			"name": "resource_id",
+			"label": "resource",
+			"data_type": "ulid",
+			"no_update": true
+		},
+		{
+			"name": "role_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "scope",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["tenant", "org", "orgunit", "private"]
+			},
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "org_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": { "en-US": "If scope=org, this field is required. " }
+		},
+		{
+			"name": "org_unit_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": { "en-US": "If scope=org_unit, this field is required. " }
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "action",
+			"label": { "en-US": "Action" },
+			"type": "many:one",
+			"dest_schema": "iam_action",
+			"key_map": { "action_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "resource",
+			"label": { "en-US": "Resource" },
+			"type": "many:one",
+			"dest_schema": "iam_resource",
+			"key_map": { "resource_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "org_unit",
+			"label": { "en-US": "Organizational Unit" },
+			"type": "many:one",
+			"dest_schema": "iam_orgunit",
+			"key_map": { "org_unit_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "org",
+			"label": { "en-US": "Organization" },
+			"type": "many:one",
+			"dest_schema": "iam_org",
+			"key_map": { "org_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "role",
+			"label": { "en-US": "Owned by role" },
+			"type": "many:one",
+			"dest_schema": "iam_role",
+			"key_map": { "role_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	]
+}

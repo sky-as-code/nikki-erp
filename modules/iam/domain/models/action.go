@@ -24,6 +24,7 @@ const (
 func ActionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ActionSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", ActionSchemaName)).
+		RecordLabelField(ActionFieldName).
 		TableName("iam_actions").
 		DefaultSearchFields("name", "code", "description").
 		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{ActionFieldResourceId, ActionFieldCode}}).
