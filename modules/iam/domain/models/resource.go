@@ -41,9 +41,8 @@ func ResourceSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().Name(ResourceFieldName).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate().
-				Unique(),
+				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
+				RequiredForCreate(),
 		).
 		Field(
 			DefineResourceFieldCode(ResourceFieldCode).

@@ -18,22 +18,29 @@ import (
 	itOrgz "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/orgunit"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
+	itRes "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/resource"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 )
 
 func NewRoleDomainServiceImpl(
 	roleRepo itRole.RoleRepository,
 	entitlementRepo itEnt.EntitlementRepository,
+	entitlementSvc itEnt.EntitlementDomainService,
+	resourceRepo itRes.ResourceRepository,
 	orgRepo itOrgz.OrganizationRepository,
 	orgUnitRepo itOrg.OrgUnitRepository,
 	orgUnitSvc itOrg.OrgUnitDomainService,
 	permRepo itPerm.PermissionRepository,
+	historyRepo itPerm.PermissionHistoryRepository,
 	cqrsBus cqrs.CqrsBus,
 ) itRole.RoleDomainService {
 	return &RoleDomainServiceImpl{
+		auditor:         permissionAuditor{historyRepo: historyRepo},
 		cqrsBus:         cqrsBus,
 		roleRepo:        roleRepo,
 		entitlementRepo: entitlementRepo,
+		entitlementSvc:  entitlementSvc,
+		resourceRepo:    resourceRepo,
 		orgRepo:         orgRepo,
 		orgUnitRepo:     orgUnitRepo,
 		orgUnitSvc:      orgUnitSvc,
@@ -45,12 +52,16 @@ type RoleDomainServiceImpl struct {
 	cqrsBus         cqrs.CqrsBus
 	roleRepo        itRole.RoleRepository
 	entitlementRepo itEnt.EntitlementRepository
+	// entitlementSvc and resourceRepo serve the entitlement delta of UpdateRole.
+	entitlementSvc itEnt.EntitlementDomainService
+	resourceRepo   itRes.ResourceRepository
 	// orgRepo and orgUnitRepo exist only to resolve entitlement scope display names in
 	// DescribeRoles; role CRUD does not touch them.
 	orgRepo     itOrgz.OrganizationRepository
 	orgUnitRepo itOrg.OrgUnitRepository
 	orgUnitSvc  itOrg.OrgUnitDomainService
 	permRepo    itPerm.PermissionRepository
+	auditor     permissionAuditor
 }
 
 func (this *RoleDomainServiceImpl) CreateRole(
@@ -371,10 +382,29 @@ func (this *RoleDomainServiceImpl) UpdateRole(
 	ctx corectx.Context, cmd itRole.UpdateRoleCommand, options ...corecrud.ServiceUpdateOptions[*domain.Role],
 ) (*itRole.UpdateRoleResult, error) {
 	opts := safe.GetOptional(options, corecrud.ServiceUpdateOptions[*domain.Role]{})
-	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Role, *domain.Role]{
+	if cmd.HasMalformedEntitlements() {
+		return &itRole.UpdateRoleResult{ClientErrors: ft.ClientErrors{*ft.NewValidationError(
+			itRole.UpdateRoleFieldEntitlements, ft.ErrorKey("err_malformed_request"),
+			"entitlements must be {add: [{resource_id, action_id, description}], remove: [ids]}",
+		)}}, nil
+	}
+	result, err := corecrud.Update(ctx, corecrud.UpdateParam[domain.Role, *domain.Role]{
 		Action:                 "update role",
 		DbRepoGetter:           this.roleRepo,
 		Data:                   cmd,
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
+	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData || !cmd.HasEntitlementsDelta() {
+		return result, err
+	}
+	// The role row was updated first, so the etag check guards the delta too and an
+	// entitlement-only call still moves the etag and the audit columns.
+	cErrs, err := this.applyEntitlementsDelta(ctx, *cmd.GetId(), *cmd.Entitlements)
+	if err != nil {
+		return nil, err
+	}
+	if cErrs.Count() > 0 {
+		return &itRole.UpdateRoleResult{ClientErrors: cErrs}, nil
+	}
+	return result, nil
 }

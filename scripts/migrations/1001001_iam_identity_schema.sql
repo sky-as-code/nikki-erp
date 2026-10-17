@@ -42,7 +42,7 @@ CREATE TABLE "iam_password_stores" (
 -- Create "iam_resources" table
 CREATE TABLE "iam_resources" (
   "id" character varying NOT NULL,
-  "name" character varying NOT NULL,
+  "name" jsonb NOT NULL,
   "code" character varying NOT NULL,
   "description" character varying NULL,
   "owner_type" character varying NOT NULL,
@@ -52,20 +52,18 @@ CREATE TABLE "iam_resources" (
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "iam_resources_code_ukey" UNIQUE ("code"),
-  CONSTRAINT "iam_resources_name_ukey" UNIQUE ("name")
+  CONSTRAINT "iam_resources_code_ukey" UNIQUE ("code")
 );
 -- Create "iam_actions" table
 CREATE TABLE "iam_actions" (
   "id" character varying NOT NULL,
-  "name" character varying NOT NULL,
+  "name" jsonb NOT NULL,
   "code" character varying NOT NULL,
   "description" character varying NULL,
   "resource_id" character varying NOT NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "iam_actions_resource_id_code_ukey" UNIQUE ("resource_id", "code"),
-  CONSTRAINT "iam_actions_resource_id_name_ukey" UNIQUE ("resource_id", "name"),
   CONSTRAINT "iam_actions_resource_id_fkey" FOREIGN KEY ("resource_id") REFERENCES "iam_resources" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "iam_organizations" table

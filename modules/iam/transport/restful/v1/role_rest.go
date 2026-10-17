@@ -139,3 +139,19 @@ func (this RoleRest) GetModelSchema(echoCtx *echo.Context) (err error) {
 	echoCtx.JSON(http.StatusOK, schema.ToSimplized())
 	return nil
 }
+
+func (this RoleRest) ManageRoleUsers(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeGeneralMutate[ManageRoleUsersRequest, ManageRoleUsersResponse](
+		"manage role users",
+		echoCtx,
+		this.RoleSvc.ManageRoleUsers,
+	)
+}
+
+func (this RoleRest) ManageRoleGroups(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeGeneralMutate[ManageRoleGroupsRequest, ManageRoleGroupsResponse](
+		"manage role groups",
+		echoCtx,
+		this.RoleSvc.ManageRoleGroups,
+	)
+}

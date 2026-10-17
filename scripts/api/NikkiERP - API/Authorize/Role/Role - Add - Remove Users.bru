@@ -1,0 +1,23 @@
+meta {
+  name: Role - Add / Remove Users
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{api_host}}/v1/iam/roles/{{role_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "add": ["01JWNXT3EY7FG47VDJTEPTDC98", "01JWNXXTF8958VVYAV33MVVMDN"],
+      "remove": []
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

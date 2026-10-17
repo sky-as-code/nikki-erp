@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 
+	"go.bryk.io/pkg/errors"
+
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
@@ -124,5 +126,67 @@ func (this *RoleApplicationServiceImpl) UpdateRole(ctx corectx.Context, cmd it.U
 	if cErr := assertPermission(ctx, "update", c.ResourceIamRole, c.ResourceScopeTenant); cErr != nil {
 		return &it.UpdateRoleResult{ClientErrors: *cErr}, nil
 	}
-	return this.roleSvc.UpdateRole(ctx, cmd)
+	if !cmd.HasEntitlementsDelta() {
+		return this.roleSvc.UpdateRole(ctx, cmd)
+	}
+	// Changing what a role grants is the manage_entitlements permission, whichever route
+	// carries it, so the role's update permission alone must not be enough.
+	if cErr := assertPermission(ctx, "manage_entitlements", c.ResourceIamRole, c.ResourceScopeTenant); cErr != nil {
+		return &it.UpdateRoleResult{ClientErrors: *cErr}, nil
+	}
+	return execRefusableInTranx(ctx, this.roleRepo, func(tranxCtx corectx.Context) (*it.UpdateRoleResult, error) {
+		return this.roleSvc.UpdateRole(tranxCtx, cmd)
+	})
+}
+
+// errRollbackRefusedUpdate unwinds the transaction when a later step refuses the request.
+// ExecInTranx commits whenever fn returns no Go error, and a refusal is a result, not an error,
+// so without it the role row could commit while the entitlement half was refused.
+var errRollbackRefusedUpdate = errors.New("role update refused; rolling back")
+
+func execRefusableInTranx(
+	ctx corectx.Context, repo dyn.DynamicModelRepository,
+	fn func(tranxCtx corectx.Context) (*it.UpdateRoleResult, error),
+) (*it.UpdateRoleResult, error) {
+	var refused *it.UpdateRoleResult
+	result, err := corecrud.ExecInTranx(ctx, repo, func(tranxCtx corectx.Context) (*it.UpdateRoleResult, error) {
+		res, err := fn(tranxCtx)
+		if err != nil {
+			return nil, err
+		}
+		if res.ClientErrors.Count() > 0 || !res.HasData {
+			refused = res
+			return nil, errRollbackRefusedUpdate
+		}
+		return res, nil
+	})
+	if errors.Is(err, errRollbackRefusedUpdate) {
+		return refused, nil
+	}
+	return result, err
+}
+
+// ManageRoleUsers asserts exactly what POST /users/:user_id/roles asserts, so the role side
+// opens no path the principal side keeps shut.
+func (this *RoleApplicationServiceImpl) ManageRoleUsers(
+	ctx corectx.Context, cmd it.ManageRoleUsersCommand,
+) (*it.ManageRoleUsersResult, error) {
+	if cErr := assertPermission(ctx, "manage_role_assignments", c.ResourceIamUser, c.ResourceScopeOrg); cErr != nil {
+		return &it.ManageRoleUsersResult{ClientErrors: *cErr}, nil
+	}
+	return corecrud.ExecInTranx(ctx, this.roleRepo, func(tranxCtx corectx.Context) (*it.ManageRoleUsersResult, error) {
+		return this.roleSvc.ManageRoleUsers(tranxCtx, cmd)
+	})
+}
+
+// ManageRoleGroups mirrors POST /groups/:group_id/roles the same way.
+func (this *RoleApplicationServiceImpl) ManageRoleGroups(
+	ctx corectx.Context, cmd it.ManageRoleGroupsCommand,
+) (*it.ManageRoleGroupsResult, error) {
+	if cErr := assertPermission(ctx, "manage_role_assignments", c.ResourceIamGroup, c.ResourceScopeOrg); cErr != nil {
+		return &it.ManageRoleGroupsResult{ClientErrors: *cErr}, nil
+	}
+	return corecrud.ExecInTranx(ctx, this.roleRepo, func(tranxCtx corectx.Context) (*it.ManageRoleGroupsResult, error) {
+		return this.roleSvc.ManageRoleGroups(tranxCtx, cmd)
+	})
 }

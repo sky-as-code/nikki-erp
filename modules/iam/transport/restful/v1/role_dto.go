@@ -39,3 +39,9 @@ type SetRoleIsArchivedResponse = httpserver.RestMutateResponse
 
 type UpdateRoleRequest = it.UpdateRoleCommand
 type UpdateRoleResponse = httpserver.RestMutateResponse
+
+type ManageRoleUsersRequest = it.ManageRoleUsersCommand
+type ManageRoleUsersResponse = httpserver.RestMutateResponse
+
+type ManageRoleGroupsRequest = it.ManageRoleGroupsCommand
+type ManageRoleGroupsResponse = httpserver.RestMutateResponse

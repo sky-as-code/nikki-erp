@@ -12,7 +12,7 @@ patch {
 
 body:json {
   {
-    "name": "{{$randomVerb}}   {{$timestamp}}",
+    "name": { "en-US": "{{$randomVerb}}   {{$timestamp}}" },
     "description": "{{$randomLoremParagraphs}}",
     "etag": "{{etag}}"
   }
@@ -22,8 +22,8 @@ script:pre-request {
   const body = req.getBody();
   
   if (body.hasOwnProperty('code')) {
-    body.name = bru.interpolate(body.name);
-    body.code = body.name.toLowerCase().replace(/\s+/g, "_");
+    body.name["en-US"] = bru.interpolate(body.name["en-US"]);
+    body.code = body.name["en-US"].toLowerCase().replace(/\s+/g, "_");
     req.setBody(body);
   }
 }

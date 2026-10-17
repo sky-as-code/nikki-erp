@@ -172,6 +172,8 @@ func initIamAuthorizationV1() error {
 		v1.GET("/roles", roleRest.SearchRoles, m.SmokeAuthz())
 		v1.PATCH("/roles/:id", roleRest.UpdateRole, m.SmokeAuthz())
 		v1.POST("/roles/:role_id/manage-entitlements", roleRest.ManageRoleEntitlements, m.SmokeAuthz())
+		v1.POST("/roles/:role_id/manage-users", roleRest.ManageRoleUsers, m.SmokeAuthz())
+		v1.POST("/roles/:role_id/manage-groups", roleRest.ManageRoleGroups, m.SmokeAuthz())
 		v1.POST("/roles/:id/archived", roleRest.SetRoleIsArchived, m.SmokeAuthz())
 		v1.POST("/roles/exists", roleRest.RoleExists, m.SmokeAuthz())
 		v1.POST("/roles", roleRest.CreateRole, m.SmokeAuthz())

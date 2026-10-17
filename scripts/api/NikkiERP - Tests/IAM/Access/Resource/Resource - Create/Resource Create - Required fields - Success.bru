@@ -12,7 +12,7 @@ post {
 
 body:json {
   {
-    "name": "{{$randomColor}}  {{$randomWord}}  {{$timestamp}}",
+    "name": { "en-US": "{{$randomColor}}  {{$randomWord}}  {{$timestamp}}" },
     "code": "<Modified by Pre-request Script>",
     "max_scope": "domain",
     "min_scope": "private"
@@ -21,8 +21,8 @@ body:json {
 
 script:pre-request {
   const body = req.getBody();
-  body.name = bru.interpolate(body.name);
-  body.code = body.name.toLowerCase().replace(/\s+/g, "_");
+  body.name["en-US"] = bru.interpolate(body.name["en-US"]);
+  body.code = body.name["en-US"].toLowerCase().replace(/\s+/g, "_");
   req.setBody(body);
 }
 

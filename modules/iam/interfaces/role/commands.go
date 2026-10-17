@@ -1,6 +1,8 @@
 package role
 
 import (
+	"encoding/json"
+
 	"github.com/sky-as-code/nikki-erp/common/datastructure"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -25,6 +27,8 @@ func init() {
 	req = (*UpdateRoleCommand)(nil)
 	req = (*SetRoleIsArchivedCommand)(nil)
 	req = (*ManageRoleEntitlementsCommand)(nil)
+	req = (*ManageRoleUsersCommand)(nil)
+	req = (*ManageRoleGroupsCommand)(nil)
 	util.Unused(req)
 }
 
@@ -195,14 +199,81 @@ type DescribeRolesResult = dyn.OpResult[DescribeRolesResultData]
 
 var updateRoleCommandType = cqrs.RequestType{Module: "iam", Submodule: "role", Action: "updateRole"}
 
+// UpdateRoleCommand updates the role's own columns and, optionally, applies an entitlement
+// delta in the same call. Entitlements is not a role column: SetFieldData lifts it out of the
+// bound body before the role schema sees it.
 type UpdateRoleCommand struct {
 	domain.Role
+	Entitlements *RoleEntitlementsDelta `json:"entitlements"`
+
+	entitlementsMalformed bool
 }
 
 func (UpdateRoleCommand) CqrsRequestType() cqrs.RequestType { return updateRoleCommandType }
 
 func (UpdateRoleCommand) GetSchema() *dmodel.ModelSchema {
 	return dmodel.GetSchema(domain.RoleSchemaName)
+}
+
+func (this *UpdateRoleCommand) SetFieldData(fields dmodel.DynamicFields) {
+	raw, found := fields[UpdateRoleFieldEntitlements]
+	if found {
+		delete(fields, UpdateRoleFieldEntitlements)
+	}
+	this.Role.SetFieldData(fields)
+	this.Entitlements = nil
+	this.entitlementsMalformed = false
+	if !found || raw == nil {
+		return
+	}
+	delta, err := decodeRoleEntitlementsDelta(raw)
+	this.Entitlements = delta
+	this.entitlementsMalformed = err != nil
+}
+
+// HasMalformedEntitlements reports a body whose `entitlements` key could not be read as a delta.
+func (this UpdateRoleCommand) HasMalformedEntitlements() bool {
+	return this.entitlementsMalformed
+}
+
+func (this UpdateRoleCommand) HasEntitlementsDelta() bool {
+	return this.Entitlements != nil && !this.Entitlements.IsEmpty()
+}
+
+func decodeRoleEntitlementsDelta(raw any) (*RoleEntitlementsDelta, error) {
+	encoded, err := json.Marshal(raw)
+	if err != nil {
+		return nil, err
+	}
+	delta := &RoleEntitlementsDelta{}
+	if err := json.Unmarshal(encoded, delta); err != nil {
+		return nil, err
+	}
+	return delta, nil
+}
+
+const UpdateRoleFieldEntitlements = "entitlements"
+
+// RoleEntitlementsDeltaMaxItems caps each list of the delta: every add costs a resource lookup
+// and an insert inside one transaction.
+const RoleEntitlementsDeltaMaxItems = 100
+
+// RoleEntitlementGrant is one entitlement to create on the role. A nil ActionId grants every
+// action of the resource (`*`). The caller does not choose the scope: the grant takes the
+// resource's max_scope, and an `org` scope is bound to the role's own org.
+type RoleEntitlementGrant struct {
+	ResourceId  model.Id  `json:"resource_id"`
+	ActionId    *model.Id `json:"action_id"`
+	Description *string   `json:"description"`
+}
+
+type RoleEntitlementsDelta struct {
+	Add    []RoleEntitlementGrant `json:"add"`
+	Remove []model.Id             `json:"remove"`
+}
+
+func (this RoleEntitlementsDelta) IsEmpty() bool {
+	return len(this.Add) == 0 && len(this.Remove) == 0
 }
 
 type UpdateRoleResult = dyn.OpResult[dyn.MutateResultData]
@@ -232,3 +303,38 @@ func (ManageRoleEntitlementsCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 type ManageRoleEntitlementsResult = dyn.OpResult[dyn.MutateResultData]
+
+var manageRoleUsersCommandType = cqrs.RequestType{
+	Module: "iam", Submodule: "role", Action: "manageRoleUsers",
+}
+
+// ManageRoleUsersCommand assigns users to, and removes them from, one role. It is the role-side
+// counterpart of the user's ManageUserRoleAssignmentsCommand and writes the same junction rows.
+type ManageRoleUsersCommand struct {
+	RoleId model.Id                    `json:"role_id" param:"role_id"`
+	Add    datastructure.Set[model.Id] `json:"add"`
+	Remove datastructure.Set[model.Id] `json:"remove"`
+}
+
+func (ManageRoleUsersCommand) CqrsRequestType() cqrs.RequestType {
+	return manageRoleUsersCommandType
+}
+
+type ManageRoleUsersResult = dyn.OpResult[dyn.MutateResultData]
+
+var manageRoleGroupsCommandType = cqrs.RequestType{
+	Module: "iam", Submodule: "role", Action: "manageRoleGroups",
+}
+
+// ManageRoleGroupsCommand is the group counterpart of ManageRoleUsersCommand.
+type ManageRoleGroupsCommand struct {
+	RoleId model.Id                    `json:"role_id" param:"role_id"`
+	Add    datastructure.Set[model.Id] `json:"add"`
+	Remove datastructure.Set[model.Id] `json:"remove"`
+}
+
+func (ManageRoleGroupsCommand) CqrsRequestType() cqrs.RequestType {
+	return manageRoleGroupsCommandType
+}
+
+type ManageRoleGroupsResult = dyn.OpResult[dyn.MutateResultData]

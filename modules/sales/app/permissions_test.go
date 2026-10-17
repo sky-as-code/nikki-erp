@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -92,17 +93,17 @@ func seededActionCodes(t *testing.T) map[string]bool {
 	return codes
 }
 
+// seededRowCode matches ('<id>', <name>, '<code>', ...). The name is a LangJson built with
+// jsonb_build_object(...), so it is skipped as a unit rather than counted as quoted fields.
+var seededRowCode = regexp.MustCompile(
+	`^\('01M3SALES[0-9A-Z]*', (?:'[^']*'|jsonb_build_object\([^)]*\)), '([^']*)'`)
+
 func collectActionCodes(content string, codes map[string]bool) {
 	for _, line := range strings.Split(content, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if !strings.HasPrefix(trimmed, "('01M3SALES") {
+		match := seededRowCode.FindStringSubmatch(strings.TrimSpace(line))
+		if match == nil {
 			continue
 		}
-		// ('<id>', '<name>', '<code>', ...) - the code is the third quoted field.
-		parts := strings.Split(trimmed, "'")
-		if len(parts) < 6 {
-			continue
-		}
-		codes[parts[5]] = true
+		codes[match[1]] = true
 	}
 }

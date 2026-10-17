@@ -74,15 +74,17 @@ func seededActionCodes(t *testing.T, resourceCode string) []string {
 
 	sql := string(content)
 
-	// The resource's id, then every action row pointing at it.
+	// The resource's id, then every action row pointing at it. Names are LangJson, seeded as one
+	// jsonb_build_object(...) call.
+	const seededName = `jsonb_build_object\([^)]*\)`
 	resourcePattern := regexp.MustCompile(
-		`\('([0-9A-Z]{26})', '[^']*', '` + regexp.QuoteMeta(resourceCode) + `',`)
+		`\('([0-9A-Z]{26})', ` + seededName + `, '` + regexp.QuoteMeta(resourceCode) + `',`)
 	resourceMatch := resourcePattern.FindStringSubmatch(sql)
 	require.NotNil(t, resourceMatch, "no %q resource row in the migration", resourceCode)
 	resourceId := resourceMatch[1]
 
 	actionPattern := regexp.MustCompile(
-		`\('[0-9A-Z]{26}', '[^']*', '([a-z_]+)', (?:'[^']*'|NULL), '` + resourceId + `'`)
+		`\('[0-9A-Z]{26}', ` + seededName + `, '([a-z_]+)', (?:'[^']*'|NULL), '` + resourceId + `'`)
 
 	codes := []string{}
 	for _, match := range actionPattern.FindAllStringSubmatch(sql, -1) {

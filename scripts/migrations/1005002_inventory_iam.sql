@@ -50,13 +50,13 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0A1P4QM3P0Y3T60T7RH2KZC', 'Product Template', 'inventory_product_template', 'Catalog-level definition of a product line', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QJ0MFYJY0EQH0NVJ2R', 'Product Variant', 'inventory_product_variant', 'Concrete, transactable product of a template', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q8S7V5FR3KKY1V5ZMF', 'Product Type', 'inventory_product_type', 'How the system processes a product: goods, service, combo', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QGGABP6SVFCTD6MF8K', 'Product Category', 'inventory_product_category', 'Hierarchical classification of product templates', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QMJTAEFCJY5WRTNHWZ', 'Product Attribute', 'inventory_product_attribute', 'Attributes whose values form product variants', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QAH9DQW7VXG9K87HWP', 'Product Attribute Value', 'inventory_product_attribute_value', 'Allowed values of a product attribute', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QDXYWAJ8D4ZAD50VW7', 'Brand', 'inventory_brand', 'Product brands', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0A1P4QM3P0Y3T60T7RH2KZC', jsonb_build_object('en-US', 'Product Template', 'vi-VN', 'Mẫu sản phẩm'), 'inventory_product_template', 'Catalog-level definition of a product line', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QJ0MFYJY0EQH0NVJ2R', jsonb_build_object('en-US', 'Product Variant', 'vi-VN', 'Biến thể sản phẩm'), 'inventory_product_variant', 'Concrete, transactable product of a template', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q8S7V5FR3KKY1V5ZMF', jsonb_build_object('en-US', 'Product Type', 'vi-VN', 'Loại sản phẩm'), 'inventory_product_type', 'How the system processes a product: goods, service, combo', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QGGABP6SVFCTD6MF8K', jsonb_build_object('en-US', 'Product Category', 'vi-VN', 'Danh mục sản phẩm'), 'inventory_product_category', 'Hierarchical classification of product templates', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QMJTAEFCJY5WRTNHWZ', jsonb_build_object('en-US', 'Product Attribute', 'vi-VN', 'Thuộc tính sản phẩm'), 'inventory_product_attribute', 'Attributes whose values form product variants', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QAH9DQW7VXG9K87HWP', jsonb_build_object('en-US', 'Product Attribute Value', 'vi-VN', 'Giá trị thuộc tính sản phẩm'), 'inventory_product_attribute_value', 'Allowed values of a product attribute', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QDXYWAJ8D4ZAD50VW7', jsonb_build_object('en-US', 'Brand', 'vi-VN', 'Thương hiệu'), 'inventory_brand', 'Product brands', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -67,54 +67,54 @@ BEGIN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		-- Product Template. generate_variants is separate from update: regenerating the
 		-- variant set of a live product is a heavier capability than editing its description.
-		('01M0A1P4Q4K8REGFBYKH82M8Z1', 'Create', 'create', NULL, '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q8WKR2A0RRQ21W6ZKT', 'Update', 'update', NULL, '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QQ799ZX5PPHC4RRN9F', 'Delete', 'delete', NULL, '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q4XDRGWA4DDDNKD2DM', 'Read', 'read', NULL, '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QS5PTBGTJSN1GS991H', 'Set archived status', 'set_archived', 'Archive a product template so it and its variants cannot be used by new transactions', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QBXY1DQFZPP4P4VD1T', 'Generate variants', 'generate_variants', 'Generate or synchronize the variants of a product template', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q4K8REGFBYKH82M8Z1', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q8WKR2A0RRQ21W6ZKT', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QQ799ZX5PPHC4RRN9F', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q4XDRGWA4DDDNKD2DM', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QS5PTBGTJSN1GS991H', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a product template so it and its variants cannot be used by new transactions', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QBXY1DQFZPP4P4VD1T', jsonb_build_object('en-US', 'Generate variants', 'vi-VN', 'Tạo biến thể'), 'generate_variants', 'Generate or synchronize the variants of a product template', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Product Variant
-		('01M0A1P4Q9YQ7HAFRENHBMJ9TR', 'Create', 'create', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q4P4J5K2NANT4K78VK', 'Update', 'update', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QB7BD6NB8M9SEK5Y20', 'Delete', 'delete', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QSQMEVAZ1FFTAVA317', 'Read', 'read', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QEVX39CJ2TJ2AN97FT', 'Set archived status', 'set_archived', 'Archive a product variant so it cannot be used by new transactions', '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q9YQ7HAFRENHBMJ9TR', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q4P4J5K2NANT4K78VK', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QB7BD6NB8M9SEK5Y20', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QSQMEVAZ1FFTAVA317', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QEVX39CJ2TJ2AN97FT', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a product variant so it cannot be used by new transactions', '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Product Type
-		('01M0A1P4QCYXK4QQ5PP8K6EQ0Y', 'Create', 'create', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QR944RNJFF7716BF5C', 'Update', 'update', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q2QJ2Y2TYW6XXX9BRN', 'Delete', 'delete', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QCVHQCN7ECG2TCKJ97', 'Read', 'read', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QPQSBNB8VK8F1H6XM3', 'Set archived status', 'set_archived', 'Archive a product type', '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QCYXK4QQ5PP8K6EQ0Y', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QR944RNJFF7716BF5C', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q2QJ2Y2TYW6XXX9BRN', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QCVHQCN7ECG2TCKJ97', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QPQSBNB8VK8F1H6XM3', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a product type', '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Product Category
-		('01M0A1P4QB6H18345VP8SG849J', 'Create', 'create', NULL, '01M0A1P4QGGABP6SVFCTD6MF8K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q4QZBR3FPNJJ1V9FRJ', 'Update', 'update', NULL, '01M0A1P4QGGABP6SVFCTD6MF8K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QMSFDXYBN3D3RS9K5E', 'Delete', 'delete', NULL, '01M0A1P4QGGABP6SVFCTD6MF8K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QYG8G9QC4EWTWAV723', 'Read', 'read', NULL, '01M0A1P4QGGABP6SVFCTD6MF8K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QWZHYXV89G9BT6XJBE', 'Set archived status', 'set_archived', 'Archive a product category', '01M0A1P4QGGABP6SVFCTD6MF8K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QB6H18345VP8SG849J', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4QGGABP6SVFCTD6MF8K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q4QZBR3FPNJJ1V9FRJ', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0A1P4QGGABP6SVFCTD6MF8K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QMSFDXYBN3D3RS9K5E', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0A1P4QGGABP6SVFCTD6MF8K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QYG8G9QC4EWTWAV723', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0A1P4QGGABP6SVFCTD6MF8K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QWZHYXV89G9BT6XJBE', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a product category', '01M0A1P4QGGABP6SVFCTD6MF8K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Product Attribute
-		('01M0A1P4Q94CATJA4MXP6SED7N', 'Create', 'create', NULL, '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QXAG5J1BV1JSP6W6G9', 'Update', 'update', NULL, '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q95527SM8SJK2QRH4R', 'Delete', 'delete', NULL, '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QFDM0XSX8VXAHZ31EG', 'Read', 'read', NULL, '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QVNXPS112TGMJTTHTJ', 'Set archived status', 'set_archived', 'Archive a product attribute', '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q94CATJA4MXP6SED7N', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QXAG5J1BV1JSP6W6G9', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q95527SM8SJK2QRH4R', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QFDM0XSX8VXAHZ31EG', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QVNXPS112TGMJTTHTJ', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a product attribute', '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Product Attribute Value
-		('01M0A1P4QKK2BS2M7Q4ZJVX3ED', 'Create', 'create', NULL, '01M0A1P4QAH9DQW7VXG9K87HWP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QBJYDR8D8Y1EESRH4W', 'Update', 'update', NULL, '01M0A1P4QAH9DQW7VXG9K87HWP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q71ATJEWZM1BAM7E3N', 'Delete', 'delete', NULL, '01M0A1P4QAH9DQW7VXG9K87HWP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q4QF419T7W52WS0HMF', 'Read', 'read', NULL, '01M0A1P4QAH9DQW7VXG9K87HWP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QEYDQTRE7QH9NHGQA3', 'Set archived status', 'set_archived', 'Archive a product attribute value', '01M0A1P4QAH9DQW7VXG9K87HWP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QKK2BS2M7Q4ZJVX3ED', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4QAH9DQW7VXG9K87HWP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QBJYDR8D8Y1EESRH4W', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0A1P4QAH9DQW7VXG9K87HWP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q71ATJEWZM1BAM7E3N', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0A1P4QAH9DQW7VXG9K87HWP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q4QF419T7W52WS0HMF', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0A1P4QAH9DQW7VXG9K87HWP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QEYDQTRE7QH9NHGQA3', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a product attribute value', '01M0A1P4QAH9DQW7VXG9K87HWP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Brand
-		('01M0A1P4QKBPP966KQK6NDTY5P', 'Create', 'create', NULL, '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QXRE54C2AJPY554FD9', 'Update', 'update', NULL, '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QCM2KQ3VNHZVHGV45P', 'Delete', 'delete', NULL, '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QRS1VZA44V25595WBX', 'Read', 'read', NULL, '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q67457GP4WXDW09M6F', 'Set archived status', 'set_archived', 'Archive a brand', '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0A1P4QKBPP966KQK6NDTY5P', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QXRE54C2AJPY554FD9', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QCM2KQ3VNHZVHGV45P', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QRS1VZA44V25595WBX', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q67457GP4WXDW09M6F', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a brand', '01M0A1P4QDXYWAJ8D4ZAD50VW7', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
@@ -129,9 +129,9 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0B2Q5R34KTKF2YBXPBBC2JH', 'Stock Location', 'inventory_stock_location', 'Where stock is held, and the counterparties movements run against', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5R9XBX4YENXT9PN8J70', 'Stock Operation Type', 'inventory_stock_operation_type', 'Policy applied when processing a stock transfer', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5R3BQX4QWMQCNPQV5H6', 'Stock Quant', 'inventory_stock_quant', 'Current stock balance at one product, location, lot, package and owner', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0B2Q5R34KTKF2YBXPBBC2JH', jsonb_build_object('en-US', 'Stock Location', 'vi-VN', 'Vị trí kho'), 'inventory_stock_location', 'Where stock is held, and the counterparties movements run against', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5R9XBX4YENXT9PN8J70', jsonb_build_object('en-US', 'Stock Operation Type', 'vi-VN', 'Loại nghiệp vụ kho'), 'inventory_stock_operation_type', 'Policy applied when processing a stock transfer', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5R3BQX4QWMQCNPQV5H6', jsonb_build_object('en-US', 'Stock Quant', 'vi-VN', 'Tồn kho theo vị trí'), 'inventory_stock_quant', 'Current stock balance at one product, location, lot, package and owner', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -141,22 +141,22 @@ BEGIN
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		-- Stock Location
-		('01M0B2Q5RVRPCQHTGPJBZWQZ6P', 'Create', 'create', NULL, '01M0B2Q5R34KTKF2YBXPBBC2JH', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5RBAYTGAPKWX3GJE67S', 'Update', 'update', NULL, '01M0B2Q5R34KTKF2YBXPBBC2JH', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5R9ZY40RV3Z3E87R2PY', 'Delete', 'delete', NULL, '01M0B2Q5R34KTKF2YBXPBBC2JH', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5RXJ7JESHQXT054DFVK', 'Read', 'read', NULL, '01M0B2Q5R34KTKF2YBXPBBC2JH', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5RAG9ZMPANTTK8156YF', 'Set archived status', 'set_archived', 'Archive a stock location so new transfers cannot use it', '01M0B2Q5R34KTKF2YBXPBBC2JH', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5RVRPCQHTGPJBZWQZ6P', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0B2Q5R34KTKF2YBXPBBC2JH', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5RBAYTGAPKWX3GJE67S', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0B2Q5R34KTKF2YBXPBBC2JH', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5R9ZY40RV3Z3E87R2PY', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0B2Q5R34KTKF2YBXPBBC2JH', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5RXJ7JESHQXT054DFVK', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0B2Q5R34KTKF2YBXPBBC2JH', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5RAG9ZMPANTTK8156YF', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a stock location so new transfers cannot use it', '01M0B2Q5R34KTKF2YBXPBBC2JH', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Stock Operation Type
-		('01M0B2Q5RKQM849HKX7JRZ7E18', 'Create', 'create', NULL, '01M0B2Q5R9XBX4YENXT9PN8J70', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5RCCWQAGNZ9QV2KWX6J', 'Update', 'update', NULL, '01M0B2Q5R9XBX4YENXT9PN8J70', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5R42M238624GZGXXJN7', 'Delete', 'delete', NULL, '01M0B2Q5R9XBX4YENXT9PN8J70', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5R450DGZB5QD4YJXPZR', 'Read', 'read', NULL, '01M0B2Q5R9XBX4YENXT9PN8J70', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5R2MZ1210Q7Q59YVGST', 'Set archived status', 'set_archived', 'Archive an operation type so new transfers cannot use it, while historical transfers still resolve it', '01M0B2Q5R9XBX4YENXT9PN8J70', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5RKQM849HKX7JRZ7E18', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0B2Q5R9XBX4YENXT9PN8J70', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5RCCWQAGNZ9QV2KWX6J', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0B2Q5R9XBX4YENXT9PN8J70', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5R42M238624GZGXXJN7', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0B2Q5R9XBX4YENXT9PN8J70', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5R450DGZB5QD4YJXPZR', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0B2Q5R9XBX4YENXT9PN8J70', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5R2MZ1210Q7Q59YVGST', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive an operation type so new transfers cannot use it, while historical transfers still resolve it', '01M0B2Q5R9XBX4YENXT9PN8J70', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Stock Quant. Read only: balances change through an adjustment, transfer or scrap,
 		-- each of which records the movement that justifies the new number (AC-STOCK-002).
-		('01M0B2Q5RPK5A179SW4KMBCQT5', 'Read', 'read', NULL, '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0B2Q5RPK5A179SW4KMBCQT5', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -170,10 +170,10 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0B434KTKF2YBXPBBC2JH9XB', 'Stock Transfer', 'inventory_stock_transfer', 'The header of a stock transaction: what moves, between which locations, in what state', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4X4YENXT9PN8J703BQX4Q', 'Stock Move', 'inventory_stock_move', 'One line of demand within a transfer: this much of this variant, from here to there', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4WMQCNPQV5H6VRPCQHTGP', 'Stock Move Line', 'inventory_stock_move_line', 'The execution detail of a move: what was actually taken, and from which balance', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4JBZWQZ6PBAYTGAPKWX3G', 'Stock Move Dependency', 'inventory_stock_move_dependency', 'Ordering between the steps of a multi-step flow', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0B434KTKF2YBXPBBC2JH9XB', jsonb_build_object('en-US', 'Stock Transfer', 'vi-VN', 'Phiếu chuyển kho'), 'inventory_stock_transfer', 'The header of a stock transaction: what moves, between which locations, in what state', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4X4YENXT9PN8J703BQX4Q', jsonb_build_object('en-US', 'Stock Move', 'vi-VN', 'Dịch chuyển kho'), 'inventory_stock_move', 'One line of demand within a transfer: this much of this variant, from here to there', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4WMQCNPQV5H6VRPCQHTGP', jsonb_build_object('en-US', 'Stock Move Line', 'vi-VN', 'Dòng dịch chuyển kho'), 'inventory_stock_move_line', 'The execution detail of a move: what was actually taken, and from which balance', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4JBZWQZ6PBAYTGAPKWX3G', jsonb_build_object('en-US', 'Stock Move Dependency', 'vi-VN', 'Phụ thuộc dịch chuyển kho'), 'inventory_stock_move_dependency', 'Ordering between the steps of a multi-step flow', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -183,30 +183,30 @@ BEGIN
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		-- Stock Transfer: CRUD, then the six movement operations.
-		('01M0B4JE67S9ZY40RV3Z3E87R2', 'Create', 'create', NULL, '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4PYXJ7JESHQXT054DFVKA', 'Update', 'update', NULL, '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4G9ZMPANTTK8156YFKQM8', 'Delete', 'delete', NULL, '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B449HKX7JRZ7E18CCWQAGN', 'Read', 'read', NULL, '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4Z9QV2KWX6J42M238624G', 'Confirm', 'confirm', 'Commit a draft transfer to its demand, reserving stock when the operation type says so', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4ZGXXJN7450DGZB5QD4YJ', 'Reserve', 'reserve', 'Claim stock for the transfer''s moves without moving any of it', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4XPZR2MZ1210Q7Q59YVGS', 'Unreserve', 'unreserve', 'Release the transfer''s claims, leaving on-hand quantities untouched', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4TPK5A179SW4KMBCQT5HY', 'Validate', 'validate', 'Execute the transfer: the only operation that changes an on-hand balance, and one no edit can undo', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4JHJFQXQF7T7WT9PJ6A5Z', 'Cancel', 'cancel', 'Abandon an unfinished transfer, releasing whatever it holds', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4JE67S9ZY40RV3Z3E87R2', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4PYXJ7JESHQXT054DFVKA', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4G9ZMPANTTK8156YFKQM8', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B449HKX7JRZ7E18CCWQAGN', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4Z9QV2KWX6J42M238624G', jsonb_build_object('en-US', 'Confirm', 'vi-VN', 'Xác nhận'), 'confirm', 'Commit a draft transfer to its demand, reserving stock when the operation type says so', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4ZGXXJN7450DGZB5QD4YJ', jsonb_build_object('en-US', 'Reserve', 'vi-VN', 'Giữ chỗ'), 'reserve', 'Claim stock for the transfer''s moves without moving any of it', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4XPZR2MZ1210Q7Q59YVGS', jsonb_build_object('en-US', 'Unreserve', 'vi-VN', 'Hủy giữ chỗ'), 'unreserve', 'Release the transfer''s claims, leaving on-hand quantities untouched', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4TPK5A179SW4KMBCQT5HY', jsonb_build_object('en-US', 'Validate', 'vi-VN', 'Thực hiện chuyển kho'), 'validate', 'Execute the transfer: the only operation that changes an on-hand balance, and one no edit can undo', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4JHJFQXQF7T7WT9PJ6A5Z', jsonb_build_object('en-US', 'Cancel', 'vi-VN', 'Hủy'), 'cancel', 'Abandon an unfinished transfer, releasing whatever it holds', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Stock Move
-		('01M0B4SPVX86PAWSQHJ62WARZ4', 'Create', 'create', NULL, '01M0B4X4YENXT9PN8J703BQX4Q', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B46CHAF22AG5P8MSV3APSZ', 'Update', 'update', NULL, '01M0B4X4YENXT9PN8J703BQX4Q', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4WV9PR3JJWM5V1RSFBTK2', 'Delete', 'delete', NULL, '01M0B4X4YENXT9PN8J703BQX4Q', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4SBHVJWKG3EXFYP6CDZHY', 'Read', 'read', NULL, '01M0B4X4YENXT9PN8J703BQX4Q', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4SPVX86PAWSQHJ62WARZ4', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0B4X4YENXT9PN8J703BQX4Q', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B46CHAF22AG5P8MSV3APSZ', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0B4X4YENXT9PN8J703BQX4Q', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4WV9PR3JJWM5V1RSFBTK2', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0B4X4YENXT9PN8J703BQX4Q', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4SBHVJWKG3EXFYP6CDZHY', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0B4X4YENXT9PN8J703BQX4Q', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Stock Move Line. Read only: its rows are written by the reservation engine, and a
 		-- client-written allocation would be a claim the balance itself knows nothing about.
-		('01M0B4KB8JA48CQRTMF6J1B9WY', 'Read', 'read', NULL, '01M0B4WMQCNPQV5H6VRPCQHTGP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4KB8JA48CQRTMF6J1B9WY', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0B4WMQCNPQV5H6VRPCQHTGP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Stock Move Dependency
-		('01M0B4GJM613QQCEKG6NVT8675', 'Create', 'create', NULL, '01M0B4JBZWQZ6PBAYTGAPKWX3G', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B44FMEYRB12NBBJPDHH40T', 'Delete', 'delete', NULL, '01M0B4JBZWQZ6PBAYTGAPKWX3G', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B407H0YTHMAN6ZHPANDZBA', 'Read', 'read', NULL, '01M0B4JBZWQZ6PBAYTGAPKWX3G', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0B4GJM613QQCEKG6NVT8675', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0B4JBZWQZ6PBAYTGAPKWX3G', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B44FMEYRB12NBBJPDHH40T', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0B4JBZWQZ6PBAYTGAPKWX3G', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B407H0YTHMAN6ZHPANDZBA', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0B4JBZWQZ6PBAYTGAPKWX3G', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -224,7 +224,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0C3SQRTAAAAAAAAAAAAAAAB', 'Stock Scrap', 'inventory_stock_scrap', 'A document that removes goods from usable stock by moving them to a scrap location', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0C3SQRTAAAAAAAAAAAAAAAB', jsonb_build_object('en-US', 'Stock Scrap', 'vi-VN', 'Hủy hàng tồn kho'), 'inventory_stock_scrap', 'A document that removes goods from usable stock by moving them to a scrap location', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -234,23 +234,23 @@ BEGIN
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		-- Stock Scrap: CRUD, then the operation that executes the document.
-		('01M0C3SQRTAAAAAAAAAAAAAAAC', 'Create', 'create', NULL, '01M0C3SQRTAAAAAAAAAAAAAAAB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0C3SQRTAAAAAAAAAAAAAAAD', 'Update', 'update', NULL, '01M0C3SQRTAAAAAAAAAAAAAAAB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0C3SQRTAAAAAAAAAAAAAAAE', 'Delete', 'delete', NULL, '01M0C3SQRTAAAAAAAAAAAAAAAB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0C3SQRTAAAAAAAAAAAAAAAF', 'Read', 'read', NULL, '01M0C3SQRTAAAAAAAAAAAAAAAB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0C3SQRTAAAAAAAAAAAAAAAG', 'Do Scrap', 'do_scrap', 'Execute the scrap: generate the movement that writes the goods off. Cannot be undone by an edit.', '01M0C3SQRTAAAAAAAAAAAAAAAB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRTAAAAAAAAAAAAAAAC', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0C3SQRTAAAAAAAAAAAAAAAB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRTAAAAAAAAAAAAAAAD', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0C3SQRTAAAAAAAAAAAAAAAB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRTAAAAAAAAAAAAAAAE', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0C3SQRTAAAAAAAAAAAAAAAB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRTAAAAAAAAAAAAAAAF', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0C3SQRTAAAAAAAAAAAAAAAB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRTAAAAAAAAAAAAAAAG', jsonb_build_object('en-US', 'Do Scrap', 'vi-VN', 'Thực hiện hủy hàng'), 'do_scrap', 'Execute the scrap: generate the movement that writes the goods off. Cannot be undone by an edit.', '01M0C3SQRTAAAAAAAAAAAAAAAB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Physical inventory and cycle counting, on the Stock Quant resource seeded above. None of
 		-- these writes on_hand_quantity: enter and reset write count metadata, and apply changes
 		-- the balance only by generating a movement.
-		('01M0C3SQRTAAAAAAAAAAAAAAAH', 'Enter Count', 'enter_count', 'Record what a physical count found. Does not change the balance.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0C3SQRTAAAAAAAAAAAAAAAJ', 'Reset Count', 'reset_count', 'Abandon a pending count. Does not change the balance.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0C3SQRTAAAAAAAAAAAAAAAK', 'Apply Adjustment', 'apply_adjustment', 'Turn a pending count into a real balance change by generating an adjustment movement.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0C3SQRTAAAAAAAAAAAAABA', 'Schedule Count', 'schedule_count', 'Set when a balance is next due to be counted.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0C3SQRTAAAAAAAAAAAAABB', 'Assign Counter', 'assign_counter', 'Name who is responsible for counting a balance.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRTAAAAAAAAAAAAAAAH', jsonb_build_object('en-US', 'Enter Count', 'vi-VN', 'Nhập số lượng kiểm đếm'), 'enter_count', 'Record what a physical count found. Does not change the balance.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRTAAAAAAAAAAAAAAAJ', jsonb_build_object('en-US', 'Reset Count', 'vi-VN', 'Đặt lại số kiểm đếm'), 'reset_count', 'Abandon a pending count. Does not change the balance.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRTAAAAAAAAAAAAAAAK', jsonb_build_object('en-US', 'Apply Adjustment', 'vi-VN', 'Áp dụng điều chỉnh'), 'apply_adjustment', 'Turn a pending count into a real balance change by generating an adjustment movement.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRTAAAAAAAAAAAAABA', jsonb_build_object('en-US', 'Schedule Count', 'vi-VN', 'Lên lịch kiểm đếm'), 'schedule_count', 'Set when a balance is next due to be counted.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRTAAAAAAAAAAAAABB', jsonb_build_object('en-US', 'Assign Counter', 'vi-VN', 'Phân công người kiểm đếm'), 'assign_counter', 'Name who is responsible for counting a balance.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Create Reverse Transfer, on the Stock Transfer resource seeded above.
-		('01M0C3SQRTAAAAAAAAAAAAABC', 'Create Return', 'create_return', 'Raise a reverse transfer for goods coming back. Never alters the original transfer.', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0C3SQRTAAAAAAAAAAAAABC', jsonb_build_object('en-US', 'Create Return', 'vi-VN', 'Tạo phiếu trả hàng'), 'create_return', 'Raise a reverse transfer for goods coming back. Never alters the original transfer.', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -262,10 +262,10 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_resources'
 	) THEN
 		INSERT INTO "iam_resources" ("id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag") VALUES
-		('01M1N2Q3V769G2C81EBDXR3QH8', 'Warehouse', 'inventory_warehouse', 'A site that can receive, hold and dispatch goods', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M14PV5Q32776611SWMJMG04X', 'Storage Category', 'inventory_storage_category', 'Capacity and mixing policy a location may carry', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1E4451SXVZ5KBSM1HEPQWAZ', 'Warehouse Supply Relation', 'inventory_warehouse_supply_relation', 'Which warehouse may resupply which', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1E4XEPDJ24JDTC2R8H18X78', 'Putaway Rule', 'inventory_putaway_rule', 'Where arriving goods should be put', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M1N2Q3V769G2C81EBDXR3QH8', jsonb_build_object('en-US', 'Warehouse', 'vi-VN', 'Kho hàng'), 'inventory_warehouse', 'A site that can receive, hold and dispatch goods', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M14PV5Q32776611SWMJMG04X', jsonb_build_object('en-US', 'Storage Category', 'vi-VN', 'Loại lưu trữ'), 'inventory_storage_category', 'Capacity and mixing policy a location may carry', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1E4451SXVZ5KBSM1HEPQWAZ', jsonb_build_object('en-US', 'Warehouse Supply Relation', 'vi-VN', 'Quan hệ cung ứng kho'), 'inventory_warehouse_supply_relation', 'Which warehouse may resupply which', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1E4XEPDJ24JDTC2R8H18X78', jsonb_build_object('en-US', 'Putaway Rule', 'vi-VN', 'Quy tắc cất hàng'), 'inventory_putaway_rule', 'Where arriving goods should be put', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -275,37 +275,37 @@ BEGIN
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		-- Warehouse
-		('01M11G6HTXQC836YT846V981EN', 'Create', 'create', NULL, '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1G8C02SBBVGGFDCPEPE1EM2', 'Update', 'update', NULL, '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M167H9RH93W0BACXVP7K49AY', 'Delete', 'delete', NULL, '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1PD46HPM6N2Z5ZN8Y4MW8P8', 'Read', 'read', NULL, '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1BTGBM50Y0A8CB3EBC4XPRD', 'Set archived status', 'set_archived', 'Archive a warehouse so it is no longer offered for new work, while historical movements still resolve it', '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M16PK8AJTWVK2CN1G9Q26TW9', 'Suspend', 'suspend', 'Temporarily close a warehouse for repairs, a count or an incident, without archiving it', '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1TNQ0YZ60Q6M983RYMENHT9', 'Resume', 'resume', 'Return a suspended warehouse to service once its configuration is verified', '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1QM9N8PJXZRZ7SFT7A1TYE7', 'Configure incoming flow', 'configure_incoming_flow', 'Change how many stops goods make on the way in, provisioning the locations the new flow needs', '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1S7KGMGPV9P521Q90M9XS6G', 'Configure outgoing flow', 'configure_outgoing_flow', 'Change how many stops goods make on the way out, provisioning the locations the new flow needs', '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M11G6HTXQC836YT846V981EN', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1G8C02SBBVGGFDCPEPE1EM2', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M167H9RH93W0BACXVP7K49AY', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1PD46HPM6N2Z5ZN8Y4MW8P8', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1BTGBM50Y0A8CB3EBC4XPRD', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a warehouse so it is no longer offered for new work, while historical movements still resolve it', '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M16PK8AJTWVK2CN1G9Q26TW9', jsonb_build_object('en-US', 'Suspend', 'vi-VN', 'Tạm ngưng'), 'suspend', 'Temporarily close a warehouse for repairs, a count or an incident, without archiving it', '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1TNQ0YZ60Q6M983RYMENHT9', jsonb_build_object('en-US', 'Resume', 'vi-VN', 'Tiếp tục sử dụng'), 'resume', 'Return a suspended warehouse to service once its configuration is verified', '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1QM9N8PJXZRZ7SFT7A1TYE7', jsonb_build_object('en-US', 'Configure incoming flow', 'vi-VN', 'Cấu hình luồng nhập'), 'configure_incoming_flow', 'Change how many stops goods make on the way in, provisioning the locations the new flow needs', '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1S7KGMGPV9P521Q90M9XS6G', jsonb_build_object('en-US', 'Configure outgoing flow', 'vi-VN', 'Cấu hình luồng xuất'), 'configure_outgoing_flow', 'Change how many stops goods make on the way out, provisioning the locations the new flow needs', '01M1N2Q3V769G2C81EBDXR3QH8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Storage Category
-		('01M1R2YXJCBHS46FFG1S741XSB', 'Create', 'create', NULL, '01M14PV5Q32776611SWMJMG04X', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1YWJX8MCN9FHS7TT5QBTJD2', 'Update', 'update', NULL, '01M14PV5Q32776611SWMJMG04X', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1NSGN47CJFD0YJ0ZAZ72BDS', 'Delete', 'delete', NULL, '01M14PV5Q32776611SWMJMG04X', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1PGC9D35JZXEJQYD02NT6VA', 'Read', 'read', NULL, '01M14PV5Q32776611SWMJMG04X', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1JRTC2M87NX1J47HCS96BJG', 'Set archived status', 'set_archived', 'Archive a storage category so it can no longer be assigned to a location', '01M14PV5Q32776611SWMJMG04X', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1R2YXJCBHS46FFG1S741XSB', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M14PV5Q32776611SWMJMG04X', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1YWJX8MCN9FHS7TT5QBTJD2', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M14PV5Q32776611SWMJMG04X', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1NSGN47CJFD0YJ0ZAZ72BDS', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M14PV5Q32776611SWMJMG04X', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1PGC9D35JZXEJQYD02NT6VA', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M14PV5Q32776611SWMJMG04X', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1JRTC2M87NX1J47HCS96BJG', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a storage category so it can no longer be assigned to a location', '01M14PV5Q32776611SWMJMG04X', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Warehouse Supply Relation
-		('01M1XKQ3Q4JB467QQH3V2ZTS5H', 'Create', 'create', NULL, '01M1E4451SXVZ5KBSM1HEPQWAZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1Y4K0P5B82YYA7HMV104YDC', 'Update', 'update', NULL, '01M1E4451SXVZ5KBSM1HEPQWAZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M18GYESY6RFGGBTSWJV2G8BV', 'Delete', 'delete', NULL, '01M1E4451SXVZ5KBSM1HEPQWAZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1Q433TWYAQCQZQYRCD3TEZG', 'Read', 'read', NULL, '01M1E4451SXVZ5KBSM1HEPQWAZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1FYVTS2JJ20WF0TDFFT1MVY', 'Set archived status', 'set_archived', 'Archive a supply relation so it is no longer used for resupply planning', '01M1E4451SXVZ5KBSM1HEPQWAZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1XKQ3Q4JB467QQH3V2ZTS5H', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M1E4451SXVZ5KBSM1HEPQWAZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1Y4K0P5B82YYA7HMV104YDC', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M1E4451SXVZ5KBSM1HEPQWAZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M18GYESY6RFGGBTSWJV2G8BV', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M1E4451SXVZ5KBSM1HEPQWAZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1Q433TWYAQCQZQYRCD3TEZG', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M1E4451SXVZ5KBSM1HEPQWAZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1FYVTS2JJ20WF0TDFFT1MVY', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a supply relation so it is no longer used for resupply planning', '01M1E4451SXVZ5KBSM1HEPQWAZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Putaway Rule
-		('01M1R8PK2PYCKKW6N92Z87HEZ9', 'Create', 'create', NULL, '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1PF44FEPSM3KX9MX66G7VVJ', 'Update', 'update', NULL, '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1T7FFNF5CABX8M810TBBPVR', 'Delete', 'delete', NULL, '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1ZC6FM2WHP5FHPVH2GY5VZ2', 'Read', 'read', NULL, '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1XC5WGZDP897TE11RA0GEAX', 'Set archived status', 'set_archived', 'Archive a putaway rule so it is no longer evaluated', '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1322KA4ECQBCC1QA126YC6P', 'Suggest location', 'suggest_location', 'Ask where arriving goods should be put. Returns a suggestion and changes nothing', '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M1R8PK2PYCKKW6N92Z87HEZ9', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1PF44FEPSM3KX9MX66G7VVJ', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1T7FFNF5CABX8M810TBBPVR', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1ZC6FM2WHP5FHPVH2GY5VZ2', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1XC5WGZDP897TE11RA0GEAX', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a putaway rule so it is no longer evaluated', '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1322KA4ECQBCC1QA126YC6P', jsonb_build_object('en-US', 'Suggest location', 'vi-VN', 'Gợi ý vị trí'), 'suggest_location', 'Ask where arriving goods should be put. Returns a suggestion and changes nothing', '01M1E4XEPDJ24JDTC2R8H18X78', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -322,13 +322,13 @@ BEGIN
 		SELECT FROM "iam_resources" WHERE "code" = 'inventory_location'
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag")
-		SELECT '01M10ZMX7HPFP8P614NF0520ET', 'Suspend', 'suspend', 'Temporarily take a location out of use, keeping whatever it holds', "id", (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text
+		SELECT '01M10ZMX7HPFP8P614NF0520ET', jsonb_build_object('en-US', 'Suspend', 'vi-VN', 'Tạm ngưng'), 'suspend', 'Temporarily take a location out of use, keeping whatever it holds', "id", (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text
 		FROM "iam_resources" WHERE "code" = 'inventory_location'
 		UNION ALL
-		SELECT '01M1M8VKXZ79440FXRX307GZPQ', 'Resume', 'resume', 'Return a suspended location to use', "id", (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text
+		SELECT '01M1M8VKXZ79440FXRX307GZPQ', jsonb_build_object('en-US', 'Resume', 'vi-VN', 'Tiếp tục sử dụng'), 'resume', 'Return a suspended location to use', "id", (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text
 		FROM "iam_resources" WHERE "code" = 'inventory_location'
 		UNION ALL
-		SELECT '01M1ZHTE67SWYQV8P2J24P9C6F', 'Move', 'move', 'Re-parent a location, rewriting the cached path of everything beneath it', "id", (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text
+		SELECT '01M1ZHTE67SWYQV8P2J24P9C6F', jsonb_build_object('en-US', 'Move', 'vi-VN', 'Di chuyển'), 'move', 'Re-parent a location, rewriting the cached path of everything beneath it', "id", (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text
 		FROM "iam_resources" WHERE "code" = 'inventory_location'
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
@@ -362,7 +362,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M2A7QK3P5NXCW9VBDT4RGZH2', 'Stock Product Configuration', 'inventory_stock_product_config', 'Stock settings of a product line, currently the unit its balances are counted in', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2A7QK3P5NXCW9VBDT4RGZH2', jsonb_build_object('en-US', 'Stock Product Configuration', 'vi-VN', 'Cấu hình kho của sản phẩm'), 'inventory_stock_product_config', 'Stock settings of a product line, currently the unit its balances are counted in', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -371,13 +371,13 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_actions'
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
-		('01M2A7QK3PB8YFHV5JQW6E2SND', 'Create', 'create', 'Set the unit a product line''s stock is counted in', '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2A7QK3PC4TZR7KDXA9HM3VE', 'Read', 'read', NULL, '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2A7QK3PB8YFHV5JQW6E2SND', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', 'Set the unit a product line''s stock is counted in', '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2A7QK3PC4TZR7KDXA9HM3VE', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Changing the unit after stock has moved would reinterpret every quantity ever recorded,
 		-- so the engine refuses it outright. This permission covers the case where it is still
 		-- allowed: a product that has never been used.
-		('01M2A7QK3PDGX2W8N4VJQ5F7BK', 'Update', 'update', 'Change the unit, which the engine permits only while the product has no stock or stock history', '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2A7QK3PEH6RQY3TZB8KCW9M', 'Delete', 'delete', NULL, '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2A7QK3PDGX2W8N4VJQ5F7BK', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', 'Change the unit, which the engine permits only while the product has no stock or stock history', '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2A7QK3PEH6RQY3TZB8KCW9M', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M2A7QK3P5NXCW9VBDT4RGZH2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -391,7 +391,7 @@ BEGIN
 		SELECT FROM "iam_resources" WHERE "code" = 'inventory_stock_quant'
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag")
-		SELECT '01M2A7QK3PF9J5MXV2NQ8YT4HR', 'Read Product Stock', 'read_product_stock', 'See how much stock a product has, where it sits and what would be stranded by archiving it. Reads only.', "id", (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text
+		SELECT '01M2A7QK3PF9J5MXV2NQ8YT4HR', jsonb_build_object('en-US', 'Read Product Stock', 'vi-VN', 'Xem tồn kho sản phẩm'), 'read_product_stock', 'See how much stock a product has, where it sits and what would be stranded by archiving it. Reads only.', "id", (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text
 		FROM "iam_resources" WHERE "code" = 'inventory_stock_quant'
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
@@ -421,7 +421,7 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_actions'
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
-		('01M3NVFRES0000000000000001', 'Apply fulfillment result', 'apply_fulfillment_result', 'Record what an executor physically handed over against a reservation: consume what left, release the hold on what did not', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3NVFRES0000000000000001', jsonb_build_object('en-US', 'Apply fulfillment result', 'vi-VN', 'Áp dụng kết quả giao hàng'), 'apply_fulfillment_result', 'Record what an executor physically handed over against a reservation: consume what left, release the hold on what did not', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
@@ -439,7 +439,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3WHRSV00000000000000001', 'Stock Reservation', 'inventory_stock_reservation', 'A quantity of one variant committed at one warehouse to one demand line, with no location chosen', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3WHRSV00000000000000001', jsonb_build_object('en-US', 'Stock Reservation', 'vi-VN', 'Giữ chỗ tồn kho'), 'inventory_stock_reservation', 'A quantity of one variant committed at one warehouse to one demand line, with no location chosen', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -448,11 +448,11 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_actions'
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
-		('01M3WHRSVACT00000000000001', 'Read', 'read', NULL, '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3WHRSVACT00000000000002', 'Reserve warehouse stock', 'reserve_warehouse_stock', 'Commit quantities of variants at a warehouse to a demand, all lines or none', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3WHRSVACT00000000000003', 'Check warehouse availability', 'check_warehouse_availability', 'Read how much of a variant a warehouse can still commit, without promising it', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3WHRSVACT00000000000004', 'Release reservation', 'release_reservation', 'Give back the unconsumed remainder of a reservation. Moves no stock', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3WHRSVACT00000000000005', 'Consume reservation', 'consume_reservation', 'Record goods that physically left stock against a reservation, from the locations actually used', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3WHRSVACT00000000000001', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3WHRSVACT00000000000002', jsonb_build_object('en-US', 'Reserve warehouse stock', 'vi-VN', 'Giữ chỗ tồn kho'), 'reserve_warehouse_stock', 'Commit quantities of variants at a warehouse to a demand, all lines or none', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3WHRSVACT00000000000003', jsonb_build_object('en-US', 'Check warehouse availability', 'vi-VN', 'Kiểm tra tồn kho khả dụng'), 'check_warehouse_availability', 'Read how much of a variant a warehouse can still commit, without promising it', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3WHRSVACT00000000000004', jsonb_build_object('en-US', 'Release reservation', 'vi-VN', 'Giải phóng hàng giữ chỗ'), 'release_reservation', 'Give back the unconsumed remainder of a reservation. Moves no stock', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3WHRSVACT00000000000005', jsonb_build_object('en-US', 'Consume reservation', 'vi-VN', 'Sử dụng hàng đã giữ chỗ'), 'consume_reservation', 'Record goods that physically left stock against a reservation, from the locations actually used', '01M3WHRSV00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

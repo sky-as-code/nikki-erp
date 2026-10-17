@@ -12,8 +12,8 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01KZJ8Q3ZK7XN4WVBM2PDHR5T0', 'Unit of Measure', 'essential_uom', 'Units of measure and their conversion factors', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', 'UoM Category', 'essential_uomcat', 'Categories that bound unit-of-measure conversion', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
+		('01KZJ8Q3ZK7XN4WVBM2PDHR5T0', jsonb_build_object('en-US', 'Unit of Measure', 'vi-VN', 'Đơn vị tính'), 'essential_uom', 'Units of measure and their conversion factors', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', jsonb_build_object('en-US', 'UoM Category', 'vi-VN', 'Nhóm đơn vị tính'), 'essential_uomcat', 'Categories that bound unit-of-measure conversion', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
 	END IF;
 
 	IF EXISTS (
@@ -22,16 +22,16 @@ BEGIN
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		-- Unit of Measure
-		('01KZJ8Q3ZKC2M9YHTV5KFAP7W3', 'Create', 'create', NULL, '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKD5R0XQGN8JBSE1Y4', 'Update', 'update', NULL, '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKE7S3ZPKW1MCTF6Z5', 'Delete', 'delete', NULL, '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKF9T5A1NX3PDVG8B6', 'Read', 'read', NULL, '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKG1V7B2QY4RFWH9C7', 'Set archived status', 'set_archived', 'Archive a UoM so it cannot be used by new transactions', '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKC2M9YHTV5KFAP7W3', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKD5R0XQGN8JBSE1Y4', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKE7S3ZPKW1MCTF6Z5', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKF9T5A1NX3PDVG8B6', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKG1V7B2QY4RFWH9C7', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a UoM so it cannot be used by new transactions', '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- UoM Category
-		('01KZJ8Q3ZKH3W9C4RZ6SGXJ0D8', 'Create', 'create', NULL, '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKJ5X1D6S08THYK2E9', 'Update', 'update', NULL, '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKK7Y3E8T1AVJZL4F0', 'Delete', 'delete', NULL, '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKM9Z5F0V3BWK1M6G1', 'Read', 'read', NULL, '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
+		('01KZJ8Q3ZKH3W9C4RZ6SGXJ0D8', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKJ5X1D6S08THYK2E9', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKK7Y3E8T1AVJZL4F0', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKM9Z5F0V3BWK1M6G1', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
 	END IF;
 
 	IF EXISTS (

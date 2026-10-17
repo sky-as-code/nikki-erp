@@ -26,13 +26,12 @@ func ActionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Label(model.NewLangJsonRefSf("%s.label", ActionSchemaName)).
 		TableName("iam_actions").
 		DefaultSearchFields("name", "code", "description").
-		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{ActionFieldResourceId, ActionFieldName}}).
 		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{ActionFieldResourceId, ActionFieldCode}}).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().Name(ActionFieldName).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
+				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
@@ -125,10 +124,10 @@ func (this *Action) SetResourceId(v *model.Id) {
 	this.GetFieldData().SetModelId(ActionFieldResourceId, v)
 }
 
-func (this Action) GetName() *string {
-	return this.GetFieldData().GetString(ActionFieldName)
+func (this Action) GetName() *model.LangJson {
+	return this.GetFieldData().GetLangJson(ActionFieldName)
 }
 
-func (this *Action) SetName(v *string) {
-	this.GetFieldData().SetString(ActionFieldName, v)
+func (this *Action) SetName(v *model.LangJson) {
+	this.GetFieldData().SetLangJson(ActionFieldName, v)
 }
