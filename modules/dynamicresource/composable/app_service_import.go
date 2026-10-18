@@ -80,7 +80,7 @@ func (this *DefaultApplicationServiceImpl) prepareImportFile(cmd ImportCommand) 
 	}
 	ext := strings.ToLower(strings.TrimPrefix(path.Ext(cmd.FileHeader.Filename), "."))
 	if !this.importLimits.IsAllowed(ext) {
-		return nil, "", singleClientError(ft.NewValidationError(ImportFormFile, "err_file_type_not_allowed",
+		return nil, "", singleClientError(ft.NewValidationError(ImportFormFile, ft.ErrorKey("err_file_type_not_allowed"),
 			"file type {{actual}} is not one of {{allowed}}",
 			map[string]any{"allowed": this.importLimits.AllowedExtensions, "actual": ext}))
 	}

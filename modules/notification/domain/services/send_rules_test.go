@@ -78,12 +78,12 @@ func (this *fakeRegistry) ValidateArgs(
 		name := modconstants.ChannelName(key)
 		if !this.IsRegistered(key) {
 			errs = append(errs, *ft.NewValidationError(
-				"channel_args."+key, "err_channel_args_unknown_channel", "unknown channel"))
+				"channel_args."+key, "notification:err_channel_args_unknown_channel", "unknown channel"))
 			continue
 		}
 		if !isRequested[name] {
 			errs = append(errs, *ft.NewValidationError(
-				"channel_args."+key, "err_channel_args_not_requested", "channel not a destination"))
+				"channel_args."+key, "notification:err_channel_args_not_requested", "channel not a destination"))
 			continue
 		}
 		this.validatedWith[name]++
@@ -172,7 +172,7 @@ func TestEmptyChannelListIsRejected(t *testing.T) {
 	request := validRequest()
 	request.Channels = []string{}
 
-	assert.Contains(t, errorKeys(request), "err_channels_empty")
+	assert.Contains(t, errorKeys(request), "notification:err_channels_empty")
 }
 
 // BR 11.8: an unregistered channel is refused rather than dropped, so a typo does not look like a
@@ -181,7 +181,7 @@ func TestUnknownChannelIsRejected(t *testing.T) {
 	request := validRequest()
 	request.Channels = []string{"telegram"}
 
-	assert.Contains(t, errorKeys(request), "err_channel_unknown")
+	assert.Contains(t, errorKeys(request), "notification:err_channel_unknown")
 }
 
 // BR 11.9: asking for one channel twice is unambiguous, so it collapses instead of erroring.
@@ -219,10 +219,10 @@ func TestRequiredFieldsAreEnforced(t *testing.T) {
 
 	keys := errorKeys(request)
 
-	assert.Contains(t, keys, "err_recipients_required")
-	assert.Contains(t, keys, "err_title_required")
-	assert.Contains(t, keys, "err_message_required")
-	assert.Contains(t, keys, "err_source_module_required")
+	assert.Contains(t, keys, "notification:err_recipients_required")
+	assert.Contains(t, keys, "notification:err_title_required")
+	assert.Contains(t, keys, "notification:err_message_required")
+	assert.Contains(t, keys, "notification:err_source_module_required")
 }
 
 // Every problem is reported at once rather than one call at a time.
@@ -242,7 +242,7 @@ func TestUnknownSeverityIsRejected(t *testing.T) {
 	request := validRequest()
 	request.Severity = "catastrophic"
 
-	assert.Contains(t, errorKeys(request), "err_severity_unknown")
+	assert.Contains(t, errorKeys(request), "notification:err_severity_unknown")
 }
 
 // A blank key must not claim the single "no key" slot the partial unique leaves per organization
@@ -335,7 +335,7 @@ func TestAChannelIsAskedEvenWhenNoArgumentsWereSent(t *testing.T) {
 
 func TestAChannelMayRefuseItsOwnArguments(t *testing.T) {
 	registry := webOnly()
-	registry.argErrors[modconstants.ChannelWeb] = "err_app_link_scheme_unsupported"
+	registry.argErrors[modconstants.ChannelWeb] = "notification:err_app_link_scheme_unsupported"
 
 	request := validRequest()
 	request.Channels = []string{"web"}
@@ -346,7 +346,7 @@ func TestAChannelMayRefuseItsOwnArguments(t *testing.T) {
 	_, errs := normalizeWith(registry, request)
 
 	require.Len(t, errs, 1)
-	assert.Equal(t, "err_app_link_scheme_unsupported", errs[0].Key)
+	assert.Equal(t, "notification:err_app_link_scheme_unsupported", errs[0].Key)
 }
 
 // A name nobody answers to is a mistake, and is refused for the same reason an unknown name in
@@ -358,7 +358,7 @@ func TestArgumentsForAnUnknownChannelAreRefused(t *testing.T) {
 		"webbapp": {"app_link": "nikkiweb://x"},
 	}
 
-	assert.Contains(t, errorKeys(request), "err_channel_args_unknown_channel")
+	assert.Contains(t, errorKeys(request), "notification:err_channel_args_unknown_channel")
 }
 
 // Arguments for a channel this notification does not go to are refused rather than ignored: the
@@ -374,7 +374,7 @@ func TestArgumentsForAnUnrequestedChannelAreRefused(t *testing.T) {
 	_, errs := normalizeWith(registry, request)
 
 	require.Len(t, errs, 1)
-	assert.Equal(t, "err_channel_args_not_requested", errs[0].Key)
+	assert.Equal(t, "notification:err_channel_args_not_requested", errs[0].Key)
 }
 
 // Under mode "all" the sender named no channels, so "requested" means what the organization has
@@ -391,7 +391,7 @@ func TestUnrequestedArgumentsAreJudgedAgainstTheResolvedSetUnderModeAll(t *testi
 	_, errs := normalizeWith(registry, request)
 
 	require.Len(t, errs, 1)
-	assert.Equal(t, "err_channel_args_not_requested", errs[0].Key)
+	assert.Equal(t, "notification:err_channel_args_not_requested", errs[0].Key)
 }
 
 // Detaching a channel must not need a change anywhere else: the same send that was valid becomes a
@@ -405,5 +405,5 @@ func TestDetachingAChannelLeavesTheRulesIntact(t *testing.T) {
 	_, errs := normalizeWith(registry, request)
 
 	require.NotEmpty(t, errs)
-	assert.Equal(t, "err_channel_unknown", errs[0].Key)
+	assert.Equal(t, "notification:err_channel_unknown", errs[0].Key)
 }

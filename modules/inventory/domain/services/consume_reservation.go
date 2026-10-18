@@ -164,7 +164,8 @@ func (this *StockReservationDomainServiceImpl) consumeUnderGuard(
 func assertConsumeRequestWellFormed(request itStock.ConsumeReservationRequest) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	refuse := func(message string) {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationRequestMalformed, message))
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"), message))
 	}
 	if request.OrgId == "" || request.ReservationId == "" {
 		refuse("org_id and reservation id are required")
@@ -196,7 +197,8 @@ func loadReservationInOrg(
 		return nil, err
 	}
 	if row == nil || stringOf(row, models.StockReservationFieldOrgId) != string(orgId) {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationNotFound,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationNotFound, "inventory"),
 			"reservation '"+string(reservationId)+"' does not exist"))
 		return nil, nil
 	}
@@ -210,13 +212,16 @@ func assertReservationCanConsume(
 	switch {
 	case derefString(reservation.GetReleaseReason()) == models.StockReservationReleaseReasonExpired,
 		derefString(reservation.GetStatus()) == models.StockReservationStatusActive && !IsReservationEffective(reservation, now):
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationExpired,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationExpired, "inventory"),
 			"the reservation lapsed at "+reservation.GetReservedUntil().GoTime().UTC().Format(time.RFC3339)))
 	case derefString(reservation.GetStatus()) != models.StockReservationStatusActive:
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationNotActive,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationNotActive, "inventory"),
 			"the reservation is "+derefString(reservation.GetStatus())+" and holds nothing to consume"))
 	case quantity.GreaterThan(reservation.RemainingQuantity()):
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationQuantityExceeded,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationQuantityExceeded, "inventory"),
 			"consuming "+quantity.String()+" exceeds the "+reservation.RemainingQuantity().String()+" still held"))
 	}
 }
@@ -242,7 +247,8 @@ func resolveConsumeDestination(
 		return "", err
 	}
 	if customer == nil {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonNoCustomerLocation,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonNoCustomerLocation, "inventory"),
 			"this organisation has no customer location to issue goods to"))
 		return "", nil
 	}
@@ -266,7 +272,8 @@ func assertSourcesInWarehouse(
 		if location == nil ||
 			stringOf(location, models.InventoryLocationFieldOrgId) != derefId(reservation.GetOrgId()) ||
 			warehouseId != derefId(reservation.GetWarehouseId()) {
-			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonLocationWarehouseMismatch,
+			vErrs.Append(*ft.NewBusinessViolation(
+				models.StockReservationSchemaName, ft.ErrorKey(ReasonLocationWarehouseMismatch, "inventory"),
 				"location '"+string(source.LocationId)+"' does not belong to the reservation's warehouse"))
 		}
 	}
@@ -328,7 +335,8 @@ func issueActualSources(
 			return "", err
 		}
 		if available := availableForSource(locked, source); available.LessThan(source.Quantity) {
-			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonActualSourceShort,
+			vErrs.Append(*ft.NewBusinessViolation(
+				models.StockReservationSchemaName, ft.ErrorKey(ReasonActualSourceShort, "inventory"),
 				"location '"+string(source.LocationId)+"' holds "+available.String()+" free, not the "+
 					source.Quantity.String()+" reported as taken"))
 			continue

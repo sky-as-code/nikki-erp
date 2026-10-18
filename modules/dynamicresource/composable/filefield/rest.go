@@ -86,7 +86,7 @@ func (this Rest) serveStore(
 
 func missingRecordId() *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewValidationError(basemodel.FieldId, "file.err_record_id_required",
+	vErrs.Append(*ft.NewValidationError(basemodel.FieldId, ft.ErrorKey("file.err_record_id_required"),
 		"the record id is missing from the request path"))
 	return vErrs
 }
@@ -100,12 +100,12 @@ func bindFileUpload(echoCtx *echo.Context) (dmodel.DynamicFields, *multipart.Fil
 
 	contentType := echoCtx.Request().Header.Get(echo.HeaderContentType)
 	if !strings.HasPrefix(contentType, "multipart/form-data") {
-		vErrs.Append(*ft.NewValidationError("body", "file.err_multipart_required",
+		vErrs.Append(*ft.NewValidationError("body", ft.ErrorKey("file.err_multipart_required"),
 			"the request body must be a multipart form with a 'file' part"))
 		return nil, nil, vErrs
 	}
 	if err := echoCtx.Request().ParseMultipartForm(maxUploadMemory); err != nil {
-		vErrs.Append(*ft.NewValidationError("body", "file.err_malformed_multipart",
+		vErrs.Append(*ft.NewValidationError("body", ft.ErrorKey("file.err_malformed_multipart"),
 			"the request body is not a readable multipart form"))
 		return nil, nil, vErrs
 	}
@@ -120,7 +120,7 @@ func bindFileUpload(echoCtx *echo.Context) (dmodel.DynamicFields, *multipart.Fil
 	var file *multipart.FileHeader
 	for name, headers := range form.File {
 		if name != formPartFile {
-			vErrs.Append(*ft.NewValidationError(name, "file.err_upload_part_unknown",
+			vErrs.Append(*ft.NewValidationError(name, ft.ErrorKey("file.err_upload_part_unknown"),
 				"'"+name+"' is not accepted; send the file as the 'file' part"))
 			continue
 		}

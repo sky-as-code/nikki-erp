@@ -102,7 +102,7 @@ func RejectArchivedOnCreate(schema *dmodel.ModelSchema, cmd CreateCommand) Valid
 	}
 	return func(_ corectx.Context, _ *DynamicEntity, _ *DynamicEntity, vErrs *ft.ClientErrors) error {
 		vErrs.Append(*ft.NewBusinessViolation(basemodel.FieldIsArchived,
-			"common.immutable_at_create",
+			ft.ErrorKey("immutable_at_create"),
 			"is_archived cannot be set at create time; use the archived action instead"))
 		return nil
 	}

@@ -68,7 +68,7 @@ func settleBillIfPaid(
 	}
 	if bill == nil {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ReasonBillNotFound,
+		vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ft.ErrorKey(ReasonBillNotFound, "sales"),
 			"no bill exists with id '"+billId+"'"))
 		return nil, vErrs, nil
 	}

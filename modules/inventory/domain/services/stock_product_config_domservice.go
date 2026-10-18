@@ -21,7 +21,7 @@ import (
 func AssertInventoryUomNotInUse(vErrs *ft.ClientErrors) {
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.StockProductConfigSchemaName,
-		"stock_product_config.inventory_uom_in_use",
+		ft.ErrorKey("stock_product_config.inventory_uom_in_use", "inventory"),
 		"the inventory unit cannot be changed once the product has stock or stock history; "+
 			"an administrative migration is required to reinterpret existing quantities",
 	))
@@ -32,7 +32,7 @@ func AssertInventoryUomNotInUse(vErrs *ft.ClientErrors) {
 func AssertInventoryUomNotArchived(vErrs *ft.ClientErrors) {
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.StockProductConfigSchemaName,
-		"stock_product_config.inventory_uom_archived",
+		ft.ErrorKey("stock_product_config.inventory_uom_archived", "inventory"),
 		"an archived unit of measure cannot be chosen as an inventory unit",
 	))
 }

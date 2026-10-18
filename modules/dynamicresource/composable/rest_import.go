@@ -81,12 +81,12 @@ func unknownImportParts(form *multipart.Form) *ft.ClientErrors {
 	cErrs := ft.NewClientErrors()
 	for name := range form.Value {
 		if name != ImportFormMapping {
-			cErrs.Append(*ft.NewValidationError(name, "err_unknown_field", "unknown form part"))
+			cErrs.Append(*ft.NewValidationError(name, ft.ErrorKey("err_unknown_field"), "unknown form part"))
 		}
 	}
 	for name := range form.File {
 		if name != ImportFormFile {
-			cErrs.Append(*ft.NewValidationError(name, "err_unknown_field", "unknown form part"))
+			cErrs.Append(*ft.NewValidationError(name, ft.ErrorKey("err_unknown_field"), "unknown form part"))
 		}
 	}
 	if cErrs.Count() == 0 {

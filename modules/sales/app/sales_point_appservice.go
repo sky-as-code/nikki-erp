@@ -289,7 +289,7 @@ func loadSalesPoint(ctx corectx.Context, salesPointId string) (dmodel.DynamicFie
 
 func pointRejection(key, message string) *it.CreateSalesPointResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesPointSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.SalesPointSchemaName, ft.ErrorKey(key, "sales"), message))
 	return &it.CreateSalesPointResult{ClientErrors: *vErrs}
 }
 

@@ -56,7 +56,7 @@ func enabledLanguageRule(languageSvc itLanguage.LanguageDomainService) coreSetti
 				return nil, errors.Wrap(err, "enabledLanguageRule")
 			}
 			if !found.HasData || found.Data.GetIsEnabled() == nil || !*found.Data.GetIsEnabled() {
-				vErrs.Append(*ft.NewValidationError(item.Name, "essential.language_not_enabled",
+				vErrs.Append(*ft.NewValidationError(item.Name, ft.ErrorKey("essential.language_not_enabled", "essential"),
 					"is not a language this application is enabled for"))
 			}
 		}

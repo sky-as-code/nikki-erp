@@ -41,7 +41,7 @@ func NewEntitlementDomainServiceImpl(
 		orgRepo:     orgRepo,
 		orgUnitRepo: orgUnitRepo,
 		permRepo:    permRepo,
-		auditor:         permissionAuditor{historyRepo: historyRepo},
+		auditor:     permissionAuditor{historyRepo: historyRepo},
 	}
 }
 
@@ -253,7 +253,7 @@ func (this *EntitlementDomainServiceImpl) validateScope(
 		Step(func(cErrs *ft.ClientErrors) error {
 			if !domain.IsResourceScopeInBounds(minScope, maxScope, entScope) {
 				cErrs.Append(*ft.NewValidationError(
-					domain.EntitlementFieldScope, "err_scope_out_of_bounds",
+					domain.EntitlementFieldScope, ft.ErrorKey("err_scope_out_of_bounds", "iam"),
 					"scope must be between the resource min_scope and max_scope (both inclusive)",
 				))
 			}

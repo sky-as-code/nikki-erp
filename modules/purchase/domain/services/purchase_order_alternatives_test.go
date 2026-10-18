@@ -114,7 +114,7 @@ func TestTheOpenAlternativesWarningNamesTheCodes(t *testing.T) {
 
 	require.Equal(t, 1, result.ClientErrors.Count())
 	violation := result.ClientErrors[0]
-	assert.Equal(t, "purchase_order.open_alternatives", violation.Key)
+	assert.Equal(t, "purchase:purchase_order.open_alternatives", violation.Key)
 	assert.Contains(t, violation.Message, "PO-B")
 	assert.Contains(t, violation.Message, "PO-C")
 

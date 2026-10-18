@@ -278,12 +278,12 @@ func (this *ChannelPaymentApplicationServiceImpl) resolveChannel(
 func channelNotFound(message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesChannelSchemaName, "sales_channel.not_found", message))
+		models.SalesChannelSchemaName, ft.ErrorKey("sales_channel.not_found", "sales"), message))
 	return vErrs
 }
 
 func paymentRejection(key, message string) *it.ChannelPaymentMutationResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName, ft.ErrorKey(key, "sales"), message))
 	return &it.ChannelPaymentMutationResult{ClientErrors: *vErrs}
 }

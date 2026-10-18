@@ -208,7 +208,7 @@ func buildCreatePaymentCommand(
 
 	if cmd.PaymentMethodId == "" && cmd.PaymentMethodCode == "" {
 		vErrs.Append(*ft.NewBusinessViolation(paramPaymentMethodId,
-			"paymentinvoice.payment_method_required",
+			ft.ErrorKey("paymentinvoice.payment_method_required", "paymentinvoice"),
 			"a payment method must be identified, by id or by code"))
 	}
 
@@ -217,14 +217,14 @@ func buildCreatePaymentCommand(
 	// schema would otherwise reject the composed record as a server fault.
 	if cmd.OrgId == "" {
 		vErrs.Append(*ft.NewBusinessViolation(paramOrgId,
-			"paymentinvoice.org_required",
+			ft.ErrorKey("paymentinvoice.org_required", "paymentinvoice"),
 			"the organization the order belongs to must be identified"))
 	}
 
 	amount, ok := readDecimal(params, paramAmount)
 	if !ok {
 		vErrs.Append(*ft.NewBusinessViolation(paramAmount,
-			"paymentinvoice.amount_malformed",
+			ft.ErrorKey("paymentinvoice.amount_malformed", "paymentinvoice"),
 			"the amount must be a number"))
 	}
 	cmd.Amount = amount
@@ -263,14 +263,14 @@ func buildRefundCommand(params dmodel.DynamicFields) (services.RefundCommand, *f
 
 	if cmd.OrderId == "" && cmd.OrderCode == "" {
 		vErrs.Append(*ft.NewBusinessViolation(paramOrderId,
-			"paymentinvoice.order_id_required",
+			ft.ErrorKey("paymentinvoice.order_id_required", "paymentinvoice"),
 			"the order to refund must be identified, by order_id or by order_code"))
 	}
 
 	amount, ok := readDecimal(params, paramAmount)
 	if !ok {
 		vErrs.Append(*ft.NewBusinessViolation(paramAmount,
-			"paymentinvoice.amount_malformed",
+			ft.ErrorKey("paymentinvoice.amount_malformed", "paymentinvoice"),
 			"the amount must be a number"))
 	}
 	cmd.Amount = amount

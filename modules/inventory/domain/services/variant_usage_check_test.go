@@ -77,14 +77,16 @@ type variantOwnerModule struct {
 	dependants []string
 }
 
-func (this *variantOwnerModule) Name() string           { return this.name }
-func (this *variantOwnerModule) Deps() []string         { return nil }
-func (this *variantOwnerModule) LabelKey() string       { return this.name }
-func (this *variantOwnerModule) Init() error            { return nil }
-func (this *variantOwnerModule) IsInternal() bool       { return false }
-func (this *variantOwnerModule) ModelPrefix() string    { return this.name }
-func (this *variantOwnerModule) HasUi() bool            { return false }
-func (this *variantOwnerModule) Category() modules.ModuleCategory { return modules.ModuleCategoryFoundation }
+func (this *variantOwnerModule) Name() string        { return this.name }
+func (this *variantOwnerModule) Deps() []string      { return nil }
+func (this *variantOwnerModule) LabelKey() string    { return this.name }
+func (this *variantOwnerModule) Init() error         { return nil }
+func (this *variantOwnerModule) IsInternal() bool    { return false }
+func (this *variantOwnerModule) ModelPrefix() string { return this.name }
+func (this *variantOwnerModule) HasUi() bool         { return false }
+func (this *variantOwnerModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
 func (this *variantOwnerModule) Version() semver.SemVer { return *semver.MustParseSemVer("v1.0.0") }
 func (this *variantOwnerModule) Dependants() []string   { return this.dependants }
 
@@ -127,7 +129,7 @@ func TestAssertVariantDeletableBlocksAVariantInUse(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 1, vErrs.Count())
-	assert.Equal(t, usagecheck.ErrorKeyResourceInUse, (*vErrs)[0].Key)
+	assert.Equal(t, usagecheck.ErrorKeyResourceUsedByModules, (*vErrs)[0].Key)
 	assert.Contains(t, (*vErrs)[0].Message, "sales", "the refusal names where to clear the reference")
 }
 
@@ -176,7 +178,7 @@ func TestAssertVariantDeletableRefusesWhenAModuleCannotAnswer(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, 1, vErrs.Count())
-	assert.Equal(t, usagecheck.ErrorKeyResourceInUse, (*vErrs)[0].Key)
+	assert.Equal(t, usagecheck.ErrorKeyResourceUsedByModules, (*vErrs)[0].Key)
 }
 
 // Nothing to identify means nothing to ask about.

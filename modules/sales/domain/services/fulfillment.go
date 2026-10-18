@@ -61,7 +61,7 @@ func RaiseFulfillmentRequest(
 	// A draft has not been sold yet. Confirmation raises the first request.
 	if stringOf(order, models.SalesOrderFieldStatus) == string(models.SalesOrderStatusDraft) {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("status", ReasonOrderNotFulfilled,
+		vErrs.Append(*ft.NewBusinessViolation("status", ft.ErrorKey(ReasonOrderNotFulfilled, "sales"),
 			"a draft order has not been sold and cannot be fulfilled"))
 		return nil, vErrs, nil
 	}
@@ -72,7 +72,7 @@ func RaiseFulfillmentRequest(
 	}
 	if len(outstanding) == 0 {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("lines", ReasonNothingToFulfill,
+		vErrs.Append(*ft.NewBusinessViolation("lines", ft.ErrorKey(ReasonNothingToFulfill, "sales"),
 			"every line of this order has already been fulfilled"))
 		return nil, vErrs, nil
 	}

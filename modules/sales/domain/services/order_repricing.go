@@ -56,7 +56,7 @@ func RepriceOrder(
 	order := models.NewSalesOrderFrom(orderRecord)
 	if !order.IsEditable() {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("status", "sales_order.not_editable",
+		vErrs.Append(*ft.NewBusinessViolation("status", ft.ErrorKey("sales_order.not_editable", "sales"),
 			"only a draft sales order may be repriced; this one is '"+
 				stringOf(orderRecord, models.SalesOrderFieldStatus)+"'"))
 		return nil, vErrs, nil

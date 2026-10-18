@@ -124,7 +124,8 @@ func (this *StockReservationDomainServiceImpl) reserveUnderGuard(
 	}
 
 	if request.ReservedUntil != nil && !request.ReservedUntil.After(now) {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonDeadlineNotInFuture,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonDeadlineNotInFuture, "inventory"),
 			"reserved_until must lie in the future"))
 		return &itStock.ReserveWarehouseStockResult{ClientErrors: *vErrs}, nil
 	}
@@ -154,7 +155,8 @@ type normalisedLine struct {
 func assertReserveRequestWellFormed(request itStock.ReserveWarehouseStockRequest) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	refuse := func(message string) {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationRequestMalformed, message))
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"), message))
 	}
 	if request.OrgId == "" {
 		refuse("org_id is required")
@@ -199,18 +201,21 @@ func assertWarehouseReservable(ctx corectx.Context, warehouseId model.Id, vErrs 
 		return errors.Wrap(err, "assertWarehouseReservable")
 	}
 	if found == nil || !found.HasData {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonWarehouseNotFound,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonWarehouseNotFound, "inventory"),
 			"warehouse '"+string(warehouseId)+"' does not exist"))
 		return nil
 	}
 	warehouse := models.NewWarehouseFrom(found.Data)
 	if derefBool(warehouse.GetIsArchived()) {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonResourceArchived,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonResourceArchived, "inventory"),
 			"warehouse '"+string(warehouseId)+"' is archived"))
 		return nil
 	}
 	if derefString(warehouse.GetStatus()) != models.WarehouseStatusActive {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonWarehouseSuspended,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonWarehouseSuspended, "inventory"),
 			"warehouse '"+string(warehouseId)+"' is suspended"))
 	}
 	return nil
@@ -240,7 +245,8 @@ func (this *StockReservationDomainServiceImpl) normaliseReservationLines(
 				return nil, errors.Wrap(err, "converting a reservation quantity to the base unit")
 			}
 			if converted == nil || converted.ClientErrors.Count() > 0 || !converted.HasData {
-				vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationRequestMalformed,
+				vErrs.Append(*ft.NewBusinessViolation(
+					models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
 					"line '"+line.SourceLineId+"': quantity cannot be converted from unit '"+string(line.UomId)+"' to the base unit"))
 				continue
 			}
@@ -267,7 +273,8 @@ func (this *StockReservationDomainServiceImpl) resolveReservableVariant(
 		return "", err
 	}
 	if variant == nil {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonVariantNotFound,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonVariantNotFound, "inventory"),
 			"product variant '"+string(variantId)+"' does not exist"))
 		return "", nil
 	}
@@ -277,7 +284,8 @@ func (this *StockReservationDomainServiceImpl) resolveReservableVariant(
 		return "", err
 	}
 	if template == nil {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonVariantNotFound,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonVariantNotFound, "inventory"),
 			"product variant '"+string(variantId)+"' has no template"))
 		return "", nil
 	}
@@ -288,7 +296,8 @@ func (this *StockReservationDomainServiceImpl) resolveReservableVariant(
 		return "", err
 	}
 	if productType == nil || !derefBool(models.NewProductTypeFrom(productType).GetSupportsStock()) {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonVariantNotStockable,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonVariantNotStockable, "inventory"),
 			"product variant '"+string(variantId)+"' is not a stockable product"))
 		return "", nil
 	}
@@ -307,7 +316,8 @@ func (this *StockReservationDomainServiceImpl) resolveReservableVariant(
 	}
 	uomId := stringOf(template, models.ProductTemplateFieldUomId)
 	if uomId == "" {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonVariantNotStockable,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonVariantNotStockable, "inventory"),
 			"product variant '"+string(variantId)+"' has no unit of measure"))
 		return "", nil
 	}
@@ -338,7 +348,8 @@ func assertScopesCanCover(
 			return err
 		}
 		if shortage := availability.Shortage(totals[variantId]); shortage.IsPositive() {
-			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonInsufficientWarehouseStock,
+			vErrs.Append(*ft.NewBusinessViolation(
+				models.StockReservationSchemaName, ft.ErrorKey(ReasonInsufficientWarehouseStock, "inventory"),
 				"product variant '"+string(variantId)+"' is short by "+shortage.String()+
 					" (requested "+totals[variantId].String()+", available "+availability.Available.String()+")",
 				map[string]any{
@@ -445,7 +456,8 @@ func replayReservation(
 		if derefString(reservation.GetIdempotencyKey()) != request.IdempotencyKey ||
 			derefString(reservation.GetRequestFingerprint()) != fingerprint {
 			vErrs := ft.NewClientErrors()
-			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationIdempotencyConflict,
+			vErrs.Append(*ft.NewBusinessViolation(
+				models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationIdempotencyConflict, "inventory"),
 				"this demand was already reserved under a different request; use a new source revision"))
 			return &itStock.ReserveWarehouseStockResult{ClientErrors: *vErrs}
 		}

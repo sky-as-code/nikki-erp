@@ -130,5 +130,5 @@ Writing A Level No Module Declares Is A Caller Error
     IF    ${resp.status_code} != 200
         Should Be Equal As Integers    ${resp.status_code}    400
         ...    msg=An undeclared level must be refused as a caller error, not as a permission or server failure.
-        Should Contain    ${resp.text}    settings.schema_not_registered
+        Should Contain    ${resp.text}    common:settings.schema_not_registered
     END

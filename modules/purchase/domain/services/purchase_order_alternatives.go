@@ -48,7 +48,7 @@ func (this *PurchaseOrderDomainServiceImpl) CreateAlternative(
 		if vendorId == "" {
 			vErrs := ft.NewClientErrors()
 			vErrs.Append(*ft.NewBusinessViolation(models.PurchaseOrderFieldVendorId,
-				"purchase_order.alternative_vendor_required",
+				ft.ErrorKey("purchase_order.alternative_vendor_required", "purchase"),
 				"an alternative must name the vendor to ask instead"))
 			result = &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}
 			return nil
@@ -58,7 +58,7 @@ func (this *PurchaseOrderDomainServiceImpl) CreateAlternative(
 		if !isQuotableStatus(status) {
 			vErrs := ft.NewClientErrors()
 			vErrs.Append(*ft.NewBusinessViolation(models.PurchaseOrderSchemaName,
-				"purchase_order.not_alternatable",
+				ft.ErrorKey("purchase_order.not_alternatable", "purchase"),
 				"alternatives can only be raised while the order is still a request for "+
 					"quotation; this one is '"+status+"'"))
 			result = &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}

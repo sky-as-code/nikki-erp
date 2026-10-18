@@ -36,7 +36,9 @@ func (this *ProductServiceImpl) CreateAttributeValue(ctx corectx.Context, cmd it
 				return err
 			}
 			if !attributeResult.HasData {
-				vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldAttributeId, "attribute.not_found", "attribute does not exist"))
+				vErrs.Append(*ft.NewBusinessViolation(
+					domain.AttrValFieldAttributeId, ft.ErrorKey("attribute.not_found", "inventory"),
+					"attribute does not exist"))
 				return nil
 			}
 
@@ -49,9 +51,12 @@ func (this *ProductServiceImpl) CreateAttributeValue(ctx corectx.Context, cmd it
 			fieldName, _ := attributeValue.GetValue()
 			expectedField := domain.ExpectedValueFieldForDataType(*dataType)
 			if fieldName == "" {
-				vErrs.Append(*ft.NewBusinessViolation(expectedField, "attribute_value.value_required", "value is required for this attribute type"))
+				vErrs.Append(*ft.NewBusinessViolation(
+					expectedField, ft.ErrorKey("attribute_value.value_required", "inventory"),
+					"value is required for this attribute type"))
 			} else if fieldName != expectedField {
-				vErrs.Append(*ft.NewBusinessViolation(fieldName, "attribute_value.value_mismatch", "value type does not match attribute data type"))
+				vErrs.Append(*ft.NewBusinessViolation(fieldName, ft.ErrorKey("attribute_value.value_mismatch", "inventory"),
+					"value type does not match attribute data type"))
 			}
 
 			existingValue, err := this.findByAttributeAndValue(ctx, attributeValue)
@@ -59,7 +64,9 @@ func (this *ProductServiceImpl) CreateAttributeValue(ctx corectx.Context, cmd it
 				return err
 			}
 			if existingValue != nil {
-				vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldAttributeId, "attribute_value.duplicate", "attribute value already exists"))
+				vErrs.Append(*ft.NewBusinessViolation(
+					domain.AttrValFieldAttributeId, ft.ErrorKey("attribute_value.duplicate", "inventory"),
+					"attribute value already exists"))
 			}
 
 			return nil
@@ -83,7 +90,9 @@ func (this *ProductServiceImpl) UpdateAttributeValue(ctx corectx.Context, cmd it
 					return err
 				}
 				if !attributeResult.HasData {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldAttributeId, "attribute.not_found", "attribute does not exist"))
+					vErrs.Append(*ft.NewBusinessViolation(
+						domain.AttrValFieldAttributeId, ft.ErrorKey("attribute.not_found", "inventory"),
+						"attribute does not exist"))
 					return nil
 				}
 
@@ -97,7 +106,9 @@ func (this *ProductServiceImpl) UpdateAttributeValue(ctx corectx.Context, cmd it
 				if fieldName != "" {
 					expectedField := domain.ExpectedValueFieldForDataType(*dataType)
 					if fieldName != expectedField {
-						vErrs.Append(*ft.NewBusinessViolation(fieldName, "attribute_value.value_mismatch", "value type does not match attribute data type"))
+						vErrs.Append(*ft.NewBusinessViolation(
+							fieldName, ft.ErrorKey("attribute_value.value_mismatch", "inventory"),
+							"value type does not match attribute data type"))
 					}
 				}
 
@@ -110,7 +121,9 @@ func (this *ProductServiceImpl) UpdateAttributeValue(ctx corectx.Context, cmd it
 					currentId := attributeValue.GetId()
 					existingId := existingValue.GetId()
 					if currentId != nil && existingId != nil && *currentId != *existingId {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldAttributeId, "attribute_value.duplicate", "attribute value already exists"))
+						vErrs.Append(*ft.NewBusinessViolation(
+							domain.AttrValFieldAttributeId, ft.ErrorKey("attribute_value.duplicate", "inventory"),
+							"attribute value already exists"))
 					}
 				}
 			}
@@ -235,7 +248,8 @@ func (this *ProductServiceImpl) BuildAttributeValue(
 	}
 
 	if err := attrValue.SetValueFromRaw(dataType, value); err != nil {
-		vErrs.Append(*ft.NewValidationError("attributes."+codeName, "invalid_value_type", err.Error()))
+		vErrs.Append(*ft.NewValidationError("attributes."+codeName, ft.ErrorKey("invalid_value_type", "inventory"),
+			err.Error()))
 		return nil
 	}
 

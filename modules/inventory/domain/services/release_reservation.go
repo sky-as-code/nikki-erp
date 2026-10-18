@@ -35,15 +35,18 @@ func (this *StockReservationDomainServiceImpl) ReleaseReservation(
 ) (*itStock.ReleaseReservationResult, error) {
 	vErrs := ft.NewClientErrors()
 	if request.OrgId == "" || request.ReservationId == "" {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationRequestMalformed,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
 			"org_id and reservation id are required"))
 	}
 	if request.Quantity.IsNegative() {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationRequestMalformed,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
 			"quantity must not be negative"))
 	}
 	if request.Quantity.IsPositive() && request.IdempotencyKey == "" {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonPartialReleaseNeedsKey,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonPartialReleaseNeedsKey, "inventory"),
 			"a partial release must carry an idempotency key"))
 	}
 	if vErrs.Count() > 0 {
@@ -120,7 +123,8 @@ func (this *StockReservationDomainServiceImpl) releaseUnderGuard(
 	quantity := remaining
 	if request.Quantity.IsPositive() {
 		if request.Quantity.GreaterThan(remaining) {
-			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationQuantityExceeded,
+			vErrs.Append(*ft.NewBusinessViolation(
+				models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationQuantityExceeded, "inventory"),
 				"releasing "+request.Quantity.String()+" exceeds the "+remaining.String()+" still held"))
 			return &itStock.ReleaseReservationResult{ClientErrors: *vErrs}, nil
 		}

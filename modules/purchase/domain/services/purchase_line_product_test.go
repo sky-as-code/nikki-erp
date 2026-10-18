@@ -156,17 +156,17 @@ func TestProductRefusalsAreDistinct(t *testing.T) {
 	}{
 		{
 			"no such product", &stubProducts{found: false},
-			"purchase_order_line.product_not_found",
+			"purchase:purchase_order_line.product_not_found",
 		},
 		{
 			"a real product the business does not buy",
 			&stubProducts{found: true, purchasable: false},
-			"purchase_order_line.product_not_purchasable",
+			"purchase:purchase_order_line.product_not_purchasable",
 		},
 		{
 			"a product it used to buy",
 			&stubProducts{found: true, purchasable: true, archived: true},
-			"purchase_order_line.product_archived",
+			"purchase:purchase_order_line.product_archived",
 		},
 	}
 
@@ -193,7 +193,7 @@ func TestAnArchivedUnitIsRefusedOnANewLine(t *testing.T) {
 	require.NoError(t, prepared(validator)(nil, productLineFor("01VARIANT", "01UOM_OLD", "1"), vErrs))
 
 	require.Equal(t, 1, vErrs.Count())
-	assert.Equal(t, "purchase_order_line.uom_archived", (*vErrs)[0].Key)
+	assert.Equal(t, "purchase:purchase_order_line.uom_archived", (*vErrs)[0].Key)
 }
 
 // An unknown unit is refused outright, or a typo would produce a quantity expressed in nothing.
@@ -204,7 +204,7 @@ func TestAnUnknownUnitIsRefused(t *testing.T) {
 	require.NoError(t, prepared(validator)(nil, productLineFor("01VARIANT", "01NOPE", "1"), vErrs))
 
 	require.Equal(t, 1, vErrs.Count())
-	assert.Equal(t, "purchase_order_line.uom_not_found", (*vErrs)[0].Key)
+	assert.Equal(t, "purchase:purchase_order_line.uom_not_found", (*vErrs)[0].Key)
 }
 
 // Ordinary rather than erroneous states: each would be a false refusal if the validator insisted on

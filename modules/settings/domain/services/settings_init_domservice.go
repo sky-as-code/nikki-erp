@@ -35,7 +35,7 @@ func (this *SettingsDomainServiceImpl) InitOwnerSettings(
 	}
 	if cmd.OwnerId == "" {
 		vErrs := ft.ClientErrors{}
-		vErrs.Append(*ft.NewValidationError("owner_id", "settings.owner_id_required",
+		vErrs.Append(*ft.NewValidationError("owner_id", ft.ErrorKey("settings.owner_id_required", "settings"),
 			"owner_id is required"))
 		return &it.InitOwnerSettingsResult{ClientErrors: vErrs}, nil
 	}

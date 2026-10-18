@@ -34,7 +34,8 @@ func readReturnRequest(params dmodel.DynamicFields) (services.ReturnRequest, *ft
 	}
 	items, ok := raw.([]any)
 	if !ok {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, "stock_return.lines_malformed",
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockTransferSchemaName, ft.ErrorKey("stock_return.lines_malformed", "inventory"),
 			"'lines' must be a list of {move_id, quantity} entries"))
 		return request, vErrs
 	}
@@ -54,19 +55,19 @@ func readReturnLine(item any) (services.ReturnLineRequest, *ft.ClientErrorItem) 
 	fields, ok := item.(map[string]any)
 	if !ok {
 		return services.ReturnLineRequest{}, ft.NewBusinessViolation(
-			models.StockTransferSchemaName, "stock_return.line_malformed",
+			models.StockTransferSchemaName, ft.ErrorKey("stock_return.line_malformed", "inventory"),
 			"each return line must be an object with move_id and quantity")
 	}
 	moveId, _ := fields[paramReturnMoveId].(string)
 	if moveId == "" {
 		return services.ReturnLineRequest{}, ft.NewBusinessViolation(
-			models.StockTransferSchemaName, "stock_return.line_move_id_required",
+			models.StockTransferSchemaName, ft.ErrorKey("stock_return.line_move_id_required", "inventory"),
 			"each return line must name a move_id")
 	}
 	quantity, vErr := readItemDecimal(fields, paramReturnQuantity)
 	if vErr != nil {
 		return services.ReturnLineRequest{}, ft.NewBusinessViolation(
-			models.StockTransferSchemaName, "stock_return.line_quantity_malformed",
+			models.StockTransferSchemaName, ft.ErrorKey("stock_return.line_quantity_malformed", "inventory"),
 			"return line for move '"+moveId+"' must carry a decimal quantity")
 	}
 	return services.ReturnLineRequest{MoveId: moveId, Quantity: *quantity}, nil
@@ -85,7 +86,7 @@ func readSourceItems(params dmodel.DynamicFields, field string) ([]itStock.Sourc
 		fields, ok := entry.(map[string]any)
 		if !ok {
 			vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName,
-				"stock_transfer.items_malformed", "each entry of '"+field+"' must be an object"))
+				ft.ErrorKey("stock_transfer.items_malformed", "inventory"), "each entry of '"+field+"' must be an object"))
 			continue
 		}
 		quantity, vErr := readItemDecimal(fields, paramItemQuantity)
@@ -116,7 +117,7 @@ func readResultItems(params dmodel.DynamicFields, field string) ([]itStock.Fulfi
 		fields, ok := entry.(map[string]any)
 		if !ok {
 			vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName,
-				"stock_transfer.items_malformed", "each entry of '"+field+"' must be an object"))
+				ft.ErrorKey("stock_transfer.items_malformed", "inventory"), "each entry of '"+field+"' must be an object"))
 			continue
 		}
 		quantity, vErr := readItemDecimal(fields, paramItemQuantity)
@@ -145,7 +146,7 @@ func readEntries(params dmodel.DynamicFields, field string, vErrs *ft.ClientErro
 	entries, ok := raw.([]any)
 	if !ok {
 		vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName,
-			"stock_transfer.items_malformed",
+			ft.ErrorKey("stock_transfer.items_malformed", "inventory"),
 			"'"+field+"' must be a list of {source_item_id, product_variant_id, quantity} entries"))
 		return nil, false
 	}
@@ -159,12 +160,12 @@ func readItemDecimal(fields map[string]any, name string) (*decimal.Decimal, *ft.
 	raw, present := fields[name]
 	if !present || raw == nil {
 		return nil, ft.NewBusinessViolation(models.StockTransferSchemaName,
-			"stock_transfer.quantity_required", "each item must name a '"+name+"'")
+			ft.ErrorKey("stock_transfer.quantity_required", "inventory"), "each item must name a '"+name+"'")
 	}
 	value, ok := toDecimal(raw)
 	if !ok {
 		return nil, ft.NewBusinessViolation(models.StockTransferSchemaName,
-			"stock_transfer.quantity_malformed", "'"+name+"' is not a number")
+			ft.ErrorKey("stock_transfer.quantity_malformed", "inventory"), "'"+name+"' is not a number")
 	}
 	return &value, nil
 }

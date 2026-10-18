@@ -157,7 +157,7 @@ Import Without A Mandatory Column Is Refused
     ${mapping}=    Evaluate    {'language_code': 'en-US', 'create_missing_references': False, 'columns': [{'source': 'Mã', 'target': 'code'}, {'source': 'Tên', 'target': 'name'}]}
     ${resp}=    Import File    ${csv}    ${mapping}
     Should Be Equal As Integers    ${resp.status_code}    400
-    Should Be Equal    ${resp.json()}[0][key]    err_import_mandatory_unmapped
+    Should Be Equal    ${resp.json()}[0][key]    common:err_import_mandatory_unmapped
     Should Contain    ${resp.json()}[0][vars][fields]    external_id
     ${found}=    Search Categories By Code    mand${run}
     Should Be Empty    ${found}    msg=A refused import must write nothing
@@ -172,7 +172,7 @@ Import With An Unknown Target Field Is Refused
     ${resp}=    Import File    ${csv}    ${mapping}
     Should Be Equal As Integers    ${resp.status_code}    400
     ${keys}=    Evaluate    [e['key'] for e in $resp.json()]
-    Should Contain    ${keys}    err_import_mapping_unknown_field
+    Should Contain    ${keys}    common:err_import_mapping_unknown_field
 
 Import With An Unsupported Extension Is Refused
     [Tags]    negative
@@ -182,7 +182,7 @@ Import With An Unsupported Extension Is Refused
     ...    ${run}-1,ext${run},Ext ${run}
     ${resp}=    Import File    ${path}    ${DEFAULT_MAPPING}    filename=import_ext_${run}.xls
     Should Be Equal As Integers    ${resp.status_code}    400
-    Should Be Equal    ${resp.json()}[0][key]    err_file_type_not_allowed
+    Should Be Equal    ${resp.json()}[0][key]    common:err_file_type_not_allowed
 
 Import Without A File Is Refused
     [Tags]    negative
@@ -190,7 +190,7 @@ Import Without A File Is Refused
     ${resp}=    POST On Session    api    ${IMPORT_API}
     ...    files=${files}    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    400
-    Should Be Equal    ${resp.json()}[0][key]    err_import_file_required
+    Should Be Equal    ${resp.json()}[0][key]    common:err_import_file_required
 
 Bulk Create Writes Items Then Updates Them By External Id
     ${run}=    Unique Suffix
@@ -228,7 +228,7 @@ Bulk Create Without Items Is Refused
     ${resp}=    POST On Session    api    ${BULK_API}
     ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    400
-    Should Be Equal    ${resp.json()}[0][key]    err_import_items_required
+    Should Be Equal    ${resp.json()}[0][key]    common:err_import_items_required
 
 Plain User Is Refused Import
     [Documentation]    Import writes records, so it is gated like create.

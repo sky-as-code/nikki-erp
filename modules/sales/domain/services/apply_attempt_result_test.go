@@ -60,7 +60,7 @@ func TestTheSameEventWithDifferentContentIsRefused(t *testing.T) {
 	if replay {
 		t.Error("a contradicting payload is not a replay")
 	}
-	if vErrs == nil || !hasReason(vErrs, ReasonResultEventConflict) {
+	if vErrs == nil || !hasReasonKey(vErrs, ReasonResultEventConflict) {
 		t.Errorf("a contradicting payload must be refused as a conflict, got %v", vErrs)
 	}
 }
@@ -71,7 +71,7 @@ func TestASecondEventOnAReportedAttemptIsRefused(t *testing.T) {
 	attempt := attemptRecord("EV1", "hash-1", string(models.FulfillmentAttemptStatusSucceeded))
 
 	_, vErrs := assertResultIsNew(attempt, "EV2", "hash-2")
-	if vErrs == nil || !hasReason(vErrs, ReasonResultAlreadyReported) {
+	if vErrs == nil || !hasReasonKey(vErrs, ReasonResultAlreadyReported) {
 		t.Errorf("a second result must be refused, got %v", vErrs)
 	}
 }
@@ -81,7 +81,7 @@ func TestASettledAttemptWithNoEventCannotReport(t *testing.T) {
 	attempt := attemptRecord("", "", string(models.FulfillmentAttemptStatusCancelled))
 
 	_, vErrs := assertResultIsNew(attempt, "EV1", "hash-1")
-	if vErrs == nil || !hasReason(vErrs, ReasonResultAlreadyReported) {
+	if vErrs == nil || !hasReasonKey(vErrs, ReasonResultAlreadyReported) {
 		t.Errorf("a cancelled attempt is no longer awaiting a result, got %v", vErrs)
 	}
 }
@@ -164,7 +164,7 @@ func TestAnUnbalancedReportIsRefused(t *testing.T) {
 	}
 
 	_, vErrs := matchReportedItems(stored, reported)
-	if vErrs == nil || !hasReason(vErrs, ReasonResultQuantityMismatch) {
+	if vErrs == nil || !hasReasonKey(vErrs, ReasonResultQuantityMismatch) {
 		t.Errorf("2 of 3 accounted for must be refused, got %v", vErrs)
 	}
 }
@@ -194,7 +194,7 @@ func TestADuplicatedItemIsRefused(t *testing.T) {
 	}
 
 	_, vErrs := matchReportedItems(stored, reported)
-	if vErrs == nil || !hasReason(vErrs, ReasonResultItemUnknown) {
+	if vErrs == nil || !hasReasonKey(vErrs, ReasonResultItemUnknown) {
 		t.Errorf("one item reported twice must be refused, got %v", vErrs)
 	}
 }
@@ -206,7 +206,7 @@ func TestAnItemFromAnotherAttemptIsRefused(t *testing.T) {
 	}
 
 	_, vErrs := matchReportedItems(stored, reported)
-	if vErrs == nil || !hasReason(vErrs, ReasonResultItemUnknown) {
+	if vErrs == nil || !hasReasonKey(vErrs, ReasonResultItemUnknown) {
 		t.Errorf("an item that was never attempted must be refused, got %v", vErrs)
 	}
 }

@@ -196,7 +196,7 @@ func changesTree(cmd dmodel.DynamicFields) bool {
 func rejectClearedParent(cmd dmodel.DynamicFields, vErrs *ft.ClientErrors) {
 	if value, sent := cmd[models.ProductCategoryFieldParentCategoryId]; sent && value == nil {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldParentCategoryId,
-			"product_category.parent_required",
+			ft.ErrorKey("product_category.parent_required", "inventory"),
 			"a category must have a parent"))
 	}
 }
@@ -248,7 +248,7 @@ func (this *ProductCategoryDomainServiceImpl) validateCategoryUpdate(
 		effectiveParentId = derefString(parentId)
 		if effectiveParentId == selfId {
 			vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldParentCategoryId,
-				"product_category.self_parent",
+				ft.ErrorKey("product_category.self_parent", "inventory"),
 				"a category cannot be its own parent"))
 			return nil
 		}
@@ -284,7 +284,7 @@ func assertRootUnchanged(submitted *models.ProductCategory, stored *models.Produ
 	renamed := name != nil && (stored.GetName() == nil || !reflect.DeepEqual(*name, *stored.GetName()))
 	if moved || renamed {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldId,
-			"product_category.root_immutable",
+			ft.ErrorKey("product_category.root_immutable", "inventory"),
 			"the root category cannot be renamed, moved, archived or deleted"))
 	}
 }
@@ -303,7 +303,7 @@ func (this *ProductCategoryDomainServiceImpl) assertNoCategoryCycle(
 	for depth := 0; current != "" && depth < maxCategoryDepth; depth++ {
 		if current == selfId {
 			vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldParentCategoryId,
-				"product_category.cycle",
+				ft.ErrorKey("product_category.cycle", "inventory"),
 				"this parent is a descendant of the category, which would create a cycle"))
 			return nil
 		}
@@ -387,7 +387,7 @@ func (this *ProductCategoryDomainServiceImpl) assertNotRoot(
 	}
 	if category != nil && category.IsRoot() {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldId,
-			"product_category.root_immutable",
+			ft.ErrorKey("product_category.root_immutable", "inventory"),
 			"the root category cannot be renamed, moved, archived or deleted"))
 	}
 	return nil
@@ -409,7 +409,7 @@ func AssertProductCategoryDeletable(
 	}
 	if len(templates) > 0 {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldId,
-			"product_category.has_templates",
+			ft.ErrorKey("product_category.has_templates", "inventory"),
 			"this category still has products"))
 	}
 
@@ -419,7 +419,7 @@ func AssertProductCategoryDeletable(
 	}
 	if len(children) > 0 {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldId,
-			"product_category.has_children",
+			ft.ErrorKey("product_category.has_children", "inventory"),
 			"this category still has child categories"))
 	}
 	return nil

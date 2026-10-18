@@ -203,7 +203,7 @@ func assertFulfillmentResultWellFormed(
 ) *itStock.FulfillmentResultResponse {
 	vErrs := ft.NewClientErrors()
 	refuse := func(key, message string) {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, key, message))
+		vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, ft.ErrorKey(key, "inventory"), message))
 	}
 
 	if request.EventId == "" {

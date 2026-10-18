@@ -104,13 +104,13 @@ func assertCorrectable(request CorrectionRequest) *ft.ClientErrors {
 	if request.Quantity.LessThanOrEqual(decimal.Zero) {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.StockMoveSchemaName,
-			"stock_correction.quantity_not_positive",
+			ft.ErrorKey("stock_correction.quantity_not_positive", "inventory"),
 			"a correction must move a quantity greater than zero"))
 	}
 	if request.SourceLocationId == request.DestinationLocationId {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.StockMoveSchemaName,
-			"stock_correction.same_location",
+			ft.ErrorKey("stock_correction.same_location", "inventory"),
 			"a correction must move between two different locations"))
 	}
 	return vErrs
@@ -131,7 +131,7 @@ func prepareCorrectionTransfer(
 	if operationType == nil {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.StockOperationTypeSchemaName,
-			"stock_correction.no_operation_type",
+			ft.ErrorKey("stock_correction.no_operation_type", "inventory"),
 			"this organisation has no internal operation type with code '"+
 				models.StockCorrectionOperationTypeCode+"'; the correction seeds must be applied"))
 		return nil, vErrs, nil

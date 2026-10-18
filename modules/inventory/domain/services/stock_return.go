@@ -241,7 +241,7 @@ func resolveRequestedReturns(
 		line, ok := byMoveId[requested.MoveId]
 		if !ok {
 			vErrs.Append(*ft.NewBusinessViolation(
-				models.StockMoveSchemaName, "stock_return.unknown_move",
+				models.StockMoveSchemaName, ft.ErrorKey("stock_return.unknown_move", "inventory"),
 				"move '"+requested.MoveId+"' is not part of the transfer being returned"))
 			continue
 		}

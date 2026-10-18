@@ -57,16 +57,16 @@ type orgTestModule struct {
 	dependants []string
 }
 
-func (this *orgTestModule) Name() string           { return this.name }
-func (this *orgTestModule) Deps() []string         { return nil }
-func (this *orgTestModule) LabelKey() string       { return this.name }
-func (this *orgTestModule) Init() error            { return nil }
-func (this *orgTestModule) IsInternal() bool       { return false }
-func (this *orgTestModule) ModelPrefix() string    { return this.name }
-func (this *orgTestModule) HasUi() bool            { return false }
+func (this *orgTestModule) Name() string                     { return this.name }
+func (this *orgTestModule) Deps() []string                   { return nil }
+func (this *orgTestModule) LabelKey() string                 { return this.name }
+func (this *orgTestModule) Init() error                      { return nil }
+func (this *orgTestModule) IsInternal() bool                 { return false }
+func (this *orgTestModule) ModelPrefix() string              { return this.name }
+func (this *orgTestModule) HasUi() bool                      { return false }
 func (this *orgTestModule) Category() modules.ModuleCategory { return modules.ModuleCategoryFoundation }
-func (this *orgTestModule) Version() semver.SemVer { return *semver.MustParseSemVer("v1.0.0") }
-func (this *orgTestModule) Dependants() []string   { return this.dependants }
+func (this *orgTestModule) Version() semver.SemVer           { return *semver.MustParseSemVer("v1.0.0") }
+func (this *orgTestModule) Dependants() []string             { return this.dependants }
 
 func orgDispatcher(t *testing.T, bus *orgUsageBus) *usagecheck.Dispatcher {
 	t.Helper()
@@ -111,7 +111,7 @@ func TestOrgEngineDeleteGuard_UsedOrgIsRefused(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 1, result.ClientErrors.Count())
-	assert.Equal(t, usagecheck.ErrorKeyResourceInUse, result.ClientErrors[0].Key)
+	assert.Equal(t, usagecheck.ErrorKeyResourceUsedByModules, result.ClientErrors[0].Key)
 	assert.Equal(t, 0, base.deleted)
 }
 

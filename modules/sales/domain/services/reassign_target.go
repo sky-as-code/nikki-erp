@@ -503,6 +503,6 @@ func TargetChangesOfFulfillment(
 func targetChangeRefusal(reason, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesOrderFulfillmentSchemaName, reason, message))
+		models.SalesOrderFulfillmentSchemaName, ft.ErrorKey(reason, "sales"), message))
 	return vErrs
 }

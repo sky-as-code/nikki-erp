@@ -88,20 +88,20 @@ func (this *WebChannel) ValidateArgs(
 	link, isString := raw.(string)
 	if !isString {
 		errs = append(errs, *ft.NewValidationError(
-			field, "err_app_link_invalid", "app link must be a string"))
+			field, ft.ErrorKey("err_app_link_invalid", "notification"), "app link must be a string"))
 		return errs
 	}
 
 	link = strings.TrimSpace(link)
 	if link == "" {
 		errs = append(errs, *ft.NewValidationError(
-			field, "err_app_link_invalid", "app link must not be empty"))
+			field, ft.ErrorKey("err_app_link_invalid", "notification"), "app link must not be empty"))
 		return errs
 	}
 
 	if len(link) > maxAppLinkLength {
 		errs = append(errs, *ft.NewValidationError(
-			field, "err_app_link_too_long",
+			field, ft.ErrorKey("err_app_link_too_long", "notification"),
 			fmt.Sprintf("app link must be at most %d characters", maxAppLinkLength)))
 		return errs
 	}
@@ -109,14 +109,14 @@ func (this *WebChannel) ValidateArgs(
 	parsed, err := url.Parse(link)
 	if err != nil || parsed.Scheme == "" {
 		errs = append(errs, *ft.NewValidationError(
-			field, "err_app_link_invalid",
+			field, ft.ErrorKey("err_app_link_invalid", "notification"),
 			"app link must be an absolute link, such as 'nikkiweb://notification/notifications'"))
 		return errs
 	}
 
 	if !webLinkSchemes[strings.ToLower(parsed.Scheme)] {
 		errs = append(errs, *ft.NewValidationError(
-			field, "err_app_link_scheme_unsupported",
+			field, ft.ErrorKey("err_app_link_scheme_unsupported", "notification"),
 			fmt.Sprintf("'%s' is not a supported link scheme", parsed.Scheme)))
 	}
 

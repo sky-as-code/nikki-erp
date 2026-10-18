@@ -351,7 +351,7 @@ func updatePaymentFields(
 // refusal builds a one-violation refusal, the shape every gate in this file returns.
 func refusal(field, reason, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(field, reason, message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(reason, "sales"), message))
 	return vErrs
 }
 
@@ -364,7 +364,7 @@ func paymentProfileOfBill(
 	refuse := func(message string) *ft.ClientErrors {
 		vErrs := ft.NewClientErrors()
 		vErrs.Append(*ft.NewBusinessViolation(
-			"payment_method_id", ReasonMethodNotAtPoint, message))
+			"payment_method_id", ft.ErrorKey(ReasonMethodNotAtPoint, "sales"), message))
 		return vErrs
 	}
 

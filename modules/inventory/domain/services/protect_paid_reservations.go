@@ -30,7 +30,8 @@ func (this *StockReservationDomainServiceImpl) ProtectPaidReservations(
 ) (*itStock.ProtectPaidReservationsResult, error) {
 	vErrs := ft.NewClientErrors()
 	if request.OrgId == "" || request.SourceModule == "" || request.SourceType == "" || request.SourceId == "" {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationRequestMalformed,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
 			"org_id, source_module, source_type and source_id are required"))
 		return &itStock.ProtectPaidReservationsResult{ClientErrors: *vErrs}, nil
 	}

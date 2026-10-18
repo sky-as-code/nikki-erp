@@ -63,10 +63,10 @@ func (this *VendorDomainServiceImpl) AssertOrderable(
 
 	switch {
 	case profile == nil:
-		vErrs.Append(*ft.NewBusinessViolation(field, "vendor.not_a_vendor",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("vendor.not_a_vendor", "contacts"),
 			"the party has no vendor profile in this organization"))
 	case !profile.IsOrderable():
-		vErrs.Append(*ft.NewBusinessViolation(field, "vendor.not_orderable",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("vendor.not_orderable", "contacts"),
 			"the vendor is not active"))
 	}
 

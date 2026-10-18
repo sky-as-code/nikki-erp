@@ -241,7 +241,8 @@ func (this *ProductServiceImpl) validateVariantProduct(ctx corectx.Context, vari
 	}
 
 	if !productResult.HasData {
-		vErrs.Append(*ft.NewBusinessViolation(domain.VarFieldProductId, "product.not_found", "product does not exist"))
+		vErrs.Append(*ft.NewBusinessViolation(domain.VarFieldProductId, ft.ErrorKey("product.not_found", "inventory"),
+			"product does not exist"))
 	}
 
 	return nil
@@ -272,7 +273,8 @@ func (this *ProductServiceImpl) findOrCreateAttributeValues(
 		}
 
 		if attribute == nil {
-			vErrs.Append(*ft.NewBusinessViolation("attributes."+codeName, "attribute.not_found", "attribute with code name "+codeName+" not found"))
+			vErrs.Append(*ft.NewBusinessViolation("attributes."+codeName, ft.ErrorKey("attribute.not_found", "inventory"),
+				"attribute with code name "+codeName+" not found"))
 			continue
 		}
 

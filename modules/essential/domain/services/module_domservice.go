@@ -267,7 +267,7 @@ func (this *ModuleDomainServiceImpl) validateAndNormalizeModuleFields(
 		if err := val.ApiBased.ValidateRaw(*module.GetName(), model.ModelRuleModuleLogicalName); err != nil {
 			vErrs.Append(*ft.NewValidationError(
 				models.ModuleMetadataFieldName,
-				"module.invalid_name",
+				ft.ErrorKey("module.invalid_name", "essential"),
 				"name must contain only letters, numbers, underscores, and dots",
 			))
 		}
@@ -278,7 +278,7 @@ func (this *ModuleDomainServiceImpl) validateAndNormalizeModuleFields(
 		if _, err := semver.ParseSemVer(*rawVersion); err != nil {
 			vErrs.Append(*ft.NewValidationError(
 				models.ModuleMetadataFieldVersion,
-				"module.invalid_version",
+				ft.ErrorKey("module.invalid_version", "essential"),
 				"version must use valid semantic version format",
 			))
 		}
@@ -297,7 +297,7 @@ func (this *ModuleDomainServiceImpl) validateAndNormalizeModuleFields(
 		if fieldCount == 0 {
 			vErrs.Append(*ft.NewValidationError(
 				models.ModuleMetadataFieldLabel,
-				"module.label_requires_enabled_language",
+				ft.ErrorKey("module.label_requires_enabled_language", "essential"),
 				"label must contain at least one enabled language",
 			))
 		} else {

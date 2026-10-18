@@ -55,7 +55,7 @@ func ReserveVoucher(
 	}
 	if codeRecord == nil {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ReasonCodeNotFound,
+		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ft.ErrorKey(ReasonCodeNotFound, "sales"),
 			"no voucher exists with that code"))
 		return nil, vErrs, nil
 	}
@@ -72,7 +72,7 @@ func ReserveVoucher(
 		// same voucher twice.
 		if isUniqueViolation(err) {
 			vErrs := ft.NewClientErrors()
-			vErrs.Append(*ft.NewBusinessViolation("voucher_code", ReasonAlreadyApplied,
+			vErrs.Append(*ft.NewBusinessViolation("voucher_code", ft.ErrorKey(ReasonAlreadyApplied, "sales"),
 				"this voucher is already applied to this order"))
 			return nil, vErrs, nil
 		}
@@ -122,18 +122,18 @@ func assertCodeUsable(code *models.SalesVoucherCode, nowUnix int64) *ft.ClientEr
 	vErrs := ft.NewClientErrors()
 
 	if archived := code.GetIsArchived(); archived != nil && *archived {
-		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ReasonArchived,
+		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ft.ErrorKey(ReasonArchived, "sales"),
 			"this voucher has been withdrawn"))
 		return vErrs
 	}
 
 	if from := code.GetValidFrom(); from != nil && nowUnix < from.GoTime().Unix() {
-		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ReasonNotYetValid,
+		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ft.ErrorKey(ReasonNotYetValid, "sales"),
 			"this voucher is not valid yet"))
 		return vErrs
 	}
 	if until := code.GetValidUntil(); until != nil && nowUnix >= until.GoTime().Unix() {
-		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ReasonExpired,
+		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ft.ErrorKey(ReasonExpired, "sales"),
 			"this voucher has expired"))
 		return vErrs
 	}
@@ -141,21 +141,21 @@ func assertCodeUsable(code *models.SalesVoucherCode, nowUnix int64) *ft.ClientEr
 	status := code.GetStatus()
 	switch {
 	case status == nil:
-		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ReasonDisabled,
+		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ft.ErrorKey(ReasonDisabled, "sales"),
 			"this voucher has no status and cannot be used"))
 		return vErrs
 	case *status == string(models.VoucherCodeStatusDisabled):
-		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ReasonDisabled,
+		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ft.ErrorKey(ReasonDisabled, "sales"),
 			"this voucher has been disabled"))
 		return vErrs
 	case *status == string(models.VoucherCodeStatusExhausted):
-		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ReasonUsageExhausted,
+		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ft.ErrorKey(ReasonUsageExhausted, "sales"),
 			"this voucher has no uses left"))
 		return vErrs
 	}
 
 	if !code.HasUsesRemaining() {
-		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ReasonUsageExhausted,
+		vErrs.Append(*ft.NewBusinessViolation("voucher_code", ft.ErrorKey(ReasonUsageExhausted, "sales"),
 			"this voucher has no uses left"))
 		return vErrs
 	}
@@ -212,7 +212,7 @@ func SettleRedemption(
 	}
 	if record == nil {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("redemption", ReasonNotReserved,
+		vErrs.Append(*ft.NewBusinessViolation("redemption", ft.ErrorKey(ReasonNotReserved, "sales"),
 			"no redemption exists with that id"))
 		return vErrs, nil
 	}
@@ -225,7 +225,7 @@ func SettleRedemption(
 
 	if !CanTransitionVoucherRedemption(from, toStatus) {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("redemption", ReasonIllegalTransition,
+		vErrs.Append(*ft.NewBusinessViolation("redemption", ft.ErrorKey(ReasonIllegalTransition, "sales"),
 			"a redemption cannot move from '"+from+"' to '"+toStatus+"'"))
 		return vErrs, nil
 	}

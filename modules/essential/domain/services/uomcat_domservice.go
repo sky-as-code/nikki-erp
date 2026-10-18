@@ -82,7 +82,7 @@ func AssertUomCatDeletable(
 		return errors.Wrap(err, "AssertUomCatDeletable")
 	}
 	if len(uoms) > 0 {
-		vErrs.Append(*ft.NewBusinessViolation(models.UomCatFieldId, "uomcat.has_uoms",
+		vErrs.Append(*ft.NewBusinessViolation(models.UomCatFieldId, ft.ErrorKey("uomcat.has_uoms", "essential"),
 			"this category still has units of measure; move or delete them first"))
 	}
 	return nil
@@ -151,14 +151,16 @@ func assertReferenceUomBelongsToCategory(
 		return errors.Wrap(err, "assertReferenceUomBelongsToCategory")
 	}
 	if !found.HasData {
-		vErrs.Append(*ft.NewBusinessViolation(models.UomCatFieldReferenceUomId, "uomcat.reference_uom_not_found",
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.UomCatFieldReferenceUomId, ft.ErrorKey("uomcat.reference_uom_not_found", "essential"),
 			"the referenced UoM does not exist"))
 		return nil
 	}
 
 	uom := models.NewUomFrom(found.Data)
 	if uom.GetCategoryId() == nil || *uom.GetCategoryId() != categoryId {
-		vErrs.Append(*ft.NewBusinessViolation(models.UomCatFieldReferenceUomId, "uomcat.reference_uom_foreign",
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.UomCatFieldReferenceUomId, ft.ErrorKey("uomcat.reference_uom_foreign", "essential"),
 			"the Reference UoM must belong to this UoM Category"))
 	}
 	return nil
@@ -192,7 +194,8 @@ func assertReferenceUomStable(
 	if current != nil && submitted == *current {
 		return
 	}
-	vErrs.Append(*ft.NewBusinessViolation(models.UomCatFieldReferenceUomId, "uomcat.reference_uom_immutable_while_in_use",
+	vErrs.Append(*ft.NewBusinessViolation(
+		models.UomCatFieldReferenceUomId, ft.ErrorKey("uomcat.reference_uom_immutable_while_in_use", "essential"),
 		"this UoM Category is already in use; its Reference UoM can no longer be changed"))
 }
 

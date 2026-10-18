@@ -96,7 +96,7 @@ func AssertOrderAllocationBalances(
 	}
 
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation("allocations", ReasonAllocationMismatch,
+	vErrs.Append(*ft.NewBusinessViolation("allocations", ft.ErrorKey(ReasonAllocationMismatch, "sales"),
 		"the bills of this order allocate "+check.AllocatedTotal.String()+
 			" against an order total of "+check.OrderTotal.String()+
 			"; every dong of a sale must be settled by exactly one bill"))
@@ -150,7 +150,7 @@ func AssertLineNotOverAllocated(
 	}
 
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation("quantity", ReasonQuantityExceeded,
+	vErrs.Append(*ft.NewBusinessViolation("quantity", ft.ErrorKey(ReasonQuantityExceeded, "sales"),
 		"this order line has "+allocated.String()+" allocated across bills but only "+
 			ordered.String()+" was ordered; the same goods cannot be billed twice"))
 	return vErrs, nil

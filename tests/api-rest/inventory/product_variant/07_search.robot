@@ -107,7 +107,7 @@ Search Filtering By Function Computed Field Fails
     ...    params=${{ {'org_id': $INV_ORG_ID, 'graph': '{"if":["display_name", "*", "Lead"]}'} }}
     ...    expected_status=any
     Response Status Should Be    ${resp}    400
-    Should Contain    ${resp.text}    err_computed_field_not_filterable
+    Should Contain    ${resp.text}    common:err_computed_field_not_filterable
 
 Schema Advertises Function Computed Field As Not Filterable
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema

@@ -72,7 +72,8 @@ func reserveAtWarehouse(
 	}
 	if warehouseId == "" {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName, ReasonSalesPointNoWarehouse,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.SalesOrderFulfillmentSchemaName, ft.ErrorKey(ReasonSalesPointNoWarehouse, "sales"),
 			"the sales point's location belongs to no warehouse, so nothing can be held for it"))
 		return vErrs, nil
 	}
@@ -105,7 +106,7 @@ func reserveAtWarehouse(
 	}
 	if result.Refused() {
 		reason := ReasonFulfillmentReserveFailed
-		if hasReason(&result.ClientErrors, "stock_reservation.insufficient_warehouse_stock") {
+		if hasReason(&result.ClientErrors, "inventory:stock_reservation.insufficient_warehouse_stock") {
 			reason = ReasonFulfillmentInsufficientStock
 		}
 		return reservationRefusal(&itExt.FulfillmentReservationResponse{

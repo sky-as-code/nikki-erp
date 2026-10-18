@@ -175,6 +175,6 @@ func validateReversal(taxDate string, componentCount int) *ft.ClientErrors {
 
 func rejection(field string, key string, message string) *ft.ClientErrors {
 	cErrs := ft.NewClientErrors()
-	cErrs.Append(*ft.NewBusinessViolation(field, key, message))
+	cErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "accounting"), message))
 	return cErrs
 }

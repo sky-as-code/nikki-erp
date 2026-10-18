@@ -121,7 +121,7 @@ type CreateReturnResultLine struct {
 // refuseReturn builds a single-violation refusal, the shape every gate in this file returns.
 func refuseReturn(field, reason, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(field, reason, message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(reason, "sales"), message))
 	return vErrs
 }
 
@@ -258,7 +258,7 @@ func priceReturnLines(
 		lineKey := requested.SalesOrderLineId + "\x1f" + requested.FulfillmentItemId
 		if seen[lineKey] {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesReturnLineFieldSalesOrderLineId,
-				ReasonReturnLineDuplicate,
+				ft.ErrorKey(ReasonReturnLineDuplicate, "sales"),
 				"line "+requested.SalesOrderLineId+" is named twice; combine the quantities"))
 			continue
 		}
@@ -272,7 +272,7 @@ func priceReturnLines(
 		}
 		if !claimed.IsPositive() {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesReturnLineFieldQuantity,
-				ReasonReturnQuantityRange,
+				ft.ErrorKey(ReasonReturnQuantityRange, "sales"),
 				"the quantity to return must be greater than zero"))
 			continue
 		}
@@ -284,12 +284,12 @@ func priceReturnLines(
 		}
 		if line == nil {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesReturnLineFieldSalesOrderLineId,
-				ReasonReturnLineNotFound, "no such order line: "+requested.SalesOrderLineId))
+				ft.ErrorKey(ReasonReturnLineNotFound, "sales"), "no such order line: "+requested.SalesOrderLineId))
 			continue
 		}
 		if stringOf(line, models.SalesOrderLineFieldSalesOrderId) != stringOf(order, models.SalesOrderFieldId) {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesReturnLineFieldSalesOrderLineId,
-				ReasonReturnLineForeign,
+				ft.ErrorKey(ReasonReturnLineForeign, "sales"),
 				"line "+requested.SalesOrderLineId+" belongs to a different order"))
 			continue
 		}
@@ -310,7 +310,7 @@ func priceReturnLines(
 		claimedGoods := claimedByLine[requested.SalesOrderLineId].Add(requested.Quantity)
 		if claimedGoods.GreaterThan(allowed) {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesReturnLineFieldQuantity,
-				ReasonReturnQuantityExceedsReturnable,
+				ft.ErrorKey(ReasonReturnQuantityExceedsReturnable, "sales"),
 				"line "+requested.SalesOrderLineId+" has "+allowed.String()+
 					" returnable, and "+claimedGoods.String()+" was asked for"))
 			continue

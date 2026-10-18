@@ -27,7 +27,7 @@ Upload Again Without Replace Fails
     ${part}=    Avatar File Part    png
     ${resp}=    POST On Session    api    ${USER_API}/${USER_ID}/files/avatar
     ...    data=${{ {'etag': $USER_ETAG} }}    files=${part}    expected_status=any
-    Response Should Be File Field Error    ${resp}    avatar    file.err_file_exists
+    Response Should Be File Field Error    ${resp}    avatar    common:file.err_file_exists
 
 Replace Avatar Succeeds
     ${part}=    Avatar File Part    gif
@@ -41,14 +41,14 @@ Upload To Unknown File Field Fails
     ${part}=    Avatar File Part    png
     ${resp}=    PUT On Session    api    ${USER_API}/${USER_ID}/files/no_such_field
     ...    data=${{ {'etag': $USER_ETAG} }}    files=${part}    expected_status=any
-    Response Should Be File Field Error    ${resp}    field    file.err_field_unknown
+    Response Should Be File Field Error    ${resp}    field    common:file.err_field_unknown
 
 Upload Of A Non Image Fails
     [Tags]    negative
     ${part}=    Evaluate    {'file': ('avatar.png', b'plain text, not an image', 'image/png')}
     ${resp}=    PUT On Session    api    ${USER_API}/${USER_ID}/files/avatar
     ...    data=${{ {'etag': $USER_ETAG} }}    files=${part}    expected_status=any
-    Response Should Be File Field Error    ${resp}    avatar    err_file_type_not_allowed
+    Response Should Be File Field Error    ${resp}    avatar    common:err_file_type_not_allowed
 
 Upload Of An Oversize Image Fails
     [Tags]    negative
@@ -56,13 +56,13 @@ Upload Of An Oversize Image Fails
     ${padded}=    Evaluate    {'file': ('avatar.png', $png['file'][1] + b'\\0' * (10 * 1024 * 1024 + 1), 'image/png')}
     ${resp}=    PUT On Session    api    ${USER_API}/${USER_ID}/files/avatar
     ...    data=${{ {'etag': $USER_ETAG} }}    files=${padded}    expected_status=any
-    Response Should Be File Field Error    ${resp}    avatar    err_file_too_large
+    Response Should Be File Field Error    ${resp}    avatar    common:err_file_too_large
 
 Update Setting The File Key Directly Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${USER_API}/${USER_ID}
     ...    json=${{ {'avatar_file_key': 'iam/users/forged.png', 'etag': $USER_ETAG} }}    expected_status=any
-    Response Should Be File Field Error    ${resp}    avatar_file_key    file.err_field_managed
+    Response Should Be File Field Error    ${resp}    avatar_file_key    common:file.err_field_managed
 
 Delete Avatar Succeeds
     ${resp}=    DELETE On Session    api    ${USER_API}/${USER_ID}/files/avatar

@@ -6,9 +6,21 @@ collection's "scripts/common-utils.js" and the per-module schemas embedded in
 "scripts/*.js"; response validation mirrors "common-test-response.js" (tv4).
 """
 import json
+import re
 from pathlib import Path
 
 from jsonschema import Draft4Validator, FormatChecker
+
+
+# Every error key is "<ns>:<suffix>", <ns> being the langJson file stem the frontend looks it up in.
+# A bare key cannot be localized, so the contract refuses it on both the expected and the served side.
+ERROR_KEY_PATTERN = r"^[a-z_]+:"
+
+
+def _error_key_schema(key):
+    if not re.match(ERROR_KEY_PATTERN, key):
+        raise ValueError("error key '{}' must be namespaced as '<ns>:<suffix>'".format(key))
+    return {"type": "string", "enum": [key], "pattern": ERROR_KEY_PATTERN}
 
 
 class SchemaValidator:
@@ -43,7 +55,7 @@ class SchemaValidator:
                 "required": ["field", "key", "message", "type"],
                 "properties": {
                     "field": {"type": "string", "enum": fields},
-                    "key": {"type": "string", "enum": [key]},
+                    "key": _error_key_schema(key),
                     "message": {"type": "string", "enum": [message]},
                     "type": {"type": "string", "enum": [type]},
                     "vars": {"type": "object"},
@@ -69,7 +81,7 @@ class SchemaValidator:
                 "required": ["field", "key", "message", "type"],
                 "properties": {
                     "field": {"type": "string", "enum": [field]},
-                    "key": {"type": "string", "enum": [key]},
+                    "key": _error_key_schema(key),
                     "message": {"type": "string", "pattern": message_pattern},
                     "type": {"type": "string", "enum": [type]},
                     "vars": {"type": "object"},
@@ -89,7 +101,7 @@ class SchemaValidator:
                 "type": "object",
                 "required": ["key", "message", "type"],
                 "properties": {
-                    "key": {"type": "string", "enum": [key]},
+                    "key": _error_key_schema(key),
                     "message": {"type": "string", "enum": [message]},
                     "type": {"type": "string", "enum": [type]},
                     "vars": vars_schema or {"type": "object"},

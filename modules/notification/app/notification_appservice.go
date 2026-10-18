@@ -63,7 +63,7 @@ func (this *NotificationApplicationServiceImpl) SendNotification(
 	}
 	if orgId == nil {
 		errs := ft.ClientErrors{*ft.NewValidationError(
-			basemodel.FieldOrgId, "err_org_id_required",
+			basemodel.FieldOrgId, ft.ErrorKey("err_org_id_required", "notification"),
 			"a notification belongs to an organization")}
 		return &it.SendNotificationResult{ClientErrors: errs}, nil
 	}

@@ -75,7 +75,7 @@ func assertNotReparented(newTemplateId string, stored *models.ProductVariant, vE
 		return
 	}
 	vErrs.Append(*ft.NewBusinessViolation(models.ProductVariantFieldProductTemplateId,
-		"product_variant.immutable_template",
+		ft.ErrorKey("product_variant.immutable_template", "inventory"),
 		"product_template_id cannot be changed; create a variant under the other template instead"))
 }
 
@@ -123,7 +123,7 @@ func checkUniqueCombination(
 			continue
 		}
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductVariantFieldCombinationKey,
-			"product_variant.duplicate_combination",
+			ft.ErrorKey("product_variant.duplicate_combination", "inventory"),
 			"this template already has a variant with the same attribute combination"))
 		return nil
 	}

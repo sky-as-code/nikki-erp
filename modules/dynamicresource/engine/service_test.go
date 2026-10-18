@@ -117,7 +117,7 @@ func TestServiceSupportsEveryActionByDefault(t *testing.T) {
 
 func hasUnsupportedActionError(cErrs ft.ClientErrors) bool {
 	for _, item := range cErrs {
-		if item.Key == "err_action_not_supported" {
+		if item.Key == ft.ErrorKey("err_action_not_supported") {
 			return true
 		}
 	}

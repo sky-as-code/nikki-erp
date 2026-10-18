@@ -98,12 +98,12 @@ func langSegment(value *model.LangJson, language model.LanguageCode) string {
 func rejectServerManagedFields(cmd dmodel.DynamicFields, vErrs *ft.ClientErrors) {
 	if _, sent := cmd[models.ProductCategoryFieldCanonicalName]; sent {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldCanonicalName,
-			"product_category.canonical_name_server_managed",
+			ft.ErrorKey("product_category.canonical_name_server_managed", "inventory"),
 			"canonical_name is maintained by the server and cannot be set"))
 	}
 	if _, sent := cmd[models.ProductCategoryFieldIsRoot]; sent {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldIsRoot,
-			"product_category.is_root_server_managed",
+			ft.ErrorKey("product_category.is_root_server_managed", "inventory"),
 			"is_root is maintained by the server and cannot be set"))
 	}
 }
@@ -157,7 +157,7 @@ func (this *ProductCategoryDomainServiceImpl) fillParentWithRoot(
 	}
 	if rootId == "" {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldParentCategoryId,
-			"product_category.no_root",
+			ft.ErrorKey("product_category.no_root", "inventory"),
 			"this organization has no root category"))
 		return entity, nil
 	}
@@ -199,7 +199,7 @@ func assignCanonicalName(
 	}
 	if derefString(parent.GetOrgId()) != orgId {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductCategoryFieldParentCategoryId,
-			"product_category.parent_other_org",
+			ft.ErrorKey("product_category.parent_other_org", "inventory"),
 			"the parent category belongs to another organization"))
 		return
 	}

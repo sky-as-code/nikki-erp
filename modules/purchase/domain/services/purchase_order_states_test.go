@@ -127,15 +127,15 @@ func TestAssertOrderTransitionNamesTheProblem(t *testing.T) {
 	}{
 		{
 			"reviving a cancelled order", models.PurchaseOrderStatusCancelled,
-			models.PurchaseOrderStatusPurchaseOrder, "purchase_order.cancelled_is_final",
+			models.PurchaseOrderStatusPurchaseOrder, "purchase:purchase_order.cancelled_is_final",
 		},
 		{
 			"re-confirming a committed order", models.PurchaseOrderStatusPurchaseOrder,
-			models.PurchaseOrderStatusToApprove, "purchase_order.already_confirmed",
+			models.PurchaseOrderStatusToApprove, "purchase:purchase_order.already_confirmed",
 		},
 		{
 			"anything else", models.PurchaseOrderStatusToApprove,
-			models.PurchaseOrderStatusRfq, "purchase_order.invalid_transition",
+			models.PurchaseOrderStatusRfq, "purchase:purchase_order.invalid_transition",
 		},
 	}
 

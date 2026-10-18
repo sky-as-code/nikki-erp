@@ -23,18 +23,18 @@ func TestAssertFactorMatchesUomType(t *testing.T) {
 		{"reference with factor 1 is valid", models.UomTypeReference, "1", ""},
 		{"reference with factor 1.000 is valid", models.UomTypeReference, "1.000", ""},
 		{"reference with any other factor is rejected", models.UomTypeReference, "1000",
-			"uom.reference_factor_must_be_one"},
+			"essential:uom.reference_factor_must_be_one"},
 		{"bigger_equal at exactly 1 is valid", models.UomTypeBiggerEqual, "1", ""},
 		{"bigger_equal above 1 is valid", models.UomTypeBiggerEqual, "1000", ""},
 		{"bigger_equal below 1 is rejected", models.UomTypeBiggerEqual, "0.001",
-			"uom.bigger_equal_factor_out_of_range"},
+			"essential:uom.bigger_equal_factor_out_of_range"},
 		{"smaller below 1 is valid", models.UomTypeSmaller, "0.001", ""},
 		{"smaller at exactly 1 is rejected", models.UomTypeSmaller, "1",
-			"uom.smaller_factor_out_of_range"},
+			"essential:uom.smaller_factor_out_of_range"},
 		{"smaller at zero is rejected", models.UomTypeSmaller, "0",
-			"uom.smaller_factor_out_of_range"},
+			"essential:uom.smaller_factor_out_of_range"},
 		{"smaller when negative is rejected", models.UomTypeSmaller, "-0.5",
-			"uom.smaller_factor_out_of_range"},
+			"essential:uom.smaller_factor_out_of_range"},
 	}
 
 	for _, testCase := range testCases {
@@ -60,8 +60,8 @@ func TestAssertRoundingInRange(t *testing.T) {
 		{"a fraction is valid", "0.01", ""},
 		{"just below one is valid", "0.999999", ""},
 		{"exactly one is valid", "1", ""},
-		{"above one is rejected", "1.5", "uom.rounding_out_of_range"},
-		{"negative is rejected", "-0.01", "uom.rounding_out_of_range"},
+		{"above one is rejected", "1.5", "essential:uom.rounding_out_of_range"},
+		{"negative is rejected", "-0.01", "essential:uom.rounding_out_of_range"},
 	}
 
 	for _, testCase := range testCases {
@@ -116,7 +116,7 @@ func TestAssertImmutableWhileInUseBlocksTheFrozenFields(t *testing.T) {
 		uomTestCtx(), uomDispatcher(t, usageReply{module: "sales", used: true}), params, stored, vErrs)
 
 	require.NoError(t, err)
-	assertViolation(t, vErrs, "uom.immutable_while_in_use")
+	assertViolation(t, vErrs, "essential:uom.immutable_while_in_use")
 }
 
 func TestAssertImmutableWhileInUsePermitsEditWhenUnused(t *testing.T) {
@@ -143,7 +143,7 @@ func TestAssertImmutableWhileInUseRefusesWhenAModuleCannotAnswer(t *testing.T) {
 		params, stored, vErrs)
 
 	require.NoError(t, err)
-	assertViolation(t, vErrs, "uom.immutable_while_in_use")
+	assertViolation(t, vErrs, "essential:uom.immutable_while_in_use")
 }
 
 // Editing a field that is not frozen must not cost a round trip to every consuming module.
@@ -198,7 +198,7 @@ func TestAssertUomDeletableBlocksAUnitInUse(t *testing.T) {
 		uomTestCtx(), uomDispatcher(t, usageReply{module: "sales", used: true}), params, vErrs)
 
 	require.NoError(t, err)
-	assertViolation(t, vErrs, "resource_in_use")
+	assertViolation(t, vErrs, "common:resource_used_by_modules")
 }
 
 func TestAssertUomDeletablePermitsAnUnusedUnit(t *testing.T) {
@@ -230,5 +230,5 @@ func TestAssertUomDeletableBlocksWhenAnyModuleReportsUsage(t *testing.T) {
 		params, vErrs)
 
 	require.NoError(t, err)
-	assertViolation(t, vErrs, "resource_in_use")
+	assertViolation(t, vErrs, "common:resource_used_by_modules")
 }

@@ -17,7 +17,7 @@ import (
 func salesChannelOrgRequired() *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName,
-		"sales_channel.org_required", "a sales channel always belongs to one org"))
+		ft.ErrorKey("sales_channel.org_required", "sales"), "a sales channel always belongs to one org"))
 	return vErrs
 }
 
@@ -158,13 +158,13 @@ func (this *SalesChannelApplicationServiceImpl) ResolveSalesChannelByCode(
 
 func channelRejection(key, message string) *it.RegisterSalesChannelResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName, ft.ErrorKey(key, "sales"), message))
 	return &it.RegisterSalesChannelResult{ClientErrors: *vErrs}
 }
 
 func resolveRejection(key, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName, ft.ErrorKey(key, "sales"), message))
 	return vErrs
 }
 

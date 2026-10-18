@@ -218,5 +218,5 @@ func isArchivedWarehouse(warehouse models.Warehouse) bool {
 }
 
 func appendSupplyViolation(vErrs *ft.ClientErrors, key string, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(models.WarehouseSupplyRelationSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.WarehouseSupplyRelationSchemaName, ft.ErrorKey(key, "inventory"), message))
 }

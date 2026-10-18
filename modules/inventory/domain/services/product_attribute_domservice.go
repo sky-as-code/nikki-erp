@@ -57,7 +57,7 @@ func AssertProductAttributeDeletable(
 	}
 	if len(values) > 0 {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductAttributeFieldId,
-			"product_attribute.has_values",
+			ft.ErrorKey("product_attribute.has_values", "inventory"),
 			"this attribute still has values; delete them first"))
 	}
 	return nil

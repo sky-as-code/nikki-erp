@@ -78,7 +78,7 @@ A Language That Is Not Enabled Is Refused
     ${resp}=    Set Settings At Level    ${SETTINGS_USER_API}
     ...    ${{ [{'name': $SETTING_LANGUAGE, 'value': 'fr-FR'}] }}    expected_status=any
     Response Status Should Be    ${resp}    400
-    Should Contain    ${resp.text}    essential.language_not_enabled
+    Should Contain    ${resp.text}    essential:essential.language_not_enabled
 
 An Enabled Language Is Accepted
     ${resp}=    Set Settings At Level    ${SETTINGS_USER_API}

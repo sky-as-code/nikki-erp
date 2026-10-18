@@ -53,7 +53,7 @@ func DecideBackorder(
 		if createBackorder == nil {
 			vErrs.Append(*ft.NewBusinessViolation(
 				models.StockTransferSchemaName,
-				"stock_transfer.backorder_decision_required",
+				ft.ErrorKey("stock_transfer.backorder_decision_required", "inventory"),
 				"this transfer's backorder policy is 'ask': send create_backorder to say whether the "+
 					"undelivered quantity should become a new transfer",
 			))
@@ -68,7 +68,7 @@ func DecideBackorder(
 		// should have been backordered loses a commitment.
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.StockTransferSchemaName,
-			"stock_transfer.unknown_backorder_policy",
+			ft.ErrorKey("stock_transfer.unknown_backorder_policy", "inventory"),
 			"unknown backorder policy '"+policy+"'",
 		))
 		return BackorderNone, vErrs

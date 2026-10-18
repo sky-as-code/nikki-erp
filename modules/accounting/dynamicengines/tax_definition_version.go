@@ -125,7 +125,7 @@ func assertTreatmentMatchesCalculationType(
 		default:
 			vErrs.Append(*ft.NewBusinessViolation(
 				models.TaxDefinitionVersionFieldCalculationType,
-				"tax.none_calculation_requires_no_charge_treatment",
+				ft.ErrorKey("tax.none_calculation_requires_no_charge_treatment", "accounting"),
 				"a calculation type of 'none' is only valid with exempt, non_taxable or out_of_scope"))
 		}
 	}
@@ -133,7 +133,7 @@ func assertTreatmentMatchesCalculationType(
 	if *treat == models.TaxTreatmentZeroRated && *calc == models.CalculationNone {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.TaxDefinitionVersionFieldCalculationType,
-			"tax.zero_rated_requires_percentage",
+			ft.ErrorKey("tax.zero_rated_requires_percentage", "accounting"),
 			"a zero-rated tax is charged at 0% and must use calculation type 'percentage', not 'none'"))
 	}
 }
@@ -173,7 +173,7 @@ func assertNoPublishedOverlap(
 		) {
 			vErrs.Append(*ft.NewBusinessViolation(
 				models.TaxDefinitionVersionFieldEffectiveFrom,
-				"tax.published_version_overlap",
+				ft.ErrorKey("tax.published_version_overlap", "accounting"),
 				"another published version of this tax already covers part of this period; "+
 					"a tax date must resolve to exactly one definition"))
 			return nil

@@ -18,12 +18,14 @@ func (this *StockReservationDomainServiceImpl) CheckWarehouseAvailability(
 ) (*itStock.WarehouseAvailabilityReport, error) {
 	vErrs := ft.NewClientErrors()
 	if query.OrgId == "" || query.WarehouseId == "" || query.ProductVariantId == "" {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationRequestMalformed,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
 			"org_id, warehouse_id and product_variant_id are required"))
 		return &itStock.WarehouseAvailabilityReport{ClientErrors: *vErrs}, nil
 	}
 	if query.Requested.IsNegative() {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName, ReasonReservationRequestMalformed,
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
 			"requested must not be negative"))
 		return &itStock.WarehouseAvailabilityReport{ClientErrors: *vErrs}, nil
 	}

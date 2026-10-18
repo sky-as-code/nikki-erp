@@ -164,7 +164,7 @@ Updating An Entitlement The Same Delta Removes Is Refused
     ${ent_id}=    Role Should Grant    ${TARGET_ROLE_ID}    ${READ_EXPRESSION}
     ${update}=    Evaluate    [{'id': $ent_id, 'description': 'Robot must not apply'}]
     ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    remove=${{ [$ent_id] }}    update=${update}
-    Response Should Be Delta Refusal    ${resp}    err_entitlement_update_removed
+    Response Should Be Delta Refusal    ${resp}    iam:err_entitlement_update_removed
     Role Should Grant    ${TARGET_ROLE_ID}    ${READ_EXPRESSION}
 
 Removing Another Role's Entitlement Is Refused
@@ -174,11 +174,11 @@ Removing Another Role's Entitlement Is Refused
     Response Should Be Update Success    ${resp}
     ${foreign_ent_id}=    Role Should Grant    ${FOREIGN_ROLE_ID}    ${READ_EXPRESSION}
     ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    remove=${{ [$foreign_ent_id] }}
-    Response Should Be Delta Refusal    ${resp}    err_entitlement_not_in_role
+    Response Should Be Delta Refusal    ${resp}    iam:err_entitlement_not_in_role
     Role Should Grant    ${FOREIGN_ROLE_ID}    ${READ_EXPRESSION}
     ${update}=    Evaluate    [{'id': $foreign_ent_id, 'description': 'Robot must not apply'}]
     ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    update=${update}
-    Response Should Be Delta Refusal    ${resp}    err_entitlement_not_in_role
+    Response Should Be Delta Refusal    ${resp}    iam:err_entitlement_not_in_role
 
 A Grant The Role Already Has Is Refused And Rolls Back
     [Documentation]    The refusal must also undo the role field change sent with it.
@@ -187,7 +187,7 @@ A Grant The Role Already Has Is Refused And Rolls Back
     ${grant}=    Grant    ${READ_ACTION_ID}
     ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    add=${{ [$grant] }}
     ...    extra=${{ {'description': 'Robot must roll back'} }}
-    Response Should Be Delta Refusal    ${resp}    err_entitlement_already_granted
+    Response Should Be Delta Refusal    ${resp}    iam:err_entitlement_already_granted
     ${after}=    Role Description    ${TARGET_ROLE_ID}
     Should Be Equal    ${after}    ${before}
 
@@ -195,7 +195,7 @@ The Same Grant Twice In One Delta Is Refused
     [Tags]    entitlements    negative
     ${grant}=    Grant
     ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    add=${{ [$grant, $grant] }}
-    Response Should Be Delta Refusal    ${resp}    err_entitlement_duplicated
+    Response Should Be Delta Refusal    ${resp}    iam:err_entitlement_duplicated
     Role Should Not Grant    ${TARGET_ROLE_ID}    *:iam_role:tenant
 
 An Unknown Resource Is A Client Error

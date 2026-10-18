@@ -179,7 +179,7 @@ func TestImportRefusesAWrongExtensionAndAMissingFile(t *testing.T) {
 
 	result, err := fx.appSvc.Import(memberContext(), importCommand(multipartFile(t, "p.xls", importCsv), false))
 	require.NoError(t, err)
-	assert.Equal(t, "err_file_type_not_allowed", result.ClientErrors[0].Key)
+	assert.Equal(t, "common:err_file_type_not_allowed", result.ClientErrors[0].Key)
 
 	result, err = fx.appSvc.Import(memberContext(), importCommand(nil, false))
 	require.NoError(t, err)

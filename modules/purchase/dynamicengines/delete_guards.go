@@ -97,5 +97,5 @@ func assertDeletableStatus(
 	if allowed[status] {
 		return
 	}
-	vErrs.Append(*ft.NewBusinessViolation(field, errorKey, message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(errorKey, "purchase"), message))
 }

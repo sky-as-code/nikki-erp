@@ -148,7 +148,7 @@ func ConfirmOrderWith(
 	}
 	if !acquired {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("id", ReasonLockUnavailable,
+		vErrs.Append(*ft.NewBusinessViolation("id", ft.ErrorKey(ReasonLockUnavailable, "sales"),
 			"this order is being changed by another request; try again"))
 		return nil, vErrs, nil
 	}
@@ -368,7 +368,7 @@ func assertConfirmable(
 ) (*ft.ClientErrors, error) {
 	refuse := func(field, reason, message string) *ft.ClientErrors {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(field, reason, message))
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(reason, "sales"), message))
 		return vErrs
 	}
 
@@ -433,7 +433,7 @@ func redeemOrderVouchers(
 			// Reported as an exhausted voucher, and the confirm is abandoned with the order still a
 			// draft.
 			out := ft.NewClientErrors()
-			out.Append(*ft.NewBusinessViolation("voucher", ReasonVoucherExhausted,
+			out.Append(*ft.NewBusinessViolation("voucher", ft.ErrorKey(ReasonVoucherExhausted, "sales"),
 				"a voucher applied to this order can no longer be redeemed; "+
 					"remove it and try again"))
 			return nil, out, nil

@@ -32,7 +32,7 @@ func assertWellFormedPeriod(
 		return
 	}
 	if !models.PeriodIsWellFormed(from, to) {
-		vErrs.Append(*ft.NewBusinessViolation(field, "tax.period_ends_before_it_starts",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("tax.period_ends_before_it_starts", "accounting"),
 			"the effective end date must be on or after the effective start date"))
 	}
 }

@@ -563,6 +563,6 @@ func hashResultPayload(params ApplyAttemptResultParams) string {
 func resultRefusal(reason, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesFulfillmentAttemptSchemaName, reason, message))
+		models.SalesFulfillmentAttemptSchemaName, ft.ErrorKey(reason, "sales"), message))
 	return vErrs
 }

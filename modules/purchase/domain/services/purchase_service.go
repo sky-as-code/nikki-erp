@@ -81,7 +81,7 @@ func orderNotFoundErrors(orderId string) *ft.ClientErrors {
 
 func orderViolationErrors(key, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.PurchaseOrderSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.PurchaseOrderSchemaName, ft.ErrorKey(key, "purchase"), message))
 	return vErrs
 }
 

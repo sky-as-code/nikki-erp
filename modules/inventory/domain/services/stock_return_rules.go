@@ -45,7 +45,7 @@ func AssertReturnable(line ReturnableLine, requested decimal.Decimal) *ft.Client
 
 	if requested.LessThanOrEqual(decimal.Zero) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockMoveSchemaName, "stock_return.quantity_not_positive",
+			models.StockMoveSchemaName, ft.ErrorKey("stock_return.quantity_not_positive", "inventory"),
 			"a return must send back a quantity greater than zero"))
 		return vErrs
 	}
@@ -53,7 +53,7 @@ func AssertReturnable(line ReturnableLine, requested decimal.Decimal) *ft.Client
 	returnable := line.Returnable()
 	if requested.GreaterThan(returnable) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockMoveSchemaName, "stock_return.exceeds_returnable",
+			models.StockMoveSchemaName, ft.ErrorKey("stock_return.exceeds_returnable", "inventory"),
 			"only "+returnable.String()+" of move '"+line.MoveId+
 				"' is still returnable, which is less than the "+requested.String()+" requested"))
 	}

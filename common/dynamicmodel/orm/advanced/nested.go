@@ -103,14 +103,14 @@ func (this *queryPlan) classifySelectPath(path string) (*pathShape, error) {
 
 func clientErrorsNestedBeyondToMany(path string) ft.ClientErrors {
 	return ft.ClientErrors{
-		*ft.NewValidationError(path, "err_graph_nested_beyond_to_many",
+		*ft.NewValidationError(path, ft.ErrorKey("err_graph_nested_beyond_to_many"),
 			"a to-many edge can only be the last edge of a selected path"),
 	}
 }
 
 func clientErrorsTooManyNestedEdges(limit int) ft.ClientErrors {
 	return ft.ClientErrors{
-		*ft.NewValidationError("fields", "err_too_many_nested_edges",
+		*ft.NewValidationError("fields", ft.ErrorKey("err_too_many_nested_edges"),
 			fmt.Sprintf("request projects more than %d to-many edges", limit)),
 	}
 }

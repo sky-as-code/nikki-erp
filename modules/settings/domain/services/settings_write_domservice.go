@@ -129,7 +129,7 @@ func validatePayload(
 		// module's declaration.
 		allowOverride := allowOverrideFor(field, stored[item.Name])
 		if !isEditable(level, ownerType, allowOverride) {
-			vErrs.Append(*ft.NewBusinessViolation(item.Name, "settings.setting_is_managed",
+			vErrs.Append(*ft.NewBusinessViolation(item.Name, ft.ErrorKey("settings.setting_is_managed", "settings"),
 				"is managed by your Tenant Administrator"))
 			continue
 		}
@@ -139,7 +139,7 @@ func validatePayload(
 		allowOverrideChanged := false
 		if item.AllowOverride != nil {
 			if ownerType != c.OwnerTypeTenant {
-				vErrs.Append(*ft.NewBusinessViolation(item.Name, "settings.override_not_yours",
+				vErrs.Append(*ft.NewBusinessViolation(item.Name, ft.ErrorKey("settings.override_not_yours", "settings"),
 					"only a Tenant Administrator may change whether this setting can be overridden"))
 				continue
 			}
@@ -287,7 +287,7 @@ func (this *SettingsDomainServiceImpl) upsertRecord(
 
 func clientErrorResult(field string, key string, message string) *it.SetSettingsResult {
 	vErrs := ft.ClientErrors{}
-	vErrs.Append(*ft.NewBusinessViolation(field, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "settings"), message))
 	return &it.SetSettingsResult{ClientErrors: vErrs}
 }
 

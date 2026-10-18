@@ -57,7 +57,7 @@ func AssertBrandDeletable(
 	}
 	if len(templates) > 0 {
 		vErrs.Append(*ft.NewBusinessViolation(models.BrandFieldId,
-			"brand.has_templates",
+			ft.ErrorKey("brand.has_templates", "inventory"),
 			"this brand is still used by product templates"))
 	}
 	return nil

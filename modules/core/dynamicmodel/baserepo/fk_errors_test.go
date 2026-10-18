@@ -9,6 +9,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/modules"
 )
 
 func fkTestSchema() *dmodel.ModelSchema {
@@ -47,10 +48,64 @@ func TestNormalizeFk_DeleteReportsTheReferencingTable(t *testing.T) {
 	assert.Contains(t, clientErrs.ToError().Error(), "still referenced")
 }
 
-// The key a delete refusal reports must match what usagecheck reports before the statement runs.
-// One condition must not look like two different problems depending on which layer caught it.
-func TestNormalizeFk_DeleteUsesTheSameKeyAsTheBusinessCheck(t *testing.T) {
-	assert.Equal(t, "resource_in_use", ErrorKeyResourceInUse)
+// Embedding the interface leaves every method but the two under test unimplemented, which is all
+// the namespace lookup reads.
+type fkTestModule struct {
+	modules.InCodeModule
+	name   string
+	prefix string
+}
+
+func (this fkTestModule) Name() string        { return this.name }
+func (this fkTestModule) ModelPrefix() string { return this.prefix }
+
+func withLoadedModules(t *testing.T, mods ...modules.InCodeModule) {
+	original := loadedModules
+	loadedModules = func() []modules.InCodeModule { return mods }
+	t.Cleanup(func() { loadedModules = original })
+}
+
+// The referencing table is sent as a translation key in the namespace of the module that owns
+// it, so a client can name it in the user's language rather than show a raw table name.
+func TestNormalizeFk_DeleteReportsANamespacedTableKey(t *testing.T) {
+	withLoadedModules(t,
+		fkTestModule{name: "iam", prefix: "iam"},
+		fkTestModule{name: "vendingmachine", prefix: "vdmc"})
+
+	clientErrs := normalizeFkViolation(
+		&pq.Error{Code: pq.ErrorCode(pgForeignKeyViolation), Table: "vdmc_kiosks"}, fkTestSchema(), true)
+
+	require.NotNil(t, clientErrs)
+	item := (*clientErrs)[0]
+	assert.Equal(t, "common:resource_in_use", item.Key)
+	assert.Equal(t, "vendingmachine:vdmc_kiosks", item.Vars["referenced_by"],
+		"the namespace is the module name, not its model prefix")
+}
+
+func TestNormalizeFk_InsertReportsTheCommonKey(t *testing.T) {
+	clientErrs := normalizeFkViolation(
+		pgFkError("test_order_lines_uom_id_fkey"), fkTestSchema(), false)
+
+	require.NotNil(t, clientErrs)
+	assert.Equal(t, "common:foreign_key_violation", (*clientErrs)[0].Key)
+}
+
+// "inventory_x" must not be claimed by a module prefixed "inv" when "inventory" is loaded too,
+// and a prefix only counts up to its separator.
+func TestLanguageNamespace_LongestPrefixWins(t *testing.T) {
+	withLoadedModules(t,
+		fkTestModule{name: "short", prefix: "inv"},
+		fkTestModule{name: "inventory", prefix: "inventory"})
+
+	assert.Equal(t, "inventory", languageNamespaceOf("inventory_products"))
+	assert.Equal(t, "short", languageNamespaceOf("inv_items"))
+}
+
+func TestLanguageNamespace_UnknownPrefixFallsBackToCommon(t *testing.T) {
+	withLoadedModules(t, fkTestModule{name: "iam", prefix: "iam"})
+
+	assert.Equal(t, "common", languageNamespaceOf("sales_order_lines"))
+	assert.Equal(t, "common", languageNamespaceOf("iamx_users"))
 }
 
 // PostgreSQL truncates identifiers at 63 bytes, so a long table plus column loses the shape the

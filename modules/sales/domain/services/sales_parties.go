@@ -87,7 +87,7 @@ func AssignParties(
 		}
 		if frozen != "" {
 			vErrs.Append(*ft.NewBusinessViolation(
-				models.SalesOrderFieldBillToPartyId, ReasonBillToPartyFrozen,
+				models.SalesOrderFieldBillToPartyId, ft.ErrorKey(ReasonBillToPartyFrozen, "sales"),
 				"the billing instruction for this order is "+frozen+
 					", so the bill-to party can no longer be changed"))
 		}

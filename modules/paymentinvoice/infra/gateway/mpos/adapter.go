@@ -57,7 +57,7 @@ func (this *Adapter) ValidateOrder(
 	if posIdOf(req.Metadata) == "" {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.OrderFieldMetadata+"."+models.OrderMetaPosId,
-			"paymentinvoice.pos_id_required",
+			ft.ErrorKey("paymentinvoice.pos_id_required", "paymentinvoice"),
 			"paying through a card terminal requires the terminal's id"))
 	}
 	return nil

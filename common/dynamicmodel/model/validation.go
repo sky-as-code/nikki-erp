@@ -16,15 +16,16 @@ func NewInvalidDataTypeErr(field string, typeName ...string) *ft.ClientErrorItem
 	if len(typeName) > 0 && typeName[0] != "" {
 		msgVars = map[string]any{"typeName": typeName[0]}
 	}
-	return ft.NewValidationError(field, "common.err_invalid_data_type", "invalid data type, must be a {{typeName}}", msgVars)
+	return ft.NewValidationError(field, ft.ErrorKey("err_invalid_data_type"),
+		"invalid data type, must be a {{typeName}}", msgVars)
 }
 
 func NewMissingFieldErr(field string) *ft.ClientErrorItem {
-	return ft.NewValidationError(field, "common.err_missing_required_field", "field is required")
+	return ft.NewValidationError(field, ft.ErrorKey("err_missing_required_field"), "field is required")
 }
 
 func NewFormatMismatchErr(field string) *ft.ClientErrorItem {
-	return ft.NewValidationError(field, "common.err_format_mismatch", "must match the required format")
+	return ft.NewValidationError(field, ft.ErrorKey("err_format_mismatch"), "must match the required format")
 }
 
 // ValidateMax validates that value is not greater than max. Supports numbers, strings (length), slices (length).

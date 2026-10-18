@@ -1020,7 +1020,7 @@ func readRefundLines(
 func refundViolation(message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesReturnSchemaName, reasonRefundMalformed, message))
+		models.SalesReturnSchemaName, ft.ErrorKey(reasonRefundMalformed, "sales"), message))
 	return vErrs
 }
 
@@ -1033,7 +1033,7 @@ func readOptionalDateTimeParam(params dmodel.DynamicFields, field string) (*time
 	parsed, err := model.ParseModelDateTime(raw)
 	if err != nil {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(field, "sales_order."+field+"_malformed",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("sales_order."+field+"_malformed", "sales"),
 			"'"+field+"' must be an RFC 3339 UTC timestamp ending in Z"))
 		return nil, vErrs
 	}

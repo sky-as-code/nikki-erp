@@ -2,9 +2,9 @@
 Documentation     Response assertion keywords — ports of the Bruno collection's
 ...               "scripts/*.js" modules. Status codes and draft-4 schemas (with
 ...               additionalProperties:false) are asserted together; error contracts pin
-...               the exact key/message/type served by the backend. The inconsistent
-...               "common.err_*" vs "common:err_*" separators are server contracts —
-...               keep them verbatim.
+...               the exact key/message/type served by the backend. Every key is
+...               namespaced "<ns>:<suffix>", <ns> being the langJson file stem that
+...               localizes it; SchemaValidator rejects a key without that prefix.
 Library           Collections
 Resource          common.resource
 
@@ -97,13 +97,13 @@ Search Results Should Not Contain Id
 Response Should Be Missing Fields Error
     [Arguments]    ${resp}    @{fields}
     ${schema}=    Same Error Schema    ${fields}
-    ...    common.err_missing_required_field    field is required
+    ...    common:err_missing_required_field    field is required
     Response Should Match Schema    ${resp}    ${schema}    400
 
 Response Should Be Invalid Format Error
     [Arguments]    ${resp}    @{fields}
     ${schema}=    Same Error Schema    ${fields}
-    ...    common.err_invalid_data_type    invalid data type, must be a {{typeName}}
+    ...    common:err_invalid_data_type    invalid data type, must be a {{typeName}}
     Response Should Match Schema    ${resp}    ${schema}    400
 
 Response Should Be Invalid String Length Error
@@ -164,7 +164,7 @@ Response Should Be Duplicate Values Error
     [Arguments]    ${resp}    @{uniques}
     ${vars_schema}=    Evaluate    {'type': 'object', 'properties': {'uniques': {'type': 'array'}}}
     ${schema}=    One Error Schema No Field
-    ...    common.err_unique_constraint_violated    unique constraint violated {{uniques}}    business    ${vars_schema}
+    ...    common:err_unique_constraint_violated    unique constraint violated {{uniques}}    business    ${vars_schema}
     Response Should Match Schema    ${resp}    ${schema}    400
     # `uniques` is a list of unique key GROUPS ([["email"]]), since a composite unique
     # collides as a whole. Callers name the colliding columns, so flatten before comparing.
@@ -176,7 +176,7 @@ Response Should Be Overlapping Fields Error
     [Arguments]    ${resp}    @{fields}
     ${vars_schema}=    Evaluate    {'type': 'object', 'required': ['fields'], 'properties': {'fields': {'type': 'array', 'minItems': len($fields), 'maxItems': len($fields), 'items': {'type': 'string', 'enum': list($fields)}}}}
     ${schema}=    One Error Schema No Field
-    ...    common.err_overlapped_fields    These fields must not have overlapping values: {.fields}    business    ${vars_schema}
+    ...    common:err_overlapped_fields    These fields must not have overlapping values: {.fields}    business    ${vars_schema}
     Response Should Match Schema    ${resp}    ${schema}    400
 
 Response Should Be Invalid Access Token Error
@@ -194,7 +194,7 @@ Response Should Be Uom Reference Factor Error
     [Documentation]    BR-UOM-ESS-006: the Reference UoM's factor is exactly 1.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['factor']}}
-    ...    uom.reference_factor_must_be_one
+    ...    essential:uom.reference_factor_must_be_one
     ...    the Reference UoM must have a conversion factor of exactly 1    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -202,7 +202,7 @@ Response Should Be Uom Bigger Equal Factor Error
     [Documentation]    BR-UOM-ESS-009: a bigger_equal UoM has factor >= 1.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['factor']}}
-    ...    uom.bigger_equal_factor_out_of_range
+    ...    essential:uom.bigger_equal_factor_out_of_range
     ...    a bigger_equal UoM must have a conversion factor greater than or equal to 1    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -210,7 +210,7 @@ Response Should Be Uom Smaller Factor Error
     [Documentation]    BR-UOM-ESS-009: a smaller UoM has 0 < factor < 1.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['factor']}}
-    ...    uom.smaller_factor_out_of_range
+    ...    essential:uom.smaller_factor_out_of_range
     ...    a smaller UoM must have a conversion factor greater than 0 and less than 1    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -218,7 +218,7 @@ Response Should Be Uom Rounding Range Error
     [Documentation]    BR-UOM-ESS-017: 0 <= rounding <= 1.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['rounding']}}
-    ...    uom.rounding_out_of_range
+    ...    essential:uom.rounding_out_of_range
     ...    rounding precision must be greater than or equal to 0 and less than or equal to 1    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -226,7 +226,7 @@ Response Should Be Uom Duplicate Reference Error
     [Documentation]    BR-UOM-ESS-005 / UOM-ESS-INV-09: one Reference UoM per category.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['uom_type']}}
-    ...    uom.category_already_has_reference
+    ...    essential:uom.category_already_has_reference
     ...    this UoM Category already has a Reference UoM    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -235,7 +235,7 @@ Response Should Be Uom Category Mismatch Error
     ...    boundary, so a cross-category conversion is refused before it is attempted.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['target_uom_id']}}
-    ...    uom.category_mismatch
+    ...    essential:uom.category_mismatch
     ...    the source and target UoM must belong to the same UoM Category    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -245,7 +245,7 @@ Response Should Be Uom Target Archived Error
     ...    quantities remain readable.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['target_uom_id']}}
-    ...    uom.target_archived
+    ...    essential:uom.target_archived
     ...    an archived UoM cannot be the target of a conversion    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -253,14 +253,14 @@ Response Should Be Uomcat Foreign Reference Error
     [Documentation]    BR-UOM-ESS-004 / UOM-ESS-INV-03.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['reference_uom_id']}}
-    ...    uomcat.reference_uom_foreign
+    ...    essential:uomcat.reference_uom_foreign
     ...    the Reference UoM must belong to this UoM Category    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
 Response Should Be Uomcat Reference Not Found Error
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['reference_uom_id']}}
-    ...    uomcat.reference_uom_not_found
+    ...    essential:uomcat.reference_uom_not_found
     ...    the referenced UoM does not exist    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -276,7 +276,7 @@ Response Should Be Category Self Parent Error
     ...    reported separately from the walk because there is no chain to walk.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['parent_category_id']}}
-    ...    product_category.self_parent
+    ...    inventory:product_category.self_parent
     ...    a category cannot be its own parent    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -285,7 +285,7 @@ Response Should Be Category Cycle Error
     ...    its own descendants would close a loop no traversal could terminate on.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['parent_category_id']}}
-    ...    product_category.cycle
+    ...    inventory:product_category.cycle
     ...    this parent is a descendant of the category, which would create a cycle    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -294,7 +294,7 @@ Response Should Be Category Root Immutable Error
     ...    deleted: every category hangs under it and a parent-less create defaults to it.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['id']}}
-    ...    product_category.root_immutable
+    ...    inventory:product_category.root_immutable
     ...    the root category cannot be renamed, moved, archived or deleted    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -303,7 +303,7 @@ Response Should Be Category Server Managed Error
     ...    sending either is refused rather than silently ignored.
     [Arguments]    ${resp}    ${field}
     ${schema}=    Same Error Schema    ${{[$field]}}
-    ...    product_category.${field}_server_managed
+    ...    inventory:product_category.${field}_server_managed
     ...    ${field} is maintained by the server and cannot be set    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -313,7 +313,7 @@ Response Should Be Duplicate Combination Error
     ...    error rather than letting the constraint surface as a 500.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['combination_key']}}
-    ...    product_variant.duplicate_combination
+    ...    inventory:product_variant.duplicate_combination
     ...    this template already has a variant with the same attribute combination    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -322,7 +322,7 @@ Response Should Be Template Has Variants Error
     ...    be referenced by a transaction is archived, never hard-deleted.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['id']}}
-    ...    product_template.has_variants
+    ...    inventory:product_template.has_variants
     ...    this template still has variants; archive it instead of deleting it    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -331,7 +331,7 @@ Response Should Be Template Id Required Error
     ...    path, so a missing template_id is a client error rather than a 404.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['template_id']}}
-    ...    product_template.template_id_required
+    ...    inventory:product_template.template_id_required
     ...    a product template must be identified    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -341,7 +341,7 @@ Response Should Be Selections Malformed Error
     ...    answer 200 with the wrong product.
     [Arguments]    ${resp}
     ${schema}=    Same Error Schema    ${{['selections']}}
-    ...    product_template.selections_malformed
+    ...    inventory:product_template.selections_malformed
     ...    selections must be a list of attribute-value choices    business
     Response Should Match Schema    ${resp}    ${schema}    400
 
@@ -351,7 +351,7 @@ Response Should Be Resource In Use Error
     ...    fixtures happen to reference, so only the shape is pinned.
     [Arguments]    ${resp}    ${field}=id
     ${schema}=    One Error Schema Message Pattern    ${field}
-    ...    resource_in_use    still used by
+    ...    common:resource_used_by_modules    still used by
     Response Should Match Schema    ${resp}    ${schema}    400
 
 Response Should Be Uom Immutable While In Use Error
@@ -360,5 +360,5 @@ Response Should Be Uom Immutable While In Use Error
     ...    data, so only the shape is pinned.
     [Arguments]    ${resp}    ${field}
     ${schema}=    One Error Schema Message Pattern    ${field}
-    ...    uom.immutable_while_in_use    already used by
+    ...    essential:uom.immutable_while_in_use    already used by
     Response Should Match Schema    ${resp}    ${schema}    400

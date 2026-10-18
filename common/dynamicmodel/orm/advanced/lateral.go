@@ -136,6 +136,6 @@ func (this *queryPlan) rejectFanOutOwner(path string) error {
 
 func clientErrorsComputedNotFilterable(field, message string) ft.ClientErrors {
 	return ft.ClientErrors{
-		*ft.NewValidationError(field, "err_computed_field_not_filterable", message),
+		*ft.NewValidationError(field, ft.ErrorKey("err_computed_field_not_filterable"), message),
 	}
 }

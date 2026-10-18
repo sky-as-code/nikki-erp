@@ -93,7 +93,7 @@ func RequestInvoice(
 	}
 	if bill == nil {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ReasonBillNotFound,
+		vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ft.ErrorKey(ReasonBillNotFound, "sales"),
 			"no bill exists with id '"+params.SalesBillId+"'"))
 		return nil, vErrs, nil
 	}
@@ -197,7 +197,7 @@ func assertInvoiceRequestable(
 	vErrs := ft.NewClientErrors()
 
 	if !isKnownFiscalIntent(intent) {
-		vErrs.Append(*ft.NewBusinessViolation("intent", ReasonUnknownFiscalIntent,
+		vErrs.Append(*ft.NewBusinessViolation("intent", ft.ErrorKey(ReasonUnknownFiscalIntent, "sales"),
 			"unrecognised fiscal intent '"+intent+"'"))
 		return vErrs
 	}
@@ -210,7 +210,7 @@ func assertInvoiceRequestable(
 	// The adjustment intents are unaffected: correcting an already-issued document is still this
 	// function's job, and the return workflow reaches it through exactly this call.
 	if intent == string(models.SalesFiscalIntentIssueOriginal) {
-		vErrs.Append(*ft.NewBusinessViolation("intent", ReasonOriginalIssuanceSuperseded,
+		vErrs.Append(*ft.NewBusinessViolation("intent", ft.ErrorKey(ReasonOriginalIssuanceSuperseded, "sales"),
 			"an original invoice is requested by creating a billing instruction on the order, "+
 				"which the scheduled issuance job acts on; this path only adjusts an issued document"))
 		return vErrs
@@ -219,12 +219,12 @@ func assertInvoiceRequestable(
 	// A cancelled bill settled nothing, so there is nothing to invoice. An OPEN one is allowed: a
 	// business may invoice goods delivered on credit before the money arrives.
 	if stringOf(bill, models.SalesBillFieldStatus) == string(models.SalesBillStatusCancelled) {
-		vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ReasonBillNotEligibleForInvoice,
+		vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ft.ErrorKey(ReasonBillNotEligibleForInvoice, "sales"),
 			"a cancelled bill has no transaction to invoice"))
 	}
 
 	if missing := missingBuyerFields(params.Buyer); missing != "" {
-		vErrs.Append(*ft.NewBusinessViolation("buyer", ReasonBuyerInfoIncomplete,
+		vErrs.Append(*ft.NewBusinessViolation("buyer", ft.ErrorKey(ReasonBuyerInfoIncomplete, "sales"),
 			"the buyer fiscal information is missing "+missing))
 	}
 
@@ -236,12 +236,12 @@ func assertInvoiceRequestable(
 		if err != nil {
 			// A read failure must not be swallowed into a permit: refusing makes the caller retry,
 			// whereas wrongly permitting issues a second document.
-			vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ReasonInvoiceAlreadyRequested,
+			vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ft.ErrorKey(ReasonInvoiceAlreadyRequested, "sales"),
 				"could not confirm whether an invoice was already requested for this bill"))
 			return vErrs
 		}
 		if blocking != nil {
-			vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ReasonInvoiceAlreadyRequested,
+			vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ft.ErrorKey(ReasonInvoiceAlreadyRequested, "sales"),
 				"an invoice has already been requested for this bill and is "+
 					stringOf(blocking, models.SalesFiscalRequestFieldStatus)))
 		}
@@ -294,7 +294,7 @@ func resolveOriginalReference(
 	vErrs := ft.NewClientErrors()
 	if params.OriginalFiscalRequestId == "" {
 		vErrs.Append(*ft.NewBusinessViolation("original_fiscal_request_id",
-			ReasonOriginalRequestRequired,
+			ft.ErrorKey(ReasonOriginalRequestRequired, "sales"),
 			"an adjustment must name the fiscal request it adjusts"))
 		return "", vErrs, nil
 	}
@@ -306,7 +306,7 @@ func resolveOriginalReference(
 	}
 	if original == nil || !models.NewSalesFiscalRequestFrom(original).IsIssued() {
 		vErrs.Append(*ft.NewBusinessViolation("original_fiscal_request_id",
-			ReasonOriginalRequestNotIssued,
+			ft.ErrorKey(ReasonOriginalRequestNotIssued, "sales"),
 			"the fiscal request being adjusted has not been issued, so there is no document to adjust"))
 		return "", vErrs, nil
 	}

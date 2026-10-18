@@ -27,7 +27,7 @@ func TestCheckCreateCombinationReportsTheDuplicateOnItsField(t *testing.T) {
 	_, err := checkCreateCombination(repo)(testContext(t), entity, vErrs)
 
 	require.NoError(t, err)
-	assertViolation(t, vErrs, "product_variant.duplicate_combination")
+	assertViolation(t, vErrs, "inventory:product_variant.duplicate_combination")
 	assert.Equal(t, models.ProductVariantFieldCombinationKey, (*vErrs)[0].Field)
 }
 
@@ -66,7 +66,7 @@ func TestVariantUpdateRefusesReparentingCapturedBeforeValidation(t *testing.T) {
 	vErrs := &ft.ClientErrors{}
 	require.NoError(t, validateVariantUpdate(&fakeSearcher{}, &submitted)(testContext(t), input, stored, vErrs))
 
-	assertViolation(t, vErrs, "product_variant.immutable_template")
+	assertViolation(t, vErrs, "inventory:product_variant.immutable_template")
 }
 
 func TestVariantUpdateAcceptsTheSameTemplate(t *testing.T) {

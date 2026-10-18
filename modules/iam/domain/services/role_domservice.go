@@ -101,7 +101,7 @@ func (this *RoleDomainServiceImpl) DeleteRole(
 			}
 			if *resRole.Data.IsPrivate() {
 				return ft.NewAnonymousBusinessViolation(
-					ft.ErrorKey("iam", "err_private_role_deletion_not_allowed"),
+					ft.ErrorKey("err_private_role_deletion_not_allowed", "iam"),
 					"private role deletion is not allowed.",
 				)
 			}
@@ -171,7 +171,7 @@ func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
 		return roleRes.ClientErrors, nil
 	}
 	if !roleRes.HasData {
-		out = append(out, *ft.NewBusinessViolation("add", "role_not_found", "role not found"))
+		out = append(out, *ft.NewBusinessViolation("add", ft.ErrorKey("role_not_found", "iam"), "role not found"))
 		return out, nil
 	}
 	roleOrgID := roleRes.Data.GetFieldData().GetModelId(domain.RoleFieldOrgId)
@@ -198,7 +198,7 @@ func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
 		ent, ok := found[wantID]
 		if !ok {
 			out = append(out, *ft.NewBusinessViolation(
-				"add", "entitlement_not_found", "entitlement not found",
+				"add", ft.ErrorKey("entitlement_not_found", "iam"), "entitlement not found",
 				map[string]any{"id": string(wantID)},
 			))
 			continue
@@ -209,7 +209,7 @@ func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
 		}
 		if roleOrgID == nil || *roleOrgID == "" {
 			out = append(out, *ft.NewBusinessViolation(
-				"add", "role_org_required",
+				"add", ft.ErrorKey("role_org_required", "iam"),
 				"role org_id is required to assign entitlements with org_unit_id",
 				map[string]any{"org_unit_id": string(*ouID)},
 			))
@@ -232,7 +232,7 @@ func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
 		}
 		if !ouRes.HasData {
 			out = append(out, *ft.NewBusinessViolation(
-				"add", "org_unit_not_found", "org unit not found",
+				"add", ft.ErrorKey("org_unit_not_found", "iam"), "org unit not found",
 				map[string]any{"org_unit_id": string(*ouID)},
 			))
 			continue
@@ -240,7 +240,7 @@ func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
 		path := ouRes.Data.GetPath()
 		if len(path) == 0 || path[0] != string(*roleOrgID) {
 			out = append(out, *ft.NewBusinessViolation(
-				"add", "entitlement_org_mismatch",
+				"add", ft.ErrorKey("entitlement_org_mismatch", "iam"),
 				`Entitlement's org_unit_id {{org_unit_id}} must belong to the role's org_id {{org_id}}`,
 				map[string]any{"org_unit_id": string(*ouID), "org_id": string(*roleOrgID)},
 			))

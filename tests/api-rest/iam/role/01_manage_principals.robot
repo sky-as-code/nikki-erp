@@ -200,10 +200,10 @@ A System Role Rejects Assignment
     ${system_role_id}=    Set Variable    ${items}[0][id]
     ${resp}=    Manage Role Users    ${system_role_id}    add=${{ [$USER_IDS[0]] }}
     Response Status Should Be    ${resp}    400
-    Should Contain    ${resp.text}    err_system_role_assignment_not_allowed
+    Should Contain    ${resp.text}    iam:err_system_role_assignment_not_allowed
     ${resp}=    Manage Role Groups    ${system_role_id}    add=${{ [$TARGET_GROUP_ID] }}
     Response Status Should Be    ${resp}    400
-    Should Contain    ${resp.text}    err_system_role_assignment_not_allowed
+    Should Contain    ${resp.text}    iam:err_system_role_assignment_not_allowed
 
 A Plain User Cannot Manage Role Users
     [Documentation]    Includes adding themselves: the role-side route must not become a

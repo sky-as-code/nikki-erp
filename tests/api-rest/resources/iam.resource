@@ -198,7 +198,7 @@ Read Roles As
 Response Should Be Permission Refusal
     [Documentation]    Asserts the response is an authorization refusal.
     ...
-    ...    An insufficient-permission error answers 403 with `err_insufficient_permissions`
+    ...    An insufficient-permission error answers 403 with `common:err_insufficient_permissions`
     ...    in the body; 401 is also accepted, since an unauthenticated caller is refused
     ...    before the permission is ever evaluated. Both status and body are asserted: the
     ...    status is what clients branch on, and the body is what makes the refusal
@@ -207,7 +207,7 @@ Response Should Be Permission Refusal
     Should Be True    ${resp.status_code} in (401, 403)
     ...    msg=${what} returned ${resp.status_code}; expected 403 (or 401 when unauthenticated)
     IF    ${resp.status_code} == 403
-        Should Contain    ${resp.text}    err_insufficient_permissions
+        Should Contain    ${resp.text}    common:err_insufficient_permissions
         ...    msg=${what} returned 403 for a reason other than permissions: ${resp.text}
     END
 

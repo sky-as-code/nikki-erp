@@ -116,7 +116,7 @@ func TestAssertTransferTransitionNamesTheReverseTransferRemedy(t *testing.T) {
 	AssertTransferTransition(models.StockTransferStatusDone, models.StockTransferStatusCancelled, vErrs)
 
 	require.Equal(t, 1, vErrs.Count(), "cancelling a done transfer must be refused")
-	assert.Equal(t, "stock_transfer.done_not_cancellable", (*vErrs)[0].Key,
+	assert.Equal(t, "inventory:stock_transfer.done_not_cancellable", (*vErrs)[0].Key,
 		"the message must point at the reverse transfer, not just say no")
 }
 

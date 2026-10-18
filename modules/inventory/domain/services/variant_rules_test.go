@@ -34,10 +34,10 @@ func TestAssertUniqueCombination(t *testing.T) {
 	}{
 		{"a free combination is accepted", nil, "", ""},
 		{"a combination held by another variant is rejected", []string{otherId}, "",
-			"product_variant.duplicate_combination"},
+			"inventory:product_variant.duplicate_combination"},
 		{"a variant keeping its own combination is accepted", []string{selfId}, selfId, ""},
 		{"a variant taking another's combination is rejected", []string{otherId}, selfId,
-			"product_variant.duplicate_combination"},
+			"inventory:product_variant.duplicate_combination"},
 	}
 
 	for _, testCase := range testCases {
@@ -76,7 +76,7 @@ func TestEmptyCombinationIsStillChecked(t *testing.T) {
 	vErrs := &ft.ClientErrors{}
 	require.NoError(t, checkUniqueCombination(testContext(t), repo, variant, "", vErrs))
 
-	assertViolation(t, vErrs, "product_variant.duplicate_combination")
+	assertViolation(t, vErrs, "inventory:product_variant.duplicate_combination")
 }
 
 // A variant whose template or combination has not been supplied is the schema's problem, not the

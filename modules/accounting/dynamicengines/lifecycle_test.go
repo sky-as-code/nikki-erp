@@ -53,7 +53,7 @@ func TestPublishedMaterialFieldsAreImmutable(t *testing.T) {
 		assertMaterialFieldsImmutable(models.TaxDefinitionVersionSchemaName, statusField,
 			params, storedWithStatus(models.LifecyclePublished), cErrs)
 
-		if !hasViolation(cErrs, "tax.published_field_immutable") {
+		if !hasViolation(cErrs, "accounting:tax.published_field_immutable") {
 			t.Errorf("expected published field %q to be immutable", field)
 		}
 	}
@@ -83,7 +83,7 @@ func TestPublishedRateIsImmutable(t *testing.T) {
 	assertMaterialFieldsImmutable(models.TaxRateVersionSchemaName,
 		models.TaxRateVersionFieldLifecycleStatus, params, &found, cErrs)
 
-	if !hasViolation(cErrs, "tax.published_field_immutable") {
+	if !hasViolation(cErrs, "accounting:tax.published_field_immutable") {
 		t.Fatalf("expected a published rate to be immutable, got %v", cErrs.ToError())
 	}
 }
@@ -120,7 +120,7 @@ func TestWithdrawnIsTerminal(t *testing.T) {
 
 		assertLifecycleTransition(statusField, params, storedWithStatus(models.LifecycleWithdrawn), cErrs)
 
-		if !hasViolation(cErrs, "tax.invalid_lifecycle_transition") {
+		if !hasViolation(cErrs, "accounting:tax.invalid_lifecycle_transition") {
 			t.Errorf("expected withdrawn -> %s to be refused", target)
 		}
 	}
@@ -133,7 +133,7 @@ func TestPublishedCannotReturnToDraft(t *testing.T) {
 
 	assertLifecycleTransition(statusField, params, storedWithStatus(models.LifecyclePublished), cErrs)
 
-	if !hasViolation(cErrs, "tax.invalid_lifecycle_transition") {
+	if !hasViolation(cErrs, "accounting:tax.invalid_lifecycle_transition") {
 		t.Fatalf("expected published -> draft to be refused, got %v", cErrs.ToError())
 	}
 }
@@ -170,7 +170,7 @@ func TestPublishedAndWithdrawnAreNotDeletable(t *testing.T) {
 
 		assertDeletableLifecycle(statusField, storedWithStatus(status), cErrs)
 
-		if !hasViolation(cErrs, "tax.published_not_deletable") {
+		if !hasViolation(cErrs, "accounting:tax.published_not_deletable") {
 			t.Errorf("expected %s configuration to be undeletable", status)
 		}
 	}

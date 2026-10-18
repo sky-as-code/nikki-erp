@@ -115,7 +115,7 @@ func CancelOrderWith(
 	}
 	if !acquired {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("id", ReasonLockUnavailable,
+		vErrs.Append(*ft.NewBusinessViolation("id", ft.ErrorKey(ReasonLockUnavailable, "sales"),
 			"this order is being changed by another request; try again"))
 		return nil, vErrs, nil
 	}
@@ -152,7 +152,7 @@ func cancelUnderLock(
 		}
 		if outstanding {
 			vErrs := ft.NewClientErrors()
-			vErrs.Append(*ft.NewBusinessViolation("fulfillment_status", ReasonFulfillmentInProgress,
+			vErrs.Append(*ft.NewBusinessViolation("fulfillment_status", ft.ErrorKey(ReasonFulfillmentInProgress, "sales"),
 				"a kiosk may still be dispensing this order; wait for its result before cancelling"))
 			return nil, vErrs, nil
 		}
@@ -355,7 +355,7 @@ func assertCancellable(record dmodel.DynamicFields) *ft.ClientErrors {
 func assertCancellableWith(record dmodel.DynamicFields, opts CancelOrderOptions) *ft.ClientErrors {
 	refuse := func(field, reason, message string) *ft.ClientErrors {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(field, reason, message))
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(reason, "sales"), message))
 		return vErrs
 	}
 

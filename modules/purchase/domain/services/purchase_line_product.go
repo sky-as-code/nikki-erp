@@ -183,5 +183,5 @@ func (this *ProductLineValidator) toInventoryQuantity(
 }
 
 func appendLineViolation(vErrs *ft.ClientErrors, field, key, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(field, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "purchase"), message))
 }

@@ -44,7 +44,9 @@ func validateNewResourceScope(ctx corectx.Context, inputResrc *domain.Resource, 
 	minScope := domain.AuthzScopeWidth(*inputResrc.GetMinScope())
 	maxScope := domain.AuthzScopeWidth(*inputResrc.GetMaxScope())
 	if minScope > maxScope {
-		vErrs.Append(*ft.NewValidationError(domain.ResourceFieldMinScope, "err_min_scope_greater_than_max_scope", "min_scope must be less than or equal to max_scope"))
+		vErrs.Append(*ft.NewValidationError(
+			domain.ResourceFieldMinScope, ft.ErrorKey("err_min_scope_greater_than_max_scope", "iam"),
+			"min_scope must be less than or equal to max_scope"))
 	}
 	return nil
 }
@@ -109,12 +111,16 @@ func validateUpdateResourceScope(ctx corectx.Context, inputResrc *domain.Resourc
 	inputMinScope := inputResrc.GetMinScope()
 	foundMaxScope := foundResrc.GetMaxScope()
 	if inputMinScope != nil && domain.AuthzScopeWidth(*inputMinScope) > domain.AuthzScopeWidth(*foundMaxScope) {
-		vErrs.Append(*ft.NewValidationError(domain.ResourceFieldMinScope, "iam.err_min_scope_greater_than_max_scope", "min_scope must be less than or equal to max_scope"))
+		vErrs.Append(*ft.NewValidationError(
+			domain.ResourceFieldMinScope, ft.ErrorKey("iam.err_min_scope_greater_than_max_scope", "iam"),
+			"min_scope must be less than or equal to max_scope"))
 	}
 	inputMaxScope := inputResrc.GetMaxScope()
 	foundMinScope := foundResrc.GetMinScope()
 	if inputMaxScope != nil && domain.AuthzScopeWidth(*inputMaxScope) < domain.AuthzScopeWidth(*foundMinScope) {
-		vErrs.Append(*ft.NewValidationError(domain.ResourceFieldMaxScope, "iam.err_max_scope_less_than_min_scope", "max_scope must be greater than or equal to min_scope"))
+		vErrs.Append(*ft.NewValidationError(
+			domain.ResourceFieldMaxScope, ft.ErrorKey("iam.err_max_scope_less_than_min_scope", "iam"),
+			"max_scope must be greater than or equal to min_scope"))
 	}
 	return nil
 }

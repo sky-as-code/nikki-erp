@@ -29,7 +29,7 @@ func TestAMethodThatForbidsTargetChangeRefuses(t *testing.T) {
 	params := ReassignTargetParams{FulfillmentId: "FU1", ToOutletId: "SP2"}
 
 	vErrs := assertReassignable(fulfillment, params, "SP1")
-	if vErrs == nil || !hasReason(vErrs, ReasonTargetChangeNotAllowed) {
+	if vErrs == nil || !hasReasonKey(vErrs, ReasonTargetChangeNotAllowed) {
 		t.Errorf("a method forbidding target change must refuse, got %v", vErrs)
 	}
 }
@@ -54,7 +54,7 @@ func TestATerminalFulfillmentCannotBeMoved(t *testing.T) {
 			params := ReassignTargetParams{FulfillmentId: "FU1", ToOutletId: "SP2"}
 
 			vErrs := assertReassignable(fulfillment, params, "SP1")
-			if vErrs == nil || !hasReason(vErrs, ReasonTargetChangeTerminal) {
+			if vErrs == nil || !hasReasonKey(vErrs, ReasonTargetChangeTerminal) {
 				t.Errorf("a %s fulfillment must not be movable, got %v", status, vErrs)
 			}
 		})
@@ -67,7 +67,7 @@ func TestMovingToTheSameOutletIsRefused(t *testing.T) {
 	params := ReassignTargetParams{FulfillmentId: "FU1", ToOutletId: "SP1"}
 
 	vErrs := assertReassignable(fulfillment, params, "SP1")
-	if vErrs == nil || !hasReason(vErrs, ReasonTargetChangeSameOutlet) {
+	if vErrs == nil || !hasReasonKey(vErrs, ReasonTargetChangeSameOutlet) {
 		t.Errorf("moving to the current target must be refused, got %v", vErrs)
 	}
 }
@@ -77,7 +77,7 @@ func TestAMoveWithNoDestinationIsRefused(t *testing.T) {
 	params := ReassignTargetParams{FulfillmentId: "FU1"}
 
 	vErrs := assertReassignable(fulfillment, params, "SP1")
-	if vErrs == nil || !hasReason(vErrs, ReasonTargetRequired) {
+	if vErrs == nil || !hasReasonKey(vErrs, ReasonTargetRequired) {
 		t.Errorf("a move with no destination must be refused, got %v", vErrs)
 	}
 }

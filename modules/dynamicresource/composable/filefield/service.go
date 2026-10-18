@@ -188,7 +188,7 @@ func (this *ApplicationService) storeFile(
 		return mutateFailure(cErrs, nil)
 	}
 	if cmd.File == nil {
-		return mutateFailure(newFileViolation("file", "file.err_file_required",
+		return mutateFailure(newFileViolation("file", ft.ErrorKey("file.err_file_required"),
 			"a 'file' part is required"), nil)
 	}
 
@@ -199,7 +199,7 @@ func (this *ApplicationService) storeFile(
 
 	oldKey := storedKey(current, field)
 	if oldKey != "" && !replace {
-		return mutateFailure(newFileViolation(field.Name, "file.err_file_exists",
+		return mutateFailure(newFileViolation(field.Name, ft.ErrorKey("file.err_file_exists"),
 			"'"+field.Name+"' already has a file; replace it with PUT"), nil)
 	}
 
@@ -274,7 +274,7 @@ func (this *ApplicationService) DeleteFile(
 func (this *ApplicationService) resolveField(name string) (FileField, *ft.ClientErrors) {
 	field, known := FindFileField(this.fields, name)
 	if !known {
-		return field, newFileViolation("field", "file.err_field_unknown",
+		return field, newFileViolation("field", ft.ErrorKey("file.err_field_unknown"),
 			"'"+name+"' is not a file field of this resource")
 	}
 	return field, nil

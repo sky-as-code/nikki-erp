@@ -6,8 +6,8 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
 	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
 )
 
 // SalesPricelistItemDomainServiceImpl enforces the rules a pricing rule carries that the schema
@@ -155,7 +155,7 @@ func assertTargetConsistent(record dmodel.DynamicFields, vErrs *ft.ClientErrors)
 		required = ""
 	default:
 		vErrs.Append(*ft.NewBusinessViolation(models.SalesPricelistItemFieldAppliesTo,
-			"sales_pricelist_item.applies_to_unknown",
+			ft.ErrorKey("sales_pricelist_item.applies_to_unknown", "sales"),
 			"'"+appliesTo+"' is not a target a pricing rule can have"))
 		return
 	}
@@ -176,11 +176,11 @@ func assertTargetConsistent(record dmodel.DynamicFields, vErrs *ft.ClientErrors)
 		switch {
 		case target.field == required && target.value == "":
 			vErrs.Append(*ft.NewBusinessViolation(target.field,
-				"sales_pricelist_item.target_required",
+				ft.ErrorKey("sales_pricelist_item.target_required", "sales"),
 				"a rule that applies to "+appliesTo+" must name which one"))
 		case target.field != required && target.value != "":
 			vErrs.Append(*ft.NewBusinessViolation(target.field,
-				"sales_pricelist_item.target_not_allowed",
+				ft.ErrorKey("sales_pricelist_item.target_not_allowed", "sales"),
 				"a rule that applies to "+appliesTo+" must not also name a "+target.field))
 		}
 	}
@@ -199,19 +199,19 @@ func assertCalculationConsistent(record dmodel.DynamicFields, vErrs *ft.ClientEr
 		// its value. A fixed-price rule with no price would match and then quote nothing.
 		if _, present := record[models.SalesPricelistItemFieldPrice]; !present {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesPricelistItemFieldPrice,
-				"sales_pricelist_item.price_required",
+				ft.ErrorKey("sales_pricelist_item.price_required", "sales"),
 				"a fixed-price rule must state its price"))
 		}
 		if stringOf(record, models.SalesPricelistItemFieldUomId) == "" {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesPricelistItemFieldUomId,
-				"sales_pricelist_item.uom_required",
+				ft.ErrorKey("sales_pricelist_item.uom_required", "sales"),
 				"a fixed price is per a unit, so the rule must say which"))
 		}
 
 	case models.PricelistMethodDiscount:
 		if _, present := record[models.SalesPricelistItemFieldDiscountPercent]; !present {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesPricelistItemFieldDiscountPercent,
-				"sales_pricelist_item.discount_required",
+				ft.ErrorKey("sales_pricelist_item.discount_required", "sales"),
 				"a discount rule must state its percentage"))
 		}
 
@@ -219,20 +219,20 @@ func assertCalculationConsistent(record dmodel.DynamicFields, vErrs *ft.ClientEr
 		source := stringOf(record, models.SalesPricelistItemFieldBasePriceSource)
 		if source == "" {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesPricelistItemFieldBasePriceSource,
-				"sales_pricelist_item.base_source_required",
+				ft.ErrorKey("sales_pricelist_item.base_source_required", "sales"),
 				"a formula rule must say what it prices from"))
 			return
 		}
 		if source == models.PricelistBaseSourceOtherPricelist &&
 			stringOf(record, models.SalesPricelistItemFieldBasePricelistId) == "" {
 			vErrs.Append(*ft.NewBusinessViolation(models.SalesPricelistItemFieldBasePricelistId,
-				"sales_pricelist_item.base_pricelist_required",
+				ft.ErrorKey("sales_pricelist_item.base_pricelist_required", "sales"),
 				"a rule priced from another pricelist must name which one"))
 		}
 
 	default:
 		vErrs.Append(*ft.NewBusinessViolation(models.SalesPricelistItemFieldCalculationMethod,
-			"sales_pricelist_item.method_unknown",
+			ft.ErrorKey("sales_pricelist_item.method_unknown", "sales"),
 			"'"+method+"' is not a way a rule can compute a price"))
 	}
 }
@@ -248,7 +248,7 @@ func assertValidityConsistent(record dmodel.DynamicFields, vErrs *ft.ClientError
 	// Both are ISO-8601 in UTC, so lexical order is chronological order.
 	if from > to {
 		vErrs.Append(*ft.NewBusinessViolation(models.SalesPricelistItemFieldValidTo,
-			"sales_pricelist_item.validity_inverted",
+			ft.ErrorKey("sales_pricelist_item.validity_inverted", "sales"),
 			"this rule stops applying before it starts, so it would never apply at all"))
 	}
 }
@@ -256,6 +256,6 @@ func assertValidityConsistent(record dmodel.DynamicFields, vErrs *ft.ClientError
 // violationsOf wraps a single business violation as a ClientErrors.
 func violationsOf(field, key, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(field, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "sales"), message))
 	return vErrs
 }

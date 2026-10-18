@@ -191,7 +191,7 @@ func withinBounds(amount decimal.Decimal, method *models.PaymentMethod) bool {
 
 func usableRejection(key, message string) *it.AssertUsableResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.PaymentMethodSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.PaymentMethodSchemaName, ft.ErrorKey(key, "paymentinvoice"), message))
 	return &it.AssertUsableResult{ClientErrors: *vErrs}
 }
 

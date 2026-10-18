@@ -119,12 +119,12 @@ func assertDiscountable(
 	// The reason is a business invariant, not an access decision, so it is enforced here rather than
 	// in app/. It is the field an auditor asking why this customer paid less actually reads.
 	if params.Reason == "" {
-		vErrs.Append(*ft.NewBusinessViolation("reason", ReasonDiscountReasonRequired,
+		vErrs.Append(*ft.NewBusinessViolation("reason", ft.ErrorKey(ReasonDiscountReasonRequired, "sales"),
 			"a manual discount must say why the price was changed"))
 	}
 
 	if !params.Amount.IsPositive() {
-		vErrs.Append(*ft.NewBusinessViolation("discount_amount", ReasonDiscountNotPositive,
+		vErrs.Append(*ft.NewBusinessViolation("discount_amount", ft.ErrorKey(ReasonDiscountNotPositive, "sales"),
 			"a manual discount must be a positive amount; a negative one would be a surcharge"))
 	}
 
@@ -132,11 +132,11 @@ func assertDiscountable(
 	// retrospective price edit.
 	status := stringOf(order, models.SalesOrderFieldStatus)
 	if status != string(models.SalesOrderStatusDraft) {
-		vErrs.Append(*ft.NewBusinessViolation("status", ReasonOrderNotDiscountable,
+		vErrs.Append(*ft.NewBusinessViolation("status", ft.ErrorKey(ReasonOrderNotDiscountable, "sales"),
 			"an order in status '"+status+"' is frozen; correct it with a return or a refund"))
 	}
 	if isOrderExpiredNow(order) {
-		vErrs.Append(*ft.NewBusinessViolation("valid_until", ReasonOrderExpired,
+		vErrs.Append(*ft.NewBusinessViolation("valid_until", ft.ErrorKey(ReasonOrderExpired, "sales"),
 			"this order's payment deadline has passed; it can only be cancelled"))
 	}
 
@@ -152,7 +152,7 @@ func assertDiscountable(
 		if line == nil ||
 			stringOf(line, models.SalesOrderLineFieldSalesOrderId) != params.SalesOrderId {
 			vErrs.Append(*ft.NewBusinessViolation("sales_order_line_id",
-				ReasonDiscountLineNotFound,
+				ft.ErrorKey(ReasonDiscountLineNotFound, "sales"),
 				"line '"+params.SalesOrderLineId+"' does not belong to this order"))
 		}
 	}
@@ -252,7 +252,7 @@ func RevokeManualDiscount(
 	status := stringOf(order, models.SalesOrderFieldStatus)
 	if status != string(models.SalesOrderStatusDraft) {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("status", ReasonOrderNotDiscountable,
+		vErrs.Append(*ft.NewBusinessViolation("status", ft.ErrorKey(ReasonOrderNotDiscountable, "sales"),
 			"an order in status '"+status+"' is frozen"))
 		return vErrs, nil
 	}

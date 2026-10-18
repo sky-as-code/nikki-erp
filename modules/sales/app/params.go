@@ -191,6 +191,6 @@ func readDecimalValue(value any) (decimal.Decimal, bool) {
 
 func itemsViolation(key, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName, ft.ErrorKey(key, "sales"), message))
 	return vErrs
 }

@@ -230,5 +230,5 @@ A Suspended User Cannot Sign In Again
     # unrelated payload complaint.
     Should Be True    ${resp.status_code} in (400, 401, 403)
     ...    msg=Signing in as a suspended user returned ${resp.status_code}; expected a refusal
-    Should Contain    ${resp.text}    err_account_not_active
+    Should Contain    ${resp.text}    iam:err_account_not_active
     ...    msg=Sign-in was refused for a reason other than the account status: ${resp.text}

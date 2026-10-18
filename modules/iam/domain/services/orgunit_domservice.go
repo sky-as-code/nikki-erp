@@ -75,18 +75,18 @@ func (this *OrgUnitDomainServiceImpl) appendOrgUnitPathFromParent(
 		Fields: []string{domain.OrgUnitFieldPath, domain.OrgUnitFieldOrgId},
 	})
 	if err != nil {
-		vErrs.Append(*ft.NewAnonymousValidationError("err_internal", err.Error(), nil))
+		vErrs.Append(*ft.NewAnonymousValidationError(ft.ErrorKey("err_internal", "iam"), err.Error(), nil))
 		return
 	}
 	if !parentRes.HasData {
-		vErrs.Append(*ft.NewValidationError(domain.OrgUnitFieldParentId, "err_not_found",
+		vErrs.Append(*ft.NewValidationError(domain.OrgUnitFieldParentId, ft.ErrorKey("err_not_found", "iam"),
 			"parent org unit was not found", nil))
 		return
 	}
 	parent := parentRes.Data
 	pOrg := parent.GetOrgId()
 	if pOrg == nil || string(*pOrg) != org {
-		vErrs.Append(*ft.NewBusinessViolation(domain.OrgUnitFieldParentId, "err_parent_org_mismatch",
+		vErrs.Append(*ft.NewBusinessViolation(domain.OrgUnitFieldParentId, ft.ErrorKey("err_parent_org_mismatch", "iam"),
 			"parent org unit must belong to the same organization", nil))
 		return
 	}

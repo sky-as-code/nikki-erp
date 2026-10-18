@@ -154,7 +154,7 @@ A Line Refuses An Unknown Product
     Ensure Purchase Uom
     ${order_id}    ${etag}=    Create Purchase Order
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_LINE_API}    json=${{ {'purchase_order_id': $order_id, 'sequence': 1, 'line_type': 'product', 'product_variant_id': '01JZZZZZZZZZZZZZZZZZZZZZZZ', 'uom_id': $PURCHASE_UOM_ID, 'quantity': '1', 'unit_price': '1.00', 'discount_percent': '0', 'tax_amount': '0', 'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
-    Response Should Be Purchase Violation    ${resp}    purchase_order_line.product_not_found
+    Response Should Be Purchase Violation    ${resp}    purchase:purchase_order_line.product_not_found
     [Teardown]    Delete Purchase Order Fixture    ${order_id}
 
 A Line Refuses An Unknown Unit
@@ -164,5 +164,5 @@ A Line Refuses An Unknown Unit
     Ensure Purchase Product
     ${order_id}    ${etag}=    Create Purchase Order
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_LINE_API}    json=${{ {'purchase_order_id': $order_id, 'sequence': 1, 'line_type': 'product', 'product_variant_id': $PURCHASE_VARIANT_ID, 'uom_id': '01JZZZZZZZZZZZZZZZZZZZZZZZ', 'quantity': '1', 'unit_price': '1.00', 'discount_percent': '0', 'tax_amount': '0', 'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
-    Response Should Be Purchase Violation    ${resp}    purchase_order_line.uom_not_found
+    Response Should Be Purchase Violation    ${resp}    purchase:purchase_order_line.uom_not_found
     [Teardown]    Delete Purchase Order Fixture    ${order_id}

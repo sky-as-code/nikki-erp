@@ -6,14 +6,16 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules"
 )
 
-// ErrorKeyResourceInUse is the refusal a blocked delete reports. One key for every resource, so
-// a client can recognize the condition without matching on message text.
-const ErrorKeyResourceInUse = "resource_in_use"
+// ErrorKeyResourceUsedByModules is the refusal a blocked delete reports. One key for every
+// resource, so a client can recognize the condition without matching on message text. It is not
+// the database refusal's "resource_in_use": that one names a table, this one the modules, and one
+// message template cannot carry both sets of vars.
+var ErrorKeyResourceUsedByModules = ft.ErrorKey("resource_used_by_modules")
 
 // AssertDeletable runs the usage check and appends a violation when any dependant blocks.
 //
@@ -42,7 +44,7 @@ func AssertDeletable(
 	blocking := outcome.BlockingModules()
 	vErrs.Append(*ft.NewBusinessViolation(
 		idField,
-		ErrorKeyResourceInUse,
+		ErrorKeyResourceUsedByModules,
 		"this "+ref.ResourceName+" is still used by "+strings.Join(blocking, ", ")+
 			"; remove or replace those references first",
 		map[string]any{

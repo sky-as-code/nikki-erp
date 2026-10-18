@@ -57,7 +57,7 @@ func AssertProductTypeDeletable(
 	}
 	if len(templates) > 0 {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductTypeFieldId,
-			"product_type.has_templates",
+			ft.ErrorKey("product_type.has_templates", "inventory"),
 			"this product type is still used by product templates"))
 	}
 	return nil

@@ -100,7 +100,7 @@ func assertMaterialFieldsImmutable(
 		if _, submitted := params[field]; !submitted {
 			continue
 		}
-		vErrs.Append(*ft.NewBusinessViolation(field, "tax.published_field_immutable",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("tax.published_field_immutable", "accounting"),
 			"this configuration is published; create a new version instead of changing "+
 				"a field that decides how tax is calculated"))
 	}
@@ -139,7 +139,7 @@ func assertLifecycleTransition(
 	}
 
 	if !allowed {
-		vErrs.Append(*ft.NewBusinessViolation(statusField, "tax.invalid_lifecycle_transition",
+		vErrs.Append(*ft.NewBusinessViolation(statusField, ft.ErrorKey("tax.invalid_lifecycle_transition", "accounting"),
 			"a tax configuration cannot move from "+string(*current)+" to "+string(*next)))
 	}
 }
@@ -154,6 +154,6 @@ func assertDeletableLifecycle(
 	if status == nil || *status == models.LifecycleDraft {
 		return
 	}
-	vErrs.Append(*ft.NewBusinessViolation(statusField, "tax.published_not_deletable",
+	vErrs.Append(*ft.NewBusinessViolation(statusField, ft.ErrorKey("tax.published_not_deletable", "accounting"),
 		"a configuration that has been published cannot be deleted; withdraw or archive it instead"))
 }

@@ -140,7 +140,7 @@ func ManagedFieldViolations(names []string, fields []FileField) *ft.ClientErrors
 	for _, field := range fields {
 		for _, column := range []string{field.KeyField, field.MimeField} {
 			if column != "" && named[column] {
-				vErrs.Append(*ft.NewBusinessViolation(column, "file.err_field_managed",
+				vErrs.Append(*ft.NewBusinessViolation(column, ft.ErrorKey("file.err_field_managed"),
 					"'"+column+"' is set through files/"+field.Name+", not through create or update"))
 			}
 		}
