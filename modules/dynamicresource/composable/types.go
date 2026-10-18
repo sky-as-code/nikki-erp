@@ -9,8 +9,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
-// EngineNamePrefix distinguishes composable engines from package engine's "engine_" names in
-// the dependency container, so both generations coexist while modules migrate.
+// EngineNamePrefix prefixes the dependency container name of every onion.
 const EngineNamePrefix = "dynengine_"
 
 // EngineDependencyName is the container name of the onion serving the given schema.

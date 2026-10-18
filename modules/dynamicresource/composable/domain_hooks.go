@@ -31,8 +31,7 @@ type AfterValidationFn = corecrud.AfterValidationSuccessFn[*DynamicEntity]
 type ValidateExtraFn = corecrud.UpdateValidateExtraFn[*DynamicEntity]
 
 // CreateOptions are what a derived domain service passes when it calls the embedded default's
-// Create. They replace package engine's ModifyAction: instead of a definition the service reads
-// at call time, the override hands the hooks over on each call.
+// Create: the override hands the hooks over on each call.
 type CreateOptions struct {
 	BeforeValidation       BeforeValidationFn
 	AfterValidationSuccess AfterValidationFn

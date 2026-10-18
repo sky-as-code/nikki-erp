@@ -20,8 +20,7 @@ func newRestEngine(schema *dmodel.ModelSchema) (RestEngine, *stubHandlers) {
 	return NewRestEngine(schema.Name(), handlers), handlers
 }
 
-// The built-in routes must come out byte-identical to the ones package engine registered, and
-// in an order where literal segments precede the ":id" patterns that would swallow them.
+// The built-in routes must keep their published paths, and come out in an order where literal segments precede the ":id" patterns that would swallow them.
 func TestAddCrudRoutesCoversBuiltins(t *testing.T) {
 	restEngine, _ := newRestEngine(newPlainSchema())
 	restEngine.AddCrudRoutes()
