@@ -51,10 +51,6 @@ func roleSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		Label(model.NewLangJsonRefSf("%s.label", RoleSchemaName)).
 		TableName("iam_roles").
 		RecordLabelField(RoleFieldName).
-		PartialUniqueLoose(dmodel.PartialUniqueParam{
-			NotNullFields: []string{RoleFieldName},
-			NullableField: RoleFieldOrgId,
-		}).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(

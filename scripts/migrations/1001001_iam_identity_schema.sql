@@ -102,6 +102,7 @@ CREATE TABLE "iam_org_units" (
 CREATE TABLE "iam_users" (
   "id" character varying NOT NULL,
   "avatar_url" character varying NULL,
+  "avatar_file_key" character varying NULL,
   "display_name" character varying NOT NULL,
   "email" character varying NOT NULL,
   "status" character varying NOT NULL,
@@ -151,10 +152,6 @@ CREATE TABLE "iam_roles" (
   CONSTRAINT "iam_roles_owner_group_id_fkey" FOREIGN KEY ("owner_group_id") REFERENCES "iam_groups" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "iam_roles_owner_user_id_fkey" FOREIGN KEY ("owner_user_id") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
--- Create index "iam_roles_name_org_id_ukey_notnull" to table: "iam_roles"
-CREATE UNIQUE INDEX "iam_roles_name_org_id_ukey_notnull" ON "iam_roles" ("name", "org_id") WHERE (org_id IS NOT NULL);
--- Create index "iam_roles_name_org_id_ukey_null" to table: "iam_roles"
-CREATE UNIQUE INDEX "iam_roles_name_org_id_ukey_null" ON "iam_roles" ("name") WHERE (org_id IS NULL);
 -- Create "iam_entitlements" table
 CREATE TABLE "iam_entitlements" (
   "id" character varying NOT NULL,
