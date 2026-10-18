@@ -1,14 +1,13 @@
 package services
 
 import (
-	"github.com/huandu/go-sqlbuilder"
 	"go.bryk.io/pkg/errors"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	c "github.com/sky-as-code/nikki-erp/modules/settings/constants"
-	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
+	itRecord "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settingsrecord"
 )
 
 // InitOwnerSettings seeds a newly created organization or user with its own settings rows.
@@ -22,10 +21,6 @@ import (
 // port iam owns. Settings must never import iam: iam already depends on settings, so the reverse
 // edge would abort start-up. That is also why the copy reads and writes only settings_records,
 // filtered by tenant, and never joins an iam table to find out who the new owner is.
-//
-// KNOWN DEBT: like settings_fanout_domservice, this builds SQL inside a domain service. Query
-// building belongs in infra/repository/ — see docs/wiki/07. ERP backend module.md §5 — and this
-// module has no infra/repository/ yet. Do not copy this pattern into a new service.
 func (this *SettingsDomainServiceImpl) InitOwnerSettings(
 	ctx corectx.Context, cmd it.InitOwnerSettingsCommand,
 ) (*it.InitOwnerSettingsResult, error) {
@@ -63,15 +58,11 @@ func levelForOwnerType(ownerType string) (string, error) {
 	return "", errors.Errorf("levelForOwnerType: '%s' cannot be initialized", ownerType)
 }
 
-// copyTenantRows performs the copy as a single INSERT ... SELECT.
+// copyTenantRows seeds the owner through the repository's single INSERT ... SELECT.
 //
 // Set-based rather than read-then-loop because it runs inside the transaction that creates the
-// owner: a per-row loop would hold that transaction open across one round trip per setting, and a
-// tenant may have many.
-//
-// The ON CONFLICT DO NOTHING clause is what makes it idempotent, so a retried creation cannot
-// violate the unique key. It also means an owner that already holds a value keeps it, which is the
-// right outcome for a re-run.
+// owner, and idempotent (ON CONFLICT DO NOTHING), so a retried creation cannot violate the unique
+// key and an owner that already holds a value keeps it.
 func (this *SettingsDomainServiceImpl) copyTenantRows(
 	ctx corectx.Context, cmd it.InitOwnerSettingsCommand, level string,
 ) (int, error) {
@@ -79,66 +70,10 @@ func (this *SettingsDomainServiceImpl) copyTenantRows(
 	if tenantId == "" {
 		tenantId = actingTenantId(ctx)
 	}
-
-	selectBuilder := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	selectBuilder.Select(
-		"gen_random_uuid()::text",
-		models.SettingsRecordFieldSchemaId,
-		models.SettingsRecordFieldModuleKey,
-		selectBuilder.Var(level),
-		selectBuilder.Var(cmd.OwnerType),
-		selectBuilder.Var(string(cmd.OwnerId)),
-		models.SettingsRecordFieldName,
-		models.SettingsRecordFieldValue,
-		// Carried forward so an owner created after an enforcement does not escape it: without
-		// this the new row's flag is NULL, which reads as overridable, and the org the tenant
-		// just locked out is replaced by one that is not.
-		models.SettingsRecordFieldAllowOverride,
-		"now()",
-	)
-	selectBuilder.From(settingsRecordsTable)
-	selectBuilder.Where(
-		selectBuilder.Equal(models.SettingsRecordFieldLevel, c.LevelTenant),
-	)
-
-	columns := []string{
-		models.SettingsRecordFieldId,
-		models.SettingsRecordFieldSchemaId,
-		models.SettingsRecordFieldModuleKey,
-		models.SettingsRecordFieldLevel,
-		models.SettingsRecordFieldOwnerType,
-		models.SettingsRecordFieldOwnerId,
-		models.SettingsRecordFieldName,
-		models.SettingsRecordFieldValue,
-		// Positional against the select list above -- the two must stay in the same order.
-		models.SettingsRecordFieldAllowOverride,
-		models.SettingsRecordFieldCreatedAt,
-	}
-
-	if tenantId != "" {
-		selectBuilder.Where(selectBuilder.Equal(tenantIdField, tenantId))
-		// The copy carries the tenant forward explicitly: these rows are written outside the
-		// engine, so nothing else would stamp it.
-		selectBuilder.SelectMore(selectBuilder.Var(tenantId))
-		columns = append(columns, tenantIdField)
-	} else if hasTenantColumn() {
-		return 0, errors.New("copyTenantRows: the request carries no tenant id")
-	}
-
-	selectQuery, args := selectBuilder.Build()
-	query := "INSERT INTO " + settingsRecordsTable + " (" + joinColumns(columns) + ") " +
-		selectQuery + " ON CONFLICT DO NOTHING"
-
-	return execCount(ctx, query, args, "copyTenantRows")
-}
-
-func joinColumns(columns []string) string {
-	joined := ""
-	for i, column := range columns {
-		if i > 0 {
-			joined += ", "
-		}
-		joined += column
-	}
-	return joined
+	return this.recordRepo.CopyTenantRows(ctx, itRecord.CopyTenantRowsParam{
+		Level:     level,
+		OwnerType: cmd.OwnerType,
+		OwnerId:   string(cmd.OwnerId),
+		TenantId:  tenantId,
+	})
 }

@@ -7,28 +7,35 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/settings/dynamicengines"
 	v1 "github.com/sky-as-code/nikki-erp/modules/settings/transport/restful/v1"
 )
 
 func InitRestfulHandlers() error {
 	return stdErr.Join(
-		deps.Register(v1.NewSettingsRest),
+		deps.Register(v1.NewSettingsRest, v1.NewSettingsSchemaRest, v1.NewSettingsRecordRest),
 		initSettingsV1(),
 	)
 }
 
-// initSettingsV1 mounts the engine routes and the per-level settings routes under /v1/settings.
+// initSettingsV1 mounts the per-level settings routes and the two read-only resources under
+// /v1/settings.
 func initSettingsV1() error {
-	return deps.Invoke(func(route *echo.Group, settingsRest *v1.SettingsRest) error {
+	return deps.Invoke(func(
+		route *echo.Group, settingsRest *v1.SettingsRest,
+		schemaRest *v1.SettingsSchemaRest, recordRest *v1.SettingsRecordRest,
+	) error {
 		routeV1 := route.Group("/v1/settings")
 
-		// The level routes are registered before the engines, because an engine mounts its CRUD
-		// under the schema name and a later catch-all would otherwise shadow these static paths.
+		// The level routes are registered before the resources, because a resource mounts its
+		// routes under the schema name and a later catch-all would otherwise shadow these paths.
 		registerLevelRoutes(routeV1, settingsRest)
-		registerEngineRoutes(routeV1)
-		return nil
+		return stdErr.Join(
+			registerReadOnly(routeV1, models.SettingsSchemaSchemaName, schemaRest),
+			registerReadOnly(routeV1, models.SettingsRecordSchemaName, recordRest),
+		)
 	})
 }
 
@@ -47,14 +54,10 @@ func registerLevelRoutes(routeV1 *echo.Group, settingsRest *v1.SettingsRest) {
 	routeV1.GET("/user/:module_key", settingsRest.GetUserPreferences, m.SmokeAuthz())
 }
 
-// registerEngineRoutes exposes every Settings resource engine over HTTP.
-// A missing engine is skipped, so that a build which drops one still starts.
-func registerEngineRoutes(routeV1 *echo.Group) {
-	for _, schemaName := range dynamicengines.EngineSchemaNames() {
-		engine, exists := dynamicresource.Registry().GetEngine(schemaName)
-		if !exists {
-			continue
-		}
-		engine.RestApi().RegisterRoutes(routeV1, m.SmokeAuthz())
-	}
+// registerReadOnly serves a settings resource's reads only: Settings never takes a generic write
+// (see registerLevelRoutes).
+func registerReadOnly(route *echo.Group, schemaName string, handlers composable.CrudRestHandlers) error {
+	return composable.NewRestEngine(schemaName, handlers).
+		AddCrudRoutes(dynamicengines.ReadOnlyCrudActions()...).
+		RegisterRoutes(route)
 }

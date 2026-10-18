@@ -8,20 +8,25 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/settings/constants"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
+	itRecord "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settingsrecord"
+	itSchema "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settingsschema"
 )
 
-func NewSettingsDomainServiceImpl() it.SettingsDomainService {
-	return &SettingsDomainServiceImpl{}
+func NewSettingsDomainServiceImpl(
+	schemaRepo itSchema.SettingsSchemaRepository, recordRepo itRecord.SettingsRecordRepository,
+) it.SettingsDomainService {
+	return &SettingsDomainServiceImpl{schemaRepo: schemaRepo, recordRepo: recordRepo}
 }
 
-// SettingsDomainServiceImpl reads and writes through the resource engines rather than a repository
-// of its own: the engine already owns the schema, the query builder and the tenant filter, and a
-// second path to the same two tables would have to keep all three in step.
+// SettingsDomainServiceImpl reads and writes through the repositories of the two settings onions:
+// they already own the schema, the query builder and the tenant filter, and a second path to the
+// same two tables would have to keep all three in step.
 type SettingsDomainServiceImpl struct {
+	schemaRepo itSchema.SettingsSchemaRepository
+	recordRepo itRecord.SettingsRecordRepository
 }
 
 func isKnownLevel(level string) bool {
@@ -38,13 +43,7 @@ func isKnownLevel(level string) bool {
 func (this *SettingsDomainServiceImpl) loadSchema(
 	ctx corectx.Context, moduleKey string, level string,
 ) (*models.SettingsSchema, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(models.SettingsSchemaSchemaName)
-	if !ok {
-		return nil, errors.Errorf("loadSchema: the '%s' engine is not registered",
-			models.SettingsSchemaSchemaName)
-	}
-
-	found, err := engine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+	found, err := this.schemaRepo.GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{
 			models.SettingsSchemaFieldModuleKey: moduleKey,
 			models.SettingsSchemaFieldLevel:     level,
