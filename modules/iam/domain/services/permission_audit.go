@@ -57,6 +57,27 @@ func (this permissionAuditor) recordRoleTransition(
 	return nil
 }
 
+// recordRoleChange audits a role-assignment change: one grant per added role and one revoke per
+// removed role, each against the given receivers.
+func (this permissionAuditor) recordRoleChange(
+	ctx corectx.Context, added []model.Id, removed []model.Id, receivers []model.Id,
+	grantReason domain.PermissionHistoryReason, revokeReason domain.PermissionHistoryReason,
+) error {
+	for _, roleId := range added {
+		err := this.recordRoleTransition(ctx, domain.PermissionHistoryEffectGrant, grantReason, roleId, receivers)
+		if err != nil {
+			return err
+		}
+	}
+	for _, roleId := range removed {
+		err := this.recordRoleTransition(ctx, domain.PermissionHistoryEffectRevoke, revokeReason, roleId, receivers)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // recordEntitlementTransition records a change to what a role grants, rather than
 // to who holds it. The receiver is left empty on purpose: the change applies to
 // every current and future holder of the role, and naming a snapshot of them here

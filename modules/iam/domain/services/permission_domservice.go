@@ -17,8 +17,6 @@ import (
 	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
-	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
-	itOrgUnit "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/orgunit"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
@@ -26,26 +24,20 @@ import (
 type NewPermissionServiceParam struct {
 	dig.In
 
-	OrgRepo            itOrg.OrganizationRepository
-	OrgUnitRepo        itOrgUnit.OrgUnitRepository
 	UserPermissionRepo itPerm.PermissionRepository
-	UserRepo           itUser.UserRepository
+	UserRepo           itUser.UserCrudRepository
 }
 
 func NewPermissionDomainServiceImpl(param NewPermissionServiceParam) itPerm.PermissionDomainService {
 	return &PermissionDomainServiceImpl{
-		orgRepo:        param.OrgRepo,
-		orgUnitRepo:    param.OrgUnitRepo,
 		permissionRepo: param.UserPermissionRepo,
 		userRepo:       param.UserRepo,
 	}
 }
 
 type PermissionDomainServiceImpl struct {
-	orgRepo        itOrg.OrganizationRepository
-	orgUnitRepo    itOrgUnit.OrgUnitRepository
 	permissionRepo itPerm.PermissionRepository
-	userRepo       itUser.UserRepository
+	userRepo       itUser.UserCrudRepository
 }
 
 // Implements PermissionDomainService interface
@@ -82,14 +74,14 @@ func (this *PermissionDomainServiceImpl) IsAuthorized(
 	if resUser.ClientErrors.Count() > 0 {
 		return nil, errors.Wrap(resUser.ClientErrors.ToError(), "IsAuthorized")
 	}
-	if !resUser.HasData || !resUser.Data.IsActive() {
+	if !resUser.HasData || !domain.NewUserFrom(resUser.Data).IsActive() {
 		return &itPerm.IsAuthorizedResult{
 			Data:    false,
 			HasData: true,
 		}, nil
 	}
 
-	foundUser := resUser.Data
+	foundUser := domain.NewUserFrom(resUser.Data)
 
 	if foundUser.IsOwner() {
 		return &itPerm.IsAuthorizedResult{

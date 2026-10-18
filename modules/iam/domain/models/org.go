@@ -1,6 +1,8 @@
 package models
 
 import (
+	_ "embed"
+
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -42,83 +44,20 @@ const (
 	OrgUsrRelFieldOrgId  = "org_id"
 )
 
+// The junction carries its own id column so that a delete cascades to the user permission cache.
+//
+//go:embed org_user_rel.json
+var orgUserRelSchemaJson string
+
 func OrgUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(OrgUsrRelSchemaName).
-		TableName("iam_org_user_rel").
-		ShouldBuildDb().
-		// Add `id` column to cascade delete to user_permissions table
-		Extend(basemodel.BaseModelSchemaBuilder()).
-		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{OrgUsrRelFieldOrgId, OrgUsrRelFieldUserId}}).
-		Field(
-			basemodel.DefineFieldId(OrgUsrRelFieldOrgId).
-				RequiredForCreate(),
-		).
-		Field(
-			basemodel.DefineFieldId(OrgUsrRelFieldUserId).
-				RequiredForCreate(),
-		)
+	return dmodel.ParseModelJson(orgUserRelSchemaJson)
 }
 
+//go:embed org.json
+var organizationSchemaJson string
+
 func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(OrganizationSchemaName).
-		Label(model.NewLangJsonRefSf("%s.label", OrganizationSchemaName)).
-		TableName("iam_organizations").
-		DefaultSearchFields("display_name", "legal_name", "slug", "phone_number").
-		RecordLabelField(OrgFieldDisplayName).
-		RecordSubLabelField(OrgFieldSlug).
-		ShouldBuildDb().
-		Extend(basemodel.BaseModelSchemaBuilder()).
-		Field(
-			dmodel.DefineField().
-				Name(OrgFieldAddress).
-				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldAddress)).
-				DataType(dmodel.FieldDataTypeLangJson(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(OrgFieldDisplayName).
-				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldDisplayName)).
-				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(OrgFieldLegalName).
-				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldLegalName)).
-				DataType(dmodel.FieldDataTypeLangJson(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(OrgFieldPhoneNumber).
-				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldPhoneNumber)).
-				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(OrgFieldSlug).
-				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldSlug)).
-				DataType(dmodel.FieldDataTypeSlug()).
-				RequiredForCreate().
-				Unique(),
-		).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.ArchivableModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder()).
-		EdgeTo(
-			dmodel.Edge(OrgEdgeUsers).
-				ManyToMany(UserSchemaName, OrgUsrRelSchemaName, "org").
-				OnDelete(dmodel.RelationCascadeCascade),
-		).
-		EdgeFrom(
-			dmodel.Edge(OrgEdgeOrgUnits).
-				Label(model.LangJson{"en-US": "Organizational Units"}).
-				Existing(OrganizationalUnitSchemaName, OrgUnitEdgeOrg),
-		).
-		EdgeFrom(
-			dmodel.Edge(OrgEdgeEntitlements).
-				Label(model.LangJson{"en-US": "Entitlements"}).
-				Existing(EntitlementSchemaName, EntitlementEdgeOrg),
-		)
+	return dmodel.ParseModelJson(organizationSchemaJson)
 }
 
 type Organization struct {

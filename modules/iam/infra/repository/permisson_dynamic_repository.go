@@ -20,7 +20,6 @@ import (
 	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
-	itOrgUnit "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/orgunit"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 )
 
@@ -32,7 +31,6 @@ type UserPermissionRepositoryParam struct {
 	QueryBuilder  orm.QueryBuilder
 	Logger        logging.LoggerService
 	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
-	OrgUnitRepo   itOrgUnit.OrgUnitRepository
 }
 
 func NewPermissionDynamicRepository(param UserPermissionRepositoryParam) itPerm.PermissionRepository {
@@ -45,15 +43,26 @@ func NewPermissionDynamicRepository(param UserPermissionRepositoryParam) itPerm.
 			Schema:       dmodel.MustGetSchema(models.UserPermissionSchemaName),
 		},
 	)
+	// The org of a unit is read through a private base repository rather than the iam_orgunit
+	// onion: that onion depends, through the user onion, on this repository.
+	orgUnitRepo := param.NewBaseRepoFn(
+		dyn.NewBaseRepoParam{
+			Client:       param.Client,
+			ConfigSvc:    param.ConfigSvc,
+			QueryBuilder: param.QueryBuilder,
+			Logger:       param.Logger,
+			Schema:       dmodel.MustGetSchema(models.OrganizationalUnitSchemaName),
+		},
+	)
 	return &PermissionDynamicRepository{
 		dynamicRepo: dynamicRepo,
-		orgUnitRepo: param.OrgUnitRepo,
+		orgUnitRepo: orgUnitRepo,
 	}
 }
 
 type PermissionDynamicRepository struct {
 	dynamicRepo dyn.BaseDynamicRepository
-	orgUnitRepo itOrgUnit.OrgUnitRepository
+	orgUnitRepo dyn.BaseDynamicRepository
 }
 
 func (this *PermissionDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository {
@@ -204,7 +213,7 @@ func (this *PermissionDynamicRepository) buildRequiredPerm(
 			return nil, err
 		}
 		if resOrgUnit.HasData {
-			required = required.InOrg(resOrgUnit.Data.GetOrgId())
+			required = required.InOrg(resOrgUnit.Data.GetModelId(models.OrgUnitFieldOrgId))
 		}
 	}
 	return &required, nil

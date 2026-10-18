@@ -1,0 +1,20 @@
+{
+	"name": "iam_org_user_rel",
+	"table_name": "iam_org_user_rel",
+	"should_build_db": true,
+	"composite_uniques": [{ "fields": ["org_id", "user_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "user_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	]
+}

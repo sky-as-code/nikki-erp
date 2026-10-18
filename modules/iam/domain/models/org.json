@@ -1,0 +1,71 @@
+{
+	"name": "iam_org",
+	"label": "iam_org.label",
+	"table_name": "iam_organizations",
+	"should_build_db": true,
+	"record_label_field": "display_name",
+	"record_sub_label_field": "slug",
+	"default_search_fields": ["display_name", "legal_name", "slug", "phone_number"],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "address",
+			"label": "fields.address",
+			"data_type": { "type": "langjson", "min": 0, "max": 200 }
+		},
+		{
+			"name": "display_name",
+			"label": "fields.display_name",
+			"data_type": { "type": "langjson", "min": 1, "max": 100 },
+			"required_for_create": true
+		},
+		{
+			"name": "legal_name",
+			"label": "fields.legal_name",
+			"data_type": { "type": "langjson", "min": 0, "max": 200 }
+		},
+		{
+			"name": "phone_number",
+			"label": "fields.phone_number",
+			"data_type": { "type": "string", "min": 0, "max": 200 }
+		},
+		{
+			"name": "slug",
+			"label": "fields.slug",
+			"data_type": "slug",
+			"required_for_create": true,
+			"unique": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.versioned_model",
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "users",
+			"type": "many:many",
+			"peer_schema": "iam_user",
+			"through_schema": "iam_org_user_rel",
+			"src_field_prefix": "org",
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"edges_from": [
+		{
+			"edge": "org_units",
+			"label": { "en-US": "Organizational Units" },
+			"existing": { "src_schema": "iam_orgunit", "src_edge": "org" }
+		},
+		{
+			"edge": "entitlements",
+			"label": { "en-US": "Entitlements" },
+			"existing": { "src_schema": "iam_entitlement", "src_edge": "org" }
+		}
+	]
+}

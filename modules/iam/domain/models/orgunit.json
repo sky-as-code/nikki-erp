@@ -1,0 +1,86 @@
+{
+	"name": "iam_orgunit",
+	"label": "iam_orgunit.label",
+	"table_name": "iam_org_units",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["name", "description"],
+	"composite_uniques": [{ "fields": ["name", "org_id"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true,
+			"unique": true
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "path",
+			"label": "fields.path",
+			"data_type": { "type": "ulid", "array": true },
+			"description": {
+				"en-US": "Path from org Id, to root and parent orgunit level IDs, and finally to this level ID (inclusive)"
+			},
+			"required_for_create": true,
+			"auto_generated": true
+		},
+		{
+			"name": "parent_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "parent",
+			"label": { "en-US": "Parent unit" },
+			"type": "many:one",
+			"dest_schema": "iam_orgunit",
+			"key_map": { "parent_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "org",
+			"label": { "en-US": "Organization" },
+			"type": "many:one",
+			"dest_schema": "iam_org",
+			"key_map": { "org_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"edges_from": [
+		{
+			"edge": "children",
+			"label": { "en-US": "Children units" },
+			"existing": { "src_schema": "iam_orgunit", "src_edge": "parent" }
+		},
+		{
+			"edge": "entitlements",
+			"label": { "en-US": "Entitlements" },
+			"existing": { "src_schema": "iam_entitlement", "src_edge": "org_unit" }
+		},
+		{
+			"edge": "users",
+			"label": { "en-US": "Users" },
+			"existing": { "src_schema": "iam_user", "src_edge": "org_unit" }
+		}
+	]
+}

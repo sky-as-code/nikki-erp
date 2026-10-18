@@ -1,0 +1,109 @@
+{
+	"name": "iam_grant_request",
+	"label": "iam_grant_request.label",
+	"table_name": "iam_grant_requests",
+	"should_build_db": true,
+	"default_search_fields": ["status", "type", "request_comment"],
+	"exclusive_required_fields": [["receiver_group_id", "receiver_user_id"]],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "role_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "receiver_group_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "receiver_user_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "status",
+			"data_type": { "type": "enum_string", "values": ["pending", "approved", "rejected", "cancelled"] },
+			"required_for_create": true,
+			"default_value": "pending"
+		},
+		{
+			"name": "type",
+			"data_type": { "type": "enum_string", "values": ["grant", "revoke"] },
+			"required_for_create": true
+		},
+		{
+			"name": "attachment_url",
+			"data_type": "url"
+		},
+		{
+			"name": "grant_expires_at",
+			"data_type": "datetime",
+			"description": { "en-US": "The date and time when the grant (if approved) expires." }
+		},
+		{
+			"name": "request_comment",
+			"data_type": { "type": "string", "min": 0, "max": 1000 }
+		},
+		{
+			"name": "requestor_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "rejection_reason",
+			"data_type": { "type": "string", "min": 0, "max": 1000 }
+		},
+		{
+			"name": "responded_at",
+			"data_type": "datetime"
+		},
+		{
+			"name": "responder_id",
+			"data_type": "ulid"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "role",
+			"label": { "en-US": "Requested Role" },
+			"type": "many:one",
+			"dest_schema": "iam_role",
+			"key_map": { "role_id": "id" }
+		},
+		{
+			"edge": "receiver_group",
+			"label": { "en-US": "Receiver Group" },
+			"type": "many:one",
+			"dest_schema": "iam_group",
+			"key_map": { "receiver_group_id": "id" }
+		},
+		{
+			"edge": "receiver_user",
+			"label": { "en-US": "Receiver User" },
+			"type": "many:one",
+			"dest_schema": "iam_user",
+			"key_map": { "receiver_user_id": "id" }
+		},
+		{
+			"edge": "requestor",
+			"label": { "en-US": "Requestor" },
+			"type": "many:one",
+			"dest_schema": "iam_user",
+			"key_map": { "requestor_id": "id" }
+		},
+		{
+			"edge": "responder",
+			"label": { "en-US": "Responder" },
+			"type": "many:one",
+			"dest_schema": "iam_user",
+			"key_map": { "responder_id": "id" }
+		}
+	]
+}

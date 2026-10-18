@@ -1,83 +1,17 @@
 package user
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/datastructure"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/util"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 )
 
-func init() {
-	// Assert interface implementation
-	var req cqrs.Request
-	req = (*CreateUserCommand)(nil)
-	req = (*DeleteUserCommand)(nil)
-	req = (*GetUserQuery)(nil)
-	req = (*ManageUserRoleAssignmentsCommand)(nil)
-	req = (*SearchUsersQuery)(nil)
-	req = (*UpdateUserCommand)(nil)
-	req = (*UserExistsQuery)(nil)
-	util.Unused(req)
-}
-
-var createUserCommandType = cqrs.RequestType{
-	Module:    "iam",
-	Submodule: "user",
-	Action:    "create",
-}
-
-type CreateUserCommand struct {
-	domain.User
-}
-
-func (CreateUserCommand) CqrsRequestType() cqrs.RequestType {
-	return createUserCommandType
-}
-
-func (this CreateUserCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.UserSchemaName)
-}
-
-type CreateUserResult = dyn.OpResult[domain.User]
-
-var deleteUserCommandType = cqrs.RequestType{
-	Module:    "iam",
-	Submodule: "user",
-	Action:    "delete",
-}
-
-type DeleteUserCommand dyn.DeleteOneCommand
-
-func (DeleteUserCommand) CqrsRequestType() cqrs.RequestType {
-	return deleteUserCommandType
-}
-
-type DeleteUserResult = dyn.OpResult[dyn.MutateResultData]
-
-var manageUserRoleAssignmentsCommandType = cqrs.RequestType{
-	Module:    "iam",
-	Submodule: "user",
-	Action:    "manageUserRoleAssignments",
-}
-
-type ManageUserRoleAssignmentsCommand struct {
-	UserId model.Id                    `json:"user_id" param:"user_id"`
-	Add    datastructure.Set[model.Id] `json:"add"`
-	Remove datastructure.Set[model.Id] `json:"remove"`
-}
-
-func (ManageUserRoleAssignmentsCommand) CqrsRequestType() cqrs.RequestType {
-	return manageUserRoleAssignmentsCommandType
-}
-
-type ManageUserRoleAssignmentsResult = dyn.OpResult[dyn.MutateResultData]
-
+// GetUserQuery reads one user by id or by email. It is the request of the getEnabledUser command
+// bus query the request guard sends on every authenticated call: the request type and the JSON
+// shape are copied by core, so neither may change.
 var getUserByIdQueryType = cqrs.RequestType{
 	Module:    "iam",
 	Submodule: "user",
@@ -111,97 +45,5 @@ func (GetUserQuery) GetSchema() *dmodel.ModelSchema {
 	)
 }
 
-type GetUserResult = dyn.OpResult[dyn.SingleResultData[domain.User]]
-
-var getUserContextQueryType = cqrs.RequestType{
-	Module:    "iam",
-	Submodule: "user",
-	Action:    "getUserContext",
-}
-
-type GetUserContextQuery struct {
-	UserId model.Id `json:"id" param:"id"`
-}
-
-func (GetUserContextQuery) CqrsRequestType() cqrs.RequestType {
-	return getUserContextQueryType
-}
-
-func (this GetUserContextQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.UserId, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-// type GetUserContextResult struct {
-// 	User        *domain.User                                       `json:"user,omitempty"`
-// 	Hierachies  []domain.OrganizationUnit                            `json:"orgunits,omitempty"`
-// 	Orgs        []domain.Organization                              `json:"orgs,omitempty"`
-// 	Permissions *map[string][]itAuthorize.ResourceScopePermissions `json:"permissions,omitempty"`
-// }
-
-// type GetUserContextResultData = corecrud.OpResult[*GetUserContextResult]
-
-var searchUsersQueryType = cqrs.RequestType{
-	Module:    "iam",
-	Submodule: "user",
-	Action:    "search",
-}
-
-type SearchUsersQuery dyn.SearchQuery
-
-func (SearchUsersQuery) CqrsRequestType() cqrs.RequestType {
-	return searchUsersQueryType
-}
-
-type SearchUsersResultData = dyn.PagedResultData[domain.User]
-type SearchUsersResult = dyn.OpResult[SearchUsersResultData]
-
-var setUserIsArchivedCommandType = cqrs.RequestType{
-	Module:    "iam",
-	Submodule: "user",
-	Action:    "setUserIsArchived",
-}
-
-type SetUserIsArchivedCommand dyn.SetIsArchivedCommand
-
-func (SetUserIsArchivedCommand) CqrsRequestType() cqrs.RequestType {
-	return setUserIsArchivedCommandType
-}
-
-type SetUserIsArchivedResult = dyn.OpResult[dyn.MutateResultData]
-
-var updateUserCommandType = cqrs.RequestType{
-	Module:    "iam",
-	Submodule: "user",
-	Action:    "update",
-}
-
-type UpdateUserCommand struct {
-	domain.User
-}
-
-func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
-	return updateUserCommandType
-}
-
-func (this UpdateUserCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.UserSchemaName)
-}
-
-type UpdateUserResult = dyn.OpResult[dyn.MutateResultData]
-
-var existsCommandType = cqrs.RequestType{
-	Module:    "iam",
-	Submodule: "user",
-	Action:    "exists",
-}
-
-type UserExistsQuery dyn.ExistsQuery
-
-func (UserExistsQuery) CqrsRequestType() cqrs.RequestType {
-	return existsCommandType
-}
-
-type UserExistsResult = dyn.OpResult[dyn.ExistsResultData]
+// GetUserDomainResult is the reply of GetUserQuery: one user, typed.
+type GetUserDomainResult = dyn.OpResult[domain.User]

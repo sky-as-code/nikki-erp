@@ -1,6 +1,8 @@
 package models
 
 import (
+	_ "embed"
+
 	"regexp"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -21,46 +23,11 @@ const (
 	ActionEdgeEntitlements = "entitlements"
 )
 
+//go:embed action.json
+var actionSchemaJson string
+
 func ActionSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(ActionSchemaName).
-		Label(model.NewLangJsonRefSf("%s.label", ActionSchemaName)).
-		RecordLabelField(ActionFieldName).
-		TableName("iam_actions").
-		DefaultSearchFields("name", "code", "description").
-		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{ActionFieldResourceId, ActionFieldCode}}).
-		ShouldBuildDb().
-		Extend(basemodel.BaseModelSchemaBuilder()).
-		Field(
-			dmodel.DefineField().Name(ActionFieldName).
-				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Field(
-			DefineActionFieldCode(ActionFieldCode).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().Name(ActionFieldDescription).
-				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
-		).
-		Field(
-			basemodel.DefineFieldId(ActionFieldResourceId).
-				RequiredAlways(),
-		).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
-		EdgeTo(
-			dmodel.Edge(ActionEdgeResource).
-				Label(model.LangJson{"en-US": "Resource"}).
-				ManyToOne(ResourceSchemaName, dmodel.DynamicFields{
-					ActionFieldResourceId: ResourceFieldId,
-				}).
-				OnDelete(dmodel.RelationCascadeNoAction),
-		).
-		EdgeFrom(
-			dmodel.Edge(ActionEdgeEntitlements).
-				Label(model.LangJson{"en-US": "Entitlements"}).
-				Existing(EntitlementSchemaName, EntitlementEdgeAction),
-		)
+	return dmodel.ParseModelJson(actionSchemaJson)
 }
 
 func DefineActionFieldCode(fieldName string) *dmodel.FieldBuilder {

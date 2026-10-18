@@ -37,7 +37,7 @@ type roleGrantPlan struct {
 // rows and the single permission rebuild must commit or roll back together. Removals run first
 // so that a delta may revoke and re-grant the same expression. Description updates run last:
 // they touch only rows the role keeps.
-func (this *RoleDomainServiceImpl) applyEntitlementsDelta(
+func (this *RoleCrudDomainServiceImpl) applyEntitlementsDelta(
 	ctx corectx.Context, roleId model.Id, delta itRole.RoleEntitlementsDelta,
 ) (ft.ClientErrors, error) {
 	if cErrs := validateDeltaSize(delta); cErrs.Count() > 0 {
@@ -80,7 +80,7 @@ func validateDeltaSize(delta itRole.RoleEntitlementsDelta) ft.ClientErrors {
 	return out
 }
 
-func (this *RoleDomainServiceImpl) removeRoleEntitlements(
+func (this *RoleCrudDomainServiceImpl) removeRoleEntitlements(
 	ctx corectx.Context, roleId model.Id, ids []model.Id,
 ) (ft.ClientErrors, error) {
 	if len(ids) == 0 {
@@ -103,9 +103,7 @@ func (this *RoleDomainServiceImpl) removeRoleEntitlements(
 		return out, nil
 	}
 	for entId := range owned {
-		res, err := this.entitlementSvc.DeleteEntitlementDeferRebuild(ctx, itEnt.DeleteEntitlementCommand{
-			Id: model.Id(entId),
-		})
+		res, err := this.entitlementSvc.DeleteDeferRebuild(ctx, dmodel.DynamicFields{basemodel.FieldId: entId})
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +114,7 @@ func (this *RoleDomainServiceImpl) removeRoleEntitlements(
 	return nil, nil
 }
 
-func (this *RoleDomainServiceImpl) addRoleEntitlements(
+func (this *RoleCrudDomainServiceImpl) addRoleEntitlements(
 	ctx corectx.Context, roleId model.Id, grants []itRole.RoleEntitlementGrant,
 ) (ft.ClientErrors, error) {
 	if len(grants) == 0 {
@@ -135,7 +133,7 @@ func (this *RoleDomainServiceImpl) addRoleEntitlements(
 		return cErrs, err
 	}
 	for _, plan := range plans {
-		res, err := this.entitlementSvc.CreateEntitlementDeferRebuild(ctx, plan.command(roleId))
+		res, err := this.entitlementSvc.CreateDeferRebuild(ctx, plan.command(roleId))
 		if err != nil {
 			return nil, err
 		}
@@ -146,7 +144,7 @@ func (this *RoleDomainServiceImpl) addRoleEntitlements(
 	return nil, nil
 }
 
-func (this *RoleDomainServiceImpl) roleOrgIdOf(
+func (this *RoleCrudDomainServiceImpl) roleOrgIdOf(
 	ctx corectx.Context, roleId model.Id,
 ) (*model.Id, ft.ClientErrors, error) {
 	roleRes, err := corecrud.GetOne[domain.Role](ctx, corecrud.GetOneParam{
@@ -172,7 +170,7 @@ func (this *RoleDomainServiceImpl) roleOrgIdOf(
 
 // planRoleGrants resolves every grant and refuses a delta that asks for the same expression
 // twice: the second insert would hit the (role_id, expression) unique key as a server error.
-func (this *RoleDomainServiceImpl) planRoleGrants(
+func (this *RoleCrudDomainServiceImpl) planRoleGrants(
 	ctx corectx.Context, roleOrgId *model.Id, grants []itRole.RoleEntitlementGrant,
 ) ([]roleGrantPlan, ft.ClientErrors, error) {
 	resources := make(map[model.Id]*domain.Resource)
@@ -201,7 +199,7 @@ func (this *RoleDomainServiceImpl) planRoleGrants(
 	return plans, out, nil
 }
 
-func (this *RoleDomainServiceImpl) planRoleGrant(
+func (this *RoleCrudDomainServiceImpl) planRoleGrant(
 	ctx corectx.Context, resources map[model.Id]*domain.Resource, roleOrgId *model.Id,
 	grant itRole.RoleEntitlementGrant, field string,
 ) (*roleGrantPlan, *ft.ClientErrorItem, error) {
@@ -241,7 +239,7 @@ func planGrantOnResource(
 	}, nil
 }
 
-func (this *RoleDomainServiceImpl) grantResource(
+func (this *RoleCrudDomainServiceImpl) grantResource(
 	ctx corectx.Context, resources map[model.Id]*domain.Resource, resourceId model.Id, field string,
 ) (*domain.Resource, *ft.ClientErrorItem, error) {
 	if cached, found := resources[resourceId]; found {
@@ -262,7 +260,7 @@ func (this *RoleDomainServiceImpl) grantResource(
 	if resRes.ClientErrors.Count() > 0 || !resRes.HasData {
 		return nil, ft.NewNotFoundError(field + "." + domain.EntitlementFieldResourceId), nil
 	}
-	resource := resRes.Data
+	resource := *domain.NewResourceFrom(resRes.Data)
 	resources[resourceId] = &resource
 	return &resource, nil, nil
 }
@@ -307,7 +305,7 @@ func grantScope(
 	}
 }
 
-func (this *RoleDomainServiceImpl) assertGrantsNotHeld(
+func (this *RoleCrudDomainServiceImpl) assertGrantsNotHeld(
 	ctx corectx.Context, roleId model.Id, plans []roleGrantPlan,
 ) (ft.ClientErrors, error) {
 	expressions := make([]any, len(plans))
@@ -330,7 +328,7 @@ func (this *RoleDomainServiceImpl) assertGrantsNotHeld(
 
 // searchRoleEntitlements returns the role's entitlements whose keyField is one of values, keyed
 // by that field. Archived rows are included: they still occupy the unique key.
-func (this *RoleDomainServiceImpl) searchRoleEntitlements(
+func (this *RoleCrudDomainServiceImpl) searchRoleEntitlements(
 	ctx corectx.Context, roleId model.Id, keyField string, values []any,
 ) (map[string]bool, ft.ClientErrors, error) {
 	graph := dmodel.NewSearchGraph().And(
@@ -350,9 +348,9 @@ func (this *RoleDomainServiceImpl) searchRoleEntitlements(
 		return nil, searchRes.ClientErrors, nil
 	}
 	found := make(map[string]bool, len(searchRes.Data.Items))
-	for _, ent := range searchRes.Data.Items {
+	for _, fields := range searchRes.Data.Items {
 		// fmt.Sprint covers both shapes a key may come back in: string and model.Id.
-		if key, hasKey := ent.GetFieldData()[keyField]; hasKey && key != nil {
+		if key, hasKey := fields[keyField]; hasKey && key != nil {
 			found[fmt.Sprint(key)] = true
 		}
 	}
@@ -376,7 +374,7 @@ func (this roleGrantPlan) command(roleId model.Id) itEnt.CreateEntitlementComman
 	if this.orgId != nil {
 		ent.SetOrgId(this.orgId)
 	}
-	return itEnt.CreateEntitlementCommand{Entitlement: *ent}
+	return ent.GetFieldData()
 }
 
 func idsToAny(ids []model.Id) []any {

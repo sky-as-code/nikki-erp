@@ -12,6 +12,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/iam/infra/repository"
+	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
+	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
@@ -26,17 +28,22 @@ type userEngineParam struct {
 func registerUserEngine() error {
 	err := deps.RegisterNamed(
 		composable.EngineDependencyName(models.UserSchemaName),
-		func(param composable.BuildParam, storage filestorage.FileStorageAdapter) composable.DynamicResourceEngineOnion {
+		func(
+			param composable.BuildParam, storage filestorage.FileStorageAdapter,
+			settingsSvc itExt.UserSettingsExtService, permRepo itPerm.PermissionRepository,
+			historyRepo itPerm.PermissionHistoryRepository,
+		) composable.DynamicResourceEngineOnion {
 			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.UserSchemaName,
 				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
 					return repo.NewUserCrudRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewUserCrudDomainService(base)
+					return services.NewUserCrudDomainService(base, settingsSvc, permRepo, historyRepo)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
-					return app.NewUserCrudApplicationService(base, storage)
+					domSvc := base.DomainService().(itUser.UserCrudDomainService)
+					return app.NewUserCrudApplicationService(base, storage, domSvc)
 				},
 			}, param)
 		},

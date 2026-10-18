@@ -2,8 +2,6 @@ package v1
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
 type GetUserContextResponse struct {
@@ -26,7 +24,4 @@ type GetUserContextResponse struct {
 	AccountSettings map[string]any         `json:"account_settings"`
 	SystemSettings  map[string]any         `json:"system_settings"`
 }
-
-type ManageUserRoleAssignmentsRequest = it.ManageUserRoleAssignmentsCommand
-type ManageUserRoleAssignmentsResponse = httpserver.RestMutateResponse
 

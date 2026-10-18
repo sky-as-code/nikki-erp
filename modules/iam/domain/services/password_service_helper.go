@@ -296,7 +296,7 @@ func (this *PasswordDomainServiceImpl) findUserById(
 	if userResult.ClientErrors.Count() > 0 || !userResult.HasData {
 		return nil, nil
 	}
-	return &userResult.Data, nil
+	return models.NewUserFrom(userResult.Data), nil
 }
 
 func (this *PasswordDomainServiceImpl) isPasswordEqual(passHash []byte, candidatePass string) bool {

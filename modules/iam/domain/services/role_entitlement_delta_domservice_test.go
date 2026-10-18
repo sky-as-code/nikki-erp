@@ -61,7 +61,7 @@ func TestPlanGrantOnResource_OrgScopeTakesRoleOrg(t *testing.T) {
 	assert.Equal(t, "*:iam_user:org/"+string(testRoleOrgId), plan.expression)
 	require.NotNil(t, plan.orgId)
 	assert.Equal(t, testRoleOrgId, *plan.orgId)
-	assert.Equal(t, testRoleOrgId, *plan.command("role").Entitlement.GetOrgId())
+	assert.Equal(t, testRoleOrgId, *domain.NewEntitlementFrom(plan.command("role")).GetOrgId())
 }
 
 func TestPlanGrantOnResource_OrgScopeWithoutRoleOrgIsRefused(t *testing.T) {
@@ -167,8 +167,8 @@ func TestEntitlementUpdateCommand_CarriesOnlyIdEtagAndDescription(t *testing.T) 
 
 	cmd := entitlementUpdateCommand(itRole.RoleEntitlementUpdate{Id: testReadId, Description: &description}, "etag-1")
 
-	fields := cmd.Entitlement.GetFieldData()
-	assert.Equal(t, testReadId, *cmd.Entitlement.GetId())
+	fields := cmd
+	assert.Equal(t, testReadId, *domain.NewEntitlementFrom(cmd).GetId())
 	assert.Equal(t, "etag-1", fields["etag"])
 	assert.Equal(t, description, fields[domain.EntitlementFieldDescription])
 	assert.Len(t, fields, 3)

@@ -21,9 +21,9 @@ import (
 func NewPermissionApplicationServiceImpl(
 	permissionDomSvc itPerm.PermissionDomainService,
 	permissionRepo itPerm.PermissionRepository,
-	orgUnitRepo itOrgUnit.OrgUnitRepository,
-	orgDomSvc itOrg.OrganizationDomainService,
-	userDomSvc itUser.UserDomainService,
+	orgUnitRepo itOrgUnit.OrgUnitCrudRepository,
+	orgDomSvc itOrg.OrgCrudDomainService,
+	userDomSvc itUser.UserCrudDomainService,
 ) itPerm.PermissionAppService {
 	return &PermissionApplicationServiceImpl{
 		permissionDomSvc: permissionDomSvc,
@@ -39,10 +39,10 @@ type PermissionApplicationServiceImpl struct {
 	permissionRepo   itPerm.PermissionRepository
 	// orgUnitRepo resolves a unit to its org, so a unit-scoped question can fall
 	// back to an org-level grant the same way enforcement does.
-	orgUnitRepo itOrgUnit.OrgUnitRepository
+	orgUnitRepo itOrgUnit.OrgUnitCrudRepository
 	// orgDomSvc lists the acting user's organizations, ordered by display name.
-	orgDomSvc  itOrg.OrganizationDomainService
-	userDomSvc itUser.UserDomainService
+	orgDomSvc  itOrg.OrgCrudDomainService
+	userDomSvc itUser.UserCrudDomainService
 }
 
 func (this *PermissionApplicationServiceImpl) IsAuthorized(ctx corectx.Context, query itPerm.IsAuthorizedQuery) (*itPerm.IsAuthorizedResult, error) {
@@ -215,7 +215,7 @@ func (this *PermissionApplicationServiceImpl) orgIdOfUnit(
 	if err != nil || res == nil || !res.HasData {
 		return nil, err
 	}
-	return res.Data.GetOrgId(), nil
+	return res.Data.GetModelId(models.OrgUnitFieldOrgId), nil
 }
 
 // describeMatches turns provenance rows into the reportable shape, resolving the
@@ -317,9 +317,7 @@ func (this *PermissionApplicationServiceImpl) getEnabledUser(ctx corectx.Context
 		return nil, errors.Wrap(result.ClientErrors.ToError(), "getEnabledUser")
 	}
 
-	orgsRes, err := this.orgDomSvc.GetUserOrgs(ctx, itOrg.GetUserOrgsQuery{
-		UserId: result.Data.MustGetId(),
-	})
+	orgsRes, err := this.orgDomSvc.GetUserOrgs(ctx, result.Data.MustGetId())
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +326,9 @@ func (this *PermissionApplicationServiceImpl) getEnabledUser(ctx corectx.Context
 	}
 	orgs := []models.Organization{}
 	if orgsRes.HasData {
-		orgs = orgsRes.Data.Items
+		orgs = array.Map(orgsRes.Data.Items, func(row dmodel.DynamicFields) models.Organization {
+			return *models.NewOrganizationFrom(row)
+		})
 	}
 
 	userFields := result.Data.GetFieldData()
