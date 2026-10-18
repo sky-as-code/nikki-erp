@@ -4,14 +4,15 @@ meta {
   seq: 3
 }
 
-put {
-  url: {{api_host}}/v1/{{org_id}}/contacts/parties/{{party_id}}
+patch {
+  url: {{api_host}}/v1/contacts/contacts_party/{{party_id}}
   body: json
   auth: inherit
 }
 
 body:json {
   {
+    "org_id": "{{org_id}}",
     "avatar_url": "{{party_avatar_url}}",
     "display_name": "{{party_display_name}}",
     "legal_name": "{{party_legal_name}}",

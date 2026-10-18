@@ -5,13 +5,15 @@ meta {
 }
 
 post {
-  url: {{api_host}}/v1/{{org_id}}/contacts/parties/{{party_id}}/channels
+  url: {{api_host}}/v1/contacts/contacts_comm_channel
   body: json
   auth: inherit
 }
 
 body:json {
   {
+    "org_id": "{{org_id}}",
+    "party_id": "{{party_id}}",
     "type": "{{channel_type}}",
     "value": "{{channel_value}}",
     "note": "{{channel_note}}",

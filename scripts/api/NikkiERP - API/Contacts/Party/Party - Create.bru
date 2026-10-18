@@ -5,13 +5,14 @@ meta {
 }
 
 post {
-  url: {{api_host}}/v1/{{org_id}}/contacts/parties
+  url: {{api_host}}/v1/contacts/contacts_party
   body: json
   auth: inherit
 }
 
 body:json {
   {
+    "org_id": "{{org_id}}",
     "display_name": "{{party_display_name}}",
     "legal_name": "{{party_legal_name}}",
     "legal_address": "{{party_legal_address}}",

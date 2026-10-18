@@ -4,8 +4,8 @@ meta {
   seq: 5
 }
 
-put {
-  url: {{api_host}}/v1/essential/languages/{{language_id}}
+patch {
+  url: {{api_host}}/v1/essential/essential_language/{{language_id}}
   body: json
   auth: inherit
 }

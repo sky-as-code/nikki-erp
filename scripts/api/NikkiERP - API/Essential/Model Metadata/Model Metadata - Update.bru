@@ -4,8 +4,8 @@ meta {
   seq: 5
 }
 
-put {
-  url: {{api_host}}/v1/essential/model-metadata/{{model_metadata_id}}
+patch {
+  url: {{api_host}}/v1/essential/essential_model_metadata/{{model_metadata_id}}
   body: json
   auth: inherit
 }
