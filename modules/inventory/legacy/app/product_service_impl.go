@@ -78,7 +78,8 @@ func (this *ProductServiceImpl) CreateProduct(ctx corectx.Context, cmd itProduct
 				return err
 			}
 			if !uomResult.HasData {
-				vErrs.Append(*ft.NewBusinessViolation("unit_id", "uom.not_found", "unit of measure does not exist"))
+				vErrs.Append(*ft.NewBusinessViolation("unit_id", ft.ErrorKey("uom.not_found", "inventory"),
+					"unit of measure does not exist"))
 			}
 			return nil
 		},
@@ -115,7 +116,8 @@ func (this *ProductServiceImpl) UpdateProduct(ctx corectx.Context, cmd itProduct
 					return err
 				}
 				if !uomResult.HasData {
-					vErrs.Append(*ft.NewBusinessViolation("unit_id", "uom.not_found", "unit of measure does not exist"))
+					vErrs.Append(*ft.NewBusinessViolation("unit_id", ft.ErrorKey("uom.not_found", "inventory"),
+						"unit of measure does not exist"))
 				}
 			}
 
@@ -129,7 +131,9 @@ func (this *ProductServiceImpl) UpdateProduct(ctx corectx.Context, cmd itProduct
 					return err
 				}
 				if !variantResult.HasData {
-					vErrs.Append(*ft.NewBusinessViolation("default_variant_id", "variant.not_found", "default variant does not exist"))
+					vErrs.Append(*ft.NewBusinessViolation(
+						"default_variant_id", ft.ErrorKey("variant.not_found", "inventory"),
+						"default variant does not exist"))
 				}
 			}
 

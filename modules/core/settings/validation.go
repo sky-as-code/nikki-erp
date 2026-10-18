@@ -27,7 +27,8 @@ func ValidateItems(schema *dmodel.ModelSchema, items []SetSettingItem) ft.Client
 
 // UnknownSettingError is the caller's error for a name no schema declares, not a server fault.
 func UnknownSettingError(name string) *ft.ClientErrorItem {
-	return ft.NewValidationError(name, "settings.unknown_setting", "is not a setting of this module at this level")
+	return ft.NewValidationError(name, ft.ErrorKey("settings.unknown_setting"),
+		"is not a setting of this module at this level")
 }
 
 // ValidateValue checks one value against its declared field. A nil value clears the setting back
@@ -65,7 +66,7 @@ func assertWithinDeclaredRange(field *dmodel.ModelField, raw any) *ft.ClientErro
 		return nil
 	}
 	if number < limits[0] || number > limits[1] {
-		return ft.NewValidationError(field.Name(), "settings.value_out_of_range",
+		return ft.NewValidationError(field.Name(), ft.ErrorKey("settings.value_out_of_range"),
 			fmt.Sprintf("must be between %v and %v", limits[0], limits[1]))
 	}
 	return nil

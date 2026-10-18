@@ -93,7 +93,7 @@ func RecordPayment(
 	}
 	if bill == nil {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ReasonBillNotFound,
+		vErrs.Append(*ft.NewBusinessViolation("sales_bill_id", ft.ErrorKey(ReasonBillNotFound, "sales"),
 			"no bill exists with id '"+params.SalesBillId+"'"))
 		return nil, vErrs, nil
 	}
@@ -163,7 +163,7 @@ func assertPaymentAcceptable(
 ) (*ft.ClientErrors, error) {
 	refuse := func(field, reason, message string) *ft.ClientErrors {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(field, reason, message))
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(reason, "sales"), message))
 		return vErrs
 	}
 
@@ -207,7 +207,7 @@ func assertMethodPermitted(
 ) (*ft.ClientErrors, error) {
 	refuse := func(reason, message string) *ft.ClientErrors {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("payment_method_id", reason, message))
+		vErrs.Append(*ft.NewBusinessViolation("payment_method_id", ft.ErrorKey(reason, "sales"), message))
 		return vErrs
 	}
 
@@ -304,7 +304,7 @@ func assertMethodCountWithinPolicy(
 	}
 
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation("payment_method_id", ReasonTooManyMethods,
+	vErrs.Append(*ft.NewBusinessViolation("payment_method_id", ft.ErrorKey(ReasonTooManyMethods, "sales"),
 		"this bill already uses the maximum of "+
 			decimal.NewFromInt(int64(policy.MaxPaymentMethodsPerBill)).String()+
 			" payment methods"))
@@ -335,7 +335,7 @@ func assertOverpaymentPermitted(
 	}
 
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation("amount", ReasonOverpaymentNotAllowed,
+	vErrs.Append(*ft.NewBusinessViolation("amount", ft.ErrorKey(ReasonOverpaymentNotAllowed, "sales"),
 		"this payment would take "+would.String()+" against a bill of "+billTotal.String()+
 			"; overpayment is not permitted"))
 	return vErrs, nil

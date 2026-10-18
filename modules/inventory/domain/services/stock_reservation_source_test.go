@@ -166,7 +166,7 @@ func TestAReallocationShortageIsARefusalNamingTheDestination(t *testing.T) {
 	vErrs := reallocationShortage("01LOC-DEST")
 
 	require.Equal(t, 1, vErrs.Count())
-	assert.Equal(t, "stock_transfer.reallocation_insufficient_stock", vErrs[0].Key)
+	assert.Equal(t, "inventory:stock_transfer.reallocation_insufficient_stock", vErrs[0].Key)
 	assert.Contains(t, vErrs[0].Message, "01LOC-DEST",
 		"the refusal must name the location that could not supply the stock")
 }

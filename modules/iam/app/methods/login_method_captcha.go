@@ -28,9 +28,11 @@ func (this *LoginMethodCaptcha) Execute(ctx corectx.Context, param itLogin.Login
 	case "NIKKI":
 		result.IsVerified = true
 	case "EXPIRED":
-		result.FailedReason = ft.NewBusinessViolation("password", "err_captcha_expired", "Captcha expired")
+		result.FailedReason = ft.NewBusinessViolation("password", ft.ErrorKey("err_captcha_expired", "iam"),
+			"Captcha expired")
 	default:
-		result.FailedReason = ft.NewBusinessViolation("password", "err_captcha_mismatched", "Captcha mismatched")
+		result.FailedReason = ft.NewBusinessViolation("password", ft.ErrorKey("err_captcha_mismatched", "iam"),
+			"Captcha mismatched")
 	}
 	return result, nil
 }

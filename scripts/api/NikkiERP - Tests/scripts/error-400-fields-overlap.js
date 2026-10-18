@@ -18,7 +18,7 @@ module.exports.testOverlappingFields = function (...fields) {
     },
   };
 
-  const schema = oneErrorSchemaNoFieldWithVars("common.err_overlapped_fields", "These fields must not have overlapping values: {.fields}", varSchema, 'business');
+  const schema = oneErrorSchemaNoFieldWithVars("common:err_overlapped_fields", "These fields must not have overlapping values: {.fields}", varSchema, 'business');
 
   testHttpResponse(schema, 400);
 };

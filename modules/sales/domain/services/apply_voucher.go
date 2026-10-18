@@ -114,7 +114,7 @@ func resolveCodeByString(
 ) (*models.SalesVoucherCode, *ft.ClientErrors, error) {
 	notFound := func() *ft.ClientErrors {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("code", ReasonCodeNotFound,
+		vErrs.Append(*ft.NewBusinessViolation("code", ft.ErrorKey(ReasonCodeNotFound, "sales"),
 			"no voucher exists with that code"))
 		return vErrs
 	}
@@ -147,7 +147,7 @@ func loadVoucherProgram(
 ) (dmodel.DynamicFields, *ft.ClientErrors, error) {
 	refuse := func(reason, message string) *ft.ClientErrors {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("code", reason, message))
+		vErrs.Append(*ft.NewBusinessViolation("code", ft.ErrorKey(reason, "sales"), message))
 		return vErrs
 	}
 
@@ -204,7 +204,7 @@ func assertProgramEligible(
 		// Fail closed: a condition that cannot be read is not a condition that passes, matching the
 		// evaluator's own reading of an unknown condition type.
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("code", ReasonConditionsNotMet,
+		vErrs.Append(*ft.NewBusinessViolation("code", ft.ErrorKey(ReasonConditionsNotMet, "sales"),
 			"this voucher's conditions could not be evaluated"))
 		return vErrs
 	}
@@ -221,7 +221,7 @@ func assertProgramEligible(
 	// One reason for every unmet condition: distinguishing them means re-evaluating each group to
 	// find the first that failed, deliberately not done yet.
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation("code", ReasonConditionsNotMet,
+	vErrs.Append(*ft.NewBusinessViolation("code", ft.ErrorKey(ReasonConditionsNotMet, "sales"),
 		"this voucher does not apply to this order"))
 	return vErrs
 }
@@ -268,7 +268,7 @@ func resolveWithVoucher(
 	// The voucher itself losing is the refusal the customer sees.
 	if !kept[programId] {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("code", ReasonIncompatible,
+		vErrs.Append(*ft.NewBusinessViolation("code", ft.ErrorKey(ReasonIncompatible, "sales"),
 			"this voucher cannot be combined with a discount already on this order"))
 		return nil, nil, vErrs, nil
 	}
@@ -440,7 +440,7 @@ func readOrderBasket(
 
 func OrderNotFoundErrors(orderId string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation("id", "sales_order.not_found",
+	vErrs.Append(*ft.NewBusinessViolation("id", ft.ErrorKey("sales_order.not_found", "sales"),
 		"no sales order exists with id '"+orderId+"'"))
 	return vErrs
 }

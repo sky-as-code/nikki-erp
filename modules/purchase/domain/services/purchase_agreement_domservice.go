@@ -202,7 +202,7 @@ func assertAgreementHasLines(
 
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(models.AgreementSchemaName,
-		"purchase_agreement.no_lines",
+		ft.ErrorKey("purchase_agreement.no_lines", "purchase"),
 		"a purchase agreement with no line cannot be confirmed"))
 	return vErrs, nil
 }
@@ -228,7 +228,7 @@ func assertNoOpenOrders(
 
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(models.AgreementSchemaName,
-		"purchase_agreement.has_open_orders",
+		ft.ErrorKey("purchase_agreement.has_open_orders", "purchase"),
 		"this agreement still has orders open against it; confirm or cancel them first"))
 	return vErrs, nil
 }
@@ -326,7 +326,7 @@ func writeAgreementChanges(
 func agreementNotFoundResult(agreementId string) *dyn.OpResult[dyn.MutateResultData] {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(models.AgreementSchemaName,
-		"purchase_agreement.not_found",
+		ft.ErrorKey("purchase_agreement.not_found", "purchase"),
 		"no purchase agreement with id '"+agreementId+"'"))
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
 }
@@ -364,7 +364,7 @@ func (this *PurchaseAgreementDomainServiceImpl) CreateRfq(
 		if status != string(models.AgreementStatusConfirmed) {
 			vErrs := ft.NewClientErrors()
 			vErrs.Append(*ft.NewBusinessViolation(models.AgreementSchemaName,
-				"purchase_agreement.not_confirmed",
+				ft.ErrorKey("purchase_agreement.not_confirmed", "purchase"),
 				"only a confirmed purchase agreement can raise a request for quotation; "+
 					"this one is '"+status+"'"))
 			result = &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}

@@ -18,22 +18,29 @@ import (
 	itOrgz "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/orgunit"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
+	itRes "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/resource"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 )
 
 func NewRoleDomainServiceImpl(
 	roleRepo itRole.RoleRepository,
 	entitlementRepo itEnt.EntitlementRepository,
+	entitlementSvc itEnt.EntitlementDomainService,
+	resourceRepo itRes.ResourceRepository,
 	orgRepo itOrgz.OrganizationRepository,
 	orgUnitRepo itOrg.OrgUnitRepository,
 	orgUnitSvc itOrg.OrgUnitDomainService,
 	permRepo itPerm.PermissionRepository,
+	historyRepo itPerm.PermissionHistoryRepository,
 	cqrsBus cqrs.CqrsBus,
 ) itRole.RoleDomainService {
 	return &RoleDomainServiceImpl{
+		auditor:         permissionAuditor{historyRepo: historyRepo},
 		cqrsBus:         cqrsBus,
 		roleRepo:        roleRepo,
 		entitlementRepo: entitlementRepo,
+		entitlementSvc:  entitlementSvc,
+		resourceRepo:    resourceRepo,
 		orgRepo:         orgRepo,
 		orgUnitRepo:     orgUnitRepo,
 		orgUnitSvc:      orgUnitSvc,
@@ -45,12 +52,16 @@ type RoleDomainServiceImpl struct {
 	cqrsBus         cqrs.CqrsBus
 	roleRepo        itRole.RoleRepository
 	entitlementRepo itEnt.EntitlementRepository
+	// entitlementSvc and resourceRepo serve the entitlement delta of UpdateRole.
+	entitlementSvc itEnt.EntitlementDomainService
+	resourceRepo   itRes.ResourceRepository
 	// orgRepo and orgUnitRepo exist only to resolve entitlement scope display names in
 	// DescribeRoles; role CRUD does not touch them.
 	orgRepo     itOrgz.OrganizationRepository
 	orgUnitRepo itOrg.OrgUnitRepository
 	orgUnitSvc  itOrg.OrgUnitDomainService
 	permRepo    itPerm.PermissionRepository
+	auditor     permissionAuditor
 }
 
 func (this *RoleDomainServiceImpl) CreateRole(
@@ -90,7 +101,7 @@ func (this *RoleDomainServiceImpl) DeleteRole(
 			}
 			if *resRole.Data.IsPrivate() {
 				return ft.NewAnonymousBusinessViolation(
-					ft.ErrorKey("iam", "err_private_role_deletion_not_allowed"),
+					ft.ErrorKey("err_private_role_deletion_not_allowed", "iam"),
 					"private role deletion is not allowed.",
 				)
 			}
@@ -160,7 +171,7 @@ func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
 		return roleRes.ClientErrors, nil
 	}
 	if !roleRes.HasData {
-		out = append(out, *ft.NewBusinessViolation("add", "role_not_found", "role not found"))
+		out = append(out, *ft.NewBusinessViolation("add", ft.ErrorKey("role_not_found", "iam"), "role not found"))
 		return out, nil
 	}
 	roleOrgID := roleRes.Data.GetFieldData().GetModelId(domain.RoleFieldOrgId)
@@ -187,7 +198,7 @@ func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
 		ent, ok := found[wantID]
 		if !ok {
 			out = append(out, *ft.NewBusinessViolation(
-				"add", "entitlement_not_found", "entitlement not found",
+				"add", ft.ErrorKey("entitlement_not_found", "iam"), "entitlement not found",
 				map[string]any{"id": string(wantID)},
 			))
 			continue
@@ -198,7 +209,7 @@ func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
 		}
 		if roleOrgID == nil || *roleOrgID == "" {
 			out = append(out, *ft.NewBusinessViolation(
-				"add", "role_org_required",
+				"add", ft.ErrorKey("role_org_required", "iam"),
 				"role org_id is required to assign entitlements with org_unit_id",
 				map[string]any{"org_unit_id": string(*ouID)},
 			))
@@ -221,7 +232,7 @@ func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
 		}
 		if !ouRes.HasData {
 			out = append(out, *ft.NewBusinessViolation(
-				"add", "org_unit_not_found", "org unit not found",
+				"add", ft.ErrorKey("org_unit_not_found", "iam"), "org unit not found",
 				map[string]any{"org_unit_id": string(*ouID)},
 			))
 			continue
@@ -229,7 +240,7 @@ func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
 		path := ouRes.Data.GetPath()
 		if len(path) == 0 || path[0] != string(*roleOrgID) {
 			out = append(out, *ft.NewBusinessViolation(
-				"add", "entitlement_org_mismatch",
+				"add", ft.ErrorKey("entitlement_org_mismatch", "iam"),
 				`Entitlement's org_unit_id {{org_unit_id}} must belong to the role's org_id {{org_id}}`,
 				map[string]any{"org_unit_id": string(*ouID), "org_id": string(*roleOrgID)},
 			))
@@ -371,10 +382,29 @@ func (this *RoleDomainServiceImpl) UpdateRole(
 	ctx corectx.Context, cmd itRole.UpdateRoleCommand, options ...corecrud.ServiceUpdateOptions[*domain.Role],
 ) (*itRole.UpdateRoleResult, error) {
 	opts := safe.GetOptional(options, corecrud.ServiceUpdateOptions[*domain.Role]{})
-	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Role, *domain.Role]{
+	if cmd.HasMalformedEntitlements() {
+		return &itRole.UpdateRoleResult{ClientErrors: ft.ClientErrors{*ft.NewValidationError(
+			itRole.UpdateRoleFieldEntitlements, ft.ErrorKey("err_malformed_request"),
+			"entitlements must be {add: [{resource_id, action_id, description}], remove: [ids]}",
+		)}}, nil
+	}
+	result, err := corecrud.Update(ctx, corecrud.UpdateParam[domain.Role, *domain.Role]{
 		Action:                 "update role",
 		DbRepoGetter:           this.roleRepo,
 		Data:                   cmd,
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
+	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData || !cmd.HasEntitlementsDelta() {
+		return result, err
+	}
+	// The role row was updated first, so the etag check guards the delta too and an
+	// entitlement-only call still moves the etag and the audit columns.
+	cErrs, err := this.applyEntitlementsDelta(ctx, *cmd.GetId(), *cmd.Entitlements)
+	if err != nil {
+		return nil, err
+	}
+	if cErrs.Count() > 0 {
+		return &itRole.UpdateRoleResult{ClientErrors: cErrs}, nil
+	}
+	return result, nil
 }

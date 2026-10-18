@@ -154,15 +154,15 @@ func TestIncompatibleOrdersAreRefused(t *testing.T) {
 	}{
 		{
 			"different vendors", orderFor("PO-2", "01OTHER", "01USD", "", nil),
-			"purchase_order.merge_vendor_mismatch",
+			"purchase:purchase_order.merge_vendor_mismatch",
 		},
 		{
 			"different currencies", orderFor("PO-2", "01VENDOR", "01EUR", "", nil),
-			"purchase_order.merge_currency_mismatch",
+			"purchase:purchase_order.merge_currency_mismatch",
 		},
 		{
 			"different agreements", orderFor("PO-2", "01VENDOR", "01USD", "01AGR", nil),
-			"purchase_order.merge_agreement_mismatch",
+			"purchase:purchase_order.merge_agreement_mismatch",
 		},
 	}
 

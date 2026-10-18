@@ -42,25 +42,25 @@ func TestAnExternalLinkIsAccepted(t *testing.T) {
 // things to keep out: "javascript:" is the obvious one, but so is every scheme nobody has thought
 // of yet.
 func TestAScriptLinkIsRefused(t *testing.T) {
-	assert.Contains(t, validateLink(t, "javascript:alert(1)"), "err_app_link_scheme_unsupported")
+	assert.Contains(t, validateLink(t, "javascript:alert(1)"), "notification:err_app_link_scheme_unsupported")
 }
 
 func TestAnUnknownSchemeIsRefused(t *testing.T) {
-	assert.Contains(t, validateLink(t, "ftp://example.com/x"), "err_app_link_scheme_unsupported")
+	assert.Contains(t, validateLink(t, "ftp://example.com/x"), "notification:err_app_link_scheme_unsupported")
 }
 
 // A bare path has no scheme, so there is nothing to check it against and nothing that could resolve
 // it: a relative link is exactly the mistake this rejects.
 func TestARelativeLinkIsRefused(t *testing.T) {
-	assert.Contains(t, validateLink(t, "/notification/notifications"), "err_app_link_invalid")
+	assert.Contains(t, validateLink(t, "/notification/notifications"), "notification:err_app_link_invalid")
 }
 
 func TestANonStringLinkIsRefused(t *testing.T) {
-	assert.Contains(t, validateLink(t, 42), "err_app_link_invalid")
+	assert.Contains(t, validateLink(t, 42), "notification:err_app_link_invalid")
 }
 
 func TestAnEmptyLinkIsRefused(t *testing.T) {
-	assert.Contains(t, validateLink(t, "   "), "err_app_link_invalid")
+	assert.Contains(t, validateLink(t, "   "), "notification:err_app_link_invalid")
 }
 
 func TestAnOverlongLinkIsRefused(t *testing.T) {
@@ -69,7 +69,7 @@ func TestAnOverlongLinkIsRefused(t *testing.T) {
 		long += "x"
 	}
 
-	assert.Contains(t, validateLink(t, long), "err_app_link_too_long")
+	assert.Contains(t, validateLink(t, long), "notification:err_app_link_too_long")
 }
 
 // The channel reads only its own argument. Anything else the sender put in the object is none of

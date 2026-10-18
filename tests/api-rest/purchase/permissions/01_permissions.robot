@@ -56,7 +56,7 @@ The Audit Trail Refuses Client Writes
     ...    instead of a 404 that reads as a wrong URL.
     Ensure Purchase Org
     ${resp}=    POST On Session    api    ${AUDIT_EVENT_API}    json=${{ {'entity_type': 'purchase_order', 'entity_id': '01JZZZZZZZZZZZZZZZZZZZZZZZ', 'action': 'confirm', 'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
-    Response Should Be Purchase Violation    ${resp}    purchase_audit_event.not_client_writable
+    Response Should Be Purchase Violation    ${resp}    purchase:purchase_audit_event.not_client_writable
 
 The Sourcing Group Refuses Direct Creation
     [Documentation]    §28. The group is created by adding an alternative to an order and reaped
@@ -64,7 +64,7 @@ The Sourcing Group Refuses Direct Creation
     ...    nothing reaps.
     Ensure Purchase Org
     ${resp}=    POST On Session    api    ${SOURCING_GROUP_API}    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
-    Response Should Be Purchase Violation    ${resp}    purchase_sourcing_group.not_client_writable
+    Response Should Be Purchase Violation    ${resp}    purchase:purchase_sourcing_group.not_client_writable
 
 The Audit Trail Is Readable
     [Documentation]    Read is the one verb the audit event does have: the trail exists to be

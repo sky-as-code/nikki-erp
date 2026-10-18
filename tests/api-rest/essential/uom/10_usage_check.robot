@@ -15,7 +15,7 @@ Test Tags         essential    uom    usage_check
 *** Test Cases ***
 Delete Is Refused While Inventory References The Unit
     [Documentation]    The stock configuration names this unit, so Inventory answers "in
-    ...    use" and the delete is refused with resource_in_use rather than succeeding and
+    ...    use" and the delete is refused with resource_used_by_modules rather than succeeding and
     ...    letting the database blank the reference (the foreign key is ON DELETE SET NULL).
     [Tags]    negative
     ${resp}=    DELETE On Session    api    ${UOM_API}/${REFERENCED_UOM_ID}

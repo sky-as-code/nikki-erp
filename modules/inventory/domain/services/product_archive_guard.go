@@ -47,28 +47,28 @@ func AssertVariantArchivable(usage itStock.ProductUsage, vErrs *ft.ClientErrors)
 	if !usage.OnHandQuantity.IsZero() {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.ProductVariantSchemaName,
-			"product_variant.has_on_hand_stock",
+			ft.ErrorKey("product_variant.has_on_hand_stock", "inventory"),
 			"the product still has stock on hand; move, sell or write it off before archiving",
 		))
 	}
 	if !usage.ReservedQuantity.IsZero() {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.ProductVariantSchemaName,
-			"product_variant.has_reserved_stock",
+			ft.ErrorKey("product_variant.has_reserved_stock", "inventory"),
 			"the product still has stock reserved against an outgoing operation",
 		))
 	}
 	if usage.OpenMoveCount > 0 {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.ProductVariantSchemaName,
-			"product_variant.has_open_moves",
+			ft.ErrorKey("product_variant.has_open_moves", "inventory"),
 			"the product is named by a stock move that has not completed",
 		))
 	}
 	if usage.OpenTransferCount > 0 {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.ProductVariantSchemaName,
-			"product_variant.has_open_transfers",
+			ft.ErrorKey("product_variant.has_open_transfers", "inventory"),
 			"the product is named by a transfer that has not completed",
 		))
 	}
@@ -92,7 +92,7 @@ func AssertTemplateArchivable(
 		}
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.ProductTemplateSchemaName,
-			"product_template.variant_has_stock",
+			ft.ErrorKey("product_template.variant_has_stock", "inventory"),
 			"variant '"+label+"' still has stock, a reservation or work in flight; "+
 				"archiving the product line would strand it",
 		))

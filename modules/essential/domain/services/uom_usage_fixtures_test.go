@@ -82,6 +82,7 @@ func (this *essentialOwner) Init() error            { return nil }
 func (this *essentialOwner) IsInternal() bool       { return false }
 func (this *essentialOwner) ModelPrefix() string    { return this.name }
 func (this *essentialOwner) HasUi() bool            { return false }
+func (this *essentialOwner) Category() modules.ModuleCategory { return modules.ModuleCategoryFoundation }
 func (this *essentialOwner) Version() semver.SemVer { return *semver.MustParseSemVer("v1.0.0") }
 func (this *essentialOwner) Dependants() []string   { return this.dependants }
 

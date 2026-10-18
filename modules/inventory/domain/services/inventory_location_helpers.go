@@ -121,7 +121,7 @@ func withLocationTransaction(ctx corectx.Context, body func(tranxCtx corectx.Con
 }
 
 func appendLocationViolation(vErrs *ft.ClientErrors, key string, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(models.InventoryLocationSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.InventoryLocationSchemaName, ft.ErrorKey(key, "inventory"), message))
 }
 
 func locationViolationResult(key string, message string) *dyn.OpResult[dyn.MutateResultData] {

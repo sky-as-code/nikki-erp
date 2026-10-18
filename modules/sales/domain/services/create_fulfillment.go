@@ -87,7 +87,7 @@ func CreateKioskFulfillment(
 	if len(lines) == 0 {
 		vErrs := ft.NewClientErrors()
 		vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName,
-			ReasonFulfillmentNothingToDeliver,
+			ft.ErrorKey(ReasonFulfillmentNothingToDeliver, "sales"),
 			"this order owes no goods, so there is nothing for a kiosk to dispense"))
 		return nil, vErrs, nil
 	}
@@ -439,16 +439,16 @@ func reservationRefusal(
 		message = response.FailureReason
 	}
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName, reason, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName, ft.ErrorKey(reason, "sales"), message))
 	return vErrs
 }
 
-func hasReason(vErrs *ft.ClientErrors, reason string) bool {
+func hasReason(vErrs *ft.ClientErrors, key string) bool {
 	if vErrs == nil {
 		return false
 	}
 	for _, item := range *vErrs {
-		if item.Key == reason {
+		if item.Key == key {
 			return true
 		}
 	}
@@ -471,7 +471,7 @@ func refusalStopsConfirm(namedMethod bool, vErrs *ft.ClientErrors) bool {
 	if namedMethod {
 		return true
 	}
-	return !hasReason(vErrs, ReasonMethodUnresolved)
+	return !hasReason(vErrs, ft.ErrorKey(ReasonMethodUnresolved, "sales"))
 }
 
 // releaseAfterFailedReserve gives back whatever a failed reservation managed to claim.

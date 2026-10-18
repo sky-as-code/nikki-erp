@@ -1,6 +1,6 @@
 {
     "type": "object",
-    "required": ["id", "created_at", "code", "name", "etag", "is_archived", "org_id"],
+    "required": ["id", "created_at", "code", "name", "parent_category_id", "etag", "is_archived", "org_id"],
     "properties": {
         "id": {
             "type": "string",
@@ -22,13 +22,27 @@
             "type": "object"
         },
         "parent_category_id": {
-            "type": ["string", "null"]
+            "type": "string",
+            "minLength": 1
+        },
+        "is_root": {
+            "type": ["boolean", "null"]
+        },
+        "canonical_name": {
+            "type": ["object", "null"]
         },
         "sequence": {
             "type": ["integer", "null"]
         },
         "description": {
             "type": ["object", "null"]
+        },
+        "source_system": {
+            "type": "string",
+            "minLength": 1
+        },
+        "external_id": {
+            "type": ["string", "null"]
         },
         "org_id": {
             "type": "string",

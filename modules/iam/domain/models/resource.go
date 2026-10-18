@@ -35,15 +35,15 @@ const (
 func ResourceSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ResourceSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", ResourceSchemaName)).
+		RecordLabelField(ResourceFieldName).
 		TableName("iam_resources").
 		DefaultSearchFields("name", "code", "description").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().Name(ResourceFieldName).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate().
-				Unique(),
+				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
+				RequiredForCreate(),
 		).
 		Field(
 			DefineResourceFieldCode(ResourceFieldCode).

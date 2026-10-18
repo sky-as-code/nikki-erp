@@ -156,7 +156,7 @@ func parseProbeExpression(expression string) (*reguard.ParsedExpression, *ft.Cli
 	parsed, err := reguard.ParseExpression(expression)
 	if err != nil {
 		cErrs.Append(*ft.NewValidationError(
-			"expression", "permission.test_expression_invalid",
+			"expression", ft.ErrorKey("permission.test_expression_invalid", "iam"),
 			"the expression is not a valid entitlement expression",
 		))
 		return nil, cErrs
@@ -166,7 +166,7 @@ func parseProbeExpression(expression string) (*reguard.ParsedExpression, *ft.Cli
 	// allowing them would turn this endpoint into a grant-enumeration tool.
 	if parsed.HasWildcard() {
 		cErrs.Append(*ft.NewValidationError(
-			"expression", "permission.test_expression_wildcard",
+			"expression", ft.ErrorKey("permission.test_expression_wildcard", "iam"),
 			"the expression under test must not contain wildcards",
 		))
 		return nil, cErrs

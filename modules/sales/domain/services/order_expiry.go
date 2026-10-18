@@ -53,7 +53,7 @@ func assertOrderNotExpired(ctx corectx.Context, record dmodel.DynamicFields) (*f
 		return nil, err
 	}
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation("valid_until", ReasonOrderExpired,
+	vErrs.Append(*ft.NewBusinessViolation("valid_until", ft.ErrorKey(ReasonOrderExpired, "sales"),
 		"this order's payment deadline has passed; it can only be cancelled"))
 	return vErrs, nil
 }
@@ -87,7 +87,7 @@ func assertValidUntilInFuture(validUntil *time.Time, now time.Time) *ft.ClientEr
 		return nil
 	}
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation("valid_until", ReasonValidUntilNotInFuture,
+	vErrs.Append(*ft.NewBusinessViolation("valid_until", ft.ErrorKey(ReasonValidUntilNotInFuture, "sales"),
 		"valid_until must lie in the future"))
 	return vErrs
 }
@@ -148,7 +148,7 @@ func assertOrderDispensable(ctx corectx.Context, orderId string) (*ft.ClientErro
 	}
 	refuse := func(field, reason, message string) *ft.ClientErrors {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(field, reason, message))
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(reason, "sales"), message))
 		return vErrs
 	}
 	if stringOf(record, models.SalesOrderFieldStatus) == string(models.SalesOrderStatusCancelled) {

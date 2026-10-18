@@ -142,7 +142,7 @@ func assertMappingLineSubstitutes(line *models.TaxMappingLine, vErrs *ft.ClientE
 	}
 	if *source == *target {
 		vErrs.Append(*ft.NewBusinessViolation(models.TaxMappingLineFieldTargetTaxId,
-			"tax.mapping_line_maps_to_itself",
+			ft.ErrorKey("tax.mapping_line_maps_to_itself", "accounting"),
 			"a mapping line must substitute one tax for a different one"))
 	}
 }
@@ -175,7 +175,7 @@ func assertParentMappingEditable(
 	status := mapping.GetLifecycleStatus()
 	if status != nil && *status != string(models.LifecycleDraft) {
 		vErrs.Append(*ft.NewBusinessViolation(models.TaxMappingLineFieldTaxMappingId,
-			"tax.mapping_line_parent_not_draft",
+			ft.ErrorKey("tax.mapping_line_parent_not_draft", "accounting"),
 			"the mapping this line belongs to is no longer a draft; "+
 				"create a new mapping version to change what it substitutes"))
 	}
@@ -274,7 +274,7 @@ func assertRoundingIncrementPositive(
 	}
 	if !increment.IsPositive() {
 		vErrs.Append(*ft.NewBusinessViolation(models.TaxRoundingPolicyFieldRoundingIncrement,
-			"tax.rounding_increment_not_positive",
+			ft.ErrorKey("tax.rounding_increment_not_positive", "accounting"),
 			"the rounding increment must be greater than zero"))
 	}
 }

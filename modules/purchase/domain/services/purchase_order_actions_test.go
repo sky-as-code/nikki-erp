@@ -21,7 +21,7 @@ func TestUnlockRequiresAReason(t *testing.T) {
 
 	require.NoError(t, err, "a refusal is a client error, not a Go error")
 	require.Equal(t, 1, result.ClientErrors.Count())
-	assert.Equal(t, "purchase_order.unlock_reason_required", result.ClientErrors[0].Key)
+	assert.Equal(t, "purchase:purchase_order.unlock_reason_required", result.ClientErrors[0].Key)
 }
 
 // The duplicate carries the order's terms and none of its history, or it would claim to have been

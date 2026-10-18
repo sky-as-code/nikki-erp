@@ -2,22 +2,9 @@ package v1
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
-
-type CreateUserRequest = it.CreateUserCommand
-type CreateUserResponse = httpserver.RestCreateResponse
-
-type UpdateUserRequest = it.UpdateUserCommand
-type UpdateUserResponse = httpserver.RestMutateResponse
-
-type DeleteUserRequest = it.DeleteUserCommand
-type DeleteUserResponse = httpserver.RestMutateResponse
-
-type GetUserRequest = it.GetUserQuery
-type GetUserResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
 
 type GetUserContextResponse struct {
 	Id           string   `json:"id"`
@@ -43,11 +30,3 @@ type GetUserContextResponse struct {
 type ManageUserRoleAssignmentsRequest = it.ManageUserRoleAssignmentsCommand
 type ManageUserRoleAssignmentsResponse = httpserver.RestMutateResponse
 
-type UserExistsRequest = it.UserExistsQuery
-type UserExistsResponse = dyn.ExistsResultData
-
-type SearchUsersRequest = it.SearchUsersQuery
-type SearchUsersResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
-
-type SetUserIsArchivedRequest = it.SetUserIsArchivedCommand
-type SetUserIsArchivedResponse = httpserver.RestMutateResponse

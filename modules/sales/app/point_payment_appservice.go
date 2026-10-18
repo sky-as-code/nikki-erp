@@ -242,12 +242,12 @@ func (this *PointPaymentApplicationServiceImpl) resolvePoint(
 func pointNotFound(message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesPointSchemaName, "sales_point.not_found", message))
+		models.SalesPointSchemaName, ft.ErrorKey("sales_point.not_found", "sales"), message))
 	return vErrs
 }
 
 func pointPaymentRejection(key, message string) *it.PointPaymentMutationResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesPointSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.SalesPointSchemaName, ft.ErrorKey(key, "sales"), message))
 	return &it.PointPaymentMutationResult{ClientErrors: *vErrs}
 }

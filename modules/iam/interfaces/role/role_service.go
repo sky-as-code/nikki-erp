@@ -21,6 +21,9 @@ type RoleDomainService interface {
 	SearchGroupRoles(ctx corectx.Context, query SearchGroupRolesQuery, opts ...corecrud.ServiceSearchOptions) (*SearchGroupRolesResult, error)
 	SetRoleIsArchived(ctx corectx.Context, cmd SetRoleIsArchivedCommand) (*SetRoleIsArchivedResult, error)
 	UpdateRole(ctx corectx.Context, cmd UpdateRoleCommand, opts ...corecrud.ServiceUpdateOptions[*domain.Role]) (*UpdateRoleResult, error)
+
+	ManageRoleUsers(ctx corectx.Context, cmd ManageRoleUsersCommand) (*ManageRoleUsersResult, error)
+	ManageRoleGroups(ctx corectx.Context, cmd ManageRoleGroupsCommand) (*ManageRoleGroupsResult, error)
 }
 
 type RoleAppService interface {
@@ -37,4 +40,7 @@ type RoleAppService interface {
 	SearchGroupRoles(ctx corectx.Context, query SearchGroupRolesQuery) (*SearchGroupRolesResult, error)
 	SetRoleIsArchived(ctx corectx.Context, cmd SetRoleIsArchivedCommand) (*SetRoleIsArchivedResult, error)
 	UpdateRole(ctx corectx.Context, cmd UpdateRoleCommand) (*UpdateRoleResult, error)
+
+	ManageRoleUsers(ctx corectx.Context, cmd ManageRoleUsersCommand) (*ManageRoleUsersResult, error)
+	ManageRoleGroups(ctx corectx.Context, cmd ManageRoleGroupsCommand) (*ManageRoleGroupsResult, error)
 }

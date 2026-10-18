@@ -110,13 +110,13 @@ func assertRateFieldsExclusive(version *models.TaxRateVersion, vErrs *ft.ClientE
 
 	if hasRate && hasFixed {
 		vErrs.Append(*ft.NewBusinessViolation(models.TaxRateVersionFieldFixedAmount,
-			"tax.rate_and_fixed_amount_both_set",
+			ft.ErrorKey("tax.rate_and_fixed_amount_both_set", "accounting"),
 			"a tax rate version carries either a percentage rate or a fixed amount, never both"))
 		return
 	}
 	if !hasRate && !hasFixed {
 		vErrs.Append(*ft.NewBusinessViolation(models.TaxRateVersionFieldRate,
-			"tax.rate_or_fixed_amount_required",
+			ft.ErrorKey("tax.rate_or_fixed_amount_required", "accounting"),
 			"a tax rate version must carry either a percentage rate or a fixed amount"))
 		return
 	}
@@ -124,12 +124,12 @@ func assertRateFieldsExclusive(version *models.TaxRateVersion, vErrs *ft.ClientE
 	if hasFixed {
 		if version.GetCurrencyCode() == nil {
 			vErrs.Append(*ft.NewBusinessViolation(models.TaxRateVersionFieldCurrencyCode,
-				"tax.fixed_amount_requires_currency",
+				ft.ErrorKey("tax.fixed_amount_requires_currency", "accounting"),
 				"a fixed tax amount must state the currency it is denominated in"))
 		}
 		if version.GetRateUomId() == nil {
 			vErrs.Append(*ft.NewBusinessViolation(models.TaxRateVersionFieldRateUomId,
-				"tax.fixed_amount_requires_uom",
+				ft.ErrorKey("tax.fixed_amount_requires_uom", "accounting"),
 				"a fixed tax amount must state the unit it is charged per"))
 		}
 	}
@@ -169,7 +169,7 @@ func assertNoPublishedRateOverlap(
 			other.GetEffectiveFrom(), other.GetEffectiveTo(),
 		) {
 			vErrs.Append(*ft.NewBusinessViolation(models.TaxRateVersionFieldEffectiveFrom,
-				"tax.published_rate_overlap",
+				ft.ErrorKey("tax.published_rate_overlap", "accounting"),
 				"another published rate version of this tax already covers part of this period; "+
 					"a tax date must resolve to exactly one rate"))
 			return nil

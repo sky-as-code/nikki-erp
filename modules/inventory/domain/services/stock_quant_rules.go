@@ -30,7 +30,7 @@ func orZero(value *decimal.Decimal) decimal.Decimal {
 func AssertQuantNotClientWritable(vErrs *ft.ClientErrors) {
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.StockQuantSchemaName,
-		"stock_quant.not_client_writable",
+		ft.ErrorKey("stock_quant.not_client_writable", "inventory"),
 		"stock balances cannot be changed directly; record an inventory adjustment, transfer or scrap instead",
 	))
 }

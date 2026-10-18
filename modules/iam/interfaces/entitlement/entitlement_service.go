@@ -10,6 +10,13 @@ import (
 type EntitlementDomainService interface {
 	CreateEntitlement(ctx corectx.Context, cmd CreateEntitlementCommand, opts ...corecrud.ServiceCreateOptions[*domain.Entitlement]) (*CreateEntitlementResult, error)
 	DeleteEntitlement(ctx corectx.Context, cmd DeleteEntitlementCommand, opts ...corecrud.ServiceDeleteOptions) (*DeleteEntitlementResult, error)
+	// CreateEntitlementDeferRebuild, DeleteEntitlementDeferRebuild and UpdateEntitlementDeferRebuild
+	// behave like their plain counterparts, audit row included, but leave
+	// RebuildUserPermissionsForRole to the caller, which must call it once for the role, in the
+	// same transaction, after its last change.
+	CreateEntitlementDeferRebuild(ctx corectx.Context, cmd CreateEntitlementCommand) (*CreateEntitlementResult, error)
+	DeleteEntitlementDeferRebuild(ctx corectx.Context, cmd DeleteEntitlementCommand) (*DeleteEntitlementResult, error)
+	UpdateEntitlementDeferRebuild(ctx corectx.Context, cmd UpdateEntitlementCommand) (*UpdateEntitlementResult, error)
 	EntitlementExists(ctx corectx.Context, query EntitlementExistsQuery) (*EntitlementExistsResult, error)
 	GetEntitlement(ctx corectx.Context, query GetEntitlementQuery) (*dyn.OpResult[domain.Entitlement], error)
 	ManageEntitlementRoles(ctx corectx.Context, cmd ManageEntitlementRolesCommand) (

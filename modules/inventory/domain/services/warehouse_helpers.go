@@ -118,7 +118,7 @@ func (this *WarehouseDomainServiceImpl) countUnarchivedSupplyRelations(
 }
 
 func appendWarehouseViolation(vErrs *ft.ClientErrors, key string, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(models.WarehouseSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.WarehouseSchemaName, ft.ErrorKey(key, "inventory"), message))
 }
 
 func warehouseViolationResult(key string, message string) *dyn.OpResult[dyn.MutateResultData] {

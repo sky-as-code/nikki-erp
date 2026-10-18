@@ -41,7 +41,7 @@ func NewEntitlementDomainServiceImpl(
 		orgRepo:     orgRepo,
 		orgUnitRepo: orgUnitRepo,
 		permRepo:    permRepo,
-		auditor:         permissionAuditor{historyRepo: historyRepo},
+		auditor:     permissionAuditor{historyRepo: historyRepo},
 	}
 }
 
@@ -90,6 +90,19 @@ func (this *EntitlementDomainServiceImpl) CreateEntitlement(
 	ctx corectx.Context, cmd itEnt.CreateEntitlementCommand, options ...corecrud.ServiceCreateOptions[*domain.Entitlement],
 ) (*itEnt.CreateEntitlementResult, error) {
 	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.Entitlement]{})
+	return this.createEntitlement(ctx, cmd, opts, true)
+}
+
+func (this *EntitlementDomainServiceImpl) CreateEntitlementDeferRebuild(
+	ctx corectx.Context, cmd itEnt.CreateEntitlementCommand,
+) (*itEnt.CreateEntitlementResult, error) {
+	return this.createEntitlement(ctx, cmd, corecrud.ServiceCreateOptions[*domain.Entitlement]{}, false)
+}
+
+func (this *EntitlementDomainServiceImpl) createEntitlement(
+	ctx corectx.Context, cmd itEnt.CreateEntitlementCommand,
+	opts corecrud.ServiceCreateOptions[*domain.Entitlement], rebuild bool,
+) (*itEnt.CreateEntitlementResult, error) {
 	result, err := corecrud.Create(ctx, corecrud.CreateParam[domain.Entitlement, *domain.Entitlement]{
 		Action:         "create entitlement",
 		BaseRepoGetter: this.entitlementRepo,
@@ -117,7 +130,7 @@ func (this *EntitlementDomainServiceImpl) CreateEntitlement(
 	// A new entitlement has to reach the role's existing holders, not just the
 	// next person assigned to it.
 	if roleId := result.Data.GetRoleId(); roleId != nil {
-		if err := this.permRepo.RebuildUserPermissionsForRole(ctx, *roleId); err != nil {
+		if err := this.rebuildRoleIf(ctx, rebuild, *roleId); err != nil {
 			return nil, err
 		}
 		if err := this.auditor.recordEntitlementTransition(
@@ -240,7 +253,7 @@ func (this *EntitlementDomainServiceImpl) validateScope(
 		Step(func(cErrs *ft.ClientErrors) error {
 			if !domain.IsResourceScopeInBounds(minScope, maxScope, entScope) {
 				cErrs.Append(*ft.NewValidationError(
-					domain.EntitlementFieldScope, "err_scope_out_of_bounds",
+					domain.EntitlementFieldScope, ft.ErrorKey("err_scope_out_of_bounds", "iam"),
 					"scope must be between the resource min_scope and max_scope (both inclusive)",
 				))
 			}
@@ -328,6 +341,27 @@ func (this *EntitlementDomainServiceImpl) DeleteEntitlement(
 	ctx corectx.Context, cmd itEnt.DeleteEntitlementCommand, options ...corecrud.ServiceDeleteOptions,
 ) (*itEnt.DeleteEntitlementResult, error) {
 	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
+	return this.deleteEntitlement(ctx, cmd, opts, true)
+}
+
+func (this *EntitlementDomainServiceImpl) DeleteEntitlementDeferRebuild(
+	ctx corectx.Context, cmd itEnt.DeleteEntitlementCommand,
+) (*itEnt.DeleteEntitlementResult, error) {
+	return this.deleteEntitlement(ctx, cmd, corecrud.ServiceDeleteOptions{}, false)
+}
+
+// rebuildRoleIf lets a caller that changes several entitlements of one role pay for a single
+// permission rebuild at the end instead of one per entitlement.
+func (this *EntitlementDomainServiceImpl) rebuildRoleIf(ctx corectx.Context, rebuild bool, roleId model.Id) error {
+	if !rebuild {
+		return nil
+	}
+	return this.permRepo.RebuildUserPermissionsForRole(ctx, roleId)
+}
+
+func (this *EntitlementDomainServiceImpl) deleteEntitlement(
+	ctx corectx.Context, cmd itEnt.DeleteEntitlementCommand, opts corecrud.ServiceDeleteOptions, rebuild bool,
+) (*itEnt.DeleteEntitlementResult, error) {
 	// Read the owning role before the row goes away - afterwards there is nothing
 	// left to resolve it from. The cascade removes this entitlement's cached rows,
 	// but holders of the role still need the rest of their rows recomputed.
@@ -346,7 +380,7 @@ func (this *EntitlementDomainServiceImpl) DeleteEntitlement(
 		return result, err
 	}
 	if roleId != nil {
-		if err := this.permRepo.RebuildUserPermissionsForRole(ctx, *roleId); err != nil {
+		if err := this.rebuildRoleIf(ctx, rebuild, *roleId); err != nil {
 			return nil, err
 		}
 		entId := cmd.Id
@@ -437,13 +471,26 @@ func (this *EntitlementDomainServiceImpl) UpdateEntitlement(
 	ctx corectx.Context, cmd itEnt.UpdateEntitlementCommand, options ...corecrud.ServiceUpdateOptions[*domain.Entitlement],
 ) (*itEnt.UpdateEntitlementResult, error) {
 	opts := safe.GetOptional(options, corecrud.ServiceUpdateOptions[*domain.Entitlement]{})
+	return this.updateEntitlement(ctx, cmd, opts, true)
+}
+
+func (this *EntitlementDomainServiceImpl) UpdateEntitlementDeferRebuild(
+	ctx corectx.Context, cmd itEnt.UpdateEntitlementCommand,
+) (*itEnt.UpdateEntitlementResult, error) {
+	return this.updateEntitlement(ctx, cmd, corecrud.ServiceUpdateOptions[*domain.Entitlement]{}, false)
+}
+
+func (this *EntitlementDomainServiceImpl) updateEntitlement(
+	ctx corectx.Context, cmd itEnt.UpdateEntitlementCommand,
+	opts corecrud.ServiceUpdateOptions[*domain.Entitlement], rebuild bool,
+) (*itEnt.UpdateEntitlementResult, error) {
 	result, err := corecrud.Update(ctx, corecrud.UpdateParam[domain.Entitlement, *domain.Entitlement]{
 		Action:                 "update entitlement",
 		DbRepoGetter:           this.entitlementRepo,
 		Data:                   cmd,
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
-	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
+	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData || !rebuild {
 		return result, err
 	}
 	if entId := cmd.GetId(); entId != nil {

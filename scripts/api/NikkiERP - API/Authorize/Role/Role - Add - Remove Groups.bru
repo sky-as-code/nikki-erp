@@ -1,0 +1,23 @@
+meta {
+  name: Role - Add / Remove Groups
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{api_host}}/v1/iam/roles/{{role_id}}/manage-groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "add": ["{{group_id}}"],
+      "remove": []
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

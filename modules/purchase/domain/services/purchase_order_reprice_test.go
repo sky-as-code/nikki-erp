@@ -43,7 +43,7 @@ func TestAConfirmedOrderIsNotRepriceable(t *testing.T) {
 
 	require.NotNil(t, refusal)
 	require.Equal(t, 1, refusal.Count())
-	assert.Equal(t, "purchase_order.not_repriceable", (*refusal)[0].Key)
+	assert.Equal(t, "purchase:purchase_order.not_repriceable", (*refusal)[0].Key)
 	assert.Contains(t, (*refusal)[0].Message, status,
 		"the refusal must name the status, or the buyer cannot tell which rule they hit")
 }
@@ -56,7 +56,7 @@ func TestACancelledOrderIsRefusedWithItsOwnMessage(t *testing.T) {
 	refusal := repriceRefusal(orderWith(status, false), status)
 
 	require.NotNil(t, refusal)
-	assert.Equal(t, "purchase_order.cancelled_is_final", (*refusal)[0].Key)
+	assert.Equal(t, "purchase:purchase_order.cancelled_is_final", (*refusal)[0].Key)
 	assert.Contains(t, (*refusal)[0].Message, "duplicate")
 }
 
@@ -69,7 +69,7 @@ func TestALockedDraftIsRefused(t *testing.T) {
 	refusal := repriceRefusal(orderWith(status, true), status)
 
 	require.NotNil(t, refusal)
-	assert.Equal(t, "purchase_order.locked", (*refusal)[0].Key)
+	assert.Equal(t, "purchase:purchase_order.locked", (*refusal)[0].Key)
 	assert.Contains(t, (*refusal)[0].Message, "unlock")
 }
 
@@ -81,7 +81,7 @@ func TestTheCommittedRefusalOutranksTheLockedOne(t *testing.T) {
 	refusal := repriceRefusal(orderWith(status, true), status)
 
 	require.NotNil(t, refusal)
-	assert.Equal(t, "purchase_order.not_repriceable", (*refusal)[0].Key,
+	assert.Equal(t, "purchase:purchase_order.not_repriceable", (*refusal)[0].Key,
 		"unlocking would not make a confirmed order repriceable, so that is not the advice to give")
 }
 

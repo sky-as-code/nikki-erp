@@ -1,50 +1,55 @@
 package dynamicengines
 
 import (
-	"go.bryk.io/pkg/errors"
+	stdErr "errors"
 
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"go.uber.org/dig"
+
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/iam/app"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/iam/domain/services"
+	repo "github.com/sky-as-code/nikki-erp/modules/iam/infra/repository"
+	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
-func userEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.UserSchemaName,
-		DefineActions: defineUserActions,
-	}
+type userEngineParam struct {
+	dig.In
+
+	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_user"`
 }
 
-// defineUserActions adds the user-specific actions on top of the built-in CRUD ones.
-func defineUserActions(userEngine drif.DynamicResourceEngine) error {
-	err := userEngine.DefineAction(drif.DynamicActionDefinition{
-		ActionName:  "send_invitation",
-		ActionType:  drif.ActionTypeGeneric,
-		RestPath:    ":id/send_invitation",
-		Permission:  drif.PermissionUpdate,
-		KeysToFetch: userKeysToFetch,
-		MainProcess: processSendUserInvitation,
-	})
-	return errors.Wrap(err, "failed to define user actions")
-}
-
-func userKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
-	return dmodel.DynamicFields{models.UserFieldId: params[models.UserFieldId]}
-}
-
-// processSendUserInvitation shows how a custom action reaches the record the engine already
-// fetched for it: KeysToFetch identified the user, and the pipeline hands it over as FoundModel,
-// so there is no second read. Sending the actual email is left to the invitation feature.
-func processSendUserInvitation(
-	_ corectx.Context, input drif.ProcessInput,
-) (*drif.ActionResult, error) {
-	if input.FoundModel == nil {
-		return &drif.ActionResult{HasData: false}, nil
-	}
-
-	return &drif.ActionResult{
-		Data:    dmodel.DynamicFields{models.UserFieldEmail: (*input.FoundModel)[models.UserFieldEmail]},
-		HasData: true,
-	}, nil
+// registerUserEngine declares the iam_user onion and publishes its typed layers. User is the first
+// IAM resource on the composable engine; the others still go through engineSpecs.
+func registerUserEngine() error {
+	err := deps.RegisterNamed(
+		composable.EngineDependencyName(models.UserSchemaName),
+		func(param composable.BuildParam, storage filestorage.FileStorageAdapter) composable.DynamicResourceEngineOnion {
+			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+				SchemaName: models.UserSchemaName,
+				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+					return repo.NewUserCrudRepository(base)
+				},
+				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+					return services.NewUserCrudDomainService(base)
+				},
+				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+					return app.NewUserCrudApplicationService(base, storage)
+				},
+			}, param)
+		},
+	)
+	return stdErr.Join(err, deps.Register(
+		func(p userEngineParam) itUser.UserCrudRepository {
+			return p.Engine.Repository().(itUser.UserCrudRepository)
+		},
+		func(p userEngineParam) itUser.UserCrudDomainService {
+			return p.Engine.DomainService().(itUser.UserCrudDomainService)
+		},
+		func(p userEngineParam) itUser.UserCrudApplicationService {
+			return p.Engine.ApplicationService().(itUser.UserCrudApplicationService)
+		},
+	))
 }

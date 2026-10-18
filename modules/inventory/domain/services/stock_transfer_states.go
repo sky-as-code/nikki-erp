@@ -124,14 +124,14 @@ func AssertTransferTransition(from, to string, vErrs *ft.ClientErrors) {
 	if from == models.StockTransferStatusDone && to == models.StockTransferStatusCancelled {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.StockTransferSchemaName,
-			"stock_transfer.done_not_cancellable",
+			ft.ErrorKey("stock_transfer.done_not_cancellable", "inventory"),
 			"a completed transfer cannot be cancelled; record a reverse transfer to undo its movements",
 		))
 		return
 	}
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.StockTransferSchemaName,
-		"stock_transfer.invalid_transition",
+		ft.ErrorKey("stock_transfer.invalid_transition", "inventory"),
 		"a transfer cannot go from '"+from+"' to '"+to+"'",
 	))
 }

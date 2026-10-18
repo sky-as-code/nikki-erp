@@ -55,7 +55,7 @@ func TestCustomerSelectedOutletRefusesWhenNoTargetWasNamed(t *testing.T) {
 	if targetId != "" {
 		t.Errorf("a refused resolution must name no target, got %q", targetId)
 	}
-	if !hasReason(&refusal.ClientErrors, ReasonTargetRequired) {
+	if !hasReasonKey(&refusal.ClientErrors, ReasonTargetRequired) {
 		t.Errorf("the refusal must say a target is required, got %v", refusal.ClientErrors)
 	}
 }

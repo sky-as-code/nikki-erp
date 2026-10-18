@@ -233,7 +233,7 @@ func resolveSellingPlace(
 ) (point dmodel.DynamicFields, channel dmodel.DynamicFields, vErrs *ft.ClientErrors, err error) {
 	refuse := func(field, reason, message string) *ft.ClientErrors {
 		errs := ft.NewClientErrors()
-		errs.Append(*ft.NewBusinessViolation(field, reason, message))
+		errs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(reason, "sales"), message))
 		return errs
 	}
 
@@ -299,11 +299,11 @@ func assertLinesRequestable(lines []CreateOrderLine) *ft.ClientErrors {
 		field := "lines[" + decimal.NewFromInt(int64(index)).String() + "]"
 
 		if !line.Quantity.IsPositive() {
-			vErrs.Append(*ft.NewBusinessViolation(field, ReasonQuantityNotPositive,
+			vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(ReasonQuantityNotPositive, "sales"),
 				"a line must order more than zero; a line ordering nothing is not a line"))
 		}
 		if line.ProductVariantId == "" {
-			vErrs.Append(*ft.NewBusinessViolation(field, ReasonVariantMissing,
+			vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(ReasonVariantMissing, "sales"),
 				"a line must name a product variant"))
 		}
 	}
@@ -356,7 +356,7 @@ func assertVariantsSellable(
 		}
 		vErrs.Append(*ft.NewBusinessViolation(
 			"lines["+decimal.NewFromInt(int64(index)).String()+"]",
-			reason,
+			ft.ErrorKey(reason, "sales"),
 			"product variant '"+line.ProductVariantId+"' cannot be sold"))
 	}
 	if vErrs.Count() == 0 {

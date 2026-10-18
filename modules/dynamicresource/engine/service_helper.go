@@ -174,7 +174,7 @@ func (this *DynamicResourceServiceImpl) uniqueKeysToGraph(
 
 	if !hasKey {
 		cErrs.Append(*ft.NewAnonymousBusinessViolation(
-			"common.err_missing_unique_key",
+			ft.ErrorKey("err_missing_unique_key"),
 			"at least one unique key field is required to identify the record",
 		))
 		return nil, cErrs

@@ -10,7 +10,7 @@ module.exports.testDuplicateValues = function (...uniques) {
         },
       },
     };
-  const schema = oneErrorSchemaNoFieldWithVars('common.err_unique_constraint_violated', 'unique constraint violated {{.uniques}}', varsSchema, 'business');
+  const schema = oneErrorSchemaNoFieldWithVars('common:err_unique_constraint_violated', 'unique constraint violated {{.uniques}}', varsSchema, 'business');
 
   testHttpResponse(schema, 400);
   

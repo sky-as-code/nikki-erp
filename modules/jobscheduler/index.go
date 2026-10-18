@@ -52,6 +52,10 @@ func (*JobSchedulerModule) HasUi() bool {
 	return false
 }
 
+func (*JobSchedulerModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 // Deps implements NikkiModule.
 //
 // core and apptrait are implicit and must not be listed. The scheduler deliberately depends

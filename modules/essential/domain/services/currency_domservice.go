@@ -67,7 +67,7 @@ func (this *CurrencyDomainServiceImpl) Round(
 		return nil, errors.Wrap(err, "round amount")
 	}
 	if found == nil {
-		vErrs.Append(*ft.NewBusinessViolation(models.CurrencyFieldId, "currency.not_found",
+		vErrs.Append(*ft.NewBusinessViolation(models.CurrencyFieldId, ft.ErrorKey("currency.not_found", "essential"),
 			"the currency does not exist"))
 		return &itCurrency.RoundResult{ClientErrors: *vErrs}, nil
 	}
@@ -99,15 +99,15 @@ func (this *CurrencyDomainServiceImpl) AssertUsable(
 
 	switch {
 	case found == nil:
-		vErrs.Append(*ft.NewBusinessViolation(field, "currency.not_found",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("currency.not_found", "essential"),
 			"the currency does not exist"))
 	case !util.ValueOrZeroOf(found.GetIsActive()):
 		// Inactive is not archived. A currency withdrawn from use stays readable so that amounts
 		// already recorded in it still resolve; it simply cannot be chosen again.
-		vErrs.Append(*ft.NewBusinessViolation(field, "currency.not_active",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("currency.not_active", "essential"),
 			"the currency is not active"))
 	case util.ValueOrZeroOf(found.IsArchived()):
-		vErrs.Append(*ft.NewBusinessViolation(field, "currency.archived",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("currency.archived", "essential"),
 			"the currency is archived"))
 	}
 

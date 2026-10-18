@@ -750,7 +750,7 @@ func (this *BaseDynamicRepositoryImpl) assocToJuncRow(
 	if assoc.SrcKeys == nil || assoc.DestKeys == nil {
 		errs.Append(*ft.NewValidationError(
 			prefix,
-			"common.err_missing_required_field",
+			ft.ErrorKey("err_missing_required_field"),
 			"src and dest key maps are required",
 		))
 		return nil, errs

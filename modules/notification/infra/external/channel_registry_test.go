@@ -107,7 +107,7 @@ func TestAChannelIsAskedWhenNoArgumentsWereSent(t *testing.T) {
 
 func TestAChannelsRefusalIsReported(t *testing.T) {
 	web := stub("web", true)
-	web.argsErr = "err_app_link_scheme_unsupported"
+	web.argsErr = "notification:err_app_link_scheme_unsupported"
 	dispatcher, _ := dispatcherWith(web)
 
 	errs := dispatcher.ValidateArgs(nil,
@@ -115,7 +115,7 @@ func TestAChannelsRefusalIsReported(t *testing.T) {
 		[]modconstants.ChannelName{"web"})
 
 	require.Len(t, errs, 1)
-	assert.Equal(t, "err_app_link_scheme_unsupported", errs[0].Key)
+	assert.Equal(t, "notification:err_app_link_scheme_unsupported", errs[0].Key)
 }
 
 func TestUnknownChannelArgumentsAreRefused(t *testing.T) {
@@ -126,7 +126,7 @@ func TestUnknownChannelArgumentsAreRefused(t *testing.T) {
 		[]modconstants.ChannelName{"web"})
 
 	require.Len(t, errs, 1)
-	assert.Equal(t, "err_channel_args_unknown_channel", errs[0].Key)
+	assert.Equal(t, "notification:err_channel_args_unknown_channel", errs[0].Key)
 	// The known names are listed, because a rejection that does not say what was expected cannot
 	// be acted on.
 	assert.Contains(t, errs[0].Message, "web")
@@ -140,7 +140,7 @@ func TestArgumentsForAChannelThatIsNotADestinationAreRefused(t *testing.T) {
 		[]modconstants.ChannelName{"web"})
 
 	require.Len(t, errs, 1)
-	assert.Equal(t, "err_channel_args_not_requested", errs[0].Key)
+	assert.Equal(t, "notification:err_channel_args_not_requested", errs[0].Key)
 	assert.Contains(t, errs[0].Message, "web")
 }
 

@@ -50,13 +50,13 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M2PVRCH00000000000000001', 'Purchase Configuration', 'purchase_configuration', 'Per-organization approval mode, threshold and modification policy', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000002', 'Purchase Sourcing Group', 'purchase_sourcing_group', 'Technical grouping of purchase orders being compared as alternatives', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000003', 'Purchase Agreement', 'purchase_agreement', 'Blanket orders and purchase templates agreed with a vendor', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000004', 'Purchase Agreement Line', 'purchase_agreement_line', 'Committed product, quantity and price on a purchase agreement', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000005', 'Purchase Order', 'purchase_order', 'Requests for quotation and the purchase orders they become', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000006', 'Purchase Order Line', 'purchase_order_line', 'Product, quantity and price on a purchase order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000007', 'Purchase Audit Event', 'purchase_audit_event', 'Immutable record of every purchase order and agreement state change', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2PVRCH00000000000000001', jsonb_build_object('en-US', 'Purchase - Configuration', 'vi-VN', 'Mua hàng - Cấu hình'), 'purchase_configuration', 'Per-organization approval mode, threshold and modification policy', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000002', jsonb_build_object('en-US', 'Purchase - Sourcing Group', 'vi-VN', 'Mua hàng - Nhóm nguồn cung'), 'purchase_sourcing_group', 'Technical grouping of purchase orders being compared as alternatives', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000003', jsonb_build_object('en-US', 'Purchase - Agreement', 'vi-VN', 'Mua hàng - Thỏa thuận'), 'purchase_agreement', 'Blanket orders and purchase templates agreed with a vendor', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000004', jsonb_build_object('en-US', 'Purchase - Agreement Line', 'vi-VN', 'Mua hàng - Dòng thỏa thuận'), 'purchase_agreement_line', 'Committed product, quantity and price on a purchase agreement', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000005', jsonb_build_object('en-US', 'Purchase - Order', 'vi-VN', 'Mua hàng - Đơn hàng'), 'purchase_order', 'Requests for quotation and the purchase orders they become', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000006', jsonb_build_object('en-US', 'Purchase - Order Line', 'vi-VN', 'Mua hàng - Dòng đơn hàng'), 'purchase_order_line', 'Product, quantity and price on a purchase order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000007', jsonb_build_object('en-US', 'Purchase - Audit Event', 'vi-VN', 'Mua hàng - Sự kiện kiểm toán'), 'purchase_audit_event', 'Immutable record of every purchase order and agreement state change', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -66,47 +66,47 @@ BEGIN
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		-- Purchase Configuration
-		('01M2PVRCH00000000000000008', 'Create', 'create', NULL, '01M2PVRCH00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000009', 'Update', 'update', NULL, '01M2PVRCH00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000A', 'Delete', 'delete', NULL, '01M2PVRCH00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000B', 'Read', 'read', NULL, '01M2PVRCH00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000008', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M2PVRCH00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000009', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M2PVRCH00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000A', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M2PVRCH00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000B', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M2PVRCH00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Purchase Sourcing Group
-		('01M2PVRCH0000000000000000C', 'Read', 'read', NULL, '01M2PVRCH00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000C', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M2PVRCH00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Purchase Agreement
-		('01M2PVRCH0000000000000000D', 'Create', 'create', NULL, '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000E', 'Update', 'update', NULL, '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000F', 'Delete', 'delete', NULL, '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000G', 'Read', 'read', NULL, '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000H', 'Set archived status', 'set_archived', 'Archive a purchase agreement so it is hidden from the working set', '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000J', 'Confirm', 'confirm', 'Commit the document, which may route it for approval first', '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000K', 'Close', 'close', 'Close a confirmed agreement to further orders', '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000M', 'Cancel', 'cancel', 'Cancel the document, leaving it and its audit trail in place', '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000D', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000E', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000F', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000G', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000H', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a purchase agreement so it is hidden from the working set', '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000J', jsonb_build_object('en-US', 'Confirm', 'vi-VN', 'Xác nhận'), 'confirm', 'Commit the document, which may route it for approval first', '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000K', jsonb_build_object('en-US', 'Close', 'vi-VN', 'Đóng'), 'close', 'Close a confirmed agreement to further orders', '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000M', jsonb_build_object('en-US', 'Cancel', 'vi-VN', 'Hủy'), 'cancel', 'Cancel the document, leaving it and its audit trail in place', '01M2PVRCH00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Purchase Agreement Line
-		('01M2PVRCH0000000000000000N', 'Create', 'create', NULL, '01M2PVRCH00000000000000004', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000P', 'Update', 'update', NULL, '01M2PVRCH00000000000000004', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000Q', 'Delete', 'delete', NULL, '01M2PVRCH00000000000000004', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000R', 'Read', 'read', NULL, '01M2PVRCH00000000000000004', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000N', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M2PVRCH00000000000000004', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000P', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M2PVRCH00000000000000004', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000Q', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M2PVRCH00000000000000004', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000R', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M2PVRCH00000000000000004', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Purchase Order
-		('01M2PVRCH0000000000000000S', 'Create', 'create', NULL, '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000T', 'Update', 'update', NULL, '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000V', 'Delete', 'delete', NULL, '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000W', 'Read', 'read', NULL, '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000X', 'Send', 'send', 'Send the request for quotation to the vendor', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000Y', 'Confirm', 'confirm', 'Commit the document, which may route it for approval first', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH0000000000000000Z', 'Approve', 'approve', 'Approve a confirmed order that needed approval', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000010', 'Lock', 'lock', 'Close an order to further editing', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000011', 'Unlock', 'unlock', 'Reopen a locked order for editing, with a stated reason', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000012', 'Acknowledge', 'acknowledge', 'Record that the vendor confirmed receipt of the order', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000013', 'Cancel', 'cancel', 'Cancel the document, leaving it and its audit trail in place', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000014', 'Merge', 'merge', 'Merge several draft orders for the same vendor into one', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000020', 'Reprice', 'reprice', 'Re-resolve a draft order''s line prices from the vendor''s current price list', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000S', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000T', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000V', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000W', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000X', jsonb_build_object('en-US', 'Send', 'vi-VN', 'Gửi'), 'send', 'Send the request for quotation to the vendor', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000Y', jsonb_build_object('en-US', 'Confirm', 'vi-VN', 'Xác nhận'), 'confirm', 'Commit the document, which may route it for approval first', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH0000000000000000Z', jsonb_build_object('en-US', 'Approve', 'vi-VN', 'Phê duyệt'), 'approve', 'Approve a confirmed order that needed approval', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000010', jsonb_build_object('en-US', 'Lock', 'vi-VN', 'Khóa'), 'lock', 'Close an order to further editing', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000011', jsonb_build_object('en-US', 'Unlock', 'vi-VN', 'Mở khóa'), 'unlock', 'Reopen a locked order for editing, with a stated reason', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000012', jsonb_build_object('en-US', 'Acknowledge', 'vi-VN', 'Xác nhận đã nhận'), 'acknowledge', 'Record that the vendor confirmed receipt of the order', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000013', jsonb_build_object('en-US', 'Cancel', 'vi-VN', 'Hủy'), 'cancel', 'Cancel the document, leaving it and its audit trail in place', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000014', jsonb_build_object('en-US', 'Merge', 'vi-VN', 'Gộp'), 'merge', 'Merge several draft orders for the same vendor into one', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000020', jsonb_build_object('en-US', 'Reprice', 'vi-VN', 'Định giá lại'), 'reprice', 'Re-resolve a draft order''s line prices from the vendor''s current price list', '01M2PVRCH00000000000000005', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Purchase Order Line
-		('01M2PVRCH00000000000000015', 'Create', 'create', NULL, '01M2PVRCH00000000000000006', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000016', 'Update', 'update', NULL, '01M2PVRCH00000000000000006', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000017', 'Delete', 'delete', NULL, '01M2PVRCH00000000000000006', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000018', 'Read', 'read', NULL, '01M2PVRCH00000000000000006', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000015', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M2PVRCH00000000000000006', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000016', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M2PVRCH00000000000000006', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000017', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M2PVRCH00000000000000006', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000018', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M2PVRCH00000000000000006', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- Purchase Audit Event
-		('01M2PVRCH00000000000000019', 'Read', 'read', NULL, '01M2PVRCH00000000000000007', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2PVRCH00000000000000019', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M2PVRCH00000000000000007', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
@@ -137,7 +137,7 @@ BEGIN
 			"id", "name", "code", "description", "owner_type", "max_scope",
 			"min_scope", "created_at", "etag"
 		) VALUES
-		('01M2PVRCH00000000000000100', 'Vendor Product Price', 'purchase_vendor_product_price', 'What a vendor currently offers a product at, by quantity, unit and validity', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2PVRCH00000000000000100', jsonb_build_object('en-US', 'Purchase - Vendor Product Price', 'vi-VN', 'Mua hàng - Giá sản phẩm của nhà cung cấp'), 'purchase_vendor_product_price', 'What a vendor currently offers a product at, by quantity, unit and validity', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
@@ -149,11 +149,11 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_actions'
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
-		('01M2PVRCH00000000000000101', 'Create', 'create', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000102', 'Update', 'update', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000103', 'Delete', 'delete', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000104', 'Read', 'read', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000105', 'Set archived status', 'set_archived', 'Retire a vendor price from new resolution while keeping it readable for existing orders', '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2PVRCH00000000000000101', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000102', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000103', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000104', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000105', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Retire a vendor price from new resolution while keeping it readable for existing orders', '01M2PVRCH00000000000000100', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

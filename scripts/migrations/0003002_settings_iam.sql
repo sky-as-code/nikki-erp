@@ -46,8 +46,8 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M68990HNE4Z1PR28N6G1R1M2', 'Setting Schema', 'settings_schema', 'What a module declares it can be configured with, per level', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01MACPJ8N53VVRCDGNB7APWHPG', 'Setting Record', 'settings_record', 'One setting value held by one tenant, organization or user', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M68990HNE4Z1PR28N6G1R1M2', jsonb_build_object('en-US', 'Settings - Schema', 'vi-VN', 'Cài đặt - Lược đồ'), 'settings_schema', 'What a module declares it can be configured with, per level', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01MACPJ8N53VVRCDGNB7APWHPG', jsonb_build_object('en-US', 'Settings - Record', 'vi-VN', 'Cài đặt - Bản ghi'), 'settings_record', 'One setting value held by one tenant, organization or user', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -56,14 +56,14 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_actions'
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
-		('01MK4MWVJ323AVHSNC2PEQ8RVN', 'Create', 'create', NULL, '01M68990HNE4Z1PR28N6G1R1M2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01MVHMAN7HPNTT9HY8QZ0JDX7G', 'Read', 'read', NULL, '01M68990HNE4Z1PR28N6G1R1M2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01MZ8XS1ZB97BFSB2BY6GYKCV8', 'Update', 'update', NULL, '01M68990HNE4Z1PR28N6G1R1M2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M8AW2S19YCJJ8WGEZ7RE1KAZ', 'Delete', 'delete', NULL, '01M68990HNE4Z1PR28N6G1R1M2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M7SD4VK23A11JBHHEGTHQH5H', 'Create', 'create', NULL, '01MACPJ8N53VVRCDGNB7APWHPG', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01MFS8N4WX55Z4G0AXKB41SG81', 'Read', 'read', NULL, '01MACPJ8N53VVRCDGNB7APWHPG', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01MBA9WKZ5FN4SAN210Q820H8S', 'Update', 'update', NULL, '01MACPJ8N53VVRCDGNB7APWHPG', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01MNGK482D91SKJP082R2BAM10', 'Delete', 'delete', NULL, '01MACPJ8N53VVRCDGNB7APWHPG', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01MK4MWVJ323AVHSNC2PEQ8RVN', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M68990HNE4Z1PR28N6G1R1M2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01MVHMAN7HPNTT9HY8QZ0JDX7G', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M68990HNE4Z1PR28N6G1R1M2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01MZ8XS1ZB97BFSB2BY6GYKCV8', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M68990HNE4Z1PR28N6G1R1M2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M8AW2S19YCJJ8WGEZ7RE1KAZ', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M68990HNE4Z1PR28N6G1R1M2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M7SD4VK23A11JBHHEGTHQH5H', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01MACPJ8N53VVRCDGNB7APWHPG', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01MFS8N4WX55Z4G0AXKB41SG81', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01MACPJ8N53VVRCDGNB7APWHPG', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01MBA9WKZ5FN4SAN210Q820H8S', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01MACPJ8N53VVRCDGNB7APWHPG', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01MNGK482D91SKJP082R2BAM10', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01MACPJ8N53VVRCDGNB7APWHPG', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

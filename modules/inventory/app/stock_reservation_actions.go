@@ -107,7 +107,7 @@ func bindConsumeRequest(cmd dmodel.DynamicFields) (itStock.ConsumeReservationReq
 		fields, ok := raw.(map[string]any)
 		if !ok {
 			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName,
-				models.StockReservationSchemaName+"."+rsvParamActualSources+"_malformed",
+				ft.ErrorKey(models.StockReservationSchemaName+"."+rsvParamActualSources+"_malformed", "inventory"),
 				"actual source "+itoa(index+1)+" must be an object"))
 			continue
 		}
@@ -203,7 +203,7 @@ func bindReserveRequest(cmd dmodel.DynamicFields, orgId *model.Id) (itStock.Rese
 		parsed, ok := toDecimal(revision)
 		if !ok || !parsed.IsInteger() || !parsed.IsPositive() {
 			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName,
-				models.StockReservationSchemaName+"."+rsvParamSourceRevision+"_malformed",
+				ft.ErrorKey(models.StockReservationSchemaName+"."+rsvParamSourceRevision+"_malformed", "inventory"),
 				"'"+rsvParamSourceRevision+"' must be a positive whole number"))
 		} else {
 			request.SourceRevision = int32(parsed.IntPart())
@@ -213,7 +213,7 @@ func bindReserveRequest(cmd dmodel.DynamicFields, orgId *model.Id) (itStock.Rese
 		parsed, err := model.ParseModelDateTime(until)
 		if err != nil {
 			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName,
-				models.StockReservationSchemaName+"."+rsvParamReservedUntil+"_malformed",
+				ft.ErrorKey(models.StockReservationSchemaName+"."+rsvParamReservedUntil+"_malformed", "inventory"),
 				"'"+rsvParamReservedUntil+"' must be an RFC 3339 UTC timestamp ending in Z"))
 		} else {
 			goTime := parsed.GoTime()
@@ -226,7 +226,7 @@ func bindReserveRequest(cmd dmodel.DynamicFields, orgId *model.Id) (itStock.Rese
 		fields, ok := raw.(map[string]any)
 		if !ok {
 			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName,
-				models.StockReservationSchemaName+"."+rsvParamLines+"_malformed",
+				ft.ErrorKey(models.StockReservationSchemaName+"."+rsvParamLines+"_malformed", "inventory"),
 				"line "+itoa(index+1)+" must be an object"))
 			continue
 		}

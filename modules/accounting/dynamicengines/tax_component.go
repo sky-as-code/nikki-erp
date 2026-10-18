@@ -101,7 +101,7 @@ func assertParentVersionEditable(
 	if status != nil && *status != string(models.LifecycleDraft) {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.TaxComponentFieldParentTaxDefinitionVersionId,
-			"tax.component_parent_not_draft",
+			ft.ErrorKey("tax.component_parent_not_draft", "accounting"),
 			"the tax definition version this component belongs to is no longer a draft; "+
 				"create a new version to change what the tax is composed of"))
 	}
@@ -138,7 +138,7 @@ func assertComponentAcyclic(
 
 	if *childTaxId == *ownerTaxId {
 		vErrs.Append(*ft.NewBusinessViolation(models.TaxComponentFieldComponentTaxId,
-			"tax.component_self_reference",
+			ft.ErrorKey("tax.component_self_reference", "accounting"),
 			"a tax cannot be a component of itself"))
 		return nil
 	}
@@ -149,7 +149,7 @@ func assertComponentAcyclic(
 	}
 	if reaches {
 		vErrs.Append(*ft.NewBusinessViolation(models.TaxComponentFieldComponentTaxId,
-			"tax.component_cycle",
+			ft.ErrorKey("tax.component_cycle", "accounting"),
 			"this component already contains the tax being composed, so the composition "+
 				"would form a cycle"))
 	}

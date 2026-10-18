@@ -111,7 +111,7 @@ func ResolveBasketTax(
 	}
 	if result == nil || !result.HasData {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("tax", "sales_order.tax_unavailable",
+		vErrs.Append(*ft.NewBusinessViolation("tax", ft.ErrorKey("sales_order.tax_unavailable", "sales"),
 			"the tax service returned no result; the order cannot be priced until it does"))
 		return nil, vErrs, nil
 	}
@@ -141,12 +141,12 @@ func assertTaxResolved(result itExt.CalculationResult) *ft.ClientErrors {
 		if reason == "" {
 			reason = "unknown"
 		}
-		vErrs.Append(*ft.NewBusinessViolation("tax", "sales_order.tax_unresolved",
+		vErrs.Append(*ft.NewBusinessViolation("tax", ft.ErrorKey("sales_order.tax_unresolved", "sales"),
 			"tax could not be determined for line '"+line.LineReference+"' ("+reason+"); "+
 				"an undetermined tax must not be recorded as zero"))
 	}
 	if vErrs.Count() == 0 {
-		vErrs.Append(*ft.NewBusinessViolation("tax", "sales_order.tax_unresolved",
+		vErrs.Append(*ft.NewBusinessViolation("tax", ft.ErrorKey("sales_order.tax_unresolved", "sales"),
 			"tax could not be determined for this order; "+
 				"an undetermined tax must not be recorded as zero"))
 	}

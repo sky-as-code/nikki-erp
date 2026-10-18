@@ -133,7 +133,7 @@ func validateRuleConditionWrite(
 	fieldKey := condition.GetFieldKey()
 	if fieldKey != nil && !models.IsKnownContextField(*fieldKey) {
 		vErrs.Append(*ft.NewBusinessViolation(models.TaxRuleConditionFieldFieldKey,
-			"tax.unknown_condition_field",
+			ft.ErrorKey("tax.unknown_condition_field", "accounting"),
 			"'"+*fieldKey+"' is not a field of the tax context that a rule can test"))
 	}
 
@@ -151,19 +151,19 @@ func validateRuleConditionWrite(
 	case models.IsNullaryOperator(*operator):
 		if value != nil {
 			vErrs.Append(*ft.NewBusinessViolation(models.TaxRuleConditionFieldValue,
-				"tax.nullary_operator_takes_no_value",
+				ft.ErrorKey("tax.nullary_operator_takes_no_value", "accounting"),
 				"the operator '"+string(*operator)+"' tests presence and takes no comparison value"))
 		}
 	case models.IsArrayOperator(*operator):
 		if _, isArray := value.([]any); !isArray {
 			vErrs.Append(*ft.NewBusinessViolation(models.TaxRuleConditionFieldValue,
-				"tax.array_operator_requires_list",
+				ft.ErrorKey("tax.array_operator_requires_list", "accounting"),
 				"the operator '"+string(*operator)+"' compares against a list of values"))
 		}
 	default:
 		if value == nil {
 			vErrs.Append(*ft.NewBusinessViolation(models.TaxRuleConditionFieldValue,
-				"tax.operator_requires_value",
+				ft.ErrorKey("tax.operator_requires_value", "accounting"),
 				"the operator '"+string(*operator)+"' needs a comparison value"))
 		}
 	}
@@ -229,19 +229,19 @@ func validateRuleResultWrite(
 	case models.ActionAddTax, models.ActionRemoveTax:
 		if result.GetTaxId() == nil {
 			vErrs.Append(*ft.NewBusinessViolation(models.TaxRuleResultFieldTaxId,
-				"tax.rule_result_requires_tax",
+				ft.ErrorKey("tax.rule_result_requires_tax", "accounting"),
 				"the action '"+string(*action)+"' must name the tax it applies to"))
 		}
 	case models.ActionApplyMapping:
 		if result.GetTaxMappingId() == nil {
 			vErrs.Append(*ft.NewBusinessViolation(models.TaxRuleResultFieldTaxMappingId,
-				"tax.rule_result_requires_mapping",
+				ft.ErrorKey("tax.rule_result_requires_mapping", "accounting"),
 				"the action 'apply_mapping' must name the mapping to apply"))
 		}
 	case models.ActionNoTaxApplicable:
 		if result.GetTaxTreatment() == nil {
 			vErrs.Append(*ft.NewBusinessViolation(models.TaxRuleResultFieldTaxTreatment,
-				"tax.rule_result_requires_treatment",
+				ft.ErrorKey("tax.rule_result_requires_treatment", "accounting"),
 				"the action 'no_tax_applicable' must state whether the supply is "+
 					"non_taxable or out_of_scope"))
 		}

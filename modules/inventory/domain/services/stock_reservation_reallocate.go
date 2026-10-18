@@ -245,7 +245,7 @@ func reallocationShortage(locationId string) ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.StockTransferSchemaName,
-		"stock_transfer.reallocation_insufficient_stock",
+		ft.ErrorKey("stock_transfer.reallocation_insufficient_stock", "inventory"),
 		"location '"+locationId+"' cannot hold all of the requested quantity; the existing "+
 			"reservation is unchanged",
 	))
@@ -259,7 +259,7 @@ func assertReallocationWellFormed(
 ) *itStock.SourceReservationResult {
 	vErrs := ft.NewClientErrors()
 	refuse := func(key, message string) {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, key, message))
+		vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, ft.ErrorKey(key, "inventory"), message))
 	}
 
 	if request.SourceType == "" || request.SourceId == "" {

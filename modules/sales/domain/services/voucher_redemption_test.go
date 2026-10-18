@@ -225,13 +225,13 @@ func TestAStatuslessCodeIsRefused(t *testing.T) {
 	}
 }
 
-// hasReasonKey reports whether any violation carries the given translation key.
+// hasReasonKey reports whether any violation carries the given Sales translation key.
 func hasReasonKey(vErrs *ft.ClientErrors, key string) bool {
 	if vErrs == nil {
 		return false
 	}
 	for _, item := range *vErrs {
-		if item.Key == key {
+		if item.Key == ft.ErrorKey(key, "sales") {
 			return true
 		}
 	}

@@ -40,6 +40,10 @@ func (*AppTraitModule) HasUi() bool {
 	return false
 }
 
+func (*AppTraitModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 // Deps implements NikkiModule.
 func (*AppTraitModule) Deps() []string {
 	return []string{}

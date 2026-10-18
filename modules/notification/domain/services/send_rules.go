@@ -75,25 +75,25 @@ func (this *SendNormalizer) NormalizeSend(
 	recipients := dedupeIds(request.RecipientUserIds)
 	if len(recipients) == 0 {
 		errs = append(errs, *ft.NewValidationError(
-			"recipients", "err_recipients_required",
+			"recipients", ft.ErrorKey("err_recipients_required", "notification"),
 			"a notification must have at least one recipient"))
 	}
 
 	title := strings.TrimSpace(request.Title)
 	if title == "" {
 		errs = append(errs, *ft.NewValidationError(
-			"title", "err_title_required", "title is required"))
+			"title", ft.ErrorKey("err_title_required", "notification"), "title is required"))
 	}
 
 	message := strings.TrimSpace(request.Message)
 	if message == "" {
 		errs = append(errs, *ft.NewValidationError(
-			"message", "err_message_required", "message is required"))
+			"message", ft.ErrorKey("err_message_required", "notification"), "message is required"))
 	}
 
 	if strings.TrimSpace(request.SourceModule) == "" {
 		errs = append(errs, *ft.NewValidationError(
-			"source_module", "err_source_module_required", "source module is required"))
+			"source_module", ft.ErrorKey("err_source_module_required", "notification"), "source module is required"))
 	}
 
 	severity, severityErr := normalizeSeverity(request.Severity)
@@ -159,7 +159,7 @@ func normalizeSeverity(raw string) (models.Severity, *ft.ClientErrorItem) {
 		return severity, nil
 	}
 	return "", ft.NewValidationError(
-		"severity", "err_severity_unknown", "unknown severity: "+trimmed)
+		"severity", ft.ErrorKey("err_severity_unknown", "notification"), "unknown severity: "+trimmed)
 }
 
 // normalizeChannels decides the distribution mode and validates the names.
@@ -177,7 +177,7 @@ func (this *SendNormalizer) normalizeChannels(
 	errs := make(ft.ClientErrors, 0)
 	if len(raw) == 0 {
 		errs = append(errs, *ft.NewValidationError(
-			"channels", "err_channels_empty",
+			"channels", ft.ErrorKey("err_channels_empty", "notification"),
 			"channels must name at least one channel; omit it to use every enabled channel"))
 		return "", nil, errs
 	}
@@ -195,7 +195,7 @@ func (this *SendNormalizer) normalizeChannels(
 
 		if !this.channels.IsRegistered(trimmed) {
 			errs = append(errs, *ft.NewValidationError(
-				"channels", "err_channel_unknown", "unknown channel: "+trimmed))
+				"channels", ft.ErrorKey("err_channel_unknown", "notification"), "unknown channel: "+trimmed))
 			continue
 		}
 		channels = append(channels, modconstants.ChannelName(trimmed))
@@ -206,7 +206,7 @@ func (this *SendNormalizer) normalizeChannels(
 	}
 	if len(channels) == 0 {
 		errs = append(errs, *ft.NewValidationError(
-			"channels", "err_channels_empty", "channels must name at least one channel"))
+			"channels", ft.ErrorKey("err_channels_empty", "notification"), "channels must name at least one channel"))
 		return "", nil, errs
 	}
 	return models.DistributionModeExplicit, channels, nil

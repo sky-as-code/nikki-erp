@@ -12,7 +12,7 @@ post {
 
 body:json {
   {
-    "name": "{{name}}",
+    "name": { "en-US": "{{name}}" },
     "code": "{{resource_code}}",
     "max_scope": "domain",
     "min_scope": "org_unit"
@@ -22,7 +22,7 @@ body:json {
 script:post-response {
   const pkg = require('./scripts/error-400-duplicate-value');
   
-  pkg.testDuplicateValues(["name"], ["code"]);
+  pkg.testDuplicateValues(["code"]);
   
 }
 

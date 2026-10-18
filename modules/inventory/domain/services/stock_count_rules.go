@@ -36,7 +36,7 @@ func AssertCountEnterable(counted decimal.Decimal) *ft.ClientErrors {
 	if counted.LessThan(decimal.Zero) {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.StockQuantSchemaName,
-			"stock_quant.counted_quantity_negative",
+			ft.ErrorKey("stock_quant.counted_quantity_negative", "inventory"),
 			"a counted quantity cannot be negative"))
 	}
 	return vErrs
@@ -49,7 +49,7 @@ func AssertCountApplicable(countQuantitySet bool) *ft.ClientErrors {
 	if !countQuantitySet {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.StockQuantSchemaName,
-			"stock_quant.no_pending_count",
+			ft.ErrorKey("stock_quant.no_pending_count", "inventory"),
 			"this balance has no counted quantity awaiting apply"))
 	}
 	return vErrs
@@ -61,7 +61,7 @@ func StaleCountErrors(snapshot, currentOnHand decimal.Decimal) *ft.ClientErrors 
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.StockQuantSchemaName,
-		"stock_quant.count_snapshot_stale",
+		ft.ErrorKey("stock_quant.count_snapshot_stale", "inventory"),
 		"the balance was "+snapshot.String()+" when this count was entered and is now "+
 			currentOnHand.String()+"; the count must be entered again against the current balance"))
 	return vErrs

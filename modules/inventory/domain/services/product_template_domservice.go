@@ -68,7 +68,7 @@ func AssertTemplateDeletable(
 	}
 	if len(variants) > 0 {
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductTemplateFieldId,
-			"product_template.has_variants",
+			ft.ErrorKey("product_template.has_variants", "inventory"),
 			"this template still has variants; archive it instead of deleting it"))
 	}
 	return nil

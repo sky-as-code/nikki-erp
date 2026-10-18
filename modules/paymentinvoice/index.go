@@ -57,6 +57,10 @@ func (*PaymentInvoiceModule) HasUi() bool {
 	return true
 }
 
+func (*PaymentInvoiceModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 func (*PaymentInvoiceModule) Deps() []string {
 	return []string{
 		"dynamicresource",

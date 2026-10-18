@@ -84,7 +84,7 @@ func SplitBill(
 	}
 	if source == nil {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("source_bill_id", ReasonBillNotFound,
+		vErrs.Append(*ft.NewBusinessViolation("source_bill_id", ft.ErrorKey(ReasonBillNotFound, "sales"),
 			"no bill exists with id '"+params.SourceBillId+"'"))
 		return nil, vErrs, nil
 	}
@@ -98,7 +98,7 @@ func SplitBill(
 	}
 	if !acquired {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("source_bill_id", ReasonLockUnavailable,
+		vErrs.Append(*ft.NewBusinessViolation("source_bill_id", ft.ErrorKey(ReasonLockUnavailable, "sales"),
 			"this order is being changed by another request; try again"))
 		return nil, vErrs, nil
 	}
@@ -170,7 +170,7 @@ func splitUnderLock(
 	// LINE apportions exactly, and this is the statement about the bills as a set.
 	if !totalAfter.Equal(totalBefore) {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("parts", ReasonSplitTotalChanged,
+		vErrs.Append(*ft.NewBusinessViolation("parts", ft.ErrorKey(ReasonSplitTotalChanged, "sales"),
 			"the split produced "+totalAfter.String()+" from a bill of "+totalBefore.String()))
 		return nil, vErrs, nil
 	}
@@ -187,7 +187,7 @@ func splitUnderLock(
 func assertSplittable(source dmodel.DynamicFields, params SplitBillParams) *ft.ClientErrors {
 	refuse := func(field, reason, message string) *ft.ClientErrors {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(field, reason, message))
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(reason, "sales"), message))
 		return vErrs
 	}
 
@@ -232,14 +232,14 @@ func assertAllocationsCoverSource(
 	for lineId, want := range wanted {
 		got := given[lineId]
 		if !got.Equal(want) {
-			vErrs.Append(*ft.NewBusinessViolation("parts", ReasonAllocationIncomplete,
+			vErrs.Append(*ft.NewBusinessViolation("parts", ft.ErrorKey(ReasonAllocationIncomplete, "sales"),
 				"order line '"+lineId+"' holds "+want.String()+
 					" on this bill but the split allocates "+got.String()))
 		}
 	}
 	for lineId := range given {
 		if _, present := wanted[lineId]; !present {
-			vErrs.Append(*ft.NewBusinessViolation("parts", ReasonAllocationIncomplete,
+			vErrs.Append(*ft.NewBusinessViolation("parts", ft.ErrorKey(ReasonAllocationIncomplete, "sales"),
 				"the split allocates order line '"+lineId+
 					"', which this bill does not hold"))
 		}

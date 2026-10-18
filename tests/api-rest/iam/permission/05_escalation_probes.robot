@@ -98,6 +98,64 @@ A Plain User Cannot Add An Entitlement To An Existing Role
     ...    json=${{ {'add': []} }}    expected_status=any
     Request Should Be Refused    ${resp}    Managing a role's entitlements
 
+A Plain User Cannot Join A Role From The Role Side
+    [Documentation]    The role-side assignment route writes the same edge as
+    ...    /users/:id/roles, so it must refuse the same caller.
+    ${resp}=    POST On Session    attacker    ${ROLE_API}/${ESC_ROLE_ID}/manage-users
+    ...    json=${{ {'add': [$ATTACKER_ID], 'remove': []} }}    expected_status=any
+    Request Should Be Refused    ${resp}    Self-assigning through the role side
+    Permission Should Be Denied    attacker    read:iam_role:tenant
+
+A Plain User Cannot Strip A Holder From The Role Side
+    [Documentation]    Removing someone else's access is as much a privilege as granting it.
+    ${resp}=    POST On Session    attacker    ${ROLE_API}/${ESC_ROLE_ID}/manage-users
+    ...    json=${{ {'add': [], 'remove': [$VICTIM_ID]} }}    expected_status=any
+    Request Should Be Refused    ${resp}    Unassigning another user through the role side
+    Permission Should Be Granted    victim    read:iam_role:tenant
+
+A Plain User Cannot Assign A Group From The Role Side
+    ${gname}=    Unique Display Name    Perm Escalation Role Group
+    ${resp}=    POST On Session    api    ${GROUP_API}
+    ...    json=${{ {'name': {'en-US': $gname}, 'description': {'en-US': 'Escalation target'}, 'owner_id': $VICTIM_ID} }}
+    ${group_id}    ${getag}=    Response Should Be Create Success    ${resp}
+    Track Permission Fixture    groups    ${group_id}
+
+    ${resp}=    POST On Session    attacker    ${ROLE_API}/${ESC_ROLE_ID}/manage-groups
+    ...    json=${{ {'add': [$group_id], 'remove': []} }}    expected_status=any
+    Request Should Be Refused    ${resp}    Assigning a group through the role side
+
+A Plain User Cannot Widen A Role Through Its Update
+    [Documentation]    PATCH /roles/:id carries an entitlement delta. Without update on
+    ...    iam_role the whole request is refused, delta included.
+    ${resp}=    GET On Session    api    ${ROLE_API}/${ESC_ROLE_ID}
+    ${etag}=    Set Variable    ${resp.json()}[item][etag]
+    ${grant}=    Create Dictionary    resource_id=${ESC_RESOURCE_ID}    action_id=${None}
+    ${resp}=    PATCH On Session    attacker    ${ROLE_API}/${ESC_ROLE_ID}
+    ...    json=${{ {'etag': $etag, 'entitlements': {'add': [$grant], 'remove': []}} }}    expected_status=any
+    Request Should Be Refused    ${resp}    Widening a role through its update
+    Permission Should Be Denied    victim    update:iam_role:tenant
+
+Update On Roles Without Manage Entitlements Cannot Carry A Delta
+    [Documentation]    update on iam_role edits a role's fields; changing what it grants also
+    ...    needs manage_entitlements. A holder of update alone must not use the delta as a
+    ...    side door, nor have it silently dropped while the field edit goes through.
+    ${resource_id}    ${update_id}=    Resolve Resource And Action    iam_role    update
+    ${editor_role}=    Create Probe Role    Perm Escalation Role Editor    ${update_id}    ${resource_id}
+    Assign Role To User    ${ATTACKER_ID}    ${editor_role}
+
+    ${resp}=    GET On Session    api    ${ROLE_API}/${ESC_ROLE_ID}
+    ${etag}=    Set Variable    ${resp.json()}[item][etag]
+    ${grant}=    Create Dictionary    resource_id=${ESC_RESOURCE_ID}    action_id=${None}
+    ${resp}=    PATCH On Session    attacker    ${ROLE_API}/${ESC_ROLE_ID}
+    ...    json=${{ {'etag': $etag, 'description': 'Robot escalation', 'entitlements': {'add': [$grant], 'remove': []}} }}
+    ...    expected_status=any
+    Response Should Be Permission Refusal    ${resp}    Granting with update permission only
+    Permission Should Be Denied    victim    update:iam_role:tenant
+    ${resp}=    GET On Session    api    ${ROLE_API}/${ESC_ROLE_ID}
+    Should Be Equal    ${resp.json()}[item][etag]    ${etag}
+    ...    msg=The role changed although its update was refused
+    [Teardown]    Unassign Role From User    ${ATTACKER_ID}    ${editor_role}
+
 A Plain User Cannot Make Themselves The Owner
     [Documentation]    `is_owner` short-circuits every permission check, so it must be
     ...    unreachable from a user-supplied payload on both create and update.
@@ -172,5 +230,5 @@ A Suspended User Cannot Sign In Again
     # unrelated payload complaint.
     Should Be True    ${resp.status_code} in (400, 401, 403)
     ...    msg=Signing in as a suspended user returned ${resp.status_code}; expected a refusal
-    Should Contain    ${resp.text}    err_account_not_active
+    Should Contain    ${resp.text}    iam:err_account_not_active
     ...    msg=Sign-in was refused for a reason other than the account status: ${resp.text}

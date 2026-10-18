@@ -121,7 +121,7 @@ func (this *InboxApplicationServiceImpl) MarkRead(
 
 	if len(command.NotificationIds) == 0 {
 		errs := ft.ClientErrors{*ft.NewValidationError(
-			"notification_ids", "err_notification_ids_required",
+			"notification_ids", ft.ErrorKey("err_notification_ids_required", "notification"),
 			"at least one notification id is required")}
 		return &it.MarkReadResult{ClientErrors: errs}, nil
 	}
@@ -190,7 +190,7 @@ func (this *InboxApplicationServiceImpl) resolveOrg(
 	}
 	if orgId == nil {
 		errs := ft.ClientErrors{*ft.NewValidationError(
-			basemodel.FieldOrgId, "err_org_id_required",
+			basemodel.FieldOrgId, ft.ErrorKey("err_org_id_required", "notification"),
 			"this resource is scoped to an organization, so 'org_id' is required")}
 		return nil, &errs
 	}

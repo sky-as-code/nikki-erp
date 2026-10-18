@@ -98,6 +98,9 @@ Import Creates A Missing Referenced Category When Asked
     Should Be Equal    ${parent}[name][en-US]    Missing Parent ${run}
     ${child}=    Find Category By Code    crt${run}
     Should Be Equal    ${child}[parent_category_id]    ${parent}[id]
+    Ensure Root Product Category
+    Should Be Equal    ${parent}[parent_category_id]    ${ROOT_CATEGORY_ID}
+    ...    msg=A referenced category created by the import has no parent of its own, so it lands under All
     [Teardown]    Delete Categories By Codes    crt${run}    missing_parent_${run}
 
 Create Without Code Derives It From The Name
@@ -154,7 +157,7 @@ Import Without A Mandatory Column Is Refused
     ${mapping}=    Evaluate    {'language_code': 'en-US', 'create_missing_references': False, 'columns': [{'source': 'Mã', 'target': 'code'}, {'source': 'Tên', 'target': 'name'}]}
     ${resp}=    Import File    ${csv}    ${mapping}
     Should Be Equal As Integers    ${resp.status_code}    400
-    Should Be Equal    ${resp.json()}[0][key]    err_import_mandatory_unmapped
+    Should Be Equal    ${resp.json()}[0][key]    common:err_import_mandatory_unmapped
     Should Contain    ${resp.json()}[0][vars][fields]    external_id
     ${found}=    Search Categories By Code    mand${run}
     Should Be Empty    ${found}    msg=A refused import must write nothing
@@ -169,7 +172,7 @@ Import With An Unknown Target Field Is Refused
     ${resp}=    Import File    ${csv}    ${mapping}
     Should Be Equal As Integers    ${resp.status_code}    400
     ${keys}=    Evaluate    [e['key'] for e in $resp.json()]
-    Should Contain    ${keys}    err_import_mapping_unknown_field
+    Should Contain    ${keys}    common:err_import_mapping_unknown_field
 
 Import With An Unsupported Extension Is Refused
     [Tags]    negative
@@ -179,7 +182,7 @@ Import With An Unsupported Extension Is Refused
     ...    ${run}-1,ext${run},Ext ${run}
     ${resp}=    Import File    ${path}    ${DEFAULT_MAPPING}    filename=import_ext_${run}.xls
     Should Be Equal As Integers    ${resp.status_code}    400
-    Should Be Equal    ${resp.json()}[0][key]    err_file_type_not_allowed
+    Should Be Equal    ${resp.json()}[0][key]    common:err_file_type_not_allowed
 
 Import Without A File Is Refused
     [Tags]    negative
@@ -187,7 +190,7 @@ Import Without A File Is Refused
     ${resp}=    POST On Session    api    ${IMPORT_API}
     ...    files=${files}    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    400
-    Should Be Equal    ${resp.json()}[0][key]    err_import_file_required
+    Should Be Equal    ${resp.json()}[0][key]    common:err_import_file_required
 
 Bulk Create Writes Items Then Updates Them By External Id
     ${run}=    Unique Suffix
@@ -225,7 +228,7 @@ Bulk Create Without Items Is Refused
     ${resp}=    POST On Session    api    ${BULK_API}
     ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    400
-    Should Be Equal    ${resp.json()}[0][key]    err_import_items_required
+    Should Be Equal    ${resp.json()}[0][key]    common:err_import_items_required
 
 Plain User Is Refused Import
     [Documentation]    Import writes records, so it is gated like create.
@@ -274,16 +277,18 @@ Get Category Label
     RETURN    ${resp.json()}[item][name][en-US]
 
 Search Categories By Code
-    [Documentation]    Lists the categories of the org whose code is one of the given codes.
-    ...    The default page is wide enough for the handful of rows a test writes.
+    [Documentation]    Lists the categories of the org whose code is one of the given codes,
+    ...    filtering on the server: an org accumulates categories across runs, so a single
+    ...    unfiltered page cannot be relied on to hold the rows a test wrote.
     [Arguments]    @{codes}
-    ${wanted}=    Create List    @{codes}
-    ${resp}=    GET On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 200} }}
-    Response Status Should Be    ${resp}    200
-    # A comprehension is its own Python scope, so the list goes in through the namespace.
-    ${scope}=    Create Dictionary    wanted=${wanted}    items=${resp.json()}[items]
-    ${found}=    Evaluate    [i for i in items if i.get('code') in wanted]    namespace=${scope}
+    ${found}=    Create List
+    FOR    ${code}    IN    @{codes}
+        ${graph}=    Evaluate    json.dumps({"if": ["code", "=", $code]})    json
+        ${resp}=    GET On Session    api    ${PRODUCT_CATEGORY_API}
+        ...    params=${{ {'org_id': $INV_ORG_ID, 'graph': $graph} }}
+        Response Status Should Be    ${resp}    200
+        ${found}=    Combine Lists    ${found}    ${resp.json()}[items]
+    END
     RETURN    ${found}
 
 Find Category By Code

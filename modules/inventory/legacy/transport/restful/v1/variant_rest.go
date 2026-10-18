@@ -90,7 +90,8 @@ func (this VariantRest) UploadImage(echoCtx *echo.Context) (err error) {
 				file, openErr := req.FileHeader.Open()
 				if openErr != nil {
 					panic(httpserver.JsonBadRequest(echoCtx,
-						fault.ClientErrors{*fault.NewValidationError("file", "file_error", openErr.Error())}))
+						fault.ClientErrors{*fault.NewValidationError("file", fault.ErrorKey("file_error", "inventory"),
+							openErr.Error())}))
 				}
 				defer file.Close()
 				cmd.File = file

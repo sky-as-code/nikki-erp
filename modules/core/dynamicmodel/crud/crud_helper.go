@@ -741,7 +741,7 @@ func validateUniques(ctx corectx.Context, data dmodel.DynamicFields, dbRepo dyn.
 
 	if len(collidingKeys) > 0 {
 		vErrs.Append(*ft.NewAnonymousBusinessViolation(
-			"common.err_unique_constraint_violated",
+			ft.ErrorKey("err_unique_constraint_violated"),
 			"unique constraint violated {{uniques}}",
 			map[string]any{"uniques": collidingKeys},
 		))

@@ -51,6 +51,10 @@ func (*InventoryModule) HasUi() bool {
 	return true
 }
 
+func (*InventoryModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 // Deps implements NikkiModule.
 func (*InventoryModule) Deps() []string {
 	return []string{

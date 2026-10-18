@@ -1,0 +1,30 @@
+meta {
+  name: Role - Update Entitlements
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{api_host}}/v1/iam/roles/{{role_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "etag": "{{etag}}",
+    "description": "Optional role field changes go along with the delta",
+    "entitlements": {
+      "add": [
+        { "resource_id": "{{resource_id}}", "action_id": "{{action_id}}", "description": "Read only" },
+        { "resource_id": "{{resource_id}}", "action_id": null }
+      ],
+      "remove": ["{{entitlement_id}}"]
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

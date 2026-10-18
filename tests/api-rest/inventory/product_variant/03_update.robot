@@ -106,7 +106,7 @@ Update Writing A Computed Field Is Refused
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=Writing a computed field must be refused, not quietly ignored
-    Should Not Contain    ${resp.text}    err_etag_mismatched
+    Should Not Contain    ${resp.text}    common:err_etag_mismatched
     ...    msg=The refusal must come from the computed field, not from a stale etag
 
 Update Writing An Edge Is Refused
@@ -119,7 +119,7 @@ Update Writing An Edge Is Refused
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=Writing an edge field must be refused, not quietly ignored
-    Should Not Contain    ${resp.text}    err_etag_mismatched
+    Should Not Contain    ${resp.text}    common:err_etag_mismatched
     ...    msg=The refusal must come from the edge field, not from a stale etag
 
 Update With Missing Etag Fails

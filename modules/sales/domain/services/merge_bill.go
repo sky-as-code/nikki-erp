@@ -52,7 +52,7 @@ func MergeBills(
 	}
 	if len(params.SourceBillIds) < 2 {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ReasonMergeNeedsTwoBills,
+		vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ft.ErrorKey(ReasonMergeNeedsTwoBills, "sales"),
 			"a merge needs at least two bills"))
 		return nil, vErrs, nil
 	}
@@ -66,7 +66,7 @@ func MergeBills(
 	}
 	if first == nil {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ReasonBillNotFound,
+		vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ft.ErrorKey(ReasonBillNotFound, "sales"),
 			"no bill exists with id '"+params.SourceBillIds[0]+"'"))
 		return nil, vErrs, nil
 	}
@@ -80,7 +80,7 @@ func MergeBills(
 	}
 	if !acquired {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ReasonLockUnavailable,
+		vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ft.ErrorKey(ReasonLockUnavailable, "sales"),
 			"this order is being changed by another request; try again"))
 		return nil, vErrs, nil
 	}
@@ -140,7 +140,7 @@ func mergeUnderLock(
 
 	if !totalAfter.Equal(totalBefore) {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ReasonMergeTotalChanged,
+		vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ft.ErrorKey(ReasonMergeTotalChanged, "sales"),
 			"the merge produced "+totalAfter.String()+" from bills totalling "+
 				totalBefore.String()))
 		return nil, vErrs, nil
@@ -168,7 +168,7 @@ func loadMergeableBills(
 	for _, billId := range billIds {
 		if seen[billId] {
 			// The same bill twice would be cancelled twice and counted twice in the total.
-			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ReasonMergeNeedsTwoBills,
+			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ft.ErrorKey(ReasonMergeNeedsTwoBills, "sales"),
 				"bill '"+billId+"' is listed more than once"))
 			continue
 		}
@@ -179,13 +179,13 @@ func loadMergeableBills(
 			return nil, nil, err
 		}
 		if record == nil {
-			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ReasonBillNotFound,
+			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ft.ErrorKey(ReasonBillNotFound, "sales"),
 				"no bill exists with id '"+billId+"'"))
 			continue
 		}
 
 		if !models.NewSalesBillFrom(record).IsOpen() {
-			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ReasonBillNotOpen,
+			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ft.ErrorKey(ReasonBillNotOpen, "sales"),
 				"bill '"+billId+"' is '"+stringOf(record, models.SalesBillFieldStatus)+
 					"' and cannot be merged"))
 			continue
@@ -193,7 +193,7 @@ func loadMergeableBills(
 
 		if stringOf(record, models.SalesBillFieldSalesOrderId) != orderId {
 			// The allocation invariant is per order, so a cross-order merge would break it on both.
-			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ReasonDifferentOrders,
+			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ft.ErrorKey(ReasonDifferentOrders, "sales"),
 				"bill '"+billId+"' belongs to a different sales order"))
 			continue
 		}
@@ -204,7 +204,7 @@ func loadMergeableBills(
 		} else if billCurrency != currency {
 			// Refused rather than converted: Sales has no FX, and inventing a rate would be a pricing
 			// decision nobody authorised.
-			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ReasonCurrencyMismatch,
+			vErrs.Append(*ft.NewBusinessViolation("source_bill_ids", ft.ErrorKey(ReasonCurrencyMismatch, "sales"),
 				"bill '"+billId+"' is in "+billCurrency+" but the others are in "+currency))
 			continue
 		}

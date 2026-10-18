@@ -96,7 +96,7 @@ func writeChanges(
 // offending input, and naming one would point a form at the wrong box.
 func violationResult(schemaName, key, message string) *dyn.OpResult[dyn.MutateResultData] {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(schemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(schemaName, ft.ErrorKey(key, "sales"), message))
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
 }
 

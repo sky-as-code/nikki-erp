@@ -97,7 +97,7 @@ func hasViolation(vErrs *ft.ClientErrors, reason string) bool {
 		return false
 	}
 	for _, violation := range *vErrs {
-		if violation.Key == reason {
+		if violation.Key == ft.ErrorKey(reason, "sales") {
 			return true
 		}
 	}

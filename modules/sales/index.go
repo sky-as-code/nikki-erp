@@ -61,6 +61,10 @@ func (*SalesModule) HasUi() bool {
 	return true
 }
 
+func (*SalesModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+
 // Deps names every module Sales reads through a port. essential and core are injected automatically
 // by buildDependencyGraph; essential is named anyway because Sales consumes it directly.
 func (*SalesModule) Deps() []string {

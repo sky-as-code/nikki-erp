@@ -51,17 +51,17 @@ func TestBuildResolveSelectionQueryRejectsMalformedBodies(t *testing.T) {
 		{
 			name:    "a missing template is rejected",
 			params:  dmodel.DynamicFields{"selections": []any{}},
-			wantKey: "product_template.template_id_required",
+			wantKey: "inventory:product_template.template_id_required",
 		},
 		{
 			name:    "an empty template id is rejected",
 			params:  dmodel.DynamicFields{"template_id": ""},
-			wantKey: "product_template.template_id_required",
+			wantKey: "inventory:product_template.template_id_required",
 		},
 		{
 			name:    "selections that are not a list are rejected",
 			params:  dmodel.DynamicFields{"template_id": "01TEMPLATE", "selections": "black"},
-			wantKey: "product_template.selections_malformed",
+			wantKey: "inventory:product_template.selections_malformed",
 		},
 		{
 			name: "a selection that is not an object is rejected",
@@ -69,7 +69,7 @@ func TestBuildResolveSelectionQueryRejectsMalformedBodies(t *testing.T) {
 				"template_id": "01TEMPLATE",
 				"selections":  []any{"black"},
 			},
-			wantKey: "product_template.selection_malformed",
+			wantKey: "inventory:product_template.selection_malformed",
 		},
 		{
 			name: "a selection missing its value is rejected",
@@ -77,7 +77,7 @@ func TestBuildResolveSelectionQueryRejectsMalformedBodies(t *testing.T) {
 				"template_id": "01TEMPLATE",
 				"selections":  []any{map[string]any{"attribute_id": "01COLOR"}},
 			},
-			wantKey: "product_template.selection_incomplete",
+			wantKey: "inventory:product_template.selection_incomplete",
 		},
 	}
 

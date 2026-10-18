@@ -401,6 +401,6 @@ func itemsOfAttempt(ctx corectx.Context, attemptId string) ([]dmodel.DynamicFiel
 func attemptRefusal(reason, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesFulfillmentAttemptSchemaName, reason, message))
+		models.SalesFulfillmentAttemptSchemaName, ft.ErrorKey(reason, "sales"), message))
 	return vErrs
 }

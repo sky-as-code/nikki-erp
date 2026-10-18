@@ -310,7 +310,7 @@ func alternativesWarningResult(open []dmodel.DynamicFields) *dyn.OpResult[dyn.Mu
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.PurchaseOrderSchemaName,
-		"purchase_order.open_alternatives",
+		ft.ErrorKey("purchase_order.open_alternatives", "purchase"),
 		"this order has open alternatives ("+strings.Join(codes, ", ")+"); "+
 			"say whether to keep or cancel them",
 		map[string]any{

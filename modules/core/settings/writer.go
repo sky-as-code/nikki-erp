@@ -47,8 +47,8 @@ func (this *ModuleSettingsWriter) Update(ctx corectx.Context, cmd UpdateSettings
 	}
 	schema, ok := this.schemas[cmd.Level]
 	if !ok || !IsKnownLevel(cmd.Level) {
-		return clientErrorsResult(ft.ClientErrors{*ft.NewValidationError("level", "settings.schema_not_registered",
-			"this module has registered no settings at this level")}), nil
+		return clientErrorsResult(ft.ClientErrors{*ft.NewValidationError("level",
+			ft.ErrorKey("settings.schema_not_registered"), "this module has registered no settings at this level")}), nil
 	}
 	if vErrs := ValidateItems(schema, cmd.Items); vErrs.Count() > 0 {
 		return clientErrorsResult(vErrs), nil

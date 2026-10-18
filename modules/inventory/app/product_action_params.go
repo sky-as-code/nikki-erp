@@ -19,7 +19,7 @@ func buildResolveSelectionQuery(
 	templateId, ok := params["template_id"].(string)
 	if !ok || templateId == "" {
 		vErrs.Append(*ft.NewBusinessViolation("template_id",
-			"product_template.template_id_required",
+			ft.ErrorKey("product_template.template_id_required", "inventory"),
 			"a product template must be identified"))
 		return query, vErrs
 	}
@@ -39,7 +39,7 @@ func buildResolveSelectionQuery(
 	items, ok := raw.([]any)
 	if !ok {
 		vErrs.Append(*ft.NewBusinessViolation("selections",
-			"product_template.selections_malformed",
+			ft.ErrorKey("product_template.selections_malformed", "inventory"),
 			"selections must be a list of attribute-value choices"))
 		return query, vErrs
 	}
@@ -59,7 +59,7 @@ func toAttributeSelection(item any) (itProduct.AttributeSelection, *ft.ClientErr
 	fields, ok := item.(map[string]any)
 	if !ok {
 		return itProduct.AttributeSelection{}, ft.NewBusinessViolation("selections",
-			"product_template.selection_malformed",
+			ft.ErrorKey("product_template.selection_malformed", "inventory"),
 			"each selection must be an object with attribute_id and value_id")
 	}
 
@@ -70,7 +70,7 @@ func toAttributeSelection(item any) (itProduct.AttributeSelection, *ft.ClientErr
 
 	if input.AttributeId == "" || input.ValueId == "" {
 		return itProduct.AttributeSelection{}, ft.NewBusinessViolation("selections",
-			"product_template.selection_incomplete",
+			ft.ErrorKey("product_template.selection_incomplete", "inventory"),
 			"each selection must carry both attribute_id and value_id")
 	}
 	return input.ToSelection(), nil

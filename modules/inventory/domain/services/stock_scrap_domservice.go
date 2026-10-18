@@ -130,7 +130,7 @@ func (this *StockScrapDomainServiceImpl) loadScrap(
 	vErrs := ft.NewClientErrors()
 	if scrapId == "" {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockScrapSchemaName, "stock_scrap.id_required", "a scrap must be identified"))
+			models.StockScrapSchemaName, ft.ErrorKey("stock_scrap.id_required", "inventory"), "a scrap must be identified"))
 		return nil, vErrs, nil
 	}
 
@@ -146,7 +146,7 @@ func (this *StockScrapDomainServiceImpl) loadScrap(
 	}
 	if found == nil || !found.HasData {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockScrapSchemaName, "stock_scrap.not_found",
+			models.StockScrapSchemaName, ft.ErrorKey("stock_scrap.not_found", "inventory"),
 			"no stock scrap with id '"+scrapId+"'"))
 		return nil, vErrs, nil
 	}
@@ -165,13 +165,13 @@ func assertScrapQuantityPositive(params dmodel.DynamicFields) *ft.ClientErrors {
 	quantity, err := decimalFromAny(raw)
 	if err != nil {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockScrapSchemaName, "stock_scrap.quantity_malformed",
+			models.StockScrapSchemaName, ft.ErrorKey("stock_scrap.quantity_malformed", "inventory"),
 			"'quantity' must be a decimal number"))
 		return vErrs
 	}
 	if quantity.LessThanOrEqual(decimal.Zero) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockScrapSchemaName, "stock_scrap.quantity_not_positive",
+			models.StockScrapSchemaName, ft.ErrorKey("stock_scrap.quantity_not_positive", "inventory"),
 			"a scrap must remove a quantity greater than zero"))
 	}
 	return vErrs
@@ -210,7 +210,7 @@ func applyEmptyStringDefault(params dmodel.DynamicFields, field string) {
 
 func scrapViolation(key, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.StockScrapSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.StockScrapSchemaName, ft.ErrorKey(key, "inventory"), message))
 	return vErrs
 }
 

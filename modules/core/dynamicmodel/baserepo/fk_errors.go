@@ -6,8 +6,10 @@ import (
 	"github.com/lib/pq"
 	"go.bryk.io/pkg/errors"
 
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules"
 )
 
 // Foreign key violations are ordinary business refusals, not server faults, and this is where
@@ -18,20 +20,29 @@ import (
 // Deleting a parent something still references is a refusal to destroy a reference — the row
 // is fine, the delete is not. Left unhandled both escape as an unwrapped driver error and the
 // client gets a 500 for what it could have fixed.
-const (
+var (
 	// ErrorKeyForeignKeyViolation reports a reference to something that does not exist, raised
 	// on INSERT and UPDATE.
-	ErrorKeyForeignKeyViolation = "foreign_key_violation"
+	ErrorKeyForeignKeyViolation = ft.ErrorKey("foreign_key_violation")
 
-	// ErrorKeyResourceInUse reports a parent that may not be deleted while referenced. It is
-	// deliberately the same key usagecheck.ErrorKeyResourceInUse reports before the statement
-	// runs: a client meets one condition, whether the business check caught it or the database
-	// did, and the two must not look like different problems.
-	ErrorKeyResourceInUse = "resource_in_use"
-
-	// pgForeignKeyViolation is SQLSTATE 23503, the only code either case arrives as.
-	pgForeignKeyViolation = "23503"
+	// ErrorKeyResourceInUse reports a parent that may not be deleted while referenced. Its var
+	// "referenced_by" is itself a translation key ("<namespace>:<child table>"), so a client can
+	// name the referencing table in its own language. usagecheck reports the same condition under
+	// a different key because its vars differ: one message template cannot serve both.
+	ErrorKeyResourceInUse = ft.ErrorKey("resource_in_use")
 )
+
+// pgForeignKeyViolation is SQLSTATE 23503, the only code either case arrives as.
+const pgForeignKeyViolation = "23503"
+
+// loadedModules is a variable so tests can supply the module set. In the app it reads the list
+// the application registers once every module has initialized; a refusal raised before that
+// finds nothing and falls back to the common namespace.
+var loadedModules = func() []modules.InCodeModule {
+	var mods []modules.InCodeModule
+	_ = deps.Invoke(func(registered []modules.InCodeModule) { mods = registered })
+	return mods
+}
 
 // normalizeFkViolation converts a foreign key violation into client errors, and returns nil for
 // anything else so the caller can pass other errors through untouched.
@@ -52,11 +63,11 @@ func normalizeFkViolation(err error, schema *dmodel.ModelSchema, isDelete bool) 
 		// On delete the constraint belongs to the CHILD table, so its name identifies who still
 		// references this row, not a column of it. The violation is reported against the row as
 		// a whole for that reason.
+		table := referencingTableOf(pgErr, schema)
 		clientErrs.Append(*ft.NewBusinessViolation(
 			"", ErrorKeyResourceInUse,
-			"this record is still referenced by "+referencingTableOf(pgErr, schema)+
-				" and cannot be deleted",
-			map[string]any{"referenced_by": referencingTableOf(pgErr, schema)},
+			"this record is still referenced by "+table+" and cannot be deleted",
+			map[string]any{"referenced_by": ft.ErrorKey(table, languageNamespaceOf(table))},
 		))
 		return clientErrs
 	}
@@ -108,4 +119,20 @@ func referencingTableOf(pgErr *pq.Error, schema *dmodel.ModelSchema) string {
 		return pgErr.Constraint
 	}
 	return "another record"
+}
+
+// languageNamespaceOf answers the translation namespace a table's label lives in: the Name() of
+// the module whose ModelPrefix() the table is named with. The two differ for some modules
+// ("vdmc" tables belong to "vendingmachine"), which is why the prefix alone is not the answer.
+// The longest matching prefix wins; a table no loaded module claims falls back to "common".
+func languageNamespaceOf(table string) string {
+	namespace, matchedLen := "common", 0
+	for _, mod := range loadedModules() {
+		prefix := mod.ModelPrefix()
+		if prefix == "" || len(prefix) <= matchedLen || !strings.HasPrefix(table, prefix+"_") {
+			continue
+		}
+		namespace, matchedLen = mod.Name(), len(prefix)
+	}
+	return namespace
 }

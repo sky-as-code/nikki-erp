@@ -34,6 +34,8 @@
 	"fields.value_json": "Giá trị có cấu trúc",
 	"fields.website": "Trang web",
 	"module.label.contacts": "Danh bạ",
+	"party.archived": "Đối tác đã được lưu trữ và không thể dùng cho giao dịch mới.",
+	"party.not_found": "Không tìm thấy đối tác với mã này trong tổ chức.",
 	"status.active": "Đang hoạt động",
 	"status.blacklisted": "Danh sách đen",
 	"status.proposed": "Đề xuất",

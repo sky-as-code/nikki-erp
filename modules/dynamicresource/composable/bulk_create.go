@@ -34,18 +34,20 @@ type BulkRow struct {
 func paramsToBulkRows(cmd BulkCreateCommand) ([]BulkRow, *ft.ClientErrors) {
 	raw, ok := cmd[fieldNameItems]
 	if !ok || raw == nil {
-		return nil, singleClientError(ft.NewValidationError(fieldNameItems, "err_import_items_required", "items are required"))
+		return nil, singleClientError(ft.NewValidationError(fieldNameItems,
+			ft.ErrorKey("err_import_items_required"), "items are required"))
 	}
 	list, ok := raw.([]any)
 	if !ok {
-		return nil, singleClientError(ft.NewValidationError(fieldNameItems, "err_import_items_not_a_list", "items must be a list"))
+		return nil, singleClientError(ft.NewValidationError(fieldNameItems,
+			ft.ErrorKey("err_import_items_not_a_list"), "items must be a list"))
 	}
 	rows := make([]BulkRow, 0, len(list))
 	for i, item := range list {
 		fields, ok := item.(map[string]any)
 		if !ok {
 			return nil, singleClientError(ft.NewValidationError(
-				fieldNameItems, "err_import_item_not_a_record", "every item must be an object",
+				fieldNameItems, ft.ErrorKey("err_import_item_not_a_record"), "every item must be an object",
 				map[string]any{"index": i},
 			))
 		}

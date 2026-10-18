@@ -93,7 +93,7 @@ func (this *SalesOrderLineAllocationDomainServiceImpl) Create(
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.SalesOrderLineAllocationFieldQuantity,
-		"sales_order_line_allocation.quantity_not_positive",
+		ft.ErrorKey("sales_order_line_allocation.quantity_not_positive", "sales"),
 		"an allocation must supply more than zero"))
 	return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 }
@@ -176,7 +176,7 @@ func (this *SalesOrderLineDomainServiceImpl) assertSnapshotsUnchanged(
 		if sameFieldValue(stored[field], submitted) {
 			continue
 		}
-		vErrs.Append(*ft.NewBusinessViolation(field, "sales_order_line.snapshot_immutable",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("sales_order_line.snapshot_immutable", "sales"),
 			"'"+field+"' is a snapshot of the moment of sale and cannot change after the order "+
 				"is confirmed"))
 	}
@@ -197,27 +197,30 @@ func assertQuantitiesConsistent(fields dmodel.DynamicFields) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	if !ordered.IsPositive() {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.SalesOrderLineFieldOrderedQuantity, "sales_order_line.ordered_quantity_not_positive",
+			models.SalesOrderLineFieldOrderedQuantity,
+			ft.ErrorKey("sales_order_line.ordered_quantity_not_positive", "sales"),
 			"a line must order more than zero; a line ordering nothing is not a line"))
 	}
 	if fulfilled.IsNegative() {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.SalesOrderLineFieldFulfilledQuantity, "sales_order_line.fulfilled_quantity_negative",
+			models.SalesOrderLineFieldFulfilledQuantity,
+			ft.ErrorKey("sales_order_line.fulfilled_quantity_negative", "sales"),
 			"fulfilled quantity cannot be negative"))
 	} else if fulfilled.GreaterThan(ordered) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.SalesOrderLineFieldFulfilledQuantity, "sales_order_line.fulfilled_exceeds_ordered",
+			models.SalesOrderLineFieldFulfilledQuantity,
+			ft.ErrorKey("sales_order_line.fulfilled_exceeds_ordered", "sales"),
 			"cannot fulfil "+fulfilled.String()+" of a line that ordered "+ordered.String()))
 	}
 	if returned.IsNegative() {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.SalesOrderLineFieldReturnedQuantity, "sales_order_line.returned_quantity_negative",
+			models.SalesOrderLineFieldReturnedQuantity, ft.ErrorKey("sales_order_line.returned_quantity_negative", "sales"),
 			"returned quantity cannot be negative"))
 	} else if returned.GreaterThan(fulfilled) {
 		// Measured against fulfilled rather than ordered on purpose: a customer cannot return what
 		// was never handed over.
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.SalesOrderLineFieldReturnedQuantity, "sales_order_line.returned_exceeds_fulfilled",
+			models.SalesOrderLineFieldReturnedQuantity, ft.ErrorKey("sales_order_line.returned_exceeds_fulfilled", "sales"),
 			"cannot return "+returned.String()+" of a line that fulfilled "+fulfilled.String()))
 	}
 

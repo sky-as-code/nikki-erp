@@ -36,7 +36,7 @@ Confirm Is Refused On An Agreement With No Line
     ${id}    ${etag}=    Create Purchase Agreement
     ${resp}=    POST On Session    api    ${AGREEMENT_API}/${id}/confirm
     ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
-    Response Should Be Purchase Violation    ${resp}    purchase_agreement.no_lines
+    Response Should Be Purchase Violation    ${resp}    purchase:purchase_agreement.no_lines
     [Teardown]    Delete Agreement Fixture    ${id}
 
 Create Rfq Raises An Order From The Agreement
@@ -66,7 +66,7 @@ Create Rfq Is Refused On A Draft Agreement
     Create Agreement Line    ${id}
     ${resp}=    POST On Session    api    ${AGREEMENT_API}/${id}/create_rfq
     ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
-    Response Should Be Purchase Violation    ${resp}    purchase_agreement.not_confirmed
+    Response Should Be Purchase Violation    ${resp}    purchase:purchase_agreement.not_confirmed
     [Teardown]    Delete Agreement Fixture    ${id}
 
 Close Is Refused While Orders Are Open Against The Agreement
@@ -79,7 +79,7 @@ Close Is Refused While Orders Are Open Against The Agreement
     ${order_id}=    Set Variable    ${created.json()}[id]
     ${resp}=    POST On Session    api    ${AGREEMENT_API}/${agreement_id}/close
     ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
-    Response Should Be Purchase Violation    ${resp}    purchase_agreement.has_open_orders
+    Response Should Be Purchase Violation    ${resp}    purchase:purchase_agreement.has_open_orders
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${order_id}
     ...    AND    Delete Agreement Fixture    ${agreement_id}
@@ -135,5 +135,5 @@ Delete Is Refused On A Confirmed Agreement
     ${agreement_id}=    Create Confirmed Agreement
     ${resp}=    DELETE On Session    api    ${AGREEMENT_API}/${agreement_id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
-    Response Should Be Purchase Violation    ${resp}    purchase_agreement.not_deletable
+    Response Should Be Purchase Violation    ${resp}    purchase:purchase_agreement.not_deletable
     [Teardown]    Delete Agreement Fixture    ${agreement_id}

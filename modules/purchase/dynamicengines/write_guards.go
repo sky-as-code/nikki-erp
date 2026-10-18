@@ -26,7 +26,7 @@ func rejectAuditEventWrite(
 ) error {
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.AuditEventSchemaName,
-		"purchase_audit_event.not_client_writable",
+		ft.ErrorKey("purchase_audit_event.not_client_writable", "purchase"),
 		"audit events are written by the system when a purchase order or agreement changes state; "+
 			"they cannot be created, edited or removed",
 	))
@@ -47,7 +47,7 @@ func rejectSourcingGroupWrite(
 ) error {
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.SourcingGroupSchemaName,
-		"purchase_sourcing_group.not_client_writable",
+		ft.ErrorKey("purchase_sourcing_group.not_client_writable", "purchase"),
 		"sourcing groups are created by adding an alternative to a purchase order and removed when "+
 			"fewer than two alternatives remain",
 	))

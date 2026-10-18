@@ -160,13 +160,13 @@ func (this *UomConversionDomainServiceImpl) loadUom(
 		return nil, errors.Wrap(err, "loadUom")
 	}
 	if !found.HasData {
-		vErrs.Append(*ft.NewBusinessViolation(field, "uom.not_found", "the UoM does not exist"))
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("uom.not_found", "essential"), "the UoM does not exist"))
 		return nil, nil
 	}
 
 	uom := models.NewUomFrom(found.Data)
 	if uom.GetFactor() == nil {
-		vErrs.Append(*ft.NewBusinessViolation(field, "uom.missing_factor",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("uom.missing_factor", "essential"),
 			"the UoM has no conversion factor"))
 		return nil, nil
 	}
@@ -183,7 +183,7 @@ func (this *UomConversionDomainServiceImpl) loadCategoryReferenceUom(
 
 	categoryId := source.GetCategoryId()
 	if categoryId == nil {
-		vErrs.Append(*ft.NewBusinessViolation(models.UomFieldCategoryId, "uom.missing_category",
+		vErrs.Append(*ft.NewBusinessViolation(models.UomFieldCategoryId, ft.ErrorKey("uom.missing_category", "essential"),
 			"the UoM belongs to no UoM Category"))
 		return nil, nil
 	}
@@ -193,14 +193,15 @@ func (this *UomConversionDomainServiceImpl) loadCategoryReferenceUom(
 		return nil, errors.Wrap(err, "loadCategoryReferenceUom")
 	}
 	if len(found) == 0 {
-		vErrs.Append(*ft.NewBusinessViolation(models.UomFieldCategoryId, "uom.category_has_no_reference",
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.UomFieldCategoryId, ft.ErrorKey("uom.category_has_no_reference", "essential"),
 			"the UoM Category has no Reference UoM"))
 		return nil, nil
 	}
 
 	reference := models.NewUomFrom(found[0])
 	if reference.GetFactor() == nil {
-		vErrs.Append(*ft.NewBusinessViolation(models.UomFieldCategoryId, "uom.missing_factor",
+		vErrs.Append(*ft.NewBusinessViolation(models.UomFieldCategoryId, ft.ErrorKey("uom.missing_factor", "essential"),
 			"the Reference UoM has no conversion factor"))
 		return nil, nil
 	}
@@ -213,14 +214,14 @@ func (this *UomConversionDomainServiceImpl) loadCategoryReferenceUom(
 func assertSameCategory(source *models.Uom, target *models.Uom, vErrs *ft.ClientErrors) {
 	sourceCat, targetCat := source.GetCategoryId(), target.GetCategoryId()
 	if sourceCat == nil || targetCat == nil || *sourceCat != *targetCat {
-		vErrs.Append(*ft.NewBusinessViolation("target_uom_id", "uom.category_mismatch",
+		vErrs.Append(*ft.NewBusinessViolation("target_uom_id", ft.ErrorKey("uom.category_mismatch", "essential"),
 			"the source and target UoM must belong to the same UoM Category"))
 	}
 }
 
 func assertNotArchivedTarget(target *models.Uom, vErrs *ft.ClientErrors) {
 	if isArchived := target.IsArchived(); isArchived != nil && *isArchived {
-		vErrs.Append(*ft.NewBusinessViolation("target_uom_id", "uom.target_archived",
+		vErrs.Append(*ft.NewBusinessViolation("target_uom_id", ft.ErrorKey("uom.target_archived", "essential"),
 			"an archived UoM cannot be the target of a conversion"))
 	}
 }

@@ -70,6 +70,8 @@ CREATE TABLE "essential_modules" (
   "version" character varying NOT NULL,
   "has_ui" boolean NOT NULL,
   "model_prefix" character varying NULL,
+  "category" character varying NULL,
+  "is_enabled" boolean NOT NULL,
   "etag" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,

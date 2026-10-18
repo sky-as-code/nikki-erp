@@ -183,12 +183,14 @@ func (this *ProductServiceImpl) validateAttributeProduct(ctx corectx.Context, at
 		return err
 	}
 	if productResult == nil || !productResult.HasData {
-		vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldProductId, "product.not_found", "product does not exist"))
+		vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldProductId, ft.ErrorKey("product.not_found", "inventory"),
+			"product does not exist"))
 		return nil
 	}
 
 	if checkArchived && productResult.Data.IsArchived() != nil && *productResult.Data.IsArchived() {
-		vErrs.Append(*ft.NewValidationError(domain.AttrFieldProductId, "product.archived", "cannot add attribute to archived product"))
+		vErrs.Append(*ft.NewValidationError(domain.AttrFieldProductId, ft.ErrorKey("product.archived", "inventory"),
+			"cannot add attribute to archived product"))
 	}
 
 	return nil
@@ -212,7 +214,7 @@ func (this *ProductServiceImpl) validateAttributeEnumValues(attribute *domain.At
 		if len(enumValueNumber) == 0 {
 			vErrs.Append(*ft.NewValidationError(
 				domain.AttrFieldEnumValueNumber,
-				"attribute.enum_value_number_required",
+				ft.ErrorKey("attribute.enum_value_number_required", "inventory"),
 				"enum_value_number is required when data_type is number and is_enum is true",
 			))
 		}
@@ -222,7 +224,7 @@ func (this *ProductServiceImpl) validateAttributeEnumValues(attribute *domain.At
 		if len(enumValueText) == 0 {
 			vErrs.Append(*ft.NewValidationError(
 				domain.AttrFieldEnumValueText,
-				"attribute.enum_value_text_required",
+				ft.ErrorKey("attribute.enum_value_text_required", "inventory"),
 				"enum_value_text is required when data_type is text and is_enum is true",
 			))
 		}

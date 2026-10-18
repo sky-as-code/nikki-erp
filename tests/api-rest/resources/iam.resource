@@ -20,6 +20,9 @@ ${TEMP_PASSWORD_API}    /v1/iam/passwords/passwordtmp
 ${IAM_SCHEMA_DIR}       ${CURDIR}/schemas/iam
 # Records created by the permission suites, keyed by kind, removed by their teardown.
 ${PERM_FIXTURES}        ${None}
+# 1x1 images for the avatar file-field suite, base64.
+&{AVATAR_SAMPLES}       png=iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+...                     gif=R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==
 # Ids of the locale-ordering groups, removed by Delete Locale Group Fixtures.
 ${LOCALE_GROUP_IDS}     ${None}
 
@@ -195,7 +198,7 @@ Read Roles As
 Response Should Be Permission Refusal
     [Documentation]    Asserts the response is an authorization refusal.
     ...
-    ...    An insufficient-permission error answers 403 with `err_insufficient_permissions`
+    ...    An insufficient-permission error answers 403 with `common:err_insufficient_permissions`
     ...    in the body; 401 is also accepted, since an unauthenticated caller is refused
     ...    before the permission is ever evaluated. Both status and body are asserted: the
     ...    status is what clients branch on, and the body is what makes the refusal
@@ -204,7 +207,7 @@ Response Should Be Permission Refusal
     Should Be True    ${resp.status_code} in (401, 403)
     ...    msg=${what} returned ${resp.status_code}; expected 403 (or 401 when unauthenticated)
     IF    ${resp.status_code} == 403
-        Should Contain    ${resp.text}    err_insufficient_permissions
+        Should Contain    ${resp.text}    common:err_insufficient_permissions
         ...    msg=${what} returned 403 for a reason other than permissions: ${resp.text}
     END
 
@@ -425,3 +428,19 @@ Locale Group Names In Result
     ${names}=    Evaluate
     ...    [i['name'].get($language) for i in $resp.json()['items'] if isinstance(i.get('name'), dict) and $LOCALE_GROUP_SUFFIX in str(i['name'])]
     RETURN    ${names}
+
+Avatar File Part
+    [Documentation]    A multipart ``file`` part holding a real image: the upload sniffs the
+    ...    content, so a made-up body under an image name is refused.
+    [Arguments]    ${kind}=png
+    ${bytes}=    Evaluate    __import__('base64').b64decode($AVATAR_SAMPLES[$kind])
+    ${part}=    Evaluate    {'file': ('avatar.' + $kind, $bytes, 'image/' + $kind)}
+    RETURN    ${part}
+
+Response Should Be File Field Error
+    [Documentation]    One error from the files/:field routes, matched on field and key.
+    [Arguments]    ${resp}    ${field}    ${key}
+    Should Be Equal As Integers    ${resp.status_code}    400
+    ${errors}=    Evaluate    [e for e in $resp.json() if e.get('field') == $field and $key in e.get('key', '')]
+    Should Not Be Empty    ${errors}
+    ...    msg=Expected a '${key}' error on '${field}', got ${resp.text}

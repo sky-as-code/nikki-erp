@@ -42,15 +42,15 @@ type ImportCommand struct {
 
 // Request-level error keys: the caller can fix these by changing the request.
 const (
-	ErrImportFileRequired       = "err_import_file_required"
-	ErrImportFileUnreadable     = "err_import_file_unreadable"
-	ErrImportTooManyRows        = "err_import_too_many_rows"
-	ErrImportMappingInvalid     = "err_import_mapping_invalid"
-	ErrImportMappingUnknown     = "err_import_mapping_unknown_field"
-	ErrImportMappingDuplicate   = "err_import_mapping_duplicate_target"
-	ErrImportHeaderNotFound     = "err_import_header_not_found"
-	ErrImportMandatoryUnmapped  = "err_import_mandatory_unmapped"
-	ErrImportStorageUnavailable = "err_import_storage_unavailable"
+	ErrImportFileRequired       = "common:err_import_file_required"
+	ErrImportFileUnreadable     = "common:err_import_file_unreadable"
+	ErrImportTooManyRows        = "common:err_import_too_many_rows"
+	ErrImportMappingInvalid     = "common:err_import_mapping_invalid"
+	ErrImportMappingUnknown     = "common:err_import_mapping_unknown_field"
+	ErrImportMappingDuplicate   = "common:err_import_mapping_duplicate_target"
+	ErrImportHeaderNotFound     = "common:err_import_header_not_found"
+	ErrImportMandatoryUnmapped  = "common:err_import_mandatory_unmapped"
+	ErrImportStorageUnavailable = "common:err_import_storage_unavailable"
 )
 
 // Row-level error keys specific to import (the shared ones live in bulk_create.go).

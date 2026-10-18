@@ -78,17 +78,20 @@ func assertFactorMatchesUomType(uom *models.Uom, vErrs *ft.ClientErrors) {
 	switch *uomType {
 	case models.UomTypeReference:
 		if !factor.Equal(decimal.NewFromInt(1)) {
-			vErrs.Append(*ft.NewBusinessViolation(models.UomFieldFactor, "uom.reference_factor_must_be_one",
+			vErrs.Append(*ft.NewBusinessViolation(
+				models.UomFieldFactor, ft.ErrorKey("uom.reference_factor_must_be_one", "essential"),
 				"the Reference UoM must have a conversion factor of exactly 1"))
 		}
 	case models.UomTypeBiggerEqual:
 		if factor.LessThan(decimal.NewFromInt(1)) {
-			vErrs.Append(*ft.NewBusinessViolation(models.UomFieldFactor, "uom.bigger_equal_factor_out_of_range",
+			vErrs.Append(*ft.NewBusinessViolation(
+				models.UomFieldFactor, ft.ErrorKey("uom.bigger_equal_factor_out_of_range", "essential"),
 				"a bigger_equal UoM must have a conversion factor greater than or equal to 1"))
 		}
 	case models.UomTypeSmaller:
 		if !factor.IsPositive() || !factor.LessThan(decimal.NewFromInt(1)) {
-			vErrs.Append(*ft.NewBusinessViolation(models.UomFieldFactor, "uom.smaller_factor_out_of_range",
+			vErrs.Append(*ft.NewBusinessViolation(
+				models.UomFieldFactor, ft.ErrorKey("uom.smaller_factor_out_of_range", "essential"),
 				"a smaller UoM must have a conversion factor greater than 0 and less than 1"))
 		}
 	}
@@ -103,7 +106,7 @@ func assertRoundingInRange(uom *models.Uom, vErrs *ft.ClientErrors) {
 		return
 	}
 	if rounding.IsNegative() || rounding.GreaterThan(decimal.NewFromInt(1)) {
-		vErrs.Append(*ft.NewBusinessViolation(models.UomFieldRounding, "uom.rounding_out_of_range",
+		vErrs.Append(*ft.NewBusinessViolation(models.UomFieldRounding, ft.ErrorKey("uom.rounding_out_of_range", "essential"),
 			"rounding precision must be greater than or equal to 0 and less than or equal to 1"))
 	}
 }
@@ -136,7 +139,8 @@ func assertSingleReferenceUom(
 		if selfId != nil && other.GetId() != nil && *other.GetId() == *selfId {
 			continue
 		}
-		vErrs.Append(*ft.NewBusinessViolation(models.UomFieldUomType, "uom.category_already_has_reference",
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.UomFieldUomType, ft.ErrorKey("uom.category_already_has_reference", "essential"),
 			"this UoM Category already has a Reference UoM"))
 		return nil
 	}
@@ -173,7 +177,7 @@ func assertImmutableWhileInUse(
 	}
 
 	for _, field := range immutableFields {
-		vErrs.Append(*ft.NewBusinessViolation(field, "uom.immutable_while_in_use",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("uom.immutable_while_in_use", "essential"),
 			"this UoM is already used by "+by+" transactions; "+
 				"archive it and create a replacement instead"))
 	}

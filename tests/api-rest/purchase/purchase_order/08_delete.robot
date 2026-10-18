@@ -19,7 +19,7 @@ Delete Is Refused On A Draft Order
     ${id}    ${etag}=    Create Purchase Order
     ${resp}=    DELETE On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
-    Response Should Be Purchase Violation    ${resp}    purchase_order.not_deletable
+    Response Should Be Purchase Violation    ${resp}    purchase:purchase_order.not_deletable
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
 Delete Is Refused On A Confirmed Order
@@ -30,7 +30,7 @@ Delete Is Refused On A Confirmed Order
     Confirm Purchase Order    ${id}
     ${resp}=    DELETE On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
-    Response Should Be Purchase Violation    ${resp}    purchase_order.not_deletable
+    Response Should Be Purchase Violation    ${resp}    purchase:purchase_order.not_deletable
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${order}    200

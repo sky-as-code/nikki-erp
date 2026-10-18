@@ -1,19 +1,3 @@
--- Create "inventory_storage_categories" table
-CREATE TABLE "inventory_storage_categories" (
-  "id" character varying NOT NULL,
-  "code" character varying NOT NULL,
-  "name" jsonb NOT NULL,
-  "max_weight" numeric NULL,
-  "allow_new_item_policy" character varying NOT NULL,
-  "description" jsonb NULL,
-  "org_id" character varying NOT NULL,
-  "is_archived" boolean NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "etag" character varying NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "invty_stor_cats_tid_code_org_id_ukey" UNIQUE ("code", "org_id")
-);
 -- Create "inventory_integration_outbox" table
 CREATE TABLE "inventory_integration_outbox" (
   "id" character varying NOT NULL,
@@ -41,6 +25,22 @@ CREATE INDEX "invty_outbox_occurred_idx" ON "inventory_integration_outbox" ("occ
 CREATE INDEX "invty_outbox_published_idx" ON "inventory_integration_outbox" ("published_at");
 -- Create index "invty_outbox_type_idx" to table: "inventory_integration_outbox"
 CREATE INDEX "invty_outbox_type_idx" ON "inventory_integration_outbox" ("event_type");
+-- Create "inventory_storage_categories" table
+CREATE TABLE "inventory_storage_categories" (
+  "id" character varying NOT NULL,
+  "code" character varying NOT NULL,
+  "name" jsonb NOT NULL,
+  "max_weight" numeric NULL,
+  "allow_new_item_policy" character varying NOT NULL,
+  "description" jsonb NULL,
+  "org_id" character varying NOT NULL,
+  "is_archived" boolean NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "invty_stor_cats_tid_code_org_id_ukey" UNIQUE ("code", "org_id")
+);
 -- Create "inventory_warehouses" table
 CREATE TABLE "inventory_warehouses" (
   "id" character varying NOT NULL,
@@ -159,7 +159,9 @@ CREATE TABLE "inventory_product_categories" (
   "id" character varying NOT NULL,
   "code" character varying NOT NULL,
   "name" jsonb NOT NULL,
-  "parent_category_id" character varying NULL,
+  "parent_category_id" character varying NOT NULL,
+  "is_root" boolean NULL,
+  "canonical_name" jsonb NULL,
   "sequence" integer NULL,
   "description" jsonb NULL,
   "source_system" character varying NOT NULL,
@@ -173,6 +175,8 @@ CREATE TABLE "inventory_product_categories" (
   CONSTRAINT "inventory_product_categories_code_org_id_ukey" UNIQUE ("code", "org_id"),
   CONSTRAINT "inventory_product_categories_parent_category_id_fkey" FOREIGN KEY ("parent_category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+-- Create index "invty_prod_cats_tid_org_root_ukey" to table: "inventory_product_categories"
+CREATE UNIQUE INDEX "invty_prod_cats_tid_org_root_ukey" ON "inventory_product_categories" ("org_id", "is_root") WHERE (is_root IS NOT NULL);
 -- Create index "invty_prod_cats_tid_src_sys_ext_id_ukey" to table: "inventory_product_categories"
 CREATE UNIQUE INDEX "invty_prod_cats_tid_src_sys_ext_id_ukey" ON "inventory_product_categories" ("source_system", "external_id") WHERE (external_id IS NOT NULL);
 -- Create "inventory_product_types" table

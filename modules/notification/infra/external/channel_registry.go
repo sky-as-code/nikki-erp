@@ -117,7 +117,7 @@ func (this *ChannelDispatcher) ValidateArgs(
 		channel, exists := this.channels[name]
 		if !exists {
 			errs = append(errs, *ft.NewValidationError(
-				field, "err_channel_args_unknown_channel",
+				field, ft.ErrorKey("err_channel_args_unknown_channel", "notification"),
 				fmt.Sprintf("'%s' is not a known channel; known channels are %s",
 					key, joinNames(this.Names()))))
 			continue
@@ -128,7 +128,7 @@ func (this *ChannelDispatcher) ValidateArgs(
 			// sender never wrote it down: it is resolved from what the organization has enabled,
 			// and without seeing it the rejection cannot be acted on.
 			errs = append(errs, *ft.NewValidationError(
-				field, "err_channel_args_not_requested",
+				field, ft.ErrorKey("err_channel_args_not_requested", "notification"),
 				fmt.Sprintf("arguments were given for '%s', which this notification does not go to; it goes to %s",
 					key, joinNames(requested))))
 			continue

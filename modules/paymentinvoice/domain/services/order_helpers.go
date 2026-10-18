@@ -34,13 +34,13 @@ func EngineFor(schemaName string) (drif.DynamicResourceEngine, error) {
 
 // appendOrderViolation records a rule the caller broke, against the order resource.
 func appendOrderViolation(vErrs *ft.ClientErrors, key string, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(models.OrderSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.OrderSchemaName, ft.ErrorKey(key, "paymentinvoice"), message))
 }
 
 // appendFieldViolation records a rule broken by one named input, so the caller is told which of
 // their fields to fix rather than only that something was wrong.
 func appendFieldViolation(vErrs *ft.ClientErrors, field string, key string, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(field, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "paymentinvoice"), message))
 }
 
 // withOrderTransaction runs body inside one transaction on a scoped copy of the context.

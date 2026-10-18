@@ -19,7 +19,7 @@ import (
 
 func refusalWith(reason string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName, reason, "because"))
+	vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName, ft.ErrorKey(reason, "sales"), "because"))
 	return vErrs
 }
 

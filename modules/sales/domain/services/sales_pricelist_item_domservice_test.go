@@ -40,7 +40,7 @@ func TestVariantRuleWithoutATargetIsRefused(t *testing.T) {
 	row := fixedPriceRow()
 	delete(row, models.SalesPricelistItemFieldProductVariantId)
 
-	if key := keyOf(row); key != "sales_pricelist_item.target_required" {
+	if key := keyOf(row); key != "sales:sales_pricelist_item.target_required" {
 		t.Fatalf("a variant rule naming no variant matches nothing; got %q", key)
 	}
 }
@@ -51,7 +51,7 @@ func TestVariantRuleWithASurplusTargetIsRefused(t *testing.T) {
 	row := fixedPriceRow()
 	row[models.SalesPricelistItemFieldProductCategoryId] = "CAT1"
 
-	if key := keyOf(row); key != "sales_pricelist_item.target_not_allowed" {
+	if key := keyOf(row); key != "sales:sales_pricelist_item.target_not_allowed" {
 		t.Fatalf("a variant rule must not also name a category; got %q", key)
 	}
 }
@@ -60,7 +60,7 @@ func TestAllProductsRuleWithATargetIsRefused(t *testing.T) {
 	row := fixedPriceRow()
 	row[models.SalesPricelistItemFieldAppliesTo] = models.PricelistAppliesToAllProducts
 
-	if key := keyOf(row); key != "sales_pricelist_item.target_not_allowed" {
+	if key := keyOf(row); key != "sales:sales_pricelist_item.target_not_allowed" {
 		t.Fatalf("a rule for everything must name nothing; got %q", key)
 	}
 }
@@ -101,7 +101,7 @@ func TestFixedPriceWithoutAPriceIsRefused(t *testing.T) {
 	row := fixedPriceRow()
 	delete(row, models.SalesPricelistItemFieldPrice)
 
-	if key := keyOf(row); key != "sales_pricelist_item.price_required" {
+	if key := keyOf(row); key != "sales:sales_pricelist_item.price_required" {
 		t.Fatalf("a fixed-price rule with no price would quote nothing; got %q", key)
 	}
 }
@@ -111,7 +111,7 @@ func TestFixedPriceWithoutAUnitIsRefused(t *testing.T) {
 	row := fixedPriceRow()
 	delete(row, models.SalesPricelistItemFieldUomId)
 
-	if key := keyOf(row); key != "sales_pricelist_item.uom_required" {
+	if key := keyOf(row); key != "sales:sales_pricelist_item.uom_required" {
 		t.Fatalf("a fixed price needs the unit it is per; got %q", key)
 	}
 }
@@ -138,7 +138,7 @@ func TestDiscountRuleWithoutAPercentageIsRefused(t *testing.T) {
 		models.SalesPricelistItemFieldCalculationMethod: models.PricelistMethodDiscount,
 	}
 
-	if key := keyOf(row); key != "sales_pricelist_item.discount_required" {
+	if key := keyOf(row); key != "sales:sales_pricelist_item.discount_required" {
 		t.Fatalf("a discount rule must state its percentage; got %q", key)
 	}
 }
@@ -150,7 +150,7 @@ func TestFormulaWithoutABaseSourceIsRefused(t *testing.T) {
 		models.SalesPricelistItemFieldCalculationMethod: models.PricelistMethodFormula,
 	}
 
-	if key := keyOf(row); key != "sales_pricelist_item.base_source_required" {
+	if key := keyOf(row); key != "sales:sales_pricelist_item.base_source_required" {
 		t.Fatalf("a formula must say what it prices from; got %q", key)
 	}
 }
@@ -163,7 +163,7 @@ func TestFormulaOnAnotherPricelistMustNameIt(t *testing.T) {
 		models.SalesPricelistItemFieldBasePriceSource:   models.PricelistBaseSourceOtherPricelist,
 	}
 
-	if key := keyOf(row); key != "sales_pricelist_item.base_pricelist_required" {
+	if key := keyOf(row); key != "sales:sales_pricelist_item.base_pricelist_required" {
 		t.Fatalf("OTHER_PRICELIST must name the pricelist; got %q", key)
 	}
 }
@@ -189,7 +189,7 @@ func TestInvertedValidityWindowIsRefused(t *testing.T) {
 	row[models.SalesPricelistItemFieldValidFrom] = "2026-12-01T00:00:00Z"
 	row[models.SalesPricelistItemFieldValidTo] = "2026-01-01T00:00:00Z"
 
-	if key := keyOf(row); key != "sales_pricelist_item.validity_inverted" {
+	if key := keyOf(row); key != "sales:sales_pricelist_item.validity_inverted" {
 		t.Fatalf("a window that closes before it opens must be refused; got %q", key)
 	}
 }
@@ -207,7 +207,7 @@ func TestUnknownMethodIsRefused(t *testing.T) {
 	row := fixedPriceRow()
 	row[models.SalesPricelistItemFieldCalculationMethod] = "MAGIC"
 
-	if key := keyOf(row); key != "sales_pricelist_item.method_unknown" {
+	if key := keyOf(row); key != "sales:sales_pricelist_item.method_unknown" {
 		t.Fatalf("an unrecognised method must be refused; got %q", key)
 	}
 }
@@ -216,7 +216,7 @@ func TestUnknownAppliesToIsRefused(t *testing.T) {
 	row := fixedPriceRow()
 	row[models.SalesPricelistItemFieldAppliesTo] = "PRODUCT_COLOUR"
 
-	if key := keyOf(row); key != "sales_pricelist_item.applies_to_unknown" {
+	if key := keyOf(row); key != "sales:sales_pricelist_item.applies_to_unknown" {
 		t.Fatalf("an unrecognised target must be refused; got %q", key)
 	}
 }

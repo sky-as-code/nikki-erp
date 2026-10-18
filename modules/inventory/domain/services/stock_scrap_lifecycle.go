@@ -127,7 +127,7 @@ func assertScrappableStock(
 		}
 		if warehouseAvailable.LessThan(quantity) {
 			vErrs.Append(*ft.NewBusinessViolation(
-				models.StockScrapSchemaName, ReasonProtectionViolation,
+				models.StockScrapSchemaName, ft.ErrorKey(ReasonProtectionViolation, "inventory"),
 				"the warehouse can spare only "+warehouseAvailable.String()+" beyond its reservations, which is less than the "+
 					quantity.String()+" requested"))
 			return vErrs, nil
@@ -153,7 +153,7 @@ func assertScrappableStock(
 
 	if available.LessThan(quantity) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockScrapSchemaName, "stock_scrap.insufficient_stock",
+			models.StockScrapSchemaName, ft.ErrorKey("stock_scrap.insufficient_stock", "inventory"),
 			"only "+available.String()+" is available to scrap, which is less than the "+
 				quantity.String()+" requested"))
 	}

@@ -28,21 +28,21 @@ func (this *SettingsDomainServiceImpl) RegisterSchema(
 ) (*it.RegisterSchemaResult, error) {
 	vErrs := ft.ClientErrors{}
 	if cmd.ModuleKey == "" {
-		vErrs.Append(*ft.NewValidationError("module_key", "settings.module_key_required",
+		vErrs.Append(*ft.NewValidationError("module_key", ft.ErrorKey("settings.module_key_required", "settings"),
 			"module_key is required"))
 	}
 	if !isKnownLevel(cmd.Level) {
-		vErrs.Append(*ft.NewValidationError("level", "settings.level_invalid",
+		vErrs.Append(*ft.NewValidationError("level", ft.ErrorKey("settings.level_invalid", "settings"),
 			"level must be one of tenant, org or user"))
 	}
 	if cmd.Schema == nil {
-		vErrs.Append(*ft.NewValidationError("schema", "settings.schema_required",
+		vErrs.Append(*ft.NewValidationError("schema", ft.ErrorKey("settings.schema_required", "settings"),
 			"schema is required"))
 	} else if len(cmd.Schema.PrimaryKeys()) > 0 {
 		// A settings schema describes values, not a table. PrimaryKeys is populated only by
 		// populateDbMetadata, which runs only under ShouldBuildDb, so a non-empty one is exactly
 		// the "this schema wants a table" signal. The only tables this module builds are its own.
-		vErrs.Append(*ft.NewBusinessViolation("schema", "settings.schema_must_not_build_db",
+		vErrs.Append(*ft.NewBusinessViolation("schema", ft.ErrorKey("settings.schema_must_not_build_db", "settings"),
 			"a settings schema must be metadata-only and must not declare should_build_db"))
 	}
 	if vErrs.Count() > 0 {
@@ -177,7 +177,7 @@ func (this *SettingsDomainServiceImpl) assertNamesUniqueAcrossLevels(
 		}
 		for name := range fieldNameSetOfDocument(other.GetSchema()) {
 			if _, clashes := incoming[name]; clashes {
-				return ft.NewBusinessViolation("schema", "settings.name_used_at_another_level",
+				return ft.NewBusinessViolation("schema", ft.ErrorKey("settings.name_used_at_another_level", "settings"),
 					"setting name '"+name+"' is already declared at the '"+level+"' level of this module")
 			}
 		}

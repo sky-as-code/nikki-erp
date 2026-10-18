@@ -55,12 +55,14 @@ func readDecimalField(params dmodel.DynamicFields, schemaName string, field stri
 	vErrs := ft.NewClientErrors()
 	value, ok := params[field]
 	if !ok || value == nil {
-		vErrs.Append(*ft.NewBusinessViolation(schemaName, schemaName+"."+field+"_required", "'"+field+"' is required"))
+		vErrs.Append(*ft.NewBusinessViolation(schemaName, ft.ErrorKey(schemaName+"."+field+"_required", "inventory"),
+			"'"+field+"' is required"))
 		return decimal.Zero, vErrs
 	}
 	parsed, ok := toDecimal(value)
 	if !ok {
-		vErrs.Append(*ft.NewBusinessViolation(schemaName, schemaName+"."+field+"_malformed", "'"+field+"' must be a decimal number"))
+		vErrs.Append(*ft.NewBusinessViolation(schemaName, ft.ErrorKey(schemaName+"."+field+"_malformed", "inventory"),
+			"'"+field+"' must be a decimal number"))
 		return decimal.Zero, vErrs
 	}
 	return parsed, vErrs

@@ -179,7 +179,7 @@ func assertFlowsKnown(fields dmodel.DynamicFields) *ft.ClientErrors {
 		flow := readStringField(fields, field)
 		if flow != "" && !services.IsKnownFlow(flow) {
 			vErrs.Append(*ft.NewBusinessViolation(models.WarehouseSchemaName,
-				"warehouse.flow_invalid", "'"+flow+"' is not a known flow"))
+				ft.ErrorKey("warehouse.flow_invalid", "inventory"), "'"+flow+"' is not a known flow"))
 		}
 	}
 	return vErrs
@@ -187,7 +187,7 @@ func assertFlowsKnown(fields dmodel.DynamicFields) *ft.ClientErrors {
 
 func flowViolation(key string, message string) *itWarehouse.ConfigureFlowResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.WarehouseSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.WarehouseSchemaName, ft.ErrorKey(key, "inventory"), message))
 	return &itWarehouse.ConfigureFlowResult{ClientErrors: *vErrs}
 }
 

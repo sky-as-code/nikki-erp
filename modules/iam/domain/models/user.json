@@ -1,0 +1,114 @@
+{
+	"name": "iam_user",
+	"table_name": "iam_users",
+	"should_build_db": true,
+	"record_label_field": "display_name",
+	"record_sub_label_field": "email",
+	"default_search_fields": ["avatar_url", "display_name", "email", "status"],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "avatar_url",
+			"data_type": "url"
+		},
+		{
+			"name": "avatar_file_key",
+			"data_type": { "type": "string", "min": 1, "max": 3000 },
+			"description": {
+				"en-US": "Object storage key of the uploaded avatar. Managed by the /files/avatar routes, never written directly"
+			}
+		},
+		{
+			"name": "display_name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "email",
+			"data_type": "email",
+			"required_for_create": true,
+			"unique": true
+		},
+		{
+			"name": "status",
+			"data_type": { "type": "enum_string", "values": ["draft", "invited", "active", "suspended"] },
+			"required_for_create": true,
+			"default_value": "draft"
+		},
+		{
+			"name": "is_owner",
+			"data_type": "boolean",
+			"auto_generated": true,
+			"unique": true,
+			"description": { "en-US": "Only one owner per deployment" }
+		},
+		{
+			"name": "org_unit_id",
+			"data_type": "ulid"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "org_unit",
+			"type": "many:one",
+			"dest_schema": "iam_orgunit",
+			"key_map": { "org_unit_id": "id" },
+			"on_delete": "SET NULL"
+		},
+		{
+			"edge": "groups",
+			"type": "many:many",
+			"peer_schema": "iam_group",
+			"through_schema": "iam_group_user_rel",
+			"src_field_prefix": "user",
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "orgs",
+			"type": "many:many",
+			"peer_schema": "iam_org",
+			"through_schema": "iam_org_user_rel",
+			"src_field_prefix": "user",
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "roles",
+			"type": "many:many",
+			"peer_schema": "iam_role",
+			"through_schema": "iam_role_user_assignment",
+			"src_field_prefix": "receiver_user",
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"edges_from": [
+		{
+			"edge": "own_roles",
+			"label": { "en-US": "Owned roles" },
+			"existing": { "src_schema": "iam_role", "src_edge": "owner_user" }
+		},
+		{
+			"edge": "benefit_role_requests",
+			"label": { "en-US": "Grant requests for me" },
+			"existing": { "src_schema": "iam_grant_request", "src_edge": "receiver_user" }
+		},
+		{
+			"edge": "created_role_requests",
+			"label": { "en-US": "Grant requests created by me" },
+			"existing": { "src_schema": "iam_grant_request", "src_edge": "requestor" }
+		},
+		{
+			"edge": "responded_role_requests",
+			"label": { "en-US": "Grant requests responded by me" },
+			"existing": { "src_schema": "iam_grant_request", "src_edge": "responder" }
+		}
+	]
+}

@@ -34,6 +34,8 @@
 	"fields.value_json": "Structured value",
 	"fields.website": "Website",
 	"module.label.contacts": "Contacts",
+	"party.archived": "The party is archived and cannot be named on a new transaction.",
+	"party.not_found": "No party exists with that id in this organization.",
 	"status.active": "Active",
 	"status.blacklisted": "Blacklisted",
 	"status.proposed": "Proposed",

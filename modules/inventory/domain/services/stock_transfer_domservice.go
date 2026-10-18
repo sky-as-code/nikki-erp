@@ -157,7 +157,7 @@ func notFoundResult(transferId string) *dyn.OpResult[dyn.MutateResultData] {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.StockTransferSchemaName,
-		"stock_transfer.not_found",
+		ft.ErrorKey("stock_transfer.not_found", "inventory"),
 		"no stock transfer with id '"+transferId+"'",
 	))
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
@@ -165,7 +165,7 @@ func notFoundResult(transferId string) *dyn.OpResult[dyn.MutateResultData] {
 
 func violationResult(key, message string) *dyn.OpResult[dyn.MutateResultData] {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, ft.ErrorKey(key, "inventory"), message))
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
 }
 

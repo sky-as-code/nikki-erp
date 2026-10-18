@@ -40,7 +40,9 @@ func (this *ProductServiceImpl) CreateAttributeGroup(ctx corectx.Context, cmd it
 					return err
 				}
 				if !productResult.HasData {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrGrpFieldProductId, "product.not_found", "product does not exist"))
+					vErrs.Append(*ft.NewBusinessViolation(
+						domain.AttrGrpFieldProductId, ft.ErrorKey("product.not_found", "inventory"),
+						"product does not exist"))
 				}
 			}
 			return nil
@@ -61,7 +63,9 @@ func (this *ProductServiceImpl) UpdateAttributeGroup(ctx corectx.Context, cmd it
 					return err
 				}
 				if !productResult.HasData {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrGrpFieldProductId, "product.not_found", "product does not exist"))
+					vErrs.Append(*ft.NewBusinessViolation(
+						domain.AttrGrpFieldProductId, ft.ErrorKey("product.not_found", "inventory"),
+						"product does not exist"))
 				}
 			}
 			return nil

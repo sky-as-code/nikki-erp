@@ -97,7 +97,7 @@ func assertJurisdictionAcyclic(
 	// violation.
 	if selfId != nil && *parentId == *selfId {
 		vErrs.Append(*ft.NewBusinessViolation(models.TaxJurisdictionFieldParentId,
-			"tax.jurisdiction_self_parent",
+			ft.ErrorKey("tax.jurisdiction_self_parent", "accounting"),
 			"a tax jurisdiction cannot be its own parent"))
 		return nil
 	}
@@ -107,13 +107,13 @@ func assertJurisdictionAcyclic(
 	for depth := 0; depth < maxJurisdictionDepth; depth++ {
 		if selfId != nil && current == *selfId {
 			vErrs.Append(*ft.NewBusinessViolation(models.TaxJurisdictionFieldParentId,
-				"tax.jurisdiction_cycle",
+				ft.ErrorKey("tax.jurisdiction_cycle", "accounting"),
 				"this parent is a descendant of the jurisdiction being updated"))
 			return nil
 		}
 		if seen[current] {
 			vErrs.Append(*ft.NewBusinessViolation(models.TaxJurisdictionFieldParentId,
-				"tax.jurisdiction_cycle",
+				ft.ErrorKey("tax.jurisdiction_cycle", "accounting"),
 				"the parent chain of this jurisdiction contains a cycle"))
 			return nil
 		}
@@ -135,7 +135,7 @@ func assertJurisdictionAcyclic(
 	}
 
 	vErrs.Append(*ft.NewBusinessViolation(models.TaxJurisdictionFieldParentId,
-		"tax.jurisdiction_too_deep",
+		ft.ErrorKey("tax.jurisdiction_too_deep", "accounting"),
 		"the jurisdiction hierarchy is nested more deeply than is supported"))
 	return nil
 }

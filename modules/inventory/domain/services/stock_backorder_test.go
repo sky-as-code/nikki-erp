@@ -59,7 +59,7 @@ func TestDecideBackorderRequiresAnAnswerUnderAsk(t *testing.T) {
 
 	assert.Equal(t, BackorderNone, decision)
 	require.Equal(t, 1, vErrs.Count(), "a missing decision must be a client error, not a guess")
-	assert.Equal(t, "stock_transfer.backorder_decision_required", (*vErrs)[0].Key)
+	assert.Equal(t, "inventory:stock_transfer.backorder_decision_required", (*vErrs)[0].Key)
 }
 
 func TestDecideBackorderHonoursAnExplicitAnswerUnderAsk(t *testing.T) {
@@ -79,7 +79,7 @@ func TestDecideBackorderRefusesAnUnknownPolicy(t *testing.T) {
 
 	assert.Equal(t, BackorderNone, decision)
 	require.Equal(t, 1, vErrs.Count())
-	assert.Equal(t, "stock_transfer.unknown_backorder_policy", (*vErrs)[0].Key)
+	assert.Equal(t, "inventory:stock_transfer.unknown_backorder_policy", (*vErrs)[0].Key)
 }
 
 func TestDecideBackorderSeesAShortfallInAnyMove(t *testing.T) {

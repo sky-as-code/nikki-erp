@@ -82,7 +82,7 @@ func ConvertQuotation(
 	}
 	if quotation == nil {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("sales_quotation_id", ReasonQuotationNotFound,
+		vErrs.Append(*ft.NewBusinessViolation("sales_quotation_id", ft.ErrorKey(ReasonQuotationNotFound, "sales"),
 			"no quotation exists with id '"+params.SalesQuotationId+"'"))
 		return nil, vErrs, nil
 	}
@@ -106,7 +106,7 @@ func ConvertQuotation(
 	}
 	if len(lines) == 0 {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("sales_quotation_id", ReasonQuotationHasNoLines,
+		vErrs.Append(*ft.NewBusinessViolation("sales_quotation_id", ft.ErrorKey(ReasonQuotationHasNoLines, "sales"),
 			"a quotation with no lines offers nothing to convert"))
 		return nil, vErrs, nil
 	}
@@ -155,13 +155,13 @@ func assertConvertible(quotation dmodel.DynamicFields) *ft.ClientErrors {
 	// This path is only reached when converted_sales_order_id is missing but the status is not, a
 	// half-written accept, and refusing is safer than making a second sale.
 	if status == string(models.SalesQuotationStatusAccepted) {
-		vErrs.Append(*ft.NewBusinessViolation("status", ReasonQuotationNotConvertible,
+		vErrs.Append(*ft.NewBusinessViolation("status", ft.ErrorKey(ReasonQuotationNotConvertible, "sales"),
 			"this quotation has already been accepted"))
 		return vErrs
 	}
 
 	if !CanTransitionQuotation(status, string(models.SalesQuotationStatusAccepted)) {
-		vErrs.Append(*ft.NewBusinessViolation("status", ReasonQuotationNotConvertible,
+		vErrs.Append(*ft.NewBusinessViolation("status", ft.ErrorKey(ReasonQuotationNotConvertible, "sales"),
 			"a quotation in status '"+status+"' cannot be accepted"))
 		return vErrs
 	}
@@ -171,7 +171,7 @@ func assertConvertible(quotation dmodel.DynamicFields) *ft.ClientErrors {
 	// that window would honour an expired offer.
 	if validUntil := dateTimeOf(quotation, models.SalesQuotationFieldValidUntil); validUntil != nil {
 		if validUntil.GoTime().Before(time.Now().UTC()) {
-			vErrs.Append(*ft.NewBusinessViolation("valid_until", ReasonQuotationExpired,
+			vErrs.Append(*ft.NewBusinessViolation("valid_until", ft.ErrorKey(ReasonQuotationExpired, "sales"),
 				"this quotation lapsed on "+validUntil.GoTime().Format(time.RFC3339)+
 					" and must be re-quoted rather than converted"))
 		}
@@ -274,7 +274,7 @@ func TransitionQuotation(
 	}
 	if quotation == nil {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("sales_quotation_id", ReasonQuotationNotFound,
+		vErrs.Append(*ft.NewBusinessViolation("sales_quotation_id", ft.ErrorKey(ReasonQuotationNotFound, "sales"),
 			"no quotation exists with id '"+quotationId+"'"))
 		return vErrs, nil
 	}
@@ -282,7 +282,7 @@ func TransitionQuotation(
 	fromStatus := stringOf(quotation, models.SalesQuotationFieldStatus)
 	if !CanTransitionQuotation(fromStatus, toStatus) {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("status", ReasonQuotationBadTransition,
+		vErrs.Append(*ft.NewBusinessViolation("status", ft.ErrorKey(ReasonQuotationBadTransition, "sales"),
 			"a quotation cannot move from '"+fromStatus+"' to '"+toStatus+"'"))
 		return vErrs, nil
 	}
@@ -291,7 +291,7 @@ func TransitionQuotation(
 	// the same breath, and a status-only accept leaves a spent quotation with nothing to show for it.
 	if toStatus == string(models.SalesQuotationStatusAccepted) {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation("status", ReasonQuotationBadTransition,
+		vErrs.Append(*ft.NewBusinessViolation("status", ft.ErrorKey(ReasonQuotationBadTransition, "sales"),
 			"accept a quotation by converting it, so that the order it produces is recorded"))
 		return vErrs, nil
 	}

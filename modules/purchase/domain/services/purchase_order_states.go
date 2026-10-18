@@ -116,11 +116,11 @@ func AssertAgreementTransition(from, to string, vErrs *ft.ClientErrors) {
 	}
 	vErrs.Append(*ft.NewBusinessViolation(
 		models.AgreementSchemaName,
-		"purchase_agreement.invalid_transition",
+		ft.ErrorKey("purchase_agreement.invalid_transition", "purchase"),
 		"a purchase agreement cannot go from '"+from+"' to '"+to+"'",
 	))
 }
 
 func appendOrderViolation(vErrs *ft.ClientErrors, key, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(models.PurchaseOrderSchemaName, key, message))
+	vErrs.Append(*ft.NewBusinessViolation(models.PurchaseOrderSchemaName, ft.ErrorKey(key, "purchase"), message))
 }

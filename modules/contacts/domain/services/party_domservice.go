@@ -45,10 +45,10 @@ func (this *PartyDomainServiceImpl) AssertAssignable(
 
 	switch {
 	case found == nil:
-		vErrs.Append(*ft.NewBusinessViolation(field, "party.not_found",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("party.not_found", "contacts"),
 			"no party exists with that id in this organization"))
 	case isArchived(found):
-		vErrs.Append(*ft.NewBusinessViolation(field, "party.archived",
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("party.archived", "contacts"),
 			"the party is archived and cannot be named on a new transaction"))
 	}
 

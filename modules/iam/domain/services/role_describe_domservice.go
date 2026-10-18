@@ -160,13 +160,14 @@ func describedEntitlementFrom(id model.Id, fields dmodel.DynamicFields) itRole.D
 }
 
 // edgeName reads a leaf off a hydrated to-one edge. The repository stores the nested row under
-// the bare edge key, not under the dotted path that was requested.
+// the bare edge key, not under the dotted path that was requested. Resource and action names
+// are LangJson, flattened the same way as org names.
 func edgeName(fields dmodel.DynamicFields, edge string, leaf string) *string {
 	nested, ok := fields.GetAny(edge).(dmodel.DynamicFields)
 	if !ok {
 		return nil
 	}
-	return nested.GetString(leaf)
+	return langJsonNameOf(nested, leaf)
 }
 
 // fillScopeNames resolves the org and orgunit display names in one batched search each, rather

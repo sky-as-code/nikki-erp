@@ -42,7 +42,7 @@ CREATE TABLE "iam_password_stores" (
 -- Create "iam_resources" table
 CREATE TABLE "iam_resources" (
   "id" character varying NOT NULL,
-  "name" character varying NOT NULL,
+  "name" jsonb NOT NULL,
   "code" character varying NOT NULL,
   "description" character varying NULL,
   "owner_type" character varying NOT NULL,
@@ -52,20 +52,18 @@ CREATE TABLE "iam_resources" (
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "iam_resources_code_ukey" UNIQUE ("code"),
-  CONSTRAINT "iam_resources_name_ukey" UNIQUE ("name")
+  CONSTRAINT "iam_resources_code_ukey" UNIQUE ("code")
 );
 -- Create "iam_actions" table
 CREATE TABLE "iam_actions" (
   "id" character varying NOT NULL,
-  "name" character varying NOT NULL,
+  "name" jsonb NOT NULL,
   "code" character varying NOT NULL,
   "description" character varying NULL,
   "resource_id" character varying NOT NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "iam_actions_resource_id_code_ukey" UNIQUE ("resource_id", "code"),
-  CONSTRAINT "iam_actions_resource_id_name_ukey" UNIQUE ("resource_id", "name"),
   CONSTRAINT "iam_actions_resource_id_fkey" FOREIGN KEY ("resource_id") REFERENCES "iam_resources" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "iam_organizations" table
@@ -104,6 +102,7 @@ CREATE TABLE "iam_org_units" (
 CREATE TABLE "iam_users" (
   "id" character varying NOT NULL,
   "avatar_url" character varying NULL,
+  "avatar_file_key" character varying NULL,
   "display_name" character varying NOT NULL,
   "email" character varying NOT NULL,
   "status" character varying NOT NULL,
@@ -153,10 +152,6 @@ CREATE TABLE "iam_roles" (
   CONSTRAINT "iam_roles_owner_group_id_fkey" FOREIGN KEY ("owner_group_id") REFERENCES "iam_groups" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "iam_roles_owner_user_id_fkey" FOREIGN KEY ("owner_user_id") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
--- Create index "iam_roles_name_org_id_ukey_notnull" to table: "iam_roles"
-CREATE UNIQUE INDEX "iam_roles_name_org_id_ukey_notnull" ON "iam_roles" ("name", "org_id") WHERE (org_id IS NOT NULL);
--- Create index "iam_roles_name_org_id_ukey_null" to table: "iam_roles"
-CREATE UNIQUE INDEX "iam_roles_name_org_id_ukey_null" ON "iam_roles" ("name") WHERE (org_id IS NULL);
 -- Create "iam_entitlements" table
 CREATE TABLE "iam_entitlements" (
   "id" character varying NOT NULL,
