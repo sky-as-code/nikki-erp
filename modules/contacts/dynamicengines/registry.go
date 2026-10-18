@@ -1,110 +1,25 @@
-// Package dynamicengines declares the resource engines the Contacts module serves through the
-// dynamic resource engine, and creates them during the module's Init().
+// Package dynamicengines declares the resource onions the Contacts module serves through the
+// composable resource engine, and registers them into the dependency container during the
+// module's Init().
 //
-// Its imports point one way only: the domain, the module's own interfaces, and the dynamicresource
-// module — never app/, infra/ or transport/. That keeps the package importable by both contacts
-// (which creates the engines) and contacts/transport/restful (which registers their routes) without
-// a cycle.
+// Each resource file wires the module's own repository, domain service and application service
+// onto the composable defaults and publishes those typed layers, so transport and other modules
+// (Purchase binds VendorAppService, Sales binds PartyAppService) inject them by type. Nothing is
+// built eagerly: an onion is a container constructor, resolved the first time a consumer asks.
 //
-// All three resources are plain CRUD: there is no lifecycle, no state machine, and nothing a client
-// can ask a party to do beyond creating, reading, updating, archiving and deleting it. So no spec
-// defines actions and no derived resource service is installed.
+// All four resources are plain CRUD: no lifecycle, no state machine, no custom action.
 package dynamicengines
 
 import (
-	"go.bryk.io/pkg/errors"
-
-	"github.com/sky-as-code/nikki-erp/common/array"
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/contacts/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	stdErr "errors"
 )
 
-// engineSpec declares one resource engine the Contacts module owns.
-type engineSpec struct {
-	// SchemaName is the dynamic-model schema the engine serves. It must be an XSchemaName
-	// constant, never a string derived from the resource path.
-	SchemaName string
-
-
-	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD
-	// ones. It is optional: a resource without custom behavior leaves it nil.
-	DefineActions func(drif.DynamicResourceEngine) error
-}
-
-// engineSpecs lists the resources this module serves through the dynamic resource engine, each
-// with the field set its listing UI needs.
-var engineSpecs = []engineSpec{
-	partyEngineSpec(),
-	commChannelEngineSpec(),
-	relationshipEngineSpec(),
-	vendorProfileEngineSpec(),
-}
-
-func partyEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.PartySchemaName,
-	}
-}
-
-func commChannelEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.CommChannelSchemaName,
-	}
-}
-
-func relationshipEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.RelationshipSchemaName,
-	}
-}
-
-// vendorProfileEngineSpec serves the supplier-specific facts hanging off a party.
-//
-// Plain CRUD like its siblings: qualification status is an ordinary enum field in this phase, not a
-// state machine, so there is no transition for a domain action to protect. The rule that only an
-// active vendor may be ordered from belongs to Purchase and is enforced there, at confirmation.
-func vendorProfileEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.VendorProfileSchemaName,
-	}
-}
-
-// EngineSchemaNames lists the schemas this module creates an engine for, so that route
-// registration and engine creation cannot drift apart.
-func EngineSchemaNames() []string {
-	return array.Map(engineSpecs, func(spec engineSpec) string {
-		return spec.SchemaName
-	})
-}
-
-// InitDynamicEngines creates the resource engines this module owns and publishes them into the
-// dependency container, so that other modules can inject them by name.
+// InitDynamicEngines registers every resource onion this module owns.
 func InitDynamicEngines() error {
-	for _, spec := range engineSpecs {
-		if err := initEngine(spec); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func initEngine(spec engineSpec) error {
-	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create the '%s' resource engine", spec.SchemaName)
-	}
-
-	if spec.DefineActions != nil {
-		if err := spec.DefineActions(engine); err != nil {
-			return errors.Wrapf(err, "failed to define actions of the '%s' resource engine", spec.SchemaName)
-		}
-	}
-
-	err = deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(spec.SchemaName),
-		func() drif.DynamicResourceEngine { return engine },
+	return stdErr.Join(
+		registerPartyEngine(),
+		registerCommChannelEngine(),
+		registerRelationshipEngine(),
+		registerVendorProfileEngine(),
 	)
-	return errors.Wrapf(err, "failed to register the '%s' resource engine", spec.SchemaName)
 }

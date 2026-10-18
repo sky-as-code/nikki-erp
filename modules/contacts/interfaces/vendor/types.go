@@ -1,7 +1,7 @@
 // Package vendor declares the vendor capability that Contacts offers to other modules.
 //
-// CRUD on the vendor profile itself goes through the dynamic resource engine and needs no types
-// here. What lives in this package is the one question a purchasing module must be able to ask
+// CRUD on the vendor profile itself is the composable onion (vendor_profile_crud.go). What lives
+// in this package is the one question a purchasing module must be able to ask
 // without reaching into Contacts' repositories: is this party a vendor I may order from, and what
 // does it default?
 //

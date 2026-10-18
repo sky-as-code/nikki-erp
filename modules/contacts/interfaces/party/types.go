@@ -1,6 +1,6 @@
 // Package party declares the party capability that Contacts offers to other modules.
 //
-// CRUD on the party itself goes through the dynamic resource engine and needs no types here. What
+// CRUD on the party itself is the composable onion (party_crud.go). What
 // lives in this package is the one question a module holding a party reference must be able to ask
 // without reaching into Contacts' repositories: may this transaction name this party?
 //

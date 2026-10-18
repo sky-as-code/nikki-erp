@@ -14,7 +14,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/contacts/constants"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/contacts/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/transport/restful"
 )
@@ -71,13 +70,10 @@ func (*ContactsModule) Version() semver.SemVer {
 
 // Init implements NikkiModule.
 //
-// The order is load-bearing: the engines must exist before the vendor service that reads through
-// them, and before transport registers their routes.
+// The onions are registered before transport resolves them for its routes. The typed layers they
+// publish include VendorAppService and PartyAppService, which Purchase and Sales bind to.
 func (*ContactsModule) Init() error {
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
-		return err
-	}
-	if err := services.InitDomainServices(); err != nil {
 		return err
 	}
 	return restful.InitRestfulHandlers()

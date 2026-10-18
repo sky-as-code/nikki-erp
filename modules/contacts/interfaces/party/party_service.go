@@ -3,6 +3,7 @@ package party
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
 type AssertAssignableResult = dyn.OpResult[struct{}]
@@ -18,8 +19,10 @@ type PartyLookupService interface {
 	GetFiscalIdentity(ctx corectx.Context, query GetFiscalIdentityQuery) (*GetFiscalIdentityResult, error)
 }
 
-// PartyDomainService is the full capability, implemented inside Contacts.
+// PartyDomainService is the full capability, implemented inside Contacts: the CRUD of the
+// resource plus the questions other modules ask about a party.
 type PartyDomainService interface {
+	composable.CrudDomainService
 	PartyLookupService
 
 	// AssertAssignable reports whether a document in this organization may name this party: the
