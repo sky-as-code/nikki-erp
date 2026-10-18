@@ -13,7 +13,7 @@ import (
 )
 
 func FindAwaitingOrders(ctx corectx.Context, createdAfter time.Time) ([]StaleOrder, error) {
-	engine, err := engineFor(models.OrderSchemaName)
+	repo, err := repoFor(models.OrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func FindAwaitingOrders(ctx corectx.Context, createdAfter time.Time) ([]StaleOrd
 	)
 	graph.OrderBy(basemodel.FieldCreatedAt)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  sweepPageSize,

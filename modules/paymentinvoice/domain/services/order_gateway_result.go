@@ -178,7 +178,7 @@ func isTerminalPaymentStatus(status string) bool {
 
 // findOrderByCode looks an order up by the key its gateway callbacks arrive under.
 func findOrderByCode(ctx corectx.Context, orderCode string) (*models.Order, error) {
-	engine, err := engineFor(models.OrderSchemaName)
+	repo, err := repoFor(models.OrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func findOrderByCode(ctx corectx.Context, orderCode string) (*models.Order, erro
 		*dmodel.NewSearchNode().NewCondition(models.OrderFieldOrderCode, dmodel.Equals, orderCode),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,
@@ -209,7 +209,7 @@ func findOrderByCode(ctx corectx.Context, orderCode string) (*models.Order, erro
 func findPendingPaymentTransaction(
 	ctx corectx.Context, orderPk string,
 ) (*models.Transaction, error) {
-	engine, err := engineFor(models.TransactionSchemaName)
+	repo, err := repoFor(models.TransactionSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func findPendingPaymentTransaction(
 			models.TransactionFieldStatus, dmodel.Equals, models.TransactionStatusPending),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,

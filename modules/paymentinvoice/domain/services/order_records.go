@@ -21,12 +21,12 @@ import (
 func createRecord(
 	ctx corectx.Context, schemaName string, fields dmodel.DynamicFields,
 ) (dmodel.DynamicFields, error) {
-	engine, err := engineFor(schemaName)
+	domSvc, err := domainServiceFor(schemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := engine.ResourceService().Create(ctx, fields)
+	result, err := domSvc.Create(ctx, fields)
 	if err != nil {
 		return nil, errors.Wrapf(err, "createRecord(%s)", schemaName)
 	}
@@ -59,12 +59,12 @@ func (this *OrderDomainService) loadActiveMethod(
 		return nil, nil
 	}
 
-	engine, err := engineFor(models.PaymentMethodSchemaName)
+	repo, err := repoFor(models.PaymentMethodSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	found, err := engine.ResourceRepository().FindByKeys(ctx, key)
+	found, err := repo.FindByKeys(ctx, key)
 	if err != nil {
 		return nil, errors.Wrap(err, "loadActiveMethod")
 	}

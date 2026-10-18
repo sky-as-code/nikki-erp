@@ -81,7 +81,7 @@ type PendingSyncOrder struct {
 func FindOrdersNeedingSync(
 	ctx corectx.Context, settledBefore time.Time,
 ) ([]PendingSyncOrder, error) {
-	engine, err := engineFor(models.OrderSchemaName)
+	repo, err := repoFor(models.OrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func FindOrdersNeedingSync(
 		),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  sweepPageSize,
@@ -186,11 +186,11 @@ func (this *OrderDomainService) SyncFactsFor(
 		return facts, nil
 	}
 
-	engine, err := engineFor(models.PaymentMethodSchemaName)
+	repo, err := repoFor(models.PaymentMethodSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.PaymentMethodFieldId: methodId,
 	})
 	if err != nil {
@@ -264,12 +264,12 @@ func (this *OrderDomainService) SettlementFactsFor(
 func (this *OrderDomainService) RecordSyncOutcome(
 	ctx corectx.Context, orderPk string, outcome SyncOutcome,
 ) error {
-	engine, err := engineFor(models.OrderSchemaName)
+	repo, err := repoFor(models.OrderSchemaName)
 	if err != nil {
 		return err
 	}
 
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.OrderFieldId: orderPk,
 	})
 	if err != nil {

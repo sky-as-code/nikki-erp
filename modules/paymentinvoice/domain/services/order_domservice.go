@@ -31,7 +31,7 @@ func NewOrderDomainService(
 // OrderDomainService takes payments and gives them back.
 //
 // It is not a derived resource service: the two operations here are not CRUD on an order, they
-// are money moving. They are reached as engine actions, and the built-in create is left alone —
+// are money moving. They are reached as order actions (app/order_appservice.go), and the built-in create is left alone —
 // an order that exists without a payment attempt behind it would claim a collection nobody asked
 // for.
 type OrderDomainService struct {

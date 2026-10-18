@@ -11,6 +11,8 @@ import (
 	stdErr "errors"
 	"time"
 
+	"go.bryk.io/pkg/errors"
+
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
@@ -78,32 +80,50 @@ func (*PaymentInvoiceModule) Version() semver.SemVer {
 
 // Init implements DynamicModule.
 //
-// The steps are ordered: the gateway registry must exist before the order service that selects
-// from it, that service before the engines whose actions delegate to it, and the engines before
-// the REST layer that registers their routes.
+// The steps are ordered: the gateway registry and the domain services must be registered before
+// the onions whose application services inject them, and the onions before the REST layer that
+// registers their routes. BuildAllEngines then forces every onion that no route resolved, so the
+// resource hub the payment flow reads through is complete before the first request.
 func (*PaymentInvoiceModule) Init() error {
 	if err := initDomainServices(); err != nil {
-		return err
-	}
-	// After initOrderService, because the payment-method service is constructed with the gateway
-	// registry that step registers.
-	if err := app.InitApplicationServices(); err != nil {
 		return err
 	}
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}
-	return restful.InitRestfulHandlers()
+	if err := restful.InitRestfulHandlers(); err != nil {
+		return err
+	}
+	if err := dynamicengines.BuildAllEngines(); err != nil {
+		return err
+	}
+	return assertEveryResourceInstalled()
+}
+
+// assertEveryResourceInstalled fails the boot when an onion was declared but never built: the
+// first caller to notice would otherwise be a sweep or a gateway callback hours later.
+func assertEveryResourceInstalled() error {
+	installed := map[string]bool{}
+	for _, name := range services.InstalledResourceNames() {
+		installed[name] = true
+	}
+	var missing []error
+	for _, name := range dynamicengines.SchemaNames() {
+		if !installed[name] {
+			missing = append(missing,
+				errors.Errorf("the '%s' paymentinvoice resource was declared but never built", name))
+		}
+	}
+	return stdErr.Join(missing...)
 }
 
 // initDomainServices builds the gateway registry and the domain services, and puts them all into
 // the dependency container.
 //
-// They are *registered* rather than only handed to the engine setters, because two later steps
-// resolve them from the container: the REST layer needs the order service and the registry to serve
-// the gateway callbacks, and OnAppStarted needs the order service to run the sweeps. Constructing
-// them here and only calling the setters would leave those Invokes with nothing to find — which
-// fails at boot, taking the whole application down rather than one module.
+// They are registered because several later steps resolve them from the container: the order and
+// invoice onions inject their domain services for the custom actions, the payment profile onion
+// injects the encryption service, the REST layer needs the order service and the registry to serve
+// the gateway callbacks, and OnAppStarted needs the order service to run the sweeps.
 //
 // The registry is built once and shared: each adapter holds a connection pool and, for VietQR, a
 // cached bearer token, so one instance per request would re-authenticate on every payment. dig
@@ -150,23 +170,7 @@ func initDomainServices() error {
 			return invoices
 		},
 	)
-	if err != nil {
-		return err
-	}
-
-	// The engine actions reach their services through package variables rather than the container,
-	// because an action callback is handed only its own engine. Resolving them once here is what
-	// connects the two.
-	return deps.Invoke(func(
-		orders *services.OrderDomainService,
-		invoices *services.InvoiceDomainService,
-		profiles *services.PaymentProfileDomainService,
-	) error {
-		dynamicengines.SetOrderService(orders)
-		dynamicengines.SetInvoiceService(invoices)
-		dynamicengines.SetPaymentProfileService(profiles)
-		return nil
-	})
+	return err
 }
 
 // RegisterModels implements DynamicModule.

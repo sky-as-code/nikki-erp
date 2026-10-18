@@ -322,7 +322,7 @@ func (this *OrderDomainService) loadRefundMethod(
 // by its own reference rather than by our order code. An empty result is left to the adapter to
 // refuse: whether the reference is required is the gateway's rule, not this module's.
 func findPaymentRefTransactionId(ctx corectx.Context, orderPk string) (string, error) {
-	engine, err := engineFor(models.TransactionSchemaName)
+	repo, err := repoFor(models.TransactionSchemaName)
 	if err != nil {
 		return "", err
 	}
@@ -337,7 +337,7 @@ func findPaymentRefTransactionId(ctx corectx.Context, orderPk string) (string, e
 			models.TransactionFieldStatus, dmodel.Equals, models.TransactionStatusCompleted),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,

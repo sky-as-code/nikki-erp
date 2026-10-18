@@ -237,7 +237,7 @@ func (this *InvoiceDomainService) recomputeLines(
 // The unique index on number is the backstop if that assumption ever breaks — a collision fails
 // the transaction rather than producing two documents with one number.
 func allocateInvoiceNumber(ctx corectx.Context, year int) (string, error) {
-	engine, err := engineFor(models.InvoiceSchemaName)
+	repo, err := repoFor(models.InvoiceSchemaName)
 	if err != nil {
 		return "", err
 	}
@@ -253,7 +253,7 @@ func allocateInvoiceNumber(ctx corectx.Context, year int) (string, error) {
 	// under one identity.
 	graph.OrderBy(models.InvoiceFieldNumber, dmodel.Desc)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,

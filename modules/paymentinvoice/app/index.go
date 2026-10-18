@@ -1,19 +1,5 @@
+// Package app holds the Payment & Invoice application services. Authorization happens here: the
+// onion application services assert the permission of every built-in and custom action before
+// delegating to the domain. The onions themselves are registered by dynamicengines, which also
+// publishes PaymentMethodAppService from the payment method's onion.
 package app
-
-import (
-	"errors"
-
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-)
-
-// InitApplicationServices publishes this module's outward-facing application services into the
-// container, so that another module's adapter can resolve them by interface.
-//
-// It must run after the gateway registry is registered, because the payment-method service is
-// constructed with it: one of the usability gates asks the registry whether this build ships the
-// adapter a method names.
-func InitApplicationServices() error {
-	return errors.Join(
-		deps.Register(NewPaymentMethodApplicationServiceImpl),
-	)
-}

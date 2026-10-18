@@ -75,7 +75,7 @@ func FindCleanableOrders(ctx corectx.Context, olderThan time.Time) ([]StaleOrder
 func findOrdersOlderThan(
 	ctx corectx.Context, olderThan time.Time, statuses []any,
 ) ([]StaleOrder, error) {
-	engine, err := engineFor(models.OrderSchemaName)
+	repo, err := repoFor(models.OrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func findOrdersOlderThan(
 	// rather than the same page being re-read every run.
 	graph.OrderBy(basemodel.FieldCreatedAt)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  sweepPageSize,
@@ -133,12 +133,12 @@ func DeleteOrder(ctx corectx.Context, orderPk string) error {
 			return err
 		}
 
-		transactionEngine, err := engineFor(models.TransactionSchemaName)
+		transactionRepo, err := repoFor(models.TransactionSchemaName)
 		if err != nil {
 			return err
 		}
 		for _, transactionPk := range transactions {
-			_, err := transactionEngine.ResourceRepository().DeleteOne(tranxCtx, dmodel.DynamicFields{
+			_, err := transactionRepo.DeleteOne(tranxCtx, dmodel.DynamicFields{
 				models.TransactionFieldId: transactionPk,
 			})
 			if err != nil {
@@ -146,11 +146,11 @@ func DeleteOrder(ctx corectx.Context, orderPk string) error {
 			}
 		}
 
-		orderEngine, err := engineFor(models.OrderSchemaName)
+		orderRepo, err := repoFor(models.OrderSchemaName)
 		if err != nil {
 			return err
 		}
-		_, err = orderEngine.ResourceRepository().DeleteOne(tranxCtx, dmodel.DynamicFields{
+		_, err = orderRepo.DeleteOne(tranxCtx, dmodel.DynamicFields{
 			models.OrderFieldId: orderPk,
 		})
 		return errors.Wrapf(err, "DeleteOrder: order '%s'", orderPk)
@@ -159,7 +159,7 @@ func DeleteOrder(ctx corectx.Context, orderPk string) error {
 
 // findTransactionsOfOrder returns the primary keys of every transaction filed against one order.
 func findTransactionsOfOrder(ctx corectx.Context, orderPk string) ([]string, error) {
-	engine, err := engineFor(models.TransactionSchemaName)
+	repo, err := repoFor(models.TransactionSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func findTransactionsOfOrder(ctx corectx.Context, orderPk string) ([]string, err
 		*dmodel.NewSearchNode().NewCondition(models.TransactionFieldOrderId, dmodel.Equals, orderPk),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  sweepPageSize,

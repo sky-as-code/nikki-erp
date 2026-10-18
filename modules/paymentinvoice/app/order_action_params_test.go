@@ -1,4 +1,4 @@
-package dynamicengines
+package app
 
 import (
 	"testing"

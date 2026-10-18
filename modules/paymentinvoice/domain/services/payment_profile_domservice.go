@@ -45,8 +45,8 @@ func NewPaymentProfileDomainService(
 // PaymentProfileDomainService owns the one rule a payment profile has: its credentials are
 // readable in a request and unreadable in the database.
 //
-// Everything else about a profile is plain CRUD and is served by the resource engine. This service
-// exists so that the engine's actions and the payment flow encrypt and decrypt through the same
+// Everything else about a profile is plain CRUD served by its onion. This service
+// exists so that the CRUD overrides and the payment flow encrypt and decrypt through the same
 // code — the flow reads a profile on every payment, and a second implementation of the same
 // unwrapping is a second place for the format to drift.
 type PaymentProfileDomainService struct {
@@ -83,7 +83,7 @@ func (this *PaymentProfileDomainService) DecryptConfig(profile *models.PaymentPr
 }
 
 // DecryptFields is DecryptConfig over a field map, for the callers that hold one rather than a
-// model: the engine's read actions hand back DynamicFields, and rewrapping each of them at every
+// model: the CRUD reads hand back DynamicFields, and rewrapping each of them at every
 // call site would put the same three lines in four places.
 func (this *PaymentProfileDomainService) DecryptFields(fields dmodel.DynamicFields) error {
 	if fields == nil {
@@ -101,12 +101,12 @@ func (this *PaymentProfileDomainService) DecryptFields(fields dmodel.DynamicFiel
 func (this *PaymentProfileDomainService) FindById(
 	ctx corectx.Context, profileId string,
 ) (*models.PaymentProfile, error) {
-	engine, err := engineFor(models.PaymentProfileSchemaName)
+	repo, err := repoFor(models.PaymentProfileSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.PaymentProfileFieldId: profileId,
 	})
 	if err != nil {
@@ -135,12 +135,12 @@ func (this *PaymentProfileDomainService) FindById(
 func (this *PaymentProfileDomainService) FindActive(
 	ctx corectx.Context,
 ) ([]*models.PaymentProfile, error) {
-	engine, err := engineFor(models.PaymentProfileSchemaName)
+	repo, err := repoFor(models.PaymentProfileSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Page: 0,
 		Size: paymentProfilePageSize,
 	})
