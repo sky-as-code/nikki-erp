@@ -42,23 +42,23 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES00000000000000001', jsonb_build_object('en-US', 'Sales Channel', 'vi-VN', 'Kênh bán hàng'), 'sales_channel', 'Classification of where a sale happens, and the payment methods it accepts', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000002', jsonb_build_object('en-US', 'Sales Point', 'vi-VN', 'Điểm bán hàng'), 'sales_point', 'A concrete selling place within a channel: a kiosk, a store, a storefront', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000000K', jsonb_build_object('en-US', 'Sales Order', 'vi-VN', 'Đơn bán hàng'), 'sales_order', 'One commercial transaction: what was sold, to whom, through which channel', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000000M', jsonb_build_object('en-US', 'Sales Order Line', 'vi-VN', 'Dòng đơn bán hàng'), 'sales_order_line', 'One thing sold on one order, with its quantities and its price at the moment of sale', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000000Z', jsonb_build_object('en-US', 'Sales Order Line Component', 'vi-VN', 'Thành phần dòng đơn bán hàng'), 'sales_order_line_component', 'One real product inside a combo line, which is what Inventory actually fulfils', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000010', jsonb_build_object('en-US', 'Sales Order Adjustment', 'vi-VN', 'Điều chỉnh đơn bán hàng'), 'sales_order_adjustment', 'One step of the pricing calculation, kept so a price can be explained and replayed', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000011', jsonb_build_object('en-US', 'Sales Order Event', 'vi-VN', 'Sự kiện đơn bán hàng'), 'sales_order_event', 'One thing that happened to a sale: the document audit trail', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000015', jsonb_build_object('en-US', 'Sales Pricelist', 'vi-VN', 'Bảng giá bán'), 'sales_pricelist', 'A set of prices that applies to a channel or a selling place for a period', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000016', jsonb_build_object('en-US', 'Sales Pricelist Item', 'vi-VN', 'Mục bảng giá bán'), 'sales_pricelist_item', 'One price, for one product variant, in one unit, from one quantity upward', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000017', jsonb_build_object('en-US', 'Sales Combo', 'vi-VN', 'Combo bán hàng'), 'sales_combo', 'A bundle sold at a price of its own, independent of what its parts cost apart', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000018', jsonb_build_object('en-US', 'Sales Combo Component', 'vi-VN', 'Thành phần combo bán hàng'), 'sales_combo_component', 'One product inside a bundle definition', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000034', jsonb_build_object('en-US', 'Sales Promotion Program', 'vi-VN', 'Chương trình khuyến mãi'), 'sales_promotion_program', 'One campaign: what has to be true, and what the customer then gets', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000035', jsonb_build_object('en-US', 'Sales Promotion Condition Group', 'vi-VN', 'Nhóm điều kiện khuyến mãi'), 'sales_promotion_condition_group', 'A set of conditions ANDed together; groups are ORed with each other', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000036', jsonb_build_object('en-US', 'Sales Promotion Condition', 'vi-VN', 'Điều kiện khuyến mãi'), 'sales_promotion_condition', 'One test a promotion applies to decide whether it is eligible', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000037', jsonb_build_object('en-US', 'Sales Promotion Condition Target', 'vi-VN', 'Đối tượng điều kiện khuyến mãi'), 'sales_promotion_condition_target', 'One member of a set-valued condition, such as an eligible product variant', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000038', jsonb_build_object('en-US', 'Sales Promotion Reward', 'vi-VN', 'Phần thưởng khuyến mãi'), 'sales_promotion_reward', 'One thing a promotion gives: a discount, a fixed price, a free item', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000039', jsonb_build_object('en-US', 'Sales Promotion Compatibility', 'vi-VN', 'Tương thích khuyến mãi'), 'sales_promotion_compatibility', 'Whether two promotions may apply to the same order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000001', jsonb_build_object('en-US', 'Sales - Channel', 'vi-VN', 'Bán hàng - Kênh'), 'sales_channel', 'Classification of where a sale happens, and the payment methods it accepts', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000002', jsonb_build_object('en-US', 'Sales - Point', 'vi-VN', 'Bán hàng - Điểm'), 'sales_point', 'A concrete selling place within a channel: a kiosk, a store, a storefront', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000000K', jsonb_build_object('en-US', 'Sales - Order', 'vi-VN', 'Bán hàng - Đơn hàng'), 'sales_order', 'One commercial transaction: what was sold, to whom, through which channel', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000000M', jsonb_build_object('en-US', 'Sales - Order Line', 'vi-VN', 'Bán hàng - Dòng đơn hàng'), 'sales_order_line', 'One thing sold on one order, with its quantities and its price at the moment of sale', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000000Z', jsonb_build_object('en-US', 'Sales - Order Line Component', 'vi-VN', 'Bán hàng - Thành phần dòng đơn hàng'), 'sales_order_line_component', 'One real product inside a combo line, which is what Inventory actually fulfils', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000010', jsonb_build_object('en-US', 'Sales - Order Adjustment', 'vi-VN', 'Bán hàng - Điều chỉnh đơn hàng'), 'sales_order_adjustment', 'One step of the pricing calculation, kept so a price can be explained and replayed', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000011', jsonb_build_object('en-US', 'Sales - Order Event', 'vi-VN', 'Bán hàng - Sự kiện đơn hàng'), 'sales_order_event', 'One thing that happened to a sale: the document audit trail', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000015', jsonb_build_object('en-US', 'Sales - Pricelist', 'vi-VN', 'Bán hàng - Bảng giá bán'), 'sales_pricelist', 'A set of prices that applies to a channel or a selling place for a period', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000016', jsonb_build_object('en-US', 'Sales - Pricelist Item', 'vi-VN', 'Bán hàng - Mục bảng giá bán'), 'sales_pricelist_item', 'One price, for one product variant, in one unit, from one quantity upward', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000017', jsonb_build_object('en-US', 'Sales - Combo', 'vi-VN', 'Bán hàng - Combo'), 'sales_combo', 'A bundle sold at a price of its own, independent of what its parts cost apart', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000018', jsonb_build_object('en-US', 'Sales - Combo Component', 'vi-VN', 'Bán hàng - Thành phần combo'), 'sales_combo_component', 'One product inside a bundle definition', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000034', jsonb_build_object('en-US', 'Sales - Promotion Program', 'vi-VN', 'Bán hàng - Chương trình khuyến mãi'), 'sales_promotion_program', 'One campaign: what has to be true, and what the customer then gets', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000035', jsonb_build_object('en-US', 'Sales - Promotion Condition Group', 'vi-VN', 'Bán hàng - Nhóm điều kiện khuyến mãi'), 'sales_promotion_condition_group', 'A set of conditions ANDed together; groups are ORed with each other', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000036', jsonb_build_object('en-US', 'Sales - Promotion Condition', 'vi-VN', 'Bán hàng - Điều kiện khuyến mãi'), 'sales_promotion_condition', 'One test a promotion applies to decide whether it is eligible', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000037', jsonb_build_object('en-US', 'Sales - Promotion Condition Target', 'vi-VN', 'Bán hàng - Đối tượng điều kiện khuyến mãi'), 'sales_promotion_condition_target', 'One member of a set-valued condition, such as an eligible product variant', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000038', jsonb_build_object('en-US', 'Sales - Promotion Reward', 'vi-VN', 'Bán hàng - Phần thưởng khuyến mãi'), 'sales_promotion_reward', 'One thing a promotion gives: a discount, a fixed price, a free item', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000039', jsonb_build_object('en-US', 'Sales - Promotion Compatibility', 'vi-VN', 'Bán hàng - Tương thích khuyến mãi'), 'sales_promotion_compatibility', 'Whether two promotions may apply to the same order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -259,8 +259,8 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES00000000000000048', jsonb_build_object('en-US', 'Sales Voucher Code', 'vi-VN', 'Mã phiếu giảm giá'), 'sales_voucher_code', 'A credential a customer presents to activate a promotion program', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000049', jsonb_build_object('en-US', 'Sales Voucher Redemption', 'vi-VN', 'Lượt sử dụng phiếu giảm giá'), 'sales_voucher_redemption', 'The ledger of which orders consumed which voucher codes', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000048', jsonb_build_object('en-US', 'Sales - Voucher Code', 'vi-VN', 'Bán hàng - Mã phiếu giảm giá'), 'sales_voucher_code', 'A credential a customer presents to activate a promotion program', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000049', jsonb_build_object('en-US', 'Sales - Voucher Redemption', 'vi-VN', 'Bán hàng - Lượt sử dụng phiếu giảm giá'), 'sales_voucher_redemption', 'The ledger of which orders consumed which voucher codes', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -343,9 +343,9 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES0000000000000004K', jsonb_build_object('en-US', 'Sales Bill', 'vi-VN', 'Hóa đơn bán hàng'), 'sales_bill', 'A settlement unit of a sale - never a VAT invoice (BR 33)', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000004M', jsonb_build_object('en-US', 'Sales Bill Line', 'vi-VN', 'Dòng hóa đơn bán hàng'), 'sales_bill_line', 'One order line''s allocated share of one bill', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000004N', jsonb_build_object('en-US', 'Sales Bill Relation', 'vi-VN', 'Liên kết hóa đơn bán hàng'), 'sales_bill_relation', 'The lineage left behind by a bill split or merge', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES0000000000000004K', jsonb_build_object('en-US', 'Sales - Bill', 'vi-VN', 'Bán hàng - Hóa đơn'), 'sales_bill', 'A settlement unit of a sale - never a VAT invoice (BR 33)', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000004M', jsonb_build_object('en-US', 'Sales - Bill Line', 'vi-VN', 'Bán hàng - Dòng hóa đơn'), 'sales_bill_line', 'One order line''s allocated share of one bill', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000004N', jsonb_build_object('en-US', 'Sales - Bill Relation', 'vi-VN', 'Bán hàng - Liên kết hóa đơn'), 'sales_bill_relation', 'The lineage left behind by a bill split or merge', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -401,7 +401,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES0000000000000004Z', jsonb_build_object('en-US', 'Sales Payment', 'vi-VN', 'Thanh toán bán hàng'), 'sales_payment', 'One movement of money against a bill', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES0000000000000004Z', jsonb_build_object('en-US', 'Sales - Payment', 'vi-VN', 'Bán hàng - Thanh toán'), 'sales_payment', 'One movement of money against a bill', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -431,8 +431,8 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000053', jsonb_build_object('en-US', 'Sales Fulfilment Request', 'vi-VN', 'Yêu cầu giao hàng'), 'sales_fulfillment_request', 'One thing Sales asked Inventory to do for a sale', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000054', jsonb_build_object('en-US', 'Sales Fulfilment Request Line', 'vi-VN', 'Dòng yêu cầu giao hàng'), 'sales_fulfillment_request_line', 'One order line covered by a fulfilment request', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000053', jsonb_build_object('en-US', 'Sales - Fulfilment Request', 'vi-VN', 'Bán hàng - Yêu cầu giao hàng'), 'sales_fulfillment_request', 'One thing Sales asked Inventory to do for a sale', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000054', jsonb_build_object('en-US', 'Sales - Fulfilment Request Line', 'vi-VN', 'Bán hàng - Dòng yêu cầu giao hàng'), 'sales_fulfillment_request_line', 'One order line covered by a fulfilment request', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -465,7 +465,7 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000057', jsonb_build_object('en-US', 'Sales Fiscal Request', 'vi-VN', 'Yêu cầu hóa đơn điện tử'), 'sales_fiscal_request', 'What Sales asked an eInvoice provider for, and what came back', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000057', jsonb_build_object('en-US', 'Sales - Fiscal Request', 'vi-VN', 'Bán hàng - Yêu cầu hóa đơn điện tử'), 'sales_fiscal_request', 'What Sales asked an eInvoice provider for, and what came back', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -498,7 +498,7 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000060', jsonb_build_object('en-US', 'Sales Integration Outbox', 'vi-VN', 'Hộp thư đi tích hợp bán hàng'), 'sales_integration_outbox', 'Integration events Sales has published, or is waiting to publish', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000060', jsonb_build_object('en-US', 'Sales - Integration Outbox', 'vi-VN', 'Bán hàng - Hộp thư đi tích hợp'), 'sales_integration_outbox', 'Integration events Sales has published, or is waiting to publish', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -531,8 +531,8 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000062', jsonb_build_object('en-US', 'Sales Quotation', 'vi-VN', 'Báo giá bán hàng'), 'sales_quotation', 'An offer made to a customer, which may become a sales order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000063', jsonb_build_object('en-US', 'Sales Quotation Line', 'vi-VN', 'Dòng báo giá bán hàng'), 'sales_quotation_line', 'One line of an offer', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000062', jsonb_build_object('en-US', 'Sales - Quotation', 'vi-VN', 'Bán hàng - Báo giá'), 'sales_quotation', 'An offer made to a customer, which may become a sales order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000063', jsonb_build_object('en-US', 'Sales - Quotation Line', 'vi-VN', 'Bán hàng - Dòng báo giá'), 'sales_quotation_line', 'One line of an offer', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -573,7 +573,7 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000073', jsonb_build_object('en-US', 'Sales Manual Discount', 'vi-VN', 'Giảm giá thủ công bán hàng'), 'sales_manual_discount', 'An operator override of a sale price, with the reason it was granted', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000073', jsonb_build_object('en-US', 'Sales - Manual Discount', 'vi-VN', 'Bán hàng - Giảm giá thủ công'), 'sales_manual_discount', 'An operator override of a sale price, with the reason it was granted', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -611,9 +611,9 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000076', jsonb_build_object('en-US', 'Sales Return', 'vi-VN', 'Phiếu trả hàng bán'), 'sales_return', 'A customer sending goods back, and the refund that settles it', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000080', jsonb_build_object('en-US', 'Sales Return Line', 'vi-VN', 'Dòng phiếu trả hàng bán'), 'sales_return_line', 'One order line coming back, in whole or in part', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000082', jsonb_build_object('en-US', 'Sales Refund Payment', 'vi-VN', 'Khoản hoàn tiền bán hàng'), 'sales_refund_payment', 'One leg of a refund, against one original payment', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000076', jsonb_build_object('en-US', 'Sales - Return', 'vi-VN', 'Bán hàng - Phiếu trả hàng bán'), 'sales_return', 'A customer sending goods back, and the refund that settles it', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000080', jsonb_build_object('en-US', 'Sales - Return Line', 'vi-VN', 'Bán hàng - Dòng phiếu trả hàng bán'), 'sales_return_line', 'One order line coming back, in whole or in part', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000082', jsonb_build_object('en-US', 'Sales - Refund Payment', 'vi-VN', 'Bán hàng - Khoản hoàn tiền'), 'sales_refund_payment', 'One leg of a refund, against one original payment', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -657,8 +657,8 @@ DO $$
 BEGIN
 	IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='iam_resources') THEN
 		INSERT INTO "iam_resources" ("id","name","code","description","owner_type","max_scope","min_scope","created_at","etag") VALUES
-		('01M3SALES00000000000000090', jsonb_build_object('en-US', 'Sales Billing Instruction', 'vi-VN', 'Chỉ dẫn lập hóa đơn bán hàng'), 'sales_billing_instruction', 'Who a sale is to be invoiced to, under which legal identity', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES00000000000000091', jsonb_build_object('en-US', 'Sales Billing Issuance Attempt', 'vi-VN', 'Lần phát hành hóa đơn bán hàng'), 'sales_billing_issuance_attempt', 'One try at issuing an electronic invoice, kept as evidence', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES00000000000000090', jsonb_build_object('en-US', 'Sales - Billing Instruction', 'vi-VN', 'Bán hàng - Chỉ dẫn lập hóa đơn'), 'sales_billing_instruction', 'Who a sale is to be invoiced to, under which legal identity', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES00000000000000091', jsonb_build_object('en-US', 'Sales - Billing Issuance Attempt', 'vi-VN', 'Bán hàng - Lần phát hành hóa đơn'), 'sales_billing_issuance_attempt', 'One try at issuing an electronic invoice, kept as evidence', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -709,7 +709,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES0000000000000009E', jsonb_build_object('en-US', 'Sales Fulfillment Method', 'vi-VN', 'Phương thức giao hàng'), 'sales_fulfillment_method', 'The policy a sale is handed over under: how the goods reach the customer, and what happens when that fails', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES0000000000000009E', jsonb_build_object('en-US', 'Sales - Fulfillment Method', 'vi-VN', 'Bán hàng - Phương thức giao hàng'), 'sales_fulfillment_method', 'The policy a sale is handed over under: how the goods reach the customer, and what happens when that fails', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -752,8 +752,8 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES0000000000000009M', jsonb_build_object('en-US', 'Sales Order Fulfillment', 'vi-VN', 'Giao hàng đơn bán hàng'), 'sales_order_fulfillment', 'One delivery a sales order owes: where it is handed over, under which policy, and how far it has got', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000009N', jsonb_build_object('en-US', 'Sales Order Fulfillment Item', 'vi-VN', 'Mặt hàng giao của đơn bán hàng'), 'sales_order_fulfillment_item', 'One product within a fulfillment: how much was ordered, delivered, refunded and still owed', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES0000000000000009M', jsonb_build_object('en-US', 'Sales - Order Fulfillment', 'vi-VN', 'Bán hàng - Giao hàng đơn hàng'), 'sales_order_fulfillment', 'One delivery a sales order owes: where it is handed over, under which policy, and how far it has got', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000009N', jsonb_build_object('en-US', 'Sales - Order Fulfillment Item', 'vi-VN', 'Bán hàng - Mặt hàng giao của đơn hàng'), 'sales_order_fulfillment_item', 'One product within a fulfillment: how much was ordered, delivered, refunded and still owed', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -797,8 +797,8 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES0000000000000009R', jsonb_build_object('en-US', 'Sales Fulfillment Attempt', 'vi-VN', 'Lần thực hiện giao hàng'), 'sales_fulfillment_attempt', 'One try at handing a fulfillment''s goods over: which machine was asked, when, and how it ended', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3SALES0000000000000009S', jsonb_build_object('en-US', 'Sales Fulfillment Attempt Item', 'vi-VN', 'Mặt hàng trong lần giao hàng'), 'sales_fulfillment_attempt_item', 'What one try reported about one product: how much came out, how much did not, and why', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES0000000000000009R', jsonb_build_object('en-US', 'Sales - Fulfillment Attempt', 'vi-VN', 'Bán hàng - Lần thực hiện giao hàng'), 'sales_fulfillment_attempt', 'One try at handing a fulfillment''s goods over: which machine was asked, when, and how it ended', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SALES0000000000000009S', jsonb_build_object('en-US', 'Sales - Fulfillment Attempt Item', 'vi-VN', 'Bán hàng - Mặt hàng trong lần giao hàng'), 'sales_fulfillment_attempt_item', 'What one try reported about one product: how much came out, how much did not, and why', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -834,7 +834,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3SALES0000000000000009W', jsonb_build_object('en-US', 'Sales Fulfillment Target Change', 'vi-VN', 'Thay đổi đích giao hàng'), 'sales_fulfillment_target_change', 'The history of where a delivery has been promised from: which points, why it moved, and who moved it', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALES0000000000000009W', jsonb_build_object('en-US', 'Sales - Fulfillment Target Change', 'vi-VN', 'Bán hàng - Thay đổi đích giao hàng'), 'sales_fulfillment_target_change', 'The history of where a delivery has been promised from: which points, why it moved, and who moved it', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

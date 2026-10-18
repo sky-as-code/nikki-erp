@@ -12,8 +12,8 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01KZJ8Q3ZK7XN4WVBM2PDHR5T0', jsonb_build_object('en-US', 'Unit of Measure', 'vi-VN', 'Đơn vị tính'), 'essential_uom', 'Units of measure and their conversion factors', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', jsonb_build_object('en-US', 'UoM Category', 'vi-VN', 'Nhóm đơn vị tính'), 'essential_uomcat', 'Categories that bound unit-of-measure conversion', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
+		('01KZJ8Q3ZK7XN4WVBM2PDHR5T0', jsonb_build_object('en-US', 'Essential - Unit of Measure', 'vi-VN', 'Thiết yếu - Đơn vị tính'), 'essential_uom', 'Units of measure and their conversion factors', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', jsonb_build_object('en-US', 'Essential - UoM Category', 'vi-VN', 'Thiết yếu - Nhóm đơn vị tính'), 'essential_uomcat', 'Categories that bound unit-of-measure conversion', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
 	END IF;
 
 	IF EXISTS (

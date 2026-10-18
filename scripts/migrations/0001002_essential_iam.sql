@@ -21,7 +21,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0CUR1QK4N7VZBX2M9TPE5RD', jsonb_build_object('en-US', 'Currency', 'vi-VN', 'Tiền tệ'), 'essential_currency', 'Currencies an amount may be denominated in', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0CUR1QK4N7VZBX2M9TPE5RD', jsonb_build_object('en-US', 'Essential - Currency', 'vi-VN', 'Thiết yếu - Tiền tệ'), 'essential_currency', 'Currencies an amount may be denominated in', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -62,7 +62,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M51EPZ8K0CA51CB8DX821SM3', jsonb_build_object('en-US', 'Language', 'vi-VN', 'Ngôn ngữ'), 'essential_language', 'Languages the application can be shown in', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M51EPZ8K0CA51CB8DX821SM3', jsonb_build_object('en-US', 'Essential - Language', 'vi-VN', 'Thiết yếu - Ngôn ngữ'), 'essential_language', 'Languages the application can be shown in', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

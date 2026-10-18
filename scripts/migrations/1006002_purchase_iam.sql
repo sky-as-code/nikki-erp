@@ -50,13 +50,13 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M2PVRCH00000000000000001', jsonb_build_object('en-US', 'Purchase Configuration', 'vi-VN', 'Cấu hình mua hàng'), 'purchase_configuration', 'Per-organization approval mode, threshold and modification policy', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000002', jsonb_build_object('en-US', 'Purchase Sourcing Group', 'vi-VN', 'Nhóm nguồn cung mua hàng'), 'purchase_sourcing_group', 'Technical grouping of purchase orders being compared as alternatives', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000003', jsonb_build_object('en-US', 'Purchase Agreement', 'vi-VN', 'Thỏa thuận mua hàng'), 'purchase_agreement', 'Blanket orders and purchase templates agreed with a vendor', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000004', jsonb_build_object('en-US', 'Purchase Agreement Line', 'vi-VN', 'Dòng thỏa thuận mua hàng'), 'purchase_agreement_line', 'Committed product, quantity and price on a purchase agreement', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000005', jsonb_build_object('en-US', 'Purchase Order', 'vi-VN', 'Đơn mua hàng'), 'purchase_order', 'Requests for quotation and the purchase orders they become', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000006', jsonb_build_object('en-US', 'Purchase Order Line', 'vi-VN', 'Dòng đơn mua hàng'), 'purchase_order_line', 'Product, quantity and price on a purchase order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2PVRCH00000000000000007', jsonb_build_object('en-US', 'Purchase Audit Event', 'vi-VN', 'Sự kiện kiểm toán mua hàng'), 'purchase_audit_event', 'Immutable record of every purchase order and agreement state change', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2PVRCH00000000000000001', jsonb_build_object('en-US', 'Purchase - Configuration', 'vi-VN', 'Mua hàng - Cấu hình'), 'purchase_configuration', 'Per-organization approval mode, threshold and modification policy', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000002', jsonb_build_object('en-US', 'Purchase - Sourcing Group', 'vi-VN', 'Mua hàng - Nhóm nguồn cung'), 'purchase_sourcing_group', 'Technical grouping of purchase orders being compared as alternatives', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000003', jsonb_build_object('en-US', 'Purchase - Agreement', 'vi-VN', 'Mua hàng - Thỏa thuận'), 'purchase_agreement', 'Blanket orders and purchase templates agreed with a vendor', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000004', jsonb_build_object('en-US', 'Purchase - Agreement Line', 'vi-VN', 'Mua hàng - Dòng thỏa thuận'), 'purchase_agreement_line', 'Committed product, quantity and price on a purchase agreement', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000005', jsonb_build_object('en-US', 'Purchase - Order', 'vi-VN', 'Mua hàng - Đơn hàng'), 'purchase_order', 'Requests for quotation and the purchase orders they become', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000006', jsonb_build_object('en-US', 'Purchase - Order Line', 'vi-VN', 'Mua hàng - Dòng đơn hàng'), 'purchase_order_line', 'Product, quantity and price on a purchase order', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2PVRCH00000000000000007', jsonb_build_object('en-US', 'Purchase - Audit Event', 'vi-VN', 'Mua hàng - Sự kiện kiểm toán'), 'purchase_audit_event', 'Immutable record of every purchase order and agreement state change', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -137,7 +137,7 @@ BEGIN
 			"id", "name", "code", "description", "owner_type", "max_scope",
 			"min_scope", "created_at", "etag"
 		) VALUES
-		('01M2PVRCH00000000000000100', jsonb_build_object('en-US', 'Vendor Product Price', 'vi-VN', 'Giá sản phẩm của nhà cung cấp'), 'purchase_vendor_product_price', 'What a vendor currently offers a product at, by quantity, unit and validity', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2PVRCH00000000000000100', jsonb_build_object('en-US', 'Purchase - Vendor Product Price', 'vi-VN', 'Mua hàng - Giá sản phẩm của nhà cung cấp'), 'purchase_vendor_product_price', 'What a vendor currently offers a product at, by quantity, unit and validity', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

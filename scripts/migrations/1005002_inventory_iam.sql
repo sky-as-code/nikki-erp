@@ -50,13 +50,13 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0A1P4QM3P0Y3T60T7RH2KZC', jsonb_build_object('en-US', 'Product Template', 'vi-VN', 'Mẫu sản phẩm'), 'inventory_product_template', 'Catalog-level definition of a product line', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QJ0MFYJY0EQH0NVJ2R', jsonb_build_object('en-US', 'Product Variant', 'vi-VN', 'Biến thể sản phẩm'), 'inventory_product_variant', 'Concrete, transactable product of a template', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q8S7V5FR3KKY1V5ZMF', jsonb_build_object('en-US', 'Product Type', 'vi-VN', 'Loại sản phẩm'), 'inventory_product_type', 'How the system processes a product: goods, service, combo', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QGGABP6SVFCTD6MF8K', jsonb_build_object('en-US', 'Product Category', 'vi-VN', 'Danh mục sản phẩm'), 'inventory_product_category', 'Hierarchical classification of product templates', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QMJTAEFCJY5WRTNHWZ', jsonb_build_object('en-US', 'Product Attribute', 'vi-VN', 'Thuộc tính sản phẩm'), 'inventory_product_attribute', 'Attributes whose values form product variants', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QAH9DQW7VXG9K87HWP', jsonb_build_object('en-US', 'Product Attribute Value', 'vi-VN', 'Giá trị thuộc tính sản phẩm'), 'inventory_product_attribute_value', 'Allowed values of a product attribute', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QDXYWAJ8D4ZAD50VW7', jsonb_build_object('en-US', 'Brand', 'vi-VN', 'Thương hiệu'), 'inventory_brand', 'Product brands', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0A1P4QM3P0Y3T60T7RH2KZC', jsonb_build_object('en-US', 'Inventory - Product', 'vi-VN', 'Kho hàng - Sản phẩm'), 'inventory_product_template', 'Catalog-level definition of a product line', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QJ0MFYJY0EQH0NVJ2R', jsonb_build_object('en-US', 'Inventory - Product Variant', 'vi-VN', 'Kho hàng - Biến thể sản phẩm'), 'inventory_product_variant', 'Concrete, transactable product of a template', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4Q8S7V5FR3KKY1V5ZMF', jsonb_build_object('en-US', 'Inventory - Product Type', 'vi-VN', 'Kho hàng - Loại sản phẩm'), 'inventory_product_type', 'How the system processes a product: goods, service, combo', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QGGABP6SVFCTD6MF8K', jsonb_build_object('en-US', 'Inventory - Product Category', 'vi-VN', 'Kho hàng - Danh mục sản phẩm'), 'inventory_product_category', 'Hierarchical classification of product templates', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QMJTAEFCJY5WRTNHWZ', jsonb_build_object('en-US', 'Inventory - Product Attribute', 'vi-VN', 'Kho hàng - Thuộc tính sản phẩm'), 'inventory_product_attribute', 'Attributes whose values form product variants', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QAH9DQW7VXG9K87HWP', jsonb_build_object('en-US', 'Inventory - Product Attribute Value', 'vi-VN', 'Kho hàng - Giá trị thuộc tính sản phẩm'), 'inventory_product_attribute_value', 'Allowed values of a product attribute', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QDXYWAJ8D4ZAD50VW7', jsonb_build_object('en-US', 'Inventory - Brand', 'vi-VN', 'Kho hàng - Thương hiệu'), 'inventory_brand', 'Product brands', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -129,9 +129,9 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0B2Q5R34KTKF2YBXPBBC2JH', jsonb_build_object('en-US', 'Stock Location', 'vi-VN', 'Vị trí kho'), 'inventory_stock_location', 'Where stock is held, and the counterparties movements run against', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5R9XBX4YENXT9PN8J70', jsonb_build_object('en-US', 'Stock Operation Type', 'vi-VN', 'Loại nghiệp vụ kho'), 'inventory_stock_operation_type', 'Policy applied when processing a stock transfer', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B2Q5R3BQX4QWMQCNPQV5H6', jsonb_build_object('en-US', 'Stock Quant', 'vi-VN', 'Tồn kho theo vị trí'), 'inventory_stock_quant', 'Current stock balance at one product, location, lot, package and owner', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0B2Q5R34KTKF2YBXPBBC2JH', jsonb_build_object('en-US', 'Inventory - Stock Location', 'vi-VN', 'Kho hàng - Vị trí kho'), 'inventory_stock_location', 'Where stock is held, and the counterparties movements run against', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5R9XBX4YENXT9PN8J70', jsonb_build_object('en-US', 'Inventory - Stock Operation Type', 'vi-VN', 'Kho hàng - Loại nghiệp vụ kho'), 'inventory_stock_operation_type', 'Policy applied when processing a stock transfer', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B2Q5R3BQX4QWMQCNPQV5H6', jsonb_build_object('en-US', 'Inventory - Stock Quant', 'vi-VN', 'Kho hàng - Tồn kho theo vị trí'), 'inventory_stock_quant', 'Current stock balance at one product, location, lot, package and owner', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -170,10 +170,10 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0B434KTKF2YBXPBBC2JH9XB', jsonb_build_object('en-US', 'Stock Transfer', 'vi-VN', 'Phiếu chuyển kho'), 'inventory_stock_transfer', 'The header of a stock transaction: what moves, between which locations, in what state', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4X4YENXT9PN8J703BQX4Q', jsonb_build_object('en-US', 'Stock Move', 'vi-VN', 'Dịch chuyển kho'), 'inventory_stock_move', 'One line of demand within a transfer: this much of this variant, from here to there', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4WMQCNPQV5H6VRPCQHTGP', jsonb_build_object('en-US', 'Stock Move Line', 'vi-VN', 'Dòng dịch chuyển kho'), 'inventory_stock_move_line', 'The execution detail of a move: what was actually taken, and from which balance', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0B4JBZWQZ6PBAYTGAPKWX3G', jsonb_build_object('en-US', 'Stock Move Dependency', 'vi-VN', 'Phụ thuộc dịch chuyển kho'), 'inventory_stock_move_dependency', 'Ordering between the steps of a multi-step flow', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0B434KTKF2YBXPBBC2JH9XB', jsonb_build_object('en-US', 'Inventory - Stock Transfer', 'vi-VN', 'Kho hàng - Phiếu chuyển kho'), 'inventory_stock_transfer', 'The header of a stock transaction: what moves, between which locations, in what state', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4X4YENXT9PN8J703BQX4Q', jsonb_build_object('en-US', 'Inventory - Stock Move', 'vi-VN', 'Kho hàng - Dịch chuyển kho'), 'inventory_stock_move', 'One line of demand within a transfer: this much of this variant, from here to there', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4WMQCNPQV5H6VRPCQHTGP', jsonb_build_object('en-US', 'Inventory - Stock Move Line', 'vi-VN', 'Kho hàng - Dòng dịch chuyển kho'), 'inventory_stock_move_line', 'The execution detail of a move: what was actually taken, and from which balance', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0B4JBZWQZ6PBAYTGAPKWX3G', jsonb_build_object('en-US', 'Inventory - Stock Move Dependency', 'vi-VN', 'Kho hàng - Phụ thuộc dịch chuyển kho'), 'inventory_stock_move_dependency', 'Ordering between the steps of a multi-step flow', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -224,7 +224,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M0C3SQRTAAAAAAAAAAAAAAAB', jsonb_build_object('en-US', 'Stock Scrap', 'vi-VN', 'Hủy hàng tồn kho'), 'inventory_stock_scrap', 'A document that removes goods from usable stock by moving them to a scrap location', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0C3SQRTAAAAAAAAAAAAAAAB', jsonb_build_object('en-US', 'Inventory - Stock Scrap', 'vi-VN', 'Kho hàng - Hủy hàng tồn kho'), 'inventory_stock_scrap', 'A document that removes goods from usable stock by moving them to a scrap location', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -262,10 +262,10 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_resources'
 	) THEN
 		INSERT INTO "iam_resources" ("id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag") VALUES
-		('01M1N2Q3V769G2C81EBDXR3QH8', jsonb_build_object('en-US', 'Warehouse', 'vi-VN', 'Kho hàng'), 'inventory_warehouse', 'A site that can receive, hold and dispatch goods', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M14PV5Q32776611SWMJMG04X', jsonb_build_object('en-US', 'Storage Category', 'vi-VN', 'Loại lưu trữ'), 'inventory_storage_category', 'Capacity and mixing policy a location may carry', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1E4451SXVZ5KBSM1HEPQWAZ', jsonb_build_object('en-US', 'Warehouse Supply Relation', 'vi-VN', 'Quan hệ cung ứng kho'), 'inventory_warehouse_supply_relation', 'Which warehouse may resupply which', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M1E4XEPDJ24JDTC2R8H18X78', jsonb_build_object('en-US', 'Putaway Rule', 'vi-VN', 'Quy tắc cất hàng'), 'inventory_putaway_rule', 'Where arriving goods should be put', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M1N2Q3V769G2C81EBDXR3QH8', jsonb_build_object('en-US', 'Inventory - Warehouse', 'vi-VN', 'Kho hàng - Kho hàng'), 'inventory_warehouse', 'A site that can receive, hold and dispatch goods', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M14PV5Q32776611SWMJMG04X', jsonb_build_object('en-US', 'Inventory - Storage Category', 'vi-VN', 'Kho hàng - Loại lưu trữ'), 'inventory_storage_category', 'Capacity and mixing policy a location may carry', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1E4451SXVZ5KBSM1HEPQWAZ', jsonb_build_object('en-US', 'Inventory - Warehouse Supply Relation', 'vi-VN', 'Kho hàng - Quan hệ cung ứng kho'), 'inventory_warehouse_supply_relation', 'Which warehouse may resupply which', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M1E4XEPDJ24JDTC2R8H18X78', jsonb_build_object('en-US', 'Inventory - Putaway Rule', 'vi-VN', 'Kho hàng - Quy tắc cất hàng'), 'inventory_putaway_rule', 'Where arriving goods should be put', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -362,7 +362,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M2A7QK3P5NXCW9VBDT4RGZH2', jsonb_build_object('en-US', 'Stock Product Configuration', 'vi-VN', 'Cấu hình kho của sản phẩm'), 'inventory_stock_product_config', 'Stock settings of a product line, currently the unit its balances are counted in', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2A7QK3P5NXCW9VBDT4RGZH2', jsonb_build_object('en-US', 'Inventory - Stock Product Configuration', 'vi-VN', 'Kho hàng - Cấu hình kho của sản phẩm'), 'inventory_stock_product_config', 'Stock settings of a product line, currently the unit its balances are counted in', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -439,7 +439,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3WHRSV00000000000000001', jsonb_build_object('en-US', 'Stock Reservation', 'vi-VN', 'Giữ chỗ tồn kho'), 'inventory_stock_reservation', 'A quantity of one variant committed at one warehouse to one demand line, with no location chosen', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3WHRSV00000000000000001', jsonb_build_object('en-US', 'Inventory - Stock Reservation', 'vi-VN', 'Kho hàng - Giữ chỗ tồn kho'), 'inventory_stock_reservation', 'A quantity of one variant committed at one warehouse to one demand line, with no location chosen', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

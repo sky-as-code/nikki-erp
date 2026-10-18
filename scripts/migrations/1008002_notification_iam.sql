@@ -45,9 +45,9 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3NOTIF00000000000000001', jsonb_build_object('en-US', 'Notification', 'vi-VN', 'Thông báo'), 'notification_notification', 'A message raised by a module for one or more people', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3NOTIF00000000000000002', jsonb_build_object('en-US', 'Notification Recipient', 'vi-VN', 'Người nhận thông báo'), 'notification_recipient', 'One person''s copy of a notification, carrying their own read state', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3NOTIF00000000000000003', jsonb_build_object('en-US', 'Notification Delivery', 'vi-VN', 'Gửi thông báo'), 'notification_delivery', 'One attempt to deliver a notification over one channel', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3NOTIF00000000000000001', jsonb_build_object('en-US', 'Notification - Notification', 'vi-VN', 'Thông báo - Thông báo'), 'notification_notification', 'A message raised by a module for one or more people', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3NOTIF00000000000000002', jsonb_build_object('en-US', 'Notification - Recipient', 'vi-VN', 'Thông báo - Người nhận'), 'notification_recipient', 'One person''s copy of a notification, carrying their own read state', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3NOTIF00000000000000003', jsonb_build_object('en-US', 'Notification - Delivery', 'vi-VN', 'Thông báo - Gửi'), 'notification_delivery', 'One attempt to deliver a notification over one channel', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

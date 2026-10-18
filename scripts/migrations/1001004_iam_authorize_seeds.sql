@@ -9,14 +9,14 @@ BEGIN
 		) VALUES
 		-- ('01KF326DEC4ND7PK91AZQY0TJ0', 'AuthzAction', 'authz_action', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- ('01JWNX10DN9E2PVZTVPJNTWR7D', 'AuthzEntitlement', 'iam_entitlement', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01JWNYWE9FBX2WTMYZMR9XHHX6', jsonb_build_object('en-US', 'IAM Resource', 'vi-VN', 'Tài nguyên IAM'), 'iam_resource', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01JWNYV4RQ1ZKWG8RE0RMFTVCM', jsonb_build_object('en-US', 'IAM Role', 'vi-VN', 'Vai trò IAM'), 'iam_role', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01JWNX10DN9E2PVZTVPJNTWR7D', jsonb_build_object('en-US', 'IAM Entitlement', 'vi-VN', 'Quyền hạn IAM'), 'iam_entitlement', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KF32E4TSX9DVV9KVKBS7GQ0T', jsonb_build_object('en-US', 'IAM Grant Request', 'vi-VN', 'Yêu cầu cấp quyền IAM'), 'iam_grant_request', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01JWNYQ2A04PPV4135QGXX7W0M', jsonb_build_object('en-US', 'IAM User', 'vi-VN', 'Người dùng IAM'), 'iam_user', NULL, 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01JWNYQNN68RKN62TNG5K0CPCE', jsonb_build_object('en-US', 'IAM Group', 'vi-VN', 'Nhóm IAM'), 'iam_group', NULL, 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01JWNYQTHN6JTRNWKJ1BMCYB80', jsonb_build_object('en-US', 'IAM Organization', 'vi-VN', 'Tổ chức IAM'), 'iam_org', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01JWNYRSKZ56EAE2QRFHJWRZPT', jsonb_build_object('en-US', 'IAM Organizational Unit', 'vi-VN', 'Đơn vị tổ chức IAM'), 'iam_orgunit', NULL, 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
+		('01JWNYWE9FBX2WTMYZMR9XHHX6', jsonb_build_object('en-US', 'IAM - Resource', 'vi-VN', 'IAM - Tài nguyên'), 'iam_resource', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01JWNYV4RQ1ZKWG8RE0RMFTVCM', jsonb_build_object('en-US', 'IAM - Role', 'vi-VN', 'IAM - Vai trò'), 'iam_role', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01JWNX10DN9E2PVZTVPJNTWR7D', jsonb_build_object('en-US', 'IAM - Entitlement', 'vi-VN', 'IAM - Quyền hạn'), 'iam_entitlement', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KF32E4TSX9DVV9KVKBS7GQ0T', jsonb_build_object('en-US', 'IAM - Grant Request', 'vi-VN', 'IAM - Yêu cầu cấp quyền'), 'iam_grant_request', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01JWNYQ2A04PPV4135QGXX7W0M', jsonb_build_object('en-US', 'IAM - User', 'vi-VN', 'IAM - Người dùng'), 'iam_user', NULL, 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01JWNYQNN68RKN62TNG5K0CPCE', jsonb_build_object('en-US', 'IAM - Group', 'vi-VN', 'IAM - Nhóm'), 'iam_group', NULL, 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01JWNYQTHN6JTRNWKJ1BMCYB80', jsonb_build_object('en-US', 'IAM - Organization', 'vi-VN', 'IAM - Tổ chức'), 'iam_org', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01JWNYRSKZ56EAE2QRFHJWRZPT', jsonb_build_object('en-US', 'IAM - Organizational Unit', 'vi-VN', 'IAM - Đơn vị tổ chức'), 'iam_orgunit', NULL, 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
 	END IF;
 
 	IF EXISTS (

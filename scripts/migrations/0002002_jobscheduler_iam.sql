@@ -43,9 +43,9 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M2JBSCH00000000000000001', jsonb_build_object('en-US', 'Scheduled Job', 'vi-VN', 'Tác vụ định kỳ'), 'jobscheduler_job', 'Recurring job registered by a module, with its cron schedule and action', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2JBSCH00000000000000002', jsonb_build_object('en-US', 'Job Execution', 'vi-VN', 'Lượt thực thi tác vụ'), 'jobscheduler_execution', 'One occurrence of a scheduled job, with the configuration it ran under', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M2JBSCH00000000000000003', jsonb_build_object('en-US', 'Job Attempt', 'vi-VN', 'Lần chạy tác vụ'), 'jobscheduler_attempt', 'One actual run of an execution, including its outcome and lease', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M2JBSCH00000000000000001', jsonb_build_object('en-US', 'Job Scheduler - Scheduled Job', 'vi-VN', 'Bộ lập lịch tác vụ - Tác vụ định kỳ'), 'jobscheduler_job', 'Recurring job registered by a module, with its cron schedule and action', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2JBSCH00000000000000002', jsonb_build_object('en-US', 'Job Scheduler - Job Execution', 'vi-VN', 'Bộ lập lịch tác vụ - Lượt thực thi tác vụ'), 'jobscheduler_execution', 'One occurrence of a scheduled job, with the configuration it ran under', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M2JBSCH00000000000000003', jsonb_build_object('en-US', 'Job Scheduler - Job Attempt', 'vi-VN', 'Bộ lập lịch tác vụ - Lần chạy tác vụ'), 'jobscheduler_attempt', 'One actual run of an execution, including its outcome and lease', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
