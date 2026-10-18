@@ -7,31 +7,30 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
 // The line service keeps the stored header totals equal to the sum of the lines: every create,
-// update and delete recomputes the header before returning. It is a derived service rather than an
-// engine callback because the recompute writes to another resource and must share the write's
+// update and delete recomputes the header before returning. It is a derived service rather than a
+// validator hook because the recompute writes to another resource and must share the write's
 // transaction, and the ValidateExtra hook only runs before the write.
 
-// NewPurchaseOrderLineDomainService wraps base, the line engine's own resource service, so built-in
-// CRUD still runs through it and the totals work layers around it. Install with
-// Engine.SetResourceService.
+// NewPurchaseOrderLineDomainService wraps base, the line onion's default domain service, so built-in
+// CRUD still runs through it and the totals work layers around it.
 func NewPurchaseOrderLineDomainService(
-	base drif.DynamicResourceService, products *ProductLineValidator, pricer *LinePricer,
+	base composable.CrudDomainService, products *ProductLineValidator, pricer *LinePricer,
 ) *PurchaseOrderLineDomainServiceImpl {
 	return &PurchaseOrderLineDomainServiceImpl{
-		DynamicResourceService: base,
+		CrudDomainService: base,
 		products:               products,
 		pricer:                 pricer,
 	}
 }
 
 type PurchaseOrderLineDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 
 	// products applies the product and unit-of-measure rules and computes inventory_quantity.
 	// Nil in tests that exercise only the totals arithmetic, which needs no ports.
@@ -42,13 +41,11 @@ type PurchaseOrderLineDomainServiceImpl struct {
 	pricer *LinePricer
 }
 
-var _ drif.DynamicResourceService = (*PurchaseOrderLineDomainServiceImpl)(nil)
-
 // Create stamps the line's computed money fields, then recomputes the header. The stamp must
 // precede the base call: subtotal and total are required_for_create, so the schema would refuse the
 // create before this service could repair it.
 func (this *PurchaseOrderLineDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	StampLineTotals(params)
 
@@ -72,7 +69,7 @@ func (this *PurchaseOrderLineDomainServiceImpl) Create(
 		// Restamped because pricing may have supplied the unit price the first stamp lacked.
 		StampLineTotals(params)
 
-		created, err := this.DynamicResourceService.Create(tranxCtx, params)
+		created, err := this.CrudDomainService.Create(tranxCtx, params, options...)
 		if err != nil || created.ClientErrors.Count() > 0 {
 			result = created
 			return err
@@ -90,7 +87,7 @@ func (this *PurchaseOrderLineDomainServiceImpl) Create(
 // merged under the incoming params first because an update is partial: computing a subtotal from
 // the params alone would price a quantity-only change at zero.
 func (this *PurchaseOrderLineDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	var result *dyn.OpResult[dyn.MutateResultData]
 
@@ -126,7 +123,7 @@ func (this *PurchaseOrderLineDomainServiceImpl) Update(
 				merged[models.PurchaseOrderLineFieldInventoryQuantity]
 		}
 
-		updated, err := this.DynamicResourceService.Update(tranxCtx, params)
+		updated, err := this.CrudDomainService.Update(tranxCtx, params, options...)
 		result = updated
 		if err != nil || updated.ClientErrors.Count() > 0 {
 			return err
@@ -145,7 +142,7 @@ func (this *PurchaseOrderLineDomainServiceImpl) Update(
 // Delete removes the line and recomputes the header. The owning order must be read before the
 // delete: afterwards the line, and with it the only pointer to the order, is gone.
 func (this *PurchaseOrderLineDomainServiceImpl) Delete(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	var result *dyn.OpResult[dyn.MutateResultData]
 
@@ -155,7 +152,7 @@ func (this *PurchaseOrderLineDomainServiceImpl) Delete(
 			return err
 		}
 
-		deleted, err := this.DynamicResourceService.Delete(tranxCtx, params)
+		deleted, err := this.CrudDomainService.Delete(tranxCtx, params, options...)
 		result = deleted
 		if err != nil || deleted.ClientErrors.Count() > 0 {
 			return err
@@ -197,11 +194,11 @@ func (this *PurchaseOrderLineDomainServiceImpl) mergeStoredLine(
 		return nil, "", nil
 	}
 
-	engine, err := engineFor(models.PurchaseOrderLineSchemaName)
+	repo, err := repoFor(models.PurchaseOrderLineSchemaName)
 	if err != nil {
 		return nil, "", err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.PurchaseOrderLineFieldId: lineId,
 	})
 	if err != nil {
@@ -315,11 +312,11 @@ func (this *PurchaseOrderLineDomainServiceImpl) readOwningOrder(
 		return nil, nil
 	}
 
-	engine, err := engineFor(models.PurchaseOrderSchemaName)
+	repo, err := repoFor(models.PurchaseOrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.PurchaseOrderFieldId: orderId,
 	})
 	if err != nil {

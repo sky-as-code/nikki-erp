@@ -8,20 +8,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// NewPurchaseOrderDomainService derives the order service from the engine's default one. The
-// module must install it: the lifecycle operations live only on this type, and the action callbacks
-// reach them by type-asserting the engine's service.
+// NewPurchaseOrderDomainService derives the order service from the onion's default one. The
+// lifecycle operations live only on this type; the order application service reaches them by
+// type-asserting its domain service at construction.
 func NewPurchaseOrderDomainService(
-	base drif.DynamicResourceService, references *OrderReferenceValidator,
+	base composable.CrudDomainService, references *OrderReferenceValidator,
 	products *ProductLineValidator, pricer *LinePricer,
 ) *PurchaseOrderDomainServiceImpl {
 	return &PurchaseOrderDomainServiceImpl{
-		DynamicResourceService: base,
+		CrudDomainService: base,
 		references:             references,
 		products:               products,
 		pricer:                 pricer,
@@ -29,7 +29,7 @@ func NewPurchaseOrderDomainService(
 }
 
 type PurchaseOrderDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 
 	// Validates the vendor and currency and defaults the currency from the vendor. Nil in tests
 	// that exercise only the lifecycle rules.
@@ -42,14 +42,12 @@ type PurchaseOrderDomainServiceImpl struct {
 	pricer   *LinePricer
 }
 
-var _ drif.DynamicResourceService = (*PurchaseOrderDomainServiceImpl)(nil)
-
 // Create stamps the fields a client may not choose: a generated code, status forced to RFQ, zeroed
 // totals, and is_locked, vendor_acknowledged and approval_required set false. Approval is decided
 // at confirm time from the org configuration and the order total. Client values for these are
 // overwritten rather than rejected, so echoing a record back does not fail.
 func (this *PurchaseOrderDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	code, err := generateOrderCode()
 	if err != nil {
@@ -78,7 +76,7 @@ func (this *PurchaseOrderDomainServiceImpl) Create(
 		}
 	}
 
-	return this.DynamicResourceService.Create(ctx, prepared)
+	return this.CrudDomainService.Create(ctx, prepared, options...)
 }
 
 // generateOrderCode mints the order's human-facing reference. The prefix is "PO" whatever the

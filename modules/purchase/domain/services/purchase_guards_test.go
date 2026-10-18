@@ -1,7 +1,6 @@
-package dynamicengines
+package services
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,70 +8,19 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// TestMain registers the base mixins once for the whole package: ParseModelJson panics when a named
-// mixin is missing, and CoreModule.RegisterModels normally does this at start-up.
-func TestMain(m *testing.M) {
-	_ = basemodel.RegisterJsonBaseSchemas()
-	os.Exit(m.Run())
-}
-
-// Every schema this module registers must have an engine, and vice versa. The two lists are
-// maintained by hand in different files; a mismatch is either a resource with no HTTP surface or an
-// engine for a schema that does not exist, which fails at boot.
-func TestEveryResourceHasAnEngine(t *testing.T) {
-	assert.ElementsMatch(t, []string{
-		models.ConfigurationSchemaName,
-		models.VendorProductPriceSchemaName,
-		models.SourcingGroupSchemaName,
-		models.AgreementSchemaName,
-		models.AgreementLineSchemaName,
-		models.PurchaseOrderSchemaName,
-		models.PurchaseOrderLineSchemaName,
-		models.AuditEventSchemaName,
-	}, EngineSchemaNames())
-}
-
-// A default field set naming a field the schema lacks produces an engine that fails every listing
-// request.
-func TestDefaultSearchFieldsExistOnTheirSchemas(t *testing.T) {
-	builders := map[string]func() *dmodel.ModelSchemaBuilder{
-		models.ConfigurationSchemaName:      models.ConfigurationSchemaBuilder,
-		models.VendorProductPriceSchemaName: models.VendorProductPriceSchemaBuilder,
-		models.SourcingGroupSchemaName:      models.SourcingGroupSchemaBuilder,
-		models.AgreementSchemaName:          models.AgreementSchemaBuilder,
-		models.AgreementLineSchemaName:      models.AgreementLineSchemaBuilder,
-		models.PurchaseOrderSchemaName:      models.PurchaseOrderSchemaBuilder,
-		models.PurchaseOrderLineSchemaName:  models.PurchaseOrderLineSchemaBuilder,
-		models.AuditEventSchemaName:         models.AuditEventSchemaBuilder,
-	}
-
-	for _, spec := range engineSpecs {
-		builder, ok := builders[spec.SchemaName]
-		require.True(t, ok, "no builder for %s", spec.SchemaName)
-		schema := builder().Build()
-
-		assert.NotEmptyf(t, schema.DefaultSearchFields(),
-			"%s declares no default_search_fields, so its listing returns only primary keys",
-			spec.SchemaName)
-		for _, fieldName := range schema.DefaultSearchFields() {
-			_, exists := schema.Field(fieldName)
-			assert.True(t, exists, "%s lists default search field %q, which it does not have",
-				spec.SchemaName, fieldName)
-		}
-	}
-}
+// The guards receive the stored record as foundModel, the third argument, which is where the
+// domain service's Delete hands it over.
 
 // The audit trail is written by the system alone: a client-written event would sit in the same
 // table as the real ones with no way to tell them apart.
 func TestAuditEventWritesAreRefused(t *testing.T) {
 	vErrs := &ft.ClientErrors{}
 
-	err := rejectAuditEventWrite(nil, drif.NewDynamicEntityFrom(dmodel.DynamicFields{}), nil, vErrs)
+	err := rejectAuditEventWrite(nil, nil, composable.NewDynamicEntityFrom(dmodel.DynamicFields{}), vErrs)
 
 	require.NoError(t, err, "a refusal is a client error, not a Go error")
 	assert.Equal(t, 1, vErrs.Count())
@@ -83,7 +31,7 @@ func TestAuditEventWritesAreRefused(t *testing.T) {
 func TestSourcingGroupWritesAreRefused(t *testing.T) {
 	vErrs := &ft.ClientErrors{}
 
-	err := rejectSourcingGroupWrite(nil, drif.NewDynamicEntityFrom(dmodel.DynamicFields{}), nil, vErrs)
+	err := rejectSourcingGroupWrite(nil, nil, composable.NewDynamicEntityFrom(dmodel.DynamicFields{}), vErrs)
 
 	require.NoError(t, err)
 	assert.Equal(t, 1, vErrs.Count())
@@ -110,7 +58,7 @@ func TestOrderDeleteIsRefusedUnlessCancelled(t *testing.T) {
 				models.PurchaseOrderFieldStatus: string(testCase.status),
 			}
 
-			err := guardOrderDelete(nil, drif.NewDynamicEntityFrom(found), nil, vErrs)
+			err := GuardOrderDelete(nil, nil, composable.NewDynamicEntityFrom(found), vErrs)
 
 			require.NoError(t, err)
 			if testCase.allowed {
@@ -142,7 +90,7 @@ func TestAgreementDeleteIsRefusedUnlessDraftOrCancelled(t *testing.T) {
 				models.AgreementFieldStatus: string(testCase.status),
 			}
 
-			err := guardAgreementDelete(nil, drif.NewDynamicEntityFrom(found), nil, vErrs)
+			err := GuardAgreementDelete(nil, nil, composable.NewDynamicEntityFrom(found), vErrs)
 
 			require.NoError(t, err)
 			if testCase.allowed {
@@ -162,10 +110,10 @@ func TestDeleteGuardsRefuseAnUnreadableStatus(t *testing.T) {
 		fn   func(dmodel.DynamicFields, *ft.ClientErrors) error
 	}{
 		{"order", func(f dmodel.DynamicFields, v *ft.ClientErrors) error {
-			return guardOrderDelete(nil, drif.NewDynamicEntityFrom(f), nil, v)
+			return GuardOrderDelete(nil, nil, composable.NewDynamicEntityFrom(f), v)
 		}},
 		{"agreement", func(f dmodel.DynamicFields, v *ft.ClientErrors) error {
-			return guardAgreementDelete(nil, drif.NewDynamicEntityFrom(f), nil, v)
+			return GuardAgreementDelete(nil, nil, composable.NewDynamicEntityFrom(f), v)
 		}},
 	} {
 		t.Run(guard.name, func(t *testing.T) {
@@ -202,4 +150,30 @@ func enumValues(t *testing.T, builder *dmodel.ModelSchemaBuilder, fieldName stri
 	values, ok := raw.([]string)
 	require.True(t, ok)
 	return values
+}
+
+// An update is validated as the record will be: the change overlays the stored row, never the
+// other way round, or a price change would be validated against the price it replaces.
+func TestTheChangeOverlaysTheStoredVendorPrice(t *testing.T) {
+	merged := MergedRecord(
+		dmodel.DynamicFields{"unit_price": "10", "vendor_id": "01VENDOR"},
+		dmodel.DynamicFields{"unit_price": "12"},
+	)
+
+	assert.Equal(t, "12", merged["unit_price"])
+	assert.Equal(t, "01VENDOR", merged["vendor_id"])
+}
+
+// A create has no stored row, and must still be validated: the input alone is the record.
+func TestACreatedVendorPriceIsValidated(t *testing.T) {
+	svc := &VendorProductPriceDomainServiceImpl{validator: NewVendorPriceValidator(nil, nil, nil)}
+	vErrs := &ft.ClientErrors{}
+
+	err := svc.validateVendorPrice(nil, composable.NewDynamicEntityFrom(dmodel.DynamicFields{
+		models.VendorProductPriceFieldValidFrom: "2026-02-01T00:00:00Z",
+		models.VendorProductPriceFieldValidTo:   "2026-01-01T00:00:00Z",
+	}), nil, vErrs)
+
+	require.NoError(t, err)
+	assert.Positive(t, vErrs.Count(), "a create must reach the validator")
 }

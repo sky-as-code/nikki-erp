@@ -66,7 +66,7 @@ type AuditEntry struct {
 // not the caller, so an operation cannot record somebody else as having performed it; it stays
 // empty for a system-initiated transition, which genuinely has no actor.
 func WriteAuditEvent(ctx corectx.Context, entry AuditEntry) error {
-	engine, err := engineFor(models.AuditEventSchemaName)
+	repo, err := repoFor(models.AuditEventSchemaName)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func WriteAuditEvent(ctx corectx.Context, entry AuditEntry) error {
 
 	// Through the repository, not the resource service: the service guard refuses every client
 	// write to this resource and must keep doing so while the system writes its own events.
-	_, err = engine.ResourceRepository().Insert(ctx, event)
+	_, err = repo.Insert(ctx, event)
 	return errors.Wrap(err, "WriteAuditEvent")
 }
 

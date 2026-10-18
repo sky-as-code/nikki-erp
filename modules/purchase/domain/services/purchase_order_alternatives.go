@@ -16,7 +16,7 @@ import (
 
 // Alternatives: asking several vendors for the same thing and comparing what comes back. A
 // sourcing group only records that these orders answer the same requirement; it carries no fields
-// of its own, and the engine refuses direct creation because a hand-made group would be an empty
+// of its own, and its domain service refuses direct creation because a hand-made group would be an empty
 // container nothing reaps.
 
 // The answers to the confirm-time alternatives warning.
@@ -112,7 +112,7 @@ func (this *PurchaseOrderDomainServiceImpl) ensureSourcingGroup(
 		return existing, nil
 	}
 
-	groupEngine, err := engineFor(models.SourcingGroupSchemaName)
+	groupRepo, err := repoFor(models.SourcingGroupSchemaName)
 	if err != nil {
 		return "", err
 	}
@@ -125,9 +125,9 @@ func (this *PurchaseOrderDomainServiceImpl) ensureSourcingGroup(
 	if orgId := stringOf(source, basemodel.FieldOrgId); orgId != "" {
 		group[basemodel.FieldOrgId] = orgId
 	}
-	// Through the repository, not the service: the engine's guard refuses client creation of a
+	// Through the repository, not the service: the sourcing group's domain service refuses creation of a
 	// sourcing group and must keep doing so while the system still creates its own.
-	if _, err := groupEngine.ResourceRepository().Insert(ctx, group); err != nil {
+	if _, err := groupRepo.Insert(ctx, group); err != nil {
 		return "", errors.Wrap(err, "ensureSourcingGroup")
 	}
 
@@ -321,11 +321,11 @@ func ReapSourcingGroup(ctx corectx.Context, groupId string) error {
 		}
 	}
 
-	groupEngine, err := engineFor(models.SourcingGroupSchemaName)
+	groupRepo, err := repoFor(models.SourcingGroupSchemaName)
 	if err != nil {
 		return err
 	}
-	_, err = groupEngine.ResourceRepository().DeleteOne(ctx, dmodel.DynamicFields{
+	_, err = groupRepo.DeleteOne(ctx, dmodel.DynamicFields{
 		models.SourcingGroupFieldId: groupId,
 	})
 	return errors.Wrap(err, "ReapSourcingGroup")
@@ -334,10 +334,10 @@ func ReapSourcingGroup(ctx corectx.Context, groupId string) error {
 func loadSourcingGroupOrders(
 	ctx corectx.Context, groupId string,
 ) ([]dmodel.DynamicFields, error) {
-	engine, err := engineFor(models.PurchaseOrderSchemaName)
+	repo, err := repoFor(models.PurchaseOrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
 	return models.FindOrdersInSourcingGroup(
-		ctx, engine.ResourceRepository(), groupId, models.MaxSourcingGroupOrders)
+		ctx, repo, groupId, models.MaxSourcingGroupOrders)
 }

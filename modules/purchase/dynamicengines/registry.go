@@ -1,129 +1,53 @@
-// Package dynamicengines declares the resource engines the Purchase module serves, and creates them
-// during Init(). It may import only the domain, the module's own interfaces and dynamicresource —
-// never app/, infra/ or transport/ — so that both purchase and purchase/transport/restful can
-// import it without a cycle. The rules its callbacks enforce live in domain/services.
+// Package dynamicengines registers the composable onions of the Purchase resources and publishes
+// their typed layers into the dependency container. Each onion is a container constructor that
+// receives the ports its domain service validates against; Init only registers, and
+// BuildAllEngines forces the construction once every port is bound.
 package dynamicengines
 
 import (
-	"go.bryk.io/pkg/errors"
+	stdErr "errors"
 
-	"github.com/sky-as-code/nikki-erp/common/array"
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
 )
 
-// engineSpec declares one resource engine the Purchase module owns.
-type engineSpec struct {
-	// SchemaName must be an XSchemaName constant, never a string derived from the resource path.
-	SchemaName string
-
-
-	// DefineActions is optional; a resource without custom behavior leaves it nil.
-	DefineActions func(drif.DynamicResourceEngine) error
-}
-
-// engineSpecs lists the resources this module serves. The order matches RegisterModels for
-// readability only; engines are created after every schema is registered.
-var engineSpecs = []engineSpec{
-	configurationEngineSpec(),
-	vendorProductPriceEngineSpec(),
-	sourcingGroupEngineSpec(),
-	agreementEngineSpec(),
-	agreementLineEngineSpec(),
-	purchaseOrderEngineSpec(),
-	purchaseOrderLineEngineSpec(),
-	auditEventEngineSpec(),
-}
-
-func configurationEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.ConfigurationSchemaName,
-	}
-}
-
-func vendorProductPriceEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName:    models.VendorProductPriceSchemaName,
-		DefineActions: defineVendorProductPriceGuards,
-	}
-}
-
-func sourcingGroupEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.SourcingGroupSchemaName,
-		DefineActions: defineSourcingGroupGuards,
-	}
-}
-
-func agreementEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.AgreementSchemaName,
-		DefineActions: defineAgreementActions,
-	}
-}
-
-func agreementLineEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.AgreementLineSchemaName,
-	}
-}
-
-func purchaseOrderEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.PurchaseOrderSchemaName,
-		DefineActions: defineOrderActions,
-	}
-}
-
-func purchaseOrderLineEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.PurchaseOrderLineSchemaName,
-	}
-}
-
-func auditEventEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName: models.AuditEventSchemaName,
-		DefineActions: defineAuditEventGuards,
-	}
-}
-
-// EngineSchemaNames lists the schemas this module creates an engine for, so that route
-// registration and engine creation cannot drift apart.
-func EngineSchemaNames() []string {
-	return array.Map(engineSpecs, func(spec engineSpec) string {
-		return spec.SchemaName
-	})
-}
-
-// InitDynamicEngines creates this module's engines and publishes them into the dependency
-// container so other modules can inject them by name.
+// InitDynamicEngines registers every resource this module serves. It must run after
+// infra/external has bound the ports the onions inject.
 func InitDynamicEngines() error {
-	for _, spec := range engineSpecs {
-		if err := initEngine(spec); err != nil {
-			return err
-		}
-	}
-	return nil
+	return stdErr.Join(
+		registerConfigurationEngine(),
+		registerVendorProductPriceEngine(),
+		registerSourcingGroupEngine(),
+		registerAgreementEngine(),
+		registerAgreementLineEngine(),
+		registerPurchaseOrderEngine(),
+		registerPurchaseOrderLineEngine(),
+		registerAuditEventEngine(),
+	)
 }
 
-func initEngine(spec engineSpec) error {
-	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create the '%s' resource engine", spec.SchemaName)
+// SchemaNames lists the resources served by a composable onion, in RegisterModels order, for route
+// registration and the boot-time check that each was built.
+func SchemaNames() []string {
+	return []string{
+		models.ConfigurationSchemaName,
+		models.VendorProductPriceSchemaName,
+		models.SourcingGroupSchemaName,
+		models.AgreementSchemaName,
+		models.AgreementLineSchemaName,
+		models.PurchaseOrderSchemaName,
+		models.PurchaseOrderLineSchemaName,
+		models.AuditEventSchemaName,
 	}
+}
 
-	if spec.DefineActions != nil {
-		if err := spec.DefineActions(engine); err != nil {
-			return errors.Wrapf(err, "failed to define actions of the '%s' resource engine", spec.SchemaName)
-		}
-	}
-
-	err = deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(spec.SchemaName),
-		func() drif.DynamicResourceEngine { return engine },
-	)
-	return errors.Wrapf(err, "failed to register the '%s' resource engine", spec.SchemaName)
+// buildOnion builds one onion and installs it into the resource hub, through which the lifecycle
+// operations, the totals recomputation and the usage checker reach the repositories.
+func buildOnion(
+	impl *composable.DynamicResourceEngineOnionImpl, param composable.BuildParam,
+) composable.DynamicResourceEngineOnion {
+	onion := composable.MustBuild(impl, param)
+	services.InstallResource(impl.SchemaName, onion.Repository(), onion.DomainService())
+	return onion
 }

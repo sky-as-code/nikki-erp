@@ -15,8 +15,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 	invModels "github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
@@ -136,10 +134,4 @@ func derefId(value *model.Id) model.Id {
 
 func derefBool(value *bool) bool {
 	return value != nil && *value
-}
-
-// engineFor resolves one of this module's own resource engines from the legacy registry, for the
-// usage probe that reads purchase rows. Inventory's resources are reached through their ports.
-func engineFor(schemaName string) (drif.DynamicResourceEngine, bool) {
-	return dynamicresource.Registry().GetEngine(schemaName)
 }

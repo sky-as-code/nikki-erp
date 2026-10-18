@@ -1,4 +1,4 @@
-package dynamicengines
+package app
 
 import (
 	"os"
@@ -9,27 +9,28 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/constants"
 )
 
-// A permission code the engine demands but the seed never created denies every request for that
+// A permission code the application service demands but the seed never created denies every request for that
 // action, with nothing in the response pointing at the seed. This reads the migration and checks
 // the Go constants and the SQL agree, which is the only comparison possible without a database.
 func TestOrderActionPermissionsAreSeeded(t *testing.T) {
 	seeded := seededActionCodes(t, "purchase_order")
 
 	for _, permission := range []string{
-		PermissionConfirm,
-		PermissionApprove,
-		PermissionCancel,
-		PermissionSend,
-		PermissionLock,
-		PermissionUnlock,
-		PermissionAcknowledge,
-		PermissionMerge,
+		constants.ActionConfirm,
+		constants.ActionApprove,
+		constants.ActionCancel,
+		constants.ActionSend,
+		constants.ActionLock,
+		constants.ActionUnlock,
+		constants.ActionAcknowledge,
+		constants.ActionMerge,
 	} {
 		assert.Contains(t, seeded, permission,
-			"the engine demands the %q permission, which 1006002_purchase_iam.sql does not seed", permission)
+			"the application service demands the %q permission, which 1006002_purchase_iam.sql does not seed", permission)
 	}
 
 	// Duplicate reuses `create`, so the seed must not have grown a row of its own: an unused action
@@ -38,28 +39,28 @@ func TestOrderActionPermissionsAreSeeded(t *testing.T) {
 	assert.NotContains(t, seeded, "print")
 }
 
-// The reverse direction: every code the seed creates must be one the engine demands, or it grants
+// The reverse direction: every code the seed creates must be one the application service demands, or it grants
 // nothing.
 func TestSeededOrderActionsAreDemanded(t *testing.T) {
 	demanded := map[string]bool{
-		drif.PermissionCreate: true,
-		drif.PermissionUpdate: true,
-		drif.PermissionDelete: true,
-		drif.PermissionRead:   true,
-		PermissionConfirm:     true,
-		PermissionApprove:     true,
-		PermissionCancel:      true,
-		PermissionSend:        true,
-		PermissionLock:        true,
-		PermissionUnlock:      true,
-		PermissionAcknowledge: true,
+		composable.PermissionCreate: true,
+		composable.PermissionUpdate: true,
+		composable.PermissionDelete: true,
+		composable.PermissionRead:   true,
+		constants.ActionConfirm:     true,
+		constants.ActionApprove:     true,
+		constants.ActionCancel:      true,
+		constants.ActionSend:        true,
+		constants.ActionLock:        true,
+		constants.ActionUnlock:      true,
+		constants.ActionAcknowledge: true,
 		// Merge is seeded but not yet reached; the constant exists so the two cannot drift apart.
-		PermissionMerge: true,
+		constants.ActionMerge: true,
 	}
 
 	for _, code := range seededActionCodes(t, "purchase_order") {
 		assert.True(t, demanded[code],
-			"1006002_purchase_iam.sql seeds the %q action, which no engine action demands", code)
+			"1006002_purchase_iam.sql seeds the %q action, which no application method demands", code)
 	}
 }
 
@@ -99,13 +100,13 @@ func TestAgreementActionPermissionsAreSeeded(t *testing.T) {
 	seeded := seededActionCodes(t, "purchase_agreement")
 
 	for _, permission := range []string{
-		PermissionConfirm,
-		PermissionClose,
-		PermissionCancel,
-		drif.PermissionSetArchived,
+		constants.ActionConfirm,
+		constants.ActionClose,
+		constants.ActionCancel,
+		composable.PermissionSetArchived,
 	} {
 		assert.Contains(t, seeded, permission,
-			"the engine demands the %q permission, which 1006002_purchase_iam.sql does not seed",
+			"the application service demands the %q permission, which 1006002_purchase_iam.sql does not seed",
 			permission)
 	}
 
@@ -118,18 +119,18 @@ func TestAgreementActionPermissionsAreSeeded(t *testing.T) {
 
 func TestSeededAgreementActionsAreDemanded(t *testing.T) {
 	demanded := map[string]bool{
-		drif.PermissionCreate:      true,
-		drif.PermissionUpdate:      true,
-		drif.PermissionDelete:      true,
-		drif.PermissionRead:        true,
-		drif.PermissionSetArchived: true,
-		PermissionConfirm:          true,
-		PermissionClose:            true,
-		PermissionCancel:           true,
+		composable.PermissionCreate:      true,
+		composable.PermissionUpdate:      true,
+		composable.PermissionDelete:      true,
+		composable.PermissionRead:        true,
+		composable.PermissionSetArchived: true,
+		constants.ActionConfirm:          true,
+		constants.ActionClose:            true,
+		constants.ActionCancel:           true,
 	}
 
 	for _, code := range seededActionCodes(t, "purchase_agreement") {
 		assert.True(t, demanded[code],
-			"1006002_purchase_iam.sql seeds the %q action, which no engine action demands", code)
+			"1006002_purchase_iam.sql seeds the %q action, which no application method demands", code)
 	}
 }

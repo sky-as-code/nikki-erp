@@ -7,11 +7,14 @@ package purchase
 import (
 	stdErr "errors"
 
+	"go.bryk.io/pkg/errors"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/purchase/constants"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/infra/external"
 	purchasecqrs "github.com/sky-as-code/nikki-erp/modules/purchase/transport/cqrs"
@@ -45,8 +48,8 @@ func (*PurchaseModule) Category() modules.ModuleCategory {
 	return modules.ModuleCategoryFoundation
 }
 
-// Deps names every module Purchase reads through a port: dynamicresource hosts the resource
-// engines, essential supplies UoM conversion and currency, inventory the product variant and its
+// Deps names every module Purchase reads through a port: dynamicresource hosts the composable
+// onions, essential supplies UoM conversion and currency, inventory the product variant and its
 // purchase_ok flag, contacts the vendor party and its vendor profile.
 func (*PurchaseModule) Deps() []string {
 	return []string{
@@ -66,8 +69,9 @@ func (*PurchaseModule) Version() semver.SemVer {
 }
 
 // Init implements DynamicModule. The order is load-bearing: external ports first because the
-// derived line service needs them, then the engines because a derived service wraps the engine's
-// own, then REST last because it registers the engines' routes.
+// onions inject them, then the onion registrations, then the usage-check handler and the routes.
+// BuildAllEngines forces every onion no route resolved, so the resource hub the lifecycle
+// operations and the usage checker read through is complete before the first request.
 func (*PurchaseModule) Init() error {
 	if err := external.InitExternal(); err != nil {
 		return err
@@ -75,13 +79,33 @@ func (*PurchaseModule) Init() error {
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}
-	if err := dynamicengines.InitDomainServices(); err != nil {
-		return err
-	}
 	if err := purchasecqrs.InitCqrsHandlers(); err != nil {
 		return err
 	}
-	return restful.InitRestfulHandlers()
+	if err := restful.InitRestfulHandlers(); err != nil {
+		return err
+	}
+	if err := dynamicengines.BuildAllEngines(); err != nil {
+		return err
+	}
+	return assertEveryResourceInstalled()
+}
+
+// assertEveryResourceInstalled fails the boot when an onion was declared but never built: the first
+// caller to notice would otherwise be a lifecycle action or a usage check.
+func assertEveryResourceInstalled() error {
+	installed := map[string]bool{}
+	for _, name := range services.InstalledResourceNames() {
+		installed[name] = true
+	}
+	var missing []error
+	for _, name := range dynamicengines.SchemaNames() {
+		if !installed[name] {
+			missing = append(missing,
+				errors.Errorf("the '%s' purchase resource was declared but never built", name))
+		}
+	}
+	return stdErr.Join(missing...)
 }
 
 // RegisterModels implements DynamicModule. The order is load-bearing: an edge is resolved against

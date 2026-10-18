@@ -1,6 +1,6 @@
 // Package services holds the rules of the Purchase module: the totals recomputation, the order and
-// agreement lifecycles, and the audit trail that records them. Everything here is reached from a
-// dynamicengines action callback, which adapts and validates the request; the writes belong here.
+// agreement lifecycles, and the audit trail that records them. Everything here is reached from an
+// application service in app/, which authorizes and adapts the request; the writes belong here.
 package services
 
 import (
@@ -13,27 +13,9 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
-
-// engineFor resolves another resource's engine from the registry. It is a variable so a test can
-// substitute its own engines; the registry is a package singleton populated during Init.
-var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
-	if !ok {
-		return nil, errors.Errorf("no resource engine for '%s'", schemaName)
-	}
-	return engine, nil
-}
-
-// EngineFor exposes the registry lookup to dynamicengines, whose action callbacks receive only
-// their own engine. It delegates to engineFor so a test's substitution is honoured here too.
-func EngineFor(schemaName string) (drif.DynamicResourceEngine, error) {
-	return engineFor(schemaName)
-}
 
 // withOrderTransaction runs body inside one transaction on a cloned context. The transaction must
 // go on the clone, never on ctx itself, or a committed transaction stays visible to whatever runs
@@ -41,12 +23,12 @@ func EngineFor(schemaName string) (drif.DynamicResourceEngine, error) {
 // no join-existing-transaction branch: BeginTx returns ErrTxNested, and nesting these entry points
 // is a bug rather than a case to handle.
 func withOrderTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
-	engine, err := engineFor(models.PurchaseOrderSchemaName)
+	repo, err := repoFor(models.PurchaseOrderSchemaName)
 	if err != nil {
 		return err
 	}
 
-	tranx, err := engine.ResourceRepository().BeginTransaction(ctx)
+	tranx, err := repo.BeginTransaction(ctx)
 	if err != nil {
 		return errors.Wrap(err, "withOrderTransaction")
 	}
