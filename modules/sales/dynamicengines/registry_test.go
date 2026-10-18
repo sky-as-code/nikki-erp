@@ -17,27 +17,23 @@ import (
 // decision someone must confirm, not a number that drifts silently.
 const engineSchemaCount = 41
 
-// Every schema Sales serves appears exactly once. A schema served twice would be registered by
-// both engine generations at once, which assertNoDualServing refuses at boot; catching it here
-// costs a millisecond instead of a container start and a log read.
+// Every schema Sales serves appears exactly once. A schema listed twice would register its onion
+// and its routes twice; catching it here costs a millisecond instead of a container start.
 func TestEngineSchemaNamesHasNoDuplicate(t *testing.T) {
 	seen := map[string]bool{}
 	for _, name := range EngineSchemaNames() {
 		if seen[name] {
-			t.Errorf("schema '%s' is registered twice; a schema served by both the legacy registry "+
-				"and a composable onion fails the boot in assertNoDualServing", name)
+			t.Errorf("schema '%s' is registered twice", name)
 		}
 		seen[name] = true
 	}
 }
 
-// The count is stable across the migration: EngineSchemaNames answers every schema Sales serves,
-// whichever generation serves it, so moving a resource from one to the other must not change it.
+// EngineSchemaNames answers every schema Sales serves through an onion.
 func TestEngineSchemaNamesCount(t *testing.T) {
 	if got := len(EngineSchemaNames()); got != engineSchemaCount {
 		t.Errorf("EngineSchemaNames() returned %d schemas, want %d; a resource was added or removed "+
-			"without updating engineSchemaCount, or a cut-over added it to one list without removing "+
-			"it from the other", got, engineSchemaCount)
+			"without updating engineSchemaCount", got, engineSchemaCount)
 	}
 }
 
