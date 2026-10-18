@@ -1,6 +1,7 @@
 *** Settings ***
 Documentation     Update Role with an entitlement delta: PATCH /v1/iam/roles/:id accepts
-...               `entitlements: {add: [{resource_id, action_id|null, description?}], remove: [ids]}`.
+...               `entitlements: {add: [{resource_id, action_id|null, description?}], remove: [ids],
+...               update: [{id, description}]}`. An update changes only the description.
 ...
 ...               The role row and the entitlement changes commit in one transaction with one
 ...               permission rebuild for the role. A grant takes the resource's max_scope, a
@@ -57,11 +58,12 @@ Patch Role Entitlements
     [Documentation]    Sends an entitlement delta with the role's current etag (or the one
     ...    given) plus any extra role fields. Returns the raw response.
     [Arguments]    ${role_id}    ${add}=${{ [] }}    ${remove}=${{ [] }}    ${alias}=api
-    ...    ${etag}=${None}    ${extra}=${{ {} }}
+    ...    ${etag}=${None}    ${extra}=${{ {} }}    ${update}=${{ [] }}
     IF    $etag is None
         ${etag}=    Role Etag    ${role_id}
     END
-    ${body}=    Evaluate    {**$extra, 'etag': $etag, 'entitlements': {'add': $add, 'remove': $remove}}
+    ${delta}=    Evaluate    {'add': $add, 'remove': $remove, 'update': $update}
+    ${body}=    Evaluate    {**$extra, 'etag': $etag, 'entitlements': $delta}
     ${resp}=    PATCH On Session    ${alias}    ${ROLE_API}/${role_id}    json=${body}    expected_status=any
     RETURN    ${resp}
 
@@ -88,6 +90,14 @@ Role Should Grant
     ${entitlements}=    Role Entitlements    ${role_id}
     Dictionary Should Contain Key    ${entitlements}    ${expression}
     RETURN    ${entitlements}[${expression}]
+
+Entitlement Description
+    [Arguments]    ${ent_id}
+    ${graph}=    Set Variable    {"if":["id", "=", "${ent_id}"]}
+    ${resp}=    GET On Session    api    ${ENTITLEMENT_API}
+    ...    params=${{ {'graph': $graph, 'fields': 'id,description', 'size': 1} }}
+    Response Status Should Be    ${resp}    200
+    RETURN    ${resp.json()}[items][0][description]
 
 Role Should Not Grant
     [Arguments]    ${role_id}    ${expression}
@@ -139,6 +149,24 @@ Role Fields And A Delta Change Together
     Should Be Equal    ${description}    Robot delta with fields
     Role Should Grant    ${TARGET_ROLE_ID}    ${READ_EXPRESSION}
 
+A Delta Updates An Entitlement Description
+    [Tags]    entitlements
+    ${ent_id}=    Role Should Grant    ${TARGET_ROLE_ID}    ${READ_EXPRESSION}
+    ${update}=    Evaluate    [{'id': $ent_id, 'description': 'Robot edited description'}]
+    ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    update=${update}
+    Response Should Be Update Success    ${resp}
+    ${description}=    Entitlement Description    ${ent_id}
+    Should Be Equal    ${description}    Robot edited description
+    Role Should Grant    ${TARGET_ROLE_ID}    ${READ_EXPRESSION}
+
+Updating An Entitlement The Same Delta Removes Is Refused
+    [Tags]    entitlements    negative
+    ${ent_id}=    Role Should Grant    ${TARGET_ROLE_ID}    ${READ_EXPRESSION}
+    ${update}=    Evaluate    [{'id': $ent_id, 'description': 'Robot must not apply'}]
+    ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    remove=${{ [$ent_id] }}    update=${update}
+    Response Should Be Delta Refusal    ${resp}    err_entitlement_update_removed
+    Role Should Grant    ${TARGET_ROLE_ID}    ${READ_EXPRESSION}
+
 Removing Another Role's Entitlement Is Refused
     [Tags]    entitlements    negative
     ${grant}=    Grant    ${READ_ACTION_ID}
@@ -148,6 +176,9 @@ Removing Another Role's Entitlement Is Refused
     ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    remove=${{ [$foreign_ent_id] }}
     Response Should Be Delta Refusal    ${resp}    err_entitlement_not_in_role
     Role Should Grant    ${FOREIGN_ROLE_ID}    ${READ_EXPRESSION}
+    ${update}=    Evaluate    [{'id': $foreign_ent_id, 'description': 'Robot must not apply'}]
+    ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    update=${update}
+    Response Should Be Delta Refusal    ${resp}    err_entitlement_not_in_role
 
 A Grant The Role Already Has Is Refused And Rolls Back
     [Documentation]    The refusal must also undo the role field change sent with it.

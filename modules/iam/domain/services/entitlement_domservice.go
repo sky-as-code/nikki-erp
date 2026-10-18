@@ -471,13 +471,26 @@ func (this *EntitlementDomainServiceImpl) UpdateEntitlement(
 	ctx corectx.Context, cmd itEnt.UpdateEntitlementCommand, options ...corecrud.ServiceUpdateOptions[*domain.Entitlement],
 ) (*itEnt.UpdateEntitlementResult, error) {
 	opts := safe.GetOptional(options, corecrud.ServiceUpdateOptions[*domain.Entitlement]{})
+	return this.updateEntitlement(ctx, cmd, opts, true)
+}
+
+func (this *EntitlementDomainServiceImpl) UpdateEntitlementDeferRebuild(
+	ctx corectx.Context, cmd itEnt.UpdateEntitlementCommand,
+) (*itEnt.UpdateEntitlementResult, error) {
+	return this.updateEntitlement(ctx, cmd, corecrud.ServiceUpdateOptions[*domain.Entitlement]{}, false)
+}
+
+func (this *EntitlementDomainServiceImpl) updateEntitlement(
+	ctx corectx.Context, cmd itEnt.UpdateEntitlementCommand,
+	opts corecrud.ServiceUpdateOptions[*domain.Entitlement], rebuild bool,
+) (*itEnt.UpdateEntitlementResult, error) {
 	result, err := corecrud.Update(ctx, corecrud.UpdateParam[domain.Entitlement, *domain.Entitlement]{
 		Action:                 "update entitlement",
 		DbRepoGetter:           this.entitlementRepo,
 		Data:                   cmd,
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
-	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
+	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData || !rebuild {
 		return result, err
 	}
 	if entId := cmd.GetId(); entId != nil {

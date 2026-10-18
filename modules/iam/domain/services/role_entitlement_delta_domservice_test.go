@@ -118,3 +118,58 @@ func TestPrefixFields_NestsUnderTheDeltaItem(t *testing.T) {
 	assert.Equal(t, testGrantField+".resource_id", out[0].Field)
 	assert.Equal(t, testGrantField, out[1].Field)
 }
+
+func TestValidateDeltaSize_RefusesOversizedUpdates(t *testing.T) {
+	delta := itRole.RoleEntitlementsDelta{
+		Update: make([]itRole.RoleEntitlementUpdate, itRole.RoleEntitlementsDeltaMaxItems+1),
+	}
+
+	cErrs := validateDeltaSize(delta)
+
+	require.Equal(t, 1, cErrs.Count())
+	assert.Equal(t, "entitlements.update", cErrs[0].Field)
+}
+
+func TestValidateEntitlementUpdates_RefusesMissingRemovedAndRepeatedIds(t *testing.T) {
+	delta := itRole.RoleEntitlementsDelta{
+		Remove: []model.Id{testForeignId},
+		Update: []itRole.RoleEntitlementUpdate{
+			{Id: testReadId},
+			{Id: ""},
+			{Id: testForeignId},
+			{Id: testReadId},
+		},
+	}
+
+	cErrs := validateEntitlementUpdates(delta)
+
+	require.Equal(t, 3, cErrs.Count())
+	assert.Equal(t, "entitlements.update[1].id", cErrs[0].Field)
+	assert.Equal(t, "iam:err_entitlement_update_removed", cErrs[1].Key)
+	assert.Equal(t, "entitlements.update[2]", cErrs[1].Field)
+	assert.Equal(t, "iam:err_entitlement_update_repeated", cErrs[2].Key)
+	assert.Equal(t, "entitlements.update[3]", cErrs[2].Field)
+}
+
+func TestAssertUpdatesOwned_RefusesForeignEntitlements(t *testing.T) {
+	updates := []itRole.RoleEntitlementUpdate{{Id: testReadId}, {Id: testForeignId}}
+	etags := map[model.Id]model.Etag{testReadId: "etag-1"}
+
+	cErrs := assertUpdatesOwned(updates, etags)
+
+	require.Equal(t, 1, cErrs.Count())
+	assert.Equal(t, "iam:err_entitlement_not_in_role", cErrs[0].Key)
+	assert.Equal(t, "entitlements.update[1]", cErrs[0].Field)
+}
+
+func TestEntitlementUpdateCommand_CarriesOnlyIdEtagAndDescription(t *testing.T) {
+	description := "Read users"
+
+	cmd := entitlementUpdateCommand(itRole.RoleEntitlementUpdate{Id: testReadId, Description: &description}, "etag-1")
+
+	fields := cmd.Entitlement.GetFieldData()
+	assert.Equal(t, testReadId, *cmd.Entitlement.GetId())
+	assert.Equal(t, "etag-1", fields["etag"])
+	assert.Equal(t, description, fields[domain.EntitlementFieldDescription])
+	assert.Len(t, fields, 3)
+}

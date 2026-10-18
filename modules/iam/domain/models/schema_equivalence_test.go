@@ -235,7 +235,8 @@ func entitlementSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().Name(EntitlementFieldName).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
-				RequiredForCreate(),
+				RequiredForCreate().
+				NoUpdate(),
 		).
 		Field(
 			dmodel.DefineField().Name(EntitlementFieldDescription).

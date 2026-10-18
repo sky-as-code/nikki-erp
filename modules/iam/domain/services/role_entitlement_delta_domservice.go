@@ -19,6 +19,7 @@ import (
 const (
 	deltaFieldAdd    = itRole.UpdateRoleFieldEntitlements + ".add"
 	deltaFieldRemove = itRole.UpdateRoleFieldEntitlements + ".remove"
+	deltaFieldUpdate = itRole.UpdateRoleFieldEntitlements + ".update"
 )
 
 // roleGrantPlan is one requested grant, resolved and checked before anything is written.
@@ -34,11 +35,15 @@ type roleGrantPlan struct {
 
 // applyEntitlementsDelta expects the caller's transaction: the removals, the grants, their audit
 // rows and the single permission rebuild must commit or roll back together. Removals run first
-// so that a delta may revoke and re-grant the same expression.
+// so that a delta may revoke and re-grant the same expression. Description updates run last:
+// they touch only rows the role keeps.
 func (this *RoleDomainServiceImpl) applyEntitlementsDelta(
 	ctx corectx.Context, roleId model.Id, delta itRole.RoleEntitlementsDelta,
 ) (ft.ClientErrors, error) {
 	if cErrs := validateDeltaSize(delta); cErrs.Count() > 0 {
+		return cErrs, nil
+	}
+	if cErrs := validateEntitlementUpdates(delta); cErrs.Count() > 0 {
 		return cErrs, nil
 	}
 	cErrs, err := this.removeRoleEntitlements(ctx, roleId, delta.Remove)
@@ -46,6 +51,10 @@ func (this *RoleDomainServiceImpl) applyEntitlementsDelta(
 		return cErrs, err
 	}
 	cErrs, err = this.addRoleEntitlements(ctx, roleId, delta.Add)
+	if err != nil || cErrs.Count() > 0 {
+		return cErrs, err
+	}
+	cErrs, err = this.updateRoleEntitlements(ctx, roleId, delta.Update)
 	if err != nil || cErrs.Count() > 0 {
 		return cErrs, err
 	}
@@ -63,6 +72,10 @@ func validateDeltaSize(delta itRole.RoleEntitlementsDelta) ft.ClientErrors {
 	if len(delta.Remove) > maxItems {
 		out = append(out, *ft.NewValidationError(deltaFieldRemove, ft.ErrorKey("err_too_many_items", "iam"),
 			"at most {{max}} entitlements can be removed in one request", vars))
+	}
+	if len(delta.Update) > maxItems {
+		out = append(out, *ft.NewValidationError(deltaFieldUpdate, ft.ErrorKey("err_too_many_items", "iam"),
+			"at most {{max}} entitlements can be updated in one request", vars))
 	}
 	return out
 }

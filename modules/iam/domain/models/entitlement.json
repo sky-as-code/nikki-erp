@@ -14,7 +14,8 @@
 		{
 			"name": "name",
 			"data_type": { "type": "string", "min": 1, "max": 100 },
-			"required_for_create": true
+			"required_for_create": true,
+			"no_update": true
 		},
 		{
 			"name": "description",

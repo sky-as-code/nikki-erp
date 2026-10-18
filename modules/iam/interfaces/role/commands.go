@@ -267,13 +267,21 @@ type RoleEntitlementGrant struct {
 	Description *string   `json:"description"`
 }
 
+// RoleEntitlementUpdate changes the description of one entitlement the role already holds. The
+// description is the only editable column: every other one feeds the stored expression.
+type RoleEntitlementUpdate struct {
+	Id          model.Id `json:"id"`
+	Description *string  `json:"description"`
+}
+
 type RoleEntitlementsDelta struct {
-	Add    []RoleEntitlementGrant `json:"add"`
-	Remove []model.Id             `json:"remove"`
+	Add    []RoleEntitlementGrant  `json:"add"`
+	Remove []model.Id              `json:"remove"`
+	Update []RoleEntitlementUpdate `json:"update"`
 }
 
 func (this RoleEntitlementsDelta) IsEmpty() bool {
-	return len(this.Add) == 0 && len(this.Remove) == 0
+	return len(this.Add) == 0 && len(this.Remove) == 0 && len(this.Update) == 0
 }
 
 type UpdateRoleResult = dyn.OpResult[dyn.MutateResultData]
