@@ -18,5 +18,11 @@ func InitDynamicEngines() error {
 		registerCurrencyEngine(),
 		registerUomEngine(),
 		registerUomCatEngine(),
+		registerLanguageEngine(),
+		registerEnumEngine(),
+		registerTagEngine(),
+		registerFieldMetadataEngine(),
+		registerModelMetadataEngine(),
+		registerModuleEngine(),
 	)
 }

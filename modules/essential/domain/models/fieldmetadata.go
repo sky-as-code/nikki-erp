@@ -1,10 +1,9 @@
 package models
 
 import (
-	"regexp"
+	_ "embed"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
@@ -22,66 +21,11 @@ const (
 	FieldMetadataEdgeModelMetadata = "model_metadata"
 )
 
+//go:embed fieldmetadata.json
+var fieldMetadataSchemaJson string
+
 func FieldMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(FieldMetadataSchemaName).
-		Label(model.NewLangJsonRefSf("%s.label", FieldMetadataSchemaName)).
-		TableName("essential_field_metadata").
-		ShouldBuildDb().
-		Field(
-			basemodel.DefineFieldId(FieldMetadataFieldId).
-				Label(model.NewLangJsonRefSf("fields.%s", FieldMetadataFieldId)).
-				UseTypeDefault().
-				PrimaryKey(),
-		).
-		Field(
-			basemodel.DefineFieldId(FieldMetadataFieldModelMetadataId).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(FieldMetadataFieldName).
-				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(FieldMetadataFieldCode).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH, dmodel.FieldDataTypeStringOpts{
-					Regex: regexp.MustCompile(`^[a-zA-Z0-9_]+$`),
-				})).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(FieldMetadataFieldDataType).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(FieldMetadataFieldIsRequired).
-				DataType(dmodel.FieldDataTypeBoolean()).
-				Default(false).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(FieldMetadataFieldDisplayOrder).
-				DataType(dmodel.FieldDataTypeInt32(0, 10000)).
-				Default(int32(0)).
-				RequiredForCreate(),
-		).
-		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{FieldMetadataFieldModelMetadataId, FieldMetadataFieldCode}}).
-		Extend(basemodel.ArchivableModelSchemaBuilder()).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder()).
-		EdgeTo(
-			dmodel.Edge(FieldMetadataEdgeModelMetadata).
-				ManyToOne(ModelMetadataSchemaName, dmodel.DynamicFields{
-					FieldMetadataFieldModelMetadataId: ModelMetadataFieldId,
-				}).
-				OnDelete(dmodel.RelationCascadeCascade),
-		)
+	return dmodel.ParseModelJson(fieldMetadataSchemaJson)
 }
 
 type FieldMetadata struct {

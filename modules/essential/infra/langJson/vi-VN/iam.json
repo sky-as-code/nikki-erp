@@ -88,6 +88,7 @@
 	"err_min_scope_greater_than_max_scope": "Phạm vi tối thiểu không được rộng hơn phạm vi tối đa",
 	"err_not_found": "Không tìm thấy bản ghi được yêu cầu",
 	"err_parent_org_mismatch": "Đơn vị tổ chức cha phải thuộc cùng tổ chức",
+	"err_private_role_deletion_not_allowed": "Không thể xóa vai trò riêng tư",
 	"err_role_org_required": "Tài nguyên này thuộc phạm vi tổ chức, chỉ vai trò thuộc một tổ chức mới cấp được",
 	"err_scope_not_grantable": "Không thể cấp từ vai trò một tài nguyên có phạm vi tối đa là {{scope}}",
 	"err_scope_out_of_bounds": "Phạm vi phải nằm giữa phạm vi tối thiểu và tối đa của tài nguyên",

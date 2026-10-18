@@ -1,0 +1,35 @@
+{
+	"name": "essential_tag",
+	"label": "essential_tag.label",
+	"table_name": "essential_tags",
+	"should_build_db": true,
+	"extend_before": [
+		"core.basemodel.base_model"
+	],
+	"fields": [
+		{
+			"name": "label",
+			"label": "fields.label",
+			"data_type": {
+				"type": "langjson",
+				"min": 1,
+				"max": 50
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "type",
+			"label": "fields.type",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 50
+			},
+			"required_for_create": true
+		}
+	],
+	"extend_after": [
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	]
+}

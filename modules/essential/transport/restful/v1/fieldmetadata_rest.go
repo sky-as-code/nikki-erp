@@ -1,120 +1,27 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/util"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
-	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/fieldmetadata"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
-type fieldMetadataRestParams struct {
+// FieldMetadataEngineName is the container name of the onion, checked by a test.
+const FieldMetadataEngineName = "dynengine_essential_field_metadata"
+
+type fieldmetadataRestParams struct {
 	dig.In
-	FieldMetadataSvc it.FieldMetadataAppService
+
+	Engine composable.DynamicResourceEngineOnion `name:"dynengine_essential_field_metadata"`
 }
 
-func NewFieldMetadataRest(params fieldMetadataRestParams) *FieldMetadataRest {
-	return &FieldMetadataRest{svc: params.FieldMetadataSvc}
+func NewFieldMetadataRest(params fieldmetadataRestParams) *FieldMetadataRest {
+	rest := &FieldMetadataRest{}
+	rest.SetApplicationService(params.Engine.ApplicationService())
+	return rest
 }
 
-type FieldMetadataRest struct{ svc it.FieldMetadataAppService }
-
-func (this FieldMetadataRest) CreateFieldMetadata(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create field metadata"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.CreateFieldMetadata,
-		func(request CreateFieldMetadataRequest) it.CreateFieldMetadataCommand {
-			cmd := it.CreateFieldMetadataCommand{}
-			cmd.SetFieldData(request.DynamicFields)
-			return cmd
-		},
-		func(data models.FieldMetadata) CreateFieldMetadataResponse {
-			return *httpserver.NewRestCreateResponseDyn(data.GetFieldData())
-		},
-		httpserver.JsonCreated)
-}
-
-func (this FieldMetadataRest) DeleteFieldMetadata(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete field metadata"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.DeleteFieldMetadata,
-		func(request DeleteFieldMetadataRequest) it.DeleteFieldMetadataCommand {
-			return it.DeleteFieldMetadataCommand(request)
-		},
-		func(data dyn.MutateResultData) DeleteFieldMetadataResponse {
-			return httpserver.NewRestDeleteResponse2(data)
-		},
-		httpserver.JsonOk)
-}
-
-func (this FieldMetadataRest) GetFieldMetadata(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get field metadata"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.GetFieldMetadata,
-		func(request GetFieldMetadataRequest) it.GetFieldMetadataQuery {
-			return it.GetFieldMetadataQuery(request)
-		},
-		func(data models.FieldMetadata) GetFieldMetadataResponse { return data.GetFieldData() },
-		httpserver.JsonOk)
-}
-
-func (this FieldMetadataRest) FieldMetadataExists(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST field metadata exists"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.FieldMetadataExists,
-		func(request FieldMetadataExistsRequest) it.FieldMetadataExistsQuery {
-			return it.FieldMetadataExistsQuery(request)
-		},
-		func(data dyn.ExistsResultData) FieldMetadataExistsResponse { return FieldMetadataExistsResponse(data) },
-		httpserver.JsonOk)
-}
-
-func (this FieldMetadataRest) SearchFieldMetadata(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search field metadata"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.SearchFieldMetadata,
-		func(request SearchFieldMetadataRequest) it.SearchFieldMetadataQuery {
-			return it.SearchFieldMetadataQuery(request)
-		},
-		func(data it.SearchFieldMetadataResultData) SearchFieldMetadataResponse {
-			return httpserver.NewSearchResponseDyn(data)
-		},
-		httpserver.JsonOk, true)
-}
-
-func (this FieldMetadataRest) UpdateFieldMetadata(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update field metadata"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.UpdateFieldMetadata,
-		func(request UpdateFieldMetadataRequest) it.UpdateFieldMetadataCommand {
-			cmd := it.UpdateFieldMetadataCommand{}
-			cmd.SetFieldData(request.DynamicFields)
-			cmd.SetId(util.ToPtr(model.Id(request.Id)))
-			return cmd
-		},
-		httpserver.NewRestMutateResponse,
-		httpserver.JsonOk)
+// FieldMetadataRest serves the built-in CRUD of the resource.
+type FieldMetadataRest struct {
+	composable.CrudRestBase
 }

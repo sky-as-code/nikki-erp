@@ -1,0 +1,97 @@
+{
+	"name": "essential_field_metadata",
+	"label": "essential_field_metadata.label",
+	"table_name": "essential_field_metadata",
+	"should_build_db": true,
+	"composite_uniques": [
+		{
+			"fields": [
+				"model_metadata_id",
+				"code"
+			]
+		}
+	],
+	"fields": [
+		{
+			"name": "id",
+			"label": "fields.id",
+			"data_type": "ulid",
+			"primary_key": true,
+			"use_type_default": true,
+			"description": {
+				"en-US": "Declared here rather than inherited from core.basemodel.base_model, because that mixin carries the tenant key in the hosted app and model metadata is global: it is synced once at start-up with no tenant in scope."
+			}
+		},
+		{
+			"name": "model_metadata_id",
+			"label": "fields.model_metadata_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": {
+				"type": "langjson",
+				"min": 1,
+				"max": 200
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 50,
+				"regex": "^[a-zA-Z0-9_]+$"
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "data_type",
+			"label": "fields.data_type",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 50
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "is_required",
+			"label": "fields.is_required",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false
+		},
+		{
+			"name": "display_order",
+			"label": "fields.display_order",
+			"data_type": {
+				"type": "int32",
+				"min": 0,
+				"max": 10000
+			},
+			"required_for_create": true,
+			"default_value": 0
+		}
+	],
+	"edges_to": [
+		{
+			"edge": "model_metadata",
+			"type": "many:one",
+			"dest_schema": "essential_model_metadata",
+			"key_map": {
+				"model_metadata_id": "id"
+			},
+			"on_delete": "CASCADE"
+		}
+	],
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	]
+}

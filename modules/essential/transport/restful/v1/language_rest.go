@@ -4,133 +4,42 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/util"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 )
 
+// LanguageEngineName is the container name of the language onion, checked by a test.
+const LanguageEngineName = "dynengine_essential_language"
+
 type languageRestParams struct {
 	dig.In
-	LanguageSvc it.LanguageAppService
+
+	Engine composable.DynamicResourceEngineOnion `name:"dynengine_essential_language"`
 }
 
 func NewLanguageRest(params languageRestParams) *LanguageRest {
-	return &LanguageRest{svc: params.LanguageSvc}
+	rest := &LanguageRest{languageSvc: params.Engine.ApplicationService().(it.LanguageApplicationService)}
+	rest.SetApplicationService(params.Engine.ApplicationService())
+	return rest
 }
 
-type LanguageRest struct{ svc it.LanguageAppService }
-
-func (this LanguageRest) CreateLanguage(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create language"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.CreateLanguage,
-		func(request CreateLanguageRequest) it.CreateLanguageCommand {
-			cmd := it.CreateLanguageCommand{}
-			cmd.SetFieldData(request.DynamicFields)
-			return cmd
-		},
-		func(data models.Language) CreateLanguageResponse {
-			return *httpserver.NewRestCreateResponseDyn(data.GetFieldData())
-		},
-		httpserver.JsonCreated)
+// LanguageRest serves the built-in CRUD of the language catalogue plus its two public reads.
+type LanguageRest struct {
+	composable.CrudRestBase
+	languageSvc it.LanguageApplicationService
 }
 
-func (this LanguageRest) DeleteLanguage(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete language"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.DeleteLanguage,
-		func(request DeleteLanguageRequest) it.DeleteLanguageCommand { return it.DeleteLanguageCommand(request) },
-		func(data dyn.MutateResultData) DeleteLanguageResponse { return httpserver.NewRestDeleteResponse2(data) },
-		httpserver.JsonOk)
+// GetLanguageJson serves one module's translation bundle (?language_code=&module_name=).
+func (this *LanguageRest) GetLanguageJson(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "get language json", payload,
+		this.languageSvc.GetLanguageJsonAction, composable.Identity)
 }
 
-func (this LanguageRest) GetLanguage(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get language"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.GetLanguage,
-		func(request GetLanguageRequest) it.GetLanguageQuery { return it.GetLanguageQuery(request) },
-		func(data models.Language) GetLanguageResponse { return data.GetFieldData() },
-		httpserver.JsonOk)
-}
-
-func (this LanguageRest) GetLanguageJson(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get language json"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.GetLanguageJson,
-		func(request GetLanguageJsonRequest) it.GetLanguageJsonQuery { return it.GetLanguageJsonQuery(request) },
-		func(data model.LanguageTranslationItem) GetLanguageJsonResponse { return data },
-		httpserver.JsonOk)
-}
-
-func (this LanguageRest) LanguageExists(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST language exists"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.LanguageExists,
-		func(request LanguageExistsRequest) it.LanguageExistsQuery { return it.LanguageExistsQuery(request) },
-		func(data dyn.ExistsResultData) LanguageExistsResponse { return LanguageExistsResponse(data) },
-		httpserver.JsonOk)
-}
-
-func (this LanguageRest) SearchLanguages(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search languages"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.SearchLanguages,
-		func(request SearchLanguagesRequest) it.SearchLanguagesQuery { return it.SearchLanguagesQuery(request) },
-		func(data it.SearchLanguagesResultData) SearchLanguagesResponse {
-			return httpserver.NewSearchResponseDyn(data)
-		},
-		httpserver.JsonOk, true)
-}
-
-func (this LanguageRest) UpdateLanguage(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update language"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.UpdateLanguage,
-		func(request UpdateLanguageRequest) it.UpdateLanguageCommand {
-			cmd := it.UpdateLanguageCommand{}
-			cmd.SetFieldData(request.DynamicFields)
-			cmd.SetId(util.ToPtr(model.Id(request.Id)))
-			return cmd
-		},
-		httpserver.NewRestMutateResponse,
-		httpserver.JsonOk)
-}
-
-// ListEnabledLanguages serves the languages a user may pick. Public on purpose: the sign-in page
-// offers a language switch before anyone has a session.
-func (this LanguageRest) ListEnabledLanguages(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST list enabled languages"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(echoCtx, this.svc.ListEnabledLanguages,
-		func(ListEnabledLanguagesRequest) it.ListEnabledLanguagesQuery { return it.ListEnabledLanguagesQuery{} },
-		NewListEnabledLanguagesResponse,
-		httpserver.JsonOk)
+// ListEnabledLanguages serves the languages a user may pick.
+func (this *LanguageRest) ListEnabledLanguages(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "list enabled languages", payload,
+		this.languageSvc.ListEnabledLanguagesAction, func(data []models.Language) any {
+			return NewListEnabledLanguagesResponse(data)
+		})
 }

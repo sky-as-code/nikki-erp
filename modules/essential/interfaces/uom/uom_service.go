@@ -1,6 +1,7 @@
 package uom
 
 import (
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
@@ -47,4 +48,13 @@ type UomConversionAppService interface {
 
 	Convert(ctx corectx.Context, query ConvertQuantityQuery) (*ConvertQuantityResult, error)
 	ToReference(ctx corectx.Context, query ToReferenceQuery) (*ToReferenceResult, error)
+}
+
+// UomConversionApplicationService is the conversion capability plus its two REST actions on
+// essential_uom (convert, to_reference), which authorize the caller first.
+type UomConversionApplicationService interface {
+	UomConversionAppService
+
+	ConvertAction(ctx corectx.Context, params dmodel.DynamicFields) (*ConvertQuantityResult, error)
+	ToReferenceAction(ctx corectx.Context, params dmodel.DynamicFields) (*ToReferenceResult, error)
 }

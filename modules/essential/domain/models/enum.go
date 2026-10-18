@@ -1,6 +1,7 @@
 package models
 
 import (
+	_ "embed"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -16,34 +17,11 @@ const (
 	EnumFieldType  = "type"
 )
 
+//go:embed enum.json
+var enumSchemaJson string
+
 func EnumSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(EnumSchemaName).
-		Label(model.NewLangJsonRefSf("%s.label", EnumSchemaName)).
-		TableName("essential_enums").
-		ShouldBuildDb().
-		Extend(basemodel.BaseModelSchemaBuilder()).
-		Field(
-			dmodel.DefineField().
-				Name(EnumFieldLabel).
-				Label(model.NewLangJsonRefSf("fields.%s", EnumFieldLabel)).
-				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(EnumFieldValue).
-				Label(model.NewLangJsonRefSf("fields.%s", EnumFieldValue)).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(EnumFieldType).
-				Label(model.NewLangJsonRefSf("fields.%s", EnumFieldType)).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+	return dmodel.ParseModelJson(enumSchemaJson)
 }
 
 type Enum struct {

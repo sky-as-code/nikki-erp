@@ -88,6 +88,7 @@
 	"err_min_scope_greater_than_max_scope": "The minimum scope must not be wider than the maximum scope",
 	"err_not_found": "The requested record could not be found",
 	"err_parent_org_mismatch": "The parent organizational unit must belong to the same organization",
+	"err_private_role_deletion_not_allowed": "A private role cannot be deleted",
 	"err_role_org_required": "This resource is organization-scoped, so only a role that belongs to an organization can grant it",
 	"err_scope_not_grantable": "A resource whose maximum scope is {{scope}} cannot be granted from a role",
 	"err_scope_out_of_bounds": "The scope must be between the resource's minimum and maximum scope",

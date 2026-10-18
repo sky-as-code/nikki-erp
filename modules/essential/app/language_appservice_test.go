@@ -19,7 +19,7 @@ const testModule = "vendingmachine"
 func newLanguageService(t *testing.T) (it.LanguageAppService, corectx.Context) {
 	t.Helper()
 	// The language JSON methods never reach the domain service.
-	return app.NewLanguageApplicationServiceImpl(nil), corectx.NewRequestContext(context.Background())
+	return app.NewLanguageApplicationServiceForTest(), corectx.NewRequestContext(context.Background())
 }
 
 func getJson(
