@@ -9,6 +9,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/iam/dynamicengines"
 	v1 "github.com/sky-as-code/nikki-erp/modules/iam/transport/restful/v1"
 )
@@ -16,6 +18,7 @@ import (
 func InitRestfulHandlers() error {
 	err := deps.Register(
 		v1.NewUserRest,
+		v1.NewUserCrudRest,
 		v1.NewGroupRest,
 		v1.NewOrganizationRest,
 		v1.NewOrgUnitRest,
@@ -86,24 +89,30 @@ func initIamDirectoryV1() error {
 		// from the plain users who need it to understand a refusal.
 		routeV1.POST("/me/test-permissions", permissionRest.TestMyPermissions, m.SmokeAuthz())
 
-		// User is the pilot resource of the dynamic resource engine. Its engine-served
-		// endpoints live at /v1/iam/iam_user and coexist with the hand-written /v1/iam/users
-		// ones below, which stay the supported API until the migration is decided.
+		// User is served by the composable engine at /v1/iam/iam_user; the other IAM resources
+		// still go through the legacy engine routes.
 		registerEngineRoutes(routeV1)
+		if err := initUserCrudV1(routeV1); err != nil {
+			return err
+		}
 
-		routeV1.DELETE("/users/:id", userRest.DeleteUser, m.SmokeAuthz())
-		routeV1.GET("/users/meta/schema", userRest.GetModelSchema, m.SmokeAuthz())
-		// routeV1.GET("/users/getOne", userRest.GetUser, m.SmokeAuthz())
-		routeV1.GET("/users/:id", userRest.GetUser, m.SmokeAuthz())
-		routeV1.GET("/users", userRest.SearchUsers, m.SmokeAuthz())
-		routeV1.POST("/users/exists", userRest.UserExists, m.SmokeAuthz())
-		routeV1.POST("/users/:id/archived", userRest.SetUserIsArchived, m.SmokeAuthz())
+		// The user CRUD moved to /v1/iam/iam_user; role assignment is not a CRUD action and stays
+		// here until it becomes a custom action of the composable resource.
 		routeV1.POST("/users/:user_id/roles", userRest.ManageUserRoleAssignments, m.SmokeAuthz())
-		routeV1.POST("/users", userRest.CreateUser, m.SmokeAuthz())
-		// JSON Merge Patch (RFC 7396) semantics.
-		routeV1.PATCH("/users/:id", userRest.UpdateUser, m.SmokeAuthz())
 
 		return nil
+	})
+}
+
+func initUserCrudV1(route *echo.Group) error {
+	return deps.Invoke(func(rest *v1.UserCrudRest) error {
+		return composable.NewRestEngine(models.UserSchemaName, rest).
+			AddCrudRoutes().
+			AddRoute(composable.RouteDefinition{Path: ":id/files/:field", ActionType: composable.ActionTypeUpload, HandlerFn: rest.UploadFile}).
+			AddRoute(composable.RouteDefinition{Path: ":id/files/:field", ActionType: composable.ActionTypeUploadReplace, HandlerFn: rest.ReplaceFile}).
+			AddRoute(composable.RouteDefinition{Path: ":id/files/:field", ActionType: composable.ActionTypeDelete, HandlerFn: rest.DeleteFile}).
+			AddRoute(composable.RouteDefinition{Path: ":id/send_invitation", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.SendInvitation}).
+			RegisterRoutes(route)
 	})
 }
 

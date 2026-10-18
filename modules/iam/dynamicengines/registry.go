@@ -1,9 +1,10 @@
 // Package dynamicengines declares the resource engines the IAM module serves through
 // the dynamic resource engine, and creates them during the module's Init().
 //
-// It is deliberately a leaf package: it imports the domain models and the dynamicresource
-// module, but nothing else from iam. That lets both iam (which creates the engines) and
-// iam/transport/restful (which registers their routes) import it without a cycle.
+// The legacy engines (engineSpecs) need only the domain models; a composable onion (iam_user)
+// also wires the module's app, domain and repository layers. Neither iam/app, iam/domain nor
+// iam/infra may import this package, so both iam (which creates the engines) and
+// iam/transport/restful (which registers their routes) can import it without a cycle.
 package dynamicengines
 
 import (
@@ -38,7 +39,6 @@ type engineSpec struct {
 // engineSpecs lists the resources IAM serves through the dynamic resource engine,
 // each with the field set its listing UI needs.
 var engineSpecs = []engineSpec{
-	userEngineSpec(),
 	orgEngineSpec(),
 	orgUnitEngineSpec(),
 	groupEngineSpec(),
@@ -64,6 +64,9 @@ func EngineSchemaNames() []string {
 // repository and REST handlers) are untouched and keep serving their own routes;
 // an engine serves the same resource at /v1/iam/{schema_name}.
 func InitDynamicEngines() error {
+	if err := registerUserEngine(); err != nil {
+		return err
+	}
 	for _, spec := range engineSpecs {
 		if err := initEngine(spec); err != nil {
 			return err

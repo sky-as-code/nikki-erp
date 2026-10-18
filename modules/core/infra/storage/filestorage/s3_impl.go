@@ -62,6 +62,10 @@ func NewS3Adapter(cfg config.ConfigService, logger logging.LoggerService) (FileS
 }
 
 func (this *s3Adapter) Put(ctx context.Context, objectKey string, r io.Reader, opts *PutOptions) error {
+	// An empty bucket otherwise surfaces as the storage's NoSuchBucket, which names no setting.
+	if this.bucket == "" {
+		return errors.Errorf("file storage has no bucket: set %s", constants.S3StorageBucket)
+	}
 	in := &s3.PutObjectInput{
 		Bucket:             aws.String(this.bucket),
 		Key:                aws.String(objectKey),

@@ -20,6 +20,9 @@ ${TEMP_PASSWORD_API}    /v1/iam/passwords/passwordtmp
 ${IAM_SCHEMA_DIR}       ${CURDIR}/schemas/iam
 # Records created by the permission suites, keyed by kind, removed by their teardown.
 ${PERM_FIXTURES}        ${None}
+# 1x1 images for the avatar file-field suite, base64.
+&{AVATAR_SAMPLES}       png=iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+...                     gif=R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==
 # Ids of the locale-ordering groups, removed by Delete Locale Group Fixtures.
 ${LOCALE_GROUP_IDS}     ${None}
 
@@ -425,3 +428,19 @@ Locale Group Names In Result
     ${names}=    Evaluate
     ...    [i['name'].get($language) for i in $resp.json()['items'] if isinstance(i.get('name'), dict) and $LOCALE_GROUP_SUFFIX in str(i['name'])]
     RETURN    ${names}
+
+Avatar File Part
+    [Documentation]    A multipart ``file`` part holding a real image: the upload sniffs the
+    ...    content, so a made-up body under an image name is refused.
+    [Arguments]    ${kind}=png
+    ${bytes}=    Evaluate    __import__('base64').b64decode($AVATAR_SAMPLES[$kind])
+    ${part}=    Evaluate    {'file': ('avatar.' + $kind, $bytes, 'image/' + $kind)}
+    RETURN    ${part}
+
+Response Should Be File Field Error
+    [Documentation]    One error from the files/:field routes, matched on field and key.
+    [Arguments]    ${resp}    ${field}    ${key}
+    Should Be Equal As Integers    ${resp.status_code}    400
+    ${errors}=    Evaluate    [e for e in $resp.json() if e.get('field') == $field and $key in e.get('key', '')]
+    Should Not Be Empty    ${errors}
+    ...    msg=Expected a '${key}' error on '${field}', got ${resp.text}

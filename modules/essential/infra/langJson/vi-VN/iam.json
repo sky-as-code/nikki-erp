@@ -93,6 +93,8 @@
 	"fields.attribute_id": "Thuộc tính",
 	"fields.attribute_value": "Giá trị thuộc tính",
 	"fields.avatar_url": "Ảnh đại diện",
+	"fields.avatar_file_key": "Ảnh đại diện (tải lên)",
+	"fields.avatar_file_url": "Liên kết ảnh đại diện",
 	"fields.code": "Mã",
 	"fields.confirm_password": "Xác nhận mật khẩu",
 	"fields.created_at": "Ngày tạo",

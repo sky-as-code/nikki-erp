@@ -14,6 +14,8 @@ docker compose -f "$compose_file" up -d
 MINIO_ROOT_USER="nikki_admin"
 MINIO_ROOT_PASSWORD="nikki_password"
 MINIO_ALIAS="local"
+# Must match CORE.S3_STORAGE.BUCKET in config/config.default.yaml.
+MINIO_BUCKET="nikki-local"
 
 echo "Waiting for MinIO to be ready..."
 for i in $(seq 1 30); do
@@ -22,6 +24,9 @@ for i in $(seq 1 30); do
 	fi
 	sleep 1
 done
+
+echo "Creating MinIO bucket ${MINIO_BUCKET}..."
+docker exec nikki_minio mc mb --ignore-existing "${MINIO_ALIAS}/${MINIO_BUCKET}"
 
 echo "Creating MinIO access token..."
 CREDENTIALS_JSON=$(docker exec nikki_minio mc admin accesskey create "$MINIO_ALIAS" --json)

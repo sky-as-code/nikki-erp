@@ -1,6 +1,8 @@
-package app
+package filefield
 
 import (
+	"mime/multipart"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -9,81 +11,129 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
-type fileBackedApplicationService struct {
+type UploadFileCommand struct {
+	RecordId  model.Id
+	FieldName string
+	File      *multipart.FileHeader
+	Params    dmodel.DynamicFields
+}
+
+type DeleteFileCommand struct {
+	RecordId  model.Id
+	FieldName string
+	Params    dmodel.DynamicFields
+}
+
+type FileFieldResult = dyn.OpResult[dyn.MutateResultData]
+
+type FileFieldsService interface {
+	UploadFile(ctx corectx.Context, cmd UploadFileCommand) (*FileFieldResult, error)
+	ReplaceFile(ctx corectx.Context, cmd UploadFileCommand) (*FileFieldResult, error)
+	DeleteFile(ctx corectx.Context, cmd DeleteFileCommand) (*FileFieldResult, error)
+}
+
+// ApplicationService wraps a resource's composable application service: reads presign every file
+// field, writes refuse the managed key columns, and the file methods are the keys' only writer.
+type ApplicationService struct {
 	composable.CrudApplicationService
 
 	storage filestorage.FileStorageAdapter
-	fields  []services.FileField
+	fields  []FileField
 }
 
-func newFileBackedApplicationService(
-	base composable.CrudApplicationService, storage filestorage.FileStorageAdapter, fields []services.FileField,
-) fileBackedApplicationService {
-	return fileBackedApplicationService{CrudApplicationService: base, storage: storage, fields: fields}
+// Storage is the adapter the service stores with, for a resource that presigns a key of its own
+// outside the record maps (a projected view, say).
+func (this *ApplicationService) Storage() filestorage.FileStorageAdapter {
+	return this.storage
 }
 
-func (this *fileBackedApplicationService) GetById(
+// Fields lists the resource's file fields.
+func (this *ApplicationService) Fields() []FileField {
+	return this.fields
+}
+
+func NewApplicationService(
+	base composable.CrudApplicationService, storage filestorage.FileStorageAdapter, fields []FileField,
+) ApplicationService {
+	return ApplicationService{CrudApplicationService: base, storage: storage, fields: fields}
+}
+
+func (this *ApplicationService) GetById(
 	ctx corectx.Context, query composable.GetByIdQuery,
 ) (*composable.GetOneResult, error) {
-	result, err := this.CrudApplicationService.GetById(ctx, query)
-	if err != nil || result == nil || !result.HasData {
-		return result, err
-	}
-	if err := services.PresignFileFields(ctx, this.storage, result.Data.Item, this.fields); err != nil {
-		return nil, err
-	}
-	return result, nil
+	return this.readOne(ctx, query, this.CrudApplicationService.GetById)
 }
 
-func (this *fileBackedApplicationService) GetOne(
+func (this *ApplicationService) GetOne(
 	ctx corectx.Context, query composable.GetOneQuery,
 ) (*composable.GetOneResult, error) {
-	result, err := this.CrudApplicationService.GetOne(ctx, query)
+	return this.readOne(ctx, query, this.CrudApplicationService.GetOne)
+}
+
+func (this *ApplicationService) readOne(
+	ctx corectx.Context, query dmodel.DynamicFields,
+	read func(corectx.Context, dmodel.DynamicFields) (*composable.GetOneResult, error),
+) (*composable.GetOneResult, error) {
+	added := appendHiddenKeys(query, this.fields, nil)
+	result, err := read(ctx, query)
 	if err != nil || result == nil || !result.HasData {
 		return result, err
 	}
-	if err := services.PresignFileFields(ctx, this.storage, result.Data.Item, this.fields); err != nil {
+	if err := PresignFileFields(ctx, this.storage, result.Data.Item, this.fields); err != nil {
 		return nil, err
 	}
+	meta := &result.Data.Meta
+	meta.DesiredFields = stripHiddenKeys([]dmodel.DynamicFields{result.Data.Item}, meta.DesiredFields, added)
 	return result, nil
 }
 
-func (this *fileBackedApplicationService) Search(
+// Search presigns every row, also when the projection is the default columns, which name the URL
+// field's fallback rather than the storage key.
+func (this *ApplicationService) Search(
 	ctx corectx.Context, query composable.SearchQuery,
 ) (*composable.SearchResult, error) {
+	added := appendHiddenKeys(query, this.fields, this.defaultProjection(query))
 	result, err := this.CrudApplicationService.Search(ctx, query)
 	if err != nil || result == nil || !result.HasData {
 		return result, err
 	}
-	if err := services.PresignPage(ctx, this.storage, result.Data.Items, this.fields); err != nil {
+	if err := PresignPage(ctx, this.storage, result.Data.Items, this.fields); err != nil {
 		return nil, err
 	}
+	result.Data.DesiredFields = stripHiddenKeys(result.Data.Items, result.Data.DesiredFields, added)
 	return result, nil
 }
 
-func (this *fileBackedApplicationService) Create(
+// defaultProjection is what a search without `fields` projects: the schema's default search
+// fields for the default view. Any other named view resolves its own columns, left untouched.
+func (this *ApplicationService) defaultProjection(query dmodel.DynamicFields) []string {
+	if name, ok := query[basemodel.FieldSearchName].(string); ok && name != "" && name != dyn.DefaultSearchName {
+		return nil
+	}
+	return this.Schema().DefaultSearchFields()
+}
+
+func (this *ApplicationService) Create(
 	ctx corectx.Context, cmd composable.CreateCommand,
 ) (*composable.CreateResult, error) {
-	if vErrs := services.ManagedFieldViolations(fieldNames(cmd), this.fields); vErrs.Count() > 0 {
+	if vErrs := ManagedFieldViolations(fieldNames(cmd), this.fields); vErrs.Count() > 0 {
 		return &composable.CreateResult{ClientErrors: *vErrs}, nil
 	}
 	return this.CrudApplicationService.Create(ctx, cmd)
 }
 
-func (this *fileBackedApplicationService) Update(
+func (this *ApplicationService) Update(
 	ctx corectx.Context, cmd composable.UpdateCommand,
 ) (*composable.MutateResult, error) {
-	if vErrs := services.ManagedFieldViolations(fieldNames(cmd), this.fields); vErrs.Count() > 0 {
+	if vErrs := ManagedFieldViolations(fieldNames(cmd), this.fields); vErrs.Count() > 0 {
 		return &composable.MutateResult{ClientErrors: *vErrs}, nil
 	}
 	return this.CrudApplicationService.Update(ctx, cmd)
 }
 
-func (this *fileBackedApplicationService) CreateBulk(
+func (this *ApplicationService) CreateBulk(
 	ctx corectx.Context, cmd composable.BulkCreateCommand,
 ) (*composable.BulkCreateResult, error) {
 	names := []string{}
@@ -94,42 +144,42 @@ func (this *fileBackedApplicationService) CreateBulk(
 			}
 		}
 	}
-	if vErrs := services.ManagedFieldViolations(names, this.fields); vErrs.Count() > 0 {
+	if vErrs := ManagedFieldViolations(names, this.fields); vErrs.Count() > 0 {
 		return &composable.BulkCreateResult{ClientErrors: *vErrs}, nil
 	}
 	return this.CrudApplicationService.CreateBulk(ctx, cmd)
 }
 
-func (this *fileBackedApplicationService) Import(
+func (this *ApplicationService) Import(
 	ctx corectx.Context, cmd composable.ImportCommand,
 ) (*composable.BulkCreateResult, error) {
 	names := make([]string, 0, len(cmd.Mapping.Columns))
 	for _, column := range cmd.Mapping.Columns {
 		names = append(names, column.Target)
 	}
-	if vErrs := services.ManagedFieldViolations(names, this.fields); vErrs.Count() > 0 {
+	if vErrs := ManagedFieldViolations(names, this.fields); vErrs.Count() > 0 {
 		return &composable.BulkCreateResult{ClientErrors: *vErrs}, nil
 	}
 	return this.CrudApplicationService.Import(ctx, cmd)
 }
 
-func (this *fileBackedApplicationService) UploadFile(
-	ctx corectx.Context, cmd itProduct.UploadFileCommand,
-) (*itProduct.FileFieldResult, error) {
+func (this *ApplicationService) UploadFile(
+	ctx corectx.Context, cmd UploadFileCommand,
+) (*FileFieldResult, error) {
 	return this.storeFile(ctx, cmd, false)
 }
 
-func (this *fileBackedApplicationService) ReplaceFile(
-	ctx corectx.Context, cmd itProduct.UploadFileCommand,
-) (*itProduct.FileFieldResult, error) {
+func (this *ApplicationService) ReplaceFile(
+	ctx corectx.Context, cmd UploadFileCommand,
+) (*FileFieldResult, error) {
 	return this.storeFile(ctx, cmd, true)
 }
 
-func (this *fileBackedApplicationService) storeFile(
-	ctx corectx.Context, cmd itProduct.UploadFileCommand, replace bool,
-) (*itProduct.FileFieldResult, error) {
+func (this *ApplicationService) storeFile(
+	ctx corectx.Context, cmd UploadFileCommand, replace bool,
+) (*FileFieldResult, error) {
 	params := recordParams(cmd.RecordId, cmd.Params)
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionUpdate, params); err != nil || cErrs != nil {
+	if cErrs, err := assertRecordAction(this.CrudApplicationService, ctx, composable.PermissionUpdate, params); err != nil || cErrs != nil {
 		return mutateFailure(cErrs, err)
 	}
 
@@ -144,7 +194,7 @@ func (this *fileBackedApplicationService) storeFile(
 
 	current, err := this.currentRecord(ctx, params)
 	if err != nil || current == nil {
-		return &itProduct.FileFieldResult{}, err
+		return &FileFieldResult{}, err
 	}
 
 	oldKey := storedKey(current, field)
@@ -154,7 +204,7 @@ func (this *fileBackedApplicationService) storeFile(
 	}
 
 	vErrs := ft.NewClientErrors()
-	newKey, mime, err := services.StoreFile(ctx, this.storage, field, cmd.File, vErrs)
+	newKey, mime, err := StoreFile(ctx, this.storage, field, cmd.File, vErrs)
 	if err != nil {
 		return nil, err
 	}
@@ -170,21 +220,21 @@ func (this *fileBackedApplicationService) storeFile(
 
 	result, err := this.CrudApplicationService.Update(ctx, update)
 	if err != nil || result == nil || result.ClientErrors.Count() > 0 {
-		services.RemoveObjects(ctx, this.storage, []string{newKey})
+		RemoveObjects(ctx, this.storage, []string{newKey})
 		return result, err
 	}
 
 	if oldKey != "" {
-		services.RemoveObjects(ctx, this.storage, []string{oldKey})
+		RemoveObjects(ctx, this.storage, []string{oldKey})
 	}
 	return result, nil
 }
 
-func (this *fileBackedApplicationService) DeleteFile(
-	ctx corectx.Context, cmd itProduct.DeleteFileCommand,
-) (*itProduct.FileFieldResult, error) {
+func (this *ApplicationService) DeleteFile(
+	ctx corectx.Context, cmd DeleteFileCommand,
+) (*FileFieldResult, error) {
 	params := recordParams(cmd.RecordId, cmd.Params)
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionUpdate, params); err != nil || cErrs != nil {
+	if cErrs, err := assertRecordAction(this.CrudApplicationService, ctx, composable.PermissionUpdate, params); err != nil || cErrs != nil {
 		return mutateFailure(cErrs, err)
 	}
 
@@ -195,12 +245,12 @@ func (this *fileBackedApplicationService) DeleteFile(
 
 	current, err := this.currentRecord(ctx, params)
 	if err != nil || current == nil {
-		return &itProduct.FileFieldResult{}, err
+		return &FileFieldResult{}, err
 	}
 
 	oldKey := storedKey(current, field)
 	if oldKey == "" {
-		return &itProduct.FileFieldResult{
+		return &FileFieldResult{
 			Data:    dyn.MutateResultData{Etag: etagOf(current)},
 			HasData: true,
 		}, nil
@@ -217,12 +267,12 @@ func (this *fileBackedApplicationService) DeleteFile(
 		return result, err
 	}
 
-	services.RemoveObjects(ctx, this.storage, []string{oldKey})
+	RemoveObjects(ctx, this.storage, []string{oldKey})
 	return result, nil
 }
 
-func (this *fileBackedApplicationService) resolveField(name string) (services.FileField, *ft.ClientErrors) {
-	field, known := services.FindFileField(this.fields, name)
+func (this *ApplicationService) resolveField(name string) (FileField, *ft.ClientErrors) {
+	field, known := FindFileField(this.fields, name)
 	if !known {
 		return field, newFileViolation("field", "file.err_field_unknown",
 			"'"+name+"' is not a file field of this resource")
@@ -230,7 +280,7 @@ func (this *fileBackedApplicationService) resolveField(name string) (services.Fi
 	return field, nil
 }
 
-func (this *fileBackedApplicationService) currentRecord(
+func (this *ApplicationService) currentRecord(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (dmodel.DynamicFields, error) {
 	query := composable.GetByIdQuery{basemodel.FieldId: params[basemodel.FieldId]}
@@ -277,7 +327,7 @@ func fileUpdateParams(params dmodel.DynamicFields, current dmodel.DynamicFields)
 	return update
 }
 
-func storedKey(record dmodel.DynamicFields, field services.FileField) string {
+func storedKey(record dmodel.DynamicFields, field FileField) string {
 	if key := record.GetString(field.KeyField); key != nil {
 		return *key
 	}
@@ -295,4 +345,24 @@ func newFileViolation(field, code, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewValidationError(field, code, message))
 	return vErrs
+}
+
+func assertRecordAction(
+	appSvc composable.CrudApplicationService, ctx corectx.Context, permission string, params dmodel.DynamicFields,
+) (*ft.ClientErrors, error) {
+	orgId, cErrs := appSvc.AssertAction(ctx, permission, params)
+	if cErrs != nil {
+		return cErrs, nil
+	}
+	if orgId == nil {
+		return nil, nil
+	}
+	return appSvc.AssertRecordInOrg(ctx, params, *orgId)
+}
+
+func mutateFailure(cErrs *ft.ClientErrors, err error) (*FileFieldResult, error) {
+	if err != nil {
+		return nil, err
+	}
+	return &FileFieldResult{ClientErrors: *cErrs}, nil
 }
