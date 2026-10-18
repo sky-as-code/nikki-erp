@@ -13,8 +13,8 @@ Resource          ${CURDIR}/../nikki_api/data.resource
 *** Variables ***
 ${USER_API}             /v1/iam/iam_user
 ${GROUP_API}            /v1/iam/iam_group
-${ROLE_API}             /v1/iam/roles
-${ENTITLEMENT_API}      /v1/iam/entitlements
+${ROLE_API}             /v1/iam/iam_role
+${ENTITLEMENT_API}      /v1/iam/iam_entitlement
 ${TEST_PERM_API}        /v1/iam/me/test-permissions
 ${TEMP_PASSWORD_API}    /v1/iam/passwords/passwordtmp
 ${IAM_SCHEMA_DIR}       ${CURDIR}/schemas/iam
@@ -98,7 +98,7 @@ Ensure Seed Group
     ${gid}    ${getag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${SEED_GROUP_ID}    ${gid}
     Set Global Variable    ${SEED_GROUP_CREATED}    ${True}
-    ${resp}=    POST On Session    api    /v1/iam/groups/${gid}/manage-users
+    ${resp}=    POST On Session    api    /v1/iam/iam_group/${gid}/manage_users
     ...    json=${{ {'add': [$SEED_USER_ID]} }}
     Response Should Be Update Success    ${resp}    count=1
 
@@ -265,14 +265,15 @@ Resolve Resource And Action
     ...    keeps working when the seed ULIDs change, and so it fails with a clear message
     ...    if a resource the tests assume is simply absent.
     [Arguments]    ${resource_code}    ${action_code}
-    ${resp}=    GET On Session    api    /v1/iam/resources
+    ${resp}=    GET On Session    api    /v1/iam/iam_resource
     ...    params=${{ {'graph': '{"if":["code", "=", "' + $resource_code + '"]}'} }}
     Response Status Should Be    ${resp}    200
     ${items}=    Set Variable    ${resp.json()}[items]
     Should Not Be Empty    ${items}    msg=No seeded resource with code "${resource_code}"
     ${resource_id}=    Set Variable    ${items}[0][id]
 
-    ${resp}=    GET On Session    api    /v1/iam/resources/${resource_id}/actions
+    ${resp}=    GET On Session    api    /v1/iam/iam_action
+    ...    params=${{ {'graph': '{"if":["resource_id", "=", "' + $resource_id + '"]}', 'fields': ['id', 'code'], 'size': 100} }}
     Response Status Should Be    ${resp}    200
     ${actions}=    Set Variable    ${resp.json()}[items]
     ${matching}=    Evaluate    [a for a in $actions if a.get('code') == "${action_code}"]
@@ -304,13 +305,13 @@ Create Probe Role
 Assign Role To User
     [Documentation]    Assigns a role directly to a user through the supported API.
     [Arguments]    ${user_id}    ${role_id}
-    ${resp}=    POST On Session    api    /v1/iam/users/${user_id}/roles
+    ${resp}=    POST On Session    api    /v1/iam/iam_user/${user_id}/manage_roles
     ...    json=${{ {'add': [$role_id]} }}
     Response Status Should Be    ${resp}    200
 
 Unassign Role From User
     [Arguments]    ${user_id}    ${role_id}
-    ${resp}=    POST On Session    api    /v1/iam/users/${user_id}/roles
+    ${resp}=    POST On Session    api    /v1/iam/iam_user/${user_id}/manage_roles
     ...    json=${{ {'remove': [$role_id]} }}
     Response Status Should Be    ${resp}    200
 

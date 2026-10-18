@@ -40,19 +40,25 @@ Create Probe Org
     [Arguments]    ${label}
     ${name}=    Unique Display Name    ${label}
     ${slug}=    Evaluate    "${label}".lower().replace(' ', '-') + '-' + str(__import__('uuid').uuid4())[:8]
-    ${resp}=    POST On Session    api    /v1/iam/organizations
-    ...    json=${{ {'display_name': $name, 'slug': $slug, 'legal_name': $name} }}
+    ${resp}=    POST On Session    api    /v1/iam/iam_org
+    ...    json=${{ {'display_name': {'en-US': $name}, 'slug': $slug, 'legal_name': {'en-US': $name}} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    # iam_orgunit is org-scoped: creating a unit requires membership of its org, and
+    # creating an org does not make its creator a member.
+    ${me}=    GET On Session    api    /v1/iam/me/context
+    ${resp}=    POST On Session    api    /v1/iam/iam_org/${id}/manage_users
+    ...    json=${{ {'add': [$me.json()['id']]} }}
+    Response Should Be Update Success    ${resp}    count=1
     RETURN    ${id}
 
 Create Probe Org Unit
     [Arguments]    ${label}    ${org_id}    ${parent_id}=${EMPTY}
     ${name}=    Unique Display Name    ${label}
-    ${payload}=    Create Dictionary    name=${name}    display_name=${name}    org_id=${org_id}
+    ${payload}=    Create Dictionary    name=${name}    org_id=${org_id}
     IF    $parent_id
         Set To Dictionary    ${payload}    parent_id=${parent_id}
     END
-    ${resp}=    POST On Session    api    /v1/iam/orgunits    json=${payload}
+    ${resp}=    POST On Session    api    /v1/iam/iam_orgunit    json=${payload}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 
@@ -71,7 +77,7 @@ Skip Unless Unit Scope Is Grantable
     ...    out at org — so these cases are skipped rather than failed: the evaluation rule
     ...    they cover is proven by the unit tests, and failing here would report a missing
     ...    seed as a broken permission system.
-    ${resp}=    GET On Session    api    /v1/iam/resources
+    ${resp}=    GET On Session    api    /v1/iam/iam_resource
     ...    params=${{ {'graph': '{"if":["min_scope", "=", "orgunit"]}'} }}    expected_status=any
     IF    ${resp.status_code} != 200 or len($resp.json().get('items', [])) == 0
         Skip    No resource permits orgunit-scoped entitlements in this deployment

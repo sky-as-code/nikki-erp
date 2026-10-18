@@ -108,7 +108,7 @@ Ensure Purchase Product
     ${resolved}=    Get Variable Value    ${PURCHASE_VARIANT_ID}    ${EMPTY}
     IF    $resolved    RETURN
     ${resp}=    GET On Session    api    /v1/inventory/inventory_product_variant
-    ...    params=${{ {'org_id': $PURCHASE_ORG_ID, 'size': 1, 'fields': 'id,product_template_id,template_purchase_ok'} }}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID, 'size': 1, 'fields': 'id,product_template_id,product_template_purchase_ok'} }}
     Response Status Should Be    ${resp}    200
     ${items}=    Set Variable    ${resp.json()}[items]
     Should Not Be Empty    ${items}    msg=No product variant exists to put on a purchase line

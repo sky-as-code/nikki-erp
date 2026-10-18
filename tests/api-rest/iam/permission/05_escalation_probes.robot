@@ -3,12 +3,11 @@ Documentation     The adversarial pass: everything here expects a refusal.
 ...
 ...               The other suites prove that grants work. This one probes the ways a
 ...               signed-in user might try to grant themselves something, read somebody
-...               else's access, or slip past the hand-written routes by going through the
-...               generic engine routes instead.
+...               else's access, or reach a role's grants through a side door.
 ...
-...               Two properties matter most. First, the two API surfaces must agree — a
-...               permission enforced on `/v1/iam/roles` but not on `/v1/iam/iam_role` is
-...               not enforced at all. Second, the probe must never become an oracle: it
+...               Two properties matter most. First, every route that changes access must
+...               enforce the same permission - the role side and the principal side of an
+...               assignment alike. Second, the probe must never become an oracle: it
 ...               answers about the caller and nobody else, and a refusal says only "no".
 Resource          ../../resources/iam.resource
 Suite Setup       Set Up Escalation Fixtures
@@ -54,18 +53,19 @@ Request Should Be Refused
 *** Test Cases ***
 A Plain User Cannot Assign Themselves A Role
     [Documentation]    The most direct escalation there is.
-    ${resp}=    POST On Session    attacker    /v1/iam/users/${ATTACKER_ID}/roles
+    ${resp}=    POST On Session    attacker    /v1/iam/iam_user/${ATTACKER_ID}/manage_roles
     ...    json=${{ {'add': [$ESC_ROLE_ID]} }}    expected_status=any
     Request Should Be Refused    ${resp}    Self-assigning a role
     Permission Should Be Denied    attacker    read:iam_role:tenant
 
-A Plain User Cannot Assign A Role Through The Engine Route
-    [Documentation]    The generic engine routes serve the same records as the hand-written
-    ...    ones. If one refuses and the other allows, the permission is not enforced — it is
-    ...    merely inconvenient to bypass.
+A Plain User Cannot Assign A Role Through The Roles Read Route
+    [Documentation]    manage_roles is the only write route for a user's roles; `:id/roles`
+    ...    is read-only. A write to it must find no handler at all, so there is no second
+    ...    door whose permission could drift from the first.
     ${resp}=    POST On Session    attacker    ${USER_API}/${ATTACKER_ID}/roles
     ...    json=${{ {'add': [$ESC_ROLE_ID]} }}    expected_status=any
-    Request Should Be Refused    ${resp}    Self-assigning a role via the engine route
+    Should Be Equal As Integers    ${resp.status_code}    405
+    ...    msg=Writing through the roles read route returned ${resp.status_code}; expected 405
     Permission Should Be Denied    attacker    read:iam_role:tenant
 
 A Plain User Cannot Add Themselves To A Group
@@ -75,7 +75,7 @@ A Plain User Cannot Add Themselves To A Group
     ${group_id}    ${getag}=    Response Should Be Create Success    ${resp}
     Track Permission Fixture    groups    ${group_id}
 
-    ${resp}=    POST On Session    attacker    /v1/iam/groups/${group_id}/manage-users
+    ${resp}=    POST On Session    attacker    /v1/iam/iam_group/${group_id}/manage_users
     ...    json=${{ {'add': [$ATTACKER_ID]} }}    expected_status=any
     Request Should Be Refused    ${resp}    Self-adding to a group
 
@@ -101,14 +101,14 @@ A Plain User Cannot Add An Entitlement To An Existing Role
 A Plain User Cannot Join A Role From The Role Side
     [Documentation]    The role-side assignment route writes the same edge as
     ...    /users/:id/roles, so it must refuse the same caller.
-    ${resp}=    POST On Session    attacker    ${ROLE_API}/${ESC_ROLE_ID}/manage-users
+    ${resp}=    POST On Session    attacker    ${ROLE_API}/${ESC_ROLE_ID}/manage_users
     ...    json=${{ {'add': [$ATTACKER_ID], 'remove': []} }}    expected_status=any
     Request Should Be Refused    ${resp}    Self-assigning through the role side
     Permission Should Be Denied    attacker    read:iam_role:tenant
 
 A Plain User Cannot Strip A Holder From The Role Side
     [Documentation]    Removing someone else's access is as much a privilege as granting it.
-    ${resp}=    POST On Session    attacker    ${ROLE_API}/${ESC_ROLE_ID}/manage-users
+    ${resp}=    POST On Session    attacker    ${ROLE_API}/${ESC_ROLE_ID}/manage_users
     ...    json=${{ {'add': [], 'remove': [$VICTIM_ID]} }}    expected_status=any
     Request Should Be Refused    ${resp}    Unassigning another user through the role side
     Permission Should Be Granted    victim    read:iam_role:tenant
@@ -120,7 +120,7 @@ A Plain User Cannot Assign A Group From The Role Side
     ${group_id}    ${getag}=    Response Should Be Create Success    ${resp}
     Track Permission Fixture    groups    ${group_id}
 
-    ${resp}=    POST On Session    attacker    ${ROLE_API}/${ESC_ROLE_ID}/manage-groups
+    ${resp}=    POST On Session    attacker    ${ROLE_API}/${ESC_ROLE_ID}/manage_groups
     ...    json=${{ {'add': [$group_id], 'remove': []} }}    expected_status=any
     Request Should Be Refused    ${resp}    Assigning a group through the role side
 

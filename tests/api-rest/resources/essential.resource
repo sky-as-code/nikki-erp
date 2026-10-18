@@ -12,8 +12,8 @@ Resource          ${CURDIR}/../nikki_api/data.resource
 *** Variables ***
 ${UOM_API}                  /v1/essential/essential_uom
 ${UOMCAT_API}               /v1/essential/essential_uomcat
-${UOM_CONVERT_API}          /v1/essential/uoms/convert
-${UOM_TO_REFERENCE_API}     /v1/essential/uoms/to_reference
+${UOM_CONVERT_API}          /v1/essential/essential_uom/convert
+${UOM_TO_REFERENCE_API}     /v1/essential/essential_uom/to_reference
 ${ESSENTIAL_SCHEMA_DIR}     ${CURDIR}/schemas/essential
 
 

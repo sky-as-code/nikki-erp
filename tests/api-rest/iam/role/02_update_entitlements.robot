@@ -1,19 +1,17 @@
 *** Settings ***
-Documentation     Update Role with an entitlement delta: PATCH /v1/iam/roles/:id accepts
+Documentation     Update Role with an entitlement delta: PATCH /v1/iam/iam_role/:id accepts
 ...               `entitlements: {add: [{resource_id, action_id|null, description?}], remove: [ids],
 ...               update: [{id, description}]}`. An update changes only the description.
 ...
 ...               The role row and the entitlement changes commit in one transaction with one
 ...               permission rebuild for the role. A grant takes the resource's max_scope, a
 ...               null action_id grants every action (`*`), and a delta needs
-...               manage_entitlements on iam_role on top of update. The generic engine route
-...               /v1/iam/iam_role does not accept the delta.
+...               manage_entitlements on iam_role on top of update.
 Resource          ../../resources/iam.resource
 Suite Setup       Set Up Role Entitlement Fixtures
 
 
 *** Variables ***
-${ENGINE_ROLE_API}      /v1/iam/iam_role
 ${READ_EXPRESSION}      read:iam_role:tenant
 
 
@@ -238,16 +236,3 @@ Update Permission Alone Does Not Allow A Delta
     Response Should Be Permission Refusal    ${resp}    Granting with update permission only
     Role Should Not Grant    ${FOREIGN_ROLE_ID}    *:iam_role:tenant
     [Teardown]    Unassign Role From User    ${PLAIN_USER_ID}    ${editor_role}
-
-The Engine Route Does Not Apply A Delta
-    [Documentation]    /v1/iam/iam_role is the generic engine surface; it must not become a
-    ...    second way to change what a role grants.
-    [Tags]    entitlements    negative    security
-    ${etag}=    Role Etag    ${FOREIGN_ROLE_ID}
-    ${grant}=    Grant
-    ${body}=    Evaluate    {'etag': $etag, 'entitlements': {'add': [$grant], 'remove': []}}
-    ${resp}=    PATCH On Session    api    ${ENGINE_ROLE_API}/${FOREIGN_ROLE_ID}    json=${body}
-    ...    expected_status=any
-    Should Be True    ${resp.status_code} < 500
-    ...    msg=The engine PATCH failed with ${resp.status_code}: ${resp.text}
-    Role Should Not Grant    ${FOREIGN_ROLE_ID}    *:iam_role:tenant
