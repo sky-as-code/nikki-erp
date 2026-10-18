@@ -15,8 +15,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// NewProductVariantDomainService derives the variant service from the engine's default one, which
-// it embeds so built-in actions keep running unchanged. Installed with Engine.SetResourceService.
+// NewProductVariantDomainService derives the variant service from the onion's default one, which
+// it embeds so built-in actions keep running unchanged.
 //
 // The template_* fields are declared as related computed fields in product_variant.json, and the
 // engine's computed-field layer batches the template read and fills them on every read path.
@@ -102,7 +102,7 @@ func assertVariantDeletable(
 
 // SetArchived archives the variant, stamps why it was archived, and brings its template in step.
 // Both follow-ups must run AFTER the variant row is written, which is why they are not in the
-// engine's AfterValidationSuccess hook: that runs before MainProcess, so the "are any variants
+// AfterValidationSuccess hook: that runs before the write, so the "are any variants
 // left?" count would still see this variant unarchived and never archive the template.
 func (this *ProductVariantDomainServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,

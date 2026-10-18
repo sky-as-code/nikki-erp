@@ -16,7 +16,7 @@ import (
 // The goods-movement port other modules bind to.
 //
 // Narrowed deliberately rather than publishing the implementing struct, which also embeds
-// drif.DynamicResourceService: full CRUD would let a consumer set a status to done without moving
+// composable.CrudDomainService: full CRUD would let a consumer set a status to done without moving
 // anything, or edit a validated document, making the lifecycle rules optional.
 //
 // Every method takes a transfer id, and the transfer already carries its operation type, locations

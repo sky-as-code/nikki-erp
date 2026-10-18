@@ -18,8 +18,8 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// NewStockTransferDomainService derives the transfer service from the engine's default one, which
-// it embeds so built-in CRUD keeps running unchanged. Installed with Engine.SetResourceService.
+// NewStockTransferDomainService derives the transfer service from the onion's default one, which
+// it embeds so built-in CRUD keeps running unchanged.
 func NewStockTransferDomainService(base composable.CrudDomainService) *StockTransferDomainServiceImpl {
 	return &StockTransferDomainServiceImpl{CrudDomainService: base}
 }
