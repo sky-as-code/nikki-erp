@@ -1,4 +1,4 @@
-package dynamicengines
+package services
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"

@@ -1,94 +1,71 @@
 package restful
 
 import (
-	"os"
-	"strings"
 	"testing"
 
 	"github.com/labstack/echo/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	modconstants "github.com/sky-as-code/nikki-erp/modules/accounting/constants"
+	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/accounting/dynamicengines"
+	v1 "github.com/sky-as-code/nikki-erp/modules/accounting/transport/restful/v1"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
-
-// taxRoutePaths is the set of sub-paths initTaxCalculationV1 registers, asserted against the real
-// source below so that adding an endpoint without updating this list fails.
-var taxRoutePaths = []string{
-	"/tax/calculate",
-	"/tax/simulate",
-	"/tax/reverse-full",
-	"/tax/reverse-partial",
-}
-
-// registerTaxRoutes mirrors what initTaxCalculationV1 registers, minus the dependency injection.
-// Paths are asserted rather than handlers: booting proves the DI wiring, but a typo in a route
-// string produces a 404 nothing else catches.
-func registerTaxRoutes(routeV1 *echo.Group) {
-	noop := func(echoCtx *echo.Context) error { return nil }
-	for _, path := range taxRoutePaths {
-		routeV1.POST(path, noop)
-	}
-}
-
-func TestTaxRoutesAreRegisteredUnderTheModulePrefix(t *testing.T) {
-	server := echo.New()
-	registerTaxRoutes(server.Group(modconstants.AccountingRouteV1))
-
-	registered := map[string]string{}
-	for _, route := range server.Router().Routes() {
-		registered[route.Path] = route.Method
-	}
-
-	expected := []string{
-		"/v1/accounting/tax/calculate",
-		"/v1/accounting/tax/simulate",
-		"/v1/accounting/tax/reverse-full",
-		"/v1/accounting/tax/reverse-partial",
-	}
-	for _, path := range expected {
-		method, found := registered[path]
-		if !found {
-			t.Errorf("expected %s to be registered; registered paths: %v", path, registered)
-			continue
-		}
-		// POST throughout, including for the two that only read: the request is a whole document of
-		// lines and party context, which does not fit a query string.
-		if method != "POST" {
-			t.Errorf("expected %s to be a POST, got %s", path, method)
-		}
-	}
-}
 
 // The prefix is the same string the IAM resource codes and schema names share; drifting from it
 // leaves the endpoints reachable at a path no client calls.
 func TestModuleRoutePrefixIsStable(t *testing.T) {
-	if modconstants.AccountingRouteV1 != "/v1/accounting" {
-		t.Fatalf("the module route prefix changed to %q; clients and docs assume /v1/accounting",
-			modconstants.AccountingRouteV1)
-	}
+	assert.Equal(t, "/v1/accounting", modconstants.AccountingRouteV1)
 }
 
-// Every custom route must carry SmokeAuthz, and this test reads the real source to check it.
-// Without it the handler runs with an empty permission context and answers 403 to everyone,
-// including an owner, which no compiler or route-path assertion would catch.
-func TestCustomRoutesCarrySmokeAuthz(t *testing.T) {
-	source, err := os.ReadFile("index.go")
-	if err != nil {
-		t.Fatalf("could not read the route registration source: %v", err)
+// The container names in the REST structs' tags are literals; they must be what the onions are
+// registered under, or the handlers resolve nothing at boot.
+func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
+	for schemaName, literal := range map[string]string{
+		models.TaxJurisdictionSchemaName:          v1.TaxJurisdictionEngineName,
+		models.TaxGroupSchemaName:                 v1.TaxGroupEngineName,
+		models.TaxRoundingPolicySchemaName:        v1.TaxRoundingPolicyEngineName,
+		models.TaxProductClassificationSchemaName: v1.TaxProductClassificationEngineName,
+		models.TaxSchemaName:                      v1.TaxEngineName,
+		models.TaxDefinitionVersionSchemaName:     v1.TaxDefinitionVersionEngineName,
+		models.TaxRateVersionSchemaName:           v1.TaxRateVersionEngineName,
+		models.TaxComponentSchemaName:             v1.TaxComponentEngineName,
+		models.TaxMappingSchemaName:               v1.TaxMappingEngineName,
+		models.TaxMappingLineSchemaName:           v1.TaxMappingLineEngineName,
+		models.TaxRuleSchemaName:                  v1.TaxRuleEngineName,
+		models.TaxRuleConditionSchemaName:         v1.TaxRuleConditionEngineName,
+		models.TaxRuleResultSchemaName:            v1.TaxRuleResultEngineName,
+	} {
+		assert.Equal(t, composable.EngineDependencyName(schemaName), literal)
 	}
+	assert.Len(t, dynamicengines.EngineSchemaNames(), 13)
+}
 
-	for _, path := range taxRoutePaths {
-		index := strings.Index(string(source), `"`+path+`"`)
-		if index < 0 {
-			t.Errorf("route %s is not registered in index.go", path)
-			continue
-		}
-		// The registration is one call; the middleware has to appear before the line ends.
-		line := string(source)[index:]
-		if end := strings.IndexByte(line, 0x0a); end >= 0 {
-			line = line[:end]
-		}
-		if !strings.Contains(line, "m.SmokeAuthz()") {
-			t.Errorf("route %s is registered without m.SmokeAuthz(); every request to it would be denied", path)
-		}
+func passThrough(next echo.HandlerFunc) echo.HandlerFunc {
+	return next
+}
+
+// The four calculation actions are POST collection actions of accounting_tax, registered ahead of
+// the ":id" routes that would otherwise swallow their literal segment.
+func TestTaxCalculationActionsAreCollectionPosts(t *testing.T) {
+	noop := func(*echo.Context, map[string]any) error { return nil }
+	restEngine := composable.NewRestEngine(models.TaxSchemaName, &v1.TaxRest{}).AddCrudRoutes()
+	for _, path := range TaxCalculationActionPaths {
+		restEngine.AddRoute(taxAction(path, noop))
+	}
+	echoApp := echo.New()
+	require.NoError(t, restEngine.RegisterRoutes(echoApp.Group(modconstants.AccountingRouteV1), passThrough))
+
+	position := map[string]int{}
+	for i, route := range echoApp.Router().Routes() {
+		position[route.Method+" "+route.Path] = i
+	}
+	base := modconstants.AccountingRouteV1 + "/" + models.TaxSchemaName
+	for _, path := range []string{"calculate", "simulate", "reverse_full", "reverse_partial"} {
+		index, ok := position["POST "+base+"/"+path]
+		require.True(t, ok, path)
+		assert.Less(t, index, position["POST "+base+"/:id/archived"], path)
 	}
 }

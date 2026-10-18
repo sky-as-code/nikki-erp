@@ -1,183 +1,52 @@
 package dynamicengines
 
 import (
-	"go.bryk.io/pkg/errors"
+	stdErr "errors"
 
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"go.uber.org/dig"
+
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/accounting/app"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
-	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/services"
+	repo "github.com/sky-as-code/nikki-erp/modules/accounting/infra/repository"
+	"github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/taxconfig"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
-func taxDefinitionVersionEngineSpec() engineSpec {
-	return engineSpec{
-		SchemaName:    models.TaxDefinitionVersionSchemaName,
-		DefineActions: defineDefinitionVersionActions,
-	}
+type taxDefinitionVersionEngineParam struct {
+	dig.In
+
+	Engine composable.DynamicResourceEngineOnion `name:"dynengine_accounting_tax_definition_version"`
 }
 
-func defineDefinitionVersionActions(engine drif.DynamicResourceEngine) error {
-	err := engine.ModifyAction(drif.DynamicActionDelta{
-		ActionName:    drif.ActionCreate,
-		ValidateExtra: validateDefinitionVersionCreate(engine),
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to attach tax definition version create validation")
-	}
-
-	err = engine.ModifyAction(drif.DynamicActionDelta{
-		ActionName:    drif.ActionUpdate,
-		KeysToFetch:   definitionVersionKeysToFetch,
-		ValidateExtra: validateDefinitionVersionUpdate(engine),
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to attach tax definition version update validation")
-	}
-
-	err = engine.ModifyAction(drif.DynamicActionDelta{
-		ActionName:    drif.ActionDelete,
-		KeysToFetch:   definitionVersionKeysToFetch,
-		ValidateExtra: validateDefinitionVersionDelete,
-	})
-	return errors.Wrap(err, "failed to attach tax definition version delete validation")
-}
-
-func definitionVersionKeysToFetch(params dmodel.DynamicFields) dmodel.DynamicFields {
-	return dmodel.DynamicFields{
-		models.TaxDefinitionVersionFieldId: params[models.TaxDefinitionVersionFieldId],
-	}
-}
-
-func validateDefinitionVersionCreate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
-	return func(
-		ctx corectx.Context, inputModel *drif.DynamicEntity, _ *drif.DynamicEntity, vErrs *ft.ClientErrors,
-	) error {
-		params := inputModel.GetFieldData()
-		version := models.NewTaxDefinitionVersionFrom(params)
-		assertWellFormedPeriod(
-			version.GetEffectiveFrom(), version.GetEffectiveTo(),
-			models.TaxDefinitionVersionFieldEffectiveTo, vErrs)
-		assertTreatmentMatchesCalculationType(version, vErrs)
-		return assertNoPublishedOverlap(ctx, engine, version, nil, vErrs)
-	}
-}
-
-func validateDefinitionVersionUpdate(engine drif.DynamicResourceEngine) drif.ActionValidateExtraFn {
-	return func(
-		ctx corectx.Context, inputModel *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
-	) error {
-		params := inputModel.GetFieldData()
-		found := entityFields(foundModel)
-		assertLifecycleTransition(
-			models.TaxDefinitionVersionFieldLifecycleStatus, params, found, vErrs)
-		assertMaterialFieldsImmutable(
-			models.TaxDefinitionVersionSchemaName,
-			models.TaxDefinitionVersionFieldLifecycleStatus, params, found, vErrs)
-		if vErrs.Count() > 0 {
-			return nil
-		}
-
-		merged := mergeFields(found, params)
-		version := models.NewTaxDefinitionVersionFrom(merged)
-		assertWellFormedPeriod(
-			version.GetEffectiveFrom(), version.GetEffectiveTo(),
-			models.TaxDefinitionVersionFieldEffectiveTo, vErrs)
-		assertTreatmentMatchesCalculationType(version, vErrs)
-
-		var selfId *string
-		if found != nil {
-			selfId = models.NewTaxDefinitionVersionFrom(*found).GetId()
-		}
-		return assertNoPublishedOverlap(ctx, engine, version, selfId, vErrs)
-	}
-}
-
-func validateDefinitionVersionDelete(
-	_ corectx.Context, _ *drif.DynamicEntity, foundModel *drif.DynamicEntity, vErrs *ft.ClientErrors,
-) error {
-	found := entityFields(foundModel)
-	assertDeletableLifecycle(models.TaxDefinitionVersionFieldLifecycleStatus, found, vErrs)
-	return nil
-}
-
-// assertTreatmentMatchesCalculationType pairs the treatment with the calculation type.
-//
-// The "none" calculation type lets a tax carry legal meaning without producing an amount, so it is
-// valid only where the treatment says no tax is due for a legal reason. Zero-rated is excluded even
-// though it also yields zero: a zero-rated supply is taxed at 0%, and that distinction is what lets
-// the supplier reclaim input tax.
-func assertTreatmentMatchesCalculationType(
-	version *models.TaxDefinitionVersion, vErrs *ft.ClientErrors,
-) {
-	rawCalc, rawTreat := version.GetCalculationType(), version.GetTaxTreatment()
-	if rawCalc == nil || rawTreat == nil {
-		return
-	}
-	calc, treat := models.WrapCalculationType(*rawCalc), models.WrapTaxTreatment(*rawTreat)
-	if calc == nil || treat == nil {
-		return
-	}
-
-	if *calc == models.CalculationNone {
-		switch *treat {
-		case models.TaxTreatmentExempt, models.TaxTreatmentNonTaxable, models.TaxTreatmentOutOfScope:
-		default:
-			vErrs.Append(*ft.NewBusinessViolation(
-				models.TaxDefinitionVersionFieldCalculationType,
-				ft.ErrorKey("tax.none_calculation_requires_no_charge_treatment", "accounting"),
-				"a calculation type of 'none' is only valid with exempt, non_taxable or out_of_scope"))
-		}
-	}
-
-	if *treat == models.TaxTreatmentZeroRated && *calc == models.CalculationNone {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.TaxDefinitionVersionFieldCalculationType,
-			ft.ErrorKey("tax.zero_rated_requires_percentage", "accounting"),
-			"a zero-rated tax is charged at 0% and must use calculation type 'percentage', not 'none'"))
-	}
-}
-
-// assertNoPublishedOverlap rejects a published version whose period overlaps another published
-// version of the same tax. It runs only for published rows; two overlapping drafts are a work in
-// progress until the second is published.
-func assertNoPublishedOverlap(
-	ctx corectx.Context,
-	engine drif.DynamicResourceEngine,
-	version *models.TaxDefinitionVersion,
-	selfId *string,
-	vErrs *ft.ClientErrors,
-) error {
-	status := version.GetLifecycleStatus()
-	if status == nil || *status != string(models.LifecyclePublished) {
-		return nil
-	}
-	taxId := version.GetTaxId()
-	if taxId == nil {
-		return nil
-	}
-
-	existing, err := models.FindPublishedVersionsOfTax(ctx, engine.ResourceRepository(), *taxId, 200)
-	if err != nil {
-		return errors.Wrap(err, "assertNoPublishedOverlap")
-	}
-
-	for _, item := range existing {
-		other := models.NewTaxDefinitionVersionFrom(item)
-		if selfId != nil && other.GetId() != nil && *other.GetId() == *selfId {
-			continue
-		}
-		if models.PeriodsOverlap(
-			version.GetEffectiveFrom(), version.GetEffectiveTo(),
-			other.GetEffectiveFrom(), other.GetEffectiveTo(),
-		) {
-			vErrs.Append(*ft.NewBusinessViolation(
-				models.TaxDefinitionVersionFieldEffectiveFrom,
-				ft.ErrorKey("tax.published_version_overlap", "accounting"),
-				"another published version of this tax already covers part of this period; "+
-					"a tax date must resolve to exactly one definition"))
-			return nil
-		}
-	}
-	return nil
+func registerTaxDefinitionVersionEngine() error {
+	err := deps.RegisterNamed(
+		composable.EngineDependencyName(models.TaxDefinitionVersionSchemaName),
+		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
+			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+				SchemaName: models.TaxDefinitionVersionSchemaName,
+				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+					return repo.NewTaxDefinitionVersionRepository(base)
+				},
+				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+					return services.NewTaxDefinitionVersionDomainService(base)
+				},
+				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+					return app.NewTaxDefinitionVersionApplicationService(base)
+				},
+			}, param)
+		},
+	)
+	return stdErr.Join(err, deps.Register(
+		func(p taxDefinitionVersionEngineParam) taxconfig.TaxDefinitionVersionRepository {
+			return p.Engine.Repository().(taxconfig.TaxDefinitionVersionRepository)
+		},
+		func(p taxDefinitionVersionEngineParam) taxconfig.TaxDefinitionVersionDomainService {
+			return p.Engine.DomainService().(taxconfig.TaxDefinitionVersionDomainService)
+		},
+		func(p taxDefinitionVersionEngineParam) taxconfig.TaxDefinitionVersionApplicationService {
+			return p.Engine.ApplicationService().(taxconfig.TaxDefinitionVersionApplicationService)
+		},
+	))
 }

@@ -20,14 +20,17 @@ import (
 // on its tax date.
 type TaxCalculationDomainServiceImpl struct {
 	uomSvc itExt.UomExtService
+	repos  *TaxRepos
 
 	// now supplies the calculated-at stamp; a field so a test can freeze it, nil in production. This
 	// is NOT the tax date, which is always the caller's and never defaulted from the clock.
 	now func() string
 }
 
-func NewTaxCalculationDomainServiceImpl(uomSvc itExt.UomExtService) it.TaxCalculationDomainService {
-	return &TaxCalculationDomainServiceImpl{uomSvc: uomSvc}
+func NewTaxCalculationDomainServiceImpl(
+	uomSvc itExt.UomExtService, repos *TaxRepos,
+) it.TaxCalculationDomainService {
+	return &TaxCalculationDomainServiceImpl{uomSvc: uomSvc, repos: repos}
 }
 
 func (this *TaxCalculationDomainServiceImpl) Calculate(
@@ -58,10 +61,7 @@ func (this *TaxCalculationDomainServiceImpl) Simulate(
 func (this *TaxCalculationDomainServiceImpl) run(
 	ctx corectx.Context, request it.CalculationRequest, withTrace bool,
 ) (*it.CalculationResult, []it.TraceStep, error) {
-	repos, err := NewTaxRepos()
-	if err != nil {
-		return nil, nil, err
-	}
+	repos := this.repos
 
 	var trace []it.TraceStep
 	addTrace := func(stage string, detail string, taxIds []string, ruleIds []string) {
