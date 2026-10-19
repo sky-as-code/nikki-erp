@@ -7,40 +7,25 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
-	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// withOrderTransaction runs body inside one transaction on a cloned context. The transaction must
-// go on the clone, never on ctx itself, or a committed transaction stays visible to whatever runs
-// next; the clone carries the caller's identity, which the audit columns and actor need. There is
-// no join-existing-transaction branch: BeginTx returns ErrTxNested, and nesting these entry points
-// is a bug rather than a case to handle.
+// withOrderTransaction runs body inside one order transaction. An entry point reached from another
+// one (create_rfq creating its order lines) joins the transaction ctx already carries, since the
+// database client refuses a nested one.
 func withOrderTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
 	repo, err := repoFor(models.PurchaseOrderSchemaName)
 	if err != nil {
 		return err
 	}
-
-	tranx, err := repo.BeginTransaction(ctx)
-	if err != nil {
-		return errors.Wrap(err, "withOrderTransaction")
-	}
-	defer tranx.Rollback()
-
-	tranxCtx := corectx.CloneRequestContext(ctx)
-	tranxCtx.SetDbTranx(tranx)
-
-	if err := body(tranxCtx); err != nil {
-		return err
-	}
-	return errors.Wrap(tranx.Commit(), "withOrderTransaction")
+	return composable.InTransaction(ctx, repo, body)
 }
 
 // orderNotFoundResult reports a missing order as a client error, since the id came from the caller.

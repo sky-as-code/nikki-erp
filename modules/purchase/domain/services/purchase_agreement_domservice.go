@@ -403,6 +403,16 @@ func (this *PurchaseAgreementDomainServiceImpl) CreateRfq(
 		})
 	})
 
+	return refusalOrResult(result, err)
+}
+
+// refusalOrResult answers a ClientErrorSignal that rolled the transaction back as client errors.
+func refusalOrResult(
+	result *dyn.OpResult[dmodel.DynamicFields], err error,
+) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	if signal, ok := composable.AsClientErrorSignal(err); ok {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: signal.Errors}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -468,8 +478,13 @@ func (this *PurchaseAgreementDomainServiceImpl) copyAgreementLines(
 			orderLine[basemodel.FieldOrgId] = orgId
 		}
 
-		if _, err := orderLineSvc.Create(ctx, orderLine); err != nil {
+		created, err := orderLineSvc.Create(ctx, orderLine)
+		if err != nil {
 			return err
+		}
+		// A refused line must not leave an RFQ short of it: the signal rolls the whole RFQ back.
+		if created.ClientErrors.Count() > 0 {
+			return composable.ClientErrorSignal{Errors: created.ClientErrors}
 		}
 	}
 	return nil
