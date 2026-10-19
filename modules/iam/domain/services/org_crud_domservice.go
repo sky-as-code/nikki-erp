@@ -19,6 +19,12 @@ import (
 // installation the switcher was never designed for.
 const maxUserOrgs = 500
 
+var orgUsersM2mParam = composable.ManageM2mParam{
+	Action:          "manage organization users",
+	DestSchemaName:  domain.UserSchemaName,
+	JunctionIdField: domain.OrgUsrRelFieldId,
+}
+
 // NewOrgCrudDomainService is handed the composable default by the iam_org onion.
 func NewOrgCrudDomainService(
 	base composable.CrudDomainService,
@@ -38,8 +44,9 @@ type OrgCrudDomainServiceImpl struct {
 	usageDispatcher *usagecheck.Dispatcher
 }
 
-// Create creates the organization and seeds its settings in one transaction, so an org never
-// exists without the settings rows the application reads from it.
+// Create creates the organization, seeds its settings and makes its creator a member in one
+// transaction, so an org never exists without the settings rows the application reads from it, and
+// its creator can act in it straight away.
 func (this *OrgCrudDomainServiceImpl) Create(
 	ctx corectx.Context, cmd itOrg.CreateOrgCommand, options ...composable.CreateOptions,
 ) (*itOrg.CreateOrgResult, error) {
@@ -50,7 +57,11 @@ func (this *OrgCrudDomainServiceImpl) Create(
 		if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
 			return err
 		}
-		return this.initOrgSettings(tranxCtx, composable.ParamId(result.Data))
+		orgId := composable.ParamId(result.Data)
+		if err := this.initOrgSettings(tranxCtx, orgId); err != nil {
+			return err
+		}
+		return this.addCreatorAsMember(tranxCtx, orgId)
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "create organization")
@@ -69,6 +80,27 @@ func (this *OrgCrudDomainServiceImpl) initOrgSettings(ctx corectx.Context, orgId
 	// A rejected seeding is a defect in this call, not something the caller can correct.
 	if initResult.ClientErrors.Count() > 0 {
 		return initResult.ClientErrors.ToError()
+	}
+	return nil
+}
+
+// addCreatorAsMember skips a caller that is not a user: a service or an unauthenticated
+// execution cannot be a member. A refused add is a defect, not a client mistake, so it rolls the
+// create back.
+func (this *OrgCrudDomainServiceImpl) addCreatorAsMember(ctx corectx.Context, orgId model.Id) error {
+	perms := ctx.GetPermissions()
+	if perms.Principal.Kind != corectx.PrincipalKindUser || perms.UserId == "" {
+		return nil
+	}
+	result, err := composable.ManageM2m(ctx, this.Repository(), dmodel.DynamicFields{
+		basemodel.FieldId:      orgId,
+		composable.FieldM2mAdd: []model.Id{perms.UserId},
+	}, orgUsersM2mParam)
+	if err != nil {
+		return err
+	}
+	if result.ClientErrors.Count() > 0 {
+		return errors.Wrap(result.ClientErrors.ToError(), "add the organization creator as a member")
 	}
 	return nil
 }
@@ -97,11 +129,7 @@ func (this *OrgCrudDomainServiceImpl) assertDeletable(
 func (this *OrgCrudDomainServiceImpl) ManageUsers(
 	ctx corectx.Context, cmd itOrg.ManageOrgUsersCommand,
 ) (*itOrg.ManageOrgUsersResult, error) {
-	return composable.ManageM2m(ctx, this.Repository(), cmd, composable.ManageM2mParam{
-		Action:          "manage organization users",
-		DestSchemaName:  domain.UserSchemaName,
-		JunctionIdField: domain.OrgUsrRelFieldId,
-	})
+	return composable.ManageM2m(ctx, this.Repository(), cmd, orgUsersM2mParam)
 }
 
 func (this *OrgCrudDomainServiceImpl) GetUserOrgs(

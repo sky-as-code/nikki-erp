@@ -28,6 +28,7 @@ type stubCrudRepo struct {
 	composable.CrudRepository
 	schema *dmodel.ModelSchema
 	tranx  *stubTranx
+	base   *stubBaseRepo
 
 	// rows answers GetOne and KeyExist by id; updates records every Update.
 	rows    map[string]dmodel.DynamicFields
@@ -50,6 +51,39 @@ func (this *stubCrudRepo) Update(_ corectx.Context, data dmodel.DynamicFields) (
 }
 
 func (this *stubCrudRepo) Schema() *dmodel.ModelSchema { return this.schema }
+
+func (this *stubCrudRepo) GetBaseRepo() dyn.BaseDynamicRepository {
+	if this.base == nil {
+		this.base = &stubBaseRepo{schema: this.schema}
+	}
+	this.base.rows = this.rows
+	return this.base
+}
+
+// stubBaseRepo is what the corecrud helpers reach through GetBaseRepo: GetOne answers from the
+// owning stubCrudRepo's rows, and ManageM2m records each call or refuses it.
+type stubBaseRepo struct {
+	dyn.BaseDynamicRepository
+	schema     *dmodel.ModelSchema
+	rows       map[string]dmodel.DynamicFields
+	m2mCalls   []dyn.RepoManageM2mParam
+	m2mRefusal *ft.ClientErrorItem
+}
+
+func (this *stubBaseRepo) Schema() *dmodel.ModelSchema { return this.schema }
+
+func (this *stubBaseRepo) GetOne(_ corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	row, ok := this.rows[composable.ParamString(param.Filter, "id")]
+	return &dyn.OpResult[dmodel.DynamicFields]{Data: row, HasData: ok}, nil
+}
+
+func (this *stubBaseRepo) ManageM2m(_ corectx.Context, param dyn.RepoManageM2mParam) (*dyn.OpResult[int], error) {
+	this.m2mCalls = append(this.m2mCalls, param)
+	if this.m2mRefusal != nil {
+		return &dyn.OpResult[int]{ClientErrors: ft.ClientErrors{*this.m2mRefusal}}, nil
+	}
+	return &dyn.OpResult[int]{Data: param.AssociatedIds.Length(), HasData: true}, nil
+}
 
 func (this *stubCrudRepo) BeginTransaction(corectx.Context) (database.DbTransaction, error) {
 	this.tranx = &stubTranx{}
@@ -92,6 +126,19 @@ func (this *fakeCrudDomain) Create(
 	this.created = entity.GetFieldData()
 	this.created["id"] = "01JTESTUSER000000000000000"
 	return &composable.CreateResult{Data: this.created, HasData: true}, nil
+}
+
+// Update writes through the stub repository, so a test can tell a written row from a rolled-back
+// one by the transaction the write ran in.
+func (this *fakeCrudDomain) Update(
+	ctx corectx.Context, cmd composable.UpdateCommand, _ ...composable.UpdateOptions,
+) (*composable.MutateResult, error) {
+	if this.rejectNext {
+		return &composable.MutateResult{ClientErrors: ft.ClientErrors{
+			*ft.NewValidationError("name", "err_test", "rejected"),
+		}}, nil
+	}
+	return this.repo.Update(ctx, cmd)
 }
 
 // Delete runs the guard it is handed against the keys, the way the default service does after
