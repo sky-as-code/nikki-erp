@@ -1,0 +1,43 @@
+[
+	{
+		"$alias": "stock_operation_type_main_in",
+		"code": "MAIN-IN",
+		"name": {
+			"en-US": "Receipts",
+			"vi-VN": "Nhập kho"
+		},
+		"operation_code": "incoming",
+		"reservation_method": "at_confirmation",
+		"backorder_policy": "ask",
+		"shipping_policy": "all_at_once",
+		"default_source_location_id": "@location_virt_vendor",
+		"default_destination_location_id": "@location_main_stock"
+	},
+	{
+		"$alias": "stock_operation_type_main_out",
+		"code": "MAIN-OUT",
+		"name": {
+			"en-US": "Deliveries",
+			"vi-VN": "Xuất kho"
+		},
+		"operation_code": "outgoing",
+		"reservation_method": "at_confirmation",
+		"backorder_policy": "ask",
+		"shipping_policy": "all_at_once",
+		"default_source_location_id": "@location_main_stock",
+		"default_destination_location_id": "@location_virt_customer"
+	},
+	{
+		"$alias": "stock_operation_type_vdmc_dispense",
+		"code": "VDMC_DISPENSE",
+		"name": {
+			"en-US": "Kiosk Dispense",
+			"vi-VN": "Xuất hàng cho khách tại kiosk"
+		},
+		"operation_code": "outgoing",
+		"reservation_method": "manual",
+		"backorder_policy": "never",
+		"shipping_policy": "partial",
+		"default_destination_location_id": "@location_virt_customer"
+	}
+]

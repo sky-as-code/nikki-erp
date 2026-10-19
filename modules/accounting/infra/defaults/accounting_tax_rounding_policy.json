@@ -1,0 +1,19 @@
+[
+	{
+		"$alias": "tax_rounding_policy_vn_vnd_doc",
+		"code": "VN-VND-DOC",
+		"name": {
+			"en-US": "Vietnam VND document rounding",
+			"vi-VN": "Lam tron VND theo chung tu"
+		},
+		"jurisdiction_id": "@tax_jurisdiction_vn",
+		"currency_code": "VND",
+		"rounding_scope": "document",
+		"rounding_method": "half_up",
+		"rounding_increment": "1",
+		"precision": 0,
+		"version_no": 1,
+		"effective_from": "2025-07-01",
+		"lifecycle_status": "published"
+	}
+]

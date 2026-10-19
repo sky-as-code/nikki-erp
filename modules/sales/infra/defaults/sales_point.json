@@ -1,0 +1,10 @@
+[
+	{
+		"$alias": "point_bo001",
+		"sales_channel_id": "@channel_bo",
+		"name": "Back Office",
+		"code": "BO001",
+		"status": "active",
+		"fulfillment_enabled": false
+	}
+]

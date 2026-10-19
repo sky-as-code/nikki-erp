@@ -251,7 +251,7 @@
 	"nikki.shell.appLoading.title": "Đang tải ứng dụng",
 	"nikki.shell.menuBar.allApps": "Tất cả ứng dụng",
 	"not_found_hint": "Trang bạn tìm kiếm không tồn tại hoặc đã được di chuyển.",
-	"org.manageOrganizations": "Quản lý tổ chức...",
+	"org.manageOrganizations": "Quản lý tổ chức",
 	"page_not_found": "Không tìm thấy trang",
 	"pagination.itemsFound": "Tổng {{count}}",
 	"pagination.next": "Tiếp",

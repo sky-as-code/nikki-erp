@@ -52,9 +52,13 @@ func ownerIdFor(ctx corectx.Context, ownerType string) (string, error) {
 // A user may belong to several organizations, and settings deliberately refuses to guess among
 // them: writing one org's configuration because it happened to sort first would be worse than
 // failing. The org unit's organization is used when the request has one, since that is an explicit
-// choice rather than an inference.
+// choice rather than an inference. A service principal is minted for one organization, so that
+// is the one it acts for.
 func actingOrgId(ctx corectx.Context) string {
 	permissions := ctx.GetPermissions()
+	if permissions.Principal.Kind == corectx.PrincipalKindService && permissions.Principal.OrgId != nil {
+		return string(*permissions.Principal.OrgId)
+	}
 	if permissions.OrgUnitOrgId != nil && *permissions.OrgUnitOrgId != "" {
 		return string(*permissions.OrgUnitOrgId)
 	}

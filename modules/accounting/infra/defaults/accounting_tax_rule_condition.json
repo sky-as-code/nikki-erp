@@ -1,0 +1,32 @@
+[
+	{
+		"$alias": "tax_rule_condition_1",
+		"tax_rule_id": "@tax_rule_vn_export_zero_rated",
+		"field_key": "product_tax_classification",
+		"operator": "eq",
+		"value": [
+			"VN_EXPORT"
+		],
+		"sequence": 1
+	},
+	{
+		"$alias": "tax_rule_condition_2",
+		"tax_rule_id": "@tax_rule_vn_exempt_supply",
+		"field_key": "product_tax_classification",
+		"operator": "eq",
+		"value": [
+			"VN_EXEMPT"
+		],
+		"sequence": 1
+	},
+	{
+		"$alias": "tax_rule_condition_3",
+		"tax_rule_id": "@tax_rule_vn_vat_reduction_2025",
+		"field_key": "product_tax_classification",
+		"operator": "eq",
+		"value": [
+			"VN_VAT_REDUCTION_ELIGIBLE"
+		],
+		"sequence": 1
+	}
+]

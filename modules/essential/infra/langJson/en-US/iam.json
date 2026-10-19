@@ -608,5 +608,18 @@
 	"user.errors_passwords_do_not_match": "Passwords do not match",
 	"user_one": "user",
 	"user_other": "users",
-	"user_sections_assignedRoles": "Assigned roles"
+	"user_sections_assignedRoles": "Assigned roles",
+	"status.provisioning": "Provisioning",
+	"status.ready": "Ready",
+	"status.deleted": "Deleted",
+	"fields.status_message": "Status message",
+	"fields.status_message_vars": "Status details",
+	"org_status.init_failed": "Failed to set up defaults for modules: {{failed_modules}}",
+	"org_status.cleanup_failed": "Failed to clean up modules: {{failed_modules}}",
+	"org_status.provisioning_hint": "Setting up the organization. It can be used once it is ready.",
+	"org_status.deleting_hint": "Deleting the organization. It is removed once every module has cleaned up.",
+	"err_org_deleted": "The organization is being deleted and can no longer be changed",
+	"err_org_not_deleted": "The organization must be deleted and cleaned up before it is removed",
+	"org.delete_confirm": "The organization is archived now and removed after every module has deleted its data. Continue?",
+	"err_cannot_delete_current_org": "You cannot delete the organization you are working in. Switch to another one first."
 }

@@ -1,0 +1,15 @@
+[
+	{
+		"$alias": "product_category_root",
+		"name": {
+			"en-US": "Default",
+			"vi-VN": "Mặc định"
+		},
+		"display_order": 0,
+		"description": {
+			"en-US": "Root of the category tree",
+			"vi-VN": "Gốc của cây danh mục"
+		},
+		"source_system": "manual"
+	}
+]

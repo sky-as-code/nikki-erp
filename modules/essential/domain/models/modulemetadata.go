@@ -2,6 +2,8 @@ package models
 
 import (
 	_ "embed"
+	"slices"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
@@ -23,6 +25,8 @@ const (
 	ModuleMetadataFieldModelPrefix = "model_prefix"
 	ModuleMetadataFieldCategory    = "category"
 	ModuleMetadataFieldIsEnabled   = "is_enabled"
+	ModuleMetadataFieldDeps        = "dependencies"
+	ModuleMetadataFieldDepLevel    = "dep_level"
 )
 
 //go:embed module.json
@@ -125,6 +129,22 @@ func (this *ModuleMetadata) SetIsEnabled(v *bool) {
 	this.GetFieldData().SetBool(ModuleMetadataFieldIsEnabled, v)
 }
 
+func (this ModuleMetadata) GetDependencies() []string {
+	return this.GetFieldData().GetStrings(ModuleMetadataFieldDeps)
+}
+
+func (this *ModuleMetadata) SetDependencies(v []string) {
+	this.GetFieldData().SetStrings(ModuleMetadataFieldDeps, v)
+}
+
+func (this ModuleMetadata) GetDepLevel() *int32 {
+	return this.GetFieldData().GetInt32(ModuleMetadataFieldDepLevel)
+}
+
+func (this *ModuleMetadata) SetDepLevel(v *int32) {
+	this.GetFieldData().SetInt32(ModuleMetadataFieldDepLevel, v)
+}
+
 func (this ModuleMetadata) GetVersion() *semver.SemVer {
 	version := this.GetFieldData().GetString(ModuleMetadataFieldVersion)
 	if version == nil {
@@ -146,9 +166,21 @@ func (this *ModuleMetadata) SetVersion(v *semver.SemVer) {
 	this.GetFieldData().SetString(ModuleMetadataFieldVersion, &version)
 }
 
-func (this ModuleMetadata) ModifiedFields(other modules.InCodeModule) *ModuleMetadata {
+// ModifiedFields returns what the stored row must change to describe other, or nil when nothing
+// differs. depLevel is other's depth among the loaded modules, which other cannot know itself.
+func (this ModuleMetadata) ModifiedFields(other modules.InCodeModule, depLevel int32) *ModuleMetadata {
 	modified := NewModuleMetadata()
 	count := 0
+
+	if !slices.Equal(this.GetDependencies(), other.Deps()) {
+		modified.SetDependencies(other.Deps())
+		count++
+	}
+
+	if this.GetDepLevel() == nil || *this.GetDepLevel() != depLevel {
+		modified.SetDepLevel(&depLevel)
+		count++
+	}
 
 	if this.GetLabel() != nil && this.GetLabel().TranslationKey() != other.LabelKey() {
 		label := make(model.LangJson)

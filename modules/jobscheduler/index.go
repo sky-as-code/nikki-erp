@@ -11,6 +11,7 @@ package jobscheduler
 
 import (
 	"errors"
+	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
@@ -86,6 +87,8 @@ func (*JobSchedulerModule) Init() error {
 		services.InitDomainServices(),
 		app.InitApplicationServices(),
 		transport.InitTransport(),
+		// Jobs and their runs are deployment-wide, not per organization.
+		orglifecycle.RegisterNoop(constants.JobSchedulerModuleName),
 	)
 }
 

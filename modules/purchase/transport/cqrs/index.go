@@ -12,7 +12,10 @@ import (
 )
 
 func InitCqrsHandlers() error {
-	return initUsageCheckHandlers()
+	if err := initUsageCheckHandlers(); err != nil {
+		return err
+	}
+	return initOrgLifecycleHandlers()
 }
 
 // initUsageCheckHandlers subscribes Purchase's answer to usage checks. One subscription serves

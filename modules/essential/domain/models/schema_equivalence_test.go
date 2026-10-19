@@ -393,6 +393,20 @@ func moduleMetadataSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 				NoUpdate().
 				Default(true),
 		).
+		Field(
+			dmodel.DefineField().
+				Name(ModuleMetadataFieldDeps).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldDeps)).
+				DataType(dmodel.FieldDataTypeString(1, 50).ArrayType()),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(ModuleMetadataFieldDepLevel).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldDepLevel)).
+				DataType(dmodel.FieldDataTypeInt32(0, 999)).
+				RequiredForCreate().
+				Default("0"),
+		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder())
 }

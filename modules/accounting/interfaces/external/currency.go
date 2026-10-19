@@ -13,8 +13,13 @@ import (
 // it, and refusing to name it would make every existing amount unreadable.
 type CurrencyExtService interface {
 	GetCurrency(ctx corectx.Context, query GetCurrencyQuery) (*GetCurrencyResult, error)
+
+	// GetCurrencyByCode resolves the code a new organization's defaults name its currency by.
+	GetCurrencyByCode(ctx corectx.Context, query GetCurrencyByCodeQuery) (*GetCurrencyByCodeResult, error)
 }
 
 type GetCurrencyQuery = itCurrency.GetCurrencyQuery
+type GetCurrencyByCodeQuery = itCurrency.GetCurrencyByCodeQuery
+type GetCurrencyByCodeResult = itCurrency.GetCurrencyByCodeResult
 type GetCurrencyResult = itCurrency.GetCurrencyResult
 type GetCurrencyResultData = itCurrency.GetCurrencyResultData

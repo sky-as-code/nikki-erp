@@ -1,0 +1,38 @@
+[
+	{
+		"$alias": "tax_rate_version_1",
+		"tax_id": "@tax_vn_vat_10",
+		"version_no": 1,
+		"rate": "10",
+		"effective_from": "2025-07-01",
+		"legal_reference": "Luat Thue GTGT 48/2024/QH15",
+		"lifecycle_status": "published"
+	},
+	{
+		"$alias": "tax_rate_version_2",
+		"tax_id": "@tax_vn_vat_8",
+		"version_no": 1,
+		"rate": "8",
+		"effective_from": "2025-07-01",
+		"legal_reference": "Nghi quyet 204/2025/QH15",
+		"lifecycle_status": "published"
+	},
+	{
+		"$alias": "tax_rate_version_3",
+		"tax_id": "@tax_vn_vat_5",
+		"version_no": 1,
+		"rate": "5",
+		"effective_from": "2025-07-01",
+		"legal_reference": "Luat Thue GTGT 48/2024/QH15",
+		"lifecycle_status": "published"
+	},
+	{
+		"$alias": "tax_rate_version_4",
+		"tax_id": "@tax_vn_vat_0",
+		"version_no": 1,
+		"rate": "0",
+		"effective_from": "2025-07-01",
+		"legal_reference": "Luat Thue GTGT 48/2024/QH15",
+		"lifecycle_status": "published"
+	}
+]

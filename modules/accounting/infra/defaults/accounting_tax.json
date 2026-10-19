@@ -1,0 +1,72 @@
+[
+	{
+		"$alias": "tax_vn_vat_10",
+		"code": "VN_VAT_10",
+		"name": {
+			"en-US": "VAT 10%",
+			"vi-VN": "GTGT 10%"
+		},
+		"tax_kind": "vat",
+		"invoice_label": {
+			"en-US": "VAT 10%",
+			"vi-VN": "GTGT 10%"
+		},
+		"description": "Standard Vietnamese VAT rate"
+	},
+	{
+		"$alias": "tax_vn_vat_8",
+		"code": "VN_VAT_8",
+		"name": {
+			"en-US": "VAT 8%",
+			"vi-VN": "GTGT 8%"
+		},
+		"tax_kind": "vat",
+		"invoice_label": {
+			"en-US": "VAT 8%",
+			"vi-VN": "GTGT 8%"
+		},
+		"description": "Temporarily reduced VAT rate under Resolution 204/2025/QH15"
+	},
+	{
+		"$alias": "tax_vn_vat_5",
+		"code": "VN_VAT_5",
+		"name": {
+			"en-US": "VAT 5%",
+			"vi-VN": "GTGT 5%"
+		},
+		"tax_kind": "vat",
+		"invoice_label": {
+			"en-US": "VAT 5%",
+			"vi-VN": "GTGT 5%"
+		},
+		"description": "Reduced statutory VAT rate"
+	},
+	{
+		"$alias": "tax_vn_vat_0",
+		"code": "VN_VAT_0",
+		"name": {
+			"en-US": "VAT 0%",
+			"vi-VN": "GTGT 0%"
+		},
+		"tax_kind": "vat",
+		"invoice_label": {
+			"en-US": "VAT 0%",
+			"vi-VN": "GTGT 0%"
+		},
+		"description": "Zero rated: taxed at 0%, which is not the same as exempt"
+	},
+	{
+		"$alias": "tax_vn_vat_exempt",
+		"code": "VN_VAT_EXEMPT",
+		"name": {
+			"en-US": "VAT exempt",
+			"vi-VN": "Khong chiu thue GTGT"
+		},
+		"tax_kind": "vat",
+		"invoice_label": {
+			"en-US": "VAT exempt",
+			"vi-VN": "Khong chiu thue GTGT"
+		},
+		"description": "Exempt supplies: no VAT and no input tax recovery"
+	}
+]

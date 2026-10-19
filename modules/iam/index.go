@@ -11,6 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/iam/app"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
@@ -114,8 +115,13 @@ func (*IamModule) OnAppStarted() error {
 		settingsSvc itExt.SettingsRegistrationExtService,
 		cqrsBus cqrs.CqrsBus,
 		dependants *modules.ModuleDependantRegistry,
+		loadedMods []modules.InCodeModule,
 	) error {
 		if err := usagecheck.AssertDependantsSubscribed(cqrsBus, dependants, c.IamModuleName); err != nil {
+			return err
+		}
+		// iam orchestrates the org lifecycle, so it checks every module can answer.
+		if err := orglifecycle.AssertSubscribed(cqrsBus, moduleNames(loadedMods)); err != nil {
 			return err
 		}
 		return registerTenantSettings(corectx.NewRequestContext(context.Background()), settingsSvc)
@@ -146,4 +152,12 @@ func (this *IamModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.MethodSettingSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.PasswordStoreSchemaBuilder()),
 	)
+}
+
+func moduleNames(mods []modules.InCodeModule) []string {
+	names := make([]string, 0, len(mods))
+	for _, mod := range mods {
+		names = append(names, mod.Name())
+	}
+	return names
 }

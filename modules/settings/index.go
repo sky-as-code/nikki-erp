@@ -27,6 +27,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/settings/dynamicengines"
+	"github.com/sky-as-code/nikki-erp/modules/settings/transport"
 	"github.com/sky-as-code/nikki-erp/modules/settings/transport/restful"
 )
 
@@ -98,7 +99,10 @@ func (*SettingsModule) Init() error {
 	if err := app.InitApplicationServices(); err != nil {
 		return err
 	}
-	return restful.InitRestfulHandlers()
+	if err := restful.InitRestfulHandlers(); err != nil {
+		return err
+	}
+	return transport.InitOrgLifecycleHandlers()
 }
 
 // RegisterModels implements DynamicModule.

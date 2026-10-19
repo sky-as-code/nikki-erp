@@ -1,0 +1,15 @@
+[
+	{
+		"$alias": "storage_category_ambient",
+		"code": "ambient",
+		"name": {
+			"en-US": "Ambient shelving",
+			"vi-VN": "Kệ thường"
+		},
+		"allow_new_item_policy": "allow",
+		"description": {
+			"en-US": "Room-temperature racking, mixed products allowed",
+			"vi-VN": "Kệ nhiệt độ phòng, cho phép hàng hỗn hợp"
+		}
+	}
+]

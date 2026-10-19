@@ -80,6 +80,31 @@ func organizationSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 				RequiredForCreate().
 				Unique(),
 		).
+		Field(
+			dmodel.DefineField().
+				Name(OrgFieldStatus).
+				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldStatus)).
+				Description(model.LangJson{"en-US": "Lifecycle of the organization: provisioning until every module has written its defaults, ready once they all have, deleted while modules clean up before the row is removed. Written only by the org lifecycle, never by a client."}).
+				DataType(dmodel.FieldDataTypeEnumString([]string{
+					string(OrgStatusProvisioning), string(OrgStatusReady), string(OrgStatusDeleted),
+				})).
+				RequiredForCreate().
+				Default(string(OrgStatusProvisioning)),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(OrgFieldStatusMessage).
+				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldStatusMessage)).
+				Description(model.LangJson{"en-US": "Translation key explaining the status, set when a module failed to set up or clean up the organization."}).
+				DataType(dmodel.FieldDataTypeString(0, 200)),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(OrgFieldStatusMessageVars).
+				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldStatusMessageVars)).
+				Description(model.LangJson{"en-US": "Variables interpolated into status_message, such as failed_modules."}).
+				DataType(dmodel.FieldDataTypeJsonMap()),
+		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).

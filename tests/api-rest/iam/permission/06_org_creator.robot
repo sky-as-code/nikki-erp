@@ -16,6 +16,8 @@ The Creator Of An Org Sees It In Their Context
     ${resp}=    POST On Session    api    /v1/iam/iam_org
     ...    json=${{ {'display_name': {'en-US': $name}, 'slug': $slug, 'legal_name': {'en-US': $name}} }}
     ${org_id}    ${etag}=    Response Should Be Create Success    ${resp}
+    # The context lists only ready orgs, and an org is ready once every module has set it up.
+    Wait Until Org Is Ready    ${org_id}
     ${me}=    GET On Session    api    /v1/iam/me/context
     Response Status Should Be    ${me}    200
     ${org_ids}=    Evaluate    [org['id'] for org in body['orgs']]    namespace=${{ {'body': $me.json()} }}

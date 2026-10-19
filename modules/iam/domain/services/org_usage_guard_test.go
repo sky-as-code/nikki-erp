@@ -1,6 +1,7 @@
 package services
 
 import (
+	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"context"
 	"testing"
 
@@ -82,7 +83,11 @@ func deleteOrgThroughService(t *testing.T, bus *orgUsageBus) (*composable.Mutate
 	base := newFakeCrudDomain()
 	svc := NewOrgCrudDomainService(base, nil, orgDispatcher(t, bus))
 	ctx := corectx.NewRequestContext(context.Background())
-	result, err := svc.Delete(ctx, dmodel.DynamicFields{basemodel.FieldId: "01JORG0000000000000000000A"})
+	// The fake hands the keys back as the stored record: the org lifecycle has marked it deleted.
+	result, err := svc.Delete(ctx, dmodel.DynamicFields{
+		basemodel.FieldId:     "01JORG0000000000000000000A",
+		domain.OrgFieldStatus: string(domain.OrgStatusDeleted),
+	})
 	return result, base, err
 }
 

@@ -36,6 +36,32 @@
 			"data_type": "slug",
 			"required_for_create": true,
 			"unique": true
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": { "type": "enum_string", "values": ["provisioning", "ready", "deleted"] },
+			"required_for_create": true,
+			"default_value": "provisioning",
+			"description": {
+				"en-US": "Lifecycle of the organization: provisioning until every module has written its defaults, ready once they all have, deleted while modules clean up before the row is removed. Written only by the org lifecycle, never by a client."
+			}
+		},
+		{
+			"name": "status_message",
+			"label": "fields.status_message",
+			"data_type": { "type": "string", "min": 0, "max": 200 },
+			"description": {
+				"en-US": "Translation key explaining the status, set when a module failed to set up or clean up the organization."
+			}
+		},
+		{
+			"name": "status_message_vars",
+			"label": "fields.status_message_vars",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "Variables interpolated into status_message, such as failed_modules."
+			}
 		}
 	],
 

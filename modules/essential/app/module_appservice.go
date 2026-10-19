@@ -6,6 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 )
 
@@ -64,4 +65,9 @@ func (this *ModuleApplicationServiceImpl) SyncModuleMetadata(
 	ctx corectx.Context, installedModules []modules.InCodeModule,
 ) (bool, error) {
 	return this.moduleSvc.SyncModuleMetadata(ctx, installedModules)
+}
+
+// ListModulesByDeps is a cross-module port (IAM's org lifecycle), so it asserts nothing.
+func (this *ModuleApplicationServiceImpl) ListModulesByDeps(ctx corectx.Context) ([]models.ModuleMetadata, error) {
+	return this.moduleSvc.ListModulesByDeps(ctx)
 }

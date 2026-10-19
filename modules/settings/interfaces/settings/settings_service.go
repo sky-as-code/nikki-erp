@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
@@ -33,6 +34,9 @@ type SettingsDomainService interface {
 
 	// InitOwnerSettings copies the tenant's own rows onto a newly created organization or user.
 	InitOwnerSettings(ctx corectx.Context, cmd InitOwnerSettingsCommand) (*InitOwnerSettingsResult, error)
+
+	// DeleteOwnerSettings removes every row an organization or user holds, for org cleanup.
+	DeleteOwnerSettings(ctx corectx.Context, ownerType string, ownerId model.Id) (int, error)
 
 	// GetEffectiveSettings returns every setting that applies to the acting caller, across all
 	// three levels, flattened into one "{module_key}.{setting_name}" map.
@@ -73,6 +77,10 @@ type OrgSettingsAppService interface {
 	// InitOrgSettings seeds a newly created organization from its tenant's rows. It is called by
 	// iam inside the creating transaction, through a port iam owns.
 	InitOrgSettings(ctx corectx.Context, cmd InitOwnerSettingsCommand) (*InitOwnerSettingsResult, error)
+
+	// SeedOrgSettings writes a module's own defaults for a new organization, called from that
+	// module's org lifecycle as a service principal of the organization.
+	SeedOrgSettings(ctx corectx.Context, cmd SetSettingsCommand) (*SetSettingsResult, error)
 }
 
 // UserPreferencesAppService is the user-level contract other modules consume.

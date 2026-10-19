@@ -39,6 +39,7 @@ func syncedMetadata(mod modules.InCodeModule, category *modules.ModuleCategory) 
 	meta.SetModelPrefix(util.ToPtr(mod.ModelPrefix()))
 	meta.SetCategory(category)
 	meta.SetIsEnabled(util.ToPtr(true))
+	meta.SetDepLevel(util.ToPtr(int32(0)))
 	return meta
 }
 
@@ -46,14 +47,14 @@ func TestModifiedFieldsUnchangedCategory(t *testing.T) {
 	mod := &categoryTestModule{category: modules.ModuleCategoryCoremart}
 	meta := syncedMetadata(mod, util.ToPtr(modules.ModuleCategoryCoremart))
 
-	assert.Nil(t, meta.ModifiedFields(mod))
+	assert.Nil(t, meta.ModifiedFields(mod, 0))
 }
 
 func TestModifiedFieldsChangedCategory(t *testing.T) {
 	mod := &categoryTestModule{category: modules.ModuleCategoryCoreparking}
 	meta := syncedMetadata(mod, util.ToPtr(modules.ModuleCategoryFoundation))
 
-	modified := meta.ModifiedFields(mod)
+	modified := meta.ModifiedFields(mod, 0)
 	require.NotNil(t, modified)
 	assert.Equal(t, util.ToPtr(modules.ModuleCategoryCoreparking), modified.GetCategory())
 	assert.Nil(t, modified.GetIsEnabled(), "is_enabled is never part of the sync diff")
@@ -64,7 +65,18 @@ func TestModifiedFieldsBackfillsMissingCategory(t *testing.T) {
 	mod := &categoryTestModule{category: modules.ModuleCategoryFoundation}
 	meta := syncedMetadata(mod, nil)
 
-	modified := meta.ModifiedFields(mod)
+	modified := meta.ModifiedFields(mod, 0)
 	require.NotNil(t, modified)
 	assert.Equal(t, util.ToPtr(modules.ModuleCategoryFoundation), modified.GetCategory())
+}
+
+func TestModifiedFieldsDetectsDepsAndLevel(t *testing.T) {
+	mod := &categoryTestModule{category: modules.ModuleCategoryFoundation}
+	meta := syncedMetadata(mod, util.ToPtr(modules.ModuleCategoryFoundation))
+
+	modified := meta.ModifiedFields(mod, 2)
+
+	require.NotNil(t, modified)
+	assert.Equal(t, int32(2), *modified.GetDepLevel())
+	assert.Nil(t, modified.GetDependencies(), "unchanged deps are not rewritten")
 }

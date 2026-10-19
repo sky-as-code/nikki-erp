@@ -38,6 +38,8 @@ type BaseDynamicRepository interface {
 	CheckUniqueCollisions(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[[][]string], error)
 	CountM2m(ctx corectx.Context, param RepoCountM2mParam) (*OpResult[int], error)
 	DeleteOne(ctx corectx.Context, keys dmodel.DynamicFields) (*OpResult[int], error)
+	// DeleteByOrg deletes every row an organization holds in this schema, for org cleanup.
+	DeleteByOrg(ctx corectx.Context, orgId model.Id) (*OpResult[int], error)
 	Exists(ctx corectx.Context, keys []dmodel.DynamicFields) (*OpResult[RepoExistsResult], error)
 	ExistsM2m(ctx corectx.Context, param RepoExistsM2mParam) (bool, error)
 	InsertBulk(ctx corectx.Context, data []dmodel.DynamicFields) (*OpResult[int], error)

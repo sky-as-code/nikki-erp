@@ -1,0 +1,37 @@
+[
+	{
+		"$alias": "channel_payment_rel_1",
+		"sales_channel_id": "@channel_vdmc",
+		"payment_method_id": "@payment_method_momo"
+	},
+	{
+		"$alias": "channel_payment_rel_2",
+		"sales_channel_id": "@channel_vdmc",
+		"payment_method_id": "@payment_method_vietqr"
+	},
+	{
+		"$alias": "channel_payment_rel_3",
+		"sales_channel_id": "@channel_vdmc",
+		"payment_method_id": "@payment_method_mpos"
+	},
+	{
+		"$alias": "channel_payment_rel_4",
+		"sales_channel_id": "@channel_vdmc",
+		"payment_method_id": "@payment_method_mbbank"
+	},
+	{
+		"$alias": "channel_payment_rel_5",
+		"sales_channel_id": "@channel_bo",
+		"payment_method_id": "@payment_method_momo"
+	},
+	{
+		"$alias": "channel_payment_rel_6",
+		"sales_channel_id": "@channel_bo",
+		"payment_method_id": "@payment_method_vietqr"
+	},
+	{
+		"$alias": "channel_payment_rel_7",
+		"sales_channel_id": "@channel_bo",
+		"payment_method_id": "@payment_method_mbbank"
+	}
+]

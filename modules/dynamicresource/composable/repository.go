@@ -3,6 +3,7 @@ package composable
 import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -26,6 +27,8 @@ type CrudRepository interface {
 	Insert(ctx corectx.Context, data dmodel.DynamicFields) (*dyn.OpResult[int], error)
 	Update(ctx corectx.Context, data dmodel.DynamicFields) (*MutateResult, error)
 	DeleteOne(ctx corectx.Context, keys dmodel.DynamicFields) (*MutateResult, error)
+	// DeleteByOrg deletes every row the org holds in this schema; it serves org cleanup only.
+	DeleteByOrg(ctx corectx.Context, orgId model.Id) (int, error)
 
 	// FindByKeys fetches the single record identified by the given primary or unique keys.
 	FindByKeys(ctx corectx.Context, keys dmodel.DynamicFields) (*dyn.OpResult[dmodel.DynamicFields], error)
@@ -99,6 +102,14 @@ func (this *DefaultCrudRepositoryImpl) DeleteOne(
 	ctx corectx.Context, keys dmodel.DynamicFields,
 ) (*MutateResult, error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys)
+}
+
+func (this *DefaultCrudRepositoryImpl) DeleteByOrg(ctx corectx.Context, orgId model.Id) (int, error) {
+	result, err := this.dynamicRepo.DeleteByOrg(ctx, orgId)
+	if err != nil {
+		return 0, err
+	}
+	return result.Data, nil
 }
 
 // FindByKeys reads every column of the schema.

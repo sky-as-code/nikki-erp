@@ -1,6 +1,7 @@
 package product
 
 import (
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
@@ -12,6 +13,9 @@ type ProductCategoryRepository interface {
 // ProductCategoryDomainService is the CRUD of the resource plus its own rules.
 type ProductCategoryDomainService interface {
 	composable.CrudDomainService
+
+	// CreateRoot creates an org's root category; the org lifecycle calls it once per org.
+	CreateRoot(ctx corectx.Context, cmd CreateProductCategoryCommand) (*CreateProductCategoryResult, error)
 }
 
 // ProductCategoryApplicationService is the authorized surface the REST handler serves.

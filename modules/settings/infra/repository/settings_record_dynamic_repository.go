@@ -126,6 +126,28 @@ func buildCopyTenantRowsSql(
 	return query, args, nil
 }
 
+func (this *SettingsRecordRepositoryImpl) DeleteOwnerRows(
+	ctx corectx.Context, param itRecord.DeleteOwnerRowsParam,
+) (int, error) {
+	if param.OwnerId == "" {
+		return 0, errors.New("DeleteOwnerRows: no owner id")
+	}
+	builder := sqlbuilder.PostgreSQL.NewDeleteBuilder()
+	builder.DeleteFrom(this.Schema().TableName())
+	builder.Where(
+		builder.Equal(models.SettingsRecordFieldOwnerType, param.OwnerType),
+		builder.Equal(models.SettingsRecordFieldOwnerId, param.OwnerId),
+	)
+	if param.TenantId != "" {
+		builder.Where(builder.Equal(tenantIdColumn, param.TenantId))
+	} else if this.HasTenantColumn() {
+		return 0, errors.New("DeleteOwnerRows: the request carries no tenant id")
+	}
+
+	query, args := builder.Build()
+	return this.execCount(ctx, query, args, "DeleteOwnerRows")
+}
+
 // execCount runs a statement on the request's client, which is the open transaction when the
 // context carries one, and returns the rows it touched.
 func (this *SettingsRecordRepositoryImpl) execCount(

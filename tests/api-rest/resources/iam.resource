@@ -455,3 +455,17 @@ Response Should Be File Field Error
     ...    namespace=${{ {'body': $resp.json(), 'field': $field, 'key': $key} }}
     Should Not Be Empty    ${errors}
     ...    msg=Expected a '${key}' error on '${field}', got ${resp.text}
+
+Wait Until Org Is Ready
+    [Documentation]    A new org is provisioning until every module has set it up, and only a
+    ...    ready org is listed in its members' context.
+    [Arguments]    ${org_id}    ${timeout}=60s
+    Wait Until Keyword Succeeds    ${timeout}    2s    Org Status Should Be Ready    ${org_id}
+
+Org Status Should Be Ready
+    [Arguments]    ${org_id}
+    ${resp}=    GET On Session    api    /v1/iam/iam_org/${org_id}
+    Response Status Should Be    ${resp}    200
+    ${org}=    Set Variable    ${resp.json()}[item]
+    Should Be Equal    ${org}[status]    ready
+    ...    msg=Org ${org_id} is ${org}[status] (${org.get('status_message')})

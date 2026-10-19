@@ -9,6 +9,7 @@ import (
 	itTax "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
 	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
+	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 	itJob "github.com/sky-as-code/nikki-erp/modules/jobscheduler/interfaces/job"
@@ -125,6 +126,14 @@ func InitExternal() error {
 			// The DOMAIN service, per the port's own note: authorization was established by the
 			// request that started this, so there is no application-service counterpart to call.
 			return &paymentOrderAdapter{orders: orders}
+		},
+		func(
+			currencySvc itCurrency.CurrencyAppService, operationTypeSvc itStock.StockOperationTypeDomainService,
+		) itExt.OrgDefaultsLookupExtService {
+			return &orgDefaultsLookup{currencySvc: currencySvc, operationTypeSvc: operationTypeSvc}
+		},
+		func(settings itSettings.OrgSettingsAppService) itExt.OrgSettingsSeedExtService {
+			return settings
 		},
 	); err != nil {
 		return err

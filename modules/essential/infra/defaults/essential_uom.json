@@ -1,0 +1,818 @@
+[
+	{
+		"$alias": "uom_pc",
+		"name": {
+			"en-US": "Piece",
+			"vi-VN": "Cái"
+		},
+		"symbol": "pc",
+		"category_id": "@uomcat_unit",
+		"uom_type": "reference",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_pr",
+		"name": {
+			"en-US": "Pair",
+			"vi-VN": "Đôi"
+		},
+		"symbol": "pr",
+		"category_id": "@uomcat_unit",
+		"uom_type": "bigger_equal",
+		"factor": "2",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_dz",
+		"name": {
+			"en-US": "Dozen",
+			"vi-VN": "Tá"
+		},
+		"symbol": "dz",
+		"category_id": "@uomcat_unit",
+		"uom_type": "bigger_equal",
+		"factor": "12",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_ctn",
+		"name": {
+			"en-US": "Carton",
+			"vi-VN": "Thùng"
+		},
+		"symbol": "ctn",
+		"category_id": "@uomcat_unit",
+		"uom_type": "bigger_equal",
+		"factor": "24",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_gross",
+		"name": {
+			"en-US": "Gross",
+			"vi-VN": "Gross"
+		},
+		"symbol": "gross",
+		"category_id": "@uomcat_unit",
+		"uom_type": "bigger_equal",
+		"factor": "144",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_kg",
+		"name": {
+			"en-US": "Kilogram",
+			"vi-VN": "Ki-lô-gam"
+		},
+		"symbol": "kg",
+		"category_id": "@uomcat_weight",
+		"uom_type": "reference",
+		"factor": "1",
+		"rounding": "0.001"
+	},
+	{
+		"$alias": "uom_g",
+		"name": {
+			"en-US": "Gram",
+			"vi-VN": "Gam"
+		},
+		"symbol": "g",
+		"category_id": "@uomcat_weight",
+		"uom_type": "smaller",
+		"factor": "0.001",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_mg",
+		"name": {
+			"en-US": "Milligram",
+			"vi-VN": "Mi-li-gam"
+		},
+		"symbol": "mg",
+		"category_id": "@uomcat_weight",
+		"uom_type": "smaller",
+		"factor": "0.000001",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_t",
+		"name": {
+			"en-US": "Tonne",
+			"vi-VN": "Tấn"
+		},
+		"symbol": "t",
+		"category_id": "@uomcat_weight",
+		"uom_type": "bigger_equal",
+		"factor": "1000",
+		"rounding": "0.001"
+	},
+	{
+		"$alias": "uom_oz",
+		"name": {
+			"en-US": "Ounce",
+			"vi-VN": "Ao-xơ"
+		},
+		"symbol": "oz",
+		"category_id": "@uomcat_weight",
+		"uom_type": "smaller",
+		"factor": "0.028349523125",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_lb",
+		"name": {
+			"en-US": "Pound",
+			"vi-VN": "Pao"
+		},
+		"symbol": "lb",
+		"category_id": "@uomcat_weight",
+		"uom_type": "smaller",
+		"factor": "0.45359237",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_m",
+		"name": {
+			"en-US": "Meter",
+			"vi-VN": "Mét"
+		},
+		"symbol": "m",
+		"category_id": "@uomcat_length",
+		"uom_type": "reference",
+		"factor": "1",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_mm",
+		"name": {
+			"en-US": "Millimeter",
+			"vi-VN": "Mi-li-mét"
+		},
+		"symbol": "mm",
+		"category_id": "@uomcat_length",
+		"uom_type": "smaller",
+		"factor": "0.001",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_cm",
+		"name": {
+			"en-US": "Centimeter",
+			"vi-VN": "Xăng-ti-mét"
+		},
+		"symbol": "cm",
+		"category_id": "@uomcat_length",
+		"uom_type": "smaller",
+		"factor": "0.01",
+		"rounding": "0.1"
+	},
+	{
+		"$alias": "uom_km",
+		"name": {
+			"en-US": "Kilometer",
+			"vi-VN": "Ki-lô-mét"
+		},
+		"symbol": "km",
+		"category_id": "@uomcat_length",
+		"uom_type": "bigger_equal",
+		"factor": "1000",
+		"rounding": "0.001"
+	},
+	{
+		"$alias": "uom_in",
+		"name": {
+			"en-US": "Inch",
+			"vi-VN": "Inch"
+		},
+		"symbol": "in",
+		"category_id": "@uomcat_length",
+		"uom_type": "smaller",
+		"factor": "0.0254",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_ft",
+		"name": {
+			"en-US": "Foot",
+			"vi-VN": "Foot"
+		},
+		"symbol": "ft",
+		"category_id": "@uomcat_length",
+		"uom_type": "smaller",
+		"factor": "0.3048",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_yd",
+		"name": {
+			"en-US": "Yard",
+			"vi-VN": "Yard"
+		},
+		"symbol": "yd",
+		"category_id": "@uomcat_length",
+		"uom_type": "smaller",
+		"factor": "0.9144",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_mi",
+		"name": {
+			"en-US": "Mile",
+			"vi-VN": "Dặm"
+		},
+		"symbol": "mi",
+		"category_id": "@uomcat_length",
+		"uom_type": "bigger_equal",
+		"factor": "1609.344",
+		"rounding": "0.001"
+	},
+	{
+		"$alias": "uom_l",
+		"name": {
+			"en-US": "Liter",
+			"vi-VN": "Lít"
+		},
+		"symbol": "L",
+		"category_id": "@uomcat_volume",
+		"uom_type": "reference",
+		"factor": "1",
+		"rounding": "0.001"
+	},
+	{
+		"$alias": "uom_ml",
+		"name": {
+			"en-US": "Milliliter",
+			"vi-VN": "Mi-li-lít"
+		},
+		"symbol": "mL",
+		"category_id": "@uomcat_volume",
+		"uom_type": "smaller",
+		"factor": "0.001",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_cl",
+		"name": {
+			"en-US": "Centiliter",
+			"vi-VN": "Xen-ti-lít"
+		},
+		"symbol": "cL",
+		"category_id": "@uomcat_volume",
+		"uom_type": "smaller",
+		"factor": "0.01",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_m3",
+		"name": {
+			"en-US": "Cubic Meter",
+			"vi-VN": "Mét khối"
+		},
+		"symbol": "m³",
+		"category_id": "@uomcat_volume",
+		"uom_type": "bigger_equal",
+		"factor": "1000",
+		"rounding": "0.001"
+	},
+	{
+		"$alias": "uom_fl_oz",
+		"name": {
+			"en-US": "US Fluid Ounce",
+			"vi-VN": "Ao-xơ chất lỏng Mỹ"
+		},
+		"symbol": "fl oz",
+		"category_id": "@uomcat_volume",
+		"uom_type": "smaller",
+		"factor": "0.029573529563",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_gal",
+		"name": {
+			"en-US": "US Gallon",
+			"vi-VN": "Ga-lông Mỹ"
+		},
+		"symbol": "gal",
+		"category_id": "@uomcat_volume",
+		"uom_type": "bigger_equal",
+		"factor": "3.785411784",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_imp_gal",
+		"name": {
+			"en-US": "Imperial Gallon",
+			"vi-VN": "Ga-lông Anh"
+		},
+		"symbol": "imp gal",
+		"category_id": "@uomcat_volume",
+		"uom_type": "bigger_equal",
+		"factor": "4.54609",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_h",
+		"name": {
+			"en-US": "Hour",
+			"vi-VN": "Giờ"
+		},
+		"symbol": "h",
+		"category_id": "@uomcat_time",
+		"uom_type": "reference",
+		"factor": "1",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_min",
+		"name": {
+			"en-US": "Minute",
+			"vi-VN": "Phút"
+		},
+		"symbol": "min",
+		"category_id": "@uomcat_time",
+		"uom_type": "smaller",
+		"factor": "0.016666666667",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_day",
+		"name": {
+			"en-US": "Day",
+			"vi-VN": "Ngày"
+		},
+		"symbol": "day",
+		"category_id": "@uomcat_time",
+		"uom_type": "bigger_equal",
+		"factor": "24",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_wk",
+		"name": {
+			"en-US": "Week",
+			"vi-VN": "Tuần"
+		},
+		"symbol": "wk",
+		"category_id": "@uomcat_time",
+		"uom_type": "bigger_equal",
+		"factor": "168",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_m2",
+		"name": {
+			"en-US": "Square Meter",
+			"vi-VN": "Mét vuông"
+		},
+		"symbol": "m²",
+		"category_id": "@uomcat_surface",
+		"uom_type": "reference",
+		"factor": "1",
+		"rounding": "0.01"
+	},
+	{
+		"$alias": "uom_cm2",
+		"name": {
+			"en-US": "Square Centimeter",
+			"vi-VN": "Xăng-ti-mét vuông"
+		},
+		"symbol": "cm²",
+		"category_id": "@uomcat_surface",
+		"uom_type": "smaller",
+		"factor": "0.0001",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_ha",
+		"name": {
+			"en-US": "Hectare",
+			"vi-VN": "Héc-ta"
+		},
+		"symbol": "ha",
+		"category_id": "@uomcat_surface",
+		"uom_type": "bigger_equal",
+		"factor": "10000",
+		"rounding": "0.0001"
+	},
+	{
+		"$alias": "uom_cai",
+		"name": {
+			"en-US": "Piece",
+			"vi-VN": "Cái"
+		},
+		"symbol": "Cái",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "reference",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_bo",
+		"name": {
+			"en-US": "Set",
+			"vi-VN": "Bộ"
+		},
+		"symbol": "Bộ",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_lon",
+		"name": {
+			"en-US": "Can",
+			"vi-VN": "Lon"
+		},
+		"symbol": "Lon",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_chai",
+		"name": {
+			"en-US": "Bottle",
+			"vi-VN": "Chai"
+		},
+		"symbol": "Chai",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_ly",
+		"name": {
+			"en-US": "Cup",
+			"vi-VN": "Ly"
+		},
+		"symbol": "Ly",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_cay",
+		"name": {
+			"en-US": "Stick",
+			"vi-VN": "Cây"
+		},
+		"symbol": "Cây",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_hop",
+		"name": {
+			"en-US": "Box",
+			"vi-VN": "Hộp"
+		},
+		"symbol": "Hộp",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_goi",
+		"name": {
+			"en-US": "Pack",
+			"vi-VN": "Gói"
+		},
+		"symbol": "Gói",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thanh",
+		"name": {
+			"en-US": "Bar",
+			"vi-VN": "Thanh"
+		},
+		"symbol": "Thanh",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_ket",
+		"name": {
+			"en-US": "Crate",
+			"vi-VN": "Két"
+		},
+		"symbol": "Két",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_hop_10_goi",
+		"name": {
+			"en-US": "Box of 10 packs",
+			"vi-VN": "Hộp 10 gói"
+		},
+		"symbol": "Hộp 10 gói",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "10",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_36_hop",
+		"name": {
+			"en-US": "Case of 36 boxes",
+			"vi-VN": "Thùng 36 hộp"
+		},
+		"symbol": "Thùng 36 hộp",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "36",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_12_hop",
+		"name": {
+			"en-US": "Case of 12 boxes",
+			"vi-VN": "Thùng 12 hộp"
+		},
+		"symbol": "Thùng 12 hộp",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "12",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_12_ly",
+		"name": {
+			"en-US": "Case of 12 cups",
+			"vi-VN": "Thùng 12 ly"
+		},
+		"symbol": "Thùng 12 ly",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "12",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_12_lon",
+		"name": {
+			"en-US": "Case of 12 cans",
+			"vi-VN": "Thùng 12 lon"
+		},
+		"symbol": "Thùng 12 lon",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "12",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_14_lon",
+		"name": {
+			"en-US": "Case of 14 cans",
+			"vi-VN": "Thùng 14 lon"
+		},
+		"symbol": "Thùng 14 lon",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "14",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_hop_16_thanh",
+		"name": {
+			"en-US": "Box of 16 bars",
+			"vi-VN": "Hộp 16 thanh"
+		},
+		"symbol": "Hộp 16 thanh",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "16",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_hop_18_goi",
+		"name": {
+			"en-US": "Box of 18 packs",
+			"vi-VN": "Hộp 18 gói"
+		},
+		"symbol": "Hộp 18 gói",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "18",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_20_goi",
+		"name": {
+			"en-US": "Case of 20 packs",
+			"vi-VN": "Thùng 20 gói"
+		},
+		"symbol": "Thùng 20 gói",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "20",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_24_lon",
+		"name": {
+			"en-US": "Case of 24 cans",
+			"vi-VN": "Thùng 24 lon"
+		},
+		"symbol": "Thùng 24 lon",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "24",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_24_chai",
+		"name": {
+			"en-US": "Case of 24 bottles",
+			"vi-VN": "Thùng 24 chai"
+		},
+		"symbol": "Thùng 24 chai",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "24",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_24_hop",
+		"name": {
+			"en-US": "Case of 24 boxes",
+			"vi-VN": "Thùng 24 hộp"
+		},
+		"symbol": "Thùng 24 hộp",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "24",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_24_goi",
+		"name": {
+			"en-US": "Case of 24 packs",
+			"vi-VN": "Thùng 24 gói"
+		},
+		"symbol": "Thùng 24 gói",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "24",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_hop_24_thanh",
+		"name": {
+			"en-US": "Box of 24 bars",
+			"vi-VN": "Hộp 24 thanh"
+		},
+		"symbol": "Hộp 24 thanh",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "24",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_hop_24_goi",
+		"name": {
+			"en-US": "Box of 24 packs",
+			"vi-VN": "Hộp 24 gói"
+		},
+		"symbol": "Hộp 24 gói",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "24",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_24_ly",
+		"name": {
+			"en-US": "Case of 24 cups",
+			"vi-VN": "Thùng 24 ly"
+		},
+		"symbol": "Thùng 24 ly",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "24",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_hop_30_cai",
+		"name": {
+			"en-US": "Box of 30 pieces",
+			"vi-VN": "Hộp 30 cái"
+		},
+		"symbol": "Hộp 30 cái",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "30",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_40_goi",
+		"name": {
+			"en-US": "Case of 40 packs",
+			"vi-VN": "Thùng 40 gói"
+		},
+		"symbol": "Thùng 40 gói",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "40",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_48_hop",
+		"name": {
+			"en-US": "Case of 48 boxes",
+			"vi-VN": "Thùng 48 hộp"
+		},
+		"symbol": "Thùng 48 hộp",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "48",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_48_chai",
+		"name": {
+			"en-US": "Case of 48 bottles",
+			"vi-VN": "Thùng 48 chai"
+		},
+		"symbol": "Thùng 48 chai",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "48",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_48_goi",
+		"name": {
+			"en-US": "Case of 48 packs",
+			"vi-VN": "Thùng 48 gói"
+		},
+		"symbol": "Thùng 48 gói",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "48",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_80_goi",
+		"name": {
+			"en-US": "Case of 80 packs",
+			"vi-VN": "Thùng 80 gói"
+		},
+		"symbol": "Thùng 80 gói",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "80",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_thung_120_hop",
+		"name": {
+			"en-US": "Case of 120 boxes",
+			"vi-VN": "Thùng 120 hộp"
+		},
+		"symbol": "Thùng 120 hộp",
+		"category_id": "@uomcat_quantity",
+		"uom_type": "bigger_equal",
+		"factor": "120",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_cong",
+		"name": {
+			"en-US": "Work Unit",
+			"vi-VN": "Công"
+		},
+		"symbol": "Công",
+		"category_id": "@uomcat_labor",
+		"uom_type": "reference",
+		"factor": "1",
+		"rounding": "1"
+	},
+	{
+		"$alias": "uom_may",
+		"name": {
+			"en-US": "Machine",
+			"vi-VN": "Máy"
+		},
+		"symbol": "Máy",
+		"category_id": "@uomcat_engineering",
+		"uom_type": "reference",
+		"factor": "1",
+		"rounding": "1"
+	}
+]

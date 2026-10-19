@@ -9,6 +9,7 @@ import (
 func InitTransport() error {
 	err := errors.Join(
 		restful.InitRestfulHandlers(),
+		initOrgLifecycleHandlers(),
 	)
 	return err
 }

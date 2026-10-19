@@ -21,6 +21,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/language"
 	"github.com/sky-as-code/nikki-erp/modules/core/message"
+	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 )
 
@@ -88,6 +89,7 @@ func (*CoreModule) Init() error {
 		deps.Invoke(cqrs.InitSubModule),
 		// After cqrs: the dispatcher takes the bus as a constructor dependency.
 		deps.Invoke(usagecheck.InitSubModule),
+		deps.Invoke(orglifecycle.InitSubModule),
 		deps.Invoke(authtoken.InitSubModule),
 		deps.Invoke(event.InitSubModule),
 		deps.Invoke(db.InitSubModule),
@@ -100,6 +102,14 @@ func (*CoreModule) Init() error {
 		// These submodules expose network APIs
 		deps.Invoke(language.InitSubModule),
 	)
+	if err != nil {
+		return err
+	}
 
-	return err
+	// apptrait is registered here because it initializes before the bus exists: core depends on
+	// it. Neither holds org-scoped data.
+	return errors.Join(
+		orglifecycle.RegisterNoop(coreconstants.CoreModuleName),
+		orglifecycle.RegisterNoop("apptrait"),
+	)
 }

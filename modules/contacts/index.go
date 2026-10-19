@@ -8,6 +8,7 @@ package contacts
 
 import (
 	stdErr "errors"
+	contactsCqrs "github.com/sky-as-code/nikki-erp/modules/contacts/transport/cqrs"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
@@ -76,7 +77,10 @@ func (*ContactsModule) Init() error {
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}
-	return restful.InitRestfulHandlers()
+	if err := restful.InitRestfulHandlers(); err != nil {
+		return err
+	}
+	return contactsCqrs.InitOrgLifecycleHandlers()
 }
 
 // RegisterModels implements DynamicModule.

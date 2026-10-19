@@ -1,0 +1,74 @@
+[
+	{
+		"$alias": "uomcat_unit",
+		"name": {
+			"en-US": "Unit",
+			"vi-VN": "Đơn vị"
+		},
+		"reference_uom_id": "@uom_pc"
+	},
+	{
+		"$alias": "uomcat_weight",
+		"name": {
+			"en-US": "Weight",
+			"vi-VN": "Khối lượng"
+		},
+		"reference_uom_id": "@uom_kg"
+	},
+	{
+		"$alias": "uomcat_length",
+		"name": {
+			"en-US": "Length",
+			"vi-VN": "Chiều dài"
+		},
+		"reference_uom_id": "@uom_m"
+	},
+	{
+		"$alias": "uomcat_volume",
+		"name": {
+			"en-US": "Volume",
+			"vi-VN": "Thể tích"
+		},
+		"reference_uom_id": "@uom_l"
+	},
+	{
+		"$alias": "uomcat_time",
+		"name": {
+			"en-US": "Time",
+			"vi-VN": "Thời gian"
+		},
+		"reference_uom_id": "@uom_h"
+	},
+	{
+		"$alias": "uomcat_surface",
+		"name": {
+			"en-US": "Surface",
+			"vi-VN": "Diện tích"
+		},
+		"reference_uom_id": "@uom_m2"
+	},
+	{
+		"$alias": "uomcat_quantity",
+		"name": {
+			"en-US": "Quantity",
+			"vi-VN": "Số lượng"
+		},
+		"reference_uom_id": "@uom_cai"
+	},
+	{
+		"$alias": "uomcat_labor",
+		"name": {
+			"en-US": "Labor",
+			"vi-VN": "Nhân công"
+		},
+		"reference_uom_id": "@uom_cong"
+	},
+	{
+		"$alias": "uomcat_engineering",
+		"name": {
+			"en-US": "Engineering",
+			"vi-VN": "Kỹ thuật"
+		},
+		"reference_uom_id": "@uom_may"
+	}
+]

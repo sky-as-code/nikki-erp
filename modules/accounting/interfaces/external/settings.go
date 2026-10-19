@@ -25,3 +25,13 @@ type EffectiveSettingsExtService interface {
 
 type GetEffectiveSettingsQuery = itSettings.GetEffectiveSettingsQuery
 type GetEffectiveSettingsResult = itSettings.GetEffectiveSettingsResult
+
+// OrgSettingsSeedExtService writes Accounting's own settings for a new organization, from the org
+// lifecycle. It writes nothing else: reads go through EffectiveSettingsExtService.
+type OrgSettingsSeedExtService interface {
+	SeedOrgSettings(ctx corectx.Context, cmd SetSettingsCommand) (*SetSettingsResult, error)
+}
+
+type SetSettingsCommand = itSettings.SetSettingsCommand
+type SetSettingItem = itSettings.SetSettingItem
+type SetSettingsResult = itSettings.SetSettingsResult

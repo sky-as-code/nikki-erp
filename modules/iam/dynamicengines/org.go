@@ -7,6 +7,9 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
@@ -24,6 +27,17 @@ type orgEngineParam struct {
 	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_org"`
 }
 
+// orgLifecycleDeps are what the org lifecycle orchestrator needs besides the org's own services.
+type orgLifecycleDeps struct {
+	dig.In
+
+	Catalog    itExt.ModuleCatalogExtService
+	Notifier   itExt.OrgNotificationExtService
+	Dispatcher *orglifecycle.Dispatcher
+	Config     config.ConfigService
+	Logger     logging.LoggerService
+}
+
 // registerOrgEngine declares the iam_org onion. An organization is the org scope itself, so its
 // permissions are tenant-scoped and the schema carries no org_id to confine by.
 func registerOrgEngine() error {
@@ -32,6 +46,7 @@ func registerOrgEngine() error {
 		func(
 			param composable.BuildParam,
 			settingsSvc itExt.OrgSettingsInitExtService, usageDispatcher *usagecheck.Dispatcher,
+			lifecycleDeps orgLifecycleDeps,
 		) composable.DynamicResourceEngineOnion {
 			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName:      models.OrganizationSchemaName,
@@ -43,7 +58,16 @@ func registerOrgEngine() error {
 					return services.NewOrgCrudDomainService(base, settingsSvc, usageDispatcher)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
-					return app.NewOrgCrudApplicationService(base, base.DomainService().(itOrg.OrgCrudDomainService))
+					domSvc := base.DomainService().(itOrg.OrgCrudDomainService)
+					return app.NewOrgCrudApplicationService(base, domSvc, app.NewOrgLifecycleOrchestrator(
+						app.OrgLifecycleOrchestratorParam{
+							DomSvc:     domSvc,
+							Catalog:    lifecycleDeps.Catalog,
+							Notifier:   lifecycleDeps.Notifier,
+							Dispatcher: lifecycleDeps.Dispatcher,
+							Config:     lifecycleDeps.Config,
+							Logger:     lifecycleDeps.Logger,
+						}))
 				},
 			}, param)
 		},
