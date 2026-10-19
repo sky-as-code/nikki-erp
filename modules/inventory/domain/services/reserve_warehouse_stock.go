@@ -263,7 +263,7 @@ func (this *StockReservationDomainServiceImpl) normaliseReservationLines(
 }
 
 // resolveReservableVariant returns the variant's base unit, or empty after appending why it cannot
-// be reserved: a service or combo product holds no stock, so no reservation can be made for it.
+// be reserved: a service holds no stock, combo or not, so no reservation can be made for it.
 // The base unit is the template's stock configuration when one exists, else the template's own unit.
 func (this *StockReservationDomainServiceImpl) resolveReservableVariant(
 	ctx corectx.Context, orgId, variantId model.Id, vErrs *ft.ClientErrors,
@@ -290,12 +290,7 @@ func (this *StockReservationDomainServiceImpl) resolveReservableVariant(
 		return "", nil
 	}
 
-	productType, err := findRecord(ctx, models.ProductTypeSchemaName, models.ProductTypeFieldId,
-		stringOf(template, models.ProductTemplateFieldProductTypeId))
-	if err != nil {
-		return "", err
-	}
-	if productType == nil || !derefBool(models.NewProductTypeFrom(productType).GetSupportsStock()) {
+	if !models.NewProductTemplateFrom(template).IsStockTracked() {
 		vErrs.Append(*ft.NewBusinessViolation(
 			models.StockReservationSchemaName, ft.ErrorKey(ReasonVariantNotStockable, "inventory"),
 			"product variant '"+string(variantId)+"' is not a stockable product"))

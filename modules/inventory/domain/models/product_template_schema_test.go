@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
@@ -20,7 +21,9 @@ func TestProductTemplateSchemaParses(t *testing.T) {
 	assert.Equal(t, ProductTemplateFieldName, schema.RecordLabelField())
 
 	// A template must be classifiable: type and category are mandatory, brand optional.
-	assert.True(t, requireField(t, schema, ProductTemplateFieldProductTypeId).IsRequiredForCreate())
+	productType := requireField(t, schema, ProductTemplateFieldProductType)
+	assert.True(t, productType.IsRequiredForCreate())
+	assert.False(t, requireField(t, schema, ProductTemplateFieldIsCombo).IsRequiredForCreate())
 	assert.True(t, requireField(t, schema, ProductTemplateFieldCategoryId).IsRequiredForCreate())
 	assert.False(t, requireField(t, schema, ProductTemplateFieldBrandId).IsRequiredForCreate())
 }
@@ -46,7 +49,8 @@ func TestVariantDoesNotDuplicateTemplateOwnedFields(t *testing.T) {
 	for _, fieldName := range []string{
 		ProductTemplateFieldName,
 		ProductTemplateFieldCategoryId,
-		ProductTemplateFieldProductTypeId,
+		ProductTemplateFieldProductType,
+		ProductTemplateFieldIsCombo,
 		ProductTemplateFieldBrandId,
 		ProductTemplateFieldSaleOk,
 		ProductTemplateFieldPurchaseOk,
@@ -177,4 +181,27 @@ func TestVariantValueJunctionPointsAtTemplateScopedValue(t *testing.T) {
 	requireField(t, schema, ProductVariantAttributeValueFieldTemplateAttributeValueId)
 	_, ok := schema.Fields()[ProductAttributeValueFieldId+"_global"]
 	assert.False(t, ok)
+}
+
+// Stock is kept for goods only; is_combo never changes that, so a service combo stays untracked.
+func TestProductTemplateIsStockTracked(t *testing.T) {
+	cases := map[string]struct {
+		productType *ProductType
+		isCombo     bool
+		tracked     bool
+	}{
+		"goods":         {util.ToPtr(ProductTypeGoods), false, true},
+		"goods combo":   {util.ToPtr(ProductTypeGoods), true, true},
+		"service":       {util.ToPtr(ProductTypeService), false, false},
+		"service combo": {util.ToPtr(ProductTypeService), true, false},
+		"no type":       {nil, false, false},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			template := NewProductTemplate()
+			template.SetProductType(tc.productType)
+			template.SetIsCombo(&tc.isCombo)
+			assert.Equal(t, tc.tracked, template.IsStockTracked())
+		})
+	}
 }

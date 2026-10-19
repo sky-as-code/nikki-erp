@@ -13,7 +13,6 @@ import (
 
 func InitRestfulHandlers() error {
 	err := deps.Register(
-		v1.NewProductTypeRest,
 		v1.NewProductCategoryRest,
 		v1.NewBrandRest,
 		v1.NewProductAttributeRest,
@@ -47,7 +46,6 @@ func initInventoryV1() error {
 	return deps.Invoke(func(route *echo.Group) error {
 		routeV1 := route.Group("/v1/inventory")
 		return stdErr.Join(
-			initProductTypeV1(routeV1),
 			initProductCategoryV1(routeV1),
 			initBrandV1(routeV1),
 			initProductAttributeV1(routeV1),
@@ -72,14 +70,6 @@ func initInventoryV1() error {
 			initStockProductConfigV1(routeV1),
 			initStockReservationV1(routeV1),
 		)
-	})
-}
-
-func initProductTypeV1(route *echo.Group) error {
-	return deps.Invoke(func(rest *v1.ProductTypeRest) error {
-		return composable.NewRestEngine(models.ProductTypeSchemaName, rest).
-			AddCrudRoutes().
-			RegisterRoutes(route)
 	})
 }
 

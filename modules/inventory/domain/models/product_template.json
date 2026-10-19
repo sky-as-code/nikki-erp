@@ -26,10 +26,26 @@
 			"data_type": { "type": "langjson", "min": 0, "max": 100 }
 		},
 		{
-			"name": "product_type_id",
-			"label": "fields.product_type_id",
-			"data_type": "ulid",
-			"required_for_create": true
+			"name": "product_type",
+			"label": "fields.product_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["goods", "service"]
+			},
+			"required_for_create": true,
+			"default_value": "goods",
+			"description": {
+				"en-US": "How the system processes the product. Only goods are tracked in stock; a service never is, combo or not."
+			}
+		},
+		{
+			"name": "is_combo",
+			"label": "fields.is_combo",
+			"data_type": "boolean",
+			"default_value": false,
+			"description": {
+				"en-US": "Marks a bundle sold as one product. Stock tracking still follows product_type: a goods combo is tracked, a service combo is not."
+			}
 		},
 		{
 			"name": "category_id",
@@ -216,14 +232,6 @@
 	],
 
 	"edges_to": [
-		{
-			"edge": "product_type",
-			"label": { "en-US": "Product type" },
-			"type": "many:one",
-			"dest_schema": "inventory_product_type",
-			"key_map": { "product_type_id": "id" },
-			"on_delete": "NO ACTION"
-		},
 		{
 			"edge": "category",
 			"label": { "en-US": "Category" },

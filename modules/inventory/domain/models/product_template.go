@@ -30,13 +30,27 @@ func WrapProductTemplateStatus(s string) *ProductTemplateStatus {
 	return &st
 }
 
+// ProductType determines how the system processes a product, not how the business classifies it.
+// Taxonomy such as Raw Material or Finished Goods belongs on Product Category.
+type ProductType string
+
+const (
+	ProductTypeGoods   = ProductType("goods")
+	ProductTypeService = ProductType("service")
+)
+
+func (this ProductType) String() string {
+	return string(this)
+}
+
 const (
 	ProductTemplateSchemaName = "inventory_product_template"
 
 	ProductTemplateFieldId                  = basemodel.FieldId
 	ProductTemplateFieldName                = "name"
 	ProductTemplateFieldShortName           = "short_name"
-	ProductTemplateFieldProductTypeId       = "product_type_id"
+	ProductTemplateFieldProductType         = "product_type"
+	ProductTemplateFieldIsCombo             = "is_combo"
 	ProductTemplateFieldUomId               = "uom_id"
 	ProductTemplateFieldCategoryId          = "category_id"
 	ProductTemplateFieldBrandId             = "brand_id"
@@ -61,10 +75,9 @@ const (
 	ProductTemplateFieldMinVariantCost = "min_variant_cost"
 	ProductTemplateFieldMaxVariantCost = "max_variant_cost"
 
-	ProductTemplateEdgeProductType = "product_type"
-	ProductTemplateEdgeCategory    = "category"
-	ProductTemplateEdgeBrand       = "brand"
-	ProductTemplateEdgeVariants    = "variants"
+	ProductTemplateEdgeCategory = "category"
+	ProductTemplateEdgeBrand    = "brand"
+	ProductTemplateEdgeVariants = "variants"
 )
 
 //go:embed product_template.json
@@ -102,12 +115,37 @@ func (this *ProductTemplate) SetShortName(v *model.LangJson) {
 	this.GetFieldData().SetLangJson(ProductTemplateFieldShortName, v)
 }
 
-func (this ProductTemplate) GetProductTypeId() *model.Id {
-	return this.GetFieldData().GetModelId(ProductTemplateFieldProductTypeId)
+func (this ProductTemplate) GetProductType() *ProductType {
+	s := this.GetFieldData().GetString(ProductTemplateFieldProductType)
+	if s == nil {
+		return nil
+	}
+	productType := ProductType(*s)
+	return &productType
 }
 
-func (this *ProductTemplate) SetProductTypeId(v *model.Id) {
-	this.GetFieldData().SetModelId(ProductTemplateFieldProductTypeId, v)
+func (this *ProductTemplate) SetProductType(v *ProductType) {
+	if v == nil {
+		this.GetFieldData().SetString(ProductTemplateFieldProductType, nil)
+		return
+	}
+	s := string(*v)
+	this.GetFieldData().SetString(ProductTemplateFieldProductType, &s)
+}
+
+// IsStockTracked is the one rule deciding whether stock is kept for a product: goods are, services
+// never are, and is_combo does not change it.
+func (this ProductTemplate) IsStockTracked() bool {
+	productType := this.GetProductType()
+	return productType != nil && *productType == ProductTypeGoods
+}
+
+func (this ProductTemplate) GetIsCombo() *bool {
+	return this.GetFieldData().GetBool(ProductTemplateFieldIsCombo)
+}
+
+func (this *ProductTemplate) SetIsCombo(v *bool) {
+	this.GetFieldData().SetBool(ProductTemplateFieldIsCombo, v)
 }
 
 func (this ProductTemplate) GetCategoryId() *model.Id {

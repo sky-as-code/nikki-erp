@@ -157,12 +157,11 @@ CREATE TABLE "inventory_brands" (
 -- Create "inventory_product_categories" table
 CREATE TABLE "inventory_product_categories" (
   "id" character varying NOT NULL,
-  "code" character varying NOT NULL,
   "name" jsonb NOT NULL,
   "parent_category_id" character varying NOT NULL,
   "is_root" boolean NULL,
   "canonical_name" jsonb NULL,
-  "sequence" integer NULL,
+  "display_order" integer NULL,
   "description" jsonb NULL,
   "source_system" character varying NOT NULL,
   "external_id" character varying NULL,
@@ -172,36 +171,19 @@ CREATE TABLE "inventory_product_categories" (
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_product_categories_code_org_id_ukey" UNIQUE ("code", "org_id"),
   CONSTRAINT "inventory_product_categories_parent_category_id_fkey" FOREIGN KEY ("parent_category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_prod_cats_tid_org_root_ukey" to table: "inventory_product_categories"
 CREATE UNIQUE INDEX "invty_prod_cats_tid_org_root_ukey" ON "inventory_product_categories" ("org_id", "is_root") WHERE (is_root IS NOT NULL);
 -- Create index "invty_prod_cats_tid_src_sys_ext_id_ukey" to table: "inventory_product_categories"
 CREATE UNIQUE INDEX "invty_prod_cats_tid_src_sys_ext_id_ukey" ON "inventory_product_categories" ("source_system", "external_id") WHERE (external_id IS NOT NULL);
--- Create "inventory_product_types" table
-CREATE TABLE "inventory_product_types" (
-  "id" character varying NOT NULL,
-  "code" character varying NOT NULL,
-  "name" jsonb NOT NULL,
-  "description" jsonb NULL,
-  "supports_stock" boolean NULL,
-  "supports_sale" boolean NULL,
-  "supports_purchase" boolean NULL,
-  "supports_manufacturing" boolean NULL,
-  "is_archived" boolean NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "etag" character varying NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_product_types_code_ukey" UNIQUE ("code")
-);
 -- Create "inventory_product_templates" table
 CREATE TABLE "inventory_product_templates" (
   "id" character varying NOT NULL,
   "name" jsonb NOT NULL,
   "short_name" jsonb NULL,
-  "product_type_id" character varying NOT NULL,
+  "product_type" character varying NOT NULL,
+  "is_combo" boolean NULL,
   "category_id" character varying NOT NULL,
   "brand_id" character varying NULL,
   "uom_id" character varying NULL,
@@ -227,7 +209,6 @@ CREATE TABLE "inventory_product_templates" (
   PRIMARY KEY ("id"),
   CONSTRAINT "inventory_product_templates_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "inventory_brands" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_product_templates_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_product_templates_product_type_id_fkey" FOREIGN KEY ("product_type_id") REFERENCES "inventory_product_types" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_product_templates_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_prod_tpls_tid_src_sys_ext_id_ukey" to table: "inventory_product_templates"

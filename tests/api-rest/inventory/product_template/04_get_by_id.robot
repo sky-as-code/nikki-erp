@@ -26,11 +26,10 @@ Get With Edge Columns Succeeds
     Response Status Should Be    ${resp}    200
 
 Get With Classification Edges Succeeds
-    [Documentation]    A template renders its type, category and brand by name rather than by
-    ...    ULID, which is what these three many:one edges are for.
-    Ensure Product Type Under Test
+    [Documentation]    A template renders its category and brand by name rather than by
+    ...    ULID, which is what these many:one edges are for.
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${PRODUCT_TEMPLATE_ID}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['name', 'product_type.code', 'category.code']} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['name', 'product_type', 'category.name', 'category.canonical_name']} }}
     Response Status Should Be    ${resp}    200
 
 Get With Nonexist Column Fails

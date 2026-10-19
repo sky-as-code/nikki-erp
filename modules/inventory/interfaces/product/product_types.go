@@ -21,9 +21,10 @@ type EffectiveProduct struct {
 	Name        *model.LangJson
 	DisplayName string
 
-	ProductTypeId string
-	CategoryId    string
-	BrandId       string
+	ProductType string
+	IsCombo     bool
+	CategoryId  string
+	BrandId     string
 
 	SaleOk     bool
 	PurchaseOk bool
@@ -74,7 +75,8 @@ func (this EffectiveProduct) ToFieldMap() map[string]any {
 		"sku":                 this.Sku,
 		"barcode":             this.Barcode,
 		"image_file_key":      this.ImageKey,
-		"product_type_id":     this.ProductTypeId,
+		"product_type":        this.ProductType,
+		"is_combo":            this.IsCombo,
 		"category_id":         this.CategoryId,
 		"brand_id":            this.BrandId,
 		"sale_ok":             this.SaleOk,

@@ -32,7 +32,7 @@ Schema Declares No Inherited Fields
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    FOR    ${field}    IN    name    category_id    product_type_id    brand_id
+    FOR    ${field}    IN    name    category_id    product_type    is_combo    brand_id
     ...    sale_ok    purchase_ok
         Dictionary Should Not Contain Key    ${fields}    ${field}
     END
@@ -45,7 +45,8 @@ Schema Declares The Inherited Fields As Virtual
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
     FOR    ${field}    IN    product_template_name    product_template_category_id
-    ...    product_template_brand_id    product_template_product_type_id    product_template_status
+    ...    product_template_brand_id    product_template_product_type    product_template_is_combo
+    ...    product_template_status
     ...    product_template_sale_ok    product_template_purchase_ok    product_template_base_sales_price
         Dictionary Should Contain Key    ${fields}    ${field}
     END

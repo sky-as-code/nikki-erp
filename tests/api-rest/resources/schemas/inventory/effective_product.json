@@ -17,8 +17,12 @@
         "display_name": {
             "type": "string"
         },
-        "product_type_id": {
-            "type": "string"
+        "product_type": {
+            "type": "string",
+            "enum": ["goods", "service"]
+        },
+        "is_combo": {
+            "type": "boolean"
         },
         "category_id": {
             "type": "string"

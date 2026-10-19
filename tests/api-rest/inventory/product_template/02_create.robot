@@ -4,7 +4,6 @@ Documentation     Creating Product Templates. The first test saves the template 
 ...               suites and deleted last by 08_delete.robot.
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session
-...               AND    Ensure Product Type Under Test
 ...               AND    Ensure Product Category Under Test
 Test Tags         inventory    product_template    create
 
@@ -13,7 +12,7 @@ Test Tags         inventory    product_template    create
 Create With Required Fields Succeeds
     ${name}=    Unique Display Name    Robot Template
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${PRODUCT_TEMPLATE_ID}    ${id}
     Set Global Variable    ${PRODUCT_TEMPLATE_ETAG}    ${etag}
@@ -23,7 +22,7 @@ Create Defaults To Draft Status
     ...    that defaulted to active would be sellable before anyone reviewed it.
     ${name}=    Unique Display Name    Robot Default Status Template
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
@@ -40,7 +39,7 @@ Create Defaults The Capability Flags On
     ...    a wrong default here silently propagates to every SKU.
     ${name}=    Unique Display Name    Robot Capability Template
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
@@ -57,7 +56,7 @@ Create With Brand And Defaults Succeeds
     Ensure Brand Under Test
     ${name}=    Unique Display Name    Robot Full Template
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'brand_id': $BRAND_ID, 'default_weight': '1.5', 'default_length': '10', 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'brand_id': $BRAND_ID, 'default_weight': '1.5', 'default_length': '10', 'status': 'draft', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
@@ -71,7 +70,7 @@ Create Without Brand Succeeds
     ...    so the catalog must not force a brand to exist before a template can.
     ${name}=    Unique Display Name    Robot Unbranded Template
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
@@ -82,13 +81,14 @@ Create Without Brand Succeeds
     ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
 Create With Missing Required Fields Fails
-    [Documentation]    status is required_for_create too, but it declares a default, and the
-    ...    schema applies a default before it reports a field as missing. required_for_create
-    ...    is what makes the column NOT NULL; it does not oblige the caller to send a value
-    ...    the schema can supply. Its defaulting is covered by Create Defaults To Draft Status.
+    [Documentation]    status and product_type are required_for_create too, but each declares
+    ...    a default, and the schema applies a default before it reports a field as missing.
+    ...    required_for_create is what makes the column NOT NULL; it does not oblige the caller
+    ...    to send a value the schema can supply. The defaulting is covered by Create Defaults
+    ...    To Draft Status and Create Defaults To Goods And Not Combo.
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}    json=${{ {} }}    expected_status=any
-    Response Should Be Missing Fields Error    ${resp}    name    product_type_id    category_id    org_id
+    Response Should Be Missing Fields Error    ${resp}    name    category_id    org_id
 
 Create With Invalid Status Fails
     [Documentation]    BR §6.1.2: the lifecycle is a closed set. An unknown status would
@@ -96,25 +96,55 @@ Create With Invalid Status Fails
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Bad Status Template
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'bla_bla_status', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'bla_bla_status', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
     ...    msg=status must reject a value outside draft/active/discontinued
 
-Create With Not Found Product Type Fails
-    [Tags]    negative
-    ${name}=    Unique Display Name    Robot Orphan Type Template
+Create Defaults To Goods And Not Combo
+    [Documentation]    product_type is an enum on the template, defaulting to goods so a product
+    ...    is stock-tracked unless declared a service; is_combo defaults to false.
+    ${name}=    Unique Display Name    Robot Default Type Template
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $NOT_FOUND_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_template.json    200
+    Should Be Equal    ${item}[product_type]    goods
+    Should Be Equal    ${item}[is_combo]    ${False}
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+
+Create Service Combo Succeeds
+    ${name}=    Unique Display Name    Robot Service Combo Template
+    ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'service', 'is_combo': True, 'category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_template.json    200
+    Should Be Equal    ${item}[product_type]    service
+    Should Be Equal    ${item}[is_combo]    ${True}
+    DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+
+Create With Invalid Product Type Fails
+    [Documentation]    The product type is a closed set (goods / service); there is no
+    ...    product type resource to point at any more.
+    [Tags]    negative
+    ${name}=    Unique Display Name    Robot Bad Type Template
+    ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'combo', 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
-    ...    msg=A template must not be creatable against a product type that does not exist
+    ...    msg=product_type must reject a value outside goods/service
 
 Create With Not Found Category Fails
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Orphan Category Template
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $NOT_FOUND_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $NOT_FOUND_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
     ...    msg=A template must not be creatable against a category that does not exist
@@ -125,7 +155,7 @@ Create With Variant Owned Field Fails
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Sku Template
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID, 'sku': 'SKU-1'} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID, 'sku': 'SKU-1'} }}
     ...    expected_status=any
     Response Should Be Nonexist Fields Error    ${resp}    sku
 
@@ -141,6 +171,6 @@ Create With Nonexist Field Fails
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Nonexist Field
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID, 'bla_bla_field': 'x'} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID, 'bla_bla_field': 'x'} }}
     ...    expected_status=any
     Response Should Be Nonexist Fields Error    ${resp}    bla_bla_field

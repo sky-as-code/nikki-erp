@@ -24,7 +24,6 @@ func finalizedVariantSchema(t *testing.T) *dmodel.ModelSchema {
 	if registry.Get(ProductVariantSchemaName) == nil {
 		require.NoError(t, errors.Join(
 			// Master data first: the template points at all of it.
-			dmodel.RegisterSchemaB(ProductTypeSchemaBuilder()),
 			dmodel.RegisterSchemaB(ProductCategorySchemaBuilder()),
 			dmodel.RegisterSchemaB(BrandSchemaBuilder()),
 			dmodel.RegisterSchemaB(ProductTemplateSchemaBuilder()),

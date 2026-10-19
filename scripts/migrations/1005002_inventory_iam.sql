@@ -52,7 +52,6 @@ BEGIN
 		) VALUES
 		('01M0A1P4QM3P0Y3T60T7RH2KZC', jsonb_build_object('en-US', 'Inventory - Product', 'vi-VN', 'Kho hàng - Sản phẩm'), 'inventory_product_template', 'Catalog-level definition of a product line', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QJ0MFYJY0EQH0NVJ2R', jsonb_build_object('en-US', 'Inventory - Product Variant', 'vi-VN', 'Kho hàng - Biến thể sản phẩm'), 'inventory_product_variant', 'Concrete, transactable product of a template', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q8S7V5FR3KKY1V5ZMF', jsonb_build_object('en-US', 'Inventory - Product Type', 'vi-VN', 'Kho hàng - Loại sản phẩm'), 'inventory_product_type', 'How the system processes a product: goods, service, combo', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QGGABP6SVFCTD6MF8K', jsonb_build_object('en-US', 'Inventory - Product Category', 'vi-VN', 'Kho hàng - Danh mục sản phẩm'), 'inventory_product_category', 'Hierarchical classification of product templates', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QMJTAEFCJY5WRTNHWZ', jsonb_build_object('en-US', 'Inventory - Product Attribute', 'vi-VN', 'Kho hàng - Thuộc tính sản phẩm'), 'inventory_product_attribute', 'Attributes whose values form product variants', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QAH9DQW7VXG9K87HWP', jsonb_build_object('en-US', 'Inventory - Product Attribute Value', 'vi-VN', 'Kho hàng - Giá trị thuộc tính sản phẩm'), 'inventory_product_attribute_value', 'Allowed values of a product attribute', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
@@ -80,13 +79,6 @@ BEGIN
 		('01M0A1P4QB7BD6NB8M9SEK5Y20', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QSQMEVAZ1FFTAVA317', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QEVX39CJ2TJ2AN97FT', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a product variant so it cannot be used by new transactions', '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-
-		-- Product Type
-		('01M0A1P4QCYXK4QQ5PP8K6EQ0Y', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QR944RNJFF7716BF5C', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4Q2QJ2Y2TYW6XXX9BRN', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QCVHQCN7ECG2TCKJ97', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QPQSBNB8VK8F1H6XM3', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a product type', '01M0A1P4Q8S7V5FR3KKY1V5ZMF', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Product Category
 		('01M0A1P4QB6H18345VP8SG849J', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4QGGABP6SVFCTD6MF8K', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),

@@ -19,7 +19,7 @@ Schema Declares The Catalog Fields
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    FOR    ${field}    IN    name    short_name    product_type_id    category_id    brand_id
+    FOR    ${field}    IN    name    short_name    product_type    is_combo    category_id    brand_id
     ...    sale_ok    purchase_ok    status    org_id
         Dictionary Should Contain Key    ${fields}    ${field}
     END

@@ -8,7 +8,6 @@ const InventoryModuleName = "inventory"
 const (
 	ResourceProductTemplate       = "inventory_product_template"
 	ResourceProductVariant        = "inventory_product_variant"
-	ResourceProductType           = "inventory_product_type"
 	ResourceProductCategory       = "inventory_product_category"
 	ResourceProductAttribute      = "inventory_product_attribute"
 	ResourceProductAttributeValue = "inventory_product_attribute_value"

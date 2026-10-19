@@ -13,12 +13,11 @@ const (
 	ProductCategorySchemaName = "inventory_product_category"
 
 	ProductCategoryFieldId               = basemodel.FieldId
-	ProductCategoryFieldCode             = "code"
 	ProductCategoryFieldName             = "name"
 	ProductCategoryFieldParentCategoryId = "parent_category_id"
 	ProductCategoryFieldIsRoot           = "is_root"
 	ProductCategoryFieldCanonicalName    = "canonical_name"
-	ProductCategoryFieldSequence         = "sequence"
+	ProductCategoryFieldDisplayOrder     = "display_order"
 	ProductCategoryFieldDescription      = "description"
 	ProductCategoryFieldOrgId            = "org_id"
 
@@ -30,7 +29,7 @@ const (
 
 // ProductCategoryRootName is the name every org's root category carries.
 func ProductCategoryRootName() model.LangJson {
-	return model.LangJson{model.LanguageCodeEnUs: "All", model.LanguageCodeViVn: "Tất cả"}
+	return model.LangJson{model.LanguageCodeEnUs: "Default", model.LanguageCodeViVn: "Mặc định"}
 }
 
 //go:embed product_category.json
@@ -50,14 +49,6 @@ func NewProductCategory() *ProductCategory {
 
 func NewProductCategoryFrom(src dmodel.DynamicFields) *ProductCategory {
 	return &ProductCategory{basemodel.NewDynamicModel(src)}
-}
-
-func (this ProductCategory) GetCode() *string {
-	return this.GetFieldData().GetString(ProductCategoryFieldCode)
-}
-
-func (this *ProductCategory) SetCode(v *string) {
-	this.GetFieldData().SetString(ProductCategoryFieldCode, v)
 }
 
 func (this ProductCategory) GetName() *model.LangJson {
@@ -94,12 +85,12 @@ func (this *ProductCategory) SetCanonicalName(v *model.LangJson) {
 	this.GetFieldData().SetLangJson(ProductCategoryFieldCanonicalName, v)
 }
 
-func (this ProductCategory) GetSequence() *int32 {
-	return this.GetFieldData().GetInt32(ProductCategoryFieldSequence)
+func (this ProductCategory) GetDisplayOrder() *int32 {
+	return this.GetFieldData().GetInt32(ProductCategoryFieldDisplayOrder)
 }
 
-func (this *ProductCategory) SetSequence(v *int32) {
-	this.GetFieldData().SetInt32(ProductCategoryFieldSequence, v)
+func (this *ProductCategory) SetDisplayOrder(v *int32) {
+	this.GetFieldData().SetInt32(ProductCategoryFieldDisplayOrder, v)
 }
 
 func (this ProductCategory) GetDescription() *model.LangJson {

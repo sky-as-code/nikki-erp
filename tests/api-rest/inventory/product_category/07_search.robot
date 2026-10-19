@@ -1,5 +1,5 @@
 *** Settings ***
-Documentation     Searching Product Categories. Unlike product_type, a category is org-scoped
+Documentation     Searching Product Categories. A category is org-scoped
 ...               (org_id required-for-create), so every search here carries org_id. Graph
 ...               filters rely on the seeded categories (the "Lead" variants), so they pass
 ...               on any database. The "graph" query values are JSON strings that requests

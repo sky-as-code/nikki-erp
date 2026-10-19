@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
@@ -59,7 +60,8 @@ func TestEffectiveProductInheritsTemplateOwnedFields(t *testing.T) {
 
 	effective := BuildEffectiveProduct(template, variant, []string{"Black"})
 
-	assert.Equal(t, "01TYPE", effective.ProductTypeId)
+	assert.Equal(t, models.ProductTypeGoods.String(), effective.ProductType)
+	assert.True(t, effective.IsCombo)
 	assert.Equal(t, "01CATEGORY", effective.CategoryId)
 	assert.Equal(t, "01BRAND", effective.BrandId)
 	assert.True(t, effective.SaleOk)
@@ -186,7 +188,8 @@ func newTemplate() *models.ProductTemplate {
 	template := models.NewProductTemplate()
 	template.SetId(strPtr("01TEMPLATE"))
 	template.SetName(langJson("Classic T-Shirt"))
-	template.SetProductTypeId(strPtr("01TYPE"))
+	template.SetProductType(util.ToPtr(models.ProductTypeGoods))
+	template.SetIsCombo(boolPtr(true))
 	template.SetCategoryId(strPtr("01CATEGORY"))
 	template.SetBrandId(strPtr("01BRAND"))
 	template.SetSaleOk(boolPtr(true))

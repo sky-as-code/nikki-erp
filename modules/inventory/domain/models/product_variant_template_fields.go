@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 )
 
 // The template-owned fields a variant exposes as its own. Each template_{x} field is declared in
@@ -37,8 +38,16 @@ func (this ProductVariant) GetTemplateBrandId() *model.Id {
 	return this.GetFieldData().GetModelId(ProductVariantFieldTemplateBrandId)
 }
 
-func (this ProductVariant) GetTemplateProductTypeId() *model.Id {
-	return this.GetFieldData().GetModelId(ProductVariantFieldTemplateProductTypeId)
+func (this ProductVariant) GetTemplateProductType() *ProductType {
+	productType := this.GetFieldData().GetString(ProductVariantFieldTemplateProductType)
+	if productType == nil {
+		return nil
+	}
+	return util.ToPtr(ProductType(*productType))
+}
+
+func (this ProductVariant) GetTemplateIsCombo() *bool {
+	return this.GetFieldData().GetBool(ProductVariantFieldTemplateIsCombo)
 }
 
 // GetTemplateStatus is the template's lifecycle, not the variant's: an active variant of a

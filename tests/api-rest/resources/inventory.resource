@@ -12,7 +12,6 @@ Resource          ${CURDIR}/../nikki_api/data.resource
 
 
 *** Variables ***
-${PRODUCT_TYPE_API}         /v1/inventory/inventory_product_type
 ${PRODUCT_CATEGORY_API}     /v1/inventory/inventory_product_category
 ${BRAND_API}                /v1/inventory/inventory_brand
 ${PRODUCT_ATTRIBUTE_API}    /v1/inventory/inventory_product_attribute
@@ -66,23 +65,8 @@ Unique Code
 
 # --- Master data ----------------------------------------------------------------------
 
-Ensure Product Type Under Test
-    [Documentation]    The product type the product_type suite exercises, and that every
-    ...    template hangs off — product_type_id is required-for-create on a template.
-    ${id}=    Get Variable Value    ${PRODUCT_TYPE_ID}    ${EMPTY}
-    IF    $id    RETURN
-    Ensure Inventory Org
-    ${name}=    Unique Display Name    Robot Goods Type
-    ${code}=    Unique Code    goods
-    ${resp}=    POST On Session    api    ${PRODUCT_TYPE_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'supports_stock': True} }}
-    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    Set Global Variable    ${PRODUCT_TYPE_ID}    ${id}
-    Set Global Variable    ${PRODUCT_TYPE_ETAG}    ${etag}
-    Set Global Variable    ${PRODUCT_TYPE_CODE}    ${code}
-
 Ensure Root Product Category
-    [Documentation]    The org's root "All" (is_root=true, its own parent). It is seeded, never
+    [Documentation]    The org's root "Default" (is_root=true, its own parent). It is seeded, never
     ...    created through the API, and every parent-less create defaults to it.
     ${id}=    Get Variable Value    ${ROOT_CATEGORY_ID}    ${EMPTY}
     IF    $id    RETURN
@@ -106,19 +90,17 @@ Get Product Category
 
 Ensure Product Category Under Test
     [Documentation]    The category the product_category suite exercises and every template
-    ...    references. Created without a parent, so it lands under the org's root "All"; 03_update
+    ...    references. Created without a parent, so it lands under the org's root "Default"; 03_update
     ...    hangs a child off it and exercises the cycle rule against a real two-level tree.
     ${id}=    Get Variable Value    ${PRODUCT_CATEGORY_ID}    ${EMPTY}
     IF    $id    RETURN
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Root Category
-    ${code}=    Unique Code    cat
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${PRODUCT_CATEGORY_ID}    ${id}
     Set Global Variable    ${PRODUCT_CATEGORY_ETAG}    ${etag}
-    Set Global Variable    ${PRODUCT_CATEGORY_CODE}    ${code}
 
 Ensure Child Product Category
     [Documentation]    A child of the category under test. The cycle rule needs a real
@@ -128,9 +110,8 @@ Ensure Child Product Category
     IF    $id    RETURN
     Ensure Product Category Under Test
     ${name}=    Unique Display Name    Robot Child Category
-    ${code}=    Unique Code    childcat
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'parent_category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'parent_category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${CHILD_CATEGORY_ID}    ${id}
     Set Global Variable    ${CHILD_CATEGORY_ETAG}    ${etag}
@@ -191,16 +172,15 @@ Ensure Attribute Value Under Test
 # --- Template and variant -------------------------------------------------------------
 
 Create Product Template
-    [Documentation]    Creates a template against the shared type and category and returns
+    [Documentation]    Creates a goods template in the shared category and returns
     ...    (id, etag). Callers that need their own template — the archive-cascade and
     ...    delete-guard suites each consume one destructively — use this instead of the
     ...    shared "under test" one.
     [Arguments]    ${words}=Robot Template
-    Ensure Product Type Under Test
     Ensure Product Category Under Test
     ${name}=    Unique Display Name    ${words}
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}    ${etag}
 
@@ -290,7 +270,6 @@ Ensure Seeded Product Templates
     [Arguments]    ${count}=50
     ${ids}=    Get Variable Value    ${SEEDED_TEMPLATE_IDS}    ${None}
     IF    $ids is not None and len($ids) >= int($count)    RETURN
-    Ensure Product Type Under Test
     Ensure Product Category Under Test
     ${ids}=    Create List
     FOR    ${index}    IN RANGE    ${count}
@@ -301,7 +280,7 @@ Ensure Seeded Product Templates
             ${name}=    Unique Display Name    Seed Template ${index}
         END
         ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-        ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+        ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
         Response Status Should Be    ${resp}    201
         Append To List    ${ids}    ${resp.json()}[id]
     END
@@ -322,9 +301,8 @@ Ensure Seeded Product Categories
         ELSE
             ${name}=    Unique Display Name    Seed Category ${index}
         END
-        ${code}=    Unique Code    seedcat
         ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-        ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
+        ...    json=${{ {'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
         Response Status Should Be    ${resp}    201
         Append To List    ${ids}    ${resp.json()}[id]
     END
@@ -805,4 +783,3 @@ Delete Inventory Seed Data
     # The child points at the category under test, so it must go first.
     Delete Inventory Fixture    ${PRODUCT_CATEGORY_API}    CHILD_CATEGORY_ID
     Delete Inventory Fixture    ${PRODUCT_CATEGORY_API}    PRODUCT_CATEGORY_ID
-    Delete Inventory Fixture    ${PRODUCT_TYPE_API}    PRODUCT_TYPE_ID

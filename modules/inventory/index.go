@@ -175,7 +175,6 @@ func assertEveryResourceInstalled() error {
 func (*InventoryModule) RegisterModels() error {
 	return errors.Join(
 		// Master data: referenced by the template, so registered first.
-		dmodel.RegisterSchemaB(models.ProductTypeSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.ProductCategorySchemaBuilder()),
 		dmodel.RegisterSchemaB(models.BrandSchemaBuilder()),
 

@@ -67,30 +67,6 @@ func TestBrandGuardIgnoresEmptyId(t *testing.T) {
 	assert.Equal(t, 0, vErrs.Count())
 }
 
-func TestProductTypeWithTemplatesCannotBeDeleted(t *testing.T) {
-	vErrs := ft.NewClientErrors()
-
-	require.NoError(t, AssertProductTypeDeletable(callerContext(), oneChild(), testParentId, vErrs))
-
-	assert.Equal(t, 1, vErrs.Count(), "a template is still of this product type")
-}
-
-func TestProductTypeWithoutTemplatesCanBeDeleted(t *testing.T) {
-	vErrs := ft.NewClientErrors()
-
-	require.NoError(t, AssertProductTypeDeletable(callerContext(), noChild(), testParentId, vErrs))
-
-	assert.Equal(t, 0, vErrs.Count())
-}
-
-func TestProductTypeGuardIgnoresEmptyId(t *testing.T) {
-	vErrs := ft.NewClientErrors()
-
-	require.NoError(t, AssertProductTypeDeletable(callerContext(), oneChild(), "", vErrs))
-
-	assert.Equal(t, 0, vErrs.Count())
-}
-
 func TestProductAttributeWithValuesCannotBeDeleted(t *testing.T) {
 	vErrs := ft.NewClientErrors()
 

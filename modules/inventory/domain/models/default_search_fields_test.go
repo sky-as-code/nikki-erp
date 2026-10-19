@@ -17,7 +17,7 @@ func engineBackedSchemas(t *testing.T) []*dmodel.ModelSchema {
 	// Built, not registered: the registry is process-wide and TestProductSchemasRegisterInOrder
 	// owns registration, so registering here too would collide.
 	builders := []*dmodel.ModelSchemaBuilder{
-		ProductTypeSchemaBuilder(), ProductCategorySchemaBuilder(), BrandSchemaBuilder(),
+		ProductCategorySchemaBuilder(), BrandSchemaBuilder(),
 		ProductAttributeSchemaBuilder(), ProductAttributeValueSchemaBuilder(),
 		ProductTemplateSchemaBuilder(), ProductTemplateAttributeSchemaBuilder(),
 		ProductTemplateAttributeValueSchemaBuilder(),
