@@ -5,12 +5,13 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/contacts/parties?page=-1&size=99999999999&graph={"if":["type", "=", "individual"]}
+  url: {{api_host}}/v1/contacts/contacts_party?page=-1&size=99999999999&graph={"if":["type", "=", "individual"]}&org_id={{org_id}}
   body: none
   auth: inherit
 }
 
 params:query {
+  org_id: {{org_id}}
   page: -1
   size: 99999999999
   graph: {"if":["type", "=", "individual"]}

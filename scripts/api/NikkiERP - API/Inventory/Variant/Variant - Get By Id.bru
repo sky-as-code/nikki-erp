@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/variants/{{variant_id}}
+  url: {{api_host}}/v1/inventory/inventory_product_variant/{{variant_id}}?org_id={{org_id}}
   body: none
   auth: inherit
 }

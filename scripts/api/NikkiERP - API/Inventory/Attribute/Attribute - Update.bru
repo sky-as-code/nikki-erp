@@ -4,14 +4,15 @@ meta {
   seq: 2
 }
 
-put {
-  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/attributes/{{attribute_id}}
+patch {
+  url: {{api_host}}/v1/inventory/inventory_product_attribute/{{attribute_id}}
   body: json
   auth: inherit
 }
 
 body:json {
   {
+    "org_id": "{{org_id}}",
     "code_name": "{{attr_code_name}}",
     "display_name": {
       "vi-VN": "{{attr_display_name_vi}}",

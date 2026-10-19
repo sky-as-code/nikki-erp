@@ -5,13 +5,14 @@ meta {
 }
 
 post {
-  url: {{api_host}}/v1/iam/hierarchy/{{hierarchy_id}}/manage-users
+  url: {{api_host}}/v1/iam/iam_orgunit/{{hierarchy_id}}/manage_users
   body: json
   auth: inherit
 }
 
 body:json {
   {
+    "org_id": "{{org_id}}",
       "add": ["01JZQFZFK6GM2D5X6MYHWH6FND", "01JZQFY6EXRG0959Z95Y2EM3AM"],
       "remove": []
   }

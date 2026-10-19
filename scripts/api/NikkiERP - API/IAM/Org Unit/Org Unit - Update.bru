@@ -4,14 +4,15 @@ meta {
   seq: 2
 }
 
-put {
-  url: {{api_host}}/v1/iam/hierarchy/{{hierarchy_id}}
+patch {
+  url: {{api_host}}/v1/iam/iam_orgunit/{{hierarchy_id}}
   body: json
   auth: inherit
 }
 
 body:json {
   {
+    "org_id": "{{org_id}}",
     "name": "{{$randomDepartment}} Updated",
     "description": "{{$randomLoremParagraphs}}",
     "etag": "{{etag}}"

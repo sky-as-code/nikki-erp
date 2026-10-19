@@ -4,7 +4,7 @@ meta {
   seq: 2
 }
 
-put {
+patch {
   url: {{api_host}}/v1/iam/iam_group/{{group_id}}
   body: json
   auth: inherit
@@ -12,6 +12,7 @@ put {
 
 body:json {
   {
+    "org_id": "{{org_id}}",
       "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}}",
       "description": "{{$randomLoremParagraphs}}",
       "etag": "{{etag}}"

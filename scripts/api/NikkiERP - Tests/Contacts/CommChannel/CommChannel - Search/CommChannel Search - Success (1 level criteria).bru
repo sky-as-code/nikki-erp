@@ -5,12 +5,13 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/contacts/parties/channels?graph={"if":["type", "=", "post"]}
+  url: {{api_host}}/v1/contacts/contacts_comm_channel?graph={"if":["type", "=", "post"]}&org_id={{org_id}}
   body: none
   auth: inherit
 }
 
 params:query {
+  org_id: {{org_id}}
   graph: {"if":["type", "=", "post"]}
 }
 

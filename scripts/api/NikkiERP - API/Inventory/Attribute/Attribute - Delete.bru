@@ -5,7 +5,7 @@ meta {
 }
 
 delete {
-  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/attributes/{{attribute_id}}
+  url: {{api_host}}/v1/inventory/inventory_product_attribute/{{attribute_id}}?org_id={{org_id}}
   body: none
   auth: inherit
 }
