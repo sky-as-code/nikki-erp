@@ -24,9 +24,12 @@ var moveTransitions = map[string][]string{
 		models.StockMoveStatusAssigned,
 		models.StockMoveStatusCancelled,
 	},
+	// A receipt's move is never reserved (its supplier source holds no balance), so validate ships
+	// it straight from `confirmed`.
 	models.StockMoveStatusConfirmed: {
 		models.StockMoveStatusPartiallyAvailable,
 		models.StockMoveStatusAssigned,
+		models.StockMoveStatusDone,
 		models.StockMoveStatusCancelled,
 	},
 	// Reservation is reversible while the move is open, so both allocation states can fall back to

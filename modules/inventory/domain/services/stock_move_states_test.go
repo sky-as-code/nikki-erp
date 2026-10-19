@@ -23,6 +23,7 @@ func TestCanTransitionMoveAllowsTheDocumentedPaths(t *testing.T) {
 		{models.StockMoveStatusPartiallyAvailable, models.StockMoveStatusAssigned, true, "the rest of the stock arrives"},
 		{models.StockMoveStatusAssigned, models.StockMoveStatusDone, true, "validate records the movement"},
 		{models.StockMoveStatusPartiallyAvailable, models.StockMoveStatusDone, true, "validating what is available"},
+		{models.StockMoveStatusConfirmed, models.StockMoveStatusDone, true, "validating a receipt, which is never reserved"},
 		{models.StockMoveStatusConfirmed, models.StockMoveStatusCancelled, true, "cancelling an open move"},
 
 		{models.StockMoveStatusDone, models.StockMoveStatusCancelled, false, "a recorded movement is not undone by cancelling"},

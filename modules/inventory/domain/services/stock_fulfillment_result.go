@@ -188,11 +188,14 @@ func writeMoveDemand(
 ) error {
 	update := dmodel.DynamicFields{
 		models.StockMoveFieldId:                 derefString(move.GetId()),
-		models.StockMoveFieldDemandQuantity:     quantity.String(),
-		models.StockMoveFieldBaseDemandQuantity: quantity.String(),
+		models.StockMoveFieldDemandQuantity:     quantity,
+		models.StockMoveFieldBaseDemandQuantity: quantity,
 	}
-	_, err := operation.MoveRepo.Update(ctx, update)
-	return errors.Wrap(err, "writeMoveDemand")
+	updated, err := operation.MoveRepo.Update(ctx, update)
+	if err != nil {
+		return errors.Wrap(err, "writeMoveDemand")
+	}
+	return refusedWriteError(updated, "writeMoveDemand")
 }
 
 // assertFulfillmentResultWellFormed refuses a result that cannot be attributed, before any stock is

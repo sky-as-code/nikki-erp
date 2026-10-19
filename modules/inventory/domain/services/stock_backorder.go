@@ -116,7 +116,9 @@ func createBackorderTransfer(
 	if err != nil {
 		return errors.Wrap(err, "createBackorderTransfer")
 	}
-	_ = created
+	if err := refusedWriteError(created, "createBackorderTransfer"); err != nil {
+		return err
+	}
 
 	backorderId, err := findTransferByNumber(ctx, operation, derefString(original.GetOrgId()), transferNumber)
 	if err != nil {
@@ -165,11 +167,11 @@ func copyShortfallMoves(
 			continue
 		}
 
-		_, err := operation.MoveRepo.Insert(ctx, dmodel.DynamicFields{
+		inserted, err := operation.MoveRepo.Insert(ctx, dmodel.DynamicFields{
 			models.StockMoveFieldTransferId:            backorderId,
 			models.StockMoveFieldProductVariantId:      derefString(source.GetProductVariantId()),
-			models.StockMoveFieldDemandQuantity:        shortfall.String(),
-			models.StockMoveFieldBaseDemandQuantity:    shortfall.String(),
+			models.StockMoveFieldDemandQuantity:        shortfall,
+			models.StockMoveFieldBaseDemandQuantity:    shortfall,
 			models.StockMoveFieldSourceLocationId:      derefString(source.GetSourceLocationId()),
 			models.StockMoveFieldDestinationLocationId: derefString(source.GetDestinationLocationId()),
 			models.StockMoveFieldStatus:                models.StockMoveStatusDraft,
@@ -180,6 +182,9 @@ func copyShortfallMoves(
 		})
 		if err != nil {
 			return errors.Wrap(err, "copyShortfallMoves")
+		}
+		if err := refusedWriteError(inserted, "copyShortfallMoves"); err != nil {
+			return err
 		}
 	}
 	return nil

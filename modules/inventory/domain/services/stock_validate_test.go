@@ -65,3 +65,21 @@ func TestReplayedValidateIsSkippedWithoutAKey(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, result)
 }
+
+// A receipt's line draws from a supplier location that was never reserved against, so shipping it
+// must leave the source's reserved figure alone; consuming a reservation there drove it negative
+// and failed every receipt with a 500. Any other operation consumes the reservation it shipped.
+func TestShippingConsumesAReservationOnlyOutsideAReceipt(t *testing.T) {
+	quantity := dec(t, "30")
+	for code, want := range map[string]string{
+		models.StockOperationCodeIncoming: "0",
+		models.StockOperationCodeOutgoing: "-30",
+		models.StockOperationCodeInternal: "-30",
+	} {
+		operation := &transferOperationContext{Transfer: *models.NewStockTransferFrom(dmodel.DynamicFields{
+			models.StockTransferFieldOperationCode: code,
+		})}
+		assert.Truef(t, sourceReservedDelta(operation, quantity).Equal(dec(t, want)),
+			"operation %s: reserved delta must be %s", code, want)
+	}
+}

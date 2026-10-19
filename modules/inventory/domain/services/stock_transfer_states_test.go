@@ -126,3 +126,16 @@ func TestAssertTransferTransitionAcceptsALegalMove(t *testing.T) {
 
 	assert.Equal(t, 0, vErrs.Count(), "a legal transition must raise nothing")
 }
+
+// Cancelling twice is refused rather than answered as a success: cancelled is terminal, and the
+// idempotent same-state rule is for recomputes, not for a client's request.
+func TestAssertTransferCancellableRefusesASecondCancel(t *testing.T) {
+	vErrs := ft.NewClientErrors()
+	AssertTransferCancellable(models.StockTransferStatusCancelled, vErrs)
+	require.Equal(t, 1, vErrs.Count())
+	assert.Equal(t, "inventory:stock_transfer.already_cancelled", (*vErrs)[0].Key)
+
+	vErrs = ft.NewClientErrors()
+	AssertTransferCancellable(models.StockTransferStatusDraft, vErrs)
+	assert.Zero(t, vErrs.Count(), "an open transfer can still be cancelled")
+}

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
@@ -58,8 +59,12 @@ func TestApplyNeedsThePendingFlagNotTheValue(t *testing.T) {
 func TestCountEntryFieldsSnapshotTheBalanceAndSetTheFlag(t *testing.T) {
 	fields := CountEntryFields(dec(t, "97"), dec(t, "100"), "missing", "two boxes short")
 
-	assert.Equal(t, "97", fields[models.StockQuantFieldCountedQuantity])
-	assert.Equal(t, "100", fields[models.StockQuantFieldCountSnapshotQty])
+	// Decimals, not their text: the repository write refuses a string for a numeric column, and the
+	// refusal arrives as client errors on a nil error.
+	assert.Equal(t, dec(t, "97"), fields[models.StockQuantFieldCountedQuantity])
+	assert.Equal(t, dec(t, "100"), fields[models.StockQuantFieldCountSnapshotQty])
+	assert.IsType(t, decimal.Decimal{}, fields[models.StockQuantFieldCountedQuantity])
+	assert.IsType(t, decimal.Decimal{}, fields[models.StockQuantFieldCountSnapshotQty])
 	assert.Equal(t, true, fields[models.StockQuantFieldCountQuantitySet])
 	assert.Equal(t, "missing", fields[models.StockQuantFieldCountReasonCode])
 }

@@ -8,6 +8,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
@@ -89,6 +90,7 @@ func findCandidatePutawayRules(
 	conditions := []dmodel.SearchNode{
 		*dmodel.NewSearchNode().NewCondition(
 			models.PutawayRuleFieldSourceLocationId, dmodel.Equals, putawayCtx.ArrivalLocationId),
+		*dmodel.NewSearchNode().NewCondition(basemodel.FieldIsArchived, dmodel.Equals, false),
 	}
 	if putawayCtx.WarehouseId != "" {
 		conditions = append(conditions, *dmodel.NewSearchNode().NewCondition(

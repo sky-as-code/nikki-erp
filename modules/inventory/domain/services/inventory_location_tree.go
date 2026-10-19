@@ -9,6 +9,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
@@ -243,6 +244,7 @@ func (this *InventoryLocationDomainServiceImpl) countUnarchivedChildren(
 	graph.And(
 		*dmodel.NewSearchNode().NewCondition(
 			models.InventoryLocationFieldParentLocationId, dmodel.Equals, parentId),
+		*dmodel.NewSearchNode().NewCondition(basemodel.FieldIsArchived, dmodel.Equals, false),
 	)
 
 	total, err := countMatching(ctx, engine, graph)

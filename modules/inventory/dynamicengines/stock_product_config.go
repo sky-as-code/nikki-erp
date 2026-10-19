@@ -11,6 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/inventory/infra/repository"
+	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/external"
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
@@ -24,14 +25,14 @@ type stockProductConfigEngineParam struct {
 func registerStockProductConfigEngine() error {
 	err := deps.RegisterNamed(
 		composable.EngineDependencyName(models.StockProductConfigSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
+		func(param composable.BuildParam, uoms itExt.UomLookupExtService) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.StockProductConfigSchemaName,
 				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
 					return repo.NewStockProductConfigRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewStockProductConfigDomainService(base)
+					return services.NewStockProductConfigDomainService(base, uoms)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					return app.NewStockProductConfigApplicationService(base)

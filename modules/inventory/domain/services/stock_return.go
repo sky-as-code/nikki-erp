@@ -309,8 +309,12 @@ func insertReturnTransfer(
 		fields[models.StockTransferFieldOperationTypeId] = derefString(original.GetOperationTypeId())
 	}
 
-	if _, err := operation.TransferRepo.Insert(ctx, fields); err != nil {
+	inserted, err := operation.TransferRepo.Insert(ctx, fields)
+	if err != nil {
 		return "", errors.Wrap(err, "insertReturnTransfer")
+	}
+	if err := refusedWriteError(inserted, "insertReturnTransfer"); err != nil {
+		return "", err
 	}
 	return findTransferByNumber(ctx, operation, derefString(original.GetOrgId()), transferNumber)
 }
@@ -329,13 +333,11 @@ func insertReturnMoves(
 		if !ok {
 			continue
 		}
-		quantity := line.Quantity.String()
-
-		_, err := operation.MoveRepo.Insert(ctx, dmodel.DynamicFields{
+		inserted, err := operation.MoveRepo.Insert(ctx, dmodel.DynamicFields{
 			models.StockMoveFieldTransferId:         returnId,
 			models.StockMoveFieldProductVariantId:   derefString(source.GetProductVariantId()),
-			models.StockMoveFieldDemandQuantity:     quantity,
-			models.StockMoveFieldBaseDemandQuantity: quantity,
+			models.StockMoveFieldDemandQuantity:     line.Quantity,
+			models.StockMoveFieldBaseDemandQuantity: line.Quantity,
 			// Reversed, matching the transfer header.
 			models.StockMoveFieldSourceLocationId:      derefString(source.GetDestinationLocationId()),
 			models.StockMoveFieldDestinationLocationId: derefString(source.GetSourceLocationId()),
@@ -347,6 +349,9 @@ func insertReturnMoves(
 		})
 		if err != nil {
 			return errors.Wrap(err, "insertReturnMoves")
+		}
+		if err := refusedWriteError(inserted, "insertReturnMoves"); err != nil {
+			return err
 		}
 	}
 	return nil

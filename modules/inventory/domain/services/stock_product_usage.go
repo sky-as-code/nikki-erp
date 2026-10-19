@@ -73,11 +73,17 @@ func (this *StockQuantDomainServiceImpl) GetProductUsageBatch(
 	}, nil
 }
 
-// accumulateUsageQuantities totals on-hand and reserved across every location holding the variants.
+// accumulateUsageQuantities totals on-hand and reserved across the locations holding stock we own.
+// A vendor or other virtual location goes negative by what it supplied, so counting it would net a
+// receipt to zero and let a product with stock on the shelf be archived.
 func (this *StockQuantDomainServiceImpl) accumulateUsageQuantities(
 	ctx corectx.Context, variantIds []string, usages map[string]itStock.ProductUsage,
 ) error {
 	engine, err := repoFor(models.StockQuantSchemaName)
+	if err != nil {
+		return err
+	}
+	owned, err := this.ownedLocationIds(ctx)
 	if err != nil {
 		return err
 	}
@@ -105,7 +111,7 @@ func (this *StockQuantDomainServiceImpl) accumulateUsageQuantities(
 			quant := models.NewStockQuantFrom(row)
 			variantId := derefId(quant.GetProductVariantId())
 			usage, tracked := usages[variantId]
-			if !tracked {
+			if !tracked || !owned[derefId(quant.GetLocationId())] {
 				continue
 			}
 			usage.OnHandQuantity = usage.OnHandQuantity.Add(derefDecimal(quant.GetOnHandQuantity()))
@@ -119,6 +125,23 @@ func (this *StockQuantDomainServiceImpl) accumulateUsageQuantities(
 		}
 	}
 	return nil
+}
+
+// ownedLocationIds are the internal and transit locations: stock on our shelves or on its way
+// between them.
+func (this *StockQuantDomainServiceImpl) ownedLocationIds(ctx corectx.Context) (map[string]bool, error) {
+	owned, err := this.internalLocationIds(ctx)
+	if err != nil {
+		return nil, err
+	}
+	transit, err := this.transitLocationIds(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for id := range transit {
+		owned[id] = true
+	}
+	return owned, nil
 }
 
 // accumulateOpenWork counts the moves and transfers still in flight for each variant. Done and
