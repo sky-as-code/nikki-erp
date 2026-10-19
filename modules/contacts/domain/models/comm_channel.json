@@ -4,7 +4,7 @@
 	"table_name": "contacts_comm_channels",
 	"should_build_db": true,
 	"record_label_field": "value",
-	"default_search_fields": ["type", "value", "is_archived"],
+	"default_search_fields": ["party_id", "type", "value", "is_archived"],
 	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
 
 	"fields": [

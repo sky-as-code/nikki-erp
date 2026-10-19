@@ -122,3 +122,16 @@ func TestVendorProfileDefaultsAreOptional(t *testing.T) {
 	assert.Equal(t, "", util.ValueOrZeroOf(profile.GetPaymentTerms()))
 	assert.True(t, profile.IsOrderable(), "missing defaults must not make a vendor unorderable")
 }
+
+// Both resources belong to a party, and a listing without the party cannot say whose row it is:
+// party_id must come back without a fields= projection.
+func TestPartyOwnedSchemasListThePartyByDefault(t *testing.T) {
+	requireBaseSchemasRegistered(t)
+	for _, builder := range []*dmodel.ModelSchemaBuilder{
+		CommChannelSchemaBuilder(), VendorProfileSchemaBuilder(),
+	} {
+		schema := builder.Build()
+		assert.Containsf(t, schema.DefaultSearchFields(), VendorProfileFieldPartyId,
+			"schema %q must list party_id by default", schema.Name())
+	}
+}

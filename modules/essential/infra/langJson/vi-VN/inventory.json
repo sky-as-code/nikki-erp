@@ -508,6 +508,7 @@
 	"stock_transfer.already_closed": "Phiếu này đã được hoàn tất hoặc đã hủy.",
 	"stock_transfer.backorder_decision_required": "Còn số lượng chưa xử lý. Hãy chọn có tạo phiếu giao thiếu hay không.",
 	"stock_transfer.destination_location_required": "Phân bổ lại phải chỉ định vị trí mới để giữ hàng",
+	"stock_transfer.already_cancelled": "Phiếu đã bị hủy trước đó.",
 	"stock_transfer.done_not_cancellable": "Không thể hủy phiếu đã hoàn tất. Hãy lập phiếu chuyển ngược để đảo các phát sinh của nó.",
 	"stock_transfer.event_id_required": "Kết quả xử lý đơn phải kèm mã sự kiện báo cáo nó",
 	"stock_transfer.invalid_transition": "Phiếu này không thể chuyển sang trạng thái đó.",

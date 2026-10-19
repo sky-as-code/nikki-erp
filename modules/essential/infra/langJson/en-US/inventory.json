@@ -508,6 +508,7 @@
 	"stock_transfer.already_closed": "This transfer has already been completed or cancelled.",
 	"stock_transfer.backorder_decision_required": "Some quantity was not processed. Choose whether it should become a backorder.",
 	"stock_transfer.destination_location_required": "A reallocation must name the location the stock should be held at instead",
+	"stock_transfer.already_cancelled": "The transfer is already cancelled.",
 	"stock_transfer.done_not_cancellable": "A completed transfer cannot be cancelled. Record a reverse transfer to undo its movements.",
 	"stock_transfer.event_id_required": "A fulfillment result must carry the id of the event reporting it",
 	"stock_transfer.invalid_transition": "This transfer cannot move to that state.",
