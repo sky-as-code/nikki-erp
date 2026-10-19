@@ -234,6 +234,7 @@ Permission Should Be Granted
     ...    a real grant path. A match with no source id or no expression would mean the
     ...    provenance columns are not being populated.
     [Arguments]    ${alias}    ${expression}    ${expected_kind}=${EMPTY}    ${expected_source_id}=${EMPTY}
+    ...    ${expected_role_id}=${EMPTY}
     ${body}=    Probe Permission    ${alias}    ${expression}
     Should Be True    ${body}[is_granted]    msg=Expected ${expression} to be granted
     Should Not Be Empty    ${body}[matches]    msg=Granted but no grant path was reported
@@ -248,6 +249,12 @@ Permission Should Be Granted
     IF    $expected_source_id
         ${ids}=    Evaluate    [m['source_id'] for m in $body['matches']]
         Should Contain    ${ids}    ${expected_source_id}
+    END
+    IF    $expected_role_id
+        # source_id is the assignment id; the role shows through source_name.
+        ${resp}=    GET On Session    api    ${ROLE_API}/${expected_role_id}
+        ${names}=    Evaluate    [m['source_name'] for m in $body['matches']]
+        Should Contain    ${names}    ${resp.json()}[item][name]
     END
     RETURN    ${body}
 
@@ -389,8 +396,8 @@ Ensure Locale Ordering Groups
     # en-US ascending: Alpha, Bravo, Charlie
     # vi-VN ascending: Xuan(Charlie), Yen(Bravo), Zulu(Alpha)  -> exactly reversed
     @{specs}=    Create List
-    ...    ${{ {'key': 'alpha',   'en': 'Alpha ' + $suffix,   'vi': 'Zulu ' + $suffix} }}
-    ...    ${{ {'key': 'bravo',   'en': 'Bravo ' + $suffix,   'vi': 'Yen ' + $suffix} }}
+    ...    ${{ {'key': 'alpha', 'en': 'Alpha ' + $suffix, 'vi': 'Zulu ' + $suffix} }}
+    ...    ${{ {'key': 'bravo', 'en': 'Bravo ' + $suffix, 'vi': 'Yen ' + $suffix} }}
     ...    ${{ {'key': 'charlie', 'en': 'Charlie ' + $suffix, 'vi': 'Xuan ' + $suffix} }}
 
     &{ids}=    Create Dictionary
@@ -427,7 +434,8 @@ Locale Group Names In Result
     ...    other suites, and they must not decide whether an ordering assertion passes.
     [Arguments]    ${resp}    ${language}
     ${names}=    Evaluate
-    ...    [i['name'].get($language) for i in $resp.json()['items'] if isinstance(i.get('name'), dict) and $LOCALE_GROUP_SUFFIX in str(i['name'])]
+    ...    [i['name'][language] for i in body['items'] if isinstance(i.get('name'), dict) and suffix in str(i['name']) and language in i['name']]
+    ...    namespace=${{ {'body': $resp.json(), 'language': $language, 'suffix': $LOCALE_GROUP_SUFFIX} }}
     RETURN    ${names}
 
 Avatar File Part
@@ -442,6 +450,8 @@ Response Should Be File Field Error
     [Documentation]    One error from the files/:field routes, matched on field and key.
     [Arguments]    ${resp}    ${field}    ${key}
     Should Be Equal As Integers    ${resp.status_code}    400
-    ${errors}=    Evaluate    [e for e in $resp.json() if e.get('field') == $field and $key in e.get('key', '')]
+    # Robot's $var is not visible inside a comprehension's scope, so the values go in as names.
+    ${errors}=    Evaluate    [e for e in body if e.get('field') == field and key in e.get('key', '')]
+    ...    namespace=${{ {'body': $resp.json(), 'field': $field, 'key': $key} }}
     Should Not Be Empty    ${errors}
     ...    msg=Expected a '${key}' error on '${field}', got ${resp.text}

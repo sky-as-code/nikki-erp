@@ -37,7 +37,7 @@ Validated Receipt Is Done And Stamped
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${RECEIPT_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${item}=    Set Variable    ${resp.json()}[data]
+    ${item}=    Set Variable    ${resp.json()}[item]
     Should Be Equal    ${item}[status]    done
     Should Not Be Equal    ${item.get('completed_at')}    ${None}
     ...    msg=completed_at must be stamped by validate
@@ -46,7 +46,7 @@ Validated Receipt Closes Its Moves
     ${resp}=    GET On Session    api    ${STOCK_MOVE_API}/${RECEIPT_MOVE_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Be Equal    ${resp.json()}[data][status]    done
+    Should Be Equal    ${resp.json()}[item][status]    done
 
 Validating A Done Transfer Fails
     [Documentation]    Validate is not repeatable without an idempotency key: a second run would

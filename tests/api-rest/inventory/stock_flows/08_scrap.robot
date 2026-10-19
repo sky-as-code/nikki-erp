@@ -41,7 +41,7 @@ A New Scrap Is Draft And Numbered By The Server
     ${resp}=    GET On Session    api    ${STOCK_SCRAP_API}/${SCRAP_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${item}=    Set Variable    ${resp.json()}[data]
+    ${item}=    Set Variable    ${resp.json()}[item]
     Should Be Equal    ${item}[status]    draft
     Should Not Be Empty    ${item}[scrap_number]
     ...    msg=The server must generate a scrap number
@@ -63,7 +63,7 @@ A Done Scrap Records Its Movement
     ${resp}=    GET On Session    api    ${STOCK_SCRAP_API}/${SCRAP_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${item}=    Set Variable    ${resp.json()}[data]
+    ${item}=    Set Variable    ${resp.json()}[item]
     Should Be Equal    ${item}[status]    done
     Should Not Be Equal    ${item.get('move_id')}    ${None}
     ...    msg=A done scrap must record the move it generated
@@ -76,8 +76,8 @@ A Done Scrap Cannot Be Edited
     [Tags]    negative
     ${resp}=    GET On Session    api    ${STOCK_SCRAP_API}/${SCRAP_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${etag}=    Set Variable    ${resp.json()}[data][etag]
-    ${resp}=    PUT On Session    api    ${STOCK_SCRAP_API}/${SCRAP_ID}
+    ${etag}=    Set Variable    ${resp.json()}[item][etag]
+    ${resp}=    PATCH On Session    api    ${STOCK_SCRAP_API}/${SCRAP_ID}
     ...    json=${{ {'org_id': $INV_ORG_ID, 'reason_code': 'data_error', 'etag': $etag} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=A completed scrap must not be editable

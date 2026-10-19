@@ -243,7 +243,7 @@ Attach Attribute To Template
     ...    junction id — the id the allowed-value rows point at, not the attribute's.
     [Arguments]    ${template_id}    ${attribute_id}
     ${resp}=    POST On Session    api    ${TEMPLATE_ATTRIBUTE_API}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_template_id': $template_id, 'attribute_id': $attribute_id} }}
+    ...    json=${{ {'product_template_id': $template_id, 'attribute_id': $attribute_id} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 
@@ -251,7 +251,7 @@ Allow Attribute Value On Template
     [Documentation]    Adds one attribute value to a template attribute's allowed subset.
     [Arguments]    ${template_attribute_id}    ${attribute_value_id}
     ${resp}=    POST On Session    api    ${TEMPLATE_ATTRIBUTE_VALUE_API}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'template_attribute_id': $template_attribute_id, 'attribute_value_id': $attribute_value_id} }}
+    ...    json=${{ {'template_attribute_id': $template_attribute_id, 'attribute_value_id': $attribute_value_id} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 
@@ -391,7 +391,7 @@ Archive Inventory Fixture
         ${resp}=    GET On Session    api    ${api}/${id}
         ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
         IF    ${resp.status_code} == 200
-            ${etag}=    Set Variable    ${resp.json()}[etag]
+            ${etag}=    Set Variable    ${resp.json()}[item][etag]
             POST On Session    api    ${api}/${id}/archived
             ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $etag} }}    expected_status=any
         END
@@ -683,7 +683,7 @@ Read Stock Quant Id
     ...    missing balance means the receipt did not land and the test should say so.
     [Arguments]    ${variant_id}    ${location_id}
     ${resp}=    GET On Session    api    ${STOCK_QUANT_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,product_variant_id,location_id', 'graph': __import__('json').dumps({'and': [{'if': ['product_variant_id', '=', $variant_id]}, {'if': ['location_id', '=', $location_id]}]})} }}
     Response Status Should Be    ${resp}    200
     FOR    ${item}    IN    @{resp.json()}[items]
         IF    $item.get('product_variant_id') == $variant_id and $item.get('location_id') == $location_id
@@ -698,7 +698,9 @@ Read Stock Quant Field
     ${resp}=    GET On Session    api    ${STOCK_QUANT_API}/${quant_id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    RETURN    ${resp.json()}[data].get('${field}')
+    # A null column is omitted from the item, so an absent field reads as None.
+    ${value}=    Evaluate    $resp.json()['item'].get($field)
+    RETURN    ${value}
 
 Receive Stock Into Location
     [Documentation]    Puts a quantity of a variant into a location by running a real receipt:
@@ -733,7 +735,7 @@ Read Stock On Hand
     ...    zero mean the same thing to a caller asking how much is there.
     [Arguments]    ${variant_id}    ${location_id}
     ${resp}=    GET On Session    api    ${STOCK_QUANT_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,product_variant_id,location_id,on_hand_quantity', 'graph': __import__('json').dumps({'and': [{'if': ['product_variant_id', '=', $variant_id]}, {'if': ['location_id', '=', $location_id]}]})} }}
     Response Status Should Be    ${resp}    200
     ${total}=    Set Variable    ${0}
     FOR    ${item}    IN    @{resp.json()}[items]
@@ -748,7 +750,7 @@ Read Stock Reserved
     [Documentation]    Sums reserved_quantity across every balance of a variant in a location.
     [Arguments]    ${variant_id}    ${location_id}
     ${resp}=    GET On Session    api    ${STOCK_QUANT_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,product_variant_id,location_id,reserved_quantity', 'graph': __import__('json').dumps({'and': [{'if': ['product_variant_id', '=', $variant_id]}, {'if': ['location_id', '=', $location_id]}]})} }}
     Response Status Should Be    ${resp}    200
     ${total}=    Set Variable    ${0}
     FOR    ${item}    IN    @{resp.json()}[items]

@@ -69,7 +69,7 @@ Applying A Count Generates An Adjustment Movement
     [Documentation]    The balance changed, so there must be a movement explaining it: an
     ...    adjustment that wrote the quant directly would be a change no report could account for.
     ${resp}=    GET On Session    api    ${STOCK_MOVE_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,is_inventory_adjustment,product_variant_id', 'graph': '{"and": [{"if": ["product_variant_id", "=", "%s"]}, {"if": ["is_inventory_adjustment", "=", true]}]}' % $PRODUCT_VARIANT_ID} }}
     Response Status Should Be    ${resp}    200
     ${found}=    Set Variable    ${False}
     FOR    ${item}    IN    @{resp.json()}[items]
@@ -173,7 +173,7 @@ The Counts Due Worklist Is An Ordinary Filtered Search
     [Documentation]    AC-STOCK-016. The scheduled balance above must be findable by filtering on
     ...    next_count_date — which is the whole cycle-count worklist, with no new entity.
     ${resp}=    GET On Session    api    ${STOCK_QUANT_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,next_count_date', 'graph': '{"if": ["next_count_date", "=", "2026-12-01"]}'} }}
     Response Status Should Be    ${resp}    200
     ${due}=    Set Variable    ${0}
     FOR    ${item}    IN    @{resp.json()}[items]
@@ -189,7 +189,8 @@ Direct Writes To A Balance Are Still Refused
     ...    on_hand_quantity, so adding them must not have reopened the resource to client writes.
     [Tags]    negative
     ${quant_id}=    Read Stock Quant Id    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}
-    ${resp}=    PUT On Session    api    ${STOCK_QUANT_API}/${quant_id}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'on_hand_quantity': '999'} }}    expected_status=any
+    ${etag}=    Read Stock Quant Field    ${quant_id}    etag
+    ${resp}=    PATCH On Session    api    ${STOCK_QUANT_API}/${quant_id}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'on_hand_quantity': '999', 'etag': $etag} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    200
     ...    msg=Client writes to a stock balance must still be refused

@@ -137,9 +137,9 @@ Import Reports An Unconvertible Cell Per Row
     [Tags]    negative
     ${run}=    Unique Suffix
     ${csv}=    Write Csv    import_cell_${run}.csv
-    ...    ID,Mã,Tên,Thứ tự
-    ...    ${run}-1,cell${run},Cell ${run},not-a-number
-    ${mapping}=    Evaluate    {'language_code': 'en-US', 'create_missing_references': False, 'columns': [{'source': 'ID', 'target': 'external_id'}, {'source': 'Mã', 'target': 'code'}, {'source': 'Tên', 'target': 'name'}, {'source': 'Thứ tự', 'target': 'sequence'}]}
+    ...    ID,Mã,Tên,Thứ tự,Danh mục cha
+    ...    ${run}-1,cell${run},Cell ${run},not-a-number,
+    ${mapping}=    Evaluate    {'language_code': 'en-US', 'create_missing_references': False, 'columns': [{'source': 'ID', 'target': 'external_id'}, {'source': 'Mã', 'target': 'code'}, {'source': 'Tên', 'target': 'name'}, {'source': 'Thứ tự', 'target': 'sequence'}, {'source': 'Danh mục cha', 'target': 'parent_category_id'}]}
     ${resp}=    Import File    ${csv}    ${mapping}
     Response Status Should Be    ${resp}    200
     Should Be Equal As Integers    ${resp.json()}[created_count]    0

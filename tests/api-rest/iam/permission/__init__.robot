@@ -5,7 +5,7 @@ Documentation     IAM permission suite. Proves that the entitlement-based permis
 ...               agrees with what enforcement actually does.
 ...
 ...               File order encodes the flow: CONTRACT (endpoint behaviour) ->
-...               ROLE LIFECYCLE -> GROUP LIFECYCLE -> SCOPE MATRIX -> ESCALATION.
+...               ROLE LIFECYCLE -> GROUP LIFECYCLE -> SCOPE MATRIX -> ESCALATION -> ORG CREATOR.
 ...               Every lifecycle assertion pairs the probe with a real API call, so a
 ...               probe that lied about a grant would be caught rather than believed.
 ...

@@ -28,7 +28,7 @@ Create Generates The Transfer Number
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${item}=    Set Variable    ${resp.json()}[data]
+    ${item}=    Set Variable    ${resp.json()}[item]
     Should Not Be Empty    ${item}[transfer_number]
     ...    msg=Create must generate a transfer number
 
@@ -37,7 +37,7 @@ Create Starts In Draft
     ...    a movement with nothing behind it.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${item}=    Set Variable    ${resp.json()}[data]
+    ${item}=    Set Variable    ${resp.json()}[item]
     Should Be Equal    ${item}[status]    draft
 
 Create Snapshots The Operation Type Policies
@@ -46,7 +46,7 @@ Create Snapshots The Operation Type Policies
     ...    afterwards must not reinterpret a transfer already created.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${item}=    Set Variable    ${resp.json()}[data]
+    ${item}=    Set Variable    ${resp.json()}[item]
     Should Be Equal    ${item}[operation_code]    internal
     Should Be Equal    ${item}[reservation_method]    manual
     Should Be Equal    ${item}[backorder_policy]    always
@@ -60,9 +60,10 @@ Create Overrides A Client Supplied Status
     ...    json=${{ {'operation_type_id': $INTERNAL_OPERATION_TYPE_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'status': 'done', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     IF    ${resp.status_code} == 201
-        ${id}=    Set Variable    ${resp.json()}[data][id]
-        ${check}=    Get On Session    api    ${STOCK_TRANSFER_API}/${id}
-        Should Be Equal    ${check.json()}[data][status]    draft
+        ${id}=    Set Variable    ${resp.json()}[id]
+        ${check}=    GET On Session    api    ${STOCK_TRANSFER_API}/${id}
+        ...    params=${{ {'org_id': $INV_ORG_ID} }}
+        Should Be Equal    ${check.json()}[item][status]    draft
         ...    msg=A client-supplied status must not survive create
         DELETE On Session    api    ${STOCK_TRANSFER_API}/${id}
         ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any

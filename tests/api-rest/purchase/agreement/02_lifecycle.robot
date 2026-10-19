@@ -14,8 +14,8 @@ Create Agreement Starts As A Draft
     ${resp}=    GET On Session    api    ${AGREEMENT_API}/${AGREEMENT_ID}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Be Equal    ${resp.json()}[status]    draft
-    Should Start With    ${resp.json()}[code]    PA-
+    Should Be Equal    ${resp.json()}[item][status]    draft
+    Should Start With    ${resp.json()}[item][code]    PA-
 
 Confirm Makes The Agreement Live
     [Documentation]    AC-16, §38. Only a confirmed agreement can have orders drawn against it.
@@ -26,7 +26,7 @@ Confirm Makes The Agreement Live
     Response Status Should Be    ${resp}    200
     ${agreement}=    GET On Session    api    ${AGREEMENT_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${agreement.json()}[status]    confirmed
+    Should Be Equal    ${agreement.json()}[item][status]    confirmed
     Audit Trail Should Record    ${id}    confirm
     [Teardown]    Delete Agreement Fixture    ${id}
 
@@ -52,9 +52,9 @@ Create Rfq Raises An Order From The Agreement
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${order_id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${order}    200
-    Should Be Equal    ${order.json()}[status]        rfq
-    Should Be Equal    ${order.json()}[agreement_id]  ${agreement_id}
-    Should Be Equal As Numbers    ${order.json()}[total_amount]    2000.00
+    Should Be Equal    ${order.json()}[item][status]        rfq
+    Should Be Equal    ${order.json()}[item][agreement_id]  ${agreement_id}
+    Should Be Equal As Numbers    ${order.json()}[item][total_amount]    2000.00
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${order_id}
     ...    AND    Delete Agreement Fixture    ${agreement_id}
@@ -93,7 +93,7 @@ Close Succeeds Once The Open Orders Are Settled
     Response Status Should Be    ${resp}    200
     ${agreement}=    GET On Session    api    ${AGREEMENT_API}/${agreement_id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${agreement.json()}[status]    closed
+    Should Be Equal    ${agreement.json()}[item][status]    closed
     Audit Trail Should Record    ${agreement_id}    close
     [Teardown]    Delete Agreement Fixture    ${agreement_id}
 
@@ -104,7 +104,7 @@ Cancel Calls The Agreement Off
     Response Status Should Be    ${resp}    200
     ${agreement}=    GET On Session    api    ${AGREEMENT_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${agreement.json()}[status]    cancelled
+    Should Be Equal    ${agreement.json()}[item][status]    cancelled
     ${event}=    Audit Trail Should Record    ${id}    cancel
     Should Be Equal    ${event}[reason]    terms not agreed
     [Teardown]    Delete Agreement Fixture    ${id}
@@ -114,12 +114,12 @@ Archive And Restore Use The Built In Set Archived
     ...    power applied in reverse, so splitting them would let a role archive agreements it
     ...    could not bring back. This is a deliberate correction to the plan's §4 table.
     ${id}    ${etag}=    Create Purchase Agreement
-    ${resp}=    PUT On Session    api    ${AGREEMENT_API}/${id}/archived    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $etag, 'is_archived': ${True}} }}
+    ${resp}=    POST On Session    api    ${AGREEMENT_API}/${id}/archived    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $etag, 'is_archived': ${True}} }}
     Response Status Should Be    ${resp}    200
     ${archived}=    GET On Session    api    ${AGREEMENT_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be True    ${archived.json()}[is_archived]
-    ${restore}=    PUT On Session    api    ${AGREEMENT_API}/${id}/archived    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $archived.json()['etag'], 'is_archived': ${False}} }}
+    Should Be True    ${archived.json()}[item][is_archived]
+    ${restore}=    POST On Session    api    ${AGREEMENT_API}/${id}/archived    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $archived.json()['item']['etag'], 'is_archived': ${False}} }}
     Response Status Should Be    ${restore}    200
     [Teardown]    Delete Agreement Fixture    ${id}
 

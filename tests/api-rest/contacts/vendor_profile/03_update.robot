@@ -70,7 +70,7 @@ Update Party Id Is Refused Or Ignored
 Update With Stale Etag Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${VENDOR_PROFILE_API}/${VENDOR_PROFILE_ID}
-    ...    json=${{ {'org_id': $CONTACTS_ORG_ID, 'etag': '1', 'payment_terms': 'Net 60'} }}    expected_status=any
+    ...    json=${{ {'org_id': $CONTACTS_ORG_ID, 'etag': '1000000000000000000', 'payment_terms': 'Net 60'} }}    expected_status=any
     Response Should Be Etag Unmatched Error    ${resp}
 
 Update With Not Found Id Fails

@@ -36,7 +36,7 @@ Status Enum Is Exactly The Four Qualification States
     ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${status}=    Set Variable    ${resp.json()}[fields][status]
-    ${values}=    Set Variable    ${status}[data_type][values]
+    ${values}=    Set Variable    ${status}[data_type][options][enumValues]
     Lists Should Be Equal    ${values}    ${{ ['proposed', 'active', 'suspended', 'blacklisted'] }}
     ...    ignore_order=${True}
 

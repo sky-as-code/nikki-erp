@@ -33,7 +33,7 @@ Partial Processing Leaves The Original Demand Intact
 
     ${check}=    GET On Session    api    ${STOCK_MOVE_API}/${move_id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${actual}=    Convert To Number    ${check.json()}[data][demand_quantity]
+    ${actual}=    Convert To Number    ${check.json()}[item][demand_quantity]
     Should Be Equal As Numbers    ${actual}    ${demand}
     ...    msg=A partial validate must not rewrite the original demand
 
@@ -46,10 +46,11 @@ Partial Processing Creates A Backorder
     [Documentation]    The fixture type's policy is 'always', so the undelivered remainder becomes
     ...    a new transfer rather than being silently dropped.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,backorder_of_id', 'graph': '{"if": ["backorder_of_id", "=", "%s"]}' % $PARTIAL_TRANSFER_ID} }}
     Response Status Should Be    ${resp}    200
     ${backorders}=    Evaluate
-    ...    [i for i in $resp.json()['data']['items'] if i.get('backorder_of_id') == $PARTIAL_TRANSFER_ID]
+    ...    [i for i in items if i.get('backorder_of_id') == tid]
+    ...    namespace=${{ {'items': $resp.json()['items'], 'tid': $PARTIAL_TRANSFER_ID} }}
     Should Not Be Empty    ${backorders}
     ...    msg=An 'always' backorder policy must raise a new transfer for the remainder
     Set Suite Variable    ${BACKORDER_TRANSFER_ID}    ${backorders}[0][id]
@@ -60,28 +61,29 @@ Backorder Points Back At Its Original
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${BACKORDER_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Be Equal    ${resp.json()}[data][backorder_of_id]    ${PARTIAL_TRANSFER_ID}
+    Should Be Equal    ${resp.json()}[item][backorder_of_id]    ${PARTIAL_TRANSFER_ID}
 
 Backorder Starts As A Fresh Draft
     [Documentation]    It is a new document with its own number and its own lifecycle, not a
     ...    reopening of the original — which stays Done.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${BACKORDER_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${item}=    Set Variable    ${resp.json()}[data]
+    ${item}=    Set Variable    ${resp.json()}[item]
     Should Be Equal    ${item}[status]    draft
     Should Not Be Empty    ${item}[transfer_number]
 
     ${original}=    GET On Session    api    ${STOCK_TRANSFER_API}/${PARTIAL_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    Should Be Equal    ${original.json()}[data][status]    done
+    Should Be Equal    ${original.json()}[item][status]    done
     ...    msg=The original transfer stays done: what it delivered, it delivered
 
 Backorder Carries Only The Undelivered Quantity
     ${resp}=    GET On Session    api    ${STOCK_MOVE_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,transfer_id,demand_quantity', 'graph': '{"if": ["transfer_id", "=", "%s"]}' % $BACKORDER_TRANSFER_ID} }}
     Response Status Should Be    ${resp}    200
     ${moves}=    Evaluate
-    ...    [i for i in $resp.json()['data']['items'] if i.get('transfer_id') == $BACKORDER_TRANSFER_ID]
+    ...    [i for i in items if i.get('transfer_id') == tid]
+    ...    namespace=${{ {'items': $resp.json()['items'], 'tid': $BACKORDER_TRANSFER_ID} }}
     Should Not Be Empty    ${moves}    msg=The backorder must carry a move for the remainder
     ${carried}=    Convert To Number    ${moves}[0][demand_quantity]
     ${expected}=    Evaluate    ${PARTIAL_DEMAND} - ${PARTIAL_PROCESSED}

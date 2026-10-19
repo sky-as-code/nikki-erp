@@ -54,6 +54,7 @@ Unarchive Leaves The Warehouse Suspended
     [Documentation]    TS-STATUS-03 and INV-STATUS-011. Unarchiving never puts a warehouse
     ...    straight back to work: what it sat in may have changed while it was away, so
     ...    someone confirms the configuration through Resume.
+    Detach Secondary Warehouse
     ${item}=    Get Warehouse Under Test
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/archived
     ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $item['etag']} }}
@@ -87,6 +88,21 @@ There Is No Activate Or Deactivate Action
 
 
 *** Keywords ***
+Detach Secondary Warehouse
+    [Documentation]    02_create.robot re-parents the secondary warehouse under the one under
+    ...    test. A warehouse with a live child cannot be archived, so the child is detached
+    ...    first: this suite is about the parent's own lifecycle, not the hierarchy.
+    ${id}=    Get Variable Value    ${SECONDARY_WAREHOUSE_ID}    ${EMPTY}
+    IF    not $id    RETURN
+    ${resp}=    GET On Session    api    ${WAREHOUSE_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/warehouse.json    200
+    IF    not $item.get('parent_warehouse_id')    RETURN
+    ${resp}=    PATCH On Session    api    ${WAREHOUSE_API}/${id}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'parent_warehouse_id': None, 'etag': $item['etag']} }}
+    ${etag}=    Response Should Be Update Success    ${resp}
+    IF    $etag is not None    Set Global Variable    ${SECONDARY_WAREHOUSE_ETAG}    ${etag}
+
 Get Warehouse Under Test
     ${resp}=    GET On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}

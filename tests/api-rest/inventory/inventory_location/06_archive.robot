@@ -1,8 +1,12 @@
 *** Settings ***
 Documentation     Archiving the Inventory Location under test, rotating the saved etag. The
 ...               location is unarchived again so the later suites see it live.
+...               The child created by 02_create.robot is archived first, because a location
+...               with a live child refuses to be archived. It is archived rather than deleted
+...               so 08_delete.robot still has a child that references the location.
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session    AND    Ensure Inventory Location Under Test
+...               AND    Archive Child Location
 Test Tags         inventory    inventory_location    archive
 
 
@@ -44,3 +48,15 @@ Archive With Missing Required Fields Fails
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${INVENTORY_LOCATION_ID}/archived
     ...    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Response Should Be Missing Fields Error    ${resp}    etag    is_archived
+
+
+*** Keywords ***
+Archive Child Location
+    ${child}=    Get Variable Value    ${CHILD_INVENTORY_LOCATION_ID}    ${EMPTY}
+    IF    not $child    RETURN
+    ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${child}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ${etag}=    Set Variable    ${resp.json()}[item][etag]
+    ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${child}/archived
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $etag} }}
+    Response Status Should Be    ${resp}    200

@@ -15,49 +15,50 @@ Test Tags         purchase    purchase_order    update
 *** Test Cases ***
 Update The Editable Fields
     Ensure Purchase Order Under Test
-    ${resp}=    PUT On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $PURCHASE_ORDER_ETAG, 'vendor_reference': 'VQ-2026-0042', 'priority': 'urgent'} }}
+    ${resp}=    PATCH On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $PURCHASE_ORDER_ETAG, 'vendor_reference': 'VQ-2026-0042', 'priority': 'urgent'} }}
     ${etag}=    Response Should Be Update Success    ${resp}
     Set Global Variable    ${PURCHASE_ORDER_ETAG}    ${etag}
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${order.json()}[vendor_reference]    VQ-2026-0042
-    Should Be Equal    ${order.json()}[priority]            urgent
+    Should Be Equal    ${order.json()}[item][vendor_reference]    VQ-2026-0042
+    Should Be Equal    ${order.json()}[item][priority]            urgent
 
 Update Refuses A Stale Etag
     [Documentation]    Optimistic concurrency: two buyers editing the same order must not both
     ...    win, and the one holding the older copy is the one that loses.
     Ensure Purchase Order Under Test
-    ${resp}=    PUT On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': '1', 'vendor_reference': 'stale write'} }}    expected_status=any
+    ${resp}=    PATCH On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': '1000000000000000000', 'vendor_reference': 'stale write'} }}    expected_status=any
     Response Should Be Etag Unmatched Error    ${resp}
 
 Update Cannot Change The Status
     [Documentation]    Confirming is not an edit. An update that could set the status would let
     ...    a role with `update` commit the business to a purchase without ever holding the
-    ...    `confirm` permission.
+    ...    `confirm` permission. status is no_update, which the engine drops from an update
+    ...    rather than refusing, so the stored value is what this asserts.
     Ensure Purchase Order Under Test
-    ${resp}=    PUT On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $PURCHASE_ORDER_ETAG, 'status': 'purchase_order'} }}    expected_status=any
-    Response Should Be Client Error    ${resp}
+    ${resp}=    PATCH On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $PURCHASE_ORDER_ETAG, 'status': 'purchase_order'} }}    expected_status=any
+    Should Be True    ${resp.status_code} < 500
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${order.json()}[status]    rfq
+    Should Be Equal    ${order.json()}[item][status]    rfq
 
 Update Cannot Change The Totals
     [Documentation]    §10.2 and §55.12: the totals come from the lines and a client value is
     ...    ignored, not trusted. An order whose header a client could write would be an order
     ...    whose total nobody can verify against anything.
     Ensure Purchase Order Under Test
-    ${resp}=    PUT On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $PURCHASE_ORDER_ETAG, 'total_amount': '999999.00'} }}    expected_status=any
+    ${resp}=    PATCH On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $PURCHASE_ORDER_ETAG, 'total_amount': '999999.00'} }}    expected_status=any
     Response Should Be Client Error    ${resp}
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Not Be Equal As Numbers    ${order.json()}[total_amount]    999999.00
+    Should Not Be Equal As Numbers    ${order.json()}[item][total_amount]    999999.00
 
 Update Cannot Change The Approval Evidence
     [Documentation]    approved_by and approved_at are the record that spending control was
     ...    applied. A client that could write them could name somebody else as the approver of
     ...    its own order, which is exactly the control the field exists to provide.
     Ensure Purchase Order Under Test
-    ${resp}=    PUT On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $PURCHASE_ORDER_ETAG, 'approved_by': $PURCHASE_BUYER_ID} }}    expected_status=any
+    ${resp}=    PATCH On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $PURCHASE_ORDER_ETAG, 'approved_by': $PURCHASE_BUYER_ID} }}    expected_status=any
     Response Should Be Client Error    ${resp}
 
 Update Cannot Set The Lock Flag Directly
@@ -65,5 +66,5 @@ Update Cannot Set The Lock Flag Directly
     ...    audit trail. A direct write to is_locked would bypass that, leaving the order reopened
     ...    with nothing recording why.
     Ensure Purchase Order Under Test
-    ${resp}=    PUT On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $PURCHASE_ORDER_ETAG, 'is_locked': ${True}} }}    expected_status=any
+    ${resp}=    PATCH On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}    json=${{ {'org_id': $PURCHASE_ORG_ID, 'etag': $PURCHASE_ORDER_ETAG, 'is_locked': ${True}} }}    expected_status=any
     Response Should Be Client Error    ${resp}

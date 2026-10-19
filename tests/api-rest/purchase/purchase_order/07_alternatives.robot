@@ -27,8 +27,8 @@ Create Alternative Puts Two Orders In One Sourcing Group
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     ${alternative}=    GET On Session    api    ${PURCHASE_ORDER_API}/${alt_id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Not Be Empty    ${original.json()}[sourcing_group_id]
-    Should Be Equal    ${original.json()}[sourcing_group_id]    ${alternative.json()}[sourcing_group_id]
+    Should Not Be Empty    ${original.json()}[item][sourcing_group_id]
+    Should Be Equal    ${original.json()}[item][sourcing_group_id]    ${alternative.json()}[item][sourcing_group_id]
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${alt_id}
     ...    AND    Delete Purchase Order Fixture    ${order_id}
@@ -45,8 +45,8 @@ An Alternative Asks A Different Vendor
     ${alt_id}=    Set Variable    ${resp.json()}[id]
     ${alternative}=    GET On Session    api    ${PURCHASE_ORDER_API}/${alt_id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${alternative.json()}[vendor_id]    ${second_party}
-    Should Be Equal    ${alternative.json()}[status]       rfq
+    Should Be Equal    ${alternative.json()}[item][vendor_id]    ${second_party}
+    Should Be Equal    ${alternative.json()}[item][status]       rfq
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${alt_id}
     ...    AND    Delete Purchase Order Fixture    ${order_id}
@@ -89,7 +89,7 @@ Confirming With Open Alternatives Is Refused Until The Caller Decides
     Response Should Be Purchase Violation    ${resp}    purchase:purchase_order.open_alternatives
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${order_id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${order.json()}[status]    rfq    msg=A refused confirm must not have moved the order
+    Should Be Equal    ${order.json()}[item][status]    rfq    msg=A refused confirm must not have moved the order
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${alt_id}
     ...    AND    Delete Purchase Order Fixture    ${order_id}
@@ -106,7 +106,7 @@ Confirming With Keep Alternatives Leaves The Others Open
     Response Status Should Be    ${resp}    200
     ${alternative}=    GET On Session    api    ${PURCHASE_ORDER_API}/${alt_id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${alternative.json()}[status]    rfq
+    Should Be Equal    ${alternative.json()}[item][status]    rfq
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${alt_id}
     ...    AND    Delete Purchase Order Fixture    ${order_id}
@@ -123,7 +123,7 @@ Confirming With Cancel Alternatives Closes The Others
     Response Status Should Be    ${resp}    200
     ${alternative}=    GET On Session    api    ${PURCHASE_ORDER_API}/${alt_id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${alternative.json()}[status]    cancelled
+    Should Be Equal    ${alternative.json()}[item][status]    cancelled
     Audit Trail Should Record    ${alt_id}    cancel
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${alt_id}
@@ -142,7 +142,7 @@ Merge Folds Draft Orders Into The Oldest
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     ${second}=    GET On Session    api    ${PURCHASE_ORDER_API}/${second_id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    ${statuses}=    Create List    ${first.json()}[status]    ${second.json()}[status]
+    ${statuses}=    Create List    ${first.json()}[item][status]    ${second.json()}[item][status]
     Should Contain    ${statuses}    cancelled
     ...    msg=One of the merged orders must be cancelled as the source
     [Teardown]    Run Keywords

@@ -29,7 +29,7 @@ Schema Declares The Channel Type Enum
     ...    address in value_json rather than a single string in value.
     ${resp}=    GET On Session    api    ${COMM_CHANNEL_API}/meta/schema
     Response Status Should Be    ${resp}    200
-    ${values}=    Set Variable    ${resp.json()}[fields][type][data_type][values]
+    ${values}=    Set Variable    ${resp.json()}[fields][type][data_type][options][enumValues]
     Should Contain    ${values}    phone
     Should Contain    ${values}    zalo
     Should Contain    ${values}    facebook

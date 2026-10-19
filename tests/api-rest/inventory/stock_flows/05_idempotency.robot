@@ -62,7 +62,7 @@ Validate Records The Key It Completed Under
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${IDEMPOTENT_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Be Equal    ${resp.json()}[data][idempotency_key]    ${IDEMPOTENT_KEY}
+    Should Be Equal    ${resp.json()}[item][idempotency_key]    ${IDEMPOTENT_KEY}
 
 Validate With A Different Key Is Not A Replay
     [Documentation]    A different key is a different operation. It must fall through to the

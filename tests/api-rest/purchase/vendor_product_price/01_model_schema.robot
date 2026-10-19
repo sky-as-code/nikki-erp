@@ -66,5 +66,5 @@ Money Fields Are Decimals Rather Than Floats
     ${resp}=    GET On Session    api    ${VENDOR_PRICE_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    Should Be Equal    ${fields}[unit_price][data_type][type]    decimal
-    Should Be Equal    ${fields}[min_quantity][data_type][type]    decimal
+    Should Be Equal    ${fields}[unit_price][data_type][name]    decimal
+    Should Be Equal    ${fields}[min_quantity][data_type][name]    decimal

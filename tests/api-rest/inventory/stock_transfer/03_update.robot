@@ -33,9 +33,9 @@ Update Cannot Change The Status
     ...    expected_status=any
     ${check}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    Should Not Be Equal    ${check.json()}[data][status]    done
+    Should Not Be Equal    ${check.json()}[item][status]    done
     ...    msg=A transfer must not be driven to done by a plain update
-    ${etag}=    Set Variable    ${check.json()}[data][etag]
+    ${etag}=    Set Variable    ${check.json()}[item][etag]
     Set Global Variable    ${STOCK_TRANSFER_ETAG}    ${etag}
 
 Update Cannot Change The Transfer Number
@@ -43,15 +43,15 @@ Update Cannot Change The Transfer Number
     ...    so renumbering a transfer would orphan every mention of it.
     ${before}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${original}=    Set Variable    ${before.json()}[data][transfer_number]
+    ${original}=    Set Variable    ${before.json()}[item][transfer_number]
     PATCH On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
     ...    json=${{ {'org_id': $INV_ORG_ID, 'transfer_number': 'ROBOT-RENUMBERED', 'etag': $STOCK_TRANSFER_ETAG} }}
     ...    expected_status=any
     ${after}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    Should Be Equal    ${after.json()}[data][transfer_number]    ${original}
+    Should Be Equal    ${after.json()}[item][transfer_number]    ${original}
     ...    msg=transfer_number is immutable
-    ${etag}=    Set Variable    ${after.json()}[data][etag]
+    ${etag}=    Set Variable    ${after.json()}[item][etag]
     Set Global Variable    ${STOCK_TRANSFER_ETAG}    ${etag}
 
 Update Of An Unknown Transfer Fails

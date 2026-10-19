@@ -36,10 +36,9 @@ A Variant With No Stock Reads Zero, Not Null
     [Documentation]    AC-PROD-INT-004. SUM over no rows is NULL in SQL; the declared default is
     ...    what turns that into the zero a product page should show.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
-    ...    params=fields=id,on_hand_quantity,reserved_quantity,available_quantity
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': 'id,on_hand_quantity,reserved_quantity,available_quantity'} }}
     Response Status Should Be    ${resp}    200
-    ${item}=    Set Variable    ${resp.json()}
+    ${item}=    Set Variable    ${resp.json()}[item]
 
     Should Be Equal As Numbers    ${item}[on_hand_quantity]    0
     Should Be Equal As Numbers    ${item}[reserved_quantity]    0
@@ -49,10 +48,9 @@ Available Agrees With The Two Figures It Derives From
     [Documentation]    available is an expression over the other two rather than a third
     ...    subquery, so it cannot report a total that disagrees with them.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
-    ...    params=fields=id,on_hand_quantity,reserved_quantity,available_quantity
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': 'id,on_hand_quantity,reserved_quantity,available_quantity'} }}
     Response Status Should Be    ${resp}    200
-    ${item}=    Set Variable    ${resp.json()}
+    ${item}=    Set Variable    ${resp.json()}[item]
     ${expected}=    Evaluate    float($item['on_hand_quantity']) - float($item['reserved_quantity'])
     Should Be Equal As Numbers    ${item}[available_quantity]    ${expected}
 
@@ -61,10 +59,9 @@ Asking Only For Available Still Answers Correctly
     ...    engine did not pull them into the projection, it would evaluate against absent operands
     ...    and read as zero for a product that does hold stock.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
-    ...    params=fields=id,available_quantity
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': 'id,available_quantity'} }}
     Response Status Should Be    ${resp}    200
-    Dictionary Should Contain Key    ${resp.json()}    available_quantity
+    Dictionary Should Contain Key    ${resp.json()}[item]    available_quantity
 
 The Columns Are Read-Only
     [Documentation]    AC-PROD-INT-034. Product must not be able to set a balance. A computed
@@ -73,27 +70,52 @@ The Columns Are Read-Only
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${item}=    Set Variable    ${resp.json()}
-    ${resp}=    PUT On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
+    ${item}=    Set Variable    ${resp.json()}[item]
+    ${resp}=    PATCH On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
     ...    json=${{ {'org_id': $INV_ORG_ID, 'on_hand_quantity': '999', 'etag': $item['etag']} }}
     ...    expected_status=any
     Should Be True    ${resp.status_code} >= 400
     ...    msg=Writing a stock figure through the product must be refused
 
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${PRODUCT_VARIANT_ID}
-    ...    params=fields=id,on_hand_quantity
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': 'id,on_hand_quantity'} }}
     Response Status Should Be    ${resp}    200
-    Should Be Equal As Numbers    ${resp.json()}[on_hand_quantity]    0
+    Should Be Equal As Numbers    ${resp.json()}[item][on_hand_quantity]    0
     ...    msg=The refused write must not have reached anything
 
-Stock Cannot Be Filtered Or Sorted On Yet
-    [Documentation]    The figures have no column behind them, so SQL cannot ORDER BY or WHERE
-    ...    them. This is the documented boundary of INV-PI-016, asserted rather than assumed: it
-    ...    changes when stored computed fields ship, and this test is what will notice.
-    [Tags]    negative
+Stock Is Advertised As Filterable And Sortable
+    [Documentation]    INV-PI-016's old boundary (no column, so no ORDER BY / WHERE) is gone: the
+    ...    graph query builder evaluates aggregate and expression computed fields in SQL, and
+    ...    meta/schema says so. Clients gate on is_filterable / is_sortable, never on is_persisted.
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
+    Response Status Should Be    ${resp}    200
+    ${fields}=    Set Variable    ${resp.json()}[fields]
+    FOR    ${name}    IN    on_hand_quantity    reserved_quantity    available_quantity
+        Should Be True    ${fields}[${name}][is_filterable]
+        ...    msg=${name} must be advertised as filterable
+        Should Be True    ${fields}[${name}][is_sortable]
+        ...    msg=${name} must be advertised as sortable
+    END
+
+Sorting By Stock Orders The List
+    [Documentation]    A field advertised as sortable must actually be sorted by, not silently
+    ...    ignored: the page comes back in non-increasing on_hand_quantity order.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}
-    ...    params=order_by=on_hand_quantity desc
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
-    Should Be True    ${resp.status_code} >= 400
-    ...    msg=Sorting by a field with no column must be refused, not silently ignored
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 50, 'fields': 'id,on_hand_quantity', 'graph': '{"order":[["on_hand_quantity","desc"]]}'} }}
+    Response Status Should Be    ${resp}    200
+    ${quantities}=    Evaluate    [float(item['on_hand_quantity']) for item in items]
+    ...    namespace=${{ {'items': $resp.json()['items']} }}
+    ${expected}=    Evaluate    sorted(quantities, reverse=True)    namespace=${{ {'quantities': $quantities} }}
+    Should Be Equal    ${quantities}    ${expected}
+    ...    msg=Sorting by on_hand_quantity desc must order the page by it
+
+Filtering By Stock Narrows The List
+    [Documentation]    A field advertised as filterable must actually filter: every row returned
+    ...    for on_hand_quantity > 0 holds stock.
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 50, 'fields': 'id,on_hand_quantity', 'graph': '{"if":["on_hand_quantity", ">", 0]}'} }}
+    Response Status Should Be    ${resp}    200
+    ${offending}=    Evaluate    [i['id'] for i in items if float(i['on_hand_quantity']) <= 0]
+    ...    namespace=${{ {'items': $resp.json()['items']} }}
+    Should Be Empty    ${offending}
+    ...    msg=A filter on on_hand_quantity must exclude variants that do not match it

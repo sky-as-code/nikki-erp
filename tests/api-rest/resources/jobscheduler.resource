@@ -112,6 +112,15 @@ Ensure Execution History Exists
     Set Global Variable    ${EXECUTION_ID}    ${items}[0][id]
     RETURN    ${items}[0][id]
 
+Skip Unless Jobscheduler Is Served
+    [Documentation]    The hosted coreplatform app does not load the jobscheduler module (a
+    ...    deliberate platform choice: it stays out of loader/module_static.go), so every route
+    ...    would answer 404 there. An environment sets JOBSCHEDULER_SERVED to False to say so;
+    ...    the standalone nikkierp app serves the module and leaves it unset.
+    ${served}=    Get Variable Value    ${JOBSCHEDULER_SERVED}    ${True}
+    Skip If    not $served
+    ...    The jobscheduler module is not loaded by this app (hosted coreplatform), so its routes do not exist
+
 Delete Jobscheduler Seed Data
     [Documentation]    Best effort: the suite must not fail in teardown, and a job
     ...    already removed by 08_delete.robot is the expected case rather than an error.

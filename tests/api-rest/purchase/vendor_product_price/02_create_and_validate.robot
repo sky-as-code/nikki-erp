@@ -27,9 +27,9 @@ Create A Template Wide Vendor Price
 
     ${resp}=    GET On Session    api    ${VENDOR_PRICE_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Response Should Match Schema    ${resp}    ${VENDOR_PRICE_SCHEMA}    200
-    Should Be Equal    ${resp.json()}[vendor_id]    ${PURCHASE_VENDOR_ID}
-    Should Be Equal    ${resp.json()}[product_template_id]    ${PURCHASE_TEMPLATE_ID}
+    Item Should Match Schema    ${resp}    ${VENDOR_PRICE_SCHEMA}    200
+    Should Be Equal    ${resp.json()}[item][vendor_id]    ${PURCHASE_VENDOR_ID}
+    Should Be Equal    ${resp.json()}[item][product_template_id]    ${PURCHASE_TEMPLATE_ID}
 
 Create A Variant Specific Vendor Price
     [Documentation]    PRICE-INV-018: naming a variant makes the quote more specific, and it beats
@@ -40,7 +40,7 @@ Create A Variant Specific Vendor Price
     ${resp}=    GET On Session    api    ${VENDOR_PRICE_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Be Equal    ${resp.json()}[product_variant_id]    ${PURCHASE_VARIANT_ID}
+    Should Be Equal    ${resp.json()}[item][product_variant_id]    ${PURCHASE_VARIANT_ID}
 
 A New Vendor Price Is Not Archived
     [Documentation]    A quote is live the moment it is recorded. Defaulting to archived would make
@@ -50,7 +50,7 @@ A New Vendor Price Is Not Archived
     ${resp}=    GET On Session    api    ${VENDOR_PRICE_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Not Be True    ${resp.json()}[is_archived]
+    Should Not Be True    ${resp.json()}[item][is_archived]
 
 Quantity Breaks Are Recorded Separately
     [Documentation]    TS-PRICE-06. Three rows, not one row with three prices: each break is its
@@ -70,15 +70,21 @@ A Price For An Unknown Vendor Is Refused
     ...    does not exist would look perfectly ordinary until an order tried to resolve through it.
     ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}
     ...    json=${{ dict($VENDOR_PRICE_BODY, vendor_id='01ZZZZZZZZZZZZZZZZZZZZZZZZ') }}
-    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
+    ...    expected_status=any
     Should Be True    ${resp.status_code} >= 400
     ...    msg=A price for a non-existent vendor was accepted; nothing else would have caught it
 
-A Price For An Unknown Product Is Refused
+A Price For A Template Id Nobody Checks Is Accepted
+    [Documentation]    Deliberate (decided 19/10/2026): a template-wide price names no variant, and
+    ...    the template's own existence is not checked - a template with no variants cannot be
+    ...    bought, so the price can never apply (vendor_price_validator.go). A variant is checked.
     ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}
     ...    json=${{ dict($VENDOR_PRICE_BODY, product_template_id='01ZZZZZZZZZZZZZZZZZZZZZZZZ') }}
-    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
-    Should Be True    ${resp.status_code} >= 400
+    ...    expected_status=any
+    Response Status Should Be    ${resp}    201
+    [Teardown]    Run Keyword If    ${resp.status_code} == 201
+    ...    DELETE On Session    api    ${VENDOR_PRICE_API}/${resp.json()}[id]
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
 
 A Variant From Another Template Is Refused
     [Documentation]    The two columns must describe ONE product. If they disagree, resolution
@@ -87,7 +93,7 @@ A Variant From Another Template Is Refused
     Skip If    not $other    msg=Only one product template exists; nothing to mismatch against
     ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}
     ...    json=${{ dict($VENDOR_PRICE_BODY, product_variant_id=$other) }}
-    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
+    ...    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 A Negative Unit Price Is Refused
@@ -95,7 +101,7 @@ A Negative Unit Price Is Refused
     ...    field, so this is really asserting that the bound survived.
     ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}
     ...    json=${{ dict($VENDOR_PRICE_BODY, unit_price='-1') }}
-    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
+    ...    expected_status=any
     Should Be True    ${resp.status_code} >= 400
 
 Archiving A Price Keeps It Readable
@@ -104,14 +110,14 @@ Archiving A Price Keeps It Readable
     ...    Readable and usable are different things, and conflating them would strand history.
     ${id}    ${etag}=    Create Vendor Price    min_quantity=1    unit_price=999000
 
-    ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}/${id}/set_archived
+    ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}/${id}/archived
     ...    json=${{ {'org_id': $PURCHASE_ORG_ID, 'is_archived': True, 'etag': $etag} }}    expected_status=any
     Should Be True    ${resp.status_code} < 400    msg=Archiving a vendor price must be permitted
 
     ${resp}=    GET On Session    api    ${VENDOR_PRICE_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Be True    ${resp.json()}[is_archived]
+    Should Be True    ${resp.json()}[item][is_archived]
 
 
 *** Keywords ***
@@ -123,15 +129,15 @@ Set Up Vendor Price Fixtures
     Ensure Purchase Fixtures
     Ensure Purchase Product
     Ensure Purchase Uom
-    Set Suite Variable    ${VENDOR_PRICE_BODY}    ${{ {
-    ...    'org_id': $PURCHASE_ORG_ID,
-    ...    'vendor_id': $PURCHASE_VENDOR_ID,
-    ...    'product_template_id': $PURCHASE_TEMPLATE_ID,
-    ...    'purchase_uom_id': $PURCHASE_UOM_ID,
-    ...    'currency_id': $PURCHASE_CURRENCY_ID,
-    ...    'min_quantity': '1',
-    ...    'unit_price': '100000'
-    ...    } }}
+    ${body}=    Create Dictionary
+    ...    org_id=${PURCHASE_ORG_ID}
+    ...    vendor_id=${PURCHASE_VENDOR_ID}
+    ...    product_template_id=${PURCHASE_TEMPLATE_ID}
+    ...    purchase_uom_id=${PURCHASE_UOM_ID}
+    ...    currency_id=${PURCHASE_CURRENCY_ID}
+    ...    min_quantity=1
+    ...    unit_price=100000
+    Set Suite Variable    ${VENDOR_PRICE_BODY}    ${body}
 
 Create Vendor Price
     [Documentation]    Creates one quote and remembers it for teardown. Returns (id, etag).
@@ -141,7 +147,6 @@ Create Vendor Price
         ${body}=    Evaluate    dict($body, product_variant_id=$product_variant_id)
     END
     ${resp}=    POST On Session    api    ${VENDOR_PRICE_API}    json=${body}
-    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    201
     Append To List    ${CREATED_PRICE_IDS}    ${resp.json()}[id]
     RETURN    ${resp.json()}[id]    ${resp.json()}[etag]

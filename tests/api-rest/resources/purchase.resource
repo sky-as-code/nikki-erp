@@ -194,7 +194,7 @@ Create Confirmable Purchase Order
     ${refreshed}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${refreshed}    200
-    RETURN    ${id}    ${refreshed.json()}[etag]
+    RETURN    ${id}    ${refreshed.json()}[item][etag]
 
 Confirm Purchase Order
     [Documentation]    Confirms an order and returns the response, without asserting on it:
@@ -205,9 +205,9 @@ Confirm Purchase Order
     IF    $alternative_choice
         Set To Dictionary    ${body}    alternative_choice    ${alternative_choice}
     END
+    Set To Dictionary    ${body}    org_id=${PURCHASE_ORG_ID}
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}/${order_id}/confirm
-    ...    json=${body}
-    ...    json=${{ {'org_id': $PURCHASE_ORG_ID} }}    expected_status=any
+    ...    json=${body}    expected_status=any
     RETURN    ${resp}
 
 # --- Purchase agreement ------------------------------------------------------------------

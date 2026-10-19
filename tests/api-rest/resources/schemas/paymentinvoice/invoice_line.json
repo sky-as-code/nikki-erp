@@ -26,7 +26,7 @@
             "minLength": 1
         },
         "quantity": {
-            "type": "integer"
+            "type": ["string", "number"]
         },
         "unit_price": {
             "type": ["string", "number"]

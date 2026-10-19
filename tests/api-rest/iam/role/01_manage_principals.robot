@@ -159,7 +159,7 @@ Assigning From The Role Side Grants And Revokes Immediately
     Permission Should Be Denied    role_side_plain    ${PROBE_EXPRESSION}
     ${resp}=    Manage Role Users    ${role_id}    add=${{ [$PLAIN_USER_ID] }}
     Response Should Be Update Success    ${resp}    count=1
-    Permission Should Be Granted    role_side_plain    ${PROBE_EXPRESSION}    expected_source_id=${role_id}
+    Permission Should Be Granted    role_side_plain    ${PROBE_EXPRESSION}    expected_role_id=${role_id}
     ${resp}=    Manage Role Users    ${role_id}    remove=${{ [$PLAIN_USER_ID] }}
     Response Should Be Update Success    ${resp}    count=1
     Permission Should Be Denied    role_side_plain    ${PROBE_EXPRESSION}

@@ -41,16 +41,17 @@ Reserving Changes Only The Reserved Quantity
 Reserving Makes The Move Assigned
     ${resp}=    GET On Session    api    ${STOCK_MOVE_API}/${RESERVED_MOVE_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    Should Be Equal    ${resp.json()}[data][status]    assigned
+    Should Be Equal    ${resp.json()}[item][status]    assigned
     ...    msg=A fully reserved move is assigned (BR §4.2.3.8)
 
 Reserving Creates A Move Line
     [Documentation]    The line records which balance the claim was made against, which is what
     ...    lets exactly this reservation be released later rather than some other row's.
     ${resp}=    GET On Session    api    ${STOCK_MOVE_LINE_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,move_id', 'graph': '{"if": ["move_id", "=", "%s"]}' % $RESERVED_MOVE_ID} }}
     Response Status Should Be    ${resp}    200
-    ${mine}=    Evaluate    [i for i in $resp.json()['data']['items'] if i.get('move_id') == $RESERVED_MOVE_ID]
+    ${mine}=    Evaluate    [i for i in items if i.get('move_id') == mid]
+    ...    namespace=${{ {'items': $resp.json()['items'], 'mid': $RESERVED_MOVE_ID} }}
     Should Not Be Empty    ${mine}    msg=Reserving must record its allocation as a move line
 
 Reserving Twice Does Not Double Allocate
@@ -106,12 +107,12 @@ Reserving More Than Is Available Is Partial Not Failed
 
     ${check}=    GET On Session    api    ${STOCK_MOVE_API}/${move_id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    Should Be Equal    ${check.json()}[data][status]    partially_available
+    Should Be Equal    ${check.json()}[item][status]    partially_available
     ...    msg=A move that could not be fully covered is partially available
 
     ${transfer}=    GET On Session    api    ${STOCK_TRANSFER_API}/${id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    Should Not Be Equal    ${transfer.json()}[data][status]    ready
+    Should Not Be Equal    ${transfer.json()}[item][status]    ready
     ...    msg=A partly-allocated transfer must not report itself ready
 
     [Teardown]    Run Keywords

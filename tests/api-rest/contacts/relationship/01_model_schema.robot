@@ -37,7 +37,7 @@ Schema Declares No Org Id
 Schema Declares The Relationship Type Enum
     ${resp}=    GET On Session    api    ${RELATIONSHIP_API}/meta/schema
     Response Status Should Be    ${resp}    200
-    ${values}=    Set Variable    ${resp.json()}[fields][type][data_type][values]
+    ${values}=    Set Variable    ${resp.json()}[fields][type][data_type][options][enumValues]
     Should Contain    ${values}    employee
     Should Contain    ${values}    spouse
     Should Contain    ${values}    parent

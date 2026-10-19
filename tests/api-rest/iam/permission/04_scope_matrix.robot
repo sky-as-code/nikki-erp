@@ -43,12 +43,6 @@ Create Probe Org
     ${resp}=    POST On Session    api    /v1/iam/iam_org
     ...    json=${{ {'display_name': {'en-US': $name}, 'slug': $slug, 'legal_name': {'en-US': $name}} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    # iam_orgunit is org-scoped: creating a unit requires membership of its org, and
-    # creating an org does not make its creator a member.
-    ${me}=    GET On Session    api    /v1/iam/me/context
-    ${resp}=    POST On Session    api    /v1/iam/iam_org/${id}/manage_users
-    ...    json=${{ {'add': [$me.json()['id']]} }}
-    Response Should Be Update Success    ${resp}    count=1
     RETURN    ${id}
 
 Create Probe Org Unit
@@ -118,7 +112,9 @@ A Unit Grant Answers Only For Its Own Unit
     ${role_id}=    Grant Scoped Role    Perm Scope Unit Child    orgunit    org_unit_id    ${UNIT_CHILD}
     Permission Should Be Granted    scope_user    read:iam_user:orgunit/${UNIT_CHILD}
     Permission Should Be Denied    scope_user    read:iam_user:orgunit/${UNIT_PARENT}
-    [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
+    # A skipped case never granted the role, so there is no ${role_id} to revoke.
+    [Teardown]    Run Keyword If    '${TEST STATUS}' != 'SKIP'
+    ...    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
 A Parent Unit Grant Does Not Reach A Child Unit
     [Documentation]    No downward inheritance between units. A grant on the parent must
@@ -129,7 +125,9 @@ A Parent Unit Grant Does Not Reach A Child Unit
     ${role_id}=    Grant Scoped Role    Perm Scope Unit Parent    orgunit    org_unit_id    ${UNIT_PARENT}
     Permission Should Be Granted    scope_user    read:iam_user:orgunit/${UNIT_PARENT}
     Permission Should Be Denied    scope_user    read:iam_user:orgunit/${UNIT_CHILD}
-    [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
+    # A skipped case never granted the role, so there is no ${role_id} to revoke.
+    [Teardown]    Run Keyword If    '${TEST STATUS}' != 'SKIP'
+    ...    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
 A Narrow Grant Does Not Satisfy A Tenant Question
     [Documentation]    Widening runs one way only. Holding a permission over one org says

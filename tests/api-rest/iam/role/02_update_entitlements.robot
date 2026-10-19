@@ -107,6 +107,22 @@ Response Should Be Delta Refusal
     Response Status Should Be    ${resp}    400
     Should Contain    ${resp.text}    ${key}
 
+Org Scoped Resource Id
+    [Documentation]    A resource whose max_scope is org, or a skip when the app seeds none:
+    ...    nikkierp's own resources all reach tenant, so only an extending app has one.
+    ${resp}=    GET On Session    api    /v1/iam/iam_resource
+    ...    params=${{ {'graph': '{"if":["max_scope", "=", "org"]}', 'fields': 'id', 'size': 1} }}
+    Response Status Should Be    ${resp}    200
+    ${items}=    Set Variable    ${resp.json()}[items]
+    Skip If    not $items    No seeded resource has max_scope org, so an org-only grant cannot be sent
+    RETURN    ${items}[0][id]
+
+Role Name And Etag
+    [Arguments]    ${role_id}
+    ${resp}=    GET On Session    api    ${ROLE_API}/${role_id}
+    Response Status Should Be    ${resp}    200
+    RETURN    ${resp.json()}[item][name]    ${resp.json()}[item][etag]
+
 
 *** Test Cases ***
 Entitlement-Only Update Grants An Action And Moves The Etag
@@ -119,7 +135,7 @@ Entitlement-Only Update Grants An Action And Moves The Etag
     ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    add=${{ [$grant] }}    etag=${etag}
     Response Should Be Update Success    ${resp}    previous_etag=${etag}
     Role Should Grant    ${TARGET_ROLE_ID}    ${READ_EXPRESSION}
-    Permission Should Be Granted    role_delta_plain    ${READ_EXPRESSION}    expected_source_id=${TARGET_ROLE_ID}
+    Permission Should Be Granted    role_delta_plain    ${READ_EXPRESSION}    expected_role_id=${TARGET_ROLE_ID}
 
 A Null Action Grants Every Action
     [Tags]    entitlements
@@ -188,6 +204,29 @@ A Grant The Role Already Has Is Refused And Rolls Back
     Response Should Be Delta Refusal    ${resp}    iam:err_entitlement_already_granted
     ${after}=    Role Description    ${TARGET_ROLE_ID}
     Should Be Equal    ${after}    ${before}
+
+An Org Only Grant On An Org-less Role Is Refused And Rolls Back
+    [Documentation]    An org-scoped resource can only be granted by a role that belongs to an
+    ...    org. The refusal must also undo the name change sent with it: the role keeps its
+    ...    name and etag, and gains no entitlement.
+    [Tags]    entitlements    negative
+    ${resource_id}=    Org Scoped Resource Id
+    ${name_before}    ${etag_before}=    Role Name And Etag    ${TARGET_ROLE_ID}
+    ${entitlements_before}=    Role Entitlements    ${TARGET_ROLE_ID}
+    ${grant}=    Create Dictionary    resource_id=${resource_id}    action_id=${None}
+    ${new_name}=    Unique Display Name    Robot Must Roll Back
+    ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    add=${{ [$grant] }}
+    ...    etag=${etag_before}    extra=${{ {'name': $new_name} }}
+    Response Status Should Be    ${resp}    400
+    ${refusals}=    Evaluate    [e for e in body if e.get('key') == 'iam:err_role_org_required']
+    ...    namespace=${{ {'body': $resp.json()} }}
+    Should Not Be Empty    ${refusals}    msg=Expected iam:err_role_org_required, got ${resp.text}
+    Should Be Equal    ${refusals}[0][field]    entitlements.add[0]
+    ${name_after}    ${etag_after}=    Role Name And Etag    ${TARGET_ROLE_ID}
+    Should Be Equal    ${name_after}    ${name_before}
+    Should Be Equal    ${etag_after}    ${etag_before}
+    ${entitlements_after}=    Role Entitlements    ${TARGET_ROLE_ID}
+    Dictionaries Should Be Equal    ${entitlements_after}    ${entitlements_before}
 
 The Same Grant Twice In One Delta Is Refused
     [Tags]    entitlements    negative

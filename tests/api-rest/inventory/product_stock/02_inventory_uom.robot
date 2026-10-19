@@ -39,7 +39,7 @@ The Unit Can Be Changed While The Product Is Unused
     ...    changes meaning and the update is allowed.
     ${second}=    Create Second Uom For Change
     ${item}=    Get Stock Product Config
-    ${resp}=    PUT On Session    api    ${STOCK_PRODUCT_CONFIG_API}/${STOCK_PRODUCT_CONFIG_ID}
+    ${resp}=    PATCH On Session    api    ${STOCK_PRODUCT_CONFIG_API}/${STOCK_PRODUCT_CONFIG_ID}
     ...    json=${{ {'org_id': $INV_ORG_ID, 'inventory_uom_id': $second, 'etag': $item['etag']} }}
     ...    expected_status=any
     Response Status Should Be    ${resp}    200
@@ -52,7 +52,7 @@ An Archived Unit Cannot Be Chosen
     [Tags]    negative
     ${archived}=    Create Archived Uom
     ${item}=    Get Stock Product Config
-    ${resp}=    PUT On Session    api    ${STOCK_PRODUCT_CONFIG_API}/${STOCK_PRODUCT_CONFIG_ID}
+    ${resp}=    PATCH On Session    api    ${STOCK_PRODUCT_CONFIG_API}/${STOCK_PRODUCT_CONFIG_ID}
     ...    json=${{ {'org_id': $INV_ORG_ID, 'inventory_uom_id': $archived, 'etag': $item['etag']} }}
     ...    expected_status=any
     Should Be True    ${resp.status_code} >= 400
@@ -64,7 +64,7 @@ Get Stock Product Config
     ${resp}=    GET On Session    api    ${STOCK_PRODUCT_CONFIG_API}/${STOCK_PRODUCT_CONFIG_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    RETURN    ${resp.json()}
+    RETURN    ${resp.json()}[item]
 
 Create Second Uom For Change
     [Documentation]    A second unit in the same category, so changing to it is a legitimate
@@ -75,7 +75,7 @@ Create Second Uom For Change
     ${name}=    Unique Display Name    Robot Tonne
     ${symbol}=    Unique Symbol    t
     ${resp}=    POST On Session    api    ${UOM_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'symbol': $symbol, 'category_id': $UOMCAT_ID, 'uom_type': 'bigger', 'factor': '1000', 'rounding': '0.01', 'org_id': $UOM_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'symbol': $symbol, 'category_id': $UOMCAT_ID, 'uom_type': 'bigger_equal', 'factor': '1000', 'rounding': '0.01', 'org_id': $UOM_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${SECOND_INVENTORY_UOM_ID}    ${id}
     RETURN    ${id}
