@@ -154,13 +154,13 @@ func (this *PurchaseOrderDomainServiceImpl) Confirm(
 func assertConfirmable(
 	ctx corectx.Context, order dmodel.DynamicFields,
 ) *dyn.OpResult[dyn.MutateResultData] {
-	lineEngine, err := engineFor(models.PurchaseOrderLineSchemaName)
+	lineRepo, err := repoFor(models.PurchaseOrderLineSchemaName)
 	if err != nil {
-		// A missing engine is a wiring fault, not a refusal; let the caller's error path have it.
+		// A resource missing from the hub is a wiring fault, not a refusal; let the caller's error path have it.
 		return nil
 	}
 	orderId := stringOf(order, models.PurchaseOrderFieldId)
-	lines, err := models.FindOrderLines(ctx, lineEngine.ResourceRepository(), orderId, models.MaxOrderLines)
+	lines, err := models.FindOrderLines(ctx, lineRepo, orderId, models.MaxOrderLines)
 	if err != nil {
 		return nil
 	}
@@ -323,11 +323,11 @@ func alternativesWarningResult(open []dmodel.DynamicFields) *dyn.OpResult[dyn.Mu
 
 // loadOrder reads one order inside the caller's transaction, returning nil when there is none.
 func loadOrder(ctx corectx.Context, orderId string) (dmodel.DynamicFields, error) {
-	engine, err := engineFor(models.PurchaseOrderSchemaName)
+	repo, err := repoFor(models.PurchaseOrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.PurchaseOrderFieldId: orderId,
 	})
 	if err != nil {
@@ -345,7 +345,7 @@ func loadOrder(ctx corectx.Context, orderId string) (dmodel.DynamicFields, error
 func writeOrderChanges(
 	ctx corectx.Context, order dmodel.DynamicFields, changes dmodel.DynamicFields,
 ) error {
-	engine, err := engineFor(models.PurchaseOrderSchemaName)
+	repo, err := repoFor(models.PurchaseOrderSchemaName)
 	if err != nil {
 		return err
 	}
@@ -357,6 +357,6 @@ func writeOrderChanges(
 	update[models.PurchaseOrderFieldId] = stringOf(order, models.PurchaseOrderFieldId)
 	update[basemodel.FieldEtag] = stringOf(order, basemodel.FieldEtag)
 
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = repo.Update(ctx, update)
 	return errors.Wrap(err, "writeOrderChanges")
 }

@@ -4,8 +4,8 @@ meta {
   seq: 5
 }
 
-put {
-  url: {{api_host}}/v1/essential/enums/{{enum_id}}
+patch {
+  url: {{api_host}}/v1/essential/essential_enum/{{enum_id}}
   body: json
   auth: inherit
 }

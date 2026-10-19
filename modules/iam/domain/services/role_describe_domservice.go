@@ -23,7 +23,7 @@ const maxDescribedEntitlements = itRole.DescribeRolesMaxIds * 100
 // The stored `expression` is deliberately not parsed. It is a `{action}:{resource}:{scope}`
 // triple of opaque ids, and reading the structured columns instead keeps this endpoint correct
 // regardless of what CalculateExpression writes into it.
-func (this *RoleDomainServiceImpl) DescribeRoles(
+func (this *RoleCrudDomainServiceImpl) DescribeRoles(
 	ctx corectx.Context, query itRole.DescribeRolesQuery,
 ) (result *itRole.DescribeRolesResult, err error) {
 	defer func() {
@@ -69,7 +69,7 @@ func (this *RoleDomainServiceImpl) DescribeRoles(
 
 // describeRoleNames returns one entry per role that actually exists. Ids the caller cannot see
 // are simply absent from the result rather than raising an error.
-func (this *RoleDomainServiceImpl) describeRoleNames(
+func (this *RoleCrudDomainServiceImpl) describeRoleNames(
 	ctx corectx.Context, roleIds []model.Id,
 ) ([]itRole.DescribedRole, ft.ClientErrors, error) {
 	res, err := this.roleRepo.Search(ctx, dyn.RepoSearchParam{
@@ -82,8 +82,7 @@ func (this *RoleDomainServiceImpl) describeRoleNames(
 		return nil, res.ClientErrors, err
 	}
 	roles := make([]itRole.DescribedRole, 0, len(res.Data.Items))
-	for _, item := range res.Data.Items {
-		fields := item.GetFieldData()
+	for _, fields := range res.Data.Items {
 		id := fields.GetModelId(basemodel.FieldId)
 		if id == nil {
 			continue
@@ -100,7 +99,7 @@ func (this *RoleDomainServiceImpl) describeRoleNames(
 // role id. `action.name` and `resource.name` are single-dot paths, which is the deepest select
 // the query builder allows (MaxSelectGraphColumnDots), so both names arrive without extra
 // round trips.
-func (this *RoleDomainServiceImpl) describeEntitlements(
+func (this *RoleCrudDomainServiceImpl) describeEntitlements(
 	ctx corectx.Context, roleIds []model.Id,
 ) (map[model.Id][]itRole.DescribedEntitlement, ft.ClientErrors, error) {
 	res, err := this.entitlementRepo.Search(ctx, dyn.RepoSearchParam{
@@ -124,8 +123,7 @@ func (this *RoleDomainServiceImpl) describeEntitlements(
 	}
 
 	byRole := make(map[model.Id][]itRole.DescribedEntitlement, len(roleIds))
-	for _, item := range res.Data.Items {
-		fields := item.GetFieldData()
+	for _, fields := range res.Data.Items {
 		roleId := fields.GetModelId(domain.EntitlementFieldRoleId)
 		id := fields.GetModelId(basemodel.FieldId)
 		if roleId == nil || id == nil {
@@ -172,7 +170,7 @@ func edgeName(fields dmodel.DynamicFields, edge string, leaf string) *string {
 
 // fillScopeNames resolves the org and orgunit display names in one batched search each, rather
 // than per entitlement.
-func (this *RoleDomainServiceImpl) fillScopeNames(
+func (this *RoleCrudDomainServiceImpl) fillScopeNames(
 	ctx corectx.Context, byRole map[model.Id][]itRole.DescribedEntitlement,
 ) error {
 	orgIds, orgUnitIds := collectScopeIds(byRole)
@@ -232,38 +230,24 @@ func keysOf(set map[model.Id]bool) []model.Id {
 
 type namesSearchFn func(ctx corectx.Context, param dyn.RepoSearchParam) ([]dmodel.DynamicFields, ft.ClientErrors, error)
 
-// fieldDataHaver is every dynamic-model entity; the describe flow only ever reads raw fields
-// off a search result, so the concrete entity type is irrelevant here.
-type fieldDataHaver interface {
-	GetFieldData() dmodel.DynamicFields
-}
-
-func fieldRowsOf[T fieldDataHaver](items []T) []dmodel.DynamicFields {
-	rows := make([]dmodel.DynamicFields, 0, len(items))
-	for i := range items {
-		rows = append(rows, items[i].GetFieldData())
-	}
-	return rows
-}
-
-func (this *RoleDomainServiceImpl) orgRepoSearch(
+func (this *RoleCrudDomainServiceImpl) orgRepoSearch(
 	ctx corectx.Context, param dyn.RepoSearchParam,
 ) ([]dmodel.DynamicFields, ft.ClientErrors, error) {
 	res, err := this.orgRepo.Search(ctx, param)
 	if err != nil || res.ClientErrors.Count() > 0 {
 		return nil, res.ClientErrors, err
 	}
-	return fieldRowsOf(res.Data.Items), nil, nil
+	return res.Data.Items, nil, nil
 }
 
-func (this *RoleDomainServiceImpl) orgUnitRepoSearch(
+func (this *RoleCrudDomainServiceImpl) orgUnitRepoSearch(
 	ctx corectx.Context, param dyn.RepoSearchParam,
 ) ([]dmodel.DynamicFields, ft.ClientErrors, error) {
 	res, err := this.orgUnitRepo.Search(ctx, param)
 	if err != nil || res.ClientErrors.Count() > 0 {
 		return nil, res.ClientErrors, err
 	}
-	return fieldRowsOf(res.Data.Items), nil, nil
+	return res.Data.Items, nil, nil
 }
 
 // nameExtractorFn reads one row's display name. Org names are LangJson while org-unit names are
@@ -296,7 +280,7 @@ func langJsonNameOf(row dmodel.DynamicFields, nameField string) *string {
 	return nil
 }
 
-func (this *RoleDomainServiceImpl) searchNames(
+func (this *RoleCrudDomainServiceImpl) searchNames(
 	ctx corectx.Context, search namesSearchFn, ids []model.Id, nameField string,
 	extractName nameExtractorFn,
 ) (map[model.Id]*string, error) {

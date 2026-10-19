@@ -1,6 +1,6 @@
 package constants
 
-// Action codes beyond the engine's built-in CRUD. Each lifecycle operation carries its own
+// Action codes beyond the built-in CRUD. Each lifecycle operation carries its own
 // permission rather than being folded into "update", because approving an order or unlocking a
 // closed document is a materially different power from editing a note.
 const (
@@ -15,6 +15,11 @@ const (
 	ActionMerge               = "merge"
 	ActionCreateAlternative   = "create_alternative"
 	ActionCompareAlternatives = "compare_alternatives"
+	ActionDuplicate           = "duplicate"
+
+	// ActionReprice is its own power: repricing rewrites what the company will pay across a whole
+	// order, but it commits nothing, so it is neither "update" nor "confirm".
+	ActionReprice = "reprice"
 
 	// Purchase agreement.
 	ActionClose     = "close"

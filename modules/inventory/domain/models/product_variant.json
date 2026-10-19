@@ -188,10 +188,19 @@
 			"computed": { "kind": "related", "is_stored": false, "field": "product_template.brand_id" }
 		},
 		{
-			"name": "product_template_product_type_id",
-			"label": "fields.product_template_product_type_id",
-			"data_type": "ulid",
-			"computed": { "kind": "related", "is_stored": false, "field": "product_template.product_type_id" }
+			"name": "product_template_product_type",
+			"label": "fields.product_template_product_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["goods", "service"]
+			},
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.product_type" }
+		},
+		{
+			"name": "product_template_is_combo",
+			"label": "fields.product_template_is_combo",
+			"data_type": "boolean",
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.is_combo" }
 		},
 		{
 			"name": "product_template_status",

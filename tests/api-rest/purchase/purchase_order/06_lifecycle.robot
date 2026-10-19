@@ -23,7 +23,7 @@ Send Moves A Draft To Quotation Sent
     Response Status Should Be    ${resp}    200
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${order.json()}[status]    rfq_sent
+    Should Be Equal    ${order.json()}[item][status]    rfq_sent
     Audit Trail Should Record    ${id}    send
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
@@ -45,8 +45,8 @@ Confirm Commits The Order
     Response Status Should Be    ${resp}    200
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${order.json()}[status]    purchase_order
-    Should Not Be Empty    ${order.json()}[confirmed_at]
+    Should Be Equal    ${order.json()}[item][status]    purchase_order
+    Should Not Be Empty    ${order.json()}[item][confirmed_at]
     Audit Trail Should Record    ${id}    confirm
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
@@ -59,7 +59,7 @@ Confirm Is Refused On An Order With No Priced Line
     Response Should Be Client Error    ${resp}
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal    ${order.json()}[status]    rfq
+    Should Be Equal    ${order.json()}[item][status]    rfq
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
 Confirming Twice Is Refused Rather Than Silently Repeated
@@ -81,8 +81,8 @@ Confirm Recomputes The Totals From The Lines
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${order}    200
-    Should Be Equal As Numbers    ${order.json()}[untaxed_amount]    250.00
-    Should Be Equal As Numbers    ${order.json()}[total_amount]      250.00
+    Should Be Equal As Numbers    ${order.json()}[item][untaxed_amount]    250.00
+    Should Be Equal As Numbers    ${order.json()}[item][total_amount]      250.00
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
 Lock Closes A Confirmed Order To Editing
@@ -95,8 +95,8 @@ Lock Closes A Confirmed Order To Editing
     Response Status Should Be    ${resp}    200
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be True    ${order.json()}[is_locked]
-    Should Be Equal    ${order.json()}[status]    purchase_order
+    Should Be True    ${order.json()}[item][is_locked]
+    Should Be Equal    ${order.json()}[item][status]    purchase_order
     Audit Trail Should Record    ${id}    lock
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
@@ -122,7 +122,7 @@ Unlock Requires A Reason
     Response Should Be Client Error    ${resp}
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be True    ${order.json()}[is_locked]    msg=A refused unlock must leave the order locked
+    Should Be True    ${order.json()}[item][is_locked]    msg=A refused unlock must leave the order locked
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
 Unlock With A Reason Reopens The Order And Records Why
@@ -137,7 +137,7 @@ Unlock With A Reason Reopens The Order And Records Why
     Response Status Should Be    ${resp}    200
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Not Be True    ${order.json()}[is_locked]
+    Should Not Be True    ${order.json()}[item][is_locked]
     ${event}=    Audit Trail Should Record    ${id}    unlock
     Should Be Equal    ${event}[reason]    price correction agreed with the vendor
     [Teardown]    Delete Purchase Order Fixture    ${id}
@@ -152,7 +152,7 @@ Acknowledge Records The Vendor Confirmation
     Response Status Should Be    ${resp}    200
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be True    ${order.json()}[vendor_acknowledged]
+    Should Be True    ${order.json()}[item][vendor_acknowledged]
     Audit Trail Should Record    ${id}    acknowledge
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
@@ -189,7 +189,7 @@ Cancel Leaves The Order And Its Trail In Place
     ${order}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${order}    200
-    Should Be Equal    ${order.json()}[status]    cancelled
+    Should Be Equal    ${order.json()}[item][status]    cancelled
     ${event}=    Audit Trail Should Record    ${id}    cancel
     Should Be Equal    ${event}[reason]    vendor withdrew
     [Teardown]    Delete Purchase Order Fixture    ${id}
@@ -230,13 +230,13 @@ Duplicate Starts A Fresh Draft With None Of The History
     ${copy}=    GET On Session    api    ${PURCHASE_ORDER_API}/${copy_id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${copy}    200
-    ${body}=    Set Variable    ${copy.json()}
+    ${body}=    Set Variable    ${copy.json()}[item]
     Should Be Equal    ${body}[status]    rfq
     Should Not Be True    ${body}[is_locked]
     Should Not Be True    ${body}[vendor_acknowledged]
     ${original}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Not Be Equal    ${body}[code]    ${original.json()}[code]
+    Should Not Be Equal    ${body}[code]    ${original.json()}[item][code]
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${copy_id}
     ...    AND    Delete Purchase Order Fixture    ${id}
@@ -251,7 +251,7 @@ Duplicate Copies The Lines And Their Totals
     ${copy_id}=    Set Variable    ${resp.json()}[id]
     ${copy}=    GET On Session    api    ${PURCHASE_ORDER_API}/${copy_id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
-    Should Be Equal As Numbers    ${copy.json()}[total_amount]    200.00
+    Should Be Equal As Numbers    ${copy.json()}[item][total_amount]    200.00
     [Teardown]    Run Keywords
     ...    Delete Purchase Order Fixture    ${copy_id}
     ...    AND    Delete Purchase Order Fixture    ${id}

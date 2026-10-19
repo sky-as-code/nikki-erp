@@ -9,8 +9,8 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	itGateway "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/gateway"
 	it "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/paymentmethod"
 )
@@ -20,19 +20,21 @@ import (
 // on every checkout cannot be handed an unbounded read.
 const maxPaymentMethods = 500
 
-// PaymentMethodApplicationServiceImpl answers the payment-method port.
+// PaymentMethodApplicationServiceImpl is the payment method's authorized CRUD and answers the
+// payment-method port on the same instance.
 //
 // It holds the gateway registry because one of the three usability gates is "does this build ship
 // the adapter this row names" — a question only the registry can answer, and the reason a consumer
 // cannot derive usability from the row alone.
 type PaymentMethodApplicationServiceImpl struct {
+	composable.CrudApplicationService
 	registry *itGateway.Registry
 }
 
-func NewPaymentMethodApplicationServiceImpl(
-	registry *itGateway.Registry,
-) it.PaymentMethodAppService {
-	return &PaymentMethodApplicationServiceImpl{registry: registry}
+func NewPaymentMethodApplicationService(
+	base composable.CrudApplicationService, registry *itGateway.Registry,
+) it.PaymentMethodCrudApplicationService {
+	return &PaymentMethodApplicationServiceImpl{CrudApplicationService: base, registry: registry}
 }
 
 // ListPaymentMethods answers every method this deployment knows about, each already judged.
@@ -46,12 +48,7 @@ func NewPaymentMethodApplicationServiceImpl(
 func (this *PaymentMethodApplicationServiceImpl) ListPaymentMethods(
 	ctx corectx.Context, query it.ListPaymentMethodsQuery,
 ) (*it.ListPaymentMethodsResult, error) {
-	engine, err := services.EngineFor(models.PaymentMethodSchemaName)
-	if err != nil {
-		return nil, err
-	}
-
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := this.DomainService().Repository().Search(ctx, dyn.RepoSearchParam{
 		Graph: &dmodel.SearchGraph{},
 		Page:  0,
 		Size:  maxPaymentMethods,
@@ -93,11 +90,7 @@ func (this *PaymentMethodApplicationServiceImpl) AssertUsable(
 			"a payment method id is required"), nil
 	}
 
-	engine, err := services.EngineFor(models.PaymentMethodSchemaName)
-	if err != nil {
-		return nil, err
-	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := this.DomainService().Repository().FindByKeys(ctx, dmodel.DynamicFields{
 		models.PaymentMethodFieldId: query.PaymentMethodId,
 	})
 	if err != nil {

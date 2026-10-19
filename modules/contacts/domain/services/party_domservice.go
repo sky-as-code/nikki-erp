@@ -10,14 +10,17 @@ import (
 	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
-func NewPartyDomainServiceImpl() itParty.PartyDomainService {
-	return &PartyDomainServiceImpl{}
+// NewPartyDomainService is handed the composable default by the party onion. The CRUD is the
+// default's; what this type adds is the capability other modules ask of a party.
+func NewPartyDomainService(base composable.CrudDomainService) itParty.PartyDomainService {
+	return &PartyDomainServiceImpl{CrudDomainService: base}
 }
 
 type PartyDomainServiceImpl struct {
+	composable.CrudDomainService
 }
 
 // AssertAssignable reports whether a document in one organization may name this party.
@@ -99,19 +102,10 @@ func derefString(value *string) string {
 //
 // The org id is part of the FILTER rather than compared afterwards, so a party belonging to another
 // organization is simply not found — the read never returns a row the caller may not see.
-//
-// A missing engine is a Go error rather than a validation failure: it means this module was
-// initialized wrongly, which is a defect in the deployment and not something a caller can correct.
 func (this *PartyDomainServiceImpl) loadParty(
 	ctx corectx.Context, partyId model.Id, orgId model.Id,
 ) (dmodel.DynamicFields, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(models.PartySchemaName)
-	if !ok {
-		return nil, errors.Errorf("loadParty: the '%s' engine is not registered",
-			models.PartySchemaName)
-	}
-
-	found, err := engine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+	found, err := this.Repository().GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{
 			models.PartyFieldId:    partyId,
 			models.PartyFieldOrgId: orgId,

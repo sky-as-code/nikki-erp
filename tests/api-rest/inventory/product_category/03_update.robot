@@ -21,7 +21,7 @@ Update Parent Succeeds
     Ensure Child Product Category
     ${before}=    Get Product Category    ${CHILD_CATEGORY_ID}
     ${resp}=    PATCH On Session    api    ${PRODUCT_CATEGORY_API}/${CHILD_CATEGORY_ID}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'sequence': 1, 'etag': $CHILD_CATEGORY_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'display_order': 1, 'etag': $CHILD_CATEGORY_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${CHILD_CATEGORY_ETAG}
     IF    $etag is not None    Set Global Variable    ${CHILD_CATEGORY_ETAG}    ${etag}
     ${after}=    Get Product Category    ${CHILD_CATEGORY_ID}
@@ -31,10 +31,9 @@ Rename Cascades To Descendants
     [Documentation]    Renaming a category rewrites the canonical name of its child and
     ...    grandchild in the same transaction.
     Ensure Child Product Category
-    ${grand_code}=    Unique Code    grandcat
     ${grand_name}=    Unique Display Name    Robot Grandchild Category
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $grand_code, 'name': {'en-US': $grand_name}, 'parent_category_id': $CHILD_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $grand_name}, 'parent_category_id': $CHILD_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
     ${grand_id}    ${grand_etag}=    Response Should Be Create Success    ${resp}
     ${new_name}=    Unique Display Name    Robot Renamed Category
     ${resp}=    PATCH On Session    api    ${PRODUCT_CATEGORY_API}/${PRODUCT_CATEGORY_ID}

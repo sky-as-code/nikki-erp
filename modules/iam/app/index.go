@@ -12,16 +12,8 @@ func InitApplicationServices() error {
 		deps.Register(NewAttemptApplicationServiceImpl),
 		deps.Register(NewLoginApplicationServiceImpl),
 		deps.Register(NewPasswordApplicationServiceImpl),
-		deps.Register(NewEntitlementApplicationServiceImpl),
-		deps.Register(NewGroupApplicationServiceImpl),
-		deps.Register(NewOrganizationApplicationServiceImpl),
-		deps.Register(NewOrgUnitApplicationServiceImpl),
-		deps.Register(NewResourceApplicationServiceImpl),
-		deps.Register(NewActionApplicationService),
-		deps.Register(NewRoleApplicationServiceImpl),
-		deps.Register(NewRoleRequestApplicationServiceImpl),
+		deps.Register(NewPrincipalRolesApplicationService),
 		deps.Register(NewPermissionApplicationServiceImpl),
-		deps.Register(NewUserApplicationServiceImpl),
 	)
 	return err
 }

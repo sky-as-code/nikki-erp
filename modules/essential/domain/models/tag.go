@@ -1,6 +1,7 @@
 package models
 
 import (
+	_ "embed"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -15,28 +16,11 @@ const (
 	TagFieldType  = "type"
 )
 
+//go:embed tag.json
+var tagSchemaJson string
+
 func TagSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(TagSchemaName).
-		Label(model.NewLangJsonRefSf("%s.label", TagSchemaName)).
-		TableName("essential_tags").
-		ShouldBuildDb().
-		Extend(basemodel.BaseModelSchemaBuilder()).
-		Field(
-			dmodel.DefineField().
-				Name(TagFieldLabel).
-				Label(model.NewLangJsonRefSf("fields.%s", TagFieldLabel)).
-				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(TagFieldType).
-				Label(model.NewLangJsonRefSf("fields.%s", TagFieldType)).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+	return dmodel.ParseModelJson(tagSchemaJson)
 }
 
 type Tag struct {

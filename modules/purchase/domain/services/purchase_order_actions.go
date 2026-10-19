@@ -186,12 +186,16 @@ func copyableOrderFields(order dmodel.DynamicFields) dmodel.DynamicFields {
 func (this *PurchaseOrderDomainServiceImpl) copyOrderLines(
 	ctx corectx.Context, fromOrderId string, toOrderId string,
 ) error {
-	lineEngine, err := engineFor(models.PurchaseOrderLineSchemaName)
+	lineRepo, err := repoFor(models.PurchaseOrderLineSchemaName)
+	if err != nil {
+		return err
+	}
+	lineSvc, err := domainServiceFor(models.PurchaseOrderLineSchemaName)
 	if err != nil {
 		return err
 	}
 	lines, err := models.FindOrderLines(
-		ctx, lineEngine.ResourceRepository(), fromOrderId, models.MaxOrderLines)
+		ctx, lineRepo, fromOrderId, models.MaxOrderLines)
 	if err != nil {
 		return err
 	}
@@ -219,7 +223,7 @@ func (this *PurchaseOrderDomainServiceImpl) copyOrderLines(
 		}
 		StampLineTotals(copied)
 
-		if _, err := lineEngine.ResourceService().Create(ctx, copied); err != nil {
+		if _, err := lineSvc.Create(ctx, copied); err != nil {
 			return err
 		}
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	stdErr "errors"
 
-	"go.bryk.io/pkg/errors"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -13,7 +12,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/app"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
@@ -91,9 +89,6 @@ func (*IamModule) Init() error {
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}
-	if err := installOrgEngineDeleteGuard(); err != nil {
-		return err
-	}
 
 	err := stdErr.Join(
 		external.InitExternalServices(),
@@ -124,18 +119,6 @@ func (*IamModule) OnAppStarted() error {
 			return err
 		}
 		return registerTenantSettings(corectx.NewRequestContext(context.Background()), settingsSvc)
-	})
-}
-
-// installOrgEngineDeleteGuard routes the generic iam_org engine's delete through the same usage
-// check as DeleteOrg; otherwise DELETE /v1/iam/iam_org would bypass it.
-func installOrgEngineDeleteGuard() error {
-	engine, ok := dynamicresource.Registry().GetEngine(models.OrganizationSchemaName)
-	if !ok {
-		return errors.New("the '" + models.OrganizationSchemaName + "' engine is not registered")
-	}
-	return deps.Invoke(func(dispatcher *usagecheck.Dispatcher) {
-		engine.SetResourceService(services.NewOrgEngineDeleteGuard(engine.ResourceService(), dispatcher))
 	})
 }
 

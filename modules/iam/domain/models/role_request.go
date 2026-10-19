@@ -1,8 +1,9 @@
 package models
 
 import (
+	_ "embed"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
@@ -43,104 +44,11 @@ const (
 	RoleReqEdgeResponder     = "responder"
 )
 
+//go:embed role_request.json
+var roleRequestSchemaJson string
+
 func RoleRequestSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(RoleRequestSchemaName).
-		Label(model.NewLangJsonRefSf("%s.label", RoleRequestSchemaName)).
-		TableName("iam_grant_requests").
-		DefaultSearchFields("status", "type", "request_comment").
-		ShouldBuildDb().
-		Extend(basemodel.BaseModelSchemaBuilder()).
-		Field(
-			basemodel.DefineFieldId(RoleReqFieldRoleId).
-				RequiredForCreate(),
-		).
-		Field(
-			basemodel.DefineFieldId(RoleReqFieldReceiverGroupId),
-		).
-		Field(
-			basemodel.DefineFieldId(RoleReqFieldReceiverUserId),
-		).
-		ExclusiveRequiredFields(RoleReqFieldReceiverGroupId, RoleReqFieldReceiverUserId).
-		Field(
-			dmodel.DefineField().Name(RoleReqFieldStatus).
-				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(RoleReqStatusPending), string(RoleReqStatusApproved), string(RoleReqStatusRejected), string(RoleReqStatusCancelled),
-				})).
-				RequiredForCreate().
-				Default(string(RoleReqStatusPending)),
-		).
-		Field(
-			dmodel.DefineField().Name(RoleReqFieldType).
-				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(RoleReqTypeGrant), string(RoleReqTypeRevoke),
-				})).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().Name(RoleReqFieldAttachmentUrl).
-				DataType(dmodel.FieldDataTypeUrl()),
-		).
-		Field(
-			dmodel.DefineField().Name(RoleReqFieldGrantExpiresAt).
-				DataType(dmodel.FieldDataTypeDateTime()).
-				Description(model.LangJson{"en-US": "The date and time when the grant (if approved) expires."}),
-		).
-		Field(
-			dmodel.DefineField().Name(RoleReqFieldRequestComment).
-				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_COMMENT_LENGTH)),
-		).
-		Field(
-			basemodel.DefineFieldId(RoleReqFieldRequestorId).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().Name(RoleReqFieldRejectionReason).
-				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_COMMENT_LENGTH)),
-		).
-		Field(
-			dmodel.DefineField().Name(RoleReqFieldRespondedAt).
-				DataType(dmodel.FieldDataTypeDateTime()),
-		).
-		Field(
-			basemodel.DefineFieldId(RoleReqFieldResponderId),
-		).
-		Extend(basemodel.AuditableModelSchemaBuilder()).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
-		EdgeTo(
-			dmodel.Edge(RoleReqEdgeRole).
-				Label(model.LangJson{"en-US": "Requested Role"}).
-				ManyToOne(RoleSchemaName, dmodel.DynamicFields{
-					RoleReqFieldRoleId: RoleFieldId,
-				}),
-		).
-		EdgeTo(
-			dmodel.Edge(RoleReqEdgeReceiverGroup).
-				Label(model.LangJson{"en-US": "Receiver Group"}).
-				ManyToOne(GroupSchemaName, dmodel.DynamicFields{
-					RoleReqFieldReceiverGroupId: GroupFieldId,
-				}),
-		).
-		EdgeTo(
-			dmodel.Edge(RoleReqEdgeReceiverUser).
-				Label(model.LangJson{"en-US": "Receiver User"}).
-				ManyToOne(UserSchemaName, dmodel.DynamicFields{
-					RoleReqFieldReceiverUserId: UserFieldId,
-				}),
-		).
-		EdgeTo(
-			dmodel.Edge(RoleReqEdgeRequestor).
-				Label(model.LangJson{"en-US": "Requestor"}).
-				ManyToOne(UserSchemaName, dmodel.DynamicFields{
-					RoleReqFieldRequestorId: UserFieldId,
-				}),
-		).
-		EdgeTo(
-			dmodel.Edge(RoleReqEdgeResponder).
-				Label(model.LangJson{"en-US": "Responder"}).
-				ManyToOne(UserSchemaName, dmodel.DynamicFields{
-					RoleReqFieldResponderId: UserFieldId,
-				}),
-		)
+	return dmodel.ParseModelJson(roleRequestSchemaJson)
 }
 
 // RoleRequest represents a request to assign a role to a receiver (user or group).

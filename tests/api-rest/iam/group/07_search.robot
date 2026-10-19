@@ -45,11 +45,11 @@ Search Order By Lang Json Name Follows A Locale Change
     ...    invert, the resulting order of ids must reverse.
     Set Own Language    vi-VN
     ${vi_resp}=    Search Groups By Name Order    asc
-    ${vi_ids}=    Locale Group Ids In Result    ${vi_resp}
+    ${vi_ids}=    Locale Group Ids In Result    ${vi_resp}    bilingual_only=${True}
 
     Set Own Language    en-US
     ${en_resp}=    Search Groups By Name Order    asc
-    ${en_ids}=    Locale Group Ids In Result    ${en_resp}
+    ${en_ids}=    Locale Group Ids In Result    ${en_resp}    bilingual_only=${True}
 
     Should Be Equal    ${en_ids}    ${{ list(reversed($vi_ids)) }}
     ...    msg=Changing the reader's language did not change the order: vi=${vi_ids} en=${en_ids}
@@ -144,10 +144,14 @@ Search Groups Where Name Contains
 
 Locale Group Ids In Result
     [Documentation]    Result-order ids, narrowed to the groups this suite created so that
-    ...    unrelated rows cannot decide whether an ordering assertion passes.
-    [Arguments]    ${resp}
+    ...    unrelated rows cannot decide whether an ordering assertion passes. With
+    ...    bilingual_only, the English-only group is dropped: it sorts last in either language,
+    ...    so it would not reverse with the others.
+    [Arguments]    ${resp}    ${bilingual_only}=${False}
+    ${skip}=    Set Variable If    ${bilingual_only}    ${LOCALE_GROUP_IDS}[en_only]    ${None}
     ${ids}=    Evaluate
-    ...    [i['id'] for i in $resp.json()['items'] if isinstance(i.get('name'), dict) and $LOCALE_GROUP_SUFFIX in str(i['name'])]
+    ...    [i['id'] for i in body['items'] if isinstance(i.get('name'), dict) and suffix in str(i['name']) and i['id'] != skip]
+    ...    namespace=${{ {'body': $resp.json(), 'suffix': $LOCALE_GROUP_SUFFIX, 'skip': $skip} }}
     RETURN    ${ids}
 
 Remember Own Language
@@ -157,6 +161,7 @@ Remember Own Language
     Response Status Should Be    ${resp}    200
     ${item}=    Find Setting Item    ${resp}    ${SETTING_LANGUAGE}
     Set Global Variable    ${ORIGINAL_LANGUAGE}    ${item}[value]
+    Set Global Variable    ${LANGUAGE_REMEMBERED}    ${True}
 
 Set Own Language
     [Arguments]    ${value}
@@ -165,7 +170,10 @@ Set Own Language
     Response Status Should Be    ${resp}    200
 
 Restore Own Language
-    ${value}=    Get Variable Value    ${ORIGINAL_LANGUAGE}    ${EMPTY}
-    IF    not $value    RETURN
+    [Documentation]    An unset language is restored as null, which clears the setting again;
+    ...    leaving it at vi-VN would change how later suites match localized names.
+    ${remembered}=    Get Variable Value    ${LANGUAGE_REMEMBERED}    ${False}
+    IF    not $remembered    RETURN
+    ${value}=    Get Variable Value    ${ORIGINAL_LANGUAGE}    ${None}
     Set Settings At Level    ${SETTINGS_USER_API}
     ...    ${{ [{'name': $SETTING_LANGUAGE, 'value': $value}] }}    expected_status=any

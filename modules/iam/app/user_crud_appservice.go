@@ -23,10 +23,11 @@ func UserFileFields() []filefield.FileField {
 
 // NewUserCrudApplicationService is handed the composable default by the iam_user onion.
 func NewUserCrudApplicationService(
-	base composable.CrudApplicationService, storage filestorage.FileStorageAdapter,
+	base composable.CrudApplicationService, storage filestorage.FileStorageAdapter, domSvc itUser.UserCrudDomainService,
 ) itUser.UserCrudApplicationService {
 	return &UserCrudApplicationServiceImpl{
 		ApplicationService: filefield.NewApplicationService(base, storage, UserFileFields()),
+		domSvc:             domSvc,
 	}
 }
 
@@ -34,6 +35,20 @@ func NewUserCrudApplicationService(
 // field presigned on read and written only through files/avatar.
 type UserCrudApplicationServiceImpl struct {
 	filefield.ApplicationService
+	domSvc itUser.UserCrudDomainService
+}
+
+// ManageRoles asserts manage_role_assignments, the same permission the role side asserts for
+// iam_role/:id/manage_users, so neither side opens a path the other keeps shut.
+func (this *UserCrudApplicationServiceImpl) ManageRoles(
+	ctx corectx.Context, cmd itUser.ManageUserRolesCommand,
+) (*itUser.ManageUserRolesResult, error) {
+	cErrs, err := composable.AssertRecordAction(ctx, this, cmd,
+		composable.ActionPermission{ActionCode: actionManageRoleAssignments})
+	if err != nil || cErrs != nil {
+		return mutateRefused(cErrs, err)
+	}
+	return this.domSvc.ManageRoles(ctx, cmd)
 }
 
 // SendInvitation answers with the address an invitation would go to. Sending the actual email is

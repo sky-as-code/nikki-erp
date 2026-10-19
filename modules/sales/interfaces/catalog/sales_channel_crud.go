@@ -18,7 +18,7 @@ type SalesChannelDomainService interface {
 	composable.CrudDomainService
 
 	// ResolveByCode answers the channel a caller named by its stable code rather than its id.
-	ResolveByCode(ctx corectx.Context, code string) (*dyn.OpResult[dyn.MutateResultData], error)
+	ResolveByCode(ctx corectx.Context, code string, orgId string) (*dyn.OpResult[dyn.MutateResultData], error)
 
 	Suspend(ctx corectx.Context, channelId string) (*dyn.OpResult[dyn.MutateResultData], error)
 	Activate(ctx corectx.Context, channelId string) (*dyn.OpResult[dyn.MutateResultData], error)

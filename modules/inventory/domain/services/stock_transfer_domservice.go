@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -18,8 +19,8 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
-// NewStockTransferDomainService derives the transfer service from the engine's default one, which
-// it embeds so built-in CRUD keeps running unchanged. Installed with Engine.SetResourceService.
+// NewStockTransferDomainService derives the transfer service from the onion's default one, which
+// it embeds so built-in CRUD keeps running unchanged.
 func NewStockTransferDomainService(base composable.CrudDomainService) *StockTransferDomainServiceImpl {
 	return &StockTransferDomainServiceImpl{CrudDomainService: base}
 }
@@ -51,6 +52,20 @@ type transferOperationContext struct {
 
 	Transfer models.StockTransfer
 	Moves    []dmodel.DynamicFields
+}
+
+// isIncomingOperation reports a receipt, whose moves draw from a supplier rather than a balance.
+func isIncomingOperation(operation *transferOperationContext) bool {
+	return derefString(operation.Transfer.GetOperationCode()) == models.StockOperationCodeIncoming
+}
+
+// sourceReservedDelta is what shipping a line takes off its source's reserved figure. An incoming
+// line was never reserved: its supplier source holds no balance to reserve against.
+func sourceReservedDelta(operation *transferOperationContext, quantity decimal.Decimal) decimal.Decimal {
+	if isIncomingOperation(operation) {
+		return decimal.Zero
+	}
+	return quantity.Neg()
 }
 
 // loadTransferOperation resolves the engines and reads the transfer with its moves. The read joins
@@ -205,8 +220,14 @@ func updateTransferStatus(
 		update[models.StockTransferFieldCompletedAt] = time.Now().UTC()
 	}
 
-	_, err := engine.Update(ctx, update)
-	return nil, errors.Wrap(err, "updateTransferStatus")
+	updated, err := engine.Update(ctx, update)
+	if err != nil {
+		return nil, errors.Wrap(err, "updateTransferStatus")
+	}
+	if updated != nil && updated.ClientErrors.Count() > 0 {
+		return updated, nil
+	}
+	return nil, nil
 }
 
 // updateMoveStatus writes a new move state, refusing a transition the machine forbids.
@@ -221,12 +242,25 @@ func updateMoveStatus(
 		return errors.Errorf("a stock move cannot go from '%s' to '%s'", current, next)
 	}
 
-	_, err := engine.Update(ctx, dmodel.DynamicFields{
+	updated, err := engine.Update(ctx, dmodel.DynamicFields{
 		models.StockMoveFieldId:     derefString(move.GetId()),
 		models.StockMoveFieldStatus: next,
 		basemodel.FieldEtag:         derefString(move.GetEtag()),
 	})
-	return errors.Wrap(err, "updateMoveStatus")
+	if err != nil {
+		return errors.Wrap(err, "updateMoveStatus")
+	}
+	return refusedWriteError(updated, "updateMoveStatus")
+}
+
+// refusedWriteError turns a repository write refused with client errors into an error. The
+// repository reports such a refusal on a nil error (a string in a numeric column is one), so a
+// caller that only checks err would carry on as though the write had happened.
+func refusedWriteError[TData any](result *dyn.OpResult[TData], operation string) error {
+	if result == nil || result.ClientErrors.Count() == 0 {
+		return nil
+	}
+	return errors.Errorf("%s: the write was refused: %v", operation, result.ClientErrors)
 }
 
 // moveStatuses reads the state of each move, for summarising into the transfer's own.

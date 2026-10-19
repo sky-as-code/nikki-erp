@@ -16,8 +16,8 @@ import (
 // synchronous request should carry.
 const maxTemplateVariants = 1000
 
-// NewProductTemplateDomainService derives the Products service from the engine's default one, which
-// it embeds so built-in CRUD keeps running unchanged. Installed with Engine.SetResourceService.
+// NewProductTemplateDomainService derives the Products service from the onion's default one, which
+// it embeds so built-in CRUD keeps running unchanged.
 func NewProductTemplateDomainService(base composable.CrudDomainService) itProduct.ProductService {
 	return &ProductTemplateDomainServiceImpl{CrudDomainService: base}
 }

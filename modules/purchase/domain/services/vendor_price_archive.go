@@ -8,7 +8,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
@@ -18,34 +18,32 @@ import (
 // this row, so an archived quote stays readable and only stops pricing anything new. Unarchiving
 // revalidates, because the vendor, product or unit may have become unusable meanwhile, and a rule
 // that archiving and unarchiving can bypass is not a rule. This is a derived service rather than a
-// ValidateExtra hook because the engine refuses that hook on set_archived.
+// ValidateExtra hook because corecrud accepts no hook on set_archived.
 
-// NewVendorProductPriceDomainService derives the vendor price service from the engine's default.
-// Only SetArchived is overridden; create and update are already guarded through ValidateExtra.
+// NewVendorProductPriceDomainService derives the vendor price service from the onion's default.
+// Create and update chain the validator through ValidateExtra (purchase_guards.go).
 func NewVendorProductPriceDomainService(
-	base drif.DynamicResourceService, validator *VendorPriceValidator,
+	base composable.CrudDomainService, validator *VendorPriceValidator,
 ) *VendorProductPriceDomainServiceImpl {
 	return &VendorProductPriceDomainServiceImpl{
-		DynamicResourceService: base,
+		CrudDomainService: base,
 		validator:              validator,
 	}
 }
 
 type VendorProductPriceDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 
 	// The same validator the write guards use, so archiving and creating enforce one set of rules.
 	validator *VendorPriceValidator
 }
-
-var _ drif.DynamicResourceService = (*VendorProductPriceDomainServiceImpl)(nil)
 
 // SetArchived archives freely and revalidates on the way back.
 func (this *VendorProductPriceDomainServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	if !isUnarchiving(params) {
-		return this.DynamicResourceService.SetArchived(ctx, params)
+		return this.CrudDomainService.SetArchived(ctx, params)
 	}
 
 	stored, err := this.loadVendorPrice(ctx, stringOf(params, basemodel.FieldId))
@@ -55,7 +53,7 @@ func (this *VendorProductPriceDomainServiceImpl) SetArchived(
 	if stored == nil {
 		// Let the base call report not-found in its own shape, so the answer does not depend on
 		// which direction was asked for.
-		return this.DynamicResourceService.SetArchived(ctx, params)
+		return this.CrudDomainService.SetArchived(ctx, params)
 	}
 
 	vErrs := ft.NewClientErrors()
@@ -69,7 +67,7 @@ func (this *VendorProductPriceDomainServiceImpl) SetArchived(
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
 
-	return this.DynamicResourceService.SetArchived(ctx, params)
+	return this.CrudDomainService.SetArchived(ctx, params)
 }
 
 // isUnarchiving reports whether this request is bringing a row back. An absent is_archived counts
@@ -100,11 +98,11 @@ func (this *VendorProductPriceDomainServiceImpl) loadVendorPrice(
 		return nil, nil
 	}
 
-	engine, err := engineFor(models.VendorProductPriceSchemaName)
+	repo, err := repoFor(models.VendorProductPriceSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.VendorProductPriceFieldId: recordId,
 	})
 	if err != nil {

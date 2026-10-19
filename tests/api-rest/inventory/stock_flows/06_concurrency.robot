@@ -77,8 +77,8 @@ Exactly One Of Two Contenders Is Fully Assigned
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${second}=    GET On Session    api    ${STOCK_MOVE_API}/${second_move}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${first_status}=    Set Variable    ${first.json()}[data][status]
-    ${second_status}=    Set Variable    ${second.json()}[data][status]
+    ${first_status}=    Set Variable    ${first.json()}[item][status]
+    ${second_status}=    Set Variable    ${second.json()}[item][status]
     ${assigned}=    Evaluate    [$first_status, $second_status].count('assigned')
     Should Be True    ${assigned} <= 1
     ...    msg=Both moves reported as assigned (${first_status}, ${second_status}): the same stock was promised twice

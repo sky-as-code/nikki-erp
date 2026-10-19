@@ -1,5 +1,5 @@
 *** Settings ***
-Documentation     Role-side assignment: manage-users and manage-groups.
+Documentation     Role-side assignment: manage_users and manage_groups.
 ...
 ...               Both endpoints take {add: [ids], remove: [ids]} and run in one transaction
 ...               with one permission rebuild for the role. They assert exactly what the
@@ -7,7 +7,7 @@ Documentation     Role-side assignment: manage-users and manage-groups.
 ...               iam_group), so a caller refused there is refused here too.
 ...
 ...               Membership is verified through the principal-side read endpoints
-...               (GET /v1/iam/users/:user_id/roles, GET /v1/iam/groups/:group_id/roles), so
+...               (GET /v1/iam/iam_user/:id/roles, GET /v1/iam/iam_group/:id/roles), so
 ...               each assertion also proves both ends see the same junction rows.
 Resource          ../../resources/iam.resource
 Suite Setup       Set Up Role Assignment Fixtures
@@ -65,25 +65,25 @@ Create Assignment Group
 
 Manage Role Users
     [Arguments]    ${role_id}    ${add}=${{ [] }}    ${remove}=${{ [] }}    ${alias}=api
-    ${resp}=    POST On Session    ${alias}    ${ROLE_API}/${role_id}/manage-users
+    ${resp}=    POST On Session    ${alias}    ${ROLE_API}/${role_id}/manage_users
     ...    json=${{ {'add': $add, 'remove': $remove} }}    expected_status=any
     RETURN    ${resp}
 
 Manage Role Groups
     [Arguments]    ${role_id}    ${add}=${{ [] }}    ${remove}=${{ [] }}    ${alias}=api
-    ${resp}=    POST On Session    ${alias}    ${ROLE_API}/${role_id}/manage-groups
+    ${resp}=    POST On Session    ${alias}    ${ROLE_API}/${role_id}/manage_groups
     ...    json=${{ {'add': $add, 'remove': $remove} }}    expected_status=any
     RETURN    ${resp}
 
 User Should Hold Role
     [Arguments]    ${user_id}    ${role_id}
-    ${resp}=    GET On Session    api    /v1/iam/users/${user_id}/roles
+    ${resp}=    GET On Session    api    /v1/iam/iam_user/${user_id}/roles
     Response Status Should Be    ${resp}    200
     Search Results Should Contain Id    ${resp}    ${role_id}
 
 User Should Not Hold Role
     [Arguments]    ${user_id}    ${role_id}
-    ${resp}=    GET On Session    api    /v1/iam/users/${user_id}/roles    expected_status=any
+    ${resp}=    GET On Session    api    /v1/iam/iam_user/${user_id}/roles    expected_status=any
     IF    ${resp.status_code} == 200
         Search Results Should Not Contain Id    ${resp}    ${role_id}
     ELSE
@@ -93,13 +93,13 @@ User Should Not Hold Role
 
 Group Should Hold Role
     [Arguments]    ${group_id}    ${role_id}
-    ${resp}=    GET On Session    api    /v1/iam/groups/${group_id}/roles
+    ${resp}=    GET On Session    api    /v1/iam/iam_group/${group_id}/roles
     Response Status Should Be    ${resp}    200
     Search Results Should Contain Id    ${resp}    ${role_id}
 
 Group Should Not Hold Role
     [Arguments]    ${group_id}    ${role_id}
-    ${resp}=    GET On Session    api    /v1/iam/groups/${group_id}/roles    expected_status=any
+    ${resp}=    GET On Session    api    /v1/iam/iam_group/${group_id}/roles    expected_status=any
     IF    ${resp.status_code} == 200
         Search Results Should Not Contain Id    ${resp}    ${role_id}
     ELSE
@@ -159,7 +159,7 @@ Assigning From The Role Side Grants And Revokes Immediately
     Permission Should Be Denied    role_side_plain    ${PROBE_EXPRESSION}
     ${resp}=    Manage Role Users    ${role_id}    add=${{ [$PLAIN_USER_ID] }}
     Response Should Be Update Success    ${resp}    count=1
-    Permission Should Be Granted    role_side_plain    ${PROBE_EXPRESSION}    expected_source_id=${role_id}
+    Permission Should Be Granted    role_side_plain    ${PROBE_EXPRESSION}    expected_role_id=${role_id}
     ${resp}=    Manage Role Users    ${role_id}    remove=${{ [$PLAIN_USER_ID] }}
     Response Should Be Update Success    ${resp}    count=1
     Permission Should Be Denied    role_side_plain    ${PROBE_EXPRESSION}
@@ -175,11 +175,13 @@ Unknown Group Id Is A Client Error
     Response Should Be Value Not Found Error    ${resp}    ${NOT_FOUND_ID}
 
 Unknown Role Id Is A Client Error
+    [Documentation]    The role is the `:id` path parameter of /iam_role/:id/manage_*, so the
+    ...    error names `id`.
     [Tags]    manage_users    manage_groups    negative
     ${resp}=    Manage Role Users    ${NOT_FOUND_ID}    add=${{ [$USER_IDS[0]] }}
-    Response Should Be Field Not Found Error    ${resp}    role_id
+    Response Should Be Field Not Found Error    ${resp}    id
     ${resp}=    Manage Role Groups    ${NOT_FOUND_ID}    add=${{ [$TARGET_GROUP_ID] }}
-    Response Should Be Field Not Found Error    ${resp}    role_id
+    Response Should Be Field Not Found Error    ${resp}    id
 
 The Same Id In Add And Remove Is A Client Error
     [Tags]    manage_users    negative

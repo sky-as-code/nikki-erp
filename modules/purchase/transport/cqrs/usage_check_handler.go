@@ -1,11 +1,9 @@
 package cqrs
 
 import (
-	"go.bryk.io/pkg/errors"
-
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
 )
 
 // Purchase's answer to "is this unit of measure still in use", asked before Essential deletes or
@@ -37,13 +35,10 @@ func uomTables() []usagecheck.ReferencingTable {
 	}
 }
 
-// resolveRepository answers which repository serves a schema. Purchase is still on the legacy
-// resource engine, so the lookup goes through its registry; resolving at check time rather than
-// at registration keeps that detail from mattering to when the checker is registered.
+// resolveRepository answers which repository serves a schema, through the module's resource hub.
+// It resolves at check time rather than at registration, so it does not matter whether the onions
+// are built before the checker is registered; a schema not installed answers an error, which the
+// dispatcher counts as "in use" and so refuses the delete.
 func resolveRepository(schemaName string) (usagecheck.RowSearcher, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
-	if !ok {
-		return nil, errors.Errorf("no resource engine for %s", schemaName)
-	}
-	return engine.ResourceRepository(), nil
+	return services.RepositoryFor(schemaName)
 }

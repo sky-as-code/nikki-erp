@@ -3,6 +3,7 @@ package vendor
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
 type GetVendorResult = dyn.OpResult[GetVendorResultData]
@@ -15,8 +16,10 @@ type VendorLookupService interface {
 	GetVendor(ctx corectx.Context, query GetVendorQuery) (*GetVendorResult, error)
 }
 
-// VendorDomainService is the full capability, implemented inside Contacts.
+// VendorDomainService is the full capability, implemented inside Contacts: the CRUD of the vendor
+// profile resource plus the questions a purchasing module asks.
 type VendorDomainService interface {
+	composable.CrudDomainService
 	VendorLookupService
 
 	// AssertOrderable reports whether a new order may name this party as its vendor: the party

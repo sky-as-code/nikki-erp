@@ -1,81 +1,53 @@
-// Package dynamicengines declares the resource engines the Payment & Invoice module serves through
-// the dynamic resource engine, and creates them during the module's Init().
-//
-// Its imports point one way only: the domain, the module's own interfaces, and the dynamicresource
-// module — never app/, infra/ or transport/. That keeps the package importable by both
-// paymentinvoice (which creates the engines) and paymentinvoice/transport/restful (which registers
-// their routes) without a cycle.
-//
-// The package declares engines and adapts their callbacks; the rules those callbacks enforce live
-// in domain/services. See docs/wiki/07. ERP backend module.md §6.7.
+// Package dynamicengines registers the composable onions of the Payment & Invoice resources and
+// publishes their typed layers into the dependency container. Each onion is a container
+// constructor: Init only registers, and BuildAllEngines forces the construction once every
+// service an onion injects is registered.
 package dynamicengines
 
 import (
-	"go.bryk.io/pkg/errors"
+	stdErr "errors"
 
-	"github.com/sky-as-code/nikki-erp/common/array"
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 )
 
-// engineSpec declares one resource engine the Payment & Invoice module owns.
-type engineSpec struct {
-	// SchemaName is the dynamic-model schema the engine serves. It must be an XSchemaName
-	// constant, never a string derived from the resource path.
-	SchemaName string
-
-
-	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD
-	// ones. It is optional: a resource without custom behavior leaves it nil.
-	DefineActions func(drif.DynamicResourceEngine) error
-}
-
-// engineSpecs lists the resources this module serves through the dynamic resource engine, each
-// with the field set its listing UI needs.
-var engineSpecs = []engineSpec{
-	paymentMethodEngineSpec(),
-	paymentProfileEngineSpec(),
-	orderEngineSpec(),
-	transactionEngineSpec(),
-	invoiceEngineSpec(),
-	invoiceLineEngineSpec(),
-}
-
-// EngineSchemaNames lists the schemas this module creates an engine for, so that route
-// registration and engine creation cannot drift apart.
-func EngineSchemaNames() []string {
-	return array.Map(engineSpecs, func(spec engineSpec) string {
-		return spec.SchemaName
-	})
-}
-
-// InitDynamicEngines creates the resource engines this module owns and publishes them into the
-// dependency container, so that other modules can inject them by name.
+// InitDynamicEngines registers every resource this module serves.
 func InitDynamicEngines() error {
-	for _, spec := range engineSpecs {
-		if err := initEngine(spec); err != nil {
-			return err
-		}
-	}
-	return nil
+	return stdErr.Join(
+		registerPaymentMethodEngine(),
+		registerPaymentProfileEngine(),
+		registerTransactionEngine(),
+		registerOrderEngine(),
+		registerInvoiceEngine(),
+		registerInvoiceLineEngine(),
+	)
 }
 
-func initEngine(spec engineSpec) error {
-	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create the '%s' resource engine", spec.SchemaName)
+// SchemaNames lists the resources served by a composable onion, for route registration and the
+// boot-time check that each was built.
+func SchemaNames() []string {
+	return []string{
+		models.PaymentMethodSchemaName,
+		models.PaymentProfileSchemaName,
+		models.TransactionSchemaName,
+		models.OrderSchemaName,
+		models.InvoiceSchemaName,
+		models.InvoiceLineSchemaName,
 	}
+}
 
-	if spec.DefineActions != nil {
-		if err := spec.DefineActions(engine); err != nil {
-			return errors.Wrapf(err, "failed to define actions of the '%s' resource engine", spec.SchemaName)
-		}
-	}
+// EngineSchemaNames is SchemaNames under the name the route tests are written against.
+func EngineSchemaNames() []string {
+	return SchemaNames()
+}
 
-	err = deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(spec.SchemaName),
-		func() drif.DynamicResourceEngine { return engine },
-	)
-	return errors.Wrapf(err, "failed to register the '%s' resource engine", spec.SchemaName)
+// buildOnion builds one onion and installs it into the resource hub, through which the payment
+// flow, the sweeps and the webhooks reach the repositories.
+func buildOnion(
+	impl *composable.DynamicResourceEngineOnionImpl, param composable.BuildParam,
+) composable.DynamicResourceEngineOnion {
+	onion := composable.MustBuild(impl, param)
+	services.InstallResource(impl.SchemaName, onion.Repository(), onion.DomainService())
+	return onion
 }

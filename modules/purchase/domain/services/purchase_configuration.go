@@ -40,11 +40,11 @@ func LoadConfiguration(ctx corectx.Context, orgId string) (PurchaseConfiguration
 		return config, nil
 	}
 
-	engine, err := engineFor(models.ConfigurationSchemaName)
+	repo, err := repoFor(models.ConfigurationSchemaName)
 	if err != nil {
 		return config, err
 	}
-	rows, err := models.FindConfigurationForOrg(ctx, engine.ResourceRepository(), orgId)
+	rows, err := models.FindConfigurationForOrg(ctx, repo, orgId)
 	if err != nil {
 		return config, err
 	}

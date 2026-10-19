@@ -119,7 +119,7 @@ func (this *InvoiceDomainService) GetBySource(
 		return &IssueFromSourceResult{}, nil
 	}
 
-	engine, err := engineFor(models.InvoiceSchemaName)
+	repo, err := repoFor(models.InvoiceSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (this *InvoiceDomainService) GetBySource(
 			models.InvoiceFieldSourceId, dmodel.Equals, query.SourceId),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,
@@ -177,7 +177,7 @@ func assertIssuableFromSource(cmd IssueFromSourceCommand) string {
 
 // writeInvoiceDraft creates the draft the lines hang off.
 func writeInvoiceDraft(ctx corectx.Context, cmd IssueFromSourceCommand) (string, error) {
-	engine, err := engineFor(models.InvoiceSchemaName)
+	repo, err := repoFor(models.InvoiceSchemaName)
 	if err != nil {
 		return "", err
 	}
@@ -209,7 +209,7 @@ func writeInvoiceDraft(ctx corectx.Context, cmd IssueFromSourceCommand) (string,
 		fields[models.InvoiceFieldNote] = cmd.Note
 	}
 
-	if _, err := engine.ResourceRepository().Insert(ctx, fields); err != nil {
+	if _, err := repo.Insert(ctx, fields); err != nil {
 		return "", errors.Wrap(err, "writeInvoiceDraft")
 	}
 	return string(*id), nil
@@ -220,7 +220,7 @@ func writeInvoiceDraft(ctx corectx.Context, cmd IssueFromSourceCommand) (string,
 func writeInvoiceLinesFor(
 	ctx corectx.Context, invoiceId string, cmd IssueFromSourceCommand,
 ) error {
-	engine, err := engineFor(models.InvoiceLineSchemaName)
+	repo, err := repoFor(models.InvoiceLineSchemaName)
 	if err != nil {
 		return err
 	}
@@ -230,7 +230,7 @@ func writeInvoiceLinesFor(
 		if err != nil {
 			return err
 		}
-		if _, err := engine.ResourceRepository().Insert(ctx, dmodel.DynamicFields{
+		if _, err := repo.Insert(ctx, dmodel.DynamicFields{
 			models.InvoiceLineFieldId:             string(*id),
 			models.InvoiceLineFieldInvoiceId:      invoiceId,
 			models.InvoiceLineFieldDescription:    line.Description,

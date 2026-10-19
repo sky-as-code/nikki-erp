@@ -1,14 +1,12 @@
 package dynamicresource
 
 import (
-	stdErr "errors"
-
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
-// ModuleName is the name feature modules must list in their Deps() to use resource engines.
+// ModuleName is the name feature modules must list in their Deps() to use composable resource onions.
 const ModuleName = "dynamicresource"
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
@@ -58,24 +56,17 @@ func (*DynamicResourceModule) Version() semver.SemVer {
 }
 
 // Init implements InCodeModule.
-// It hands the core services that every engine needs to the registry, so that feature
-// modules can create their engines during their own Init(). This module is initialized
-// before them because they declare it in their Deps().
 func (*DynamicResourceModule) Init() error {
-	// A composable resource may compute over a source this registry still serves, so the
-	// registry is the onion's fallback for source rows. The reverse direction lives in
-	// searchSourceRowsForComputed.
-	composable.SetLegacySourceResolver(searchSourceRowsForComputed)
-	return initRegistryDeps()
+	return nil
 }
 
 // OnAppStarted implements InCodeModuleAppStarted.
 //
-// It matches every "function"-kind computed field against the functions its engine registered.
-// The check has to run here rather than at engine construction: a feature module builds its
-// engines and registers their functions inside its own Init(), which is long after this module's.
+// It matches every "function"-kind computed field against the functions its onion registered.
+// The check has to run here rather than at onion construction: a feature module builds its
+// onions and registers their functions inside its own Init(), which is long after this module's.
 // By the time any OnAppStarted runs, every module's Init() has completed — so a missing function
 // fails the boot with a precise message instead of surfacing as a broken read later.
 func (*DynamicResourceModule) OnAppStarted() error {
-	return stdErr.Join(assertComputedFunctionsDefined(), assertNoDualServing())
+	return composable.AssertComputedFunctionsDefined()
 }

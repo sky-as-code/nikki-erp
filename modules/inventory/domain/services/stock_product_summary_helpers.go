@@ -67,6 +67,9 @@ func (this *StockQuantDomainServiceImpl) locationIdsWithUsage(
 
 		for _, row := range result.Data.Items {
 			location := models.NewInventoryLocationFrom(row)
+			if derefString(location.GetLocationUsage()) != usage {
+				continue
+			}
 			if id := derefId(location.GetId()); id != "" {
 				found[id] = true
 			}

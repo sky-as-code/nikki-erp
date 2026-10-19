@@ -8,7 +8,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
@@ -191,19 +191,19 @@ func isOlderOrder(candidate, current dmodel.DynamicFields) bool {
 func (this *PurchaseOrderDomainServiceImpl) mergeOneOrder(
 	ctx corectx.Context, source dmodel.DynamicFields, targetId string,
 ) error {
-	lineEngine, err := engineFor(models.PurchaseOrderLineSchemaName)
+	lineRepo, err := repoFor(models.PurchaseOrderLineSchemaName)
 	if err != nil {
 		return err
 	}
 	sourceId := stringOf(source, models.PurchaseOrderFieldId)
 
 	sourceLines, err := models.FindOrderLines(
-		ctx, lineEngine.ResourceRepository(), sourceId, models.MaxOrderLines)
+		ctx, lineRepo, sourceId, models.MaxOrderLines)
 	if err != nil {
 		return err
 	}
 	targetLines, err := models.FindOrderLines(
-		ctx, lineEngine.ResourceRepository(), targetId, models.MaxOrderLines)
+		ctx, lineRepo, targetId, models.MaxOrderLines)
 	if err != nil {
 		return err
 	}
@@ -212,12 +212,12 @@ func (this *PurchaseOrderDomainServiceImpl) mergeOneOrder(
 		match := findMergeableLine(targetLines, sourceLine)
 		if match == nil {
 			// No compatible line: the source line moves across as a line of its own.
-			if err := moveLineToOrder(ctx, lineEngine, sourceLine, targetId); err != nil {
+			if err := moveLineToOrder(ctx, lineRepo, sourceLine, targetId); err != nil {
 				return err
 			}
 			continue
 		}
-		if err := addQuantityToLine(ctx, lineEngine, match, sourceLine); err != nil {
+		if err := addQuantityToLine(ctx, lineRepo, match, sourceLine); err != nil {
 			return err
 		}
 	}
@@ -302,7 +302,7 @@ func arrivalsAreClose(target, source dmodel.DynamicFields) bool {
 
 // addQuantityToLine sums the source line's quantity into the matching target line.
 func addQuantityToLine(
-	ctx corectx.Context, lineEngine drif.DynamicResourceEngine,
+	ctx corectx.Context, lineRepo composable.CrudRepository,
 	target, source dmodel.DynamicFields,
 ) error {
 	combined := decimalOf(target, models.PurchaseOrderLineFieldQuantity).Add(
@@ -319,7 +319,7 @@ func addQuantityToLine(
 	merged[models.PurchaseOrderLineFieldTaxAmount] = combinedTax
 	StampLineTotals(merged)
 
-	if _, err := lineEngine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	if _, err := lineRepo.Update(ctx, dmodel.DynamicFields{
 		models.PurchaseOrderLineFieldId:        stringOf(target, models.PurchaseOrderLineFieldId),
 		models.PurchaseOrderLineFieldQuantity:  combined,
 		models.PurchaseOrderLineFieldTaxAmount: combinedTax,
@@ -336,7 +336,7 @@ func addQuantityToLine(
 
 	// The source line is removed: it now lives inside the target's quantity, and leaving it would
 	// double-count for anyone reading both orders.
-	_, err := lineEngine.ResourceRepository().DeleteOne(ctx, dmodel.DynamicFields{
+	_, err := lineRepo.DeleteOne(ctx, dmodel.DynamicFields{
 		models.PurchaseOrderLineFieldId: stringOf(source, models.PurchaseOrderLineFieldId),
 	})
 	return err
@@ -344,10 +344,10 @@ func addQuantityToLine(
 
 // moveLineToOrder repoints one line at another order.
 func moveLineToOrder(
-	ctx corectx.Context, lineEngine drif.DynamicResourceEngine,
+	ctx corectx.Context, lineRepo composable.CrudRepository,
 	line dmodel.DynamicFields, targetId string,
 ) error {
-	_, err := lineEngine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err := lineRepo.Update(ctx, dmodel.DynamicFields{
 		models.PurchaseOrderLineFieldId:              stringOf(line, models.PurchaseOrderLineFieldId),
 		models.PurchaseOrderLineFieldPurchaseOrderId: targetId,
 		basemodel.FieldEtag:                          stringOf(line, basemodel.FieldEtag),

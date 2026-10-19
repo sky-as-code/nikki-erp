@@ -12,7 +12,7 @@ import (
 func InitApplicationServices() error {
 	return stdErr.Join(
 		deps.Register(NewSettingsApplicationServiceImpl),
-		deps.Register(services.NewTaxCalculationDomainServiceImpl),
+		deps.Register(services.NewTaxRepos, services.NewTaxCalculationDomainServiceImpl),
 		deps.Register(NewTaxCalculationApplicationServiceImpl),
 
 		// The org currency reader has no application service because it needs no authorization

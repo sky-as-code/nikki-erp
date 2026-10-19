@@ -1,0 +1,140 @@
+package services
+
+import (
+	"go.bryk.io/pkg/errors"
+
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+)
+
+func validateRateVersionCreate(repo models.TaxSearcher) composable.ValidateExtraFn {
+	return func(
+		ctx corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	) error {
+		params := inputModel.GetFieldData()
+		version := models.NewTaxRateVersionFrom(params)
+		assertWellFormedPeriod(
+			version.GetEffectiveFrom(), version.GetEffectiveTo(),
+			models.TaxRateVersionFieldEffectiveTo, vErrs)
+		assertRateFieldsExclusive(version, vErrs)
+		return assertNoPublishedRateOverlap(ctx, repo, version, nil, vErrs)
+	}
+}
+
+func validateRateVersionUpdate(repo models.TaxSearcher) composable.ValidateExtraFn {
+	return func(
+		ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity,
+		vErrs *ft.ClientErrors,
+	) error {
+		params := inputModel.GetFieldData()
+		found := entityFields(foundModel)
+		assertLifecycleTransition(models.TaxRateVersionFieldLifecycleStatus, params, found, vErrs)
+		assertMaterialFieldsImmutable(
+			models.TaxRateVersionSchemaName,
+			models.TaxRateVersionFieldLifecycleStatus, params, found, vErrs)
+		if vErrs.Count() > 0 {
+			return nil
+		}
+
+		version := models.NewTaxRateVersionFrom(mergeFields(found, params))
+		assertWellFormedPeriod(
+			version.GetEffectiveFrom(), version.GetEffectiveTo(),
+			models.TaxRateVersionFieldEffectiveTo, vErrs)
+		assertRateFieldsExclusive(version, vErrs)
+
+		var selfId *string
+		if found != nil {
+			selfId = models.NewTaxRateVersionFrom(*found).GetId()
+		}
+		return assertNoPublishedRateOverlap(ctx, repo, version, selfId, vErrs)
+	}
+}
+
+func validateRateVersionDelete(
+	_ corectx.Context, _ *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+) error {
+	found := entityFields(foundModel)
+	assertDeletableLifecycle(models.TaxRateVersionFieldLifecycleStatus, found, vErrs)
+	return nil
+}
+
+// assertRateFieldsExclusive rejects a rate version that is both a percentage and a fixed amount, or
+// neither. The two describe incompatible arithmetic: a percentage multiplies a base, a fixed amount
+// multiplies a quantity. Which one is required depends on the calculation type, which lives on the
+// definition version, so that pairing is checked at publish time; this settles only that exactly one
+// shape is present.
+func assertRateFieldsExclusive(version *models.TaxRateVersion, vErrs *ft.ClientErrors) {
+	hasRate := version.GetRate() != nil
+	hasFixed := version.GetFixedAmount() != nil
+
+	if hasRate && hasFixed {
+		vErrs.Append(*ft.NewBusinessViolation(models.TaxRateVersionFieldFixedAmount,
+			ft.ErrorKey("tax.rate_and_fixed_amount_both_set", "accounting"),
+			"a tax rate version carries either a percentage rate or a fixed amount, never both"))
+		return
+	}
+	if !hasRate && !hasFixed {
+		vErrs.Append(*ft.NewBusinessViolation(models.TaxRateVersionFieldRate,
+			ft.ErrorKey("tax.rate_or_fixed_amount_required", "accounting"),
+			"a tax rate version must carry either a percentage rate or a fixed amount"))
+		return
+	}
+
+	if hasFixed {
+		if version.GetCurrencyCode() == nil {
+			vErrs.Append(*ft.NewBusinessViolation(models.TaxRateVersionFieldCurrencyCode,
+				ft.ErrorKey("tax.fixed_amount_requires_currency", "accounting"),
+				"a fixed tax amount must state the currency it is denominated in"))
+		}
+		if version.GetRateUomId() == nil {
+			vErrs.Append(*ft.NewBusinessViolation(models.TaxRateVersionFieldRateUomId,
+				ft.ErrorKey("tax.fixed_amount_requires_uom", "accounting"),
+				"a fixed tax amount must state the unit it is charged per"))
+		}
+	}
+}
+
+// assertNoPublishedRateOverlap is the rate-version counterpart of assertNoPublishedOverlap. A
+// tax_date must resolve to exactly one published rate; a tie broken by taking the newest row is how
+// a customer ends up charged 10% on a document that says 8%.
+func assertNoPublishedRateOverlap(
+	ctx corectx.Context,
+	repo models.TaxSearcher,
+	version *models.TaxRateVersion,
+	selfId *string,
+	vErrs *ft.ClientErrors,
+) error {
+	status := version.GetLifecycleStatus()
+	if status == nil || *status != string(models.LifecyclePublished) {
+		return nil
+	}
+	taxId := version.GetTaxId()
+	if taxId == nil {
+		return nil
+	}
+
+	existing, err := models.FindPublishedRateVersionsOfTax(ctx, repo, *taxId, 200)
+	if err != nil {
+		return errors.Wrap(err, "assertNoPublishedRateOverlap")
+	}
+
+	for _, item := range existing {
+		other := models.NewTaxRateVersionFrom(item)
+		if selfId != nil && other.GetId() != nil && *other.GetId() == *selfId {
+			continue
+		}
+		if models.PeriodsOverlap(
+			version.GetEffectiveFrom(), version.GetEffectiveTo(),
+			other.GetEffectiveFrom(), other.GetEffectiveTo(),
+		) {
+			vErrs.Append(*ft.NewBusinessViolation(models.TaxRateVersionFieldEffectiveFrom,
+				ft.ErrorKey("tax.published_rate_overlap", "accounting"),
+				"another published rate version of this tax already covers part of this period; "+
+					"a tax date must resolve to exactly one rate"))
+			return nil
+		}
+	}
+	return nil
+}

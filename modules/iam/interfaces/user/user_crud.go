@@ -8,18 +8,25 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable/filefield"
 )
 
-// The composable layers of the iam_user resource, served at /v1/iam/iam_user. The "Crud" infix
-// keeps them apart from the hand-written UserRepository/UserDomainService/UserAppService, which
-// still back login, permission evaluation, /me/context and the command bus.
+// The composable layers of the iam_user resource, served at /v1/iam/iam_user. Sign-in, permission
+// evaluation, /me/context and the command bus read users through the same layers.
 
 // UserCrudRepository reads and writes user rows for the composable resource.
 type UserCrudRepository interface {
 	composable.CrudRepository
 }
 
-// UserCrudDomainService is the CRUD of the resource plus its own rules.
+// UserCrudDomainService is the CRUD of the resource plus its own rules: a create seeds the
+// user's preferences and permission cache, and a role assignment rebuilds that cache.
 type UserCrudDomainService interface {
 	composable.CrudDomainService
+
+	ManageRoles(ctx corectx.Context, cmd ManageUserRolesCommand) (*ManageUserRolesResult, error)
+
+	// GetUser and GetEnabledUser are the sign-in and request-guard reads. They assert nothing, and
+	// GetEnabledUser answers the getEnabledUser command bus query, whose shape core copies.
+	GetUser(ctx corectx.Context, query GetUserQuery) (*GetUserDomainResult, error)
+	GetEnabledUser(ctx corectx.Context, query GetUserQuery) (*GetUserDomainResult, error)
 }
 
 // UserCrudApplicationService is the authorized surface the REST handler serves.
@@ -28,9 +35,16 @@ type UserCrudApplicationService interface {
 	filefield.FileFieldsService
 
 	SendInvitation(ctx corectx.Context, cmd SendUserInvitationCommand) (*SendUserInvitationResult, error)
+	ManageRoles(ctx corectx.Context, cmd ManageUserRolesCommand) (*ManageUserRolesResult, error)
 }
 
 type (
+	CreateUserCrudCommand = composable.CreateCommand
+	CreateUserCrudResult  = composable.CreateResult
+
 	SendUserInvitationCommand = dmodel.DynamicFields
 	SendUserInvitationResult  = dyn.OpResult[any]
+
+	ManageUserRolesCommand = composable.ManageM2mCommand
+	ManageUserRolesResult  = composable.MutateResult
 )

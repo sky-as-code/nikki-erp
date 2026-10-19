@@ -36,7 +36,7 @@ Create With Duplicate Code Fails
     ${resp}=    POST On Session    api    ${STORAGE_CATEGORY_API}
     ...    json=${{ {'code': $STORAGE_CATEGORY_CODE, 'name': {'en-US': $name}, 'allow_new_item_policy': 'allow', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
-    Response Should Be Duplicate Values Error    ${resp}
+    Response Should Be Duplicate Values Error    ${resp}    code    org_id
 
 Archiving A Category A Location Uses Is Refused
     [Documentation]    Withdrawing a category while a live location cites it would leave that

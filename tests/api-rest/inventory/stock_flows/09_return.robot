@@ -30,7 +30,7 @@ A Done Transfer Can Raise A Return
 
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${transfer_id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${original}=    Set Variable    ${resp.json()}[data]
+    ${original}=    Set Variable    ${resp.json()}[item]
     Set Suite Variable    ${RETURN_ORIGINAL_ID}    ${transfer_id}
     Set Suite Variable    ${RETURN_ORIGINAL_UPDATED_AT}    ${original.get('updated_at')}
 
@@ -44,7 +44,7 @@ The Return Is A New Draft Transfer Pointing At The Original
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${return_id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${item}=    Set Variable    ${resp.json()}[data]
+    ${item}=    Set Variable    ${resp.json()}[item]
     Should Be Equal    ${item}[status]    draft
     ...    msg=A return re-enters the normal lifecycle as a draft (F5, BR §4.2.10.4 step 8)
     Should Be Equal    ${item}[return_of_id]    ${RETURN_ORIGINAL_ID}
@@ -55,10 +55,10 @@ The Return Reverses The Direction Of Travel
     ...    from. Getting this wrong produces a transfer moving stock the way it already went.
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${RETURN_ORIGINAL_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${original}=    Set Variable    ${resp.json()}[data]
+    ${original}=    Set Variable    ${resp.json()}[item]
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${RETURN_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${reverse}=    Set Variable    ${resp.json()}[data]
+    ${reverse}=    Set Variable    ${resp.json()}[item]
 
     Should Be Equal    ${reverse}[source_location_id]    ${original}[destination_location_id]
     ...    msg=The return must draw from where the original delivered
@@ -73,7 +73,7 @@ The Original Transfer Is Untouched
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${RETURN_ORIGINAL_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${item}=    Set Variable    ${resp.json()}[data]
+    ${item}=    Set Variable    ${resp.json()}[item]
     Should Be Equal    ${item}[status]    done
     ...    msg=Raising a return must not reopen or cancel the original
     Should Be Equal    ${item.get('updated_at')}    ${RETURN_ORIGINAL_UPDATED_AT}
@@ -83,7 +83,7 @@ The Return Carries A Move Linked To The One It Reverses
     [Documentation]    BR §4.2.10.5: history must read original move → reverse move. The link is
     ...    also what lets the next return tell what has already come back.
     ${resp}=    GET On Session    api    ${STOCK_MOVE_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 200} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 200, 'fields': 'id,transfer_id,origin_move_id', 'graph': '{"if": ["transfer_id", "=", "%s"]}' % $RETURN_TRANSFER_ID} }}
     Response Status Should Be    ${resp}    200
     ${linked}=    Set Variable    ${0}
     FOR    ${item}    IN    @{resp.json()}[items]
@@ -99,7 +99,7 @@ Returning More Than Was Shipped Is Refused
     ...    actually completed, never from what it demanded (BR §4.2.10.3).
     [Tags]    negative
     ${resp}=    GET On Session    api    ${STOCK_MOVE_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 200} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 200, 'fields': 'id,transfer_id,origin_move_id', 'graph': '{"if": ["transfer_id", "=", "%s"]}' % $RETURN_ORIGINAL_ID} }}
     ${origin_move}=    Set Variable    ${EMPTY}
     FOR    ${item}    IN    @{resp.json()}[items]
         IF    $item.get('transfer_id') == $RETURN_ORIGINAL_ID
@@ -130,7 +130,7 @@ Find Return Of Transfer
     [Documentation]    Locates the reverse transfer raised against an original.
     [Arguments]    ${original_id}
     ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 200} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 200, 'fields': 'id,return_of_id', 'graph': '{"if": ["return_of_id", "=", "%s"]}' % $original_id} }}
     Response Status Should Be    ${resp}    200
     FOR    ${item}    IN    @{resp.json()}[items]
         IF    $item.get('return_of_id') == $original_id    RETURN    ${item}[id]

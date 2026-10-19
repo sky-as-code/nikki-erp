@@ -1,64 +1,31 @@
 // Package services holds the rules of the Purchase module: the totals recomputation, the order and
-// agreement lifecycles, and the audit trail that records them. Everything here is reached from a
-// dynamicengines action callback, which adapts and validates the request; the writes belong here.
+// agreement lifecycles, and the audit trail that records them. Everything here is reached from an
+// application service in app/, which authorizes and adapts the request; the writes belong here.
 package services
 
 import (
 	"time"
 
 	"github.com/shopspring/decimal"
-	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
-// engineFor resolves another resource's engine from the registry. It is a variable so a test can
-// substitute its own engines; the registry is a package singleton populated during Init.
-var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
-	if !ok {
-		return nil, errors.Errorf("no resource engine for '%s'", schemaName)
-	}
-	return engine, nil
-}
-
-// EngineFor exposes the registry lookup to dynamicengines, whose action callbacks receive only
-// their own engine. It delegates to engineFor so a test's substitution is honoured here too.
-func EngineFor(schemaName string) (drif.DynamicResourceEngine, error) {
-	return engineFor(schemaName)
-}
-
-// withOrderTransaction runs body inside one transaction on a cloned context. The transaction must
-// go on the clone, never on ctx itself, or a committed transaction stays visible to whatever runs
-// next; the clone carries the caller's identity, which the audit columns and actor need. There is
-// no join-existing-transaction branch: BeginTx returns ErrTxNested, and nesting these entry points
-// is a bug rather than a case to handle.
+// withOrderTransaction runs body inside one order transaction. An entry point reached from another
+// one (create_rfq creating its order lines) joins the transaction ctx already carries, since the
+// database client refuses a nested one.
 func withOrderTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
-	engine, err := engineFor(models.PurchaseOrderSchemaName)
+	repo, err := repoFor(models.PurchaseOrderSchemaName)
 	if err != nil {
 		return err
 	}
-
-	tranx, err := engine.ResourceRepository().BeginTransaction(ctx)
-	if err != nil {
-		return errors.Wrap(err, "withOrderTransaction")
-	}
-	defer tranx.Rollback()
-
-	tranxCtx := corectx.CloneRequestContext(ctx)
-	tranxCtx.SetDbTranx(tranx)
-
-	if err := body(tranxCtx); err != nil {
-		return err
-	}
-	return errors.Wrap(tranx.Commit(), "withOrderTransaction")
+	return composable.InTransaction(ctx, repo, body)
 }
 
 // orderNotFoundResult reports a missing order as a client error, since the id came from the caller.

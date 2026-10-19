@@ -40,19 +40,19 @@ Create Probe Org
     [Arguments]    ${label}
     ${name}=    Unique Display Name    ${label}
     ${slug}=    Evaluate    "${label}".lower().replace(' ', '-') + '-' + str(__import__('uuid').uuid4())[:8]
-    ${resp}=    POST On Session    api    /v1/iam/organizations
-    ...    json=${{ {'display_name': $name, 'slug': $slug, 'legal_name': $name} }}
+    ${resp}=    POST On Session    api    /v1/iam/iam_org
+    ...    json=${{ {'display_name': {'en-US': $name}, 'slug': $slug, 'legal_name': {'en-US': $name}} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 
 Create Probe Org Unit
     [Arguments]    ${label}    ${org_id}    ${parent_id}=${EMPTY}
     ${name}=    Unique Display Name    ${label}
-    ${payload}=    Create Dictionary    name=${name}    display_name=${name}    org_id=${org_id}
+    ${payload}=    Create Dictionary    name=${name}    org_id=${org_id}
     IF    $parent_id
         Set To Dictionary    ${payload}    parent_id=${parent_id}
     END
-    ${resp}=    POST On Session    api    /v1/iam/orgunits    json=${payload}
+    ${resp}=    POST On Session    api    /v1/iam/iam_orgunit    json=${payload}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 
@@ -71,7 +71,7 @@ Skip Unless Unit Scope Is Grantable
     ...    out at org — so these cases are skipped rather than failed: the evaluation rule
     ...    they cover is proven by the unit tests, and failing here would report a missing
     ...    seed as a broken permission system.
-    ${resp}=    GET On Session    api    /v1/iam/resources
+    ${resp}=    GET On Session    api    /v1/iam/iam_resource
     ...    params=${{ {'graph': '{"if":["min_scope", "=", "orgunit"]}'} }}    expected_status=any
     IF    ${resp.status_code} != 200 or len($resp.json().get('items', [])) == 0
         Skip    No resource permits orgunit-scoped entitlements in this deployment
@@ -112,7 +112,9 @@ A Unit Grant Answers Only For Its Own Unit
     ${role_id}=    Grant Scoped Role    Perm Scope Unit Child    orgunit    org_unit_id    ${UNIT_CHILD}
     Permission Should Be Granted    scope_user    read:iam_user:orgunit/${UNIT_CHILD}
     Permission Should Be Denied    scope_user    read:iam_user:orgunit/${UNIT_PARENT}
-    [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
+    # A skipped case never granted the role, so there is no ${role_id} to revoke.
+    [Teardown]    Run Keyword If    '${TEST STATUS}' != 'SKIP'
+    ...    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
 A Parent Unit Grant Does Not Reach A Child Unit
     [Documentation]    No downward inheritance between units. A grant on the parent must
@@ -123,7 +125,9 @@ A Parent Unit Grant Does Not Reach A Child Unit
     ${role_id}=    Grant Scoped Role    Perm Scope Unit Parent    orgunit    org_unit_id    ${UNIT_PARENT}
     Permission Should Be Granted    scope_user    read:iam_user:orgunit/${UNIT_PARENT}
     Permission Should Be Denied    scope_user    read:iam_user:orgunit/${UNIT_CHILD}
-    [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
+    # A skipped case never granted the role, so there is no ${role_id} to revoke.
+    [Teardown]    Run Keyword If    '${TEST STATUS}' != 'SKIP'
+    ...    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
 A Narrow Grant Does Not Satisfy A Tenant Question
     [Documentation]    Widening runs one way only. Holding a permission over one org says

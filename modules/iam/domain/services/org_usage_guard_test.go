@@ -13,10 +13,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 )
 
@@ -78,36 +77,25 @@ func orgDispatcher(t *testing.T, bus *orgUsageBus) *usagecheck.Dispatcher {
 	return usagecheck.NewDispatcher(bus, registry, nil)
 }
 
-// deleteRecorder is the engine's own resource service; only Delete is reached by these tests.
-type deleteRecorder struct {
-	drif.DynamicResourceService
-	deleted int
-}
-
-func (this *deleteRecorder) Delete(corectx.Context, dmodel.DynamicFields) (*dyn.OpResult[dyn.MutateResultData], error) {
-	this.deleted++
-	return &dyn.OpResult[dyn.MutateResultData]{HasData: true}, nil
-}
-
-func deleteOrgThroughEngine(t *testing.T, bus *orgUsageBus) (*dyn.OpResult[dyn.MutateResultData], *deleteRecorder, error) {
+func deleteOrgThroughService(t *testing.T, bus *orgUsageBus) (*composable.MutateResult, *fakeCrudDomain, error) {
 	t.Helper()
-	base := &deleteRecorder{}
-	guard := NewOrgEngineDeleteGuard(base, orgDispatcher(t, bus))
+	base := newFakeCrudDomain()
+	svc := NewOrgCrudDomainService(base, nil, orgDispatcher(t, bus))
 	ctx := corectx.NewRequestContext(context.Background())
-	result, err := guard.Delete(ctx, dmodel.DynamicFields{basemodel.FieldId: "01JORG0000000000000000000A"})
+	result, err := svc.Delete(ctx, dmodel.DynamicFields{basemodel.FieldId: "01JORG0000000000000000000A"})
 	return result, base, err
 }
 
-func TestOrgEngineDeleteGuard_UnusedOrgIsDeleted(t *testing.T) {
-	result, base, err := deleteOrgThroughEngine(t, &orgUsageBus{used: false})
+func TestOrgDelete_UnusedOrgIsDeleted(t *testing.T) {
+	result, base, err := deleteOrgThroughService(t, &orgUsageBus{used: false})
 
 	require.NoError(t, err)
 	assert.Equal(t, 0, result.ClientErrors.Count())
 	assert.Equal(t, 1, base.deleted)
 }
 
-func TestOrgEngineDeleteGuard_UsedOrgIsRefused(t *testing.T) {
-	result, base, err := deleteOrgThroughEngine(t, &orgUsageBus{used: true})
+func TestOrgDelete_UsedOrgIsRefused(t *testing.T) {
+	result, base, err := deleteOrgThroughService(t, &orgUsageBus{used: true})
 
 	require.NoError(t, err)
 	require.Equal(t, 1, result.ClientErrors.Count())
@@ -115,8 +103,8 @@ func TestOrgEngineDeleteGuard_UsedOrgIsRefused(t *testing.T) {
 	assert.Equal(t, 0, base.deleted)
 }
 
-func TestOrgEngineDeleteGuard_UnansweredCheckRefuses(t *testing.T) {
-	result, base, err := deleteOrgThroughEngine(t, &orgUsageBus{failure: "parkinglot is down"})
+func TestOrgDelete_UnansweredCheckRefuses(t *testing.T) {
+	result, base, err := deleteOrgThroughService(t, &orgUsageBus{failure: "parkinglot is down"})
 
 	require.NoError(t, err)
 	require.Equal(t, 1, result.ClientErrors.Count())

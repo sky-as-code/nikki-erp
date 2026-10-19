@@ -157,7 +157,7 @@ Response Should Be Value Not Found Error
     [Arguments]    ${resp}    @{values}
     ${vars_schema}=    Evaluate    {'type': 'object', 'required': ['values'], 'properties': {'values': {'type': 'array', 'minItems': len($values), 'maxItems': len($values), 'items': {'type': 'string', 'enum': list($values)}}}}
     ${schema}=    One Error Schema No Field
-    ...    common:err_value_not_found    Value(s) could not be found: {.values}    business    ${vars_schema}
+    ...    common:err_value_not_found    Value(s) could not be found: {{values}}    business    ${vars_schema}
     Response Should Match Schema    ${resp}    ${schema}    400
 
 Response Should Be Duplicate Values Error
@@ -176,7 +176,7 @@ Response Should Be Overlapping Fields Error
     [Arguments]    ${resp}    @{fields}
     ${vars_schema}=    Evaluate    {'type': 'object', 'required': ['fields'], 'properties': {'fields': {'type': 'array', 'minItems': len($fields), 'maxItems': len($fields), 'items': {'type': 'string', 'enum': list($fields)}}}}
     ${schema}=    One Error Schema No Field
-    ...    common:err_overlapped_fields    These fields must not have overlapping values: {.fields}    business    ${vars_schema}
+    ...    common:err_overlapped_fields    These fields must not have overlapping values: {{fields}}    business    ${vars_schema}
     Response Should Match Schema    ${resp}    ${schema}    400
 
 Response Should Be Invalid Access Token Error

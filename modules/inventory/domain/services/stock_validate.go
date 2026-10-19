@@ -217,7 +217,7 @@ func executeOneMove(
 func ensureIncomingLine(
 	ctx corectx.Context, operation *transferOperationContext, move models.StockMove,
 ) error {
-	if derefString(operation.Transfer.GetOperationCode()) != models.StockOperationCodeIncoming {
+	if !isIncomingOperation(operation) {
 		return nil
 	}
 
@@ -255,8 +255,11 @@ func ensureIncomingLine(
 		models.StockMoveLineFieldOwnerRef:              "",
 		models.StockMoveLineFieldOrgId:                 derefString(move.GetOrgId()),
 	}
-	_, err = operation.MoveLineSvc.Create(ctx, line)
-	return errors.Wrap(err, "ensureIncomingLine")
+	created, err := operation.MoveLineSvc.Create(ctx, line)
+	if err != nil {
+		return errors.Wrap(err, "ensureIncomingLine")
+	}
+	return refusedWriteError(created, "ensureIncomingLine")
 }
 
 // shipOneLine moves one line's quantity from the source balance to the destination balance. Both
@@ -281,7 +284,8 @@ func shipOneLine(
 	}
 
 	// Source: the reservation is consumed and the goods leave.
-	if err := applyQuantDelta(ctx, operation, sourceId, quantity.Neg(), quantity.Neg()); err != nil {
+	reservedDelta := sourceReservedDelta(operation, quantity)
+	if err := applyQuantDelta(ctx, operation, sourceId, quantity.Neg(), reservedDelta); err != nil {
 		return err
 	}
 

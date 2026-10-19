@@ -76,3 +76,12 @@ func requireField(t *testing.T, schema *dmodel.ModelSchema, fieldName string) *d
 	require.Truef(t, ok, "schema %q has no field %q", schema.Name(), fieldName)
 	return field
 }
+
+// A UoM is meaningless outside its category, so the default listing carries category_id.
+func TestUomListsItsCategoryByDefault(t *testing.T) {
+	requireBaseSchemasRegistered(t)
+
+	schema := UomSchemaBuilder().Build()
+
+	assert.Contains(t, schema.DefaultSearchFields(), UomFieldCategoryId)
+}

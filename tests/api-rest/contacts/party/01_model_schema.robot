@@ -46,7 +46,7 @@ Schema Declares The Party Type Enum
     ${resp}=    GET On Session    api    ${PARTY_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${type_field}=    Set Variable    ${resp.json()}[fields][type]
-    ${values}=    Set Variable    ${type_field}[data_type][values]
+    ${values}=    Set Variable    ${type_field}[data_type][options][enumValues]
     Should Contain    ${values}    individual
     Should Contain    ${values}    company
     Length Should Be    ${values}    2

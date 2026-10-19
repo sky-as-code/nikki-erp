@@ -6,7 +6,6 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/settings/constants"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
@@ -134,12 +133,6 @@ func isEditable(level string, ownerType string, allowOverride bool) bool {
 func (this *SettingsDomainServiceImpl) loadRecords(
 	ctx corectx.Context, moduleKey string, level string, ownerType string, ownerId string,
 ) (map[string]*models.SettingsRecord, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(models.SettingsRecordSchemaName)
-	if !ok {
-		return nil, errors.Errorf("loadRecords: the '%s' engine is not registered",
-			models.SettingsRecordSchemaName)
-	}
-
 	// The conditions go in Graph, NOT in RepoSearchParam.Filter: Search builds its WHERE clause
 	// from the graph alone and ignores Filter entirely. Passing them as a filter is silently
 	// accepted and returns every row of the tenant, so one owner reads another owner's values —
@@ -156,7 +149,7 @@ func (this *SettingsDomainServiceImpl) loadRecords(
 			models.SettingsRecordFieldOwnerId, dmodel.Equals, ownerId),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := this.recordRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Size:  maxSettingsPerModule,
 	})

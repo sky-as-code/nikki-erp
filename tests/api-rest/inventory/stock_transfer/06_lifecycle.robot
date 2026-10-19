@@ -35,7 +35,7 @@ Confirming A Draft Transfer Succeeds
 
     ${check}=    GET On Session    api    ${STOCK_TRANSFER_API}/${id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    Should Not Be Equal    ${check.json()}[data][status]    draft
+    Should Not Be Equal    ${check.json()}[item][status]    draft
     ...    msg=Confirm must take the transfer out of draft
     Set Test Variable    ${CONFIRMED_TRANSFER_ID}    ${id}
     Set Test Variable    ${CONFIRMED_MOVE_ID}    ${move_id}
@@ -89,7 +89,7 @@ Cancelling A Draft Transfer Succeeds
 
     ${check}=    GET On Session    api    ${STOCK_TRANSFER_API}/${id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    Should Be Equal    ${check.json()}[data][status]    cancelled
+    Should Be Equal    ${check.json()}[item][status]    cancelled
 
     [Teardown]    Run Keywords
     ...    DELETE On Session    api    ${STOCK_MOVE_API}/${move_id}
@@ -105,7 +105,7 @@ Cancelling Closes The Transfer's Moves
 
     ${check}=    GET On Session    api    ${STOCK_MOVE_API}/${move_id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    Should Be Equal    ${check.json()}[data][status]    cancelled
+    Should Be Equal    ${check.json()}[item][status]    cancelled
     ...    msg=Cancelling a transfer must cancel its open moves
 
     [Teardown]    Run Keywords

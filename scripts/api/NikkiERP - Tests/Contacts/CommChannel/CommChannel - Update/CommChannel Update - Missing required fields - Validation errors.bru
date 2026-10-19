@@ -5,7 +5,7 @@ meta {
 }
 
 patch {
-  url: {{api_host}}/v1/contacts/parties/channels/{{channel_id}}
+  url: {{api_host}}/v1/contacts/contacts_comm_channel/{{channel_id}}
   "type": "post",
   "valueJson" : {
     "numberStreet": "297 An Duong Vuong",
@@ -17,7 +17,8 @@ patch {
 }
 
 body:json {
-  {}
+  {
+    "org_id": "{{org_id}}",}
 }
 
 settings {

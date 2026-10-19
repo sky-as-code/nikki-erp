@@ -61,3 +61,9 @@ func Identity[TData any](data TData) any {
 func MutateResponse(mutation dyn.MutateResultData) any {
 	return httpserver.NewRestMutateResponse(mutation)
 }
+
+// SearchResponse shapes a search result the way the built-in search answers, for a custom
+// sub-collection read such as ":id/roles".
+func SearchResponse(paged dyn.PagedResultData[dmodel.DynamicFields]) any {
+	return searchResponse(paged)
+}

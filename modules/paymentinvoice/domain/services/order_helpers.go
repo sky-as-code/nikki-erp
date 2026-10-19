@@ -8,29 +8,8 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 )
-
-// engineFor resolves a resource's engine from the registry.
-//
-// It is a variable rather than a plain function so that a test can supply its own engines: the
-// registry is a package singleton populated during Init, which a unit test has no way to build.
-// This mirrors inventory/domain/services/variant_domservice.go.
-var engineFor = func(schemaName string) (drif.DynamicResourceEngine, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(schemaName)
-	if !ok {
-		return nil, errors.Errorf("no resource engine for '%s'", schemaName)
-	}
-	return engine, nil
-}
-
-// EngineFor exposes the registry lookup to the dynamicengines package, whose action callbacks
-// receive only their own engine but need another resource's repository.
-func EngineFor(schemaName string) (drif.DynamicResourceEngine, error) {
-	return engineFor(schemaName)
-}
 
 // appendOrderViolation records a rule the caller broke, against the order resource.
 func appendOrderViolation(vErrs *ft.ClientErrors, key string, message string) {
@@ -49,12 +28,12 @@ func appendFieldViolation(vErrs *ft.ClientErrors, field string, key string, mess
 // mutating the caller's context would leave a committed transaction visible to whatever runs
 // next. CloneRequestContext carries the caller's identity across, which the audit columns need.
 func withOrderTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
-	engine, err := engineFor(models.OrderSchemaName)
+	repo, err := repoFor(models.OrderSchemaName)
 	if err != nil {
 		return err
 	}
 
-	tranx, err := engine.ResourceRepository().BeginTransaction(ctx)
+	tranx, err := repo.BeginTransaction(ctx)
 	if err != nil {
 		return errors.Wrap(err, "withOrderTransaction")
 	}
@@ -74,7 +53,7 @@ func withOrderTransaction(ctx corectx.Context, body func(tranxCtx corectx.Contex
 // Callers hold order_id, never the primary key: the primary key is this module's, while order_id
 // is what the ordering system and support were given.
 func findOrderByBusinessId(ctx corectx.Context, orderId string) (*models.Order, error) {
-	engine, err := engineFor(models.OrderSchemaName)
+	repo, err := repoFor(models.OrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +63,7 @@ func findOrderByBusinessId(ctx corectx.Context, orderId string) (*models.Order, 
 		*dmodel.NewSearchNode().NewCondition(models.OrderFieldOrderId, dmodel.Equals, orderId),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,
@@ -100,12 +79,12 @@ func findOrderByBusinessId(ctx corectx.Context, orderId string) (*models.Order, 
 
 // orderCodeExists reports whether a generated code is already taken.
 func orderCodeExists(ctx corectx.Context, orderCode string) (bool, error) {
-	engine, err := engineFor(models.OrderSchemaName)
+	repo, err := repoFor(models.OrderSchemaName)
 	if err != nil {
 		return false, err
 	}
 
-	found, err := engine.ResourceRepository().Exists(ctx, []dmodel.DynamicFields{
+	found, err := repo.Exists(ctx, []dmodel.DynamicFields{
 		{models.OrderFieldOrderCode: orderCode},
 	})
 	if err != nil {
@@ -123,7 +102,7 @@ func orderCodeExists(ctx corectx.Context, orderCode string) (bool, error) {
 // flow, the callbacks and the watchdog write them here instead, having already checked what the
 // transition requires.
 func writeOrderFields(ctx corectx.Context, orderPk string, fields dmodel.DynamicFields) error {
-	engine, err := engineFor(models.OrderSchemaName)
+	repo, err := repoFor(models.OrderSchemaName)
 	if err != nil {
 		return err
 	}
@@ -132,13 +111,13 @@ func writeOrderFields(ctx corectx.Context, orderPk string, fields dmodel.Dynamic
 	for key, value := range fields {
 		update[key] = value
 	}
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = repo.Update(ctx, update)
 	return errors.Wrap(err, "writeOrderFields")
 }
 
 // writeTransactionFields updates a transaction through the repository, for the same reason.
 func writeTransactionFields(ctx corectx.Context, transactionPk string, fields dmodel.DynamicFields) error {
-	engine, err := engineFor(models.TransactionSchemaName)
+	repo, err := repoFor(models.TransactionSchemaName)
 	if err != nil {
 		return err
 	}
@@ -147,7 +126,7 @@ func writeTransactionFields(ctx corectx.Context, transactionPk string, fields dm
 	for key, value := range fields {
 		update[key] = value
 	}
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = repo.Update(ctx, update)
 	return errors.Wrap(err, "writeTransactionFields")
 }
 

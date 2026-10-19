@@ -1,4 +1,4 @@
--- Seed inventory sample data (product types, categories, attributes, templates, variants);
+-- Seed inventory sample data (categories, attributes, templates, variants);
 -- aligns with 0005001_inventory_schema.sql. Org IDs match 0002002_iam_identity_seeds.sql.
 --
 -- IAM resources and actions for the Inventory module live in 0005002_inventory_iam.sql, not here,
@@ -8,19 +8,13 @@ DO $$
 BEGIN
 	IF EXISTS (
 		SELECT FROM information_schema.tables
-		WHERE table_schema = 'public' AND table_name = 'inventory_product_types'
+		WHERE table_schema = 'public' AND table_name = 'inventory_product_templates'
 	) THEN
-		-- Product types
-		INSERT INTO "inventory_product_types" ("id", "code", "name", "description", "supports_stock", "supports_sale", "supports_purchase", "supports_manufacturing", "is_archived", "created_at", "updated_at", "etag") VALUES
-		('01K5INV0000000000000TYPE01', 'beverage', jsonb_build_object('en-US', 'Beverage', 'vi-VN', 'Đồ uống'), jsonb_build_object('en-US', 'Beverage products', 'vi-VN', 'Sản phẩm đồ uống'), TRUE, TRUE, TRUE, FALSE, FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV0000000000000TYPE02', 'snack', jsonb_build_object('en-US', 'Snack', 'vi-VN', 'Đồ ăn vặt'), jsonb_build_object('en-US', 'Snack products', 'vi-VN', 'Sản phẩm đồ ăn vặt'), TRUE, TRUE, TRUE, FALSE, FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
-		ON CONFLICT ("id") DO NOTHING;
-
-		-- Product categories. The org's root "All" points to itself and comes first, so the rows below can reference it.
-		INSERT INTO "inventory_product_categories" ("id", "code", "name", "parent_category_id", "is_root", "canonical_name", "sequence", "description", "source_system", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
-		('01K5INV000000000000CAT0000', 'all', jsonb_build_object('en-US', 'All', 'vi-VN', 'Tất cả'), '01K5INV000000000000CAT0000', TRUE, jsonb_build_object('en-US', 'All', 'vi-VN', 'Tất cả'), 0, jsonb_build_object('en-US', 'Root of the category tree', 'vi-VN', 'Gốc của cây danh mục'), 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV000000000000CAT0001', 'beverages', jsonb_build_object('en-US', 'Beverages', 'vi-VN', 'Đồ uống'), '01K5INV000000000000CAT0000', NULL, jsonb_build_object('en-US', 'All / Beverages', 'vi-VN', 'Tất cả / Đồ uống'), 1, NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV000000000000CAT0002', 'snacks', jsonb_build_object('en-US', 'Snacks', 'vi-VN', 'Đồ ăn vặt'), '01K5INV000000000000CAT0000', NULL, jsonb_build_object('en-US', 'All / Snacks', 'vi-VN', 'Tất cả / Đồ ăn vặt'), 2, NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		-- Product categories. The org's root "Default" points to itself and comes first, so the rows below can reference it.
+		INSERT INTO "inventory_product_categories" ("id", "name", "parent_category_id", "is_root", "canonical_name", "display_order", "description", "source_system", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
+		('01K5INV000000000000CAT0000', jsonb_build_object('en-US', 'Default', 'vi-VN', 'Mặc định'), '01K5INV000000000000CAT0000', TRUE, jsonb_build_object('en-US', 'Default', 'vi-VN', 'Mặc định'), 0, jsonb_build_object('en-US', 'Root of the category tree', 'vi-VN', 'Gốc của cây danh mục'), 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV000000000000CAT0001', jsonb_build_object('en-US', 'Beverages', 'vi-VN', 'Đồ uống'), '01K5INV000000000000CAT0000', NULL, jsonb_build_object('en-US', 'Default / Beverages', 'vi-VN', 'Mặc định / Đồ uống'), 1, NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV000000000000CAT0002', jsonb_build_object('en-US', 'Snacks', 'vi-VN', 'Đồ ăn vặt'), '01K5INV000000000000CAT0000', NULL, jsonb_build_object('en-US', 'Default / Snacks', 'vi-VN', 'Mặc định / Đồ ăn vặt'), 2, NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product attributes
@@ -38,10 +32,10 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product templates
-		INSERT INTO "inventory_product_templates" ("id", "name", "short_name", "product_type_id", "category_id", "brand_id", "sale_ok", "purchase_ok", "description", "sales_description", "purchase_description", "default_image_file_key", "default_weight", "default_length", "default_width", "default_height", "status", "source_system", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
-		('01K5INV0000000TMPL00000001', jsonb_build_object('en-US', 'Energy Drink', 'vi-VN', 'Nước tăng lực'), NULL, '01K5INV0000000000000TYPE01', '01K5INV000000000000CAT0001', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Caffeinated beverage', 'vi-VN', 'Đồ uống có caffeine'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV0000000TMPL00000002', jsonb_build_object('en-US', 'Mineral Water', 'vi-VN', 'Nước khoáng'), NULL, '01K5INV0000000000000TYPE01', '01K5INV000000000000CAT0001', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Still water', 'vi-VN', 'Nước không ga'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV0000000TMPL00000003', jsonb_build_object('en-US', 'Potato Chips', 'vi-VN', 'Khoai tây chiên'), NULL, '01K5INV0000000000000TYPE02', '01K5INV000000000000CAT0002', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Original flavor chips', 'vi-VN', 'Khoai tây chiên vị tự nhiên'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		INSERT INTO "inventory_product_templates" ("id", "name", "short_name", "product_type", "is_combo", "category_id", "brand_id", "sale_ok", "purchase_ok", "description", "sales_description", "purchase_description", "default_image_file_key", "default_weight", "default_length", "default_width", "default_height", "status", "source_system", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
+		('01K5INV0000000TMPL00000001', jsonb_build_object('en-US', 'Energy Drink', 'vi-VN', 'Nước tăng lực'), NULL, 'goods', FALSE, '01K5INV000000000000CAT0001', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Caffeinated beverage', 'vi-VN', 'Đồ uống có caffeine'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV0000000TMPL00000002', jsonb_build_object('en-US', 'Mineral Water', 'vi-VN', 'Nước khoáng'), NULL, 'goods', FALSE, '01K5INV000000000000CAT0001', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Still water', 'vi-VN', 'Nước không ga'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV0000000TMPL00000003', jsonb_build_object('en-US', 'Potato Chips', 'vi-VN', 'Khoai tây chiên'), NULL, 'goods', FALSE, '01K5INV000000000000CAT0002', NULL, TRUE, TRUE, jsonb_build_object('en-US', 'Original flavor chips', 'vi-VN', 'Khoai tây chiên vị tự nhiên'), NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'active', 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product template attributes

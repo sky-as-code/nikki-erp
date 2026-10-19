@@ -19,7 +19,6 @@ import (
 // onion is a container constructor, resolved the first time a consumer asks for it.
 func InitDynamicEngines() error {
 	return stdErr.Join(
-		registerProductTypeEngine(),
 		registerProductCategoryEngine(),
 		registerBrandEngine(),
 		registerProductAttributeEngine(),
@@ -76,7 +75,7 @@ func buildOnion(impl *composable.DynamicResourceEngineOnionImpl, param composabl
 // built.
 func SchemaNames() []string {
 	return []string{
-		models.ProductTypeSchemaName, models.ProductCategorySchemaName, models.BrandSchemaName,
+		models.ProductCategorySchemaName, models.BrandSchemaName,
 		models.ProductAttributeSchemaName, models.ProductAttributeValueSchemaName,
 		models.ProductTemplateSchemaName, models.ProductTemplateAttributeSchemaName,
 		models.ProductTemplateAttributeValueSchemaName, models.ProductVariantSchemaName,

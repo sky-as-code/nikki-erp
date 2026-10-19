@@ -11,13 +11,14 @@ Get Product Category Model Schema
     Response Should Match Schema    ${resp}    ${COMMON_SCHEMA_DIR}/model_meta_schema.json    200
 
 Schema Declares The Tree Fields
-    [Documentation]    BR §6.4: code/name identify the category, parent_category_id is the
+    [Documentation]    BR §6.4: the name identifies the category, parent_category_id is the
     ...    self-FK the tree rule walks, org_id scopes it. A missing field here is invisible
     ...    on the frontend rather than a loud failure.
     ${resp}=    GET On Session    api    ${PRODUCT_CATEGORY_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    Dictionary Should Contain Key    ${fields}    code
+    Dictionary Should Not Contain Key    ${fields}    code
+    Dictionary Should Contain Key    ${fields}    display_order
     Dictionary Should Contain Key    ${fields}    name
     Dictionary Should Contain Key    ${fields}    parent_category_id
     Dictionary Should Contain Key    ${fields}    org_id

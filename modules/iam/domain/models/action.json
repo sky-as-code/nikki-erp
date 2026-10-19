@@ -1,0 +1,53 @@
+{
+	"name": "iam_action",
+	"label": "iam_action.label",
+	"table_name": "iam_actions",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["name", "code", "description"],
+	"composite_uniques": [{ "fields": ["resource_id", "code"] }],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"data_type": { "type": "langjson", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "code",
+			"data_type": { "type": "string", "min": 1, "max": 50, "regex": "^\\*|[a-zA-Z0-9_-]+$" },
+			"required_for_create": true
+		},
+		{
+			"name": "description",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "resource_id",
+			"data_type": "ulid",
+			"required_always": true
+		}
+	],
+
+	"extend_after": ["core.basemodel.versioned_model"],
+
+	"edges_to": [
+		{
+			"edge": "resource",
+			"label": { "en-US": "Resource" },
+			"type": "many:one",
+			"dest_schema": "iam_resource",
+			"key_map": { "resource_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	],
+
+	"edges_from": [
+		{
+			"edge": "entitlements",
+			"label": { "en-US": "Entitlements" },
+			"existing": { "src_schema": "iam_entitlement", "src_edge": "action" }
+		}
+	]
+}

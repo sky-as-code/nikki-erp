@@ -1,79 +1,52 @@
-// Package dynamicengines declares the resource engines Accounting serves through the dynamic
-// resource engine, and creates them during Init().
+// Package dynamicengines declares the thirteen tax configuration onions Accounting serves through
+// the composable resource engine, and registers them into the dependency container during Init().
 //
-// It must stay a leaf package importing nothing else from accounting, so that both accounting and
-// accounting/transport/restful can import it without a cycle.
+// Each file wires the module's own repository, domain service (which carries the resource's rules)
+// and application service onto the composable defaults, and publishes the typed layers so that
+// transport, the calculation services and the usage probe inject them by type. Nothing is built
+// eagerly: an onion is a container constructor, resolved the first time a consumer asks.
 package dynamicengines
 
 import (
-	"go.bryk.io/pkg/errors"
+	stdErr "errors"
 
-	"github.com/sky-as-code/nikki-erp/common/array"
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 )
 
-// engineSpec declares one resource engine the Accounting module owns.
-type engineSpec struct {
-	// SchemaName must be an XSchemaName constant, never a string derived from the resource path.
-	SchemaName string
-
-	// DefineActions adds resource-specific actions and validation on top of the built-in CRUD
-	// ones. Optional: nil for a resource without custom behavior.
-	DefineActions func(drif.DynamicResourceEngine) error
-}
-
-// engineSpecs lists the resources Accounting serves, in the dependency order of the schemas.
-var engineSpecs = []engineSpec{
-	taxJurisdictionEngineSpec(),
-	taxGroupEngineSpec(),
-	taxRoundingPolicyEngineSpec(),
-	taxProductClassificationEngineSpec(),
-	taxEngineSpec(),
-	taxDefinitionVersionEngineSpec(),
-	taxRateVersionEngineSpec(),
-	taxComponentEngineSpec(),
-	taxMappingEngineSpec(),
-	taxMappingLineEngineSpec(),
-	taxRuleEngineSpec(),
-	taxRuleConditionEngineSpec(),
-	taxRuleResultEngineSpec(),
-}
-
-// EngineSchemaNames keeps route registration and engine creation from drifting apart.
-func EngineSchemaNames() []string {
-	return array.Map(engineSpecs, func(spec engineSpec) string {
-		return spec.SchemaName
-	})
-}
-
-// InitDynamicEngines creates this module's resource engines and publishes them into the dependency
-// container.
+// InitDynamicEngines registers every resource onion this module owns.
 func InitDynamicEngines() error {
-	for _, spec := range engineSpecs {
-		if err := initEngine(spec); err != nil {
-			return err
-		}
-	}
-	return nil
+	return stdErr.Join(
+		registerTaxJurisdictionEngine(),
+		registerTaxGroupEngine(),
+		registerTaxRoundingPolicyEngine(),
+		registerTaxProductClassificationEngine(),
+		registerTaxEngine(),
+		registerTaxDefinitionVersionEngine(),
+		registerTaxRateVersionEngine(),
+		registerTaxComponentEngine(),
+		registerTaxMappingEngine(),
+		registerTaxMappingLineEngine(),
+		registerTaxRuleEngine(),
+		registerTaxRuleConditionEngine(),
+		registerTaxRuleResultEngine(),
+	)
 }
 
-func initEngine(spec engineSpec) error {
-	engine, err := dynamicresource.Registry().NewEngine(spec.SchemaName, drif.NewEngineOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create the '%s' resource engine", spec.SchemaName)
+// EngineSchemaNames lists the resources Accounting serves, in the dependency order of the schemas.
+func EngineSchemaNames() []string {
+	return []string{
+		models.TaxJurisdictionSchemaName,
+		models.TaxGroupSchemaName,
+		models.TaxRoundingPolicySchemaName,
+		models.TaxProductClassificationSchemaName,
+		models.TaxSchemaName,
+		models.TaxDefinitionVersionSchemaName,
+		models.TaxRateVersionSchemaName,
+		models.TaxComponentSchemaName,
+		models.TaxMappingSchemaName,
+		models.TaxMappingLineSchemaName,
+		models.TaxRuleSchemaName,
+		models.TaxRuleConditionSchemaName,
+		models.TaxRuleResultSchemaName,
 	}
-
-	if spec.DefineActions != nil {
-		if err := spec.DefineActions(engine); err != nil {
-			return errors.Wrapf(err, "failed to define actions of the '%s' resource engine", spec.SchemaName)
-		}
-	}
-
-	err = deps.RegisterNamed(
-		dynamicresource.EngineDependencyName(spec.SchemaName),
-		func() drif.DynamicResourceEngine { return engine },
-	)
-	return errors.Wrapf(err, "failed to register the '%s' resource engine", spec.SchemaName)
 }

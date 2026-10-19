@@ -50,7 +50,7 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 			"a sales point requires a name"), nil
 	}
 
-	channel, err := this.resolveChannel(ctx, command.SalesChannelCode)
+	channel, err := this.resolveChannel(ctx, command.SalesChannelCode, command.OrgId)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (this *SalesPointApplicationServiceImpl) mutate(
 }
 
 func (this *SalesPointApplicationServiceImpl) resolveChannel(
-	ctx corectx.Context, code string,
+	ctx corectx.Context, code string, orgId string,
 ) (dmodel.DynamicFields, error) {
 	normalized := services.NormalizeChannelCode(code)
 	if normalized == "" {
@@ -235,7 +235,7 @@ func (this *SalesPointApplicationServiceImpl) resolveChannel(
 	if err != nil {
 		return nil, err
 	}
-	found, err := models.FindSalesChannelByCode(ctx, engineRepo, normalized)
+	found, err := models.FindSalesChannelByCode(ctx, engineRepo, normalized, orgId)
 	if err != nil {
 		return nil, err
 	}

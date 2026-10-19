@@ -1,62 +1,15 @@
 package repository
 
 import (
-	"go.uber.org/dig"
-
-	"github.com/sky-as-code/nikki-erp/common/array"
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
-	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/modelmetadata"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	itModelMeta "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/modelmetadata"
 )
 
-type ModelMetadataDynamicRepositoryParam struct {
-	dig.In
-	Client        orm.DbClient
-	ConfigSvc     config.ConfigService
-	QueryBuilder  orm.QueryBuilder
-	Logger        logging.LoggerService
-	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
+// NewModelMetadataRepository is handed the composable default by the onion.
+func NewModelMetadataRepository(base composable.CrudRepository) itModelMeta.ModelMetadataRepository {
+	return &ModelMetadataRepositoryImpl{CrudRepository: base}
 }
 
-func NewModelMetadataDynamicRepository(param ModelMetadataDynamicRepositoryParam) it.ModelMetadataRepository {
-	dynamicRepo := param.NewBaseRepoFn(dyn.NewBaseRepoParam{
-		Client: param.Client, ConfigSvc: param.ConfigSvc, QueryBuilder: param.QueryBuilder,
-		Logger: param.Logger, Schema: dmodel.MustGetSchema(models.ModelMetadataSchemaName),
-	})
-	return &ModelMetadataDynamicRepository{dynamicRepo: dynamicRepo}
-}
-
-type ModelMetadataDynamicRepository struct{ dynamicRepo dyn.BaseDynamicRepository }
-
-func (this *ModelMetadataDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository {
-	return this.dynamicRepo
-}
-func (this *ModelMetadataDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
-	return this.dynamicRepo.BeginTransaction(ctx)
-}
-func (this *ModelMetadataDynamicRepository) DeleteOne(ctx corectx.Context, keys models.ModelMetadata) (*dyn.OpResult[dyn.MutateResultData], error) {
-	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
-}
-func (this *ModelMetadataDynamicRepository) Exists(ctx corectx.Context, keys []models.ModelMetadata) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	dynamicKeys := array.Map(keys, func(key models.ModelMetadata) dmodel.DynamicFields { return key.GetFieldData() })
-	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
-}
-func (this *ModelMetadataDynamicRepository) Insert(ctx corectx.Context, src models.ModelMetadata) (*dyn.OpResult[int], error) {
-	return baserepo.Insert(ctx, this.dynamicRepo, src)
-}
-func (this *ModelMetadataDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[models.ModelMetadata], error) {
-	return baserepo.GetOne[models.ModelMetadata](ctx, this.dynamicRepo, param)
-}
-func (this *ModelMetadataDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[models.ModelMetadata]], error) {
-	return baserepo.Search[models.ModelMetadata](ctx, this.dynamicRepo, param)
-}
-func (this *ModelMetadataDynamicRepository) Update(ctx corectx.Context, src models.ModelMetadata) (*dyn.OpResult[dyn.MutateResultData], error) {
-	return baserepo.Update(ctx, this.dynamicRepo, src.GetFieldData())
+type ModelMetadataRepositoryImpl struct {
+	composable.CrudRepository
 }

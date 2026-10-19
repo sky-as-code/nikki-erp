@@ -13,7 +13,7 @@ import (
 
 type principalHelper struct {
 	cqrsBus cqrs.CqrsBus
-	userSvc itUser.UserDomainService
+	userSvc itUser.UserCrudDomainService
 }
 
 type loginPrincipal struct {

@@ -9,9 +9,9 @@ import (
 )
 
 // tenantIdField is the tenant column coremart's base model injects. Settings never declares it and
-// never filters on it — the multi-tenant repository does that for every read and write. It is named
-// here only because the fan-out (which writes many owners' rows in one statement) has to scope
-// itself to the acting tenant explicitly.
+// never filters on it — the multi-tenant repository does that for every read and write. It is read
+// here only to hand the acting tenant to the set-based statements of the record repository, which
+// the multi-tenant decorator does not see.
 const tenantIdField = "tenant_id"
 
 // ownerIdFor resolves which owner a request is acting as.

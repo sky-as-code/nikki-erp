@@ -1,19 +1,17 @@
 *** Settings ***
-Documentation     Update Role with an entitlement delta: PATCH /v1/iam/roles/:id accepts
+Documentation     Update Role with an entitlement delta: PATCH /v1/iam/iam_role/:id accepts
 ...               `entitlements: {add: [{resource_id, action_id|null, description?}], remove: [ids],
 ...               update: [{id, description}]}`. An update changes only the description.
 ...
 ...               The role row and the entitlement changes commit in one transaction with one
 ...               permission rebuild for the role. A grant takes the resource's max_scope, a
 ...               null action_id grants every action (`*`), and a delta needs
-...               manage_entitlements on iam_role on top of update. The generic engine route
-...               /v1/iam/iam_role does not accept the delta.
+...               manage_entitlements on iam_role on top of update.
 Resource          ../../resources/iam.resource
 Suite Setup       Set Up Role Entitlement Fixtures
 
 
 *** Variables ***
-${ENGINE_ROLE_API}      /v1/iam/iam_role
 ${READ_EXPRESSION}      read:iam_role:tenant
 
 
@@ -109,6 +107,22 @@ Response Should Be Delta Refusal
     Response Status Should Be    ${resp}    400
     Should Contain    ${resp.text}    ${key}
 
+Org Scoped Resource Id
+    [Documentation]    A resource whose max_scope is org, or a skip when the app seeds none:
+    ...    nikkierp's own resources all reach tenant, so only an extending app has one.
+    ${resp}=    GET On Session    api    /v1/iam/iam_resource
+    ...    params=${{ {'graph': '{"if":["max_scope", "=", "org"]}', 'fields': 'id', 'size': 1} }}
+    Response Status Should Be    ${resp}    200
+    ${items}=    Set Variable    ${resp.json()}[items]
+    Skip If    not $items    No seeded resource has max_scope org, so an org-only grant cannot be sent
+    RETURN    ${items}[0][id]
+
+Role Name And Etag
+    [Arguments]    ${role_id}
+    ${resp}=    GET On Session    api    ${ROLE_API}/${role_id}
+    Response Status Should Be    ${resp}    200
+    RETURN    ${resp.json()}[item][name]    ${resp.json()}[item][etag]
+
 
 *** Test Cases ***
 Entitlement-Only Update Grants An Action And Moves The Etag
@@ -121,7 +135,7 @@ Entitlement-Only Update Grants An Action And Moves The Etag
     ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    add=${{ [$grant] }}    etag=${etag}
     Response Should Be Update Success    ${resp}    previous_etag=${etag}
     Role Should Grant    ${TARGET_ROLE_ID}    ${READ_EXPRESSION}
-    Permission Should Be Granted    role_delta_plain    ${READ_EXPRESSION}    expected_source_id=${TARGET_ROLE_ID}
+    Permission Should Be Granted    role_delta_plain    ${READ_EXPRESSION}    expected_role_id=${TARGET_ROLE_ID}
 
 A Null Action Grants Every Action
     [Tags]    entitlements
@@ -191,6 +205,29 @@ A Grant The Role Already Has Is Refused And Rolls Back
     ${after}=    Role Description    ${TARGET_ROLE_ID}
     Should Be Equal    ${after}    ${before}
 
+An Org Only Grant On An Org-less Role Is Refused And Rolls Back
+    [Documentation]    An org-scoped resource can only be granted by a role that belongs to an
+    ...    org. The refusal must also undo the name change sent with it: the role keeps its
+    ...    name and etag, and gains no entitlement.
+    [Tags]    entitlements    negative
+    ${resource_id}=    Org Scoped Resource Id
+    ${name_before}    ${etag_before}=    Role Name And Etag    ${TARGET_ROLE_ID}
+    ${entitlements_before}=    Role Entitlements    ${TARGET_ROLE_ID}
+    ${grant}=    Create Dictionary    resource_id=${resource_id}    action_id=${None}
+    ${new_name}=    Unique Display Name    Robot Must Roll Back
+    ${resp}=    Patch Role Entitlements    ${TARGET_ROLE_ID}    add=${{ [$grant] }}
+    ...    etag=${etag_before}    extra=${{ {'name': $new_name} }}
+    Response Status Should Be    ${resp}    400
+    ${refusals}=    Evaluate    [e for e in body if e.get('key') == 'iam:err_role_org_required']
+    ...    namespace=${{ {'body': $resp.json()} }}
+    Should Not Be Empty    ${refusals}    msg=Expected iam:err_role_org_required, got ${resp.text}
+    Should Be Equal    ${refusals}[0][field]    entitlements.add[0]
+    ${name_after}    ${etag_after}=    Role Name And Etag    ${TARGET_ROLE_ID}
+    Should Be Equal    ${name_after}    ${name_before}
+    Should Be Equal    ${etag_after}    ${etag_before}
+    ${entitlements_after}=    Role Entitlements    ${TARGET_ROLE_ID}
+    Dictionaries Should Be Equal    ${entitlements_after}    ${entitlements_before}
+
 The Same Grant Twice In One Delta Is Refused
     [Tags]    entitlements    negative
     ${grant}=    Grant
@@ -238,16 +275,3 @@ Update Permission Alone Does Not Allow A Delta
     Response Should Be Permission Refusal    ${resp}    Granting with update permission only
     Role Should Not Grant    ${FOREIGN_ROLE_ID}    *:iam_role:tenant
     [Teardown]    Unassign Role From User    ${PLAIN_USER_ID}    ${editor_role}
-
-The Engine Route Does Not Apply A Delta
-    [Documentation]    /v1/iam/iam_role is the generic engine surface; it must not become a
-    ...    second way to change what a role grants.
-    [Tags]    entitlements    negative    security
-    ${etag}=    Role Etag    ${FOREIGN_ROLE_ID}
-    ${grant}=    Grant
-    ${body}=    Evaluate    {'etag': $etag, 'entitlements': {'add': [$grant], 'remove': []}}
-    ${resp}=    PATCH On Session    api    ${ENGINE_ROLE_API}/${FOREIGN_ROLE_ID}    json=${body}
-    ...    expected_status=any
-    Should Be True    ${resp.status_code} < 500
-    ...    msg=The engine PATCH failed with ${resp.status_code}: ${resp.text}
-    Role Should Not Grant    ${FOREIGN_ROLE_ID}    *:iam_role:tenant

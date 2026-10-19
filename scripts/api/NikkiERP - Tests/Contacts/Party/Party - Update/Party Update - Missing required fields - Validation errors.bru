@@ -5,13 +5,14 @@ meta {
 }
 
 patch {
-  url: {{api_host}}/v1/contacts/parties/{{party_id}}
+  url: {{api_host}}/v1/contacts/contacts_party/{{party_id}}
   body: json
   auth: inherit
 }
 
 body:json {
   {
+    "org_id": "{{org_id}}",
   }
 }
 

@@ -10,22 +10,19 @@ Test Tags         inventory    product_category    create
 *** Test Cases ***
 Create With Required Fields Succeeds
     ${name}=    Unique Display Name    Robot Root Category
-    ${code}=    Unique Code    cat
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${PRODUCT_CATEGORY_ID}    ${id}
     Set Global Variable    ${PRODUCT_CATEGORY_ETAG}    ${etag}
-    Set Global Variable    ${PRODUCT_CATEGORY_CODE}    ${code}
 
-Create Without Parent Lands Under All
+Create Without Parent Lands Under Default
     [Documentation]    Every category has a parent. One created without lands under the org's
-    ...    root "All", and its canonical name starts from the root's.
+    ...    root "Default", and its canonical name starts from the root's.
     Ensure Root Product Category
     ${name}=    Unique Display Name    Robot Bootstrap Category
-    ${code}=    Unique Code    bootstrapcat
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name, 'vi-VN': $name + ' VI'}, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name, 'vi-VN': $name + ' VI'}, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${item}=    Get Product Category    ${id}
     Should Be Equal    ${item}[parent_category_id]    ${ROOT_CATEGORY_ID}
@@ -42,9 +39,8 @@ Create With Parent Succeeds
     Ensure Product Category Under Test
     ${parent}=    Get Product Category    ${PRODUCT_CATEGORY_ID}
     ${name}=    Unique Display Name    Robot Nested Category
-    ${code}=    Unique Code    nestedcat
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'parent_category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'parent_category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${item}=    Get Product Category    ${id}
     Should Be Equal    ${item}[canonical_name][en-US]    ${parent}[canonical_name][en-US] / ${name}
@@ -65,38 +61,25 @@ Search By Canonical Name Succeeds
 Create With Canonical Name Fails
     [Documentation]    canonical_name is derived from the tree; a client may never set it.
     [Tags]    negative
-    ${code}=    Unique Code    canoncat
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': 'X'}, 'canonical_name': {'en-US': 'Fake / X'}, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': 'X'}, 'canonical_name': {'en-US': 'Fake / X'}, 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Response Should Be Category Server Managed Error    ${resp}    canonical_name
 
 Create With Is Root Fails
     [Documentation]    The root is seeded; the API never creates another one.
     [Tags]    negative
-    ${code}=    Unique Code    rootcat
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': 'X'}, 'is_root': True, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': 'X'}, 'is_root': True, 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Response Should Be Category Server Managed Error    ${resp}    is_root
-
-Create With Duplicate Code And Org Fails
-    [Documentation]    BR §6.4.1: (code, org_id) is a composite unique — the same code is
-    ...    reusable across orgs, but not twice within one.
-    [Tags]    negative
-    Ensure Product Category Under Test
-    ${name}=    Unique Display Name    Robot Duplicate Category
-    ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $PRODUCT_CATEGORY_CODE, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
-    ...    expected_status=any
-    Response Should Be Duplicate Values Error    ${resp}    code    org_id
 
 Create With Missing Required Fields Fails
     [Documentation]    Without an org there is no root to default the parent to, so the
     ...    parent is reported missing alongside the other required fields.
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}    json=${{ {} }}    expected_status=any
-    Response Should Be Missing Fields Error    ${resp}    code    name    parent_category_id    org_id
+    Response Should Be Missing Fields Error    ${resp}    name    parent_category_id    org_id
 
 Create With Malformed Payload Fails
     [Tags]    negative
@@ -109,9 +92,8 @@ Create With Malformed Payload Fails
 Create With Nonexist Field Fails
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Nonexist Field
-    ${code}=    Unique Code    nonexist
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID, 'bla_bla_field': 'x'} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'org_id': $INV_ORG_ID, 'bla_bla_field': 'x'} }}
     ...    expected_status=any
     Response Should Be Nonexist Fields Error    ${resp}    bla_bla_field
 
@@ -121,9 +103,8 @@ Create With Not Found Parent Fails
     ...    non-success is asserted here.
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Orphan Category
-    ${code}=    Unique Code    orphancat
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'parent_category_id': $NOT_FOUND_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'parent_category_id': $NOT_FOUND_ID, 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
     ...    msg=A category referencing a nonexistent parent must not be creatable

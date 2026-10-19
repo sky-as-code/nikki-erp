@@ -16,7 +16,6 @@ func TestProductSchemasRegisterInOrder(t *testing.T) {
 	requireEssentialSchemasRegistered(t)
 
 	builders := []*dmodel.ModelSchemaBuilder{
-		ProductTypeSchemaBuilder(),
 		ProductCategorySchemaBuilder(),
 		BrandSchemaBuilder(),
 		ProductAttributeSchemaBuilder(),

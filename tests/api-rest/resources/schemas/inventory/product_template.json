@@ -1,6 +1,6 @@
 {
     "type": "object",
-    "required": ["id", "created_at", "name", "product_type_id", "category_id", "status", "etag", "is_archived", "org_id"],
+    "required": ["id", "created_at", "name", "product_type", "category_id", "status", "etag", "is_archived", "org_id"],
     "properties": {
         "id": {
             "type": "string",
@@ -20,9 +20,12 @@
         "short_name": {
             "type": ["object", "null"]
         },
-        "product_type_id": {
+        "product_type": {
             "type": "string",
-            "minLength": 1
+            "enum": ["goods", "service"]
+        },
+        "is_combo": {
+            "type": ["boolean", "null"]
         },
         "category_id": {
             "type": "string",

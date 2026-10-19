@@ -277,7 +277,7 @@ func (this *BaseDynamicRepositoryImpl) Insert(ctx corectx.Context, data dmodel.D
 	this.logQuery(*sqlQuery)
 	result, err := this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
 	if err != nil {
-		if fkErrs := normalizeFkViolation(err, this.schema, false); fkErrs != nil {
+		if fkErrs := normalizeWriteViolation(err, this.schema); fkErrs != nil {
 			return &dyn.OpResult[int]{ClientErrors: *fkErrs}, nil
 		}
 		return nil, err
@@ -307,7 +307,7 @@ func (this *BaseDynamicRepositoryImpl) InsertBulk(ctx corectx.Context, data []dm
 	this.logQuery(*sqlQuery)
 	result, err := this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
 	if err != nil {
-		if fkErrs := normalizeFkViolation(err, this.schema, false); fkErrs != nil {
+		if fkErrs := normalizeWriteViolation(err, this.schema); fkErrs != nil {
 			return &dyn.OpResult[int]{ClientErrors: *fkErrs}, nil
 		}
 		return nil, err
@@ -1503,7 +1503,7 @@ func (this *BaseDynamicRepositoryImpl) Update(ctx corectx.Context, data dmodel.D
 	this.logQuery(*sqlQuery)
 	_, err = this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
 	if err != nil {
-		if fkErrs := normalizeFkViolation(err, this.schema, false); fkErrs != nil {
+		if fkErrs := normalizeWriteViolation(err, this.schema); fkErrs != nil {
 			return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *fkErrs}, nil
 		}
 		return nil, err

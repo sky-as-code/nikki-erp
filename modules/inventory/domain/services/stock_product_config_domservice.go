@@ -5,10 +5,10 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/external"
 )
 
 // The rules behind a product's inventory unit. Inventory holds only a reference: the UoM master,
@@ -90,50 +90,23 @@ func IsTemplateStockInUse(ctx corectx.Context, templateId string) (bool, error) 
 //
 // A unit that cannot be found reads as unusable, or a typo would configure a product with a unit
 // that does not exist and every balance afterwards would be expressed in nothing.
-func IsUomUsable(ctx corectx.Context, uomId string) (bool, error) {
+func IsUomUsable(ctx corectx.Context, uoms itExt.UomLookupExtService, uomId string) (bool, error) {
 	if uomId == "" {
 		return false, nil
 	}
-
-	engine, err := repoFor(uomSchemaName)
-	if err != nil {
-		// Essential missing means a deployment without the UoM module, not a bad request. Nothing can
-		// be validated, so the unit passes; Stock still refuses to move goods it cannot express a
-		// quantity for.
+	if uoms == nil {
+		// No UoM module bound means nothing can be validated, so the unit passes; Stock still refuses
+		// to move goods it cannot express a quantity for.
 		return true, nil
 	}
-
-	found, err := engine.Search(ctx, dyn.RepoSearchParam{
-		Graph: uomByIdGraph(uomId),
-		Page:  0,
-		Size:  1,
-		// nil rather than false: the archived rows are the ones this needs to see, since finding one
-		// is how it reports the unit as unusable rather than missing.
-		IncludeArchived: nil,
-	})
+	found, err := uoms.GetUom(ctx, itExt.GetUomQuery{Id: model.Id(uomId)})
 	if err != nil {
 		return false, errors.Wrap(err, "IsUomUsable")
 	}
-	if found == nil || !found.HasData || len(found.Data.Items) == 0 {
+	if found == nil || !found.HasData {
 		return false, nil
 	}
-
-	row := found.Data.Items[0]
-	archived, _ := row[basemodel.FieldIsArchived].(bool)
-	return !archived, nil
-}
-
-// uomSchemaName is Essential's unit-of-measure resource. Spelled out rather than imported, which
-// would couple the modules at compile time; it must match essential/domain/models/uom.go's
-// UomSchemaName verbatim.
-const uomSchemaName = "essential_uom"
-
-func uomByIdGraph(uomId string) *dmodel.SearchGraph {
-	graph := &dmodel.SearchGraph{}
-	graph.And(
-		*dmodel.NewSearchNode().NewCondition(basemodel.FieldId, dmodel.Equals, uomId),
-	)
-	return graph
+	return !found.Data.IsArchived, nil
 }
 
 // anyMatching reports whether any row of a schema matches one of the given ids.

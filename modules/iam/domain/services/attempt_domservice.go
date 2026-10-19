@@ -25,7 +25,7 @@ type NewAttemptServiceParam struct {
 
 	AttemptRepo it.AttemptRepository
 	ConfigSvc   config.ConfigService
-	UserSvc     itUser.UserDomainService
+	UserSvc     itUser.UserCrudDomainService
 	CqrsBus     cqrs.CqrsBus
 }
 
@@ -41,7 +41,7 @@ func NewAttemptDomainServiceImpl(param NewAttemptServiceParam) it.AttemptDomainS
 type AttemptDomainServiceImpl struct {
 	cqrsBus     cqrs.CqrsBus
 	attemptRepo it.AttemptRepository
-	userSvc     itUser.UserDomainService
+	userSvc     itUser.UserCrudDomainService
 
 	attemptDurationSecs int
 }

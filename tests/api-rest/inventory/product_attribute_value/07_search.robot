@@ -1,6 +1,6 @@
 *** Settings ***
-Documentation     Searching Product Attribute Values. Like every Inventory resource except
-...               product_type, a value is org-scoped (org_id required-for-create), so every
+Documentation     Searching Product Attribute Values. Like every Inventory product
+...               resource, a value is org-scoped (org_id required-for-create), so every
 ...               search here carries org_id. The "graph" query values are JSON strings that
 ...               requests URL-encodes via the params dict.
 Resource          resources/inventory.resource

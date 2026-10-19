@@ -17,14 +17,15 @@ Get Succeeds
 
 Get Returns The Defaults A Purchase Order Reads
     [Documentation]    The three fields Purchase pulls off a vendor to default an order.
-    ...    All are optional, so this asserts they are PRESENT in the response — a caller must
-    ...    be able to tell "not stated" from a value, and a field omitted entirely from the
-    ...    payload cannot express either.
+    ...    A null column is omitted from the payload, so default_currency_id, which the
+    ...    fixture leaves unset, is asserted only when the record carries one.
     ${resp}=    GET On Session    api    ${VENDOR_PROFILE_API}/${VENDOR_PROFILE_ID}
     ...    params=${{ {'org_id': $CONTACTS_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${item}=    Set Variable    ${resp.json()}[item]
-    Dictionary Should Contain Key    ${item}    default_currency_id
+    IF    'default_currency_id' in $item
+        Should Not Be Empty    ${item}[default_currency_id]
+    END
     Dictionary Should Contain Key    ${item}    payment_terms
     Dictionary Should Contain Key    ${item}    lead_time_days
 

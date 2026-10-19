@@ -3,111 +3,35 @@ package repository
 import (
 	"math"
 
-	"go.uber.org/dig"
-
-	"github.com/sky-as-code/nikki-erp/common/array"
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 )
 
 const moduleMetadataSyncLockKey = math.MaxInt64
 
-type ModuleDynamicRepositoryParam struct {
-	dig.In
-
-	Client        orm.DbClient
-	ConfigSvc     config.ConfigService
-	QueryBuilder  orm.QueryBuilder
-	Logger        logging.LoggerService
-	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
+// NewModuleRepository is handed the composable default by the module metadata onion.
+func NewModuleRepository(base composable.CrudRepository) it.ModuleRepository {
+	return &ModuleRepositoryImpl{CrudRepository: base}
 }
 
-func NewModuleDynamicRepository(param ModuleDynamicRepositoryParam) it.ModuleRepository {
-	dynamicRepo := param.NewBaseRepoFn(
-		dyn.NewBaseRepoParam{
-			Client:       param.Client,
-			ConfigSvc:    param.ConfigSvc,
-			QueryBuilder: param.QueryBuilder,
-			Logger:       param.Logger,
-			Schema:       dmodel.MustGetSchema(models.ModuleMetadataSchemaName),
-		},
-	)
-	return &ModuleDynamicRepository{dynamicRepo: dynamicRepo}
+type ModuleRepositoryImpl struct {
+	composable.CrudRepository
 }
 
-type ModuleDynamicRepository struct {
-	dynamicRepo dyn.BaseDynamicRepository
-}
-
-func (this *ModuleDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository {
-	return this.dynamicRepo
-}
-
-func (this *ModuleDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
-	return this.dynamicRepo.BeginTransaction(ctx)
-}
-
-func (this *ModuleDynamicRepository) AcquireLock(ctx corectx.Context) (bool, error) {
+func (this *ModuleRepositoryImpl) AcquireLock(ctx corectx.Context) (bool, error) {
 	var acquired bool
-	rows, err := this.dynamicRepo.QueryFunc(ctx, "pg_try_advisory_lock", moduleMetadataSyncLockKey)
+	rows, err := this.GetBaseRepo().QueryFunc(ctx, "pg_try_advisory_lock", moduleMetadataSyncLockKey)
 	if err != nil {
 		return false, err
 	}
 	defer rows.Close()
 	if rows.Next() {
-		rows.Scan(&acquired)
+		err = rows.Scan(&acquired)
 	}
 	return acquired, err
 }
 
-func (this *ModuleDynamicRepository) ReleaseLock(ctx corectx.Context) error {
-	err := this.dynamicRepo.ExecFunc(ctx, "pg_advisory_unlock", moduleMetadataSyncLockKey)
-	return err
-}
-
-func (this *ModuleDynamicRepository) DeleteOne(
-	ctx corectx.Context, keys models.ModuleMetadata,
-) (*dyn.OpResult[dyn.MutateResultData], error) {
-	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
-}
-
-func (this *ModuleDynamicRepository) Exists(
-	ctx corectx.Context, keys []models.ModuleMetadata,
-) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	dynamicKeys := array.Map(keys, func(key models.ModuleMetadata) dmodel.DynamicFields {
-		return key.GetFieldData()
-	})
-	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
-}
-
-func (this *ModuleDynamicRepository) Insert(
-	ctx corectx.Context, module models.ModuleMetadata,
-) (*dyn.OpResult[int], error) {
-	return baserepo.Insert(ctx, this.dynamicRepo, module)
-}
-
-func (this *ModuleDynamicRepository) GetOne(
-	ctx corectx.Context, param dyn.RepoGetOneParam,
-) (*dyn.OpResult[models.ModuleMetadata], error) {
-	return baserepo.GetOne[models.ModuleMetadata](ctx, this.dynamicRepo, param)
-}
-
-func (this *ModuleDynamicRepository) Search(
-	ctx corectx.Context, param dyn.RepoSearchParam,
-) (*dyn.OpResult[dyn.PagedResultData[models.ModuleMetadata]], error) {
-	return baserepo.Search[models.ModuleMetadata](ctx, this.dynamicRepo, param)
-}
-
-func (this *ModuleDynamicRepository) Update(
-	ctx corectx.Context, module models.ModuleMetadata,
-) (*dyn.OpResult[dyn.MutateResultData], error) {
-	return baserepo.Update(ctx, this.dynamicRepo, module.GetFieldData())
+func (this *ModuleRepositoryImpl) ReleaseLock(ctx corectx.Context) error {
+	return this.GetBaseRepo().ExecFunc(ctx, "pg_advisory_unlock", moduleMetadataSyncLockKey)
 }

@@ -131,7 +131,7 @@ func (this *OrderDomainService) clearOneposOrder(
 func (this *OrderDomainService) findOpenOrdersOnTerminal(
 	ctx corectx.Context, posId string,
 ) ([]models.Order, error) {
-	engine, err := engineFor(models.OrderSchemaName)
+	repo, err := repoFor(models.OrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (this *OrderDomainService) findOpenOrdersOnTerminal(
 		),
 	)
 
-	found, err := engine.ResourceRepository().Search(ctx, dyn.RepoSearchParam{
+	found, err := repo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  posOrderScanLimit,
@@ -178,12 +178,12 @@ const posOrderScanLimit = 200
 func (this *OrderDomainService) readMethod(
 	ctx corectx.Context, methodId string,
 ) (*models.PaymentMethod, error) {
-	engine, err := engineFor(models.PaymentMethodSchemaName)
+	repo, err := repoFor(models.PaymentMethodSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.PaymentMethodFieldId: methodId,
 	})
 	if err != nil || found == nil || !found.HasData {

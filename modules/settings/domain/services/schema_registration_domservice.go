@@ -11,8 +11,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	basemodel "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
 	c "github.com/sky-as-code/nikki-erp/modules/settings/constants"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
@@ -54,18 +52,12 @@ func (this *SettingsDomainServiceImpl) RegisterSchema(
 		return &it.RegisterSchemaResult{ClientErrors: vErrs}, nil
 	}
 
-	engine, ok := dynamicresource.Registry().GetEngine(models.SettingsSchemaSchemaName)
-	if !ok {
-		return nil, errors.Errorf("RegisterSchema: the '%s' engine is not registered",
-			models.SettingsSchemaSchemaName)
-	}
-
 	document, err := simplizedDocument(cmd.Schema)
 	if err != nil {
 		return nil, errors.Wrap(err, "RegisterSchema")
 	}
 
-	found, err := engine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+	found, err := this.schemaRepo.GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{
 			models.SettingsSchemaFieldModuleKey: cmd.ModuleKey,
 			models.SettingsSchemaFieldLevel:     cmd.Level,
@@ -85,8 +77,6 @@ func (this *SettingsDomainServiceImpl) RegisterSchema(
 func (this *SettingsDomainServiceImpl) insertRegisteredSchema(
 	ctx corectx.Context, cmd it.RegisterSchemaCommand, document any,
 ) (*it.RegisterSchemaResult, error) {
-	engine, _ := dynamicresource.Registry().GetEngine(models.SettingsSchemaSchemaName)
-
 	id, err := model.NewId()
 	if err != nil {
 		return nil, errors.Wrap(err, "RegisterSchema")
@@ -100,16 +90,16 @@ func (this *SettingsDomainServiceImpl) insertRegisteredSchema(
 	}
 
 	// created_at is declared UseTypeDefault on auditable_model, but that default is applied by the
-	// engine's create pipeline, which this write bypasses by going straight to the repository. The
+	// domain service's create pipeline, which this write bypasses by going straight to the repository. The
 	// column is NOT NULL, so it has to be filled here — from the field's own declared default, so
 	// the schema stays the single definition of what "now" means for this column.
-	if err := setDeclaredDefault(engine, data, basemodel.FieldCreatedAt); err != nil {
+	if err := setDeclaredDefault(this.schemaRepo.Schema(), data, basemodel.FieldCreatedAt); err != nil {
 		return nil, err
 	}
 	// The insert result is inspected rather than discarded: the repository reports a rejected
 	// write as a ClientError, not a Go error, so ignoring it makes every failed registration
 	// report Created: true and leaves the table silently empty.
-	insRes, err := engine.ResourceRepository().Insert(ctx, data)
+	insRes, err := this.schemaRepo.Insert(ctx, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "RegisterSchema")
 	}
@@ -140,12 +130,11 @@ func (this *SettingsDomainServiceImpl) updateRegisteredSchema(
 		}, nil
 	}
 
-	engine, _ := dynamicresource.Registry().GetEngine(models.SettingsSchemaSchemaName)
 	data := dmodel.DynamicFields{
 		models.SettingsSchemaFieldId:     *id,
 		models.SettingsSchemaFieldSchema: document,
 	}
-	updRes, err := engine.ResourceRepository().Update(ctx, data)
+	updRes, err := this.schemaRepo.Update(ctx, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "updateRegisteredSchema")
 	}
@@ -220,15 +209,15 @@ func simplizedDocument(schema *dmodel.ModelSchema) (map[string]any, error) {
 
 // setDeclaredDefault fills one field from the default its schema declares.
 //
-// Registration writes through the repository rather than the engine's create pipeline, because it
+// Registration writes through the repository rather than the domain service's create pipeline, because it
 // runs at start-up with no caller to authorize and no request to validate. The pipeline is what
 // normally applies a field's declared default, so a direct write has to do it here — reading the
 // default off the schema rather than restating it, so the two cannot drift.
-func setDeclaredDefault(engine drif.DynamicResourceEngine, data dmodel.DynamicFields, fieldName string) error {
-	field, ok := engine.Schema().Field(fieldName)
+func setDeclaredDefault(schema *dmodel.ModelSchema, data dmodel.DynamicFields, fieldName string) error {
+	field, ok := schema.Field(fieldName)
 	if !ok {
 		return errors.Errorf("setDeclaredDefault: '%s' declares no '%s' field",
-			models.SettingsSchemaSchemaName, fieldName)
+			schema.Name(), fieldName)
 	}
 
 	defaultValue := field.DataType().DefaultValue()

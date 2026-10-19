@@ -10,7 +10,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
@@ -19,28 +19,26 @@ import (
 // arrangement with a vendor — a blanket order at agreed prices, or a reusable template — that
 // orders are drawn against; it is not itself an order.
 //
-// Unlike purchase_order the agreement is archivable, through the engine's built-in set_archived
+// Unlike purchase_order the agreement is archivable, through the built-in set_archived
 // rather than actions of its own: separate archive and restore actions would let a role archive
 // agreements it could not bring back.
 
 func NewPurchaseAgreementDomainService(
-	base drif.DynamicResourceService, references *OrderReferenceValidator,
+	base composable.CrudDomainService, references *OrderReferenceValidator,
 ) *PurchaseAgreementDomainServiceImpl {
-	return &PurchaseAgreementDomainServiceImpl{DynamicResourceService: base, references: references}
+	return &PurchaseAgreementDomainServiceImpl{CrudDomainService: base, references: references}
 }
 
 type PurchaseAgreementDomainServiceImpl struct {
-	drif.DynamicResourceService
+	composable.CrudDomainService
 
 	references *OrderReferenceValidator
 }
 
-var _ drif.DynamicResourceService = (*PurchaseAgreementDomainServiceImpl)(nil)
-
 // Create stamps code and status server-side; both are no_update and a client may not choose either,
 // or an agreement could be created already confirmed, or with a code that collides with another.
 func (this *PurchaseAgreementDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	code, err := generateAgreementCode()
 	if err != nil {
@@ -66,7 +64,7 @@ func (this *PurchaseAgreementDomainServiceImpl) Create(
 		}
 	}
 
-	return this.DynamicResourceService.Create(ctx, prepared)
+	return this.CrudDomainService.Create(ctx, prepared, options...)
 }
 
 // Confirm makes the agreement live, so orders may be drawn against it.
@@ -186,13 +184,13 @@ func (this *PurchaseAgreementDomainServiceImpl) transitionAgreement(
 func assertAgreementHasLines(
 	ctx corectx.Context, agreement dmodel.DynamicFields,
 ) (*ft.ClientErrors, error) {
-	lineEngine, err := engineFor(models.AgreementLineSchemaName)
+	lineRepo, err := repoFor(models.AgreementLineSchemaName)
 	if err != nil {
 		return nil, err
 	}
 	agreementId := stringOf(agreement, models.AgreementFieldId)
 	lines, err := models.FindAgreementLines(
-		ctx, lineEngine.ResourceRepository(), agreementId, 1)
+		ctx, lineRepo, agreementId, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -211,14 +209,14 @@ func assertAgreementHasLines(
 func assertNoOpenOrders(
 	ctx corectx.Context, agreement dmodel.DynamicFields,
 ) (*ft.ClientErrors, error) {
-	orderEngine, err := engineFor(models.PurchaseOrderSchemaName)
+	orderRepo, err := repoFor(models.PurchaseOrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
 	agreementId := stringOf(agreement, models.AgreementFieldId)
 
 	open, err := models.FindOpenOrdersForAgreement(
-		ctx, orderEngine.ResourceRepository(), agreementId, 1)
+		ctx, orderRepo, agreementId, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -240,17 +238,17 @@ func assertNoOpenOrders(
 func OrderedQuantities(
 	ctx corectx.Context, agreementId string,
 ) (map[string]OrderedQuantity, error) {
-	orderEngine, err := engineFor(models.PurchaseOrderSchemaName)
+	orderRepo, err := repoFor(models.PurchaseOrderSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	lineEngine, err := engineFor(models.PurchaseOrderLineSchemaName)
+	lineRepo, err := repoFor(models.PurchaseOrderLineSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
 	orders, err := models.FindConfirmedOrdersForAgreement(
-		ctx, orderEngine.ResourceRepository(), agreementId, models.MaxAgreementOrders)
+		ctx, orderRepo, agreementId, models.MaxAgreementOrders)
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +257,7 @@ func OrderedQuantities(
 	for _, order := range orders {
 		orderId := stringOf(order, models.PurchaseOrderFieldId)
 		lines, err := models.FindOrderLines(
-			ctx, lineEngine.ResourceRepository(), orderId, models.MaxOrderLines)
+			ctx, lineRepo, orderId, models.MaxOrderLines)
 		if err != nil {
 			return nil, err
 		}
@@ -288,11 +286,11 @@ type OrderedQuantity struct {
 }
 
 func loadAgreement(ctx corectx.Context, agreementId string) (dmodel.DynamicFields, error) {
-	engine, err := engineFor(models.AgreementSchemaName)
+	repo, err := repoFor(models.AgreementSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.AgreementFieldId: agreementId,
 	})
 	if err != nil {
@@ -307,7 +305,7 @@ func loadAgreement(ctx corectx.Context, agreementId string) (dmodel.DynamicField
 func writeAgreementChanges(
 	ctx corectx.Context, agreement dmodel.DynamicFields, changes dmodel.DynamicFields,
 ) error {
-	engine, err := engineFor(models.AgreementSchemaName)
+	repo, err := repoFor(models.AgreementSchemaName)
 	if err != nil {
 		return err
 	}
@@ -319,7 +317,7 @@ func writeAgreementChanges(
 	update[models.AgreementFieldId] = stringOf(agreement, models.AgreementFieldId)
 	update[basemodel.FieldEtag] = stringOf(agreement, basemodel.FieldEtag)
 
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = repo.Update(ctx, update)
 	return errors.Wrap(err, "writeAgreementChanges")
 }
 
@@ -344,12 +342,20 @@ func generateAgreementCode() (string, error) {
 // quantities and prices. The new order inherits none of the agreement's status or history: it is an
 // ordinary pre-filled draft RFQ and must be confirmed like any other. Only a confirmed agreement
 // may raise one, since a draft, closed or cancelled agreement's prices commit nobody.
+//
+// The order is created through the order's own domain service, so create_rfq goes through the same
+// rules as a hand-made order: the generated code, the forced RFQ status, the vendor and currency
+// checks.
 func (this *PurchaseAgreementDomainServiceImpl) CreateRfq(
-	ctx corectx.Context, agreementId string, orderService *PurchaseOrderDomainServiceImpl,
+	ctx corectx.Context, agreementId string,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	orderService, err := domainServiceFor(models.PurchaseOrderSchemaName)
+	if err != nil {
+		return nil, err
+	}
 	var result *dyn.OpResult[dmodel.DynamicFields]
 
-	err := withOrderTransaction(ctx, func(tranxCtx corectx.Context) error {
+	err = withOrderTransaction(ctx, func(tranxCtx corectx.Context) error {
 		agreement, err := loadAgreement(tranxCtx, agreementId)
 		if err != nil {
 			return err
@@ -397,6 +403,16 @@ func (this *PurchaseAgreementDomainServiceImpl) CreateRfq(
 		})
 	})
 
+	return refusalOrResult(result, err)
+}
+
+// refusalOrResult answers a ClientErrorSignal that rolled the transaction back as client errors.
+func refusalOrResult(
+	result *dyn.OpResult[dmodel.DynamicFields], err error,
+) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	if signal, ok := composable.AsClientErrorSignal(err); ok {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: signal.Errors}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -426,17 +442,19 @@ func orderFromAgreement(agreement dmodel.DynamicFields, agreementId string) dmod
 func (this *PurchaseAgreementDomainServiceImpl) copyAgreementLines(
 	ctx corectx.Context, agreementId, orderId, orgId string,
 ) error {
-	agreementLineEngine, err := engineFor(models.AgreementLineSchemaName)
+	agreementLineRepo, err := repoFor(models.AgreementLineSchemaName)
 	if err != nil {
 		return err
 	}
-	orderLineEngine, err := engineFor(models.PurchaseOrderLineSchemaName)
+	// Through the line's domain service, not its repository: the line create stamps the totals,
+	// validates the product and recomputes the order header.
+	orderLineSvc, err := domainServiceFor(models.PurchaseOrderLineSchemaName)
 	if err != nil {
 		return err
 	}
 
 	lines, err := models.FindAgreementLines(
-		ctx, agreementLineEngine.ResourceRepository(), agreementId, models.MaxAgreementLines)
+		ctx, agreementLineRepo, agreementId, models.MaxAgreementLines)
 	if err != nil {
 		return err
 	}
@@ -460,8 +478,13 @@ func (this *PurchaseAgreementDomainServiceImpl) copyAgreementLines(
 			orderLine[basemodel.FieldOrgId] = orgId
 		}
 
-		if _, err := orderLineEngine.ResourceService().Create(ctx, orderLine); err != nil {
+		created, err := orderLineSvc.Create(ctx, orderLine)
+		if err != nil {
 			return err
+		}
+		// A refused line must not leave an RFQ short of it: the signal rolls the whole RFQ back.
+		if created.ClientErrors.Count() > 0 {
+			return composable.ClientErrorSignal{Errors: created.ClientErrors}
 		}
 	}
 	return nil

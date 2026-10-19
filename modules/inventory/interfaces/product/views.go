@@ -23,9 +23,10 @@ type EffectiveProductView struct {
 	Name        *model.LangJson `json:"name,omitempty"`
 	DisplayName string          `json:"display_name"`
 
-	ProductTypeId string `json:"product_type_id,omitempty"`
-	CategoryId    string `json:"category_id,omitempty"`
-	BrandId       string `json:"brand_id,omitempty"`
+	ProductType string `json:"product_type,omitempty"`
+	IsCombo     bool   `json:"is_combo"`
+	CategoryId  string `json:"category_id,omitempty"`
+	BrandId     string `json:"brand_id,omitempty"`
 
 	SaleOk     bool `json:"sale_ok"`
 	PurchaseOk bool `json:"purchase_ok"`
@@ -56,7 +57,8 @@ func NewEffectiveProductView(product EffectiveProduct) EffectiveProductView {
 		TemplateId:         product.TemplateId,
 		Name:               product.Name,
 		DisplayName:        product.DisplayName,
-		ProductTypeId:      product.ProductTypeId,
+		ProductType:        product.ProductType,
+		IsCombo:            product.IsCombo,
 		CategoryId:         product.CategoryId,
 		BrandId:            product.BrandId,
 		SaleOk:             product.SaleOk,

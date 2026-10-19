@@ -40,25 +40,25 @@ Set Up Group Lifecycle Fixtures
 
 Add User To Group
     [Arguments]    ${group_id}    ${user_id}
-    ${resp}=    POST On Session    api    /v1/iam/groups/${group_id}/manage-users
+    ${resp}=    POST On Session    api    /v1/iam/iam_group/${group_id}/manage_users
     ...    json=${{ {'add': [$user_id]} }}
     Response Status Should Be    ${resp}    200
 
 Remove User From Group
     [Arguments]    ${group_id}    ${user_id}
-    ${resp}=    POST On Session    api    /v1/iam/groups/${group_id}/manage-users
+    ${resp}=    POST On Session    api    /v1/iam/iam_group/${group_id}/manage_users
     ...    json=${{ {'remove': [$user_id]} }}
     Response Status Should Be    ${resp}    200
 
 Assign Role To Group
     [Arguments]    ${group_id}    ${role_id}
-    ${resp}=    POST On Session    api    /v1/iam/groups/${group_id}/roles
+    ${resp}=    POST On Session    api    /v1/iam/iam_group/${group_id}/manage_roles
     ...    json=${{ {'add': [$role_id]} }}
     Response Status Should Be    ${resp}    200
 
 Unassign Role From Group
     [Arguments]    ${group_id}    ${role_id}
-    ${resp}=    POST On Session    api    /v1/iam/groups/${group_id}/roles
+    ${resp}=    POST On Session    api    /v1/iam/iam_group/${group_id}/manage_roles
     ...    json=${{ {'remove': [$role_id]} }}
     Response Status Should Be    ${resp}    200
 

@@ -26,8 +26,9 @@ Generated Variants Have Distinct Combinations
     ...    products. Equal combination keys would mean the generator built the same identity
     ...    four times and only the composite unique stopped it.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 50, 'graph': '{"if":["product_template_id", "=", "' + $MATRIX_TEMPLATE_ID + '"]}'} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 50, 'fields': 'id,combination_key', 'graph': '{"if":["product_template_id", "=", "' + $MATRIX_TEMPLATE_ID + '"]}'} }}
     Response Status Should Be    ${resp}    200
+    # combination_key is not a default search field, so it is only projected when named.
     ${items}=    Set Variable    ${resp.json()}[items]
     Length Should Be    ${items}    4
     ${keys}=    Evaluate    sorted({item['combination_key'] for item in $items})

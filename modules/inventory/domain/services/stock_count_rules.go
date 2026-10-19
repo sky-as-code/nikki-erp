@@ -74,9 +74,9 @@ func CountEntryFields(
 	counted, snapshot decimal.Decimal, reasonCode, reasonText string,
 ) map[string]any {
 	return map[string]any{
-		models.StockQuantFieldCountedQuantity:  counted.String(),
+		models.StockQuantFieldCountedQuantity:  counted,
 		models.StockQuantFieldCountQuantitySet: true,
-		models.StockQuantFieldCountSnapshotQty: snapshot.String(),
+		models.StockQuantFieldCountSnapshotQty: snapshot,
 		models.StockQuantFieldCountReasonCode:  reasonCode,
 		models.StockQuantFieldCountReasonText:  reasonText,
 	}

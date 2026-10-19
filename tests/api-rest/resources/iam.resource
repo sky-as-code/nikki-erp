@@ -13,8 +13,8 @@ Resource          ${CURDIR}/../nikki_api/data.resource
 *** Variables ***
 ${USER_API}             /v1/iam/iam_user
 ${GROUP_API}            /v1/iam/iam_group
-${ROLE_API}             /v1/iam/roles
-${ENTITLEMENT_API}      /v1/iam/entitlements
+${ROLE_API}             /v1/iam/iam_role
+${ENTITLEMENT_API}      /v1/iam/iam_entitlement
 ${TEST_PERM_API}        /v1/iam/me/test-permissions
 ${TEMP_PASSWORD_API}    /v1/iam/passwords/passwordtmp
 ${IAM_SCHEMA_DIR}       ${CURDIR}/schemas/iam
@@ -98,7 +98,7 @@ Ensure Seed Group
     ${gid}    ${getag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${SEED_GROUP_ID}    ${gid}
     Set Global Variable    ${SEED_GROUP_CREATED}    ${True}
-    ${resp}=    POST On Session    api    /v1/iam/groups/${gid}/manage-users
+    ${resp}=    POST On Session    api    /v1/iam/iam_group/${gid}/manage_users
     ...    json=${{ {'add': [$SEED_USER_ID]} }}
     Response Should Be Update Success    ${resp}    count=1
 
@@ -234,6 +234,7 @@ Permission Should Be Granted
     ...    a real grant path. A match with no source id or no expression would mean the
     ...    provenance columns are not being populated.
     [Arguments]    ${alias}    ${expression}    ${expected_kind}=${EMPTY}    ${expected_source_id}=${EMPTY}
+    ...    ${expected_role_id}=${EMPTY}
     ${body}=    Probe Permission    ${alias}    ${expression}
     Should Be True    ${body}[is_granted]    msg=Expected ${expression} to be granted
     Should Not Be Empty    ${body}[matches]    msg=Granted but no grant path was reported
@@ -248,6 +249,12 @@ Permission Should Be Granted
     IF    $expected_source_id
         ${ids}=    Evaluate    [m['source_id'] for m in $body['matches']]
         Should Contain    ${ids}    ${expected_source_id}
+    END
+    IF    $expected_role_id
+        # source_id is the assignment id; the role shows through source_name.
+        ${resp}=    GET On Session    api    ${ROLE_API}/${expected_role_id}
+        ${names}=    Evaluate    [m['source_name'] for m in $body['matches']]
+        Should Contain    ${names}    ${resp.json()}[item][name]
     END
     RETURN    ${body}
 
@@ -265,14 +272,15 @@ Resolve Resource And Action
     ...    keeps working when the seed ULIDs change, and so it fails with a clear message
     ...    if a resource the tests assume is simply absent.
     [Arguments]    ${resource_code}    ${action_code}
-    ${resp}=    GET On Session    api    /v1/iam/resources
+    ${resp}=    GET On Session    api    /v1/iam/iam_resource
     ...    params=${{ {'graph': '{"if":["code", "=", "' + $resource_code + '"]}'} }}
     Response Status Should Be    ${resp}    200
     ${items}=    Set Variable    ${resp.json()}[items]
     Should Not Be Empty    ${items}    msg=No seeded resource with code "${resource_code}"
     ${resource_id}=    Set Variable    ${items}[0][id]
 
-    ${resp}=    GET On Session    api    /v1/iam/resources/${resource_id}/actions
+    ${resp}=    GET On Session    api    /v1/iam/iam_action
+    ...    params=${{ {'graph': '{"if":["resource_id", "=", "' + $resource_id + '"]}', 'fields': ['id', 'code'], 'size': 100} }}
     Response Status Should Be    ${resp}    200
     ${actions}=    Set Variable    ${resp.json()}[items]
     ${matching}=    Evaluate    [a for a in $actions if a.get('code') == "${action_code}"]
@@ -304,13 +312,13 @@ Create Probe Role
 Assign Role To User
     [Documentation]    Assigns a role directly to a user through the supported API.
     [Arguments]    ${user_id}    ${role_id}
-    ${resp}=    POST On Session    api    /v1/iam/users/${user_id}/roles
+    ${resp}=    POST On Session    api    /v1/iam/iam_user/${user_id}/manage_roles
     ...    json=${{ {'add': [$role_id]} }}
     Response Status Should Be    ${resp}    200
 
 Unassign Role From User
     [Arguments]    ${user_id}    ${role_id}
-    ${resp}=    POST On Session    api    /v1/iam/users/${user_id}/roles
+    ${resp}=    POST On Session    api    /v1/iam/iam_user/${user_id}/manage_roles
     ...    json=${{ {'remove': [$role_id]} }}
     Response Status Should Be    ${resp}    200
 
@@ -388,8 +396,8 @@ Ensure Locale Ordering Groups
     # en-US ascending: Alpha, Bravo, Charlie
     # vi-VN ascending: Xuan(Charlie), Yen(Bravo), Zulu(Alpha)  -> exactly reversed
     @{specs}=    Create List
-    ...    ${{ {'key': 'alpha',   'en': 'Alpha ' + $suffix,   'vi': 'Zulu ' + $suffix} }}
-    ...    ${{ {'key': 'bravo',   'en': 'Bravo ' + $suffix,   'vi': 'Yen ' + $suffix} }}
+    ...    ${{ {'key': 'alpha', 'en': 'Alpha ' + $suffix, 'vi': 'Zulu ' + $suffix} }}
+    ...    ${{ {'key': 'bravo', 'en': 'Bravo ' + $suffix, 'vi': 'Yen ' + $suffix} }}
     ...    ${{ {'key': 'charlie', 'en': 'Charlie ' + $suffix, 'vi': 'Xuan ' + $suffix} }}
 
     &{ids}=    Create Dictionary
@@ -426,7 +434,8 @@ Locale Group Names In Result
     ...    other suites, and they must not decide whether an ordering assertion passes.
     [Arguments]    ${resp}    ${language}
     ${names}=    Evaluate
-    ...    [i['name'].get($language) for i in $resp.json()['items'] if isinstance(i.get('name'), dict) and $LOCALE_GROUP_SUFFIX in str(i['name'])]
+    ...    [i['name'][language] for i in body['items'] if isinstance(i.get('name'), dict) and suffix in str(i['name']) and language in i['name']]
+    ...    namespace=${{ {'body': $resp.json(), 'language': $language, 'suffix': $LOCALE_GROUP_SUFFIX} }}
     RETURN    ${names}
 
 Avatar File Part
@@ -441,6 +450,8 @@ Response Should Be File Field Error
     [Documentation]    One error from the files/:field routes, matched on field and key.
     [Arguments]    ${resp}    ${field}    ${key}
     Should Be Equal As Integers    ${resp.status_code}    400
-    ${errors}=    Evaluate    [e for e in $resp.json() if e.get('field') == $field and $key in e.get('key', '')]
+    # Robot's $var is not visible inside a comprehension's scope, so the values go in as names.
+    ${errors}=    Evaluate    [e for e in body if e.get('field') == field and key in e.get('key', '')]
+    ...    namespace=${{ {'body': $resp.json(), 'field': $field, 'key': $key} }}
     Should Not Be Empty    ${errors}
     ...    msg=Expected a '${key}' error on '${field}', got ${resp.text}

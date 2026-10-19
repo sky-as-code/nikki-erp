@@ -48,7 +48,7 @@ A Template Is Refused While Any Variant Holds Stock
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/${GUARDED_TEMPLATE_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${template}=    Set Variable    ${resp.json()}
+    ${template}=    Set Variable    ${resp.json()}[item]
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}/${GUARDED_TEMPLATE_ID}/archived
     ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $template['etag']} }}
     ...    expected_status=any
@@ -66,7 +66,7 @@ No Variant Was Archived By The Refused Template Archive
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Not Be True    ${resp.json()}[is_archived]
+    Should Not Be True    ${resp.json()}[item][is_archived]
     ...    msg=The clean variant must not be archived by an operation that was rejected
 
 A Variant With No Stock Can Be Archived
@@ -75,7 +75,7 @@ A Variant With No Stock Can Be Archived
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${item}=    Set Variable    ${resp.json()}
+    ${item}=    Set Variable    ${resp.json()}[item]
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}/archived
     ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $item['etag']} }}
     Response Status Should Be    ${resp}    200
@@ -83,7 +83,7 @@ A Variant With No Stock Can Be Archived
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Be True    ${resp.json()}[is_archived]
+    Should Be True    ${resp.json()}[item][is_archived]
 
 Unarchiving Is Never Blocked By Stock
     [Documentation]    Restoring a product to the working set strands nothing. Guarding it would
@@ -91,7 +91,7 @@ Unarchiving Is Never Blocked By Stock
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${item}=    Set Variable    ${resp.json()}
+    ${item}=    Set Variable    ${resp.json()}[item]
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_CLEAN_VARIANT_ID}/archived
     ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': False, 'etag': $item['etag']} }}
     Response Status Should Be    ${resp}    200
@@ -102,7 +102,7 @@ Get Guarded Variant
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${GUARDED_VARIANT_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    RETURN    ${resp.json()}
+    RETURN    ${resp.json()}[item]
 
 Ensure Guarded Variant With Stock
     [Documentation]    A template with two variants, one holding stock and one clean, which is

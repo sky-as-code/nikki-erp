@@ -1,0 +1,122 @@
+{
+	"name": "essential_language",
+	"label": "essential_language.label",
+	"table_name": "essential_languages",
+	"should_build_db": true,
+	"extend_before": [
+		"core.basemodel.base_model"
+	],
+	"fields": [
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 200
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "iso_code",
+			"label": "fields.iso_code",
+			"data_type": {
+				"type": "string",
+				"min": 5,
+				"max": 10,
+				"regex": "^[a-z]{2}-[A-Z]{2}$"
+			},
+			"required_for_create": true,
+			"unique": true
+		},
+		{
+			"name": "direction",
+			"label": "fields.direction",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"ltr",
+					"rtl"
+				]
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "decimal_separator",
+			"label": "fields.decimal_separator",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 5
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "thousands_separator",
+			"label": "fields.thousands_separator",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 5
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "date_format",
+			"label": "fields.date_format",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 30
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "time_format",
+			"label": "fields.time_format",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 30
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "short_time_format",
+			"label": "fields.short_time_format",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 30
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "first_day_of_week",
+			"label": "fields.first_day_of_week",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"monday",
+					"tuesday",
+					"wednesday",
+					"thursday",
+					"friday",
+					"saturday",
+					"sunday"
+				]
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "is_enabled",
+			"label": "fields.is_enabled",
+			"data_type": "boolean",
+			"default_value": false
+		}
+	],
+	"extend_after": [
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	]
+}

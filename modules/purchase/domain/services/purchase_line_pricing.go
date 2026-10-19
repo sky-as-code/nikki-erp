@@ -88,11 +88,11 @@ func (this *LinePricer) PriceLine(
 func (this *LinePricer) loadCandidates(
 	ctx corectx.Context, orgId, vendorId, templateId string, priceAt time.Time,
 ) ([]vendorpricing.Candidate, error) {
-	engine, err := engineFor(models.VendorProductPriceSchemaName)
+	repo, err := repoFor(models.VendorProductPriceSchemaName)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := models.FindVendorPriceCandidates(ctx, engine.ResourceRepository(),
+	rows, err := models.FindVendorPriceCandidates(ctx, repo,
 		orgId, vendorId, templateId, models.MaxVendorPriceCandidates)
 	if err != nil {
 		return nil, errors.Wrap(err, "loadCandidates")

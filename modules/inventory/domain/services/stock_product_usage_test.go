@@ -42,7 +42,8 @@ func readUsage(t *testing.T, variantId string) itStock.ProductUsage {
 // Stock on the shelf blocks an archive, and IsEmpty is what says so.
 func TestProductUsageReportsOnHandStock(t *testing.T) {
 	useSchemaEngines(t, map[string][]dmodel.DynamicFields{
-		models.StockQuantSchemaName: {quantRow(testVariantAId, testLocationAId, 100, 0)},
+		models.StockQuantSchemaName:        {quantRow(testVariantAId, testLocationAId, 100, 0)},
+		models.InventoryLocationSchemaName: {internalLocationRow(testLocationAId)},
 	})
 
 	usage := readUsage(t, testVariantAId)
@@ -88,7 +89,8 @@ func TestProductUsageCountsOpenWorkAndDedupesTransfers(t *testing.T) {
 // Reservation alone blocks an archive even when nothing is physically left to take away.
 func TestProductUsageReportsReservationSeparately(t *testing.T) {
 	useSchemaEngines(t, map[string][]dmodel.DynamicFields{
-		models.StockQuantSchemaName: {quantRow(testVariantAId, testLocationAId, 5, 5)},
+		models.StockQuantSchemaName:        {quantRow(testVariantAId, testLocationAId, 5, 5)},
+		models.InventoryLocationSchemaName: {internalLocationRow(testLocationAId)},
 	})
 
 	usage := readUsage(t, testVariantAId)
@@ -101,7 +103,8 @@ func TestProductUsageReportsReservationSeparately(t *testing.T) {
 // including the ones holding nothing.
 func TestProductUsageBatchReportsEveryRequestedVariant(t *testing.T) {
 	useSchemaEngines(t, map[string][]dmodel.DynamicFields{
-		models.StockQuantSchemaName: {quantRow(testVariantBId, testLocationAId, 10, 0)},
+		models.StockQuantSchemaName:        {quantRow(testVariantBId, testLocationAId, 10, 0)},
+		models.InventoryLocationSchemaName: {internalLocationRow(testLocationAId)},
 	})
 
 	service := &StockQuantDomainServiceImpl{}
@@ -123,4 +126,25 @@ func TestProductUsageRejectsAnEmptyVariantId(t *testing.T) {
 	_, err := service.GetProductUsage(callerContext(), itStock.GetProductUsageQuery{VariantId: ""})
 
 	assert.Error(t, err)
+}
+
+// A receipt leaves the vendor location negative by what it supplied. Counting that balance nets the
+// receipt to zero and lets a product with stock on the shelf be archived.
+func TestProductUsageCountsOnlyOwnedLocations(t *testing.T) {
+	vendor := dmodel.DynamicFields{
+		models.InventoryLocationFieldId:            testLocationBId,
+		models.InventoryLocationFieldLocationUsage: models.InventoryLocationUsageVendor,
+	}
+	useSchemaEngines(t, map[string][]dmodel.DynamicFields{
+		models.StockQuantSchemaName: {
+			quantRow(testVariantAId, testLocationAId, 10, 0),
+			quantRow(testVariantAId, testLocationBId, -10, 0),
+		},
+		models.InventoryLocationSchemaName: {internalLocationRow(testLocationAId), vendor},
+	})
+
+	usage := readUsage(t, testVariantAId)
+
+	assert.Equal(t, "10", usage.OnHandQuantity.String())
+	assert.False(t, usage.IsEmpty(), "stock received from a vendor blocks the archive")
 }

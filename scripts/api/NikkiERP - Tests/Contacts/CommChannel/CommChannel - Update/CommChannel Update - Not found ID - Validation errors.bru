@@ -5,13 +5,14 @@ meta {
 }
 
 patch {
-  url: {{api_host}}/v1/contacts/parties/channels/01K6A1V40MNHE8PHJB76FQtest
+  url: {{api_host}}/v1/contacts/contacts_comm_channel/01K6A1V40MNHE8PHJB76FQtest
   body: json
   auth: inherit
 }
 
 body:json {
   {
+    "org_id": "{{org_id}}",
     "partyId": "{{party_id}}",
     "type": "post",
     "valueJson" : {

@@ -113,12 +113,12 @@ func (this *PurchaseOrderDomainServiceImpl) repriceLines(
 		return report, nil
 	}
 
-	lineEngine, err := engineFor(models.PurchaseOrderLineSchemaName)
+	lineRepo, err := repoFor(models.PurchaseOrderLineSchemaName)
 	if err != nil {
 		return report, err
 	}
 	orderId := stringOf(order, models.PurchaseOrderFieldId)
-	lines, err := models.FindOrderLines(ctx, lineEngine.ResourceRepository(),
+	lines, err := models.FindOrderLines(ctx, lineRepo,
 		orderId, models.MaxOrderLines)
 	if err != nil {
 		return report, err
@@ -226,7 +226,7 @@ func (this *PurchaseOrderDomainServiceImpl) repriceOneLine(
 func (this *PurchaseOrderDomainServiceImpl) writeRepricedLine(
 	ctx corectx.Context, stored, priced dmodel.DynamicFields,
 ) error {
-	engine, err := engineFor(models.PurchaseOrderLineSchemaName)
+	repo, err := repoFor(models.PurchaseOrderLineSchemaName)
 	if err != nil {
 		return err
 	}
@@ -241,6 +241,6 @@ func (this *PurchaseOrderDomainServiceImpl) writeRepricedLine(
 		models.PurchaseOrderLineFieldTotal:                priced[models.PurchaseOrderLineFieldTotal],
 	}
 
-	_, err = engine.ResourceRepository().Update(ctx, update)
+	_, err = repo.Update(ctx, update)
 	return errors.Wrap(err, "writeRepricedLine")
 }

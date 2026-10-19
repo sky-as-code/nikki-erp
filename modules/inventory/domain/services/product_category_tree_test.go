@@ -16,6 +16,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
+func categoryEntity(fields dmodel.DynamicFields) *composable.DynamicEntity {
+	return composable.NewDynamicEntityFrom(fields)
+}
+
 func canonicalLangJson(pairs ...string) *model.LangJson {
 	value := model.LangJson{}
 	for i := 0; i+1 < len(pairs); i += 2 {
@@ -29,42 +33,42 @@ func TestBuildCanonicalNameOfTheRootIsItsName(t *testing.T) {
 
 	canonical := BuildCanonicalName(nil, &root)
 
-	assert.Equal(t, model.LangJson{"en-US": "All", "vi-VN": "Tất cả"}, canonical)
+	assert.Equal(t, model.LangJson{"en-US": "Default", "vi-VN": "Mặc định"}, canonical)
 }
 
 func TestBuildCanonicalNameAppendsPerLanguage(t *testing.T) {
-	parent := canonicalLangJson("en-US", "All / Beverages", "vi-VN", "Tất cả / Đồ uống")
+	parent := canonicalLangJson("en-US", "Default / Beverages", "vi-VN", "Mặc định / Đồ uống")
 
 	canonical := BuildCanonicalName(parent, canonicalLangJson("en-US", "Soft drinks", "vi-VN", "Nước ngọt"))
 
 	assert.Equal(t, model.LangJson{
-		"en-US": "All / Beverages / Soft drinks",
-		"vi-VN": "Tất cả / Đồ uống / Nước ngọt",
+		"en-US": "Default / Beverages / Soft drinks",
+		"vi-VN": "Mặc định / Đồ uống / Nước ngọt",
 	}, canonical)
 }
 
 func TestBuildCanonicalNameFallsBackToEnUsOnEitherSide(t *testing.T) {
-	parent := canonicalLangJson("en-US", "All / Beverages", "vi-VN", "Tất cả / Đồ uống")
+	parent := canonicalLangJson("en-US", "Default / Beverages", "vi-VN", "Mặc định / Đồ uống")
 
 	canonical := BuildCanonicalName(parent, canonicalLangJson("en-US", "Cola", "ja-JP", "コーラ"))
 
 	assert.Equal(t, model.LangJson{
-		"en-US": "All / Beverages / Cola",
-		"ja-JP": "All / Beverages / コーラ",
-		"vi-VN": "Tất cả / Đồ uống / Cola",
+		"en-US": "Default / Beverages / Cola",
+		"ja-JP": "Default / Beverages / コーラ",
+		"vi-VN": "Mặc định / Đồ uống / Cola",
 	}, canonical)
 }
 
 func TestBuildCanonicalNameFallsBackToTheFirstLanguageWithoutEnUs(t *testing.T) {
-	canonical := BuildCanonicalName(canonicalLangJson("vi-VN", "Tất cả"), canonicalLangJson("ja-JP", "飲料"))
+	canonical := BuildCanonicalName(canonicalLangJson("vi-VN", "Mặc định"), canonicalLangJson("ja-JP", "飲料"))
 
-	assert.Equal(t, model.LangJson{"ja-JP": "Tất cả / 飲料", "vi-VN": "Tất cả / 飲料"}, canonical)
+	assert.Equal(t, model.LangJson{"ja-JP": "Mặc định / 飲料", "vi-VN": "Mặc định / 飲料"}, canonical)
 }
 
 func TestBuildCanonicalNameUsesARefKeyOnlyAsALastResort(t *testing.T) {
-	canonical := BuildCanonicalName(canonicalLangJson("en-US", "All"), canonicalLangJson("$ref", "category.drinks"))
+	canonical := BuildCanonicalName(canonicalLangJson("en-US", "Default"), canonicalLangJson("$ref", "category.drinks"))
 
-	assert.Equal(t, model.LangJson{"en-US": "All / category.drinks"}, canonical)
+	assert.Equal(t, model.LangJson{"en-US": "Default / category.drinks"}, canonical)
 }
 
 // rootRepository answers the root search with rootId, or with nothing when rootId is empty.
@@ -139,14 +143,14 @@ func TestRejectServerManagedFields(t *testing.T) {
 func TestAssertRootUnchanged(t *testing.T) {
 	root := models.NewProductCategoryFrom(dmodel.DynamicFields{
 		"id": "root_1", "parent_category_id": "root_1", "is_root": true,
-		"name": map[string]any{"en-US": "All", "vi-VN": "Tất cả"},
+		"name": map[string]any{"en-US": "Default", "vi-VN": "Mặc định"},
 	})
 	cases := map[string]struct {
 		submitted  dmodel.DynamicFields
 		violations int
 	}{
 		"same name and own parent": {dmodel.DynamicFields{
-			"parent_category_id": "root_1", "name": map[string]any{"en-US": "All", "vi-VN": "Tất cả"},
+			"parent_category_id": "root_1", "name": map[string]any{"en-US": "Default", "vi-VN": "Mặc định"},
 		}, 0},
 		"renamed": {dmodel.DynamicFields{"name": map[string]any{"en-US": "Everything"}}, 1},
 		"moved":   {dmodel.DynamicFields{"parent_category_id": "cat_1"}, 1},

@@ -11,7 +11,16 @@ import (
 type (
 	ConvertQuantityQuery  = itUom.ConvertQuantityQuery
 	ConvertQuantityResult = itUom.ConvertQuantityResult
+	GetUomQuery           = itUom.GetUomQuery
+	GetUomResult          = itUom.GetUomResult
+	GetUomResultData      = itUom.GetUomResultData
 )
+
+// UomLookupExtService reads one unit of measure, archived ones included, so a reference can be
+// checked against Essential without reaching into its tables.
+type UomLookupExtService interface {
+	GetUom(ctx corectx.Context, query GetUomQuery) (*GetUomResult, error)
+}
 
 // UomConversionExtService re-expresses a quantity in another unit of the same category. Stock
 // keeps every quantity in the variant's base unit; a caller reserving in its own unit is converted

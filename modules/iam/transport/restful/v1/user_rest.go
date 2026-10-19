@@ -11,17 +11,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	itCore "github.com/sky-as-code/nikki-erp/modules/core/language/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
-	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
 type userRestParams struct {
 	dig.In
 
-	UserSvc     it.UserAppService
 	SettingsSvc itExt.EffectiveSettingsExtService
 	LanguageSvc itExt.LanguageExtService
 	CurrencySvc itExt.CurrencyExtService
@@ -29,7 +26,6 @@ type userRestParams struct {
 
 func NewUserRest(params userRestParams) *UserRest {
 	return &UserRest{
-		UserSvc:     params.UserSvc,
 		SettingsSvc: params.SettingsSvc,
 		LanguageSvc: params.LanguageSvc,
 		CurrencySvc: params.CurrencySvc,
@@ -37,18 +33,9 @@ func NewUserRest(params userRestParams) *UserRest {
 }
 
 type UserRest struct {
-	UserSvc     it.UserAppService
 	SettingsSvc itExt.EffectiveSettingsExtService
 	LanguageSvc itExt.LanguageExtService
 	CurrencySvc itExt.CurrencyExtService
-}
-
-func (this UserRest) ManageUserRoleAssignments(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate[ManageUserRoleAssignmentsRequest, ManageUserRoleAssignmentsResponse](
-		"manage user role assignments",
-		echoCtx,
-		this.UserSvc.ManageUserRoleAssignments,
-	)
 }
 
 func (this UserRest) GetUserContext(echoCtx *echo.Context) (err error) {

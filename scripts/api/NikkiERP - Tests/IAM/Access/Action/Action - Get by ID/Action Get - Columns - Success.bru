@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/iam/resources/{{resource_id}}/actions/{{action_id}}?columns=name&columns=code&columns=resource_id
+  url: {{api_host}}/v1/iam/iam_action/{{action_id}}?columns=name&columns=code&columns=resource_id
   body: none
   auth: inherit
 }

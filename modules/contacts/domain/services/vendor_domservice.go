@@ -11,14 +11,17 @@ import (
 	itVendor "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/vendor"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
-func NewVendorDomainServiceImpl() itVendor.VendorDomainService {
-	return &VendorDomainServiceImpl{}
+// NewVendorDomainService is handed the composable default by the vendor profile onion. The CRUD
+// is the default's; what this type adds is the capability a purchasing module asks of a vendor.
+func NewVendorDomainService(base composable.CrudDomainService) itVendor.VendorDomainService {
+	return &VendorDomainServiceImpl{CrudDomainService: base}
 }
 
 type VendorDomainServiceImpl struct {
+	composable.CrudDomainService
 }
 
 // GetVendor fetches a party's vendor profile, so that a purchasing module can validate a vendor
@@ -81,19 +84,10 @@ func (this *VendorDomainServiceImpl) AssertOrderable(
 //
 // Both ids are part of the filter because the profile is keyed by the pair: the same party may be a
 // vendor of one organization and an ordinary contact of another.
-//
-// A missing engine is a Go error rather than a validation failure: it means this module was
-// initialized wrongly, which is a defect in the deployment and not something a caller can correct.
 func (this *VendorDomainServiceImpl) loadProfile(
 	ctx corectx.Context, partyId model.Id, orgId model.Id,
 ) (*models.VendorProfile, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(models.VendorProfileSchemaName)
-	if !ok {
-		return nil, errors.Errorf("loadProfile: the '%s' engine is not registered",
-			models.VendorProfileSchemaName)
-	}
-
-	found, err := engine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+	found, err := this.Repository().GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{
 			models.VendorProfileFieldPartyId: partyId,
 			models.VendorProfileFieldOrgId:   orgId,

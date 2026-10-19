@@ -5,13 +5,14 @@ meta {
 }
 
 post {
-  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/variants
+  url: {{api_host}}/v1/inventory/inventory_product_variant
   body: json
   auth: inherit
 }
 
 body:json {
   {
+    "org_id": "{{org_id}}",
     "name": {
       "vi-VN" : "{{variant_name_vi}}",
       "en-US" : "{{variant_name_en}}"

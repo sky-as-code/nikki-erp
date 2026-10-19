@@ -5,48 +5,48 @@ import (
 
 	"go.bryk.io/pkg/errors"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	langjson "github.com/sky-as-code/nikki-erp/modules/essential/infra/langJson"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 )
 
-func NewLanguageApplicationServiceImpl(languageSvc it.LanguageDomainService) it.LanguageAppService {
+// NewLanguageApplicationService is handed the composable default by the language onion. The
+// domain service behind it is the module's own, so the assertion is a wiring check.
+func NewLanguageApplicationService(base composable.CrudApplicationService) it.LanguageApplicationService {
+	languageSvc, ok := base.DomainService().(it.LanguageDomainService)
+	if !ok {
+		panic(errors.New("the language onion must be built with NewLanguageDomainService"))
+	}
+	return newLanguageApplicationService(base, languageSvc)
+}
+
+func newLanguageApplicationService(
+	base composable.CrudApplicationService, languageSvc it.LanguageDomainService,
+) *LanguageApplicationServiceImpl {
 	return &LanguageApplicationServiceImpl{
-		languageSvc: languageSvc,
-		registered:  make(model.LanguagePack),
+		CrudApplicationService: base,
+		languageSvc:            languageSvc,
+		registered:             make(model.LanguagePack),
 	}
 }
 
+// LanguageApplicationServiceImpl is the authorized CRUD of the language catalogue (tenant scope,
+// the seeded create/update/delete actions), plus the cross-module capability and the translation
+// bundles modules register at start-up.
+//
+// The lookups and the two public actions assert no permission: the lookups are another module
+// acting on its own authority, and the enabled list and the bundles render the sign-in page.
 type LanguageApplicationServiceImpl struct {
+	composable.CrudApplicationService
 	languageSvc it.LanguageDomainService
 	// registered holds the translations modules ship themselves; langjson.EmbeddedPack stays the
 	// baseline.
 	registered model.LanguagePack
 	mutex      sync.RWMutex
-}
-
-func (this *LanguageApplicationServiceImpl) CreateLanguage(ctx corectx.Context, cmd it.CreateLanguageCommand) (*it.CreateLanguageResult, error) {
-	if cErr := assertLanguagePermission(ctx, actionCreate); cErr != nil {
-		return &it.CreateLanguageResult{ClientErrors: *cErr}, nil
-	}
-	return this.languageSvc.CreateLanguage(ctx, cmd)
-}
-
-func (this *LanguageApplicationServiceImpl) DeleteLanguage(ctx corectx.Context, cmd it.DeleteLanguageCommand) (*it.DeleteLanguageResult, error) {
-	if cErr := assertLanguagePermission(ctx, actionDelete); cErr != nil {
-		return &it.DeleteLanguageResult{ClientErrors: *cErr}, nil
-	}
-	return this.languageSvc.DeleteLanguage(ctx, cmd)
-}
-
-func (this *LanguageApplicationServiceImpl) LanguageExists(ctx corectx.Context, query it.LanguageExistsQuery) (*it.LanguageExistsResult, error) {
-	return this.languageSvc.LanguageExists(ctx, query)
-}
-
-func (this *LanguageApplicationServiceImpl) GetLanguage(ctx corectx.Context, query it.GetLanguageQuery) (*it.GetLanguageResult, error) {
-	return this.languageSvc.GetLanguage(ctx, query)
 }
 
 func (this *LanguageApplicationServiceImpl) GetLanguageByIsoCode(
@@ -61,7 +61,23 @@ func (this *LanguageApplicationServiceImpl) ListEnabledLanguages(
 	return this.languageSvc.ListEnabledLanguages(ctx, query)
 }
 
-func (this *LanguageApplicationServiceImpl) GetLanguageJson(ctx corectx.Context, query it.GetLanguageJsonQuery) (*it.GetLanguageJsonResult, error) {
+func (this *LanguageApplicationServiceImpl) ListEnabledLanguagesAction(
+	ctx corectx.Context, _ dmodel.DynamicFields,
+) (*it.ListEnabledLanguagesResult, error) {
+	return this.ListEnabledLanguages(ctx, it.ListEnabledLanguagesQuery{})
+}
+
+func (this *LanguageApplicationServiceImpl) GetLanguageJsonAction(
+	ctx corectx.Context, params dmodel.DynamicFields,
+) (*it.GetLanguageJsonResult, error) {
+	languageCode, _ := params["language_code"].(string)
+	moduleName, _ := params["module_name"].(string)
+	return this.GetLanguageJson(ctx, it.GetLanguageJsonQuery{LanguageCode: languageCode, ModuleName: moduleName})
+}
+
+func (this *LanguageApplicationServiceImpl) GetLanguageJson(
+	ctx corectx.Context, query it.GetLanguageJsonQuery,
+) (*it.GetLanguageJsonResult, error) {
 	_ = ctx
 	this.mutex.RLock()
 	defer this.mutex.RUnlock()
@@ -124,15 +140,4 @@ func (this *LanguageApplicationServiceImpl) hasTranslation(moduleName string, la
 	}
 	_, ok := this.registered[moduleName][langCode]
 	return ok
-}
-
-func (this *LanguageApplicationServiceImpl) SearchLanguages(ctx corectx.Context, query it.SearchLanguagesQuery) (*it.SearchLanguagesResult, error) {
-	return this.languageSvc.SearchLanguages(ctx, query)
-}
-
-func (this *LanguageApplicationServiceImpl) UpdateLanguage(ctx corectx.Context, cmd it.UpdateLanguageCommand) (*it.UpdateLanguageResult, error) {
-	if cErr := assertLanguagePermission(ctx, actionUpdate); cErr != nil {
-		return &it.UpdateLanguageResult{ClientErrors: *cErr}, nil
-	}
-	return this.languageSvc.UpdateLanguage(ctx, cmd)
 }

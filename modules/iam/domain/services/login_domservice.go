@@ -32,7 +32,7 @@ type NewLoginServiceParam struct {
 	CqrsBus    cqrs.CqrsBus
 	Logger     logging.LoggerService
 	TokenSvc   coretoken.AuthTokenService
-	UserSvc    itUser.UserDomainService
+	UserSvc    itUser.UserCrudDomainService
 }
 
 func NewLoginDomainServiceImpl(param NewLoginServiceParam) it.LoginDomainService {
@@ -58,7 +58,7 @@ type LoginDomainServiceImpl struct {
 	configSvc  config.ConfigService
 	logger     logging.LoggerService
 	tokenSvc   coretoken.AuthTokenService
-	userSvc    itUser.UserDomainService
+	userSvc    itUser.UserCrudDomainService
 
 	attemptDurationSecs int
 	principalHelper     principalHelper

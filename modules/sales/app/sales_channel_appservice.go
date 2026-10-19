@@ -56,7 +56,7 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 		return nil, err
 	}
 
-	existing, err := models.FindSalesChannelByCode(ctx, engineRepo, code)
+	existing, err := models.FindSalesChannelByCode(ctx, engineRepo, code, command.OrgId)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (this *SalesChannelApplicationServiceImpl) ResolveSalesChannelByCode(
 	if err != nil {
 		return nil, err
 	}
-	found, err := models.FindSalesChannelByCode(ctx, engineRepo, code)
+	found, err := models.FindSalesChannelByCode(ctx, engineRepo, code, query.OrgId)
 	if err != nil {
 		return nil, err
 	}

@@ -54,7 +54,7 @@ func NewChannelPaymentApplicationServiceImpl(
 func (this *ChannelPaymentApplicationServiceImpl) ListChannelPaymentMethods(
 	ctx corectx.Context, query it.ListChannelPaymentMethodsQuery,
 ) (*it.ListChannelPaymentMethodsResult, error) {
-	channel, cErrs, err := this.resolveChannel(ctx, query.SalesChannelId, query.SalesChannelCode)
+	channel, cErrs, err := this.resolveChannel(ctx, query.SalesChannelId, query.SalesChannelCode, query.OrgId)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (this *ChannelPaymentApplicationServiceImpl) EnableChannelPaymentMethod(
 			"enabling a payment method requires its id"), nil
 	}
 
-	channel, cErrs, err := this.resolveChannel(ctx, command.SalesChannelId, command.SalesChannelCode)
+	channel, cErrs, err := this.resolveChannel(ctx, command.SalesChannelId, command.SalesChannelCode, command.OrgId)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (this *ChannelPaymentApplicationServiceImpl) DisableChannelPaymentMethod(
 	}
 
 	channel, cErrs, err := this.resolveChannel(ctx,
-		command.SalesChannelId, command.SalesChannelCode)
+		command.SalesChannelId, command.SalesChannelCode, command.OrgId)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func (this *ChannelPaymentApplicationServiceImpl) IsPaymentMethodEnabledForChann
 	ctx corectx.Context, query it.IsPaymentMethodEnabledQuery,
 ) (*it.IsPaymentMethodEnabledResult, error) {
 	channel, cErrs, err := this.resolveChannel(ctx,
-		query.SalesChannelId, query.SalesChannelCode)
+		query.SalesChannelId, query.SalesChannelCode, query.OrgId)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +241,7 @@ func (this *ChannelPaymentApplicationServiceImpl) IsPaymentMethodEnabledForChann
 // resolveChannel accepts either identifier, since REST callers hold the id and integrating modules
 // store only the code. The id wins when both are given.
 func (this *ChannelPaymentApplicationServiceImpl) resolveChannel(
-	ctx corectx.Context, channelId string, channelCode string,
+	ctx corectx.Context, channelId string, channelCode string, orgId string,
 ) (dmodel.DynamicFields, *ft.ClientErrors, error) {
 	engineRepo, err := services.RepositoryFor(models.SalesChannelSchemaName)
 	if err != nil {
@@ -265,12 +265,15 @@ func (this *ChannelPaymentApplicationServiceImpl) resolveChannel(
 	if code == "" {
 		return nil, channelNotFound("a sales channel id or code is required"), nil
 	}
-	found, err := models.FindSalesChannelByCode(ctx, engineRepo, code)
+	found, err := models.FindSalesChannelByCode(ctx, engineRepo, code, orgId)
 	if err != nil {
 		return nil, nil, err
 	}
 	if len(found) == 0 {
 		return nil, channelNotFound("no sales channel with code '" + code + "'"), nil
+	}
+	if len(found) > 1 {
+		return nil, channelNotFound("sales channel code '" + code + "' exists in several orgs; an org_id is required"), nil
 	}
 	return found[0], nil, nil
 }

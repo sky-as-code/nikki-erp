@@ -40,7 +40,7 @@ func validateEntitlementUpdates(delta itRole.RoleEntitlementsDelta) ft.ClientErr
 	return out
 }
 
-func (this *RoleDomainServiceImpl) updateRoleEntitlements(
+func (this *RoleCrudDomainServiceImpl) updateRoleEntitlements(
 	ctx corectx.Context, roleId model.Id, updates []itRole.RoleEntitlementUpdate,
 ) (ft.ClientErrors, error) {
 	if len(updates) == 0 {
@@ -54,7 +54,7 @@ func (this *RoleDomainServiceImpl) updateRoleEntitlements(
 		return out, nil
 	}
 	for i, update := range updates {
-		res, err := this.entitlementSvc.UpdateEntitlementDeferRebuild(ctx, entitlementUpdateCommand(update, etags[update.Id]))
+		res, err := this.entitlementSvc.UpdateDeferRebuild(ctx, entitlementUpdateCommand(update, etags[update.Id]))
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +80,7 @@ func assertUpdatesOwned(updates []itRole.RoleEntitlementUpdate, etags map[model.
 
 // roleEntitlementEtags reads the current etag of every entitlement to update, so the update can
 // go through the entitlement service's optimistic check without the client sending etags.
-func (this *RoleDomainServiceImpl) roleEntitlementEtags(
+func (this *RoleCrudDomainServiceImpl) roleEntitlementEtags(
 	ctx corectx.Context, roleId model.Id, updates []itRole.RoleEntitlementUpdate,
 ) (map[model.Id]model.Etag, ft.ClientErrors, error) {
 	ids := make([]any, len(updates))
@@ -104,8 +104,7 @@ func (this *RoleDomainServiceImpl) roleEntitlementEtags(
 		return nil, searchRes.ClientErrors, nil
 	}
 	etags := make(map[model.Id]model.Etag, len(searchRes.Data.Items))
-	for _, ent := range searchRes.Data.Items {
-		fields := ent.GetFieldData()
+	for _, fields := range searchRes.Data.Items {
 		// fmt.Sprint covers both shapes a value may come back in: string and its named type.
 		etags[model.Id(fmt.Sprint(fields[basemodel.FieldId]))] = model.Etag(fmt.Sprint(fields[basemodel.FieldEtag]))
 	}
@@ -118,5 +117,5 @@ func entitlementUpdateCommand(update itRole.RoleEntitlementUpdate, etag model.Et
 	ent.SetId(&entId)
 	ent.SetEtag(&etag)
 	ent.GetFieldData().SetString(domain.EntitlementFieldDescription, update.Description)
-	return itEnt.UpdateEntitlementCommand{Entitlement: *ent}
+	return ent.GetFieldData()
 }

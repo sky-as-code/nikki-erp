@@ -10,7 +10,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	basemodel "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	c "github.com/sky-as-code/nikki-erp/modules/settings/constants"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
@@ -67,7 +67,7 @@ func (this *SettingsDomainServiceImpl) SetSettings(
 	}
 
 	written := 0
-	err = withSettingsTransaction(ctx, func(tranxCtx corectx.Context) error {
+	err = composable.WithTransaction(ctx, this.recordRepo, func(tranxCtx corectx.Context) error {
 		count, err := this.applyItems(tranxCtx, applyParam{
 			SchemaId:  schemaRow.GetId(),
 			ModuleKey: cmd.ModuleKey,
@@ -202,13 +202,7 @@ func (this *SettingsDomainServiceImpl) applyItems(
 func (this *SettingsDomainServiceImpl) upsertRecord(
 	ctx corectx.Context, param applyParam, item validatedItem,
 ) (int, error) {
-	engine, ok := dynamicresource.Registry().GetEngine(models.SettingsRecordSchemaName)
-	if !ok {
-		return 0, errors.Errorf("upsertRecord: the '%s' engine is not registered",
-			models.SettingsRecordSchemaName)
-	}
-
-	found, err := engine.ResourceRepository().GetOne(ctx, dyn.RepoGetOneParam{
+	found, err := this.recordRepo.GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{
 			models.SettingsRecordFieldModuleKey: param.ModuleKey,
 			models.SettingsRecordFieldName:      item.Name,
@@ -237,7 +231,7 @@ func (this *SettingsDomainServiceImpl) upsertRecord(
 		if item.AllowOverrideChanged {
 			updated[models.SettingsRecordFieldAllowOverride] = item.AllowOverride
 		}
-		updRes, err := engine.ResourceRepository().Update(ctx, updated)
+		updRes, err := this.recordRepo.Update(ctx, updated)
 		if err != nil {
 			return 0, errors.Wrap(err, "upsertRecord")
 		}
@@ -268,14 +262,14 @@ func (this *SettingsDomainServiceImpl) upsertRecord(
 	if param.SchemaId != nil {
 		data[models.SettingsRecordFieldSchemaId] = *param.SchemaId
 	}
-	// created_at is declared UseTypeDefault, but that default is applied by the engine's create
-	// pipeline, which this write bypasses by going straight to the repository. The column is NOT
+	// created_at is declared UseTypeDefault, but that default is applied by the domain service's
+	// create pipeline, which this write bypasses by going straight to the repository. The column is NOT
 	// NULL, so it is filled here from the field's own declared default.
-	if err := setDeclaredDefault(engine, data, basemodel.FieldCreatedAt); err != nil {
+	if err := setDeclaredDefault(this.recordRepo.Schema(), data, basemodel.FieldCreatedAt); err != nil {
 		return 0, err
 	}
 
-	insRes, err := engine.ResourceRepository().Insert(ctx, data)
+	insRes, err := this.recordRepo.Insert(ctx, data)
 	if err != nil {
 		return 0, errors.Wrap(err, "upsertRecord")
 	}
@@ -289,30 +283,4 @@ func clientErrorResult(field string, key string, message string) *it.SetSettings
 	vErrs := ft.ClientErrors{}
 	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "settings"), message))
 	return &it.SetSettingsResult{ClientErrors: vErrs}
-}
-
-// withSettingsTransaction runs body inside one transaction on a scoped copy of the context.
-//
-// The transaction goes on a clone, never on ctx itself: setting it on the caller's context would
-// leave a committed transaction visible to whatever runs next.
-func withSettingsTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
-	engine, ok := dynamicresource.Registry().GetEngine(models.SettingsRecordSchemaName)
-	if !ok {
-		return errors.Errorf("withSettingsTransaction: the '%s' engine is not registered",
-			models.SettingsRecordSchemaName)
-	}
-
-	tranx, err := engine.ResourceRepository().BeginTransaction(ctx)
-	if err != nil {
-		return errors.Wrap(err, "withSettingsTransaction")
-	}
-	defer tranx.Rollback()
-
-	tranxCtx := corectx.CloneRequestContext(ctx)
-	tranxCtx.SetDbTranx(tranx)
-
-	if err := body(tranxCtx); err != nil {
-		return err
-	}
-	return errors.Wrap(tranx.Commit(), "withSettingsTransaction")
 }

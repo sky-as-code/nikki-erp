@@ -31,7 +31,8 @@ func templateComputedFields() []string {
 		ProductVariantFieldTemplatePurchaseDescription,
 		ProductVariantFieldTemplateCategoryId,
 		ProductVariantFieldTemplateBrandId,
-		ProductVariantFieldTemplateProductTypeId,
+		ProductVariantFieldTemplateProductType,
+		ProductVariantFieldTemplateIsCombo,
 		ProductVariantFieldTemplateStatus,
 		ProductVariantFieldTemplateSaleOk,
 	}

@@ -5,13 +5,14 @@ meta {
 }
 
 patch {
-  url: {{api_host}}/v1/contacts/parties/01K60779QWCWPX3E0FZMR9abcd
+  url: {{api_host}}/v1/contacts/contacts_party/01K60779QWCWPX3E0FZMR9abcd
   body: json
   auth: inherit
 }
 
 body:json {
   {
+    "org_id": "{{org_id}}",
       "avatarUrl": "{{$randomUrl}}/{{$randomWord}}.jpg",
       "displayName": "{{$randomFullName}}",
       "etag": "1759114001526919100"

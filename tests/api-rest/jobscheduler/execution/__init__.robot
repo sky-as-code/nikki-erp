@@ -10,5 +10,9 @@ Documentation     Job Scheduler Execution resource suite.
 ...               The suite therefore reads history it did not create. Where the database
 ...               has none, tests skip rather than invent a fixture: skipping says the
 ...               contract was not exercised, where a hand-written row would imply it passed.
+...
+...               The suite skips against the hosted coreplatform app, which deliberately does not
+...               load the jobscheduler module (JOBSCHEDULER_SERVED=False in its environment file).
 Resource          resources/jobscheduler.resource
-Suite Setup       Create Authorized API Session
+Suite Setup       Run Keywords    Create Authorized API Session
+...               AND    Skip Unless Jobscheduler Is Served

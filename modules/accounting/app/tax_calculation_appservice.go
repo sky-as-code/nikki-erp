@@ -5,7 +5,7 @@ import (
 	c "github.com/sky-as-code/nikki-erp/modules/accounting/constants"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	it "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
 )
@@ -25,7 +25,7 @@ func NewTaxCalculationApplicationServiceImpl(
 func (this *TaxCalculationApplicationServiceImpl) Calculate(
 	ctx corectx.Context, request it.CalculationRequest,
 ) (*it.CalculateResult, error) {
-	if cErrs := assertPermissionInOrg(ctx, drif.PermissionRead,
+	if cErrs := assertPermissionInOrg(ctx, composable.PermissionRead,
 		models.TaxSchemaName, c.ResourceScopeOrg, request.OrgId); cErrs != nil {
 		return &it.CalculateResult{ClientErrors: *cErrs}, nil
 	}
@@ -63,7 +63,7 @@ func (this *TaxCalculationApplicationServiceImpl) Simulate(
 func (this *TaxCalculationApplicationServiceImpl) ReverseFull(
 	ctx corectx.Context, request it.FullReversalRequest,
 ) (*it.ReverseResult, error) {
-	if cErrs := assertPermissionInOrg(ctx, drif.PermissionRead,
+	if cErrs := assertPermissionInOrg(ctx, composable.PermissionRead,
 		models.TaxSchemaName, c.ResourceScopeOrg, request.OrgId); cErrs != nil {
 		return &it.ReverseResult{ClientErrors: *cErrs}, nil
 	}
@@ -77,7 +77,7 @@ func (this *TaxCalculationApplicationServiceImpl) ReverseFull(
 func (this *TaxCalculationApplicationServiceImpl) ReversePartial(
 	ctx corectx.Context, request it.PartialReversalRequest,
 ) (*it.ReverseResult, error) {
-	if cErrs := assertPermissionInOrg(ctx, drif.PermissionRead,
+	if cErrs := assertPermissionInOrg(ctx, composable.PermissionRead,
 		models.TaxSchemaName, c.ResourceScopeOrg, request.OrgId); cErrs != nil {
 		return &it.ReverseResult{ClientErrors: *cErrs}, nil
 	}

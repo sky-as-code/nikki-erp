@@ -6,10 +6,12 @@ import (
 	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/essential/dynamicengines"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/settings"
 	v1 "github.com/sky-as-code/nikki-erp/modules/essential/transport/restful/v1"
 )
@@ -42,8 +44,7 @@ func initEssentialV1() error {
 		routeV1 := route.Group("/v1/essential")
 
 		return stdErr.Join(
-			// Currency, UoM and UoM Category are served by the composable resource engine at
-			// /v1/essential/{schema_name}: the built-in route table, nothing resource-specific.
+			// Composable resources are served at /v1/essential/{schema_name}.
 			initCurrencyV1(routeV1),
 			initUomV1(routeV1),
 			initUomCatV1(routeV1),
@@ -53,7 +54,6 @@ func initEssentialV1() error {
 			initModelMetadataV1(routeV1),
 			initModuleV1(routeV1),
 			initTagV1(routeV1),
-			initUomConversionV1(routeV1),
 			initSettingsV1(routeV1),
 		)
 	})
@@ -67,10 +67,78 @@ func initCurrencyV1(route *echo.Group) error {
 	})
 }
 
+// initUomV1 serves the UoM CRUD plus the two conversion actions (BR-UOM-ESS-013): a
+// calculation over two records rather than an action on one, so they are collection-level.
 func initUomV1(route *echo.Group) error {
-	return deps.Invoke(func(uomRest *v1.UomRest) error {
+	return deps.Invoke(func(uomRest *v1.UomRest, conversionRest *v1.UomConversionRest) error {
 		return composable.NewRestEngine(models.UomSchemaName, uomRest).
 			AddCrudRoutes().
+			AddRoute(composable.RouteDefinition{
+				Path: "convert", ActionType: composable.ActionTypeGeneric, HandlerFn: conversionRest.Convert,
+			}).
+			AddRoute(composable.RouteDefinition{
+				Path: "to_reference", ActionType: composable.ActionTypeGeneric, HandlerFn: conversionRest.ToReference,
+			}).
+			RegisterRoutes(route)
+	})
+}
+
+func initEnumV1(route *echo.Group) error {
+	return deps.Invoke(func(enumRest *v1.EnumRest) error {
+		return composable.NewRestEngine(models.EnumSchemaName, enumRest).
+			AddCrudRoutes().
+			RegisterRoutes(route)
+	})
+}
+
+func initTagV1(route *echo.Group) error {
+	return deps.Invoke(func(tagRest *v1.TagRest) error {
+		return composable.NewRestEngine(models.TagSchemaName, tagRest).
+			AddCrudRoutes().
+			RegisterRoutes(route)
+	})
+}
+
+// initLanguageV1 serves the catalogue at /v1/essential/essential_language. The translation
+// bundles (json) and the enabled list are public: they render the sign-in page, before anyone has
+// a session.
+func initLanguageV1(route *echo.Group) error {
+	return deps.Invoke(func(languageRest *v1.LanguageRest) error {
+		return composable.NewRestEngine(models.LanguageSchemaName, languageRest).
+			AddCrudRoutes().
+			AddRoute(composable.RouteDefinition{
+				Path: "json", ActionType: composable.ActionTypeRead, HandlerFn: languageRest.GetLanguageJson,
+				IsAuthorized: util.ToPtr(false),
+			}).
+			AddRoute(composable.RouteDefinition{
+				Path: "enabled", ActionType: composable.ActionTypeRead, HandlerFn: languageRest.ListEnabledLanguages,
+				IsAuthorized: util.ToPtr(false),
+			}).
+			RegisterRoutes(route)
+	})
+}
+
+func initFieldMetadataV1(route *echo.Group) error {
+	return deps.Invoke(func(fieldMetadataRest *v1.FieldMetadataRest) error {
+		return composable.NewRestEngine(models.FieldMetadataSchemaName, fieldMetadataRest).
+			AddCrudRoutes().
+			RegisterRoutes(route)
+	})
+}
+
+func initModelMetadataV1(route *echo.Group) error {
+	return deps.Invoke(func(modelMetadataRest *v1.ModelMetadataRest) error {
+		return composable.NewRestEngine(models.ModelMetadataSchemaName, modelMetadataRest).
+			AddCrudRoutes().
+			RegisterRoutes(route)
+	})
+}
+
+// initModuleV1 serves the module catalogue read-only at /v1/essential/essential_module_metadata.
+func initModuleV1(route *echo.Group) error {
+	return deps.Invoke(func(moduleRest *v1.ModuleRest) error {
+		return composable.NewRestEngine(models.ModuleMetadataSchemaName, moduleRest).
+			AddCrudRoutes(dynamicengines.ModuleReadActions()...).
 			RegisterRoutes(route)
 	})
 }
@@ -80,98 +148,6 @@ func initUomCatV1(route *echo.Group) error {
 		return composable.NewRestEngine(models.UomCatSchemaName, uomCatRest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
-	})
-}
-
-func initEnumV1(route *echo.Group) error {
-	return deps.Invoke(func(
-		enumRest *v1.EnumRest,
-	) {
-		route.DELETE("/enums/:id", enumRest.Delete)
-		route.GET("/enums/:id", enumRest.GetOne)
-		route.GET("/enums", enumRest.Search)
-		route.POST("/enums/exists", enumRest.Exists)
-		route.POST("/enums", enumRest.Create)
-		route.PUT("/enums/:id", enumRest.Update)
-	})
-}
-
-func initFieldMetadataV1(route *echo.Group) error {
-	return deps.Invoke(func(
-		fieldMetadataRest *v1.FieldMetadataRest,
-	) {
-		route.DELETE("/field-metadata/:id", fieldMetadataRest.DeleteFieldMetadata)
-		route.GET("/field-metadata/:id", fieldMetadataRest.GetFieldMetadata)
-		route.GET("/field-metadata", fieldMetadataRest.SearchFieldMetadata)
-		route.POST("/field-metadata/exists", fieldMetadataRest.FieldMetadataExists)
-		route.POST("/field-metadata", fieldMetadataRest.CreateFieldMetadata)
-		route.PUT("/field-metadata/:id", fieldMetadataRest.UpdateFieldMetadata)
-	})
-}
-
-func initLanguageV1(route *echo.Group) error {
-	return deps.Invoke(func(
-		languageRest *v1.LanguageRest,
-	) {
-		route.DELETE("/languages/:id", languageRest.DeleteLanguage, m.SmokeAuthz())
-		route.GET("/languages/json", languageRest.GetLanguageJson)
-		route.GET("/languages/enabled", languageRest.ListEnabledLanguages, m.PublicUnauthorized)
-		route.GET("/languages/:id", languageRest.GetLanguage)
-		route.GET("/languages", languageRest.SearchLanguages)
-		route.POST("/languages/exists", languageRest.LanguageExists)
-		route.POST("/languages", languageRest.CreateLanguage, m.SmokeAuthz())
-		route.PUT("/languages/:id", languageRest.UpdateLanguage, m.SmokeAuthz())
-	})
-}
-
-func initModelMetadataV1(route *echo.Group) error {
-	return deps.Invoke(func(
-		modelMetadataRest *v1.ModelMetadataRest,
-	) {
-		route.DELETE("/model-metadata/:id", modelMetadataRest.DeleteModelMetadata)
-		route.GET("/model-metadata/:id", modelMetadataRest.GetModelMetadata)
-		route.GET("/model-metadata", modelMetadataRest.SearchModelMetadata)
-		route.POST("/model-metadata/exists", modelMetadataRest.ModelMetadataExists)
-		route.POST("/model-metadata", modelMetadataRest.CreateModelMetadata)
-		route.PUT("/model-metadata/:id", modelMetadataRest.UpdateModelMetadata)
-	})
-}
-
-func initModuleV1(route *echo.Group) error {
-	return deps.Invoke(func(
-		moduleRest *v1.ModuleRest,
-	) {
-		route.DELETE("/modules/:id", moduleRest.DeleteModule)
-		route.GET("/modules/meta/schema", moduleRest.GetModelSchema)
-		route.GET("/modules/:id", moduleRest.GetModule)
-		route.GET("/modules", moduleRest.SearchModules)
-		route.POST("/modules/exists", moduleRest.ModuleExists)
-		route.POST("/modules", moduleRest.CreateModule)
-		route.PUT("/modules/:id", moduleRest.UpdateModule)
-	})
-}
-
-func initTagV1(route *echo.Group) error {
-	return deps.Invoke(func(
-		tagRest *v1.TagRest,
-	) {
-		route.DELETE("/tags/:id", tagRest.Delete)
-		route.GET("/tags/:id", tagRest.GetOne)
-		route.GET("/tags", tagRest.Search)
-		route.POST("/tags/exists", tagRest.Exists)
-		route.POST("/tags", tagRest.Create)
-		route.PUT("/tags/:id", tagRest.Update)
-	})
-}
-
-// initUomConversionV1 registers the one UoM endpoint the resource engine cannot express:
-// conversion is a calculation over two records, not a CRUD action on one.
-func initUomConversionV1(route *echo.Group) error {
-	return deps.Invoke(func(
-		uomConversionRest *v1.UomConversionRest,
-	) {
-		route.POST("/uoms/convert", uomConversionRest.Convert, m.SmokeAuthz())
-		route.POST("/uoms/to_reference", uomConversionRest.ToReference, m.SmokeAuthz())
 	})
 }
 

@@ -1,6 +1,7 @@
 package models
 
 import (
+	_ "embed"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
@@ -24,93 +25,11 @@ const (
 	ModuleMetadataFieldIsEnabled   = "is_enabled"
 )
 
+//go:embed module.json
+var moduleMetadataSchemaJson string
+
 func ModuleMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(ModuleMetadataSchemaName).
-		Label(model.NewLangJsonRefSf("%s.label", ModuleMetadataSchemaName)).
-		TableName("essential_modules").
-		CompositeUnique(dmodel.CompositeUniqueParam{Fields: []string{ModuleMetadataFieldName}}).
-		ShouldBuildDb().
-		Field(
-			basemodel.DefineFieldId(ModuleMetadataFieldId).
-				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldId)).
-				UseTypeDefault().
-				PrimaryKey(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(ModuleMetadataFieldName).
-				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldName)).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(ModuleMetadataFieldLabel).
-				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldLabel)).
-				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(ModuleMetadataFieldIsOrphaned).
-				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldIsOrphaned)).
-				DataType(dmodel.FieldDataTypeBoolean()).
-				RequiredForCreate().
-				Default(false),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(ModuleMetadataFieldIsInternal).
-				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldIsInternal)).
-				DataType(dmodel.FieldDataTypeBoolean()).
-				RequiredForCreate().
-				NoUpdate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(ModuleMetadataFieldVersion).
-				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldVersion)).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(ModuleMetadataFieldHasUi).
-				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldHasUi)).
-				DataType(dmodel.FieldDataTypeBoolean()).
-				RequiredForCreate().
-				Default(false),
-		).
-		Field(
-			// Nullable so rows written before this field existed migrate; startup sync fills it.
-			dmodel.DefineField().
-				Name(ModuleMetadataFieldModelPrefix).
-				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldModelPrefix)).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)),
-		).
-		Field(
-			// Nullable for the same reason as model_prefix.
-			dmodel.DefineField().
-				Name(ModuleMetadataFieldCategory).
-				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldCategory)).
-				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(modules.ModuleCategoryFoundation),
-					string(modules.ModuleCategoryCoremart),
-					string(modules.ModuleCategoryCoreparking),
-				})),
-		).
-		Field(
-			// Always true for now: nothing disables a module yet, so there is no toggle and no sync diff.
-			dmodel.DefineField().
-				Name(ModuleMetadataFieldIsEnabled).
-				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldIsEnabled)).
-				DataType(dmodel.FieldDataTypeBoolean()).
-				RequiredForCreate().
-				NoUpdate().
-				Default(true),
-		).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+	return dmodel.ParseModelJson(moduleMetadataSchemaJson)
 }
 
 type ModuleMetadata struct {

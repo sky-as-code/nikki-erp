@@ -15,38 +15,6 @@ import (
 // A malformed JSON model file panics the app at start-up; these tests turn that into a test
 // failure and pin the field set the Products rules depend on.
 
-func TestProductTypeSchemaParses(t *testing.T) {
-	requireBaseSchemasRegistered(t)
-
-	schema := ProductTypeSchemaBuilder().Build()
-
-	assert.Equal(t, ProductTypeSchemaName, schema.Name())
-	assert.Equal(t, "inventory_product_types", schema.TableName())
-	// Without a record label field the frontend relation picker shows raw ULIDs.
-	assert.Equal(t, ProductTypeFieldName, schema.RecordLabelField())
-	// Processing logic keys off the code, so it must be present and unique.
-	assert.True(t, requireField(t, schema, ProductTypeFieldCode).IsRequiredForCreate())
-}
-
-// The capability flags decide which modules may consume a product, so they must exist as booleans
-// rather than be inferred from the code.
-func TestProductTypeCapabilityFlags(t *testing.T) {
-	requireBaseSchemasRegistered(t)
-
-	schema := ProductTypeSchemaBuilder().Build()
-
-	for _, fieldName := range []string{
-		ProductTypeFieldSupportsStock,
-		ProductTypeFieldSupportsSale,
-		ProductTypeFieldSupportsPurchase,
-		ProductTypeFieldSupportsManufacturing,
-	} {
-		field := requireField(t, schema, fieldName)
-		assert.Equal(t, dmodel.FieldDataTypeNameBoolean, field.DataType().String(),
-			"field %q must be a boolean", fieldName)
-	}
-}
-
 func TestProductCategorySchemaParses(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -60,6 +28,10 @@ func TestProductCategorySchemaParses(t *testing.T) {
 	assert.False(t, requireField(t, schema, ProductCategoryFieldIsRoot).IsRequiredForCreate(),
 		"is_root is the nullable side of the one-root-per-org partial unique index")
 	assert.False(t, requireField(t, schema, ProductCategoryFieldCanonicalName).IsRequiredForCreate())
+	_, hasCode := schema.Fields()["code"]
+	assert.False(t, hasCode, "a category is identified by its name and place in the tree, not a code")
+	assert.Equal(t, dmodel.FieldDataTypeNameInt32,
+		requireField(t, schema, ProductCategoryFieldDisplayOrder).DataType().String())
 }
 
 func TestBrandSchemaParses(t *testing.T) {
@@ -80,7 +52,6 @@ func TestMasterModelsAreArchivable(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
 	builders := map[string]*dmodel.ModelSchemaBuilder{
-		ProductTypeSchemaName:     ProductTypeSchemaBuilder(),
 		ProductCategorySchemaName: ProductCategorySchemaBuilder(),
 		BrandSchemaName:           BrandSchemaBuilder(),
 	}

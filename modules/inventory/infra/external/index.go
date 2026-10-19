@@ -28,5 +28,8 @@ func InitExternal() error {
 			// A hand-over: the upstream service already has exactly the method the port declares.
 			return uomSvc
 		},
+		func(uomSvc itUom.UomConversionAppService) itExt.UomLookupExtService {
+			return uomSvc
+		},
 	)
 }

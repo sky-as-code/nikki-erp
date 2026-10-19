@@ -29,12 +29,7 @@ func (this *TaxCalculationDomainServiceImpl) ReverseFull(
 func (this *TaxCalculationDomainServiceImpl) ReversePartial(
 	ctx corectx.Context, request it.PartialReversalRequest,
 ) (*it.ReverseResult, error) {
-	policyRepo, err := RepoFor(models.TaxRoundingPolicySchemaName)
-	if err != nil {
-		return nil, err
-	}
-
-	policy, problem, err := this.resolveRoundingPolicy(ctx, policyRepo,
+	policy, problem, err := this.resolveRoundingPolicy(ctx, this.repos.RoundingPolicy,
 		it.CalculationRequest{
 			RoundingPolicyCode: request.RoundingPolicyCode,
 			TaxDate:            request.TaxDate,

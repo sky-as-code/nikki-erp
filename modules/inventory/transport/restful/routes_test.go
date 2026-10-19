@@ -16,7 +16,6 @@ import (
 // registered under, or the handlers resolve nothing at boot.
 func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
 	for schemaName, engineName := range map[string]string{
-		models.ProductTypeSchemaName:                   v1.ProductTypeEngineName,
 		models.ProductCategorySchemaName:               v1.ProductCategoryEngineName,
 		models.BrandSchemaName:                         v1.BrandEngineName,
 		models.ProductAttributeSchemaName:              v1.ProductAttributeEngineName,

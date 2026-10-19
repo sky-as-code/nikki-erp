@@ -132,17 +132,6 @@ func FindTemplatesByBrand(
 	return searchAll(ctx, repo, graph, limit, "FindTemplatesByBrand")
 }
 
-// FindTemplatesByProductType returns up to limit templates of the product type.
-func FindTemplatesByProductType(
-	ctx corectx.Context, repo ProductSearcher, productTypeId string, limit int,
-) ([]dmodel.DynamicFields, error) {
-	graph := &dmodel.SearchGraph{}
-	graph.And(
-		*dmodel.NewSearchNode().NewCondition(ProductTemplateFieldProductTypeId, dmodel.Equals, productTypeId),
-	)
-	return searchAll(ctx, repo, graph, limit, "FindTemplatesByProductType")
-}
-
 // FindAttributeValues returns up to limit values of an attribute.
 func FindAttributeValues(
 	ctx corectx.Context, repo ProductSearcher, attributeId string, limit int,

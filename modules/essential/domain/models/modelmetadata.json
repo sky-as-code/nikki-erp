@@ -1,0 +1,88 @@
+{
+	"name": "essential_model_metadata",
+	"label": "essential_model_metadata.label",
+	"table_name": "essential_model_metadata",
+	"should_build_db": true,
+	"fields": [
+		{
+			"name": "id",
+			"label": "fields.id",
+			"data_type": "ulid",
+			"primary_key": true,
+			"use_type_default": true,
+			"description": {
+				"en-US": "Declared here rather than inherited from core.basemodel.base_model, because that mixin carries the tenant key in the hosted app and model metadata is global: it is synced once at start-up with no tenant in scope."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": {
+				"type": "langjson",
+				"min": 1,
+				"max": 200
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 50,
+				"regex": "^[a-zA-Z0-9_]+$"
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "code_prefix",
+			"label": "fields.code_prefix",
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 50
+			},
+			"default_value": ""
+		},
+		{
+			"name": "code_last_seq",
+			"label": "fields.code_last_seq",
+			"data_type": {
+				"type": "int32",
+				"min": 0,
+				"max": 1000000000
+			},
+			"required_for_create": true,
+			"default_value": 0
+		},
+		{
+			"name": "padding",
+			"label": "fields.padding",
+			"data_type": {
+				"type": "int32",
+				"min": 1,
+				"max": 20
+			},
+			"required_for_create": true,
+			"default_value": 8
+		}
+	],
+	"edges_from": [
+		{
+			"edge": "field_metadata_list",
+			"label": {
+				"en-US": "Field metadata list"
+			},
+			"existing": {
+				"src_schema": "essential_field_metadata",
+				"src_edge": "model_metadata"
+			}
+		}
+	],
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	]
+}

@@ -24,7 +24,7 @@ New Order Starts As A Request For Quotation
     ${resp}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Be Equal    ${resp.json()}[status]    rfq
+    Should Be Equal    ${resp.json()}[item][status]    rfq
 
 Server Mints The Order Code
     [Documentation]    The code identifies the order to the vendor, so letting a client pick it
@@ -37,7 +37,7 @@ Server Mints The Order Code
     ${resp}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Start With    ${resp.json()}[code]    PO-
+    Should Start With    ${resp.json()}[item][code]    PO-
 
 A Client Supplied Code And Status Are Overwritten Not Rejected
     [Documentation]    They are not part of the request's meaning, and a client echoing a
@@ -50,8 +50,8 @@ A Client Supplied Code And Status Are Overwritten Not Rejected
     ${created}=    GET On Session    api    ${PURCHASE_ORDER_API}/${id}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${created}    200
-    Should Not Be Equal    ${created.json()}[code]    PO-CLIENT-CHOSEN
-    Should Be Equal    ${created.json()}[status]    rfq
+    Should Not Be Equal    ${created.json()}[item][code]    PO-CLIENT-CHOSEN
+    Should Be Equal    ${created.json()}[item][status]    rfq
     [Teardown]    Delete Purchase Order Fixture    ${id}
 
 New Order Totals Start At Zero
@@ -61,7 +61,7 @@ New Order Totals Start At Zero
     ${resp}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${body}=    Set Variable    ${resp.json()}
+    ${body}=    Set Variable    ${resp.json()}[item]
     Should Be Equal As Numbers    ${body}[untaxed_amount]    0
     Should Be Equal As Numbers    ${body}[tax_amount]        0
     Should Be Equal As Numbers    ${body}[total_amount]      0
@@ -74,7 +74,7 @@ New Order Flags Start False
     ${resp}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${body}=    Set Variable    ${resp.json()}
+    ${body}=    Set Variable    ${resp.json()}[item]
     Should Not Be True    ${body}[is_locked]
     Should Not Be True    ${body}[vendor_acknowledged]
     Should Not Be True    ${body}[approval_required]
@@ -84,7 +84,8 @@ Create Requires A Vendor
     ...    commitment to buy from nobody.
     Ensure Purchase Fixtures
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}
-    ...    json=${{ {'buyer_id': $PURCHASE_BUYER_ID, 'currency_id': $PURCHASE_CURRENCY_ID, 'org_id': $PURCHASE_ORG_ID, 'priority': 'normal'} }} expected_status=any
+    ...    json=${{ {'buyer_id': $PURCHASE_BUYER_ID, 'currency_id': $PURCHASE_CURRENCY_ID, 'org_id': $PURCHASE_ORG_ID, 'priority': 'normal'} }}
+    ...    expected_status=any
     Response Should Be Client Error    ${resp}
 
 Create Refuses A Party That Is Not A Vendor
@@ -95,5 +96,6 @@ Create Refuses A Party That Is Not A Vendor
     Ensure Purchase Fixtures
     ${party_id}    ${etag}=    Create Party    Robot Not A Vendor    company
     ${resp}=    POST On Session    api    ${PURCHASE_ORDER_API}
-    ...    json=${{ {'vendor_id': $party_id, 'buyer_id': $PURCHASE_BUYER_ID, 'currency_id': $PURCHASE_CURRENCY_ID, 'org_id': $PURCHASE_ORG_ID, 'priority': 'normal'} }} expected_status=any
+    ...    json=${{ {'vendor_id': $party_id, 'buyer_id': $PURCHASE_BUYER_ID, 'currency_id': $PURCHASE_CURRENCY_ID, 'org_id': $PURCHASE_ORG_ID, 'priority': 'normal'} }}
+    ...    expected_status=any
     Response Should Be Client Error    ${resp}

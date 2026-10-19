@@ -1,67 +1,37 @@
 package language
 
 import (
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/util"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
-func init() {
-	var req cqrs.Request
-	req = (*CreateLanguageCommand)(nil)
-	req = (*DeleteLanguageCommand)(nil)
-	req = (*GetLanguageQuery)(nil)
-	req = (*SearchLanguagesQuery)(nil)
-	req = (*UpdateLanguageCommand)(nil)
-	req = (*LanguageExistsQuery)(nil)
-	util.Unused(req)
-}
+// The CRUD commands, queries and results of the language resource: the composable shapes under a
+// resource-specific name.
+type (
+	CreateLanguageCommand      = composable.CreateCommand
+	UpdateLanguageCommand      = composable.UpdateCommand
+	DeleteLanguageCommand      = composable.DeleteCommand
+	SetLanguageArchivedCommand = composable.SetArchivedCommand
+	GetLanguageByIdQuery       = composable.GetByIdQuery
+	SearchLanguagesQuery       = composable.SearchQuery
+	LanguageExistsQuery        = composable.ExistsQuery
+)
 
-var createLanguageCommandType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "create"}
+type (
+	CreateLanguageResult  = composable.CreateResult
+	UpdateLanguageResult  = composable.MutateResult
+	DeleteLanguageResult  = composable.MutateResult
+	GetLanguageByIdResult = composable.GetOneResult
+	SearchLanguagesResult = composable.SearchResult
+	LanguageExistsResult  = composable.ExistsResult
+)
 
-type CreateLanguageCommand struct{ models.Language }
-
-func (CreateLanguageCommand) CqrsRequestType() cqrs.RequestType { return createLanguageCommandType }
-func (CreateLanguageCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(models.LanguageSchemaName)
-}
-
-type CreateLanguageResult = dyn.OpResult[models.Language]
-
-var updateLanguageCommandType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "update"}
-
-type UpdateLanguageCommand struct{ models.Language }
-
-func (UpdateLanguageCommand) CqrsRequestType() cqrs.RequestType { return updateLanguageCommandType }
-func (UpdateLanguageCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(models.LanguageSchemaName)
-}
-
-type UpdateLanguageResult = dyn.OpResult[dyn.MutateResultData]
-
-var deleteLanguageCommandType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "delete"}
-
-type DeleteLanguageCommand dyn.DeleteOneCommand
-
-func (DeleteLanguageCommand) CqrsRequestType() cqrs.RequestType { return deleteLanguageCommandType }
-
-type DeleteLanguageResult = dyn.OpResult[dyn.MutateResultData]
-
-var getLanguageQueryType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "get"}
-
-type GetLanguageQuery dyn.GetOneQuery
-
-func (GetLanguageQuery) CqrsRequestType() cqrs.RequestType { return getLanguageQueryType }
-
-type GetLanguageResult = dyn.OpResult[models.Language]
+type GetLanguageJsonResult = dyn.OpResult[model.LanguageTranslationItem]
 
 // GetLanguageByIsoCodeQuery resolves a language by the BCP47 code every consumer names it with.
-//
-// It is not a cqrs request: the only caller is another module reading the acting user's formatting
-// rules, which is a lookup rather than a user-issued query.
+// The only caller is another module reading the acting user's formatting rules.
 type GetLanguageByIsoCodeQuery struct {
 	IsoCode string
 }
@@ -71,33 +41,13 @@ type GetLanguageByIsoCodeQuery struct {
 // nothing org- or tenant-scoped to withhold.
 type GetLanguageByIsoCodeResult = dyn.OpResult[models.Language]
 
-// ListEnabledLanguagesQuery lists the languages a user may pick, ordered by name. Like
-// GetLanguageByIsoCodeQuery it is a lookup for other modules and the settings write path, not a
-// user-issued cqrs request.
+// ListEnabledLanguagesQuery lists the languages a user may pick, ordered by name.
 type ListEnabledLanguagesQuery struct{}
 
 type ListEnabledLanguagesResult = dyn.OpResult[[]models.Language]
 
+// GetLanguageJsonQuery asks for one module's translation bundle in one language.
 type GetLanguageJsonQuery struct {
 	LanguageCode string `json:"language_code" query:"language_code"`
 	ModuleName   string `json:"module_name" query:"module_name"`
 }
-
-type GetLanguageJsonResult = dyn.OpResult[model.LanguageTranslationItem]
-
-var searchLanguagesQueryType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "search"}
-
-type SearchLanguagesQuery dyn.SearchQuery
-
-func (SearchLanguagesQuery) CqrsRequestType() cqrs.RequestType { return searchLanguagesQueryType }
-
-type SearchLanguagesResultData = dyn.PagedResultData[models.Language]
-type SearchLanguagesResult = dyn.OpResult[SearchLanguagesResultData]
-
-var languageExistsQueryType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "exists"}
-
-type LanguageExistsQuery dyn.ExistsQuery
-
-func (LanguageExistsQuery) CqrsRequestType() cqrs.RequestType { return languageExistsQueryType }
-
-type LanguageExistsResult = dyn.OpResult[dyn.ExistsResultData]

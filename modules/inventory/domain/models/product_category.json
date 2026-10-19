@@ -4,8 +4,7 @@
 	"table_name": "inventory_product_categories",
 	"should_build_db": true,
 	"record_label_field": "name",
-	"default_search_fields": ["code", "name", "canonical_name", "sequence"],
-	"composite_uniques": [{ "fields": ["code", "org_id"] }],
+	"default_search_fields": ["name", "canonical_name"],
 	"partial_uniques_strict": [
 		{ "index_name": "invty_prod_cats_tid_src_sys_ext_id", "not_null_fields": ["source_system"], "nullable_field": "external_id" },
 		{ "index_name": "invty_prod_cats_tid_org_root", "not_null_fields": ["org_id"], "nullable_field": "is_root" }
@@ -13,12 +12,6 @@
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
-		{
-			"name": "code",
-			"label": "fields.code",
-			"data_type": { "type": "string", "min": 1, "max": 50 },
-			"required_for_create": true
-		},
 		{
 			"name": "name",
 			"label": "fields.name",
@@ -40,7 +33,7 @@
 			"data_type": "boolean",
 			"no_update": true,
 			"description": {
-				"en-US": "True only on the org's root category \"All\", NULL on every other category. Never false: the partial unique index on (org_id, is_root) would count a false row as a second root."
+				"en-US": "True only on the org's root category \"Default\", NULL on every other category. Never false: the partial unique index on (org_id, is_root) would count a false row as a second root."
 			}
 		},
 		{
@@ -48,12 +41,12 @@
 			"label": "fields.canonical_name",
 			"data_type": { "type": "langjson", "min": 1, "max": 8000 },
 			"description": {
-				"en-US": "The names from the root down to this category, joined by ' / ', e.g. 'All / Beverages / Soft drinks'. Maintained by the server, never written by a client."
+				"en-US": "The names from the root down to this category, joined by ' / ', e.g. 'Default / Beverages / Soft drinks'. Maintained by the server, never written by a client."
 			}
 		},
 		{
-			"name": "sequence",
-			"label": "fields.sequence",
+			"name": "display_order",
+			"label": "fields.display_order",
 			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
 			"description": {
 				"en-US": "Display order among siblings."

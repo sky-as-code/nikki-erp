@@ -70,7 +70,8 @@ func (this *SalesChannelCrudApplicationServiceImpl) Resolve(
 	if _, cErrs := this.AssertAction(ctx, composable.PermissionRead, query); cErrs != nil {
 		return anyFailure(cErrs, nil)
 	}
-	result, err := this.channelSvc.ResolveByCode(ctx, readStringParam(query, paramCode))
+	result, err := this.channelSvc.ResolveByCode(ctx,
+		readStringParam(query, paramCode), readStringParam(query, paramOrgId))
 	if err != nil {
 		return nil, err
 	}

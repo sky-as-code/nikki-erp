@@ -117,6 +117,21 @@ func countMoveStatuses(moveStatuses []string) (closed, cancelled, assigned, wait
 // AssertTransferTransition refuses an illegal transfer transition, naming what was attempted.
 // Cancelling a done transfer gets its own message pointing at the reverse transfer, which is the
 // actual remedy.
+// AssertTransferCancellable refuses cancelling a transfer that is already cancelled. The machine
+// lets a state stay put so a recompute is idempotent, but a cancel is a client's request on a
+// terminal state, and answering it as a success would hide that nothing happened.
+func AssertTransferCancellable(from string, vErrs *ft.ClientErrors) {
+	if from == models.StockTransferStatusCancelled {
+		vErrs.Append(*ft.NewBusinessViolation(
+			models.StockTransferSchemaName,
+			ft.ErrorKey("stock_transfer.already_cancelled", "inventory"),
+			"the transfer is already cancelled",
+		))
+		return
+	}
+	AssertTransferTransition(from, models.StockTransferStatusCancelled, vErrs)
+}
+
 func AssertTransferTransition(from, to string, vErrs *ft.ClientErrors) {
 	if CanTransitionTransfer(from, to) {
 		return

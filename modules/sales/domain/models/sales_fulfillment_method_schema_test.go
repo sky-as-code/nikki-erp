@@ -26,8 +26,9 @@ func TestFulfillmentMethodCodeIsMandatoryUniqueAndImmutable(t *testing.T) {
 		t.Error("code must be required_for_create: it is how a method is named by everything " +
 			"outside the database")
 	}
-	if !code.IsUnique() {
-		t.Error("code must be unique: two methods answering to one code makes resolution ambiguous")
+	if !hasCompositeUnique(schema, SalesFulfillmentMethodFieldCode, SalesFulfillmentMethodFieldOrgId) {
+		t.Error("code must be unique per org: two methods answering to one code in an org makes " +
+			"resolution ambiguous")
 	}
 	if !code.IsNoUpdate() {
 		t.Error("code must be no_update: renaming it would repoint every seed and caller that " +

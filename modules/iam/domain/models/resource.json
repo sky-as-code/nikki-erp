@@ -1,0 +1,66 @@
+{
+	"name": "iam_resource",
+	"label": "iam_resource.label",
+	"table_name": "iam_resources",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["name", "code", "description"],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"data_type": { "type": "langjson", "min": 1, "max": 50 },
+			"required_for_create": true
+		},
+		{
+			"name": "code",
+			"data_type": { "type": "string", "min": 1, "max": 50, "regex": "^\\*|[a-zA-Z0-9_-]+$" },
+			"required_for_create": true,
+			"unique": true,
+			"no_update": true
+		},
+		{
+			"name": "description",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "owner_type",
+			"data_type": { "type": "enum_string", "values": ["nikkierp", "custom"] },
+			"default_value": "nikkierp",
+			"required_for_create": true,
+			"description": {
+				"en-US": "A resource can be owned by one of NikkiERP modules, or by a 3rd party system. If owner_type=nikkierp, this resource is used for NikkiERP module authorization. If owner_type=custom, this resource is used for 3rd party system authorization."
+			}
+		},
+		{
+			"name": "max_scope",
+			"data_type": { "type": "enum_string", "values": ["tenant", "org", "orgunit", "private"] },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The largest scope of the resource. No entitlement can be granted with a scope larger than this. "
+			}
+		},
+		{
+			"name": "min_scope",
+			"data_type": { "type": "enum_string", "values": ["tenant", "org", "orgunit", "private"] },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The smallest scope of the resource. No entitlement can be granted with a scope less than this. "
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_from": [
+		{
+			"edge": "actions",
+			"label": { "en-US": "Actions" },
+			"existing": { "src_schema": "iam_action", "src_edge": "resource" }
+		}
+	]
+}

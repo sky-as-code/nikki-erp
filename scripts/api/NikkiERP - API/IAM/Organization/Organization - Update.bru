@@ -4,8 +4,8 @@ meta {
   seq: 2
 }
 
-put {
-  url: {{api_host}}/v1/iam/organizations/{{org_id}}
+patch {
+  url: {{api_host}}/v1/iam/iam_org/{{org_id}}
   body: json
   auth: inherit
 }

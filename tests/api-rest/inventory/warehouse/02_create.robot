@@ -83,7 +83,7 @@ Create With Duplicate Code Fails
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}
     ...    json=${{ {'code': $WAREHOUSE_CODE, 'name': {'en-US': $name}, 'warehouse_role': 'other', 'incoming_flow': 'one_step', 'outgoing_flow': 'one_step', 'status': 'active', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
-    Response Should Be Duplicate Values Error    ${resp}
+    Response Should Be Duplicate Values Error    ${resp}    code    org_id
 
 Create With Unknown Flow Fails
     [Tags]    negative
@@ -106,5 +106,5 @@ Archive Warehouse Fixture By Id
     ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     IF    ${resp.status_code} == 200
         POST On Session    api    ${WAREHOUSE_API}/${id}/archived
-        ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $resp.json()['etag']} }}    expected_status=any
+        ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $resp.json()['item']['etag']} }}    expected_status=any
     END

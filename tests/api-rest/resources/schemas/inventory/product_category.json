@@ -1,6 +1,6 @@
 {
     "type": "object",
-    "required": ["id", "created_at", "code", "name", "parent_category_id", "etag", "is_archived", "org_id"],
+    "required": ["id", "created_at", "name", "parent_category_id", "etag", "is_archived", "org_id"],
     "properties": {
         "id": {
             "type": "string",
@@ -13,10 +13,6 @@
         "updated_at": {
             "type": "string",
             "minLength": 20
-        },
-        "code": {
-            "type": "string",
-            "minLength": 1
         },
         "name": {
             "type": "object"
@@ -31,7 +27,7 @@
         "canonical_name": {
             "type": ["object", "null"]
         },
-        "sequence": {
+        "display_order": {
             "type": ["integer", "null"]
         },
         "description": {

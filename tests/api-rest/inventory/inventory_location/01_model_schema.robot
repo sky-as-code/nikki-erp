@@ -41,7 +41,7 @@ Warehouse Is Optional On A Location
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${field}=    Set Variable    ${resp.json()}[fields][warehouse_id]
-    Should Not Be True    ${field}[required_for_create]
+    Should Not Be True    ${field}[is_required_for_create]
 
 Schema Declares Every Location Usage
     [Documentation]    BR §4.2: a movement always has two endpoints, so the counterparty and

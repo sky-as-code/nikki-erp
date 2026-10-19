@@ -1,8 +1,12 @@
 {
     "type": "object",
-    "required": ["id", "email", "groups"],
+    "required": ["id", "email", "groups", "etag"],
     "properties": {
         "id": {
+            "type": "string",
+            "minLength": 1
+        },
+        "etag": {
             "type": "string",
             "minLength": 1
         },

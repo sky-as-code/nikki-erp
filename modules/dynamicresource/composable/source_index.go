@@ -33,8 +33,7 @@ func registerSource(schemaName string, repo CrudRepository, onion DynamicResourc
 	sourceIndex.onions[schemaName] = onion
 }
 
-// LookupSourceRepository returns the repository of a schema served by a composable onion. The
-// legacy registry uses it as a fallback so a legacy resource may compute over a migrated one.
+// LookupSourceRepository returns the repository of a schema served by a composable onion.
 func LookupSourceRepository(schemaName string) (CrudRepository, bool) {
 	sourceIndex.mutex.RLock()
 	defer sourceIndex.mutex.RUnlock()
@@ -85,20 +84,6 @@ func AssertComputedFunctionsDefined() error {
 	return joinErrors(failures)
 }
 
-var legacySourceResolver struct {
-	mutex sync.RWMutex
-	fn    SourceSearchFn
-}
-
-// SetLegacySourceResolver installs the fallback used when a computed field names a schema no
-// composable onion serves, so a migrated resource may still compute over one that package
-// engine serves. Package dynamicresource installs it at Init.
-func SetLegacySourceResolver(fn SourceSearchFn) {
-	legacySourceResolver.mutex.Lock()
-	defer legacySourceResolver.mutex.Unlock()
-	legacySourceResolver.fn = fn
-}
-
 // searchSourceRows is the batched read behind related computed fields: the rows of schemaName
 // whose keyColumn is IN keys, projected down to fields. It goes through the source resource's
 // own repository, so tenant/archive handling stays what a direct read would get.
@@ -107,19 +92,13 @@ func searchSourceRows(
 ) ([]dmodel.DynamicFields, error) {
 	repo, ok := LookupSourceRepository(schemaName)
 	if !ok {
-		legacySourceResolver.mutex.RLock()
-		fallback := legacySourceResolver.fn
-		legacySourceResolver.mutex.RUnlock()
-		if fallback == nil {
-			return nil, errors.Errorf("no resource engine for computed-field source '%s'", schemaName)
-		}
-		return fallback(ctx, schemaName, keyColumn, keys, fields)
+		return nil, errors.Errorf("no resource engine for computed-field source '%s'", schemaName)
 	}
 	return SearchRepositoryRows(ctx, repo, schemaName, keyColumn, keys, fields)
 }
 
 // SearchRepositoryRows runs the IN-keyed projection read a computed field needs against one
-// repository. Exported so the legacy registry can serve a composable source the same way.
+// repository.
 func SearchRepositoryRows(
 	ctx corectx.Context, repo CrudRepository, schemaName string, keyColumn string, keys []any, fields []string,
 ) ([]dmodel.DynamicFields, error) {

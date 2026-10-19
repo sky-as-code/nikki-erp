@@ -106,7 +106,6 @@ Create Move Location
     Set To Dictionary    ${payload}    name    ${{ {'en-US': $name} }}
     IF    $parent_id    Set To Dictionary    ${payload}    parent_location_id    ${parent_id}
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}    json=${payload}
-    ...    json=${{ {'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}    ${code}
 

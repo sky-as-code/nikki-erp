@@ -154,12 +154,12 @@ func (this *OrderDomainService) adapterForMethodId(
 		return nil, nil
 	}
 
-	engine, err := engineFor(models.PaymentMethodSchemaName)
+	repo, err := repoFor(models.PaymentMethodSchemaName)
 	if err != nil {
 		return nil, err
 	}
 
-	found, err := engine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.PaymentMethodFieldId: methodId,
 	})
 	if err != nil {

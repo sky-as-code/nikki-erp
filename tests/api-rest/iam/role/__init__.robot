@@ -1,9 +1,9 @@
 *** Settings ***
 Documentation     IAM role suite. Covers the role-side assignment endpoints
-...               (POST /v1/iam/roles/:role_id/manage-users and .../manage-groups), which
+...               (POST /v1/iam/iam_role/:id/manage_users and .../manage_groups), which
 ...               write the same junction rows as the principal-side endpoints
-...               (POST /v1/iam/users/:user_id/roles, POST /v1/iam/groups/:group_id/roles),
-...               and the entitlement delta of PATCH /v1/iam/roles/:id.
+...               (POST /v1/iam/iam_user/:id/manage_roles, POST /v1/iam/iam_group/:id/manage_roles),
+...               and the entitlement delta of PATCH /v1/iam/iam_role/:id.
 ...
 ...               Teardown removes every user, group and role the suite created.
 Resource          resources/iam.resource

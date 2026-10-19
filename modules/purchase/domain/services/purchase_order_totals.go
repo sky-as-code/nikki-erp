@@ -7,7 +7,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	drif "github.com/sky-as-code/nikki-erp/modules/dynamicresource/interfaces"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
@@ -114,16 +114,16 @@ func ComputeOrderTotals(lines []dmodel.DynamicFields) OrderTotals {
 // and lines disagree. Values already correct are left alone: every write bumps the etag, which
 // would invalidate a client's in-flight edit.
 func RecomputeOrderTotals(ctx corectx.Context, orderId string) error {
-	orderEngine, err := engineFor(models.PurchaseOrderSchemaName)
+	orderRepo, err := repoFor(models.PurchaseOrderSchemaName)
 	if err != nil {
 		return err
 	}
-	lineEngine, err := engineFor(models.PurchaseOrderLineSchemaName)
+	lineRepo, err := repoFor(models.PurchaseOrderLineSchemaName)
 	if err != nil {
 		return err
 	}
 
-	found, err := orderEngine.ResourceRepository().FindByKeys(ctx, dmodel.DynamicFields{
+	found, err := orderRepo.FindByKeys(ctx, dmodel.DynamicFields{
 		models.PurchaseOrderFieldId: orderId,
 	})
 	if err != nil {
@@ -135,22 +135,22 @@ func RecomputeOrderTotals(ctx corectx.Context, orderId string) error {
 	}
 
 	lines, err := models.FindOrderLines(
-		ctx, lineEngine.ResourceRepository(), orderId, models.MaxOrderLines)
+		ctx, lineRepo, orderId, models.MaxOrderLines)
 	if err != nil {
 		return err
 	}
 
-	lines, err = rewriteStaleLines(ctx, lineEngine, lines, scaleForOrder(ctx, found.Data))
+	lines, err = rewriteStaleLines(ctx, lineRepo, lines, scaleForOrder(ctx, found.Data))
 	if err != nil {
 		return err
 	}
-	return rewriteStaleHeader(ctx, orderEngine, found.Data, lines)
+	return rewriteStaleHeader(ctx, orderRepo, found.Data, lines)
 }
 
 // rewriteStaleLines stores each line's computed totals where they differ, and returns the lines
 // with the computed values in place so the header sums the new numbers, not the replaced ones.
 func rewriteStaleLines(
-	ctx corectx.Context, lineEngine drif.DynamicResourceEngine, lines []dmodel.DynamicFields,
+	ctx corectx.Context, lineRepo composable.CrudRepository, lines []dmodel.DynamicFields,
 	scale int32,
 ) ([]dmodel.DynamicFields, error) {
 	for _, line := range lines {
@@ -168,7 +168,7 @@ func rewriteStaleLines(
 		if !stale {
 			continue
 		}
-		_, err := lineEngine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+		_, err := lineRepo.Update(ctx, dmodel.DynamicFields{
 			models.PurchaseOrderLineFieldId:        stringOf(line, models.PurchaseOrderLineFieldId),
 			models.PurchaseOrderLineFieldSubtotal:  computed.Subtotal,
 			models.PurchaseOrderLineFieldTaxAmount: computed.Tax,
@@ -184,7 +184,7 @@ func rewriteStaleLines(
 
 // rewriteStaleHeader stores the order's three totals when they differ from the sum of its lines.
 func rewriteStaleHeader(
-	ctx corectx.Context, orderEngine drif.DynamicResourceEngine,
+	ctx corectx.Context, orderRepo composable.CrudRepository,
 	order dmodel.DynamicFields, lines []dmodel.DynamicFields,
 ) error {
 	totals := ComputeOrderTotals(lines)
@@ -195,7 +195,7 @@ func rewriteStaleHeader(
 		return nil
 	}
 
-	_, err := orderEngine.ResourceRepository().Update(ctx, dmodel.DynamicFields{
+	_, err := orderRepo.Update(ctx, dmodel.DynamicFields{
 		models.PurchaseOrderFieldId:            stringOf(order, models.PurchaseOrderFieldId),
 		models.PurchaseOrderFieldUntaxedAmount: totals.Untaxed,
 		models.PurchaseOrderFieldTaxAmount:     totals.Tax,

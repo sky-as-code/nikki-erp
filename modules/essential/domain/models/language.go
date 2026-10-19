@@ -1,10 +1,9 @@
 package models
 
 import (
-	"regexp"
+	_ "embed"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
@@ -42,94 +41,11 @@ const (
 	LanguageFieldIsEnabled          = "is_enabled"
 )
 
+//go:embed language.json
+var languageSchemaJson string
+
 func LanguageSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(LanguageSchemaName).
-		Label(model.NewLangJsonRefSf("%s.label", LanguageSchemaName)).
-		TableName("essential_languages").
-		ShouldBuildDb().
-		Extend(basemodel.BaseModelSchemaBuilder()).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldName).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldIsoCode).
-				// Hyphenated BCP47, not the underscore form: every consumer of an iso code speaks
-				// hyphen -- the stored `language` setting, the LangJson document
-				// keys, ToBCP47LanguageCode, i18next on the frontend. An underscore code could not
-				// have been matched by any of them.
-				DataType(dmodel.FieldDataTypeString(5, 10, dmodel.FieldDataTypeStringOpts{
-					Regex: regexp.MustCompile(`^[a-z]{2}-[A-Z]{2}$`),
-				})).
-				RequiredForCreate().
-				Unique(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldDirection).
-				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(LanguageDirectionLtr),
-					string(LanguageDirectionRtl),
-				})).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldDecimalSeparator).
-				DataType(dmodel.FieldDataTypeString(1, 5)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldThousandsSeparator).
-				DataType(dmodel.FieldDataTypeString(1, 5)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldDateFormat).
-				DataType(dmodel.FieldDataTypeString(1, 30)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldTimeFormat).
-				DataType(dmodel.FieldDataTypeString(1, 30)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldShortTimeFormat).
-				DataType(dmodel.FieldDataTypeString(1, 30)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldFirstDayOfWeek).
-				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(WeekDayMonday),
-					string(WeekDayTuesday),
-					string(WeekDayWednesday),
-					string(WeekDayThursday),
-					string(WeekDayFriday),
-					string(WeekDaySaturday),
-					string(WeekDaySunday),
-				})).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldIsEnabled).
-				// The set of languages a user may pick. False by default: a language created before its
-				// translations ship would render every key as its raw namespace:key to whoever chose it.
-				DataType(dmodel.FieldDataTypeBoolean()).
-				Default(false),
-		).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+	return dmodel.ParseModelJson(languageSchemaJson)
 }
 
 type Language struct {

@@ -60,9 +60,10 @@ Validating Stamps The Move Lines
     [Documentation]    operation_at is what turns a line from a reservation into a recorded
     ...    movement. Without it there is no way to tell the two apart after the fact.
     ${resp}=    GET On Session    api    ${STOCK_MOVE_LINE_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,move_id,operation_at', 'graph': '{"if": ["move_id", "=", "%s"]}' % $VALIDATED_MOVE_ID} }}
     Response Status Should Be    ${resp}    200
-    ${mine}=    Evaluate    [i for i in $resp.json()['data']['items'] if i.get('move_id') == $VALIDATED_MOVE_ID]
+    ${mine}=    Evaluate    [i for i in items if i.get('move_id') == mid]
+    ...    namespace=${{ {'items': $resp.json()['items'], 'mid': $VALIDATED_MOVE_ID} }}
     Should Not Be Empty    ${mine}    msg=The validated move must still have its lines
     FOR    ${line}    IN    @{mine}
         Should Not Be Equal    ${line.get('operation_at')}    ${None}

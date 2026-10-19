@@ -40,7 +40,7 @@ Plain User Is Refused Product Template Create
     ...    Inventory entitlement at all, so no action on the resource is permitted.
     ${name}=    Unique Display Name    Robot Forbidden Template
     ${resp}=    POST On Session    plain_user    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $NOT_FOUND_ID, 'category_id': $NOT_FOUND_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $NOT_FOUND_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    403
     ...    msg=Permission must be refused before the payload is ever validated

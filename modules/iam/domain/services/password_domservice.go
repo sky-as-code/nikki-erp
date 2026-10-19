@@ -33,8 +33,8 @@ type PasswordServiceParams struct {
 	CqrsBus           cqrs.CqrsBus
 	ConfigSvc         config.ConfigService
 	Logger            logging.LoggerService
-	UserSvc           itUser.UserDomainService
-	UserRepo          itUser.UserRepository
+	UserSvc           itUser.UserCrudDomainService
+	UserRepo          itUser.UserCrudRepository
 	PasswordStoreRepo it.PasswordStoreRepository
 }
 
@@ -54,7 +54,7 @@ func NewPasswordDomainServiceImpl(params PasswordServiceParams) it.PasswordDomai
 type PasswordDomainServiceImpl struct {
 	configSvc         config.ConfigService
 	logger            logging.LoggerService
-	userRepo          itUser.UserRepository
+	userRepo          itUser.UserCrudRepository
 	passwordStoreRepo it.PasswordStoreRepository
 	principalHelper   principalHelper
 }

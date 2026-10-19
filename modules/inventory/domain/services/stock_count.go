@@ -224,11 +224,32 @@ func applyCountToQuant(
 	}
 
 	// Reached on a zero variance too: the count is still resolved, or a balance confirmed correct
-	// would stay permanently overdue on the worklist.
-	if err := updateQuantFields(ctx, quant, CountAppliedFields(time.Now().UTC(), nil)); err != nil {
+	// would stay permanently overdue on the worklist. Re-read first: the movement rewrote the row,
+	// and an update carrying the etag read before it matches nothing.
+	current, err := reloadQuant(ctx, quant)
+	if err != nil {
+		return nil, err
+	}
+	if err := updateQuantFields(ctx, current, CountAppliedFields(time.Now().UTC(), nil)); err != nil {
 		return nil, err
 	}
 	return mutateOk(), nil
+}
+
+// reloadQuant reads a balance again by id.
+func reloadQuant(ctx corectx.Context, quant models.StockQuant) (models.StockQuant, error) {
+	engine, err := repoFor(models.StockQuantSchemaName)
+	if err != nil {
+		return quant, err
+	}
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{models.StockQuantFieldId: derefString(quant.GetId())})
+	if err != nil {
+		return quant, errors.Wrap(err, "reloadQuant")
+	}
+	if found == nil || !found.HasData {
+		return quant, errors.Errorf("stock quant '%s' vanished mid-transaction", derefString(quant.GetId()))
+	}
+	return *models.NewStockQuantFrom(found.Data), nil
 }
 
 // generateAdjustmentMovement routes the variance through the shared correction helper. A positive
@@ -370,8 +391,11 @@ func updateQuantFields(
 		update[key] = value
 	}
 
-	_, err = engine.Update(ctx, update)
-	return errors.Wrap(err, "updateQuantFields")
+	updated, err := engine.Update(ctx, update)
+	if err != nil {
+		return errors.Wrap(err, "updateQuantFields")
+	}
+	return refusedWriteError(updated, "updateQuantFields")
 }
 
 // withQuantTransaction runs body inside one transaction on a cloned context, so the transaction is

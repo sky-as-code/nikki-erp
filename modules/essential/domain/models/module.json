@@ -1,0 +1,109 @@
+{
+	"name": "essential_module_metadata",
+	"label": "essential_module_metadata.label",
+	"table_name": "essential_modules",
+	"should_build_db": true,
+	"composite_uniques": [
+		{
+			"fields": [
+				"name"
+			]
+		}
+	],
+	"fields": [
+		{
+			"name": "id",
+			"label": "fields.id",
+			"data_type": "ulid",
+			"primary_key": true,
+			"use_type_default": true,
+			"description": {
+				"en-US": "Declared here rather than inherited from core.basemodel.base_model, because that mixin carries the tenant key in the hosted app and module metadata is global: it is synced once at start-up with no tenant in scope."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 50
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "label",
+			"label": "fields.label",
+			"data_type": {
+				"type": "langjson",
+				"min": 1,
+				"max": 50
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "is_orphaned",
+			"label": "fields.is_orphaned",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false
+		},
+		{
+			"name": "is_internal",
+			"label": "fields.is_internal",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "version",
+			"label": "fields.version",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 50
+			},
+			"required_for_create": true
+		},
+		{
+			"name": "has_ui",
+			"label": "fields.has_ui",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": false
+		},
+		{
+			"name": "model_prefix",
+			"label": "fields.model_prefix",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 50
+			}
+		},
+		{
+			"name": "category",
+			"label": "fields.category",
+			"data_type": {
+				"type": "enum_string",
+				"values": [
+					"foundation",
+					"coremart",
+					"coreparking"
+				]
+			}
+		},
+		{
+			"name": "is_enabled",
+			"label": "fields.is_enabled",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"no_update": true,
+			"default_value": true
+		}
+	],
+	"extend_after": [
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model"
+	]
+}

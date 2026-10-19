@@ -21,7 +21,7 @@ func BuildEffectiveProduct(
 		VariantId:          derefString(variant.GetId()),
 		TemplateId:         derefString(template.GetId()),
 		Name:               template.GetName(),
-		ProductTypeId:      derefString(template.GetProductTypeId()),
+		IsCombo:            derefBool(template.GetIsCombo()),
 		CategoryId:         derefString(template.GetCategoryId()),
 		BrandId:            derefString(template.GetBrandId()),
 		SaleOk:             derefBool(template.GetSaleOk()),
@@ -32,6 +32,9 @@ func BuildEffectiveProduct(
 		IsVariantArchived:  derefBool(variant.IsArchived()),
 	}
 
+	if productType := template.GetProductType(); productType != nil {
+		effective.ProductType = productType.String()
+	}
 	if status := template.GetStatus(); status != nil {
 		effective.TemplateStatus = status.String()
 	}

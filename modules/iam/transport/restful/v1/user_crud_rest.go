@@ -6,6 +6,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable/filefield"
+	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
@@ -15,12 +16,13 @@ const UserEngineName = "dynengine_iam_user"
 type userCrudRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_user"`
+	Engine         composable.DynamicResourceEngineOnion `name:"dynengine_iam_user"`
+	PrincipalRoles itRole.PrincipalRolesApplicationService
 }
 
 func NewUserCrudRest(params userCrudRestParams) *UserCrudRest {
 	svc := params.Engine.ApplicationService().(itUser.UserCrudApplicationService)
-	rest := &UserCrudRest{Rest: filefield.NewRest("user", svc), userSvc: svc}
+	rest := &UserCrudRest{Rest: filefield.NewRest("user", svc), userSvc: svc, rolesSvc: params.PrincipalRoles}
 	rest.SetApplicationService(params.Engine.ApplicationService())
 	return rest
 }
@@ -30,7 +32,18 @@ func NewUserCrudRest(params userCrudRestParams) *UserCrudRest {
 type UserCrudRest struct {
 	composable.CrudRestBase
 	filefield.Rest
-	userSvc itUser.UserCrudApplicationService
+	userSvc  itUser.UserCrudApplicationService
+	rolesSvc itRole.PrincipalRolesApplicationService
+}
+
+func (this *UserCrudRest) ManageRoles(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "manage user roles", payload, this.userSvc.ManageRoles,
+		composable.MutateResponse)
+}
+
+func (this *UserCrudRest) Roles(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "search user roles", payload, this.rolesSvc.UserRoles,
+		composable.SearchResponse)
 }
 
 func (this *UserCrudRest) SendInvitation(echoCtx *echo.Context, payload map[string]any) error {

@@ -1,19 +1,7 @@
 package repository
 
-import (
-	stdErr "errors"
-
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-)
-
+// InitRepositories registers nothing today: every Essential repository is published by its
+// resource onion (dynamicengines). It stays the home of a repository that is not one.
 func InitRepositories() error {
-	return stdErr.Join(
-		// deps.Register(NewContactDynamicRepository),
-		deps.Register(NewEnumDynamicRepository),
-		deps.Register(NewFieldMetadataDynamicRepository),
-		deps.Register(NewLanguageDynamicRepository),
-		deps.Register(NewModelMetadataDynamicRepository),
-		deps.Register(NewModuleDynamicRepository),
-		deps.Register(NewTagDynamicRepository),
-	)
+	return nil
 }

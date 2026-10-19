@@ -285,16 +285,13 @@ func (this *StockTransferDomainServiceImpl) Cancel(
 
 		status := derefString(operation.Transfer.GetStatus())
 		vErrs := ft.NewClientErrors()
-		AssertTransferTransition(status, models.StockTransferStatusCancelled, vErrs)
+		AssertTransferCancellable(status, vErrs)
 		if vErrs.Count() > 0 {
 			result = &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
 			return nil
 		}
 
-		if err := unreserveTransferMoves(tranxCtx, operation); err != nil {
-			return err
-		}
-		if err := cancelMoves(tranxCtx, operation); err != nil {
+		if err := releaseThenCancelMoves(tranxCtx, operation, transferId); err != nil {
 			return err
 		}
 
@@ -315,6 +312,24 @@ func (this *StockTransferDomainServiceImpl) Cancel(
 		return nil, err
 	}
 	return result, nil
+}
+
+// releaseThenCancelMoves releases the transfer's reservations, then closes its open moves. Releasing
+// writes each reserved move back to `confirmed`, which changes its etag, so the moves are re-read in
+// between: cancelled with the etags loaded at the start, every write would match no row and leave
+// the moves open under a cancelled transfer.
+func releaseThenCancelMoves(
+	ctx corectx.Context, operation *transferOperationContext, transferId string,
+) error {
+	if err := unreserveTransferMoves(ctx, operation); err != nil {
+		return err
+	}
+	refreshed, err := models.FindTransferMoves(ctx, operation.MoveRepo, transferId, models.MaxTransferMoves)
+	if err != nil {
+		return err
+	}
+	operation.Moves = refreshed
+	return cancelMoves(ctx, operation)
 }
 
 // cancelMoves closes every move that is still open. A move already done stays done: cancelling the

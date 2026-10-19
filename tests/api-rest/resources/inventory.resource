@@ -12,7 +12,6 @@ Resource          ${CURDIR}/../nikki_api/data.resource
 
 
 *** Variables ***
-${PRODUCT_TYPE_API}         /v1/inventory/inventory_product_type
 ${PRODUCT_CATEGORY_API}     /v1/inventory/inventory_product_category
 ${BRAND_API}                /v1/inventory/inventory_brand
 ${PRODUCT_ATTRIBUTE_API}    /v1/inventory/inventory_product_attribute
@@ -66,23 +65,8 @@ Unique Code
 
 # --- Master data ----------------------------------------------------------------------
 
-Ensure Product Type Under Test
-    [Documentation]    The product type the product_type suite exercises, and that every
-    ...    template hangs off — product_type_id is required-for-create on a template.
-    ${id}=    Get Variable Value    ${PRODUCT_TYPE_ID}    ${EMPTY}
-    IF    $id    RETURN
-    Ensure Inventory Org
-    ${name}=    Unique Display Name    Robot Goods Type
-    ${code}=    Unique Code    goods
-    ${resp}=    POST On Session    api    ${PRODUCT_TYPE_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'supports_stock': True} }}
-    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    Set Global Variable    ${PRODUCT_TYPE_ID}    ${id}
-    Set Global Variable    ${PRODUCT_TYPE_ETAG}    ${etag}
-    Set Global Variable    ${PRODUCT_TYPE_CODE}    ${code}
-
 Ensure Root Product Category
-    [Documentation]    The org's root "All" (is_root=true, its own parent). It is seeded, never
+    [Documentation]    The org's root "Default" (is_root=true, its own parent). It is seeded, never
     ...    created through the API, and every parent-less create defaults to it.
     ${id}=    Get Variable Value    ${ROOT_CATEGORY_ID}    ${EMPTY}
     IF    $id    RETURN
@@ -106,19 +90,17 @@ Get Product Category
 
 Ensure Product Category Under Test
     [Documentation]    The category the product_category suite exercises and every template
-    ...    references. Created without a parent, so it lands under the org's root "All"; 03_update
+    ...    references. Created without a parent, so it lands under the org's root "Default"; 03_update
     ...    hangs a child off it and exercises the cycle rule against a real two-level tree.
     ${id}=    Get Variable Value    ${PRODUCT_CATEGORY_ID}    ${EMPTY}
     IF    $id    RETURN
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Root Category
-    ${code}=    Unique Code    cat
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${PRODUCT_CATEGORY_ID}    ${id}
     Set Global Variable    ${PRODUCT_CATEGORY_ETAG}    ${etag}
-    Set Global Variable    ${PRODUCT_CATEGORY_CODE}    ${code}
 
 Ensure Child Product Category
     [Documentation]    A child of the category under test. The cycle rule needs a real
@@ -128,9 +110,8 @@ Ensure Child Product Category
     IF    $id    RETURN
     Ensure Product Category Under Test
     ${name}=    Unique Display Name    Robot Child Category
-    ${code}=    Unique Code    childcat
     ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'parent_category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'parent_category_id': $PRODUCT_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${CHILD_CATEGORY_ID}    ${id}
     Set Global Variable    ${CHILD_CATEGORY_ETAG}    ${etag}
@@ -191,16 +172,15 @@ Ensure Attribute Value Under Test
 # --- Template and variant -------------------------------------------------------------
 
 Create Product Template
-    [Documentation]    Creates a template against the shared type and category and returns
+    [Documentation]    Creates a goods template in the shared category and returns
     ...    (id, etag). Callers that need their own template — the archive-cascade and
     ...    delete-guard suites each consume one destructively — use this instead of the
     ...    shared "under test" one.
     [Arguments]    ${words}=Robot Template
-    Ensure Product Type Under Test
     Ensure Product Category Under Test
     ${name}=    Unique Display Name    ${words}
     ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}    ${etag}
 
@@ -243,7 +223,7 @@ Attach Attribute To Template
     ...    junction id — the id the allowed-value rows point at, not the attribute's.
     [Arguments]    ${template_id}    ${attribute_id}
     ${resp}=    POST On Session    api    ${TEMPLATE_ATTRIBUTE_API}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'product_template_id': $template_id, 'attribute_id': $attribute_id} }}
+    ...    json=${{ {'product_template_id': $template_id, 'attribute_id': $attribute_id} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 
@@ -251,7 +231,7 @@ Allow Attribute Value On Template
     [Documentation]    Adds one attribute value to a template attribute's allowed subset.
     [Arguments]    ${template_attribute_id}    ${attribute_value_id}
     ${resp}=    POST On Session    api    ${TEMPLATE_ATTRIBUTE_VALUE_API}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'template_attribute_id': $template_attribute_id, 'attribute_value_id': $attribute_value_id} }}
+    ...    json=${{ {'template_attribute_id': $template_attribute_id, 'attribute_value_id': $attribute_value_id} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 
@@ -290,7 +270,6 @@ Ensure Seeded Product Templates
     [Arguments]    ${count}=50
     ${ids}=    Get Variable Value    ${SEEDED_TEMPLATE_IDS}    ${None}
     IF    $ids is not None and len($ids) >= int($count)    RETURN
-    Ensure Product Type Under Test
     Ensure Product Category Under Test
     ${ids}=    Create List
     FOR    ${index}    IN RANGE    ${count}
@@ -301,7 +280,7 @@ Ensure Seeded Product Templates
             ${name}=    Unique Display Name    Seed Template ${index}
         END
         ${resp}=    POST On Session    api    ${PRODUCT_TEMPLATE_API}
-        ...    json=${{ {'name': {'en-US': $name}, 'product_type_id': $PRODUCT_TYPE_ID, 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
+        ...    json=${{ {'name': {'en-US': $name}, 'product_type': 'goods', 'category_id': $PRODUCT_CATEGORY_ID, 'status': 'draft', 'org_id': $INV_ORG_ID} }}
         Response Status Should Be    ${resp}    201
         Append To List    ${ids}    ${resp.json()}[id]
     END
@@ -322,9 +301,8 @@ Ensure Seeded Product Categories
         ELSE
             ${name}=    Unique Display Name    Seed Category ${index}
         END
-        ${code}=    Unique Code    seedcat
         ${resp}=    POST On Session    api    ${PRODUCT_CATEGORY_API}
-        ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
+        ...    json=${{ {'name': {'en-US': $name}, 'org_id': $INV_ORG_ID} }}
         Response Status Should Be    ${resp}    201
         Append To List    ${ids}    ${resp.json()}[id]
     END
@@ -391,7 +369,7 @@ Archive Inventory Fixture
         ${resp}=    GET On Session    api    ${api}/${id}
         ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
         IF    ${resp.status_code} == 200
-            ${etag}=    Set Variable    ${resp.json()}[etag]
+            ${etag}=    Set Variable    ${resp.json()}[item][etag]
             POST On Session    api    ${api}/${id}/archived
             ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $etag} }}    expected_status=any
         END
@@ -683,7 +661,7 @@ Read Stock Quant Id
     ...    missing balance means the receipt did not land and the test should say so.
     [Arguments]    ${variant_id}    ${location_id}
     ${resp}=    GET On Session    api    ${STOCK_QUANT_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,product_variant_id,location_id', 'graph': __import__('json').dumps({'and': [{'if': ['product_variant_id', '=', $variant_id]}, {'if': ['location_id', '=', $location_id]}]})} }}
     Response Status Should Be    ${resp}    200
     FOR    ${item}    IN    @{resp.json()}[items]
         IF    $item.get('product_variant_id') == $variant_id and $item.get('location_id') == $location_id
@@ -698,7 +676,9 @@ Read Stock Quant Field
     ${resp}=    GET On Session    api    ${STOCK_QUANT_API}/${quant_id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    RETURN    ${resp.json()}[data].get('${field}')
+    # A null column is omitted from the item, so an absent field reads as None.
+    ${value}=    Evaluate    $resp.json()['item'].get($field)
+    RETURN    ${value}
 
 Receive Stock Into Location
     [Documentation]    Puts a quantity of a variant into a location by running a real receipt:
@@ -733,7 +713,7 @@ Read Stock On Hand
     ...    zero mean the same thing to a caller asking how much is there.
     [Arguments]    ${variant_id}    ${location_id}
     ${resp}=    GET On Session    api    ${STOCK_QUANT_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,product_variant_id,location_id,on_hand_quantity', 'graph': __import__('json').dumps({'and': [{'if': ['product_variant_id', '=', $variant_id]}, {'if': ['location_id', '=', $location_id]}]})} }}
     Response Status Should Be    ${resp}    200
     ${total}=    Set Variable    ${0}
     FOR    ${item}    IN    @{resp.json()}[items]
@@ -748,7 +728,7 @@ Read Stock Reserved
     [Documentation]    Sums reserved_quantity across every balance of a variant in a location.
     [Arguments]    ${variant_id}    ${location_id}
     ${resp}=    GET On Session    api    ${STOCK_QUANT_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'id,product_variant_id,location_id,reserved_quantity', 'graph': __import__('json').dumps({'and': [{'if': ['product_variant_id', '=', $variant_id]}, {'if': ['location_id', '=', $location_id]}]})} }}
     Response Status Should Be    ${resp}    200
     ${total}=    Set Variable    ${0}
     FOR    ${item}    IN    @{resp.json()}[items]
@@ -803,4 +783,3 @@ Delete Inventory Seed Data
     # The child points at the category under test, so it must go first.
     Delete Inventory Fixture    ${PRODUCT_CATEGORY_API}    CHILD_CATEGORY_ID
     Delete Inventory Fixture    ${PRODUCT_CATEGORY_API}    PRODUCT_CATEGORY_ID
-    Delete Inventory Fixture    ${PRODUCT_TYPE_API}    PRODUCT_TYPE_ID
