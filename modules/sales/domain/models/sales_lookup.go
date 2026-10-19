@@ -107,15 +107,21 @@ func FindPricelistsDerivingFrom(
 }
 
 // FindSalesChannelByCode resolves a channel from the stable integration code an external module
-// names it by. The limit is 2 so a caller can tell "exactly one" from "more than one": a unique
-// constraint makes the second impossible, but taking the first row would hide the day it was not.
+// names it by, within one org: the code is unique per (code, org_id), so every org owns its own
+// 'vdmc' and 'bo'. An empty orgId searches the whole tenant, for callers that hold no org; the
+// limit is 2 so such a caller can tell "exactly one" from "ambiguous" instead of taking the first.
 func FindSalesChannelByCode(
-	ctx corectx.Context, repo SalesSearcher, code string,
+	ctx corectx.Context, repo SalesSearcher, code string, orgId string,
 ) ([]dmodel.DynamicFields, error) {
-	graph := &dmodel.SearchGraph{}
-	graph.And(
+	conditions := []dmodel.SearchNode{
 		*dmodel.NewSearchNode().NewCondition(SalesChannelFieldCode, dmodel.Equals, code),
-	)
+	}
+	if orgId != "" {
+		conditions = append(conditions,
+			*dmodel.NewSearchNode().NewCondition(SalesChannelFieldOrgId, dmodel.Equals, orgId))
+	}
+	graph := &dmodel.SearchGraph{}
+	graph.And(conditions...)
 	return searchAll(ctx, repo, graph, 2, "FindSalesChannelByCode")
 }
 

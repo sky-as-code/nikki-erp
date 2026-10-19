@@ -10,6 +10,7 @@
 		{ "index_name": "sales_pricelists_tid_point", "fields": ["sales_point_id"] },
 		{ "index_name": "sales_pricelists_tid_validity", "fields": ["valid_from", "valid_until"] }
 	],
+	"composite_uniques": [{ "fields": ["code", "org_id"] }],
 	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
 
 	"fields": [
@@ -18,10 +19,9 @@
 			"label": "fields.code",
 			"data_type": { "type": "string", "min": 1, "max": 50 },
 			"required_for_create": true,
-			"unique": true,
 			"no_update": true,
 			"description": {
-				"en-US": "The stable identifier a human or an import file names this pricelist by. Immutable and unique across the tenant, because a pricelist is referenced from spreadsheets and integration payloads that nobody will update if it is renamed."
+				"en-US": "The stable identifier a human or an import file names this pricelist by. Immutable and unique within its organization, because a pricelist is referenced from spreadsheets and integration payloads that nobody will update if it is renamed."
 			}
 		},
 		{

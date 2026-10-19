@@ -41,7 +41,8 @@ func fieldOf(t *testing.T, schema *dmodel.ModelSchema, name string) *dmodel.Mode
 // TestSalesChannelCodeIsMandatoryAndUnique. Code cannot be "unique when not NULL": the
 // partial_uniques builder scopes a required field by a nullable one, so a single-column version
 // would also emit a unique index over the remaining fields where code IS NULL, capping the table at
-// one NULL-code channel. Code is therefore required, immutable and plainly unique.
+// one NULL-code channel. Code is therefore required, immutable and unique per org: a composite on
+// (code, org_id), both required, so every org owns its own system channels ('vdmc', 'bo').
 func TestSalesChannelCodeIsMandatoryAndUnique(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -51,16 +52,26 @@ func TestSalesChannelCodeIsMandatoryAndUnique(t *testing.T) {
 	if !code.IsRequiredForCreate() {
 		t.Error("code must be required_for_create (DEC-001)")
 	}
-	if !code.IsUnique() {
-		t.Error("code must be unique (DEC-001)")
+	if !hasCompositeUnique(schema, SalesChannelFieldCode, SalesChannelFieldOrgId) {
+		t.Error("code must be unique per org (DEC-001)")
 	}
 	if !code.IsNoUpdate() {
 		t.Error("code must be no_update: it is a published integration contract (CR 7.2, 41)")
 	}
 	if len(schema.PartialUniques()) != 0 {
 		t.Error("sales_channel must not use a partial unique of either kind; DEC-001 records why " +
-			"a plain unique on a required column is what this constraint needs")
+			"a unique over required columns is what this constraint needs")
 	}
+}
+
+// hasCompositeUnique reports whether the schema declares a composite unique over exactly fields.
+func hasCompositeUnique(schema *dmodel.ModelSchema, fields ...string) bool {
+	for _, unique := range schema.CompositeUniques() {
+		if slices.Equal(unique.Fields, fields) {
+			return true
+		}
+	}
+	return false
 }
 
 // TestSalesPointUniquesAreStrict. A loose group emits a pair of indexes: one over

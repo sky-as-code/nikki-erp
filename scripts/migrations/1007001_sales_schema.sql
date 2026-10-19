@@ -1,41 +1,3 @@
--- Create "sales_channel_payment_rel" table
-CREATE TABLE "sales_channel_payment_rel" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NOT NULL,
-  "sales_channel_id" character varying NOT NULL,
-  "payment_method_id" character varying NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_channel_payment_rel_tid_chan_method_ukey" UNIQUE ("sales_channel_id", "payment_method_id")
-);
--- Create "sales_integration_outbox" table
-CREATE TABLE "sales_integration_outbox" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NOT NULL,
-  "event_id" character varying NOT NULL,
-  "aggregate_id" character varying NOT NULL,
-  "event_type" character varying NOT NULL,
-  "schema_version" character varying NOT NULL,
-  "payload" jsonb NOT NULL,
-  "occurred_at" timestamptz NOT NULL,
-  "published_at" timestamptz NULL,
-  "attempt_count" integer NULL,
-  "last_error" character varying NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "etag" character varying NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_outbox_tid_eventid_ukey" UNIQUE ("event_id")
-);
--- Create index "sales_outbox_tid_aggregate_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_aggregate_idx" ON "sales_integration_outbox" ("aggregate_id");
--- Create index "sales_outbox_tid_occurred_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_occurred_idx" ON "sales_integration_outbox" ("occurred_at");
--- Create index "sales_outbox_tid_published_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_published_idx" ON "sales_integration_outbox" ("published_at");
--- Create index "sales_outbox_tid_type_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_type_idx" ON "sales_integration_outbox" ("event_type");
 -- Create "sales_billing_instructions" table
 CREATE TABLE "sales_billing_instructions" (
   "id" character varying NOT NULL,
@@ -93,6 +55,17 @@ CREATE INDEX "sales_billing_attempts_tid_instr_idx" ON "sales_billing_issuance_a
 CREATE INDEX "sales_billing_attempts_tid_provreq_idx" ON "sales_billing_issuance_attempts" ("provider_request_id");
 -- Create index "sales_billing_attempts_tid_status_idx" to table: "sales_billing_issuance_attempts"
 CREATE INDEX "sales_billing_attempts_tid_status_idx" ON "sales_billing_issuance_attempts" ("status");
+-- Create "sales_channel_payment_rel" table
+CREATE TABLE "sales_channel_payment_rel" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "sales_channel_id" character varying NOT NULL,
+  "payment_method_id" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_channel_payment_rel_tid_chan_method_ukey" UNIQUE ("sales_channel_id", "payment_method_id")
+);
 -- Create "sales_channels" table
 CREATE TABLE "sales_channels" (
   "id" character varying NOT NULL,
@@ -111,8 +84,35 @@ CREATE TABLE "sales_channels" (
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_channels_code_ukey" UNIQUE ("code")
+  CONSTRAINT "sales_channels_code_org_id_ukey" UNIQUE ("code", "org_id")
 );
+-- Create "sales_integration_outbox" table
+CREATE TABLE "sales_integration_outbox" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "event_id" character varying NOT NULL,
+  "aggregate_id" character varying NOT NULL,
+  "event_type" character varying NOT NULL,
+  "schema_version" character varying NOT NULL,
+  "payload" jsonb NOT NULL,
+  "occurred_at" timestamptz NOT NULL,
+  "published_at" timestamptz NULL,
+  "attempt_count" integer NULL,
+  "last_error" character varying NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_outbox_tid_eventid_ukey" UNIQUE ("event_id")
+);
+-- Create index "sales_outbox_tid_aggregate_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_aggregate_idx" ON "sales_integration_outbox" ("aggregate_id");
+-- Create index "sales_outbox_tid_occurred_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_occurred_idx" ON "sales_integration_outbox" ("occurred_at");
+-- Create index "sales_outbox_tid_published_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_published_idx" ON "sales_integration_outbox" ("published_at");
+-- Create index "sales_outbox_tid_type_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_type_idx" ON "sales_integration_outbox" ("event_type");
 -- Create "sales_order_events" table
 CREATE TABLE "sales_order_events" (
   "id" character varying NOT NULL,
@@ -367,7 +367,7 @@ CREATE TABLE "sales_fulfillment_methods" (
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_fulfillment_methods_code_ukey" UNIQUE ("code")
+  CONSTRAINT "sales_fulfillment_methods_code_org_id_ukey" UNIQUE ("code", "org_id")
 );
 -- Create index "sales_fulfil_methods_tid_type_arch_idx" to table: "sales_fulfillment_methods"
 CREATE INDEX "sales_fulfil_methods_tid_type_arch_idx" ON "sales_fulfillment_methods" ("fulfillment_type", "is_archived");
@@ -790,7 +790,7 @@ CREATE TABLE "sales_pricelists" (
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_pricelists_code_ukey" UNIQUE ("code"),
+  CONSTRAINT "sales_pricelists_code_org_id_ukey" UNIQUE ("code", "org_id"),
   CONSTRAINT "sales_pricelists_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "sales_pricelists_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );

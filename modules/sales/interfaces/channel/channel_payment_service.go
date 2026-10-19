@@ -44,6 +44,8 @@ type ChannelPaymentAppService interface {
 type ListChannelPaymentMethodsQuery struct {
 	SalesChannelId   string
 	SalesChannelCode string
+	// OrgId scopes SalesChannelCode, which is unique per org; ignored when SalesChannelId is given.
+	OrgId string
 
 	// EnabledOnly narrows the answer to what this channel accepts, which is what a checkout screen
 	// wants; an administration screen leaves it false to choose from the full list.
@@ -54,13 +56,17 @@ type ListChannelPaymentMethodsQuery struct {
 type ChannelPaymentMethodCommand struct {
 	SalesChannelId   string
 	SalesChannelCode string
-	PaymentMethodId  string
+	// OrgId scopes SalesChannelCode, which is unique per org; ignored when SalesChannelId is given.
+	OrgId           string
+	PaymentMethodId string
 }
 
 type IsPaymentMethodEnabledQuery struct {
 	SalesChannelId   string
 	SalesChannelCode string
-	PaymentMethodId  string
+	// OrgId scopes SalesChannelCode, which is unique per org; ignored when SalesChannelId is given.
+	OrgId           string
+	PaymentMethodId string
 }
 
 // ChannelPaymentMethodData is one row of the merged view.

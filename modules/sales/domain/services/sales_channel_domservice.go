@@ -27,7 +27,7 @@ func NewSalesChannelDomainService(base composable.CrudDomainService) *SalesChann
 // keeps database ids out of other modules' configuration. A suspended or archived channel resolves
 // but is reported as such, because the caller may be reading history rather than selling.
 func (this *SalesChannelDomainServiceImpl) ResolveByCode(
-	ctx corectx.Context, code string,
+	ctx corectx.Context, code string, orgId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	normalized := NormalizeChannelCode(code)
 	if normalized == "" {
@@ -40,7 +40,7 @@ func (this *SalesChannelDomainServiceImpl) ResolveByCode(
 	if err != nil {
 		return nil, err
 	}
-	found, err := models.FindSalesChannelByCode(ctx, engineRepo, normalized)
+	found, err := models.FindSalesChannelByCode(ctx, engineRepo, normalized, orgId)
 	if err != nil {
 		return nil, err
 	}
