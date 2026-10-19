@@ -1,6 +1,7 @@
 package external
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	essentialConstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	essentialSettings "github.com/sky-as-code/nikki-erp/modules/essential/domain/settings"
@@ -78,6 +79,30 @@ type LanguageExtService interface {
 // code -- unlike accounting's own `org_default_currency`, which stores an id.
 type CurrencyExtService interface {
 	GetCurrencyByCode(ctx corectx.Context, query GetCurrencyByCodeQuery) (*GetCurrencyByCodeResult, error)
+}
+
+// ModuleCatalogExtService lists the modules the org lifecycle must reach, grouped in dependency
+// waves: every module of a wave depends only on modules of earlier waves.
+type ModuleCatalogExtService interface {
+	ListModuleWaves(ctx corectx.Context) ([][]string, error)
+}
+
+// OrgNotificationExtService raises an in-app notification. A refused or undeliverable
+// notification is reported as an error for logging; it never changes the outcome of the work it
+// reports on.
+type OrgNotificationExtService interface {
+	NotifyUsers(ctx corectx.Context, cmd NotifyUsersCommand) error
+}
+
+type NotifyUsersCommand struct {
+	// CommandId makes a redelivered command raise one notification, not two.
+	CommandId        string         `json:"command_id"`
+	OrgId            model.Id       `json:"org_id"`
+	RecipientUserIds []model.Id     `json:"recipient_user_ids"`
+	Title            string         `json:"title"`
+	Message          string         `json:"message"`
+	Severity         string         `json:"severity"`
+	Metadata         map[string]any `json:"metadata,omitempty"`
 }
 
 // The names below are Essential's, re-exported here so that iam's transport layer does not import

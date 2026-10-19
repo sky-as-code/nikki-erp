@@ -1,0 +1,41 @@
+[
+	{
+		"$alias": "fulfillment_method_kiosk_direct_auto_refund",
+		"code": "KIOSK_DIRECT_AUTO_REFUND",
+		"name": "Kiosk Direct - Auto Refund",
+		"description": "A walk-up sale at the machine itself. The machine may retry a jammed dispense as often as it can; whatever never comes out is refunded without asking, because there is no identified customer to ask.",
+		"fulfillment_type": "kiosk_dispense",
+		"initial_target_selection": "current_sales_outlet",
+		"max_attempts": 1,
+		"failure_action": "auto_refund",
+		"allow_target_change": false,
+		"allow_partial_fulfillment": true,
+		"requires_authenticated_customer": false
+	},
+	{
+		"$alias": "fulfillment_method_kiosk_direct_authenticated",
+		"code": "KIOSK_DIRECT_AUTHENTICATED",
+		"name": "Kiosk Direct - Customer Controlled",
+		"description": "A sale at the machine by an identified customer. Nothing is refunded automatically: the entitlement is kept so the customer may try another machine or ask for their money back.",
+		"fulfillment_type": "kiosk_dispense",
+		"initial_target_selection": "current_sales_outlet",
+		"failure_action": "customer_action_required",
+		"allow_target_change": true,
+		"allow_partial_fulfillment": true,
+		"requires_authenticated_customer": true,
+		"reservation_ttl_minutes": 1440
+	},
+	{
+		"$alias": "fulfillment_method_kiosk_pickup_selected",
+		"code": "KIOSK_PICKUP_SELECTED",
+		"name": "Kiosk Pickup - Customer Selected",
+		"description": "An order raised away from the machine and collected at a kiosk the customer chose. The target cannot be inferred from where the order was created, so one must be named before it is confirmed.",
+		"fulfillment_type": "kiosk_dispense",
+		"initial_target_selection": "customer_selected_outlet",
+		"failure_action": "customer_action_required",
+		"allow_target_change": true,
+		"allow_partial_fulfillment": true,
+		"requires_authenticated_customer": true,
+		"reservation_ttl_minutes": 1440
+	}
+]

@@ -100,6 +100,24 @@
 			"required_for_create": true,
 			"no_update": true,
 			"default_value": true
+		},
+		{
+			"name": "dependencies",
+			"label": "fields.dependencies",
+			"data_type": { "type": "string", "array": true, "min": 1, "max": 50 },
+			"description": {
+				"en-US": "Names of the modules this one depends on, as its Deps() declared at the last boot."
+			}
+		},
+		{
+			"name": "dep_level",
+			"label": "fields.dep_level",
+			"data_type": { "type": "int32", "min": 0, "max": 999 },
+			"required_for_create": true,
+			"default_value": "0",
+			"description": {
+				"en-US": "Depth in the dependency graph of the loaded modules: 0 depends on no loaded module, otherwise one more than its deepest dependency. Org lifecycle commands are sent level by level."
+			}
 		}
 	],
 	"extend_after": [

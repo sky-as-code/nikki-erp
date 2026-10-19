@@ -91,6 +91,16 @@ func (this *OrgSettingsAppServiceImpl) InitOrgSettings(
 	return this.settingsSvc.InitOwnerSettings(ctx, cmd)
 }
 
+// SeedOrgSettings asserts no permission of its own, on the reasoning of InitOrgSettings: it runs in
+// the org lifecycle that follows a creation the caller was already allowed to make, and the
+// service principal running it holds no entitlements. The write still goes through the schema
+// and override policy of SetSettings.
+func (this *OrgSettingsAppServiceImpl) SeedOrgSettings(
+	ctx corectx.Context, cmd it.SetSettingsCommand,
+) (*it.SetSettingsResult, error) {
+	return this.settingsSvc.SetSettings(ctx, c.LevelOrg, c.OwnerTypeOrg, cmd)
+}
+
 // --- User ---
 
 func NewUserPreferencesAppServiceImpl(settingsSvc it.SettingsDomainService) it.UserPreferencesAppService {

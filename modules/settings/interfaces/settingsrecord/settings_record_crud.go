@@ -24,6 +24,10 @@ type SettingsRecordRepository interface {
 	// INSERT ... SELECT that skips rows the owner already holds. It returns the rows inserted.
 	CopyTenantRows(ctx corectx.Context, param CopyTenantRowsParam) (int, error)
 
+	// DeleteOwnerRows deletes every row one owner holds, for org cleanup. It returns the rows
+	// deleted.
+	DeleteOwnerRows(ctx corectx.Context, param DeleteOwnerRowsParam) (int, error)
+
 	// HasTenantColumn tells whether this binary's settings_records carries a tenant column: true
 	// in the multi-tenant host, where apptrait injects one, false in the standalone nikkierp.
 	HasTenantColumn() bool
@@ -49,6 +53,15 @@ type CopyTenantRowsParam struct {
 	OwnerId   string
 
 	// TenantId confines the copy to one tenant, with the same rule as FanOutValueParam.TenantId.
+	TenantId string
+}
+
+// DeleteOwnerRowsParam names the owner whose rows go.
+type DeleteOwnerRowsParam struct {
+	OwnerType string
+	OwnerId   string
+
+	// TenantId confines the delete to one tenant, with the same rule as FanOutValueParam.TenantId.
 	TenantId string
 }
 

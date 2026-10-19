@@ -163,6 +163,8 @@ CORE:
 IAM:
   # Number of seconds before a login attempt expires
   LOGIN_ATTEMPT_DURATION_SECS: 300
+  # How long one module may take to set up or clean up an organization before it counts as failed.
+  ORG_LIFECYCLE_MODULE_TIMEOUT_SECS: 30
 
 PAYMENTINVOICE:
   # Each gateway is off unless its ENABLED flag is set, and a gateway that is off is not

@@ -4,8 +4,10 @@ import (
 	stdErr "errors"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
 	itLanguage "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
+	itModule "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 
@@ -38,6 +40,12 @@ func InitExternalServices() error {
 		}),
 		deps.Register(func(currencySvc itCurrency.CurrencyAppService) itExt.CurrencyExtService {
 			return currencySvc
+		}),
+		deps.Register(func(moduleSvc itModule.ModuleApplicationService) itExt.ModuleCatalogExtService {
+			return &moduleCatalogAdapter{catalog: moduleSvc}
+		}),
+		deps.Register(func(bus cqrs.CqrsBus) itExt.OrgNotificationExtService {
+			return &notificationSender{bus: bus}
 		}),
 		// deps.Register(func(orgSvc itOrg.OrganizationDomainService) itExt.OrganizationExtService {
 		// 	return orgSvc

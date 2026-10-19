@@ -65,7 +65,12 @@ func (this *ModuleDomainServiceImpl) syncInTranx(ctx corectx.Context, installedM
 		installedMap[item.Name()] = item
 	}
 
-	newCount, modifiedCount, err := this.syncInstalled(ctx, installedMap, dbMap)
+	levels, err := computeDepLevels(installedModules)
+	if err != nil {
+		return err
+	}
+
+	newCount, modifiedCount, err := this.syncInstalled(ctx, installedMap, dbMap, levels)
 	if err != nil {
 		return err
 	}
@@ -84,17 +89,18 @@ func (this *ModuleDomainServiceImpl) syncInTranx(ctx corectx.Context, installedM
 
 func (this *ModuleDomainServiceImpl) syncInstalled(
 	ctx corectx.Context, installedMap map[string]modules.InCodeModule, dbMap map[string]models.ModuleMetadata,
+	levels map[string]int32,
 ) (newCount int, modifiedCount int, err error) {
 	for name, installedModule := range installedMap {
 		dbModule, exists := dbMap[name]
 		if !exists {
-			if err := this.syncCreateModule(ctx, installedModule); err != nil {
+			if err := this.syncCreateModule(ctx, installedModule, levels[name]); err != nil {
 				return newCount, modifiedCount, err
 			}
 			newCount++
 			continue
 		}
-		modified := dbModule.ModifiedFields(installedModule)
+		modified := dbModule.ModifiedFields(installedModule, levels[name])
 		if modified == nil {
 			continue
 		}
@@ -150,7 +156,9 @@ func (this *ModuleDomainServiceImpl) listAllModules(ctx corectx.Context) ([]mode
 	return modulesOut, nil
 }
 
-func (this *ModuleDomainServiceImpl) syncCreateModule(ctx corectx.Context, installedModule modules.InCodeModule) error {
+func (this *ModuleDomainServiceImpl) syncCreateModule(
+	ctx corectx.Context, installedModule modules.InCodeModule, depLevel int32,
+) error {
 	label := make(model.LangJson)
 	label[model.LanguageCodeRef] = installedModule.LabelKey()
 
@@ -163,6 +171,8 @@ func (this *ModuleDomainServiceImpl) syncCreateModule(ctx corectx.Context, insta
 	module.SetModelPrefix(util.ToPtr(installedModule.ModelPrefix()))
 	module.SetCategory(util.ToPtr(installedModule.Category()))
 	module.SetIsEnabled(util.ToPtr(true))
+	module.SetDependencies(installedModule.Deps())
+	module.SetDepLevel(&depLevel)
 
 	result, err := this.Create(ctx, it.CreateModuleCommand(module.GetFieldData()))
 	if err != nil {

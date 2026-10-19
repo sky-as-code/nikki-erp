@@ -189,9 +189,11 @@ func assertReferenceUomStable(
 	if !isSubmitted || !isUomCatInUse(ctx, dispatcher, uomRepo, found) {
 		return
 	}
-	// Re-submitting the value unchanged is not a change.
+	// Re-submitting the value unchanged is not a change, and a first assignment repoints
+	// nothing: no factor was yet read against another reference. A new org's defaults rely on
+	// this, writing each category before its units and its reference after them.
 	current := found.GetReferenceUomId()
-	if current != nil && submitted == *current {
+	if current == nil || *current == "" || submitted == *current {
 		return
 	}
 	vErrs.Append(*ft.NewBusinessViolation(

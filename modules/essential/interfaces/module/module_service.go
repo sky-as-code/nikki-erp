@@ -6,6 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
 // ModuleRepository adds the advisory lock that keeps two instances from syncing at once.
@@ -17,7 +18,14 @@ type ModuleRepository interface {
 
 type ModuleDomainService interface {
 	composable.CrudDomainService
+	ModuleCatalogService
 	SyncModuleMetadata(ctx corectx.Context, installedModules []modules.InCodeModule) (bool, error)
+}
+
+// ModuleCatalogService lists the loaded modules for cross-module orchestration (org lifecycle).
+// Service-only: it has no REST route and asserts nothing.
+type ModuleCatalogService interface {
+	ListModulesByDeps(ctx corectx.Context) ([]models.ModuleMetadata, error)
 }
 
 // ModuleAppService is what module start-up binds to.
@@ -30,6 +38,7 @@ type ModuleAppService interface {
 type ModuleApplicationService interface {
 	composable.CrudApplicationService
 	ModuleAppService
+	ModuleCatalogService
 }
 
 type (

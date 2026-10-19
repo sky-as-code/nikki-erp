@@ -1,0 +1,16 @@
+[
+	{
+		"$alias": "tax_group_vat",
+		"code": "VAT",
+		"name": {
+			"en-US": "Value Added Tax",
+			"vi-VN": "Thue gia tri gia tang"
+		},
+		"display_name": {
+			"en-US": "VAT",
+			"vi-VN": "GTGT"
+		},
+		"description": "Vietnamese value added tax",
+		"display_sequence": 10
+	}
+]

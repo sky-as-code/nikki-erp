@@ -43,6 +43,7 @@ Create Probe Org
     ${resp}=    POST On Session    api    /v1/iam/iam_org
     ...    json=${{ {'display_name': {'en-US': $name}, 'slug': $slug, 'legal_name': {'en-US': $name}} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Wait Until Org Is Ready    ${id}
     RETURN    ${id}
 
 Create Probe Org Unit

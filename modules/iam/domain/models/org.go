@@ -31,6 +31,10 @@ const (
 	OrgFieldPhoneNumber = "phone_number"
 	OrgFieldSlug        = "slug"
 
+	OrgFieldStatus            = "status"
+	OrgFieldStatusMessage     = "status_message"
+	OrgFieldStatusMessageVars = "status_message_vars"
+
 	OrgEdgeOrgUnits     = "org_units"
 	OrgEdgeUsers        = "users"
 	OrgEdgeEntitlements = "entitlements"
@@ -59,6 +63,18 @@ var organizationSchemaJson string
 func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(organizationSchemaJson)
 }
+
+type OrgStatus string
+
+const (
+	OrgStatusProvisioning = OrgStatus("provisioning")
+	OrgStatusReady        = OrgStatus("ready")
+	OrgStatusDeleted      = OrgStatus("deleted")
+)
+
+// OrgStatusFields are the fields only the org lifecycle writes. A client's create or update has
+// them stripped; a deleted org accepts an update of nothing else.
+var OrgStatusFields = []string{OrgFieldStatus, OrgFieldStatusMessage, OrgFieldStatusMessageVars}
 
 type Organization struct {
 	basemodel.DynamicModelBase
@@ -148,4 +164,38 @@ func (this Organization) GetAddress() *model.LangJson {
 
 func (this *Organization) SetAddress(v *model.LangJson) {
 	this.GetFieldData().SetLangJson(OrgFieldAddress, v)
+}
+
+func (this Organization) GetStatus() *OrgStatus {
+	v := this.GetFieldData().GetString(OrgFieldStatus)
+	if v == nil {
+		return nil
+	}
+	status := OrgStatus(*v)
+	return &status
+}
+
+func (this *Organization) SetStatus(v *OrgStatus) {
+	if v == nil {
+		this.GetFieldData().SetString(OrgFieldStatus, nil)
+		return
+	}
+	s := string(*v)
+	this.GetFieldData().SetString(OrgFieldStatus, &s)
+}
+
+func (this Organization) GetStatusMessage() *string {
+	return this.GetFieldData().GetString(OrgFieldStatusMessage)
+}
+
+func (this *Organization) SetStatusMessage(v *string) {
+	this.GetFieldData().SetString(OrgFieldStatusMessage, v)
+}
+
+func (this *Organization) SetStatusMessageVars(v map[string]any) {
+	if v == nil {
+		this.GetFieldData().SetAny(OrgFieldStatusMessageVars, nil)
+		return
+	}
+	this.GetFieldData().SetAny(OrgFieldStatusMessageVars, v)
 }

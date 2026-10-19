@@ -103,6 +103,9 @@ func InitCqrsHandlers() error {
 	if err := deps.Register(NewNotificationHandler); err != nil {
 		return err
 	}
+	if err := initOrgLifecycleHandlers(); err != nil {
+		return err
+	}
 	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *NotificationHandler) error {
 		return cqrsBus.SubscribeRequests(
 			context.Background(),

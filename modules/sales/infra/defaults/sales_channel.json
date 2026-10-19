@@ -1,0 +1,23 @@
+[
+	{
+		"$alias": "channel_vdmc",
+		"code": "vdmc",
+		"name": "Vending Machine",
+		"description": "Unattended kiosks selling directly to walk-up customers",
+		"managed_by_module": "vending_machine_new",
+		"status": "active",
+		"is_system": true,
+		"auto_confirm_order": true,
+		"auto_confirm_refund": true
+	},
+	{
+		"$alias": "channel_bo",
+		"code": "bo",
+		"name": "Back Office",
+		"description": "Sales recorded by staff on behalf of a customer",
+		"status": "active",
+		"is_system": true,
+		"auto_confirm_order": false,
+		"auto_confirm_refund": false
+	}
+]

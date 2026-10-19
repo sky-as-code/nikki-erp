@@ -4,6 +4,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	c "github.com/sky-as-code/nikki-erp/modules/settings/constants"
 	it "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
@@ -75,5 +76,15 @@ func (this *SettingsDomainServiceImpl) copyTenantRows(
 		OwnerType: cmd.OwnerType,
 		OwnerId:   string(cmd.OwnerId),
 		TenantId:  tenantId,
+	})
+}
+
+func (this *SettingsDomainServiceImpl) DeleteOwnerSettings(
+	ctx corectx.Context, ownerType string, ownerId model.Id,
+) (int, error) {
+	return this.recordRepo.DeleteOwnerRows(ctx, itRecord.DeleteOwnerRowsParam{
+		OwnerType: ownerType,
+		OwnerId:   string(ownerId),
+		TenantId:  actingTenantId(ctx),
 	})
 }

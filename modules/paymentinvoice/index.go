@@ -9,6 +9,7 @@ package paymentinvoice
 
 import (
 	stdErr "errors"
+	pinvCqrs "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/transport/cqrs"
 	"time"
 
 	"go.bryk.io/pkg/errors"
@@ -92,6 +93,9 @@ func (*PaymentInvoiceModule) Init() error {
 		return err
 	}
 	if err := restful.InitRestfulHandlers(); err != nil {
+		return err
+	}
+	if err := pinvCqrs.InitOrgLifecycleHandlers(); err != nil {
 		return err
 	}
 	if err := dynamicengines.BuildAllEngines(); err != nil {

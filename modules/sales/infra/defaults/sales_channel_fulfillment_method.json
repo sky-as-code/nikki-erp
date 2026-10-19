@@ -1,0 +1,17 @@
+[
+	{
+		"$alias": "channel_fulfillment_method_1",
+		"sales_channel_id": "@channel_vdmc",
+		"fulfillment_method_id": "@fulfillment_method_kiosk_direct_auto_refund"
+	},
+	{
+		"$alias": "channel_fulfillment_method_2",
+		"sales_channel_id": "@channel_vdmc",
+		"fulfillment_method_id": "@fulfillment_method_kiosk_direct_authenticated"
+	},
+	{
+		"$alias": "channel_fulfillment_method_3",
+		"sales_channel_id": "@channel_vdmc",
+		"fulfillment_method_id": "@fulfillment_method_kiosk_pickup_selected"
+	}
+]

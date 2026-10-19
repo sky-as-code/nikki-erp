@@ -1,0 +1,52 @@
+[
+	{
+		"$alias": "tax_product_classification_vn_standard",
+		"code": "VN_STANDARD",
+		"name": {
+			"en-US": "Standard rated",
+			"vi-VN": "Thue suat pho thong"
+		},
+		"jurisdiction_id": "@tax_jurisdiction_vn",
+		"description": "Goods and services at the standard VAT rate"
+	},
+	{
+		"$alias": "tax_product_classification_vn_vat_reduction_eligible",
+		"code": "VN_VAT_REDUCTION_ELIGIBLE",
+		"name": {
+			"en-US": "Eligible for VAT reduction",
+			"vi-VN": "Duoc giam thue GTGT"
+		},
+		"jurisdiction_id": "@tax_jurisdiction_vn",
+		"description": "Goods and services the 2% reduction applies to, per Resolution 204/2025/QH15"
+	},
+	{
+		"$alias": "tax_product_classification_vn_essential",
+		"code": "VN_ESSENTIAL",
+		"name": {
+			"en-US": "Essential goods",
+			"vi-VN": "Hang hoa thiet yeu"
+		},
+		"jurisdiction_id": "@tax_jurisdiction_vn",
+		"description": "Goods and services taxed at the reduced statutory rate"
+	},
+	{
+		"$alias": "tax_product_classification_vn_export",
+		"code": "VN_EXPORT",
+		"name": {
+			"en-US": "Export",
+			"vi-VN": "Xuat khau"
+		},
+		"jurisdiction_id": "@tax_jurisdiction_vn",
+		"description": "Exported goods and services, zero rated"
+	},
+	{
+		"$alias": "tax_product_classification_vn_exempt",
+		"code": "VN_EXEMPT",
+		"name": {
+			"en-US": "Exempt",
+			"vi-VN": "Khong chiu thue"
+		},
+		"jurisdiction_id": "@tax_jurisdiction_vn",
+		"description": "Supplies outside the scope of VAT"
+	}
+]

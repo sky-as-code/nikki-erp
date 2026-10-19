@@ -31,6 +31,9 @@ func InitExternal() error {
 		deps.Register(func(settingsSvc itSettings.EffectiveSettingsAppService) itExt.EffectiveSettingsExtService {
 			return settingsSvc
 		}),
+		deps.Register(func(settingsSvc itSettings.OrgSettingsAppService) itExt.OrgSettingsSeedExtService {
+			return settingsSvc
+		}),
 		deps.Register(func(currencySvc itCurrency.CurrencyAppService) itExt.CurrencyExtService {
 			// A direct hand-over: the upstream service already has GetCurrency. The port stays
 			// narrower than the service it binds, so Accounting cannot start rounding through it.

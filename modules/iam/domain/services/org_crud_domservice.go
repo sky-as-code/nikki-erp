@@ -53,7 +53,7 @@ func (this *OrgCrudDomainServiceImpl) Create(
 	var result *itOrg.CreateOrgResult
 	err := composable.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
 		var err error
-		result, err = this.CrudDomainService.Create(tranxCtx, cmd, options...)
+		result, err = this.CrudDomainService.Create(tranxCtx, asProvisioning(cmd), options...)
 		if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
 			return err
 		}
@@ -105,8 +105,9 @@ func (this *OrgCrudDomainServiceImpl) addCreatorAsMember(ctx corectx.Context, or
 	return nil
 }
 
-// Delete refuses an organization another module still references. Every dependant answers for
-// its own tables; one that cannot answer refuses the delete.
+// Delete removes an organization the org lifecycle has marked deleted and cleaned up. It still
+// refuses one another module references: every dependant answers for its own tables, and one that
+// cannot answer refuses the delete.
 func (this *OrgCrudDomainServiceImpl) Delete(
 	ctx corectx.Context, cmd itOrg.DeleteOrgCommand, options ...composable.DeleteOptions,
 ) (*itOrg.DeleteOrgResult, error) {
@@ -114,7 +115,8 @@ func (this *OrgCrudDomainServiceImpl) Delete(
 	if len(options) > 0 {
 		opts = options[0]
 	}
-	opts.ValidateExtra = composable.ChainValidateExtra(this.assertDeletable, opts.ValidateExtra)
+	opts.ValidateExtra = composable.ChainValidateExtra(
+		assertDeletedBeforeRemoval, this.assertDeletable, opts.ValidateExtra)
 	return this.CrudDomainService.Delete(ctx, cmd, opts)
 }
 
@@ -139,6 +141,7 @@ func (this *OrgCrudDomainServiceImpl) GetUserOrgs(
 	graph.And(
 		*dmodel.NewSearchNode().NewCondition(domain.OrgEdgeUsers, dmodel.Linked, userId),
 		*dmodel.NewSearchNode().NewCondition(basemodel.FieldIsArchived, dmodel.Equals, false),
+		*dmodel.NewSearchNode().NewCondition(domain.OrgFieldStatus, dmodel.Equals, string(domain.OrgStatusReady)),
 	)
 	graph.OrderBy(domain.OrgFieldDisplayName, dmodel.Asc)
 

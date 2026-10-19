@@ -251,7 +251,7 @@
 	"nikki.shell.appLoading.title": "Loading app",
 	"nikki.shell.menuBar.allApps": "All apps",
 	"not_found_hint": "The page you're looking for doesn't exist or has been moved.",
-	"org.manageOrganizations": "Manage organizations...",
+	"org.manageOrganizations": "Manage organization",
 	"page_not_found": "Page not found",
 	"pagination.itemsFound": "{{count}} items found",
 	"pagination.next": "Next",

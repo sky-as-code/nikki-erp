@@ -20,6 +20,8 @@
 	"fields.category_id": "Category",
 	"fields.created_at": "Created at",
 	"fields.decimal_places": "Decimal places",
+	"fields.dep_level": "Dependency level",
+	"fields.dependencies": "Dependencies",
 	"fields.factor": "Conversion factor",
 	"fields.is_active": "Active",
 	"fields.is_archived": "Archived",

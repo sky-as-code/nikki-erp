@@ -5,6 +5,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 )
@@ -22,6 +23,9 @@ type CrudDomainService interface {
 	Update(ctx corectx.Context, cmd UpdateCommand, options ...UpdateOptions) (*MutateResult, error)
 	Delete(ctx corectx.Context, cmd DeleteCommand, options ...DeleteOptions) (*MutateResult, error)
 	SetArchived(ctx corectx.Context, cmd SetArchivedCommand) (*MutateResult, error)
+	// DeleteByOrg removes every record of the org, for org cleanup. It runs no delete rule:
+	// the whole org is going, so there is nothing left for a rule to protect.
+	DeleteByOrg(ctx corectx.Context, orgId model.Id) (int, error)
 
 	// GetById fetches one record by primary key. The query carries "id" and optional "fields".
 	GetById(ctx corectx.Context, query GetByIdQuery) (*GetOneResult, error)
@@ -197,6 +201,11 @@ func (this *DefaultDomainServiceImpl) SetArchived(
 	// service that needs a rule here overrides SetArchived itself and checks before delegating.
 	result, err := corecrud.SetIsArchived(ctx, this.repository, paramsToSetArchivedCommand(cmd))
 	return result, errors.Wrap(err, "CrudDomainService.SetArchived")
+}
+
+func (this *DefaultDomainServiceImpl) DeleteByOrg(ctx corectx.Context, orgId model.Id) (int, error) {
+	count, err := this.repository.DeleteByOrg(ctx, orgId)
+	return count, errors.Wrap(err, "CrudDomainService.DeleteByOrg")
 }
 
 func (this *DefaultDomainServiceImpl) actionName(verb string) string {

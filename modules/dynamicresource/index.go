@@ -3,6 +3,7 @@ package dynamicresource
 import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
@@ -57,7 +58,7 @@ func (*DynamicResourceModule) Version() semver.SemVer {
 
 // Init implements InCodeModule.
 func (*DynamicResourceModule) Init() error {
-	return nil
+	return orglifecycle.RegisterNoop(ModuleName)
 }
 
 // OnAppStarted implements InCodeModuleAppStarted.

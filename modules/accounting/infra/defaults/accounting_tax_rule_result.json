@@ -1,0 +1,44 @@
+[
+	{
+		"$alias": "tax_rule_result_1",
+		"tax_rule_id": "@tax_rule_vn_export_zero_rated",
+		"action": "remove_tax",
+		"tax_id": "@tax_vn_vat_10",
+		"sequence": 1
+	},
+	{
+		"$alias": "tax_rule_result_2",
+		"tax_rule_id": "@tax_rule_vn_export_zero_rated",
+		"action": "add_tax",
+		"tax_id": "@tax_vn_vat_0",
+		"sequence": 2
+	},
+	{
+		"$alias": "tax_rule_result_3",
+		"tax_rule_id": "@tax_rule_vn_exempt_supply",
+		"action": "remove_tax",
+		"tax_id": "@tax_vn_vat_10",
+		"sequence": 1
+	},
+	{
+		"$alias": "tax_rule_result_4",
+		"tax_rule_id": "@tax_rule_vn_exempt_supply",
+		"action": "add_tax",
+		"tax_id": "@tax_vn_vat_exempt",
+		"sequence": 2
+	},
+	{
+		"$alias": "tax_rule_result_5",
+		"tax_rule_id": "@tax_rule_vn_vat_reduction_2025",
+		"action": "remove_tax",
+		"tax_id": "@tax_vn_vat_10",
+		"sequence": 1
+	},
+	{
+		"$alias": "tax_rule_result_6",
+		"tax_rule_id": "@tax_rule_vn_vat_reduction_2025",
+		"action": "add_tax",
+		"tax_id": "@tax_vn_vat_8",
+		"sequence": 2
+	}
+]

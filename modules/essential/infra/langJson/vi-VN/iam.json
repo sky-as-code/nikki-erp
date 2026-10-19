@@ -664,5 +664,18 @@
 	"user.other": "người dùng",
 	"user.searchPlaceholder": "Tìm kiếm người dùng..",
 	"user.selectOrganizationPlaceholder": "Chọn tổ chức..",
-	"user_sections_assignedRoles": "Vai trò được gán"
+	"user_sections_assignedRoles": "Vai trò được gán",
+	"status.provisioning": "Đang khởi tạo",
+	"status.ready": "Sẵn sàng",
+	"status.deleted": "Đã xóa",
+	"fields.status_message": "Thông báo trạng thái",
+	"fields.status_message_vars": "Chi tiết trạng thái",
+	"org_status.init_failed": "Không thể thiết lập dữ liệu mặc định cho các phân hệ: {{failed_modules}}",
+	"org_status.cleanup_failed": "Không thể dọn dữ liệu của các phân hệ: {{failed_modules}}",
+	"org_status.provisioning_hint": "Đang thiết lập tổ chức. Có thể sử dụng khi đã sẵn sàng.",
+	"org_status.deleting_hint": "Đang xóa tổ chức. Tổ chức bị xóa hẳn khi mọi phân hệ đã dọn dữ liệu.",
+	"err_org_deleted": "Tổ chức đang bị xóa và không thể thay đổi",
+	"err_org_not_deleted": "Tổ chức phải được xóa và dọn dữ liệu trước khi bị xóa hẳn",
+	"org.delete_confirm": "Tổ chức sẽ được lưu trữ ngay và bị xóa hẳn sau khi mọi phân hệ đã xóa dữ liệu. Tiếp tục?",
+	"err_cannot_delete_current_org": "Không thể xóa tổ chức bạn đang làm việc. Hãy chuyển sang tổ chức khác trước."
 }

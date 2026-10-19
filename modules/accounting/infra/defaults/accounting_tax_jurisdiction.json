@@ -1,0 +1,13 @@
+[
+	{
+		"$alias": "tax_jurisdiction_vn",
+		"code": "VN",
+		"name": {
+			"en-US": "Vietnam",
+			"vi-VN": "Viet Nam"
+		},
+		"country_code": "VN",
+		"level": "country",
+		"authority_name": "Tong cuc Thue"
+	}
+]

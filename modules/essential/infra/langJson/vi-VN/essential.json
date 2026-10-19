@@ -20,6 +20,8 @@
 	"fields.category_id": "Nhóm",
 	"fields.created_at": "Ngày tạo",
 	"fields.decimal_places": "Số chữ số thập phân",
+	"fields.dep_level": "Cấp phụ thuộc",
+	"fields.dependencies": "Phụ thuộc",
 	"fields.factor": "Hệ số quy đổi",
 	"fields.is_active": "Đang sử dụng",
 	"fields.is_archived": "Đã lưu trữ",
