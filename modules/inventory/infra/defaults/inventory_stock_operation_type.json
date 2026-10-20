@@ -39,5 +39,29 @@
 		"backorder_policy": "never",
 		"shipping_policy": "partial",
 		"default_destination_location_id": "@location_virt_customer"
+	},
+	{
+		"$alias": "stock_operation_type_vdmc_fill",
+		"code": "VDMC_FILL",
+		"name": {
+			"en-US": "Kiosk Replenishment",
+			"vi-VN": "Bổ sung hàng cho kiosk"
+		},
+		"operation_code": "internal",
+		"reservation_method": "manual",
+		"backorder_policy": "never",
+		"shipping_policy": "all_at_once"
+	},
+	{
+		"$alias": "stock_operation_type_vdmc_return",
+		"code": "VDMC_RETURN",
+		"name": {
+			"en-US": "Kiosk Stock Return",
+			"vi-VN": "Thu hồi hàng từ kiosk"
+		},
+		"operation_code": "internal",
+		"reservation_method": "manual",
+		"backorder_policy": "never",
+		"shipping_policy": "all_at_once"
 	}
 ]
