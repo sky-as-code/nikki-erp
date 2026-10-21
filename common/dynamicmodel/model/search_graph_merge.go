@@ -14,6 +14,10 @@ func (this *SearchGraph) IsEmpty() bool {
 // MergeAndNode ANDs the leading nodes above a caller's graph, so the caller's own shape - a
 // top-level OR included - can only narrow the result, never widen it past them.
 func MergeAndNode(requested *SearchGraph, leading ...SearchNode) *SearchGraph {
+	if requested == nil {
+		requested = NewSearchGraph()
+	}
+
 	merged := NewSearchGraph()
 	if requested.IsEmpty() {
 		merged.And(leading...)
