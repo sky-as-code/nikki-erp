@@ -4,7 +4,7 @@
 	"table_name": "inventory_product_variants",
 	"should_build_db": true,
 	"record_label_field": "display_name",
-	"default_search_fields": ["sku", "product_template_name", "attribute_summary", "effective_base_sales_price", "cost", "on_hand_quantity", "product_template_uom_name"],
+	"default_search_fields": ["sku", "product_template_name", "attribute_summary", "effective_base_sales_price", "cost", "on_hand_quantity", "product_template_uom_name", "status"],
 	"composite_uniques": [{ "index_name": "invty_prod_variants_tid_ptpl_id_comb_key", "fields": ["product_template_id", "combination_key"] }],
 	"partial_uniques_strict": [
 		{ "index_name": "invty_prod_variants_tid_src_sys_ext_id", "not_null_fields": ["source_system"], "nullable_field": "external_id" }

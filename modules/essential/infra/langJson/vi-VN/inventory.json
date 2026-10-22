@@ -78,6 +78,7 @@
 	"fields.brand_id": "Thương hiệu",
 	"fields.canonical_name": "Tên đầy đủ",
 	"fields.category_id": "Danh mục",
+	"fields.category_name": "Danh mục",
 	"fields.chain_group_id": "Nhóm chuỗi",
 	"fields.code": "Mã",
 	"fields.combination_key": "Tổ hợp",

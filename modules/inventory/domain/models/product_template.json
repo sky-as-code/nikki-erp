@@ -4,7 +4,7 @@
 	"table_name": "inventory_product_templates",
 	"should_build_db": true,
 	"record_label_field": "name",
-	"default_search_fields": ["name", "base_sales_price", "variant_count", "uom_name"],
+	"default_search_fields": ["name", "category_name", "uom_name", "base_sales_price", "status"],
 	"partial_uniques_strict": [
 		{ "index_name": "invty_prod_tpls_tid_src_sys_ext_id", "not_null_fields": ["source_system"], "nullable_field": "external_id" }
 	],
@@ -169,6 +169,15 @@
 			"label": "fields.org_id",
 			"data_type": "ulid",
 			"required_for_create": true
+		},
+		{
+			"name": "category_name",
+			"label": "fields.category_name",
+			"data_type": { "type": "langjson", "min": 0, "max": 200 },
+			"computed": { "kind": "related", "is_stored": false, "field": "category.name" },
+			"description": {
+				"en-US": "The category's name, read through the edge for listings."
+			}
 		},
 		{
 			"name": "uom_name",

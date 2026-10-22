@@ -78,6 +78,7 @@
 	"fields.brand_id": "Brand",
 	"fields.canonical_name": "Full name",
 	"fields.category_id": "Category",
+	"fields.category_name": "Category",
 	"fields.chain_group_id": "Chain group",
 	"fields.code": "Code",
 	"fields.combination_key": "Combination",

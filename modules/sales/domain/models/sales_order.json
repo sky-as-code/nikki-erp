@@ -6,8 +6,11 @@
 	"record_label_field": "order_number",
 	"default_search_fields": [
 		"order_number",
-		"customer_reference",
-		"external_reference"
+		"grand_total",
+		"status",
+		"sales_point_name",
+		"sales_channel_name",
+		"created_at"
 	],
 	"search_indexes": [
 		{
@@ -553,6 +556,40 @@
 			},
 			"description": {
 				"en-US": "Whether the payment deadline has passed without a successful payment. Derived on every read, never stored, so it cannot lag the clock. A partial payment does not save the order; a later refund on a paid order does not expire it, because the paid latch is on payment_status and refund states are not unpaid ones."
+			}
+		},
+		{
+			"name": "sales_point_name",
+			"label": "fields.sales_point_name",
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 200
+			},
+			"computed": {
+				"kind": "related",
+				"is_stored": false,
+				"field": "sales_point.name"
+			},
+			"description": {
+				"en-US": "The sales point's name, read through the edge for listings."
+			}
+		},
+		{
+			"name": "sales_channel_name",
+			"label": "fields.sales_channel_name",
+			"data_type": {
+				"type": "string",
+				"min": 0,
+				"max": 200
+			},
+			"computed": {
+				"kind": "related",
+				"is_stored": false,
+				"field": "sales_channel.name"
+			},
+			"description": {
+				"en-US": "The sales channel's name, read through the edge for listings."
 			}
 		}
 	],
