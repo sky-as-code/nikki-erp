@@ -42,3 +42,6 @@ tests/api-rest/output/
 # Python bytecode (Robot API tests)
 __pycache__/
 *.py[cod]
+
+# dbpatch output: live schema snapshots and patches
+scripts/dbpatch-out/
