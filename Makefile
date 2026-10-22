@@ -11,6 +11,7 @@ endif
 
 .PHONY: build build-mods build-static build-dynamic clean \
 	db-init db-gen db-current db-hash db-migration db-apply db-revert db-infra-apply \
+	db-inspect-live db-patch-gen db-patch-apply \
 	infra-up infra-down infra-swarm-up infra-swarm-down infra-swarm-svc install-tools gen-sql run \
 	test-api-rest test-api-rest-deps cert-ca cert-client cert-server-nikki keypair-jwt-nikki
 
@@ -127,6 +128,24 @@ db-revert:
 
 db-infra-apply:
 	make infra-down && make infra-up && make db-hash && make db-apply
+
+# Patch a database built from an older tree, schema only. The tree is $(cwd)scripts/migrations, the output
+# $(cwd)scripts/dbpatch-out/<ts>/. Pass url= or set DBPATCH_URL (keeps the password out of make and history).
+
+# 1. Snapshot the live database's public schema, read-only.
+db-inspect-live:
+	@bash "${cwdnikki}scripts/dbpatch/inspectlive.sh" '${cwd}' "$(url)"
+
+# 2. Generate patch.sql + destructive.review.sql for review from the newest (or dir=) inspection.
+db-patch-gen:
+	@bash "${cwdnikki}scripts/dbpatch/patchgen.sh" '${cwd}' "$(dir)"
+
+# 3. Rehearse, then apply the reviewed patch to live. Flags: dryrun=1 include_destructive=1 confirm=yes
+#    allow_residual=1.
+db-patch-apply:
+	@DBPATCH_DRYRUN='$(dryrun)' DBPATCH_INCLUDE_DESTRUCTIVE='$(include_destructive)' \
+		DBPATCH_CONFIRM='$(confirm)' DBPATCH_ALLOW_RESIDUAL='$(allow_residual)' \
+		bash "${cwdnikki}scripts/dbpatch/patchapply.sh" '${cwd}' "$(url)" "$(dir)"
 
 # END: ORM & Database
 

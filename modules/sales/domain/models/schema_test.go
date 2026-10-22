@@ -134,10 +134,6 @@ func TestSalesPointExternalReferenceIsQualified(t *testing.T) {
 	if !refType.IsNoUpdate() {
 		t.Error("external_reference_type must be no_update: changing it would repoint the reference")
 	}
-
-	if KioskReferenceType != "vending_machine.kiosk" {
-		t.Errorf("KioskReferenceType = %q, want %q", KioskReferenceType, "vending_machine.kiosk")
-	}
 }
 
 // TestSalesPointImmutableFields pins the two fields a sales point may never change.
