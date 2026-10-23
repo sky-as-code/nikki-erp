@@ -146,7 +146,7 @@ CORE:
     ACCESS_TOKEN_ALGORITHM: "EdDSA"
     # Comma separated list of target API Gateways: extapi | intapi
     ACCESS_TOKEN_AUDIENCE: "extapi"
-    ACCESS_TOKEN_EXPIRY_MINUTES: 3
+    ACCESS_TOKEN_EXPIRY_MINUTES: 5
     ACCESS_TOKEN_ISSUER: "nikki-erp"
     ACCESS_TOKEN_HTTP_HEADER_NAME: "Authorization"
     # Leading and trailing whitespace will be trimmed from this prefix
@@ -156,7 +156,6 @@ CORE:
     ACCESS_TOKEN_SECRET: "your-secret-key-here-change-in-production"
     ACCESS_TOKEN_PUBLIC_KEY_FILE: "scripts/cert/pki/jwt-keypair/ed25519.pub"
     ACCESS_TOKEN_PRIVATE_KEY_FILE: "scripts/cert/pki/jwt-keypair/ed25519.key"
-    # Refresh token expiry time in minutes.
     REFRESH_TOKEN_EXPIRY_MINUTES: 30
     SESSION_BLACKLIST_ENABLED: false
 
