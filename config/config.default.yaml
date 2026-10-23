@@ -156,8 +156,10 @@ CORE:
     ACCESS_TOKEN_SECRET: "your-secret-key-here-change-in-production"
     ACCESS_TOKEN_PUBLIC_KEY_FILE: "scripts/cert/pki/jwt-keypair/ed25519.pub"
     ACCESS_TOKEN_PRIVATE_KEY_FILE: "scripts/cert/pki/jwt-keypair/ed25519.key"
-    # Refresh token expiry time in minutes.
-    REFRESH_TOKEN_EXPIRY_MINUTES: 30
+    # Refresh token expiry time in minutes (7 days). It must outlive the access token by far: the
+    # refresh is what keeps a session alive between tabs and across idle gaps, and is never extended
+    # while the access token is still valid.
+    REFRESH_TOKEN_EXPIRY_MINUTES: 10080
     SESSION_BLACKLIST_ENABLED: false
 
 IAM:
