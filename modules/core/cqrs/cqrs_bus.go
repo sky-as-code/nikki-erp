@@ -304,7 +304,7 @@ func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, resu
 	packet, err := this.newRequestPacket(cancellableCtx, request)
 	ft.PanicOnErr(err)
 
-	replyChan, errChan := this.subscribeReply(cancellableCtx, packet, result)
+	replyChan, errChan, err := this.subscribeReply(cancellableCtx, packet, result)
 	ft.PanicOnErr(err)
 
 	err = this.publisher.Publish(packet.requestTopic, packet.message)
@@ -318,12 +318,15 @@ func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, resu
 		return nil
 	case err := <-errChan:
 		return err
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
 
-func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *RequestPacket[Request], result any) (<-chan *Reply[any], <-chan error) {
+func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *RequestPacket[Request], result any) (replyChanOut <-chan *Reply[any], errChanOut <-chan error, err error) {
 	replyChan := make(chan *Reply[any])
 	errChan := make(chan error)
+	replyChanOut, errChanOut = replyChan, errChan
 
 	handleErr := func() {
 		if r := recover(); r != nil {
@@ -334,19 +337,29 @@ func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *Reques
 		}
 	}
 
-	defer handleErr()
+	// This defer to recovery when this.subscriber.Subscribe is panicked
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.Wrap(r.(error), fmt.Sprintf("failed to subscribe for reply from topic %s", packet.replyTopic))
+		}
+	}()
 
 	msgChan, err := this.subscriber.Subscribe(ctx, packet.replyTopic)
 	if err != nil {
-		errChan <- err
-		return replyChan, errChan
+		return replyChan, errChan, err
 	}
 
 	go func() {
 		defer handleErr()
 
+		var err error
+
 		select {
-		case msg := <-msgChan:
+		case msg, ok := <-msgChan:
+			if !ok {
+				return
+			}
+
 			msg.Ack()
 			reply := &Reply[any]{
 				Result: result,
@@ -359,7 +372,7 @@ func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *Reques
 				return
 			}
 		case <-ctx.Done():
-			err = ctx.Err()
+			return
 		case <-time.After(this.maxTimeout):
 			err = errors.Errorf("timeout for request %s (%s)", packet.correlationId, packet.requestTopic)
 		}
@@ -371,7 +384,7 @@ func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *Reques
 		close(replyChan)
 	}()
 
-	return replyChan, errChan
+	return replyChan, errChan, nil
 }
 
 func (this *WatermillCqrsBus) newRequestPacket(cancellableCtx context.Context, request Request) (packet *RequestPacket[Request], err error) {
