@@ -293,18 +293,18 @@ func (this *WatermillCqrsBus) RequestNoReply(ctx context.Context, request Reques
 
 func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, result any) (err error) {
 	cancellableCtx, cancelSubscription := context.WithCancel(ctx)
+	defer cancelSubscription()
 
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "send request of type "+request.CqrsRequestType().String()); e != nil {
 			err = e
-			cancelSubscription()
 		}
 	}()
 
 	packet, err := this.newRequestPacket(cancellableCtx, request)
 	ft.PanicOnErr(err)
 
-	replyChan, errChan := this.subscribeReply(cancellableCtx, packet, result, cancelSubscription)
+	replyChan, errChan := this.subscribeReply(cancellableCtx, packet, result)
 	ft.PanicOnErr(err)
 
 	err = this.publisher.Publish(packet.requestTopic, packet.message)
@@ -321,7 +321,7 @@ func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, resu
 	}
 }
 
-func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *RequestPacket[Request], result any, cancelSubscription context.CancelFunc) (<-chan *Reply[any], <-chan error) {
+func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *RequestPacket[Request], result any) (<-chan *Reply[any], <-chan error) {
 	replyChan := make(chan *Reply[any])
 	errChan := make(chan error)
 
@@ -343,7 +343,6 @@ func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *Reques
 	}
 
 	go func() {
-		defer cancelSubscription()
 		defer handleErr()
 
 		select {
