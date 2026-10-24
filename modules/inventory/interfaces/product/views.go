@@ -111,10 +111,14 @@ func NewResolveProductSelectionView(data ResolveProductSelectionResultData) Reso
 }
 
 type GenerateVariantsView struct {
-	CreatedVariantIds []string `json:"created_variant_ids"`
+	CreatedVariantIds  []string `json:"created_variant_ids"`
+	ExtendedVariantIds []string `json:"extended_variant_ids"`
+	RestoredVariantIds []string `json:"restored_variant_ids"`
+	ArchivedVariantIds []string `json:"archived_variant_ids"`
+	DeletedVariantIds  []string `json:"deleted_variant_ids"`
 
-	// ObsoleteVariantIds are reported rather than removed: one a transaction already references
-	// must be archived, not deleted, and only the caller knows which.
+	// ObsoleteVariantIds are archived and deleted together, the variants the configuration no
+	// longer allows.
 	ObsoleteVariantIds []string `json:"obsolete_variant_ids"`
 
 	UnchangedCount int `json:"unchanged_count"`
@@ -123,6 +127,10 @@ type GenerateVariantsView struct {
 func NewGenerateVariantsView(data GenerateVariantsResultData) GenerateVariantsView {
 	return GenerateVariantsView{
 		CreatedVariantIds:  orEmpty(data.CreatedVariantIds),
+		ExtendedVariantIds: orEmpty(data.ExtendedVariantIds),
+		RestoredVariantIds: orEmpty(data.RestoredVariantIds),
+		ArchivedVariantIds: orEmpty(data.ArchivedVariantIds),
+		DeletedVariantIds:  orEmpty(data.DeletedVariantIds),
 		ObsoleteVariantIds: orEmpty(data.ObsoleteVariantIds),
 		UnchangedCount:     data.UnchangedCount,
 	}

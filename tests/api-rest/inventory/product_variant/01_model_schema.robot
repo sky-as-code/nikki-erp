@@ -20,7 +20,7 @@ Schema Declares The Variant Owned Fields
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
     FOR    ${field}    IN    product_template_id    combination_key    sku    primary_barcode
-    ...    is_materialized    status    archive_source    org_id
+    ...    status    archive_source    org_id
         Dictionary Should Contain Key    ${fields}    ${field}
     END
 

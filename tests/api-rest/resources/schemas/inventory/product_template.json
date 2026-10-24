@@ -2,6 +2,8 @@
     "type": "object",
     "required": ["id", "created_at", "name", "product_type", "category_id", "status", "etag", "is_archived", "org_id"],
     "properties": {
+        "category_name": {"type": ["object", "null"]},
+        "attribute_configuration": {"type": ["object", "null"]},
         "id": {
             "type": "string",
             "minLength": 1

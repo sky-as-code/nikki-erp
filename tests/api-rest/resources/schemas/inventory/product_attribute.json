@@ -2,6 +2,9 @@
     "type": "object",
     "required": ["id", "created_at", "code", "name", "data_type", "variant_creation_mode", "etag", "is_archived", "org_id"],
     "properties": {
+        "current_template_usage_count": {"type": ["integer", "null"], "minimum": 0},
+        "historical_template_usage_count": {"type": ["integer", "null"], "minimum": 0},
+        "can_change_variant_creation": {"type": ["boolean", "null"]},
         "id": {
             "type": "string",
             "minLength": 1

@@ -145,6 +145,7 @@ func TestEffectiveProductSelectability(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			effective := itProduct.EffectiveProduct{
+				VariantKind:        models.VariantKindComplete.String(),
 				IsTemplateArchived: testCase.templateArchived,
 				IsVariantArchived:  testCase.variantArchived,
 				TemplateStatus:     testCase.templateStatus.String(),

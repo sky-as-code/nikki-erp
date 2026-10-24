@@ -5,9 +5,9 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
@@ -18,8 +18,13 @@ const maxTemplateVariants = 1000
 
 // NewProductTemplateDomainService derives the Products service from the onion's default one, which
 // it embeds so built-in CRUD keeps running unchanged.
-func NewProductTemplateDomainService(base composable.CrudDomainService) itProduct.ProductService {
-	return &ProductTemplateDomainServiceImpl{CrudDomainService: base}
+//
+// usageDispatcher asks the dependant modules whether a variant or the template is still used,
+// before reconcile or template delete removes one.
+func NewProductTemplateDomainService(
+	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher,
+) itProduct.ProductService {
+	return &ProductTemplateDomainServiceImpl{CrudDomainService: base, usageDispatcher: usageDispatcher}
 }
 
 // ProductTemplateDomainServiceImpl serves the Products capabilities the resource engine cannot
@@ -30,6 +35,8 @@ func NewProductTemplateDomainService(base composable.CrudDomainService) itProduc
 // creation and this service's construction both happen during Init.
 type ProductTemplateDomainServiceImpl struct {
 	composable.CrudDomainService
+
+	usageDispatcher *usagecheck.Dispatcher
 }
 
 // The derived service must satisfy both contracts — the engine installs it as its resource service,
@@ -38,29 +45,9 @@ type ProductTemplateDomainServiceImpl struct {
 var (
 	_ composable.CrudDomainService = (*ProductTemplateDomainServiceImpl)(nil)
 	_ itProduct.ProductService     = (*ProductTemplateDomainServiceImpl)(nil)
+
+	_ itProduct.ProductTemplateConfigurationService = (*ProductTemplateDomainServiceImpl)(nil)
 )
-
-// Delete refuses to remove a template that still owns variants, reporting it as a field-level
-// business error naming Archive as the alternative. Without the guard the variant foreign key
-// refuses the statement and the failure reaches the client as a 500.
-func (this *ProductTemplateDomainServiceImpl) Delete(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
-) (*dyn.OpResult[dyn.MutateResultData], error) {
-	variantRepo, err := repoFor(models.ProductVariantSchemaName)
-	if err != nil {
-		return nil, err
-	}
-
-	vErrs := ft.NewClientErrors()
-	templateId := readStringParam(params, models.ProductTemplateFieldId)
-	if err := AssertTemplateDeletable(ctx, variantRepo, templateId, vErrs); err != nil {
-		return nil, err
-	}
-	if vErrs.Count() > 0 {
-		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
-	}
-	return this.CrudDomainService.Delete(ctx, params, options...)
-}
 
 func (this *ProductTemplateDomainServiceImpl) GetEffectiveProduct(
 	ctx corectx.Context, query itProduct.GetEffectiveProductQuery,

@@ -13,6 +13,8 @@ const (
 	ResourceProductAttributeValue = "inventory_product_attribute_value"
 	ResourceBrand                 = "inventory_brand"
 
+	ResourceProductTemplateCombinationExclusion = "inventory_product_template_combination_exclusion"
+
 	// The canonical location resource of the whole Inventory module, owned by neither Warehouse
 	// nor Stock: Warehouse configures it and Stock only references its id.
 	ResourceInventoryLocation = "inventory_location"

@@ -4,7 +4,7 @@
 	"table_name": "inventory_product_template_attributes",
 	"should_build_db": true,
 	"default_search_fields": ["sequence"],
-	"composite_uniques": [{ "index_name": "invty_prod_tpl_attrs_tid_ptpl_id_attr_id", "fields": ["product_template_id", "attribute_id"] }],
+	"composite_uniques": [{ "index_name": "invty_prod_tpl_attrs_tid_ptpl_id_attr_id_rev", "fields": ["product_template_id", "attribute_id", "application_revision"] }],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
@@ -30,6 +30,43 @@
 			"description": {
 				"en-US": "Per-template display order, which may differ from the attribute's own global sequence."
 			}
+		},
+		{
+			"name": "is_enabled",
+			"label": "fields.is_enabled",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"description": {
+				"en-US": "False once the attribute was removed from the template. The line is kept rather than deleted, because variants built from it still reference its values. At most one enabled line per template and attribute; the database cannot express that (a partial unique keys only on IS NOT NULL), so the configuration service enforces it under the template's etag."
+			}
+		},
+		{
+			"name": "application_revision",
+			"label": "fields.application_revision",
+			"data_type": { "type": "int32", "min": 1, "max": 2147483647 },
+			"required_for_create": true,
+			"default_value": 1,
+			"description": {
+				"en-US": "Which application of the attribute to this template the line records. Re-adding a removed attribute starts revision + 1 with a fresh variant_creation_snapshot instead of reviving the old line."
+			}
+		},
+		{
+			"name": "variant_creation_snapshot",
+			"label": "fields.variant_creation_snapshot",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["instant", "dynamic", "never"]
+			},
+			"description": {
+				"en-US": "The attribute's variant_creation_mode at the moment this line was applied. System-set and kept after the line is disabled, so the variants it produced stay explainable."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
 		}
 	],
 

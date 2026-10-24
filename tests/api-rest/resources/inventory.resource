@@ -218,49 +218,6 @@ Ensure Product Variant Under Test
     Set Global Variable    ${PRODUCT_VARIANT_ETAG}    ${etag}
     Set Global Variable    ${PRODUCT_VARIANT_COMBINATION}    ${key}
 
-Attach Attribute To Template
-    [Documentation]    Scopes an attribute to a template (BR §6.7) and returns the
-    ...    junction id — the id the allowed-value rows point at, not the attribute's.
-    [Arguments]    ${template_id}    ${attribute_id}
-    ${resp}=    POST On Session    api    ${TEMPLATE_ATTRIBUTE_API}
-    ...    json=${{ {'product_template_id': $template_id, 'attribute_id': $attribute_id} }}
-    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    RETURN    ${id}
-
-Allow Attribute Value On Template
-    [Documentation]    Adds one attribute value to a template attribute's allowed subset.
-    [Arguments]    ${template_attribute_id}    ${attribute_value_id}
-    ${resp}=    POST On Session    api    ${TEMPLATE_ATTRIBUTE_VALUE_API}
-    ...    json=${{ {'template_attribute_id': $template_attribute_id, 'attribute_value_id': $attribute_value_id} }}
-    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    RETURN    ${id}
-
-Ensure Two By Two Template
-    [Documentation]    A template configured with two INSTANT attributes of two values each
-    ...    — the 2x2 fixture BR §8.2 / AC-PROD-011 describes, whose generation must yield
-    ...    exactly four variants. Built fresh rather than shared, because generation counts
-    ...    are only meaningful against a template nothing else has touched.
-    ${id}=    Get Variable Value    ${MATRIX_TEMPLATE_ID}    ${EMPTY}
-    IF    $id    RETURN
-    Ensure Inventory Org
-    ${id}    ${etag}=    Create Product Template    Robot Matrix Template
-    Set Global Variable    ${MATRIX_TEMPLATE_ID}    ${id}
-    Set Global Variable    ${MATRIX_TEMPLATE_ETAG}    ${etag}
-
-    FOR    ${slot}    IN    A    B
-        ${name}=    Unique Display Name    Robot Matrix Attribute ${slot}
-        ${code}=    Unique Code    matrix${slot}
-        ${resp}=    POST On Session    api    ${PRODUCT_ATTRIBUTE_API}
-        ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'data_type': 'option', 'variant_creation_mode': 'instant', 'org_id': $INV_ORG_ID} }}
-        ${attr_id}    ${attr_etag}=    Response Should Be Create Success    ${resp}
-        Set Global Variable    ${MATRIX_ATTRIBUTE_${slot}_ID}    ${attr_id}
-        ${tpl_attr_id}=    Attach Attribute To Template    ${id}    ${attr_id}
-        FOR    ${index}    IN RANGE    2
-            ${value_id}    ${value_etag}=    Create Attribute Value    ${attr_id}    Robot Matrix ${slot}${index}
-            Allow Attribute Value On Template    ${tpl_attr_id}    ${value_id}
-        END
-    END
-
 # --- Bulk seeding ---------------------------------------------------------------------
 
 Ensure Seeded Product Templates
@@ -377,20 +334,11 @@ Archive Inventory Fixture
     END
 
 Delete Matrix Template Fixture
-    [Documentation]    Removes the 2x2 generation fixture. Its variants were created by the
-    ...    generator rather than by a test, so they are found by search instead of by a
-    ...    remembered id, and they must go before the template that owns them.
+    [Documentation]    Removes the 2x2 configuration fixture (built in inventory_configuration.resource).
+    ...    A template delete removes its unused variants in the same transaction, so the
+    ...    generated variants need no separate cleanup.
     ${id}=    Get Variable Value    ${MATRIX_TEMPLATE_ID}    ${EMPTY}
     IF    not $id    RETURN
-    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'graph': '{"if":["product_template_id", "=", "' + $id + '"]}'} }}
-    ...    expected_status=any
-    IF    ${resp.status_code} == 200
-        FOR    ${item}    IN    @{resp.json()}[items]
-            DELETE On Session    api    ${PRODUCT_VARIANT_API}/${item}[id]
-            ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
-        END
-    END
     DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Set Global Variable    ${MATRIX_TEMPLATE_ID}    ${EMPTY}

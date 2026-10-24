@@ -42,17 +42,20 @@
 				"values": ["instant", "dynamic", "never"]
 			},
 			"required_for_create": true,
-			"default_value": "instant",
+			"default_value": "dynamic",
 			"description": {
-				"en-US": "instant: every valid combination is generated as soon as values are assigned to a template. dynamic: a variant is materialized only when a combination is actually used. never: the attribute carries information but does not take part in the combination key at all."
+				"en-US": "Defaults to dynamic, so a new attribute never multiplies a template's variants until a combination is actually used. instant: every valid combination is generated as soon as values are assigned to a template. dynamic: a variant is materialized only when a combination is actually used. never: the attribute carries information but does not take part in the combination key at all."
 			}
 		},
 		{
 			"name": "display_type",
 			"label": "fields.display_type",
-			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"data_type": {
+				"type": "enum_string",
+				"values": ["pills", "radio", "select", "color", "multi_checkbox"]
+			},
 			"description": {
-				"en-US": "UI rendering hint, for example radio, select or color. Presentation only; it never affects variant identity."
+				"en-US": "UI rendering hint. Presentation only; it never affects variant identity. color pairs with each value's color_hex. multi_checkbox lets a buyer pick several values at once, which no single variant can represent, so it is accepted only on a never attribute."
 			}
 		},
 		{
@@ -68,6 +71,57 @@
 			"label": "fields.org_id",
 			"data_type": "ulid",
 			"required_for_create": true
+		},
+		{
+			"name": "current_template_usage_count",
+			"label": "fields.current_template_usage_count",
+			"data_type": { "type": "int64", "min": 0, "max": 1000000000 },
+			"computed": {
+				"kind": "aggregate",
+				"is_stored": false,
+				"source": "template_lines",
+				"function": "count_distinct",
+				"field": "product_template_id",
+				"filter": { "if": ["is_enabled", "=", true] }
+			},
+			"description": {
+				"en-US": "Number of templates, archived ones included, that currently apply this attribute through an enabled line. While it is above zero variant_creation_mode is locked: changing it would reinterpret variants those templates already hold. Template lines carry no is_archived, so an archived template still counts."
+			}
+		},
+		{
+			"name": "historical_template_usage_count",
+			"label": "fields.historical_template_usage_count",
+			"data_type": { "type": "int64", "min": 0, "max": 1000000000 },
+			"computed": {
+				"kind": "aggregate",
+				"is_stored": false,
+				"source": "template_lines",
+				"function": "count_distinct",
+				"field": "product_template_id",
+				"filter": { "if": ["is_enabled", "=", false] }
+			},
+			"description": {
+				"en-US": "Number of templates that applied this attribute once and removed it. The disabled line is kept as history, which is why such an attribute cannot be hard-deleted."
+			}
+		},
+		{
+			"name": "can_change_variant_creation",
+			"label": "fields.can_change_variant_creation",
+			"data_type": "boolean",
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"op": "and",
+					"args": [
+						{ "op": "not", "args": [{ "field": "is_archived" }] },
+						{ "op": "eq", "args": [{ "function": "coalesce", "args": [{ "field": "current_template_usage_count" }, { "value": 0 }] }, { "value": 0 }] }
+					]
+				}
+			},
+			"description": {
+				"en-US": "Whether variant_creation_mode may still be edited: the attribute is not archived and no template applies it. Says nothing about the caller's permission, which the UI checks separately."
+			}
 		}
 	],
 
@@ -75,5 +129,18 @@
 		"core.basemodel.archivable_model",
 		"core.basemodel.auditable_model",
 		"core.basemodel.versioned_model"
+	],
+
+	"edges_from": [
+		{
+			"edge": "template_lines",
+			"label": { "en-US": "Template lines" },
+			"existing": { "src_schema": "inventory_product_template_attribute", "src_edge": "attribute" }
+		},
+		{
+			"edge": "values",
+			"label": { "en-US": "Values" },
+			"existing": { "src_schema": "inventory_product_attribute_value", "src_edge": "attribute" }
+		}
 	]
 }

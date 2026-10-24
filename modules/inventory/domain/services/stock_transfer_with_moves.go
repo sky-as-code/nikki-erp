@@ -35,6 +35,9 @@ func (this *StockTransferDomainServiceImpl) CreateWithMoves(
 	if result := assertMovesWellFormed(moves); result != nil {
 		return result, nil
 	}
+	if result, err := assertMovesTransactable(ctx, moves); err != nil || result != nil {
+		return result, err
+	}
 
 	var created *dyn.OpResult[dmodel.DynamicFields]
 
@@ -146,6 +149,25 @@ func assertMovesWellFormed(moves []itStock.TransferMoveRequest) *dyn.OpResult[dm
 		return nil
 	}
 	return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}
+}
+
+// assertMovesTransactable refuses, before any write, a line naming a variant that cannot start new
+// business. The move's own create runs the same check, but writeTransferMoves would report its
+// refusal as a missing move rather than as the reason.
+func assertMovesTransactable(
+	ctx corectx.Context, moves []itStock.TransferMoveRequest,
+) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	vErrs := ft.NewClientErrors()
+	for _, move := range moves {
+		err := assertVariantTransactable(ctx, move.ProductVariantId, models.StockMoveFieldProductVariantId, vErrs)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if vErrs.Count() == 0 {
+		return nil, nil
+	}
+	return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 }
 
 // transferViolation is a refusal carrying no data.

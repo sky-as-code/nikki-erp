@@ -75,9 +75,13 @@ const (
 	ProductTemplateFieldMinVariantCost = "min_variant_cost"
 	ProductTemplateFieldMaxVariantCost = "max_variant_cost"
 
-	ProductTemplateEdgeCategory = "category"
-	ProductTemplateEdgeBrand    = "brand"
-	ProductTemplateEdgeVariants = "variants"
+	ProductTemplateFieldAttributeConfiguration = "attribute_configuration"
+
+	ProductTemplateEdgeCategory       = "category"
+	ProductTemplateEdgeBrand          = "brand"
+	ProductTemplateEdgeVariants       = "variants"
+	ProductTemplateEdgeAttributeLines = "attribute_lines"
+	ProductTemplateEdgeExclusions     = "exclusions"
 )
 
 //go:embed product_template.json

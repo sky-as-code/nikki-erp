@@ -65,6 +65,13 @@ func ApplyCorrectionMovement(
 	if vErrs := assertCorrectable(request); vErrs.Count() > 0 {
 		return nil, vErrs, nil
 	}
+	// A correction settles stock that already exists, which an archived or discontinued variant may
+	// still hold; only a base, which never holds stock, is refused.
+	baseErrs := ft.NewClientErrors()
+	err := assertVariantNotBase(ctx, request.ProductVariantId, models.StockMoveFieldProductVariantId, baseErrs)
+	if err != nil || baseErrs.Count() > 0 {
+		return nil, baseErrs, err
+	}
 	if ctx.GetDbTranx() == nil {
 		return nil, nil, errors.New(
 			"ApplyCorrectionMovement must run inside a transaction: its caller holds the source " +

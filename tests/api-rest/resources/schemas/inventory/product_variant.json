@@ -2,6 +2,10 @@
     "type": "object",
     "required": ["id", "created_at", "product_template_id", "combination_key", "status", "etag", "is_archived", "org_id"],
     "properties": {
+        "variant_kind": {"type": "string", "enum": ["base", "complete"]},
+        "base_variant_id": {"type": ["string", "null"]},
+        "product_template_is_archived": {"type": ["boolean", "null"]},
+        "is_transaction_eligible": {"type": ["boolean", "null"]},
         "id": {
             "type": "string",
             "minLength": 1
@@ -26,9 +30,6 @@
         },
         "primary_barcode": {
             "type": ["string", "null"]
-        },
-        "is_materialized": {
-            "type": "boolean"
         },
         "variant_image_file_key": {
             "type": ["string", "null"]

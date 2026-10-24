@@ -231,6 +231,15 @@
 			"description": {
 				"en-US": "The highest cost among this template's variants — the other end of the range min_variant_cost opens. Equal to it exactly when every variant costs the same, which is what makes the pair a usable answer to \"does this product have one cost or several?\" without a second query.\n\nA template has NO authoritative cost of its own (BR-PRICE-VARIANT-006, PRICE-VARIANT-INV-006). Averaging these two, or taking either as the product's cost, is explicitly forbidden (BR-PRICE-VARIANT-014): cost is owned by the concrete variant, and a template with several variants genuinely has several costs. When the two differ, a reader should be shown that fact — not a number that hides it."
 			}
+		},
+		{
+			"name": "attribute_configuration",
+			"label": "fields.attribute_configuration",
+			"data_type": "jsonmap",
+			"computed": { "kind": "function", "is_stored": false, "function": "inventory.template_attribute_configuration" },
+			"description": {
+				"en-US": "The current attribute configuration in the shape a save sends: {attribute_lines: [{id, attribute_id, value_ids, sequence, variant_creation_snapshot, application_revision}], exclusions: [{left_value_id, right_value_id}]}, catalogue ids, enabled lines and selected values only. Written through attribute_lines / exclusions on the template's own create and update."
+			}
 		}
 	],
 
@@ -272,6 +281,16 @@
 			"edge": "variants",
 			"label": { "en-US": "Variants" },
 			"existing": { "src_schema": "inventory_product_variant", "src_edge": "product_template" }
+		},
+		{
+			"edge": "attribute_lines",
+			"label": { "en-US": "Attribute lines" },
+			"existing": { "src_schema": "inventory_product_template_attribute", "src_edge": "template" }
+		},
+		{
+			"edge": "exclusions",
+			"label": { "en-US": "Combination exclusions" },
+			"existing": { "src_schema": "inventory_product_template_combination_exclusion", "src_edge": "template" }
 		}
 	]
 }

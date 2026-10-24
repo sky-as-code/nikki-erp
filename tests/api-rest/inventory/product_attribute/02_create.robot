@@ -20,7 +20,7 @@ Create With Required Fields Succeeds
 
 Create Applies The Declared Enum Defaults
     [Documentation]    BR §6.5.3 / §14.3 step 2: data_type defaults to `option` and
-    ...    variant_creation_mode defaults to `instant`. An attribute that silently defaulted
+    ...    variant_creation_mode defaults to `dynamic`. An attribute that silently defaulted
     ...    to `never` would be dropped from every combination key without anyone asking for
     ...    that, so the defaults must be exactly these two values rather than merely "some
     ...    value".
@@ -33,7 +33,7 @@ Create Applies The Declared Enum Defaults
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_attribute.json    200
     Should Be Equal    ${item}[data_type]    option
-    Should Be Equal    ${item}[variant_creation_mode]    instant
+    Should Be Equal    ${item}[variant_creation_mode]    dynamic
     DELETE On Session    api    ${PRODUCT_ATTRIBUTE_API}/${id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 

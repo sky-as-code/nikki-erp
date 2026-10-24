@@ -5,9 +5,11 @@
 	"should_build_db": true,
 	"record_label_field": "display_name",
 	"default_search_fields": ["sku", "product_template_name", "attribute_summary", "effective_base_sales_price", "cost", "on_hand_quantity", "product_template_uom_name", "status"],
-	"composite_uniques": [{ "index_name": "invty_prod_variants_tid_ptpl_id_comb_key", "fields": ["product_template_id", "combination_key"] }],
+	"composite_uniques": [{ "index_name": "invty_prod_variants_tid_ptpl_id_kind_comb_key", "fields": ["product_template_id", "variant_kind", "combination_key"] }],
 	"partial_uniques_strict": [
-		{ "index_name": "invty_prod_variants_tid_src_sys_ext_id", "not_null_fields": ["source_system"], "nullable_field": "external_id" }
+		{ "index_name": "invty_prod_variants_tid_src_sys_ext_id", "not_null_fields": ["source_system"], "nullable_field": "external_id" },
+		{ "index_name": "invty_prod_variants_tid_org_sku", "not_null_fields": ["org_id"], "nullable_field": "sku" },
+		{ "index_name": "invty_prod_variants_tid_org_barcode", "not_null_fields": ["org_id"], "nullable_field": "primary_barcode" }
 	],
 	"extend_before": ["core.basemodel.base_model"],
 
@@ -20,6 +22,29 @@
 			"no_update": true,
 			"description": {
 				"en-US": "Owning template. Required and immutable: re-parenting a variant would silently reinterpret every transaction that already references it."
+			}
+		},
+		{
+			"name": "variant_kind",
+			"label": "fields.variant_kind",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["base", "complete"]
+			},
+			"required_for_create": true,
+			"default_value": "complete",
+			"no_update": true,
+			"description": {
+				"en-US": "complete: a sellable, stockable variant built from every variant-creating attribute. base: the instant-only part of a mixed (instant + dynamic) template, the anchor complete variants are resolved under; it never takes part in a transaction. Part of the identity, so it never changes."
+			}
+		},
+		{
+			"name": "base_variant_id",
+			"label": "fields.base_variant_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "For a complete variant of a mixed template, the base variant its instant values came from. Null for a base variant and for templates that are not mixed."
 			}
 		},
 		{
@@ -36,7 +61,7 @@
 			"label": "fields.sku",
 			"data_type": { "type": "string", "min": 0, "max": 100 },
 			"description": {
-				"en-US": "Variant-owned internal reference. The template has no SKU of its own: with several variants there would be nothing for it to mean."
+				"en-US": "Variant-owned internal reference. The template has no SKU of its own: with several variants there would be nothing for it to mean. Unique within the organization when present, archived variants included; a blank value is stored as null and never collides."
 			}
 		},
 		{
@@ -44,16 +69,7 @@
 			"label": "fields.primary_barcode",
 			"data_type": { "type": "string", "min": 0, "max": 100 },
 			"description": {
-				"en-US": "Variant-owned. Scanning it must resolve to this variant."
-			}
-		},
-		{
-			"name": "is_materialized",
-			"label": "fields.is_materialized",
-			"data_type": "boolean",
-			"default_value": true,
-			"description": {
-				"en-US": "False while a dynamic-mode combination is known to be valid but has not yet been used by a transaction."
+				"en-US": "Variant-owned. Scanning it must resolve to this variant, so it is unique within the organization when present, archived variants included; a blank value is stored as null."
 			}
 		},
 		{
@@ -150,6 +166,12 @@
 			"description": {
 				"en-US": "Copied from the owning template when the variant is read. Computed rather than stored: the name lives on the template, so a second copy here would go stale the moment the template is renamed."
 			}
+		},
+		{
+			"name": "product_template_is_archived",
+			"label": "fields.product_template_is_archived",
+			"data_type": "boolean",
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.is_archived" }
 		},
 		{
 			"name": "product_template_short_name",
@@ -359,6 +381,43 @@
 			"description": {
 				"en-US": "on_hand_quantity minus reserved_quantity, derived from the two aggregates above rather than summed separately. Deriving it here keeps the identity available = on_hand - reserved true by construction at the variant level, exactly as inventory_stock_quant.available_quantity does per location (BR 4.2.2.3). A computed field may depend on another computed field; the dependency graph stays acyclic."
 			}
+		},
+		{
+			"name": "is_transaction_eligible",
+			"label": "fields.is_transaction_eligible",
+			"data_type": "boolean",
+			"computed": {
+				"kind": "expression",
+				"is_stored": false,
+				"expression": {
+					"op": "and",
+					"args": [
+						{
+							"op": "and",
+							"args": [
+								{ "op": "eq", "args": [{ "field": "variant_kind" }, { "value": "complete" }] },
+								{ "op": "eq", "args": [{ "field": "status" }, { "value": "active" }] }
+							]
+						},
+						{
+							"op": "and",
+							"args": [
+								{ "op": "not", "args": [{ "field": "is_archived" }] },
+								{
+									"op": "and",
+									"args": [
+										{ "op": "not", "args": [{ "function": "coalesce", "args": [{ "field": "product_template_is_archived" }, { "value": false }] }] },
+										{ "op": "not", "args": [{ "op": "eq", "args": [{ "function": "coalesce", "args": [{ "field": "product_template_status" }, { "value": "draft" }] }, { "value": "discontinued" }] }] }
+									]
+								}
+							]
+						}
+					]
+				}
+			},
+			"description": {
+				"en-US": "Whether a sale, purchase, reservation or stock movement may name this variant: a complete variant, active, not archived, of a template that is neither archived nor discontinued (the rule of EffectiveProduct.IsSelectable). A base variant is never eligible."
+			}
 		}
 	],
 
@@ -376,6 +435,14 @@
 			"dest_schema": "inventory_product_template",
 			"key_map": { "product_template_id": "id" },
 			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "base_variant",
+			"label": { "en-US": "Base variant" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_variant",
+			"key_map": { "base_variant_id": "id" },
+			"on_delete": "RESTRICT"
 		}
 	],
 

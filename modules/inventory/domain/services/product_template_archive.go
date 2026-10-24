@@ -67,6 +67,14 @@ func (this *ProductTemplateDomainServiceImpl) SetArchived(
 	if err := this.cascadeArchiveToVariants(tranxCtx, variantEngine, templateId, archived); err != nil {
 		return nil, err
 	}
+	// Unarchiving re-reconciles: the configuration may have changed while the template was
+	// archived, and only an active template restores system_sync archives (plan D3). A refusal
+	// leaves the template archived.
+	if !archived {
+		if _, cErrs, err := this.reconcile(tranxCtx, reconcileRequest{templateId: templateId}); err != nil || cErrs.Count() > 0 {
+			return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, err
+		}
+	}
 	return result, errors.Wrap(tranx.Commit(), "SetArchived")
 }
 

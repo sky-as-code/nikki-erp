@@ -84,8 +84,9 @@ func TestVariantHasNoDefaultFlag(t *testing.T) {
 	assert.False(t, ok, "the core model must not need an is_default_variant flag")
 }
 
-// The database unique is unconditional; the engine additionally scopes it to non-archived rows so
-// an archived variant keeps its combination for history while a replacement takes it over.
+// The database unique spans archived rows too: an archived variant keeps its combination, and a
+// configuration that wants it back restores it rather than cutting a duplicate. The kind is part
+// of the key because a base and a complete variant may share the same instant-only key.
 func TestVariantCombinationIsUnique(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
@@ -93,14 +94,15 @@ func TestVariantCombinationIsUnique(t *testing.T) {
 
 	found := false
 	for _, composite := range schema.CompositeUniques() {
-		if len(composite.Fields) == 2 &&
+		if len(composite.Fields) == 3 &&
 			composite.Fields[0] == ProductVariantFieldProductTemplateId &&
-			composite.Fields[1] == ProductVariantFieldCombinationKey {
+			composite.Fields[1] == ProductVariantFieldVariantKind &&
+			composite.Fields[2] == ProductVariantFieldCombinationKey {
 			found = true
 		}
 	}
 	assert.True(t, found,
-		"a template must not hold two variants with the same combination")
+		"a template must not hold two variants of the same kind with the same combination")
 }
 
 // status and is_archived are different concepts and both need their own field; collapsing them

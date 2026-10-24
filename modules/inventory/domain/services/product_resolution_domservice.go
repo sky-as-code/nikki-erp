@@ -41,6 +41,7 @@ func BuildEffectiveProduct(
 	if status := variant.GetStatus(); status != nil {
 		effective.VariantStatus = status.String()
 	}
+	effective.VariantKind = variantKindOf(variant).String()
 
 	effective.DisplayName = BuildDisplayName(template.GetName(), valueLabels)
 

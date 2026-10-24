@@ -3,7 +3,6 @@ package dynamicengines
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"go.bryk.io/pkg/errors"
 
@@ -32,10 +31,20 @@ const (
 // variantAttributes is one row of the attribute read: which variant it belongs to, what the
 // attribute is called, what the variant's value for it is called, and where it sorts.
 type variantAttributes struct {
-	variantId string
-	attribute string
-	value     string
-	sequence  int64
+	variantId    string
+	attribute    string
+	value        string
+	lineSequence int64
+	sequence     int64
+}
+
+// variantAttributeHops holds the rows of each hop of the attribute walk, indexed for assembly.
+type variantAttributeHops struct {
+	joinRows          []dmodel.DynamicFields
+	templateValueById map[string]dmodel.DynamicFields
+	lineSequenceById  map[string]int64
+	valueById         map[string]dmodel.DynamicFields
+	attributeNameById map[string]string
 }
 
 // newVariantComputedFunctions builds the "function"-kind computed fields of product_variant.
@@ -82,10 +91,8 @@ func newVariantComputedFunctions(
 	}
 }
 
-// buildDisplayName renders "Coca Cola (No sugar, Big)".
-//
-// A variant with no attributes is the ordinary single-variant case, not a defect, so it is named
-// by its template alone rather than gaining an empty pair of brackets.
+// buildDisplayName renders "Coca Cola (No sugar, Big)" through models.FormatVariantDisplayName,
+// the spelling the configuration preview shares.
 func buildDisplayName(row dmodel.DynamicFields, attributes []variantAttributes) string {
 	name := readLangText(row[models.ProductVariantFieldTemplateName])
 	if name == "" {
@@ -93,14 +100,11 @@ func buildDisplayName(row dmodel.DynamicFields, attributes []variantAttributes) 
 		// only other thing on the row that does, and an empty cell would identify nothing.
 		name = readString(row[models.ProductVariantFieldSku])
 	}
-	if len(attributes) == 0 {
-		return name
-	}
 	values := make([]string, 0, len(attributes))
 	for _, attribute := range attributes {
 		values = append(values, attribute.value)
 	}
-	return fmt.Sprintf("%s (%s)", name, strings.Join(values, ", "))
+	return models.FormatVariantDisplayName(name, values)
 }
 
 // fetchVariantAttributes reads every attribute value of the whole page in one search, grouped by
@@ -120,8 +124,8 @@ func fetchVariantAttributes(
 	// (orm.MaxSelectGraphColumnDots), and asking for more is refused outright. Search *conditions*
 	// reach five, which is what makes each hop's id filter legal — the two limits are not the same.
 	//
-	// Three queries for the whole page, not per row: each hop filters on the ids the previous one
-	// returned.
+	// A fixed number of queries for the whole page, not per row: each hop filters on the ids the
+	// previous one returned.
 	joinRows, err := searchByIds(ctx, lookupOnion,
 		models.ProductVariantAttributeValueSchemaName,
 		models.ProductVariantAttributeValueFieldProductVariantId, variantIds,
@@ -143,10 +147,21 @@ func fetchVariantAttributes(
 		distinctStrings(joinRows, models.ProductVariantAttributeValueFieldTemplateAttributeValueId),
 		[]string{
 			basemodel.FieldId,
+			models.ProductTemplateAttributeValueFieldTemplateAttributeId,
 			models.ProductTemplateAttributeValueFieldAttributeValueId,
 			models.ProductTemplateAttributeValueFieldSequence,
 		},
 		len(joinRows))
+	if err != nil {
+		return nil, err
+	}
+
+	lineRows, err := searchByIds(ctx, lookupOnion,
+		models.ProductTemplateAttributeSchemaName,
+		basemodel.FieldId,
+		distinctStrings(templateValueRows, models.ProductTemplateAttributeValueFieldTemplateAttributeId),
+		[]string{basemodel.FieldId, models.ProductTemplateAttributeFieldSequence},
+		len(templateValueRows))
 	if err != nil {
 		return nil, err
 	}
@@ -175,45 +190,59 @@ func fetchVariantAttributes(
 		return nil, err
 	}
 
-	templateValueById := indexById(templateValueRows)
-	valueById := indexById(valueRows)
-	attributeNameById := map[string]string{}
-	for id, row := range indexById(attributeRows) {
-		attributeNameById[id] = readLangText(row[models.ProductAttributeFieldName])
+	hops := variantAttributeHops{
+		joinRows:          joinRows,
+		templateValueById: indexById(templateValueRows),
+		lineSequenceById:  map[string]int64{},
+		valueById:         indexById(valueRows),
+		attributeNameById: map[string]string{},
 	}
+	for id, row := range indexById(lineRows) {
+		hops.lineSequenceById[id] = readInt(row[models.ProductTemplateAttributeFieldSequence])
+	}
+	for id, row := range indexById(attributeRows) {
+		hops.attributeNameById[id] = readLangText(row[models.ProductAttributeFieldName])
+	}
+	return assembleVariantAttributes(hops), nil
+}
 
-	for _, join := range joinRows {
+// assembleVariantAttributes groups the walked rows by variant, in the order the template declares
+// its lines: "Coca Cola (No sugar, Big)" keeps that order rather than whatever the join returned,
+// and the configuration preview, which names variants by the same lines, agrees with it.
+func assembleVariantAttributes(hops variantAttributeHops) map[string][]variantAttributes {
+	byVariant := map[string][]variantAttributes{}
+	for _, join := range hops.joinRows {
 		variantId := readString(join[models.ProductVariantAttributeValueFieldProductVariantId])
-		if variantId == "" {
-			continue
-		}
-		templateValue := templateValueById[readString(
+		templateValue := hops.templateValueById[readString(
 			join[models.ProductVariantAttributeValueFieldTemplateAttributeValueId])]
-		if templateValue == nil {
+		if variantId == "" || templateValue == nil {
 			continue
 		}
-		value := valueById[readString(
+		value := hops.valueById[readString(
 			templateValue[models.ProductTemplateAttributeValueFieldAttributeValueId])]
 		if value == nil {
 			continue
 		}
 		byVariant[variantId] = append(byVariant[variantId], variantAttributes{
 			variantId: variantId,
-			attribute: attributeNameById[readString(value[models.ProductAttributeValueFieldAttributeId])],
+			attribute: hops.attributeNameById[readString(value[models.ProductAttributeValueFieldAttributeId])],
 			value:     readLangText(value[models.ProductAttributeValueFieldName]),
-			sequence:  readInt(templateValue[models.ProductTemplateAttributeValueFieldSequence]),
+			lineSequence: hops.lineSequenceById[readString(
+				templateValue[models.ProductTemplateAttributeValueFieldTemplateAttributeId])],
+			sequence: readInt(templateValue[models.ProductTemplateAttributeValueFieldSequence]),
 		})
 	}
 	for id := range byVariant {
 		entries := byVariant[id]
-		// The template declares the order its attributes read in, so "Coca Cola (No sugar, Big)"
-		// keeps that order rather than whatever the join returned.
 		sort.SliceStable(entries, func(a, b int) bool {
+			if entries[a].lineSequence != entries[b].lineSequence {
+				return entries[a].lineSequence < entries[b].lineSequence
+			}
 			return entries[a].sequence < entries[b].sequence
 		})
 		byVariant[id] = entries
 	}
-	return byVariant, nil
+	return byVariant
 }
 
 // searchByIds reads one hop: the rows of schemaName whose idField is among ids, projecting only

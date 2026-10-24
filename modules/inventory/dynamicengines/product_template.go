@@ -7,6 +7,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
+	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
@@ -28,6 +29,7 @@ func registerProductTemplateEngine() error {
 		composable.EngineDependencyName(models.ProductTemplateSchemaName),
 		func(
 			param composable.BuildParam,
+			usageDispatcher *usagecheck.Dispatcher,
 			storage filestorage.FileStorageAdapter,
 			catalogPublisher itEvent.CatalogChangedEventPublisher,
 		) composable.DynamicResourceEngineOnion {
@@ -37,11 +39,12 @@ func registerProductTemplateEngine() error {
 					return repo.NewProductTemplateRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewProductTemplateDomainService(base)
+					return services.NewProductTemplateDomainService(base, usageDispatcher)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					return app.NewProductTemplateApplicationService(base, catalogPublisher, storage)
 				},
+				ComputedFunctions: newTemplateComputedFunctions(),
 			}, param)
 		},
 	)

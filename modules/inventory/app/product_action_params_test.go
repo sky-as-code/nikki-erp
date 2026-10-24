@@ -7,19 +7,19 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // resolve_selection declares no ParamSchema, so its body arrives untyped. Every shape problem
 // below would otherwise decode to an empty selection list — which resolves to the empty
 // combination, a real and different variant, answered 200 OK.
 
-func TestBuildResolveSelectionQueryAcceptsAWellFormedBody(t *testing.T) {
-	query, vErrs := buildResolveSelectionQuery(dmodel.DynamicFields{
-		"template_id":            "01TEMPLATE",
+func TestBuildResolveCompleteQueryAcceptsAWellFormedBody(t *testing.T) {
+	query, vErrs := buildResolveCompleteQuery(dmodel.DynamicFields{
+		"product_template_id":    "01TEMPLATE",
 		"materialize_if_missing": true,
+		"expected_etag":          "42",
 		"selections": []any{
-			map[string]any{"attribute_id": "01COLOR", "value_id": "01BLACK", "mode": "instant"},
+			map[string]any{"attribute_id": "01COLOR", "value_id": "01BLACK"},
 			map[string]any{"attribute_id": "01SIZE", "value_id": "01M"},
 		},
 	})
@@ -27,22 +27,30 @@ func TestBuildResolveSelectionQueryAcceptsAWellFormedBody(t *testing.T) {
 	require.Zero(t, vErrs.Count())
 	assert.Equal(t, "01TEMPLATE", query.TemplateId)
 	assert.True(t, query.MaterializeIfMissing)
-	require.Len(t, query.Selections, 2)
-	assert.Equal(t, "01COLOR", query.Selections[0].AttributeId)
-	// An omitted mode keeps the attribute in the combination rather than silently dropping it.
-	assert.Equal(t, models.VariantCreationModeInstant, query.Selections[1].Mode)
+	require.NotNil(t, query.ExpectedEtag)
+	assert.Equal(t, "42", *query.ExpectedEtag)
+	assert.Equal(t, map[string]string{"01COLOR": "01BLACK", "01SIZE": "01M"}, query.Selections)
+}
+
+// template_id is the name the endpoint was first published with.
+func TestBuildResolveCompleteQueryAcceptsTheLegacyTemplateField(t *testing.T) {
+	query, vErrs := buildResolveCompleteQuery(dmodel.DynamicFields{"template_id": "01TEMPLATE"})
+
+	require.Zero(t, vErrs.Count())
+	assert.Equal(t, "01TEMPLATE", query.TemplateId)
+	assert.False(t, query.MaterializeIfMissing, "absent flag is a lookup that never writes")
 }
 
 // A template with no variant-generating attributes resolves on an empty selection, so an absent
 // list is legitimate — it is a malformed one that must be rejected.
-func TestBuildResolveSelectionQueryAllowsAbsentSelections(t *testing.T) {
-	query, vErrs := buildResolveSelectionQuery(dmodel.DynamicFields{"template_id": "01TEMPLATE"})
+func TestBuildResolveCompleteQueryAllowsAbsentSelections(t *testing.T) {
+	query, vErrs := buildResolveCompleteQuery(dmodel.DynamicFields{"template_id": "01TEMPLATE"})
 
 	assert.Zero(t, vErrs.Count())
 	assert.Empty(t, query.Selections)
 }
 
-func TestBuildResolveSelectionQueryRejectsMalformedBodies(t *testing.T) {
+func TestBuildResolveCompleteQueryRejectsMalformedBodies(t *testing.T) {
 	testCases := []struct {
 		name    string
 		params  dmodel.DynamicFields
@@ -72,6 +80,17 @@ func TestBuildResolveSelectionQueryRejectsMalformedBodies(t *testing.T) {
 			wantKey: "inventory:product_template.selection_malformed",
 		},
 		{
+			name: "two values for one attribute are rejected",
+			params: dmodel.DynamicFields{
+				"template_id": "01TEMPLATE",
+				"selections": []any{
+					map[string]any{"attribute_id": "01COLOR", "value_id": "01BLACK"},
+					map[string]any{"attribute_id": "01COLOR", "value_id": "01WHITE"},
+				},
+			},
+			wantKey: "inventory:product_template.selection_duplicate_attribute",
+		},
+		{
 			name: "a selection missing its value is rejected",
 			params: dmodel.DynamicFields{
 				"template_id": "01TEMPLATE",
@@ -83,7 +102,7 @@ func TestBuildResolveSelectionQueryRejectsMalformedBodies(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			_, vErrs := buildResolveSelectionQuery(testCase.params)
+			_, vErrs := buildResolveCompleteQuery(testCase.params)
 
 			require.NotZero(t, vErrs.Count(), "a malformed body must not resolve silently")
 			found := false

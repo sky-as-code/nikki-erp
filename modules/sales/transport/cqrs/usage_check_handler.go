@@ -58,3 +58,11 @@ func resolveRepository(schemaName string) (usagecheck.RowSearcher, error) {
 	}
 	return repo, nil
 }
+
+// templateTables are the Sales schemas holding a product_template_id. A pricelist rule may price a
+// whole template, so it is live configuration that must not be left pointing at nothing.
+func templateTables() []usagecheck.ReferencingTable {
+	return []usagecheck.ReferencingTable{
+		{SchemaName: models.SalesPricelistItemSchemaName, Field: models.SalesPricelistItemFieldProductTemplateId},
+	}
+}

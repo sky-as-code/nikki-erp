@@ -19,8 +19,8 @@ BEGIN
 
 		-- Product attributes
 		INSERT INTO "inventory_product_attributes" ("id", "code", "name", "data_type", "variant_creation_mode", "display_type", "sequence", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
-		('01K5INV0000000000ATTR00001', 'flavor', jsonb_build_object('en-US', 'Flavor', 'vi-VN', 'Hương vị'), 'text', 'instant', 'dropdown', 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV0000000000ATTR00002', 'size', jsonb_build_object('en-US', 'Size', 'vi-VN', 'Kích thước'), 'text', 'instant', 'dropdown', 2, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01K5INV0000000000ATTR00001', 'flavor', jsonb_build_object('en-US', 'Flavor', 'vi-VN', 'Hương vị'), 'option', 'instant', 'select', 1, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV0000000000ATTR00002', 'size', jsonb_build_object('en-US', 'Size', 'vi-VN', 'Kích thước'), 'option', 'instant', 'select', 2, '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Attribute values
@@ -39,34 +39,34 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product template attributes
-		INSERT INTO "inventory_product_template_attributes" ("id", "product_template_id", "attribute_id", "sequence", "created_at", "updated_at", "etag") VALUES
-		('01K5INV0000000TMPLATTR0001', '01K5INV0000000TMPL00000001', '01K5INV0000000000ATTR00001', 1, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV0000000TMPLATTR0002', '01K5INV0000000TMPL00000002', '01K5INV0000000000ATTR00002', 1, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV0000000TMPLATTR0003', '01K5INV0000000TMPL00000003', '01K5INV0000000000ATTR00002', 1, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		INSERT INTO "inventory_product_template_attributes" ("id", "product_template_id", "attribute_id", "sequence", "is_enabled", "application_revision", "variant_creation_snapshot", "org_id", "created_at", "updated_at", "etag") VALUES
+		('01K5INV0000000TMPLATTR0001', '01K5INV0000000TMPL00000001', '01K5INV0000000000ATTR00001', 1, TRUE, 1, 'instant', '01JWNY20G23KD4RV5VWYABQYHD', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV0000000TMPLATTR0002', '01K5INV0000000TMPL00000002', '01K5INV0000000000ATTR00002', 1, TRUE, 1, 'instant', '01JWNY20G23KD4RV5VWYABQYHD', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV0000000TMPLATTR0003', '01K5INV0000000TMPL00000003', '01K5INV0000000000ATTR00002', 1, TRUE, 1, 'instant', '01JWNY20G23KD4RV5VWYABQYHD', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product template attribute values
-		INSERT INTO "inventory_product_template_attribute_values" ("id", "template_attribute_id", "attribute_value_id", "sequence", "created_at", "updated_at", "etag") VALUES
-		('01K5INV000000TMPLAVVAL0001', '01K5INV0000000TMPLATTR0001', '01K5INV00000000ATTRVAL0001', 1, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV000000TMPLAVVAL0002', '01K5INV0000000TMPLATTR0001', '01K5INV00000000ATTRVAL0002', 2, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV000000TMPLAVVAL0003', '01K5INV0000000TMPLATTR0002', '01K5INV00000000ATTRVAL0003', 1, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV000000TMPLAVVAL0004', '01K5INV0000000TMPLATTR0003', '01K5INV00000000ATTRVAL0004', 1, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		INSERT INTO "inventory_product_template_attribute_values" ("id", "template_attribute_id", "attribute_value_id", "sequence", "is_selected", "org_id", "created_at", "updated_at", "etag") VALUES
+		('01K5INV000000TMPLAVVAL0001', '01K5INV0000000TMPLATTR0001', '01K5INV00000000ATTRVAL0001', 1, TRUE, '01JWNY20G23KD4RV5VWYABQYHD', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV000000TMPLAVVAL0002', '01K5INV0000000TMPLATTR0001', '01K5INV00000000ATTRVAL0002', 2, TRUE, '01JWNY20G23KD4RV5VWYABQYHD', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV000000TMPLAVVAL0003', '01K5INV0000000TMPLATTR0002', '01K5INV00000000ATTRVAL0003', 1, TRUE, '01JWNY20G23KD4RV5VWYABQYHD', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV000000TMPLAVVAL0004', '01K5INV0000000TMPLATTR0003', '01K5INV00000000ATTRVAL0004', 1, TRUE, '01JWNY20G23KD4RV5VWYABQYHD', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product variants
-		INSERT INTO "inventory_product_variants" ("id", "product_template_id", "combination_key", "sku", "primary_barcode", "is_materialized", "variant_image_file_key", "weight", "length", "width", "height", "status", "archive_source", "source_system", "org_id", "is_archived", "created_at", "updated_at", "etag") VALUES
-		('01K5INV00000000VARIANT0001', '01K5INV0000000TMPL00000001', 'flavor:berry', 'INV-SEED-ED-BERRY', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV00000000VARIANT0002', '01K5INV0000000TMPL00000001', 'flavor:citrus', 'INV-SEED-ED-CITRUS', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV00000000VARIANT0003', '01K5INV0000000TMPL00000002', 'size:size_500ml', 'INV-SEED-WATER-500', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV00000000VARIANT0004', '01K5INV0000000TMPL00000003', 'size:size_90g', 'INV-SEED-CHIPS-ORG', NULL, FALSE, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		INSERT INTO "inventory_product_variants" ("id", "product_template_id", "combination_key", "sku", "primary_barcode", "variant_image_file_key", "weight", "length", "width", "height", "status", "archive_source", "source_system", "org_id", "is_archived", "variant_kind", "created_at", "updated_at", "etag") VALUES
+		('01K5INV00000000VARIANT0001', '01K5INV0000000TMPL00000001', '01K5INV0000000000ATTR00001:01K5INV00000000ATTRVAL0001', 'INV-SEED-ED-BERRY', NULL, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, 'complete', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV00000000VARIANT0002', '01K5INV0000000TMPL00000001', '01K5INV0000000000ATTR00001:01K5INV00000000ATTRVAL0002', 'INV-SEED-ED-CITRUS', NULL, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, 'complete', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV00000000VARIANT0003', '01K5INV0000000TMPL00000002', '01K5INV0000000000ATTR00002:01K5INV00000000ATTRVAL0003', 'INV-SEED-WATER-500', NULL, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, 'complete', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV00000000VARIANT0004', '01K5INV0000000TMPL00000003', '01K5INV0000000000ATTR00002:01K5INV00000000ATTRVAL0004', 'INV-SEED-CHIPS-ORG', NULL, NULL, NULL, NULL, NULL, NULL, 'active', NULL, 'manual', '01JWNY20G23KD4RV5VWYABQYHD', FALSE, 'complete', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 
 		-- Product variant attribute values
-		INSERT INTO "inventory_product_variant_attribute_values" ("id", "product_variant_id", "template_attribute_value_id", "created_at", "updated_at", "etag") VALUES
-		('01K5INV0000000VARATVAL0001', '01K5INV00000000VARIANT0001', '01K5INV000000TMPLAVVAL0001', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV0000000VARATVAL0002', '01K5INV00000000VARIANT0002', '01K5INV000000TMPLAVVAL0002', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV0000000VARATVAL0003', '01K5INV00000000VARIANT0003', '01K5INV000000TMPLAVVAL0003', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01K5INV0000000VARATVAL0004', '01K5INV00000000VARIANT0004', '01K5INV000000TMPLAVVAL0004', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		INSERT INTO "inventory_product_variant_attribute_values" ("id", "product_variant_id", "template_attribute_value_id", "org_id", "created_at", "updated_at", "etag") VALUES
+		('01K5INV0000000VARATVAL0001', '01K5INV00000000VARIANT0001', '01K5INV000000TMPLAVVAL0001', '01JWNY20G23KD4RV5VWYABQYHD', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV0000000VARATVAL0002', '01K5INV00000000VARIANT0002', '01K5INV000000TMPLAVVAL0002', '01JWNY20G23KD4RV5VWYABQYHD', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV0000000VARATVAL0003', '01K5INV00000000VARIANT0003', '01K5INV000000TMPLAVVAL0003', '01JWNY20G23KD4RV5VWYABQYHD', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01K5INV0000000VARATVAL0004', '01K5INV00000000VARIANT0004', '01K5INV000000TMPLAVVAL0004', '01JWNY20G23KD4RV5VWYABQYHD', NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

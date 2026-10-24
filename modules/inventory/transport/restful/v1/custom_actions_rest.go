@@ -3,6 +3,8 @@ package v1
 import (
 	"github.com/labstack/echo/v5"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
@@ -50,6 +52,17 @@ func (this *ProductTemplateRest) GenerateVariants(echoCtx *echo.Context, payload
 
 func (this *ProductTemplateRest) ResolveSelection(echoCtx *echo.Context, payload map[string]any) error {
 	return composable.ServeAction(echoCtx, "resolve selection", payload, this.productTemplateSvc.ResolveSelection, composable.Identity[any])
+}
+
+// Copy answers like the built-in create: the new template's id and etag.
+func (this *ProductTemplateRest) Copy(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "copy product template", payload, this.productTemplateSvc.Copy,
+		func(created dmodel.DynamicFields) any { return httpserver.NewRestCreateResponseDyn(created) })
+}
+
+func (this *ProductTemplateRest) PreviewAttributeConfiguration(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "preview attribute configuration", payload,
+		this.productTemplateSvc.PreviewAttributeConfiguration, composable.Identity[any])
 }
 
 func (this *ProductVariantRest) GetEffective(echoCtx *echo.Context, payload map[string]any) error {

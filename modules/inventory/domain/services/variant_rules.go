@@ -12,7 +12,7 @@ import (
 )
 
 // checkCreateCombination runs before schema validation on purpose: the schema's composite unique
-// on (product_template_id, combination_key) is checked right after it, and would report the clash
+// on (product_template_id, variant_kind, combination_key) is checked right after it, and would report the clash
 // first as a generic error naming no field. This reports it on combination_key with its own key.
 // A value of the wrong type is left to schema validation, which reports it properly.
 func checkCreateCombination(repo models.ProductSearcher) composable.BeforeValidationFn {
@@ -28,6 +28,9 @@ func checkCreateCombination(repo models.ProductSearcher) composable.BeforeValida
 		variant := models.NewProductVariant()
 		variant.SetProductTemplateId(ptrOf(model.Id(templateId)))
 		variant.SetCombinationKey(&combinationKey)
+		if kind, ok := data[models.ProductVariantFieldVariantKind].(string); ok {
+			variant.SetVariantKind(models.WrapVariantKind(kind))
+		}
 		return entity, checkUniqueCombination(ctx, repo, variant, "", vErrs)
 	}
 }
@@ -110,9 +113,11 @@ func checkUniqueCombination(
 		return nil
 	}
 
-	// Size 2: the record being updated may itself hold this combination, and it must not be
-	// mistaken for a conflicting one.
-	existing, err := models.FindVariantsByCombination(ctx, repo, templateId, *combinationKey, 2)
+	// The database unique is (template, variant_kind, key): a base and a complete may share a key,
+	// as when the last dynamic line goes and the complete takes its old base's key (ADD27). Size 3:
+	// one record of each kind plus the record being updated, which is no conflict with itself.
+	kind := variantKindOrComplete(variant)
+	existing, err := models.FindVariantsByCombination(ctx, repo, templateId, *combinationKey, 3)
 	if err != nil {
 		return errors.Wrap(err, "checkUniqueCombination")
 	}
@@ -122,10 +127,21 @@ func checkUniqueCombination(
 		if selfId != "" && derefString(other.GetId()) == selfId {
 			continue
 		}
+		if variantKindOrComplete(other) != kind {
+			continue
+		}
 		vErrs.Append(*ft.NewBusinessViolation(models.ProductVariantFieldCombinationKey,
 			ft.ErrorKey("product_variant.duplicate_combination", "inventory"),
 			"this template already has a variant with the same attribute combination"))
 		return nil
 	}
 	return nil
+}
+
+// variantKindOrComplete reads the kind, defaulting to complete as the schema does.
+func variantKindOrComplete(variant *models.ProductVariant) models.VariantKind {
+	if kind := variant.GetVariantKind(); kind != nil && *kind != "" {
+		return *kind
+	}
+	return models.VariantKindComplete
 }

@@ -49,6 +49,11 @@ const (
 
 	ResourceProductVariant = "product_variant"
 
+	// ResourceProductTemplate is asked about before Inventory deletes a template. Pricing rules
+	// name a template to price all its variants at once, so a template can be referenced while
+	// none of its variants is.
+	ResourceProductTemplate = "product_template"
+
 	// Owned by Inventory, alongside the variant.
 	ResourceWarehouse         = "warehouse"
 	ResourceInventoryLocation = "inventory_location"

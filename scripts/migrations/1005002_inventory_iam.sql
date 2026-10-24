@@ -72,6 +72,8 @@ BEGIN
 		('01M0A1P4Q4XDRGWA4DDDNKD2DM', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QS5PTBGTJSN1GS991H', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a product template so it and its variants cannot be used by new transactions', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QBXY1DQFZPP4P4VD1T', jsonb_build_object('en-US', 'Generate variants', 'vi-VN', 'Tạo biến thể'), 'generate_variants', 'Generate or synchronize the variants of a product template', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QPRVWATTRCNFGPREVW', jsonb_build_object('en-US', 'Preview attribute configuration', 'vi-VN', 'Xem trước cấu hình thuộc tính'), 'preview_attribute_configuration', 'Dry-run an attribute configuration of a product template and see which variants it would keep, create, archive or delete', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QCPYPRDTMPXC0PY001', jsonb_build_object('en-US', 'Copy', 'vi-VN', 'Sao chép'), 'copy', 'Duplicate a product template with its attribute configuration', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Product Variant
 		('01M0A1P4Q9YQ7HAFRENHBMJ9TR', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
@@ -93,6 +95,7 @@ BEGIN
 		('01M0A1P4Q95527SM8SJK2QRH4R', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QFDM0XSX8VXAHZ31EG', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QVNXPS112TGMJTTHTJ', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a product attribute', '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QW9DVA1EPR1CEXTRA0', jsonb_build_object('en-US', 'Update value', 'vi-VN', 'Cập nhật giá trị'), 'update_value', 'Change the extra price a product template charges for one of its attribute values', '01M0A1P4QMJTAEFCJY5WRTNHWZ', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Product Attribute Value
 		('01M0A1P4QKK2BS2M7Q4ZJVX3ED', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4QAH9DQW7VXG9K87HWP', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),

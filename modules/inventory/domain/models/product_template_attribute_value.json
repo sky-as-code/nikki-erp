@@ -3,7 +3,7 @@
 	"label": "inventory_product_template_attribute_value.label",
 	"table_name": "inventory_product_template_attribute_values",
 	"should_build_db": true,
-	"default_search_fields": ["sequence"],
+	"default_search_fields": ["sequence", "attribute_value_name", "attribute_value_code", "sales_price_extra", "is_selected"],
 	"composite_uniques": [{ "index_name": "invty_prod_tpl_attr_vals_tid_tattr_id_aval_id", "fields": ["template_attribute_id", "attribute_value_id"] }],
 	"extend_before": ["core.basemodel.base_model"],
 
@@ -36,6 +36,46 @@
 			"name": "sequence",
 			"label": "fields.sequence",
 			"data_type": { "type": "int32", "min": 0, "max": 2147483647 }
+		},
+		{
+			"name": "is_selected",
+			"label": "fields.is_selected",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"description": {
+				"en-US": "False once the value was unselected on the template. The row is kept rather than deleted, because variants built from it still reference it."
+			}
+		},
+		{
+			"name": "attribute_value_name",
+			"label": "fields.attribute_value_name",
+			"data_type": { "type": "langjson", "min": 0, "max": 200 },
+			"computed": { "kind": "related", "is_stored": false, "field": "attribute_value.name" },
+			"description": {
+				"en-US": "The value's name, read through the edge so a price list can show it without a second request."
+			}
+		},
+		{
+			"name": "attribute_value_code",
+			"label": "fields.attribute_value_code",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"computed": { "kind": "related", "is_stored": false, "field": "attribute_value.code" }
+		},
+		{
+			"name": "attribute_name",
+			"label": "fields.attribute_name",
+			"data_type": { "type": "langjson", "min": 0, "max": 200 },
+			"computed": { "kind": "related", "is_stored": false, "field": "template_attribute.attribute.name" },
+			"description": {
+				"en-US": "The global attribute's name, read through the template line."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
 		}
 	],
 

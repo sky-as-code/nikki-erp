@@ -34,6 +34,17 @@ const PermissionReadProductStock = "read_product_stock"
 // archive many variant rows at once, which a role allowed to rename a template need not hold.
 const PermissionGenerateVariants = "generate_variants"
 
+// PermissionPreviewAttributeConfiguration runs the variant planner as a dry run; applying the
+// configuration is the template's own update.
+const PermissionPreviewAttributeConfiguration = "preview_attribute_configuration"
+
+// PermissionCopy duplicates a product template with its attribute configuration.
+const PermissionCopy = "copy"
+
+// PermissionUpdateValue is held on inventory_product_attribute and guards changing the extra price
+// a template charges for one of its attribute values (PATCH product_template_attribute_value/:id).
+const PermissionUpdateValue = "update_value"
+
 // The movement operations of a transfer.
 const (
 	PermissionConfirm                = "confirm"
