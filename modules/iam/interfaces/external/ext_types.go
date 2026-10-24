@@ -113,6 +113,7 @@ const (
 	EssentialModuleKey = essentialConstants.EssentialModuleName
 
 	SettingThemeMode = essentialSettings.UserSettingThemeMode
+	SettingDensity   = essentialSettings.UserSettingDensity
 	SettingLanguage  = essentialSettings.UserSettingLanguage
 
 	// SettingSystemLanguage and SettingDefaultCurrency are org-level: the language an organization
@@ -120,7 +121,8 @@ const (
 	SettingSystemLanguage  = essentialSettings.OrgSettingSystemLanguage
 	SettingDefaultCurrency = essentialSettings.OrgSettingDefaultCurrency
 
-	ThemeModeAuto = essentialSettings.ThemeModeAuto
+	ThemeModeAuto  = essentialSettings.ThemeModeAuto
+	DefaultDensity = essentialSettings.DefaultDensity
 )
 
 type RegisterSchemaCommand = itSettings.RegisterSchemaCommand

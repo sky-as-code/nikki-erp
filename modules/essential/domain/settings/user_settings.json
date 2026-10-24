@@ -15,6 +15,17 @@
 			"metadata": { "allow_override": true }
 		},
 		{
+			"name": "density",
+			"label": "essential.settings.density",
+			"description": "settings_desc.density",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["spacious", "compact"]
+			},
+			"default_value": "compact",
+			"metadata": { "allow_override": true }
+		},
+		{
 			"name": "language",
 			"label": "essential.settings.language",
 			"description": "settings_desc.language",
