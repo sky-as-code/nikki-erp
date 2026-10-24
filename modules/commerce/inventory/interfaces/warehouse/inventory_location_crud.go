@@ -1,6 +1,9 @@
 package warehouse
 
 import (
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
@@ -12,6 +15,10 @@ type InventoryLocationRepository interface {
 // InventoryLocationDomainService is the CRUD of the resource plus its own rules.
 type InventoryLocationDomainService interface {
 	composable.CrudDomainService
+
+	CreateBulk(
+		ctx corectx.Context, cmds []CreateInventoryLocationCommand,
+	) (*CreateInventoryLocationsResult, error)
 }
 
 // InventoryLocationApplicationService is the authorized surface the REST handler serves.
@@ -34,6 +41,7 @@ type (
 
 type (
 	CreateInventoryLocationResult      = composable.CreateResult
+	CreateInventoryLocationsResult     = dyn.OpResult[[]dmodel.DynamicFields]
 	UpdateInventoryLocationResult      = composable.MutateResult
 	DeleteInventoryLocationResult      = composable.MutateResult
 	SetInventoryLocationArchivedResult = composable.MutateResult
