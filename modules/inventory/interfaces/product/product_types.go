@@ -45,14 +45,21 @@ type EffectiveProduct struct {
 	TemplateStatus string
 	VariantStatus  string
 
+	// VariantKind is complete for a sellable variant and base for the instant-only parent of a
+	// mixed template's completes. A base is never transacted.
+	VariantKind string
+
 	IsTemplateArchived bool
 	IsVariantArchived  bool
 }
 
 // IsSelectable reports whether this product may be chosen for a new transaction. Both levels
 // must permit it: an archived template withdraws every variant under it, and a variant may be
-// withdrawn on its own.
+// withdrawn on its own. Only a complete variant names a product; a base lacks its dynamic values.
 func (this EffectiveProduct) IsSelectable() bool {
+	if this.VariantKind != models.VariantKindComplete.String() {
+		return false
+	}
 	if this.IsTemplateArchived || this.IsVariantArchived {
 		return false
 	}
@@ -94,29 +101,4 @@ type AttributeSelection struct {
 	// Mode decides whether this selection contributes to variant identity. A NEVER attribute is
 	// configuration carried alongside the product, not part of the variant's identity.
 	Mode models.VariantCreationMode
-}
-
-// AttributeOptions is one attribute of a template together with the values that template allows.
-type AttributeOptions struct {
-	AttributeId string
-	Mode        models.VariantCreationMode
-
-	// ValueIds are the template-scoped allowed values; a value the template does not allow can
-	// never enter a combination.
-	ValueIds []string
-}
-
-// VariantSyncPlan is the difference between the combinations a template should have and the
-// variants it does have. A plan rather than an action: synchronization must never invalidate a
-// variant a transaction already references, so the caller decides what to do with Obsolete —
-// archive it when used, delete it only when provably unused.
-type VariantSyncPlan struct {
-	// ToCreate are combinations with no variant yet.
-	ToCreate []string
-
-	// Obsolete are existing non-archived variants whose combination is no longer valid.
-	Obsolete []string
-
-	// Unchanged are combinations that already have a variant.
-	Unchanged []string
 }

@@ -59,6 +59,29 @@ func (this VariantCreationMode) CreatesVariants() bool {
 	return this == VariantCreationModeInstant || this == VariantCreationModeDynamic
 }
 
+// AttributeDisplayType is a UI rendering hint. It never affects variant identity.
+type AttributeDisplayType string
+
+const (
+	AttributeDisplayTypePills  = AttributeDisplayType("pills")
+	AttributeDisplayTypeRadio  = AttributeDisplayType("radio")
+	AttributeDisplayTypeSelect = AttributeDisplayType("select")
+	AttributeDisplayTypeColor  = AttributeDisplayType("color")
+
+	// AttributeDisplayTypeMultiCheckbox lets several values be picked at once, which no single
+	// variant can represent, so it is valid only with VariantCreationModeNever.
+	AttributeDisplayTypeMultiCheckbox = AttributeDisplayType("multi_checkbox")
+)
+
+func (this AttributeDisplayType) String() string {
+	return string(this)
+}
+
+func WrapAttributeDisplayType(s string) *AttributeDisplayType {
+	t := AttributeDisplayType(s)
+	return &t
+}
+
 const (
 	ProductAttributeSchemaName = "inventory_product_attribute"
 
@@ -70,6 +93,13 @@ const (
 	ProductAttributeFieldDisplayType         = "display_type"
 	ProductAttributeFieldSequence            = "sequence"
 	ProductAttributeFieldOrgId               = "org_id"
+
+	// Computed, read-only.
+	ProductAttributeFieldCurrentTemplateUsageCount    = "current_template_usage_count"
+	ProductAttributeFieldHistoricalTemplateUsageCount = "historical_template_usage_count"
+	ProductAttributeFieldCanChangeVariantCreation     = "can_change_variant_creation"
+
+	ProductAttributeEdgeTemplateLines = "template_lines"
 )
 
 //go:embed product_attribute.json
@@ -141,12 +171,21 @@ func (this *ProductAttribute) SetVariantCreationMode(v *VariantCreationMode) {
 	this.GetFieldData().SetString(ProductAttributeFieldVariantCreationMode, &s)
 }
 
-func (this ProductAttribute) GetDisplayType() *string {
-	return this.GetFieldData().GetString(ProductAttributeFieldDisplayType)
+func (this ProductAttribute) GetDisplayType() *AttributeDisplayType {
+	s := this.GetFieldData().GetString(ProductAttributeFieldDisplayType)
+	if s == nil {
+		return nil
+	}
+	return WrapAttributeDisplayType(*s)
 }
 
-func (this *ProductAttribute) SetDisplayType(v *string) {
-	this.GetFieldData().SetString(ProductAttributeFieldDisplayType, v)
+func (this *ProductAttribute) SetDisplayType(v *AttributeDisplayType) {
+	if v == nil {
+		this.GetFieldData().SetString(ProductAttributeFieldDisplayType, nil)
+		return
+	}
+	s := string(*v)
+	this.GetFieldData().SetString(ProductAttributeFieldDisplayType, &s)
 }
 
 func (this ProductAttribute) GetSequence() *int32 {
@@ -163,4 +202,16 @@ func (this ProductAttribute) GetOrgId() *model.Id {
 
 func (this *ProductAttribute) SetOrgId(v *model.Id) {
 	this.GetFieldData().SetModelId(ProductAttributeFieldOrgId, v)
+}
+
+func (this ProductAttribute) GetCurrentTemplateUsageCount() *int64 {
+	return this.GetFieldData().GetInt64(ProductAttributeFieldCurrentTemplateUsageCount)
+}
+
+func (this ProductAttribute) GetHistoricalTemplateUsageCount() *int64 {
+	return this.GetFieldData().GetInt64(ProductAttributeFieldHistoricalTemplateUsageCount)
+}
+
+func (this ProductAttribute) GetCanChangeVariantCreation() *bool {
+	return this.GetFieldData().GetBool(ProductAttributeFieldCanChangeVariantCreation)
 }

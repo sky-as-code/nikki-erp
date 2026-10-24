@@ -38,23 +38,40 @@ func BuildCombinationKey(selections []itProduct.AttributeSelection) string {
 		byAttribute[selection.AttributeId] = selection.ValueId
 	}
 
-	if len(byAttribute) == 0 {
-		return models.EmptyCombinationKey
-	}
+	return BuildKeyFromPairs(byAttribute)
+}
 
-	attributeIds := make([]string, 0, len(byAttribute))
-	for attributeId := range byAttribute {
+// BuildKeyFromPairs builds a combination key from catalogue attribute id -> catalogue value id
+// pairs. The caller has already dropped NEVER attributes; empty ids are skipped. Pairs sort by
+// attribute id, not display sequence: reordering attributes in the UI must never change the
+// identity of an existing variant.
+func BuildKeyFromPairs(pairs map[string]string) string {
+	attributeIds := make([]string, 0, len(pairs))
+	for attributeId, valueId := range pairs {
+		if attributeId == "" || valueId == "" {
+			continue
+		}
 		attributeIds = append(attributeIds, attributeId)
 	}
-	// Sorted by attribute id, not display sequence: reordering attributes in the UI must never change
-	// the identity of an existing variant.
+	if len(attributeIds) == 0 {
+		return models.EmptyCombinationKey
+	}
 	sort.Strings(attributeIds)
 
-	pairs := make([]string, 0, len(attributeIds))
+	parts := make([]string, 0, len(attributeIds))
 	for _, attributeId := range attributeIds {
-		pairs = append(pairs, attributeId+combinationPairSeparator+byAttribute[attributeId])
+		parts = append(parts, attributeId+combinationPairSeparator+pairs[attributeId])
 	}
-	return strings.Join(pairs, combinationSeparator)
+	return strings.Join(parts, combinationSeparator)
+}
+
+// ParseKeyToPairs is the inverse of BuildKeyFromPairs.
+func ParseKeyToPairs(key string) map[string]string {
+	pairs := map[string]string{}
+	for _, selection := range ParseCombinationKey(key) {
+		pairs[selection.AttributeId] = selection.ValueId
+	}
+	return pairs
 }
 
 // ParseCombinationKey splits a key back into its attribute-value pairs, in key order. The empty key
@@ -77,96 +94,4 @@ func ParseCombinationKey(key string) []itProduct.AttributeSelection {
 		})
 	}
 	return selections
-}
-
-// BuildInstantCombinations returns every combination an INSTANT-mode configuration implies: the
-// cartesian product of the allowed values, one value per attribute. DYNAMIC attributes get no
-// combination ahead of use and NEVER attributes are not part of identity, so a template whose
-// attributes are all excluded yields exactly one empty combination — the single-variant case, not
-// an absence of variants.
-func BuildInstantCombinations(attributes []itProduct.AttributeOptions) []string {
-	generating := make([]itProduct.AttributeOptions, 0, len(attributes))
-	for _, attribute := range attributes {
-		if attribute.Mode != models.VariantCreationModeInstant {
-			continue
-		}
-		if attribute.AttributeId == "" || len(attribute.ValueIds) == 0 {
-			// An attribute with no allowed values would multiply the product by zero and wipe out every
-			// combination, which is not what an unconfigured attribute means.
-			continue
-		}
-		generating = append(generating, attribute)
-	}
-
-	if len(generating) == 0 {
-		return []string{models.EmptyCombinationKey}
-	}
-
-	sort.Slice(generating, func(i, j int) bool {
-		return generating[i].AttributeId < generating[j].AttributeId
-	})
-
-	combinations := [][]itProduct.AttributeSelection{{}}
-	for _, attribute := range generating {
-		expanded := make([][]itProduct.AttributeSelection, 0, len(combinations)*len(attribute.ValueIds))
-		for _, combination := range combinations {
-			for _, valueId := range attribute.ValueIds {
-				next := make([]itProduct.AttributeSelection, len(combination), len(combination)+1)
-				copy(next, combination)
-				next = append(next, itProduct.AttributeSelection{
-					AttributeId: attribute.AttributeId,
-					ValueId:     valueId,
-					Mode:        attribute.Mode,
-				})
-				expanded = append(expanded, next)
-			}
-		}
-		combinations = expanded
-	}
-
-	keys := make([]string, 0, len(combinations))
-	for _, combination := range combinations {
-		keys = append(keys, BuildCombinationKey(combination))
-	}
-	return keys
-}
-
-// PlanVariantSync compares the combinations a template's attributes imply against the
-// combination keys its non-archived variants currently hold.
-func PlanVariantSync(wanted []string, existing []string) itProduct.VariantSyncPlan {
-	wantedSet := map[string]bool{}
-	for _, key := range wanted {
-		wantedSet[key] = true
-	}
-	existingSet := map[string]bool{}
-	for _, key := range existing {
-		existingSet[key] = true
-	}
-
-	plan := itProduct.VariantSyncPlan{}
-	for _, key := range wanted {
-		if existingSet[key] {
-			plan.Unchanged = append(plan.Unchanged, key)
-			continue
-		}
-		// A wanted key repeated in the input must not be created twice.
-		if !containsKey(plan.ToCreate, key) {
-			plan.ToCreate = append(plan.ToCreate, key)
-		}
-	}
-	for _, key := range existing {
-		if !wantedSet[key] && !containsKey(plan.Obsolete, key) {
-			plan.Obsolete = append(plan.Obsolete, key)
-		}
-	}
-	return plan
-}
-
-func containsKey(keys []string, key string) bool {
-	for _, item := range keys {
-		if item == key {
-			return true
-		}
-	}
-	return false
 }

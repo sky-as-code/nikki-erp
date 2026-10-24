@@ -74,6 +74,16 @@ func executeScrap(
 		}, nil
 	}
 
+	// Executing a drafted scrap finishes existing business, so an archived or discontinued variant
+	// may still be scrapped; only a base, which never holds stock, is refused.
+	baseErrs := ft.NewClientErrors()
+	variantId := derefString(scrap.GetProductVariantId())
+	if err := assertVariantNotBase(ctx, variantId, models.StockScrapFieldProductVariantId, baseErrs); err != nil {
+		return nil, err
+	} else if baseErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *baseErrs}, nil
+	}
+
 	if vErrs, err := assertScrappableStock(ctx, scrap, quantity); err != nil {
 		return nil, err
 	} else if vErrs.Count() > 0 {

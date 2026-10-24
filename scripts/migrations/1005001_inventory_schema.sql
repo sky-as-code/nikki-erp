@@ -128,6 +128,7 @@ CREATE TABLE "inventory_product_attribute_values" (
   "name" jsonb NOT NULL,
   "sequence" integer NULL,
   "price_extra" numeric NULL,
+  "color_hex" character varying NULL,
   "org_id" character varying NOT NULL,
   "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,
@@ -219,11 +220,15 @@ CREATE TABLE "inventory_product_template_attributes" (
   "product_template_id" character varying NOT NULL,
   "attribute_id" character varying NOT NULL,
   "sequence" integer NULL,
+  "is_enabled" boolean NOT NULL,
+  "application_revision" integer NOT NULL,
+  "variant_creation_snapshot" character varying NULL,
+  "org_id" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "invty_prod_tpl_attrs_tid_ptpl_id_attr_id_ukey" UNIQUE ("product_template_id", "attribute_id"),
+  CONSTRAINT "invty_prod_tpl_attrs_tid_ptpl_id_attr_id_rev_ukey" UNIQUE ("product_template_id", "attribute_id", "application_revision"),
   CONSTRAINT "inventory_product_template_attributes_attribute_id_fkey" FOREIGN KEY ("attribute_id") REFERENCES "inventory_product_attributes" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_product_template_attributes_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
@@ -234,6 +239,8 @@ CREATE TABLE "inventory_product_template_attribute_values" (
   "attribute_value_id" character varying NOT NULL,
   "sales_price_extra" numeric NULL,
   "sequence" integer NULL,
+  "is_selected" boolean NOT NULL,
+  "org_id" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
@@ -242,14 +249,32 @@ CREATE TABLE "inventory_product_template_attribute_values" (
   CONSTRAINT "inventory_product_template_attribute_values_attribute_value_id_" FOREIGN KEY ("attribute_value_id") REFERENCES "inventory_product_attribute_values" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_product_template_attribute_values_template_attribute_" FOREIGN KEY ("template_attribute_id") REFERENCES "inventory_product_template_attributes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
+-- Create "inventory_product_template_combination_exclusions" table
+CREATE TABLE "inventory_product_template_combination_exclusions" (
+  "id" character varying NOT NULL,
+  "product_template_id" character varying NOT NULL,
+  "left_template_attribute_value_id" character varying NOT NULL,
+  "right_template_attribute_value_id" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "is_archived" boolean NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "invty_prod_tpl_comb_excls_tid_ptpl_id_left_right_ukey" UNIQUE ("product_template_id", "left_template_attribute_value_id", "right_template_attribute_value_id"),
+  CONSTRAINT "inventory_product_template_combination_exclusions_left_template" FOREIGN KEY ("left_template_attribute_value_id") REFERENCES "inventory_product_template_attribute_values" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "inventory_product_template_combination_exclusions_product_templ" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "inventory_product_template_combination_exclusions_right_templat" FOREIGN KEY ("right_template_attribute_value_id") REFERENCES "inventory_product_template_attribute_values" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
 -- Create "inventory_product_variants" table
 CREATE TABLE "inventory_product_variants" (
   "id" character varying NOT NULL,
   "product_template_id" character varying NOT NULL,
+  "variant_kind" character varying NOT NULL,
+  "base_variant_id" character varying NULL,
   "combination_key" character varying NOT NULL,
   "sku" character varying NULL,
   "primary_barcode" character varying NULL,
-  "is_materialized" boolean NULL,
   "variant_image_file_key" character varying NULL,
   "cost" numeric NULL,
   "weight" numeric NULL,
@@ -266,9 +291,14 @@ CREATE TABLE "inventory_product_variants" (
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "invty_prod_variants_tid_ptpl_id_comb_key_ukey" UNIQUE ("product_template_id", "combination_key"),
+  CONSTRAINT "invty_prod_variants_tid_ptpl_id_kind_comb_key_ukey" UNIQUE ("product_template_id", "variant_kind", "combination_key"),
+  CONSTRAINT "inventory_product_variants_base_variant_id_fkey" FOREIGN KEY ("base_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
   CONSTRAINT "inventory_product_variants_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+-- Create index "invty_prod_variants_tid_org_barcode_ukey" to table: "inventory_product_variants"
+CREATE UNIQUE INDEX "invty_prod_variants_tid_org_barcode_ukey" ON "inventory_product_variants" ("org_id", "primary_barcode") WHERE (primary_barcode IS NOT NULL);
+-- Create index "invty_prod_variants_tid_org_sku_ukey" to table: "inventory_product_variants"
+CREATE UNIQUE INDEX "invty_prod_variants_tid_org_sku_ukey" ON "inventory_product_variants" ("org_id", "sku") WHERE (sku IS NOT NULL);
 -- Create index "invty_prod_variants_tid_src_sys_ext_id_ukey" to table: "inventory_product_variants"
 CREATE UNIQUE INDEX "invty_prod_variants_tid_src_sys_ext_id_ukey" ON "inventory_product_variants" ("source_system", "external_id") WHERE (external_id IS NOT NULL);
 -- Create "inventory_product_variant_attribute_values" table
@@ -277,6 +307,7 @@ CREATE TABLE "inventory_product_variant_attribute_values" (
   "product_variant_id" character varying NOT NULL,
   "template_attribute_value_id" character varying NOT NULL,
   "sales_price_extra" numeric NULL,
+  "org_id" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,

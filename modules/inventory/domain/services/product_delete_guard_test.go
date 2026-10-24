@@ -67,15 +67,15 @@ func TestBrandGuardIgnoresEmptyId(t *testing.T) {
 	assert.Equal(t, 0, vErrs.Count())
 }
 
-func TestProductAttributeWithValuesCannotBeDeleted(t *testing.T) {
+func TestProductAttributeWithTemplateLinesCannotBeDeleted(t *testing.T) {
 	vErrs := ft.NewClientErrors()
 
 	require.NoError(t, AssertProductAttributeDeletable(callerContext(), oneChild(), testParentId, vErrs))
 
-	assert.Equal(t, 1, vErrs.Count(), "the attribute still owns a value")
+	assert.Equal(t, 1, vErrs.Count(), "a template line, enabled or not, still references the attribute")
 }
 
-func TestProductAttributeWithoutValuesCanBeDeleted(t *testing.T) {
+func TestProductAttributeWithoutTemplateLinesCanBeDeleted(t *testing.T) {
 	vErrs := ft.NewClientErrors()
 
 	require.NoError(t, AssertProductAttributeDeletable(callerContext(), noChild(), testParentId, vErrs))

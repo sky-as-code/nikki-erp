@@ -16,29 +16,30 @@ import (
 // registered under, or the handlers resolve nothing at boot.
 func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
 	for schemaName, engineName := range map[string]string{
-		models.ProductCategorySchemaName:               v1.ProductCategoryEngineName,
-		models.BrandSchemaName:                         v1.BrandEngineName,
-		models.ProductAttributeSchemaName:              v1.ProductAttributeEngineName,
-		models.ProductAttributeValueSchemaName:         v1.ProductAttributeValueEngineName,
-		models.ProductTemplateSchemaName:               v1.ProductTemplateEngineName,
-		models.ProductTemplateAttributeSchemaName:      v1.ProductTemplateAttributeEngineName,
-		models.ProductTemplateAttributeValueSchemaName: v1.ProductTemplateAttributeValueEngineName,
-		models.ProductVariantSchemaName:                v1.ProductVariantEngineName,
-		models.ProductVariantAttributeValueSchemaName:  v1.ProductVariantAttributeValueEngineName,
-		models.WarehouseSchemaName:                     v1.WarehouseEngineName,
-		models.StorageCategorySchemaName:               v1.StorageCategoryEngineName,
-		models.InventoryLocationSchemaName:             v1.InventoryLocationEngineName,
-		models.WarehouseSupplyRelationSchemaName:       v1.WarehouseSupplyRelationEngineName,
-		models.PutawayRuleSchemaName:                   v1.PutawayRuleEngineName,
-		models.StockOperationTypeSchemaName:            v1.StockOperationTypeEngineName,
-		models.StockQuantSchemaName:                    v1.StockQuantEngineName,
-		models.StockTransferSchemaName:                 v1.StockTransferEngineName,
-		models.StockMoveSchemaName:                     v1.StockMoveEngineName,
-		models.StockMoveLineSchemaName:                 v1.StockMoveLineEngineName,
-		models.StockMoveDependencySchemaName:           v1.StockMoveDependencyEngineName,
-		models.StockScrapSchemaName:                    v1.StockScrapEngineName,
-		models.StockProductConfigSchemaName:            v1.StockProductConfigEngineName,
-		models.StockReservationSchemaName:              v1.StockReservationEngineName,
+		models.ProductCategorySchemaName:                     v1.ProductCategoryEngineName,
+		models.BrandSchemaName:                               v1.BrandEngineName,
+		models.ProductAttributeSchemaName:                    v1.ProductAttributeEngineName,
+		models.ProductAttributeValueSchemaName:               v1.ProductAttributeValueEngineName,
+		models.ProductTemplateSchemaName:                     v1.ProductTemplateEngineName,
+		models.ProductTemplateAttributeSchemaName:            v1.ProductTemplateAttributeEngineName,
+		models.ProductTemplateAttributeValueSchemaName:       v1.ProductTemplateAttributeValueEngineName,
+		models.ProductVariantSchemaName:                      v1.ProductVariantEngineName,
+		models.ProductVariantAttributeValueSchemaName:        v1.ProductVariantAttributeValueEngineName,
+		models.ProductTemplateCombinationExclusionSchemaName: v1.ProductTemplateCombinationExclusionEngineName,
+		models.WarehouseSchemaName:                           v1.WarehouseEngineName,
+		models.StorageCategorySchemaName:                     v1.StorageCategoryEngineName,
+		models.InventoryLocationSchemaName:                   v1.InventoryLocationEngineName,
+		models.WarehouseSupplyRelationSchemaName:             v1.WarehouseSupplyRelationEngineName,
+		models.PutawayRuleSchemaName:                         v1.PutawayRuleEngineName,
+		models.StockOperationTypeSchemaName:                  v1.StockOperationTypeEngineName,
+		models.StockQuantSchemaName:                          v1.StockQuantEngineName,
+		models.StockTransferSchemaName:                       v1.StockTransferEngineName,
+		models.StockMoveSchemaName:                           v1.StockMoveEngineName,
+		models.StockMoveLineSchemaName:                       v1.StockMoveLineEngineName,
+		models.StockMoveDependencySchemaName:                 v1.StockMoveDependencyEngineName,
+		models.StockScrapSchemaName:                          v1.StockScrapEngineName,
+		models.StockProductConfigSchemaName:                  v1.StockProductConfigEngineName,
+		models.StockReservationSchemaName:                    v1.StockReservationEngineName,
 	} {
 		assert.Equal(t, composable.EngineDependencyName(schemaName), engineName, schemaName)
 	}
@@ -91,6 +92,7 @@ func TestCustomRoutesRegisterAheadOfIdPatterns(t *testing.T) {
 	templateBase := "/v1/inventory/" + models.ProductTemplateSchemaName
 	assert.Less(t, indexOf(routes, "POST "+templateBase+"/resolve_selection"), indexOf(routes, "GET "+templateBase+"/:id"))
 	assert.Contains(t, routes, "POST "+templateBase+"/:id/generate_variants")
+	assert.Contains(t, routes, "POST "+templateBase+"/:id/copy")
 
 	assert.Contains(t, routes, "GET /v1/inventory/"+models.ProductVariantSchemaName+"/:id/effective")
 }
@@ -121,6 +123,7 @@ func templateRoutes(rest *v1.ProductTemplateRest) []composable.RouteDefinition {
 	return []composable.RouteDefinition{
 		{Path: ":id/generate_variants", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.GenerateVariants},
 		{Path: "resolve_selection", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ResolveSelection},
+		{Path: ":id/copy", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Copy},
 	}
 }
 
@@ -146,4 +149,42 @@ func indexOf(values []string, target string) int {
 		}
 	}
 	return -1
+}
+
+// The configuration rows are written only through the template's configuration payload, so their
+// route tables carry no write method.
+func TestConfigurationRowsServeReadsOnly(t *testing.T) {
+	routes := registeredRoutes(t, func(route *echo.Group) error {
+		rest := &v1.ProductTemplateCombinationExclusionRest{}
+		return composable.NewRestEngine(models.ProductTemplateCombinationExclusionSchemaName, rest).
+			AddCrudRoutes(configurationReadRoutes()...).
+			RegisterRoutes(route, passThrough)
+	})
+
+	base := "/v1/inventory/" + models.ProductTemplateCombinationExclusionSchemaName
+	require.Contains(t, routes, "GET "+base)
+	for _, route := range routes {
+		assert.NotRegexp(t, `^(PUT|PATCH|DELETE) `, route)
+		assert.NotRegexp(t, `/(archived|import|bulk)$`, route)
+		assert.NotEqual(t, "POST "+base, route)
+	}
+}
+
+// A template value row serves PATCH :id for sales_price_extra and nothing else that writes.
+func TestTemplateValueRowsServeReadsAndPatchOnly(t *testing.T) {
+	routes := registeredRoutes(t, func(route *echo.Group) error {
+		rest := &v1.ProductTemplateAttributeValueRest{}
+		return composable.NewRestEngine(models.ProductTemplateAttributeValueSchemaName, rest).
+			AddCrudRoutes(templateValueRoutes()...).
+			RegisterRoutes(route, passThrough)
+	})
+
+	base := "/v1/inventory/" + models.ProductTemplateAttributeValueSchemaName
+	require.Contains(t, routes, "GET "+base)
+	require.Contains(t, routes, "PATCH "+base+"/:id")
+	for _, route := range routes {
+		assert.NotRegexp(t, `^(PUT|DELETE) `, route)
+		assert.NotRegexp(t, `/(archived|import|bulk)$`, route)
+		assert.NotEqual(t, "POST "+base, route)
+	}
 }

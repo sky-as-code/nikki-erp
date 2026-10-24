@@ -25,6 +25,10 @@ type (
 type ProductTemplateActionService interface {
 	GenerateVariants(ctx corectx.Context, cmd GenerateTemplateVariantsCommand) (*GenerateTemplateVariantsResult, error)
 	ResolveSelection(ctx corectx.Context, query ResolveSelectionQuery) (*ResolveSelectionResult, error)
+	Copy(ctx corectx.Context, cmd CopyTemplateCommand) (*CopyTemplateResult, error)
+	PreviewAttributeConfiguration(
+		ctx corectx.Context, cmd PreviewAttributeConfigurationCommand,
+	) (*PreviewAttributeConfigurationResult, error)
 }
 
 // ProductVariantActionService flattens a variant together with its template, so a consumer reads

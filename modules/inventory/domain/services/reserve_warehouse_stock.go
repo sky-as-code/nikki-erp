@@ -289,6 +289,12 @@ func (this *StockReservationDomainServiceImpl) resolveReservableVariant(
 			"product variant '"+string(variantId)+"' has no template"))
 		return "", nil
 	}
+	// A reservation is new business, so it needs a variant selectable today.
+	reason := VariantIneligibility(models.NewProductVariantFrom(variant), models.NewProductTemplateFrom(template), true)
+	if reason != "" {
+		appendIneligibility(models.StockReservationSchemaName, string(variantId), reason, vErrs)
+		return "", nil
+	}
 
 	if !models.NewProductTemplateFrom(template).IsStockTracked() {
 		vErrs.Append(*ft.NewBusinessViolation(

@@ -62,7 +62,9 @@ func (this *ProductTemplateApplicationServiceImpl) GenerateVariants(
 	}
 
 	templateId := derefId(models.NewProductTemplateFrom(found).GetId())
-	result, err := this.productSvc.GenerateVariants(ctx, itProduct.GenerateVariantsQuery{TemplateId: templateId})
+	result, err := this.productSvc.GenerateVariants(ctx, itProduct.GenerateVariantsQuery{
+		TemplateId: templateId, DeleteAllowed: this.mayDeleteVariants(ctx, found),
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "GenerateVariants")
 	}
@@ -74,39 +76,53 @@ func (this *ProductTemplateApplicationServiceImpl) GenerateVariants(
 	return anyResult(itProduct.NewGenerateVariantsView(result.Data)), nil
 }
 
-// ResolveSelection resolves a chosen attribute combination to a variant. It validates the payload
-// itself: the selections are a nested array, and a malformed body would otherwise decode to an
-// empty selection list and resolve to the empty combination, a different existing variant.
+// ResolveSelection resolves a full attribute selection to its complete variant (plan D4). A
+// lookup needs read; materializing a missing or configuration-archived complete writes a variant
+// of the template, which is the generate_variants power.
 func (this *ProductTemplateApplicationServiceImpl) ResolveSelection(
 	ctx corectx.Context, query itProduct.ResolveSelectionQuery,
 ) (*itProduct.ResolveSelectionResult, error) {
-	if _, cErrs := this.AssertAction(ctx, composable.PermissionRead, query); cErrs != nil {
+	permission := composable.PermissionRead
+	if readResolveMaterialize(query) {
+		permission = PermissionGenerateVariants
+	}
+	orgId, cErrs := this.AssertAction(ctx, permission, query)
+	if cErrs != nil {
 		return anyFailure(cErrs, nil)
 	}
-
-	selection, vErrs := buildResolveSelectionQuery(query)
+	resolveQuery, vErrs := buildResolveCompleteQuery(query)
 	if vErrs.Count() > 0 {
 		return anyFailure(vErrs, nil)
 	}
+	if orgId != nil {
+		inOrg := dmodel.DynamicFields{models.ProductTemplateFieldId: resolveQuery.TemplateId}
+		if cErrs, err := this.AssertRecordInOrg(ctx, inOrg, *orgId); err != nil || cErrs != nil {
+			return anyFailure(cErrs, err)
+		}
+	}
 
-	result, err := this.productSvc.ResolveProductSelection(ctx, selection)
+	resolver, ok := this.productSvc.(itProduct.CompleteVariantResolver)
+	if !ok {
+		return nil, errors.New("ResolveSelection: the product service cannot resolve complete variants")
+	}
+	result, err := resolver.ResolveCompleteVariant(ctx, resolveQuery)
 	if err != nil {
 		return nil, errors.Wrap(err, "ResolveSelection")
 	}
 	if result.ClientErrors.Count() > 0 {
 		return anyFailure(&result.ClientErrors, nil)
 	}
-	// The service reports no data when the template does not exist, which the REST layer turns
-	// into a missing record.
+	// No data means the template does not exist, which the REST layer turns into a missing record.
 	if !result.HasData {
 		return &itProduct.ResolveSelectionResult{}, nil
 	}
-	return anyResult(itProduct.NewResolveProductSelectionView(result.Data)), nil
+	return anyResult(itProduct.NewResolveCompleteVariantView(result.Data)), nil
 }
 
 func (this *ProductTemplateApplicationServiceImpl) Create(
 	ctx corectx.Context, cmd composable.CreateCommand,
 ) (*composable.CreateResult, error) {
+	this.stampVariantDeleteAllowed(ctx, cmd)
 	res, err := this.fileBackedApplicationService.Create(ctx, cmd)
 	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductTemplate, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
@@ -118,6 +134,7 @@ func (this *ProductTemplateApplicationServiceImpl) Create(
 func (this *ProductTemplateApplicationServiceImpl) Update(
 	ctx corectx.Context, cmd composable.UpdateCommand,
 ) (*composable.MutateResult, error) {
+	this.stampVariantDeleteAllowed(ctx, cmd)
 	res, err := this.fileBackedApplicationService.Update(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductTemplate, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))

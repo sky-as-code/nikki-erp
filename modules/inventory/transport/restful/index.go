@@ -22,6 +22,7 @@ func InitRestfulHandlers() error {
 		v1.NewProductTemplateAttributeValueRest,
 		v1.NewProductVariantRest,
 		v1.NewProductVariantAttributeValueRest,
+		v1.NewProductTemplateCombinationExclusionRest,
 		v1.NewWarehouseRest,
 		v1.NewStorageCategoryRest,
 		v1.NewInventoryLocationRest,
@@ -55,6 +56,7 @@ func initInventoryV1() error {
 			initProductTemplateAttributeValueV1(routeV1),
 			initProductVariantV1(routeV1),
 			initProductVariantAttributeValueV1(routeV1),
+			initProductTemplateCombinationExclusionV1(routeV1),
 			initWarehouseV1(routeV1),
 			initStorageCategoryV1(routeV1),
 			initInventoryLocationV1(routeV1),
@@ -114,6 +116,8 @@ func initProductTemplateV1(route *echo.Group) error {
 			AddRoute(composable.RouteDefinition{Path: ":id/files/:field", ActionType: composable.ActionTypeDelete, HandlerFn: rest.DeleteFile}).
 			AddRoute(composable.RouteDefinition{Path: ":id/generate_variants", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.GenerateVariants}).
 			AddRoute(composable.RouteDefinition{Path: "resolve_selection", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ResolveSelection}).
+			AddRoute(composable.RouteDefinition{Path: ":id/copy", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Copy}).
+			AddRoute(composable.RouteDefinition{Path: ":id/preview_attribute_configuration", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.PreviewAttributeConfiguration}).
 			RegisterRoutes(route)
 	})
 }
@@ -121,7 +125,7 @@ func initProductTemplateV1(route *echo.Group) error {
 func initProductTemplateAttributeV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductTemplateAttributeRest) error {
 		return composable.NewRestEngine(models.ProductTemplateAttributeSchemaName, rest).
-			AddCrudRoutes().
+			AddCrudRoutes(configurationReadRoutes()...).
 			RegisterRoutes(route)
 	})
 }
@@ -129,9 +133,40 @@ func initProductTemplateAttributeV1(route *echo.Group) error {
 func initProductTemplateAttributeValueV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductTemplateAttributeValueRest) error {
 		return composable.NewRestEngine(models.ProductTemplateAttributeValueSchemaName, rest).
-			AddCrudRoutes().
+			AddCrudRoutes(templateValueRoutes()...).
 			RegisterRoutes(route)
 	})
+}
+
+// initProductTemplateCombinationExclusionV1 serves the reads only, as the junctions above do.
+func initProductTemplateCombinationExclusionV1(route *echo.Group) error {
+	return deps.Invoke(func(rest *v1.ProductTemplateCombinationExclusionRest) error {
+		return composable.NewRestEngine(models.ProductTemplateCombinationExclusionSchemaName, rest).
+			AddCrudRoutes(configurationReadRoutes()...).
+			RegisterRoutes(route)
+	})
+}
+
+// configurationReadRoutes is the route table of the template configuration rows: template lines,
+// their values, variant values and exclusions. They are written only through the template's own
+// configuration payload, so the UI, the API and an import share one path that reconciles the
+// variants; a direct write here would change the configuration without the reconcile. Import is
+// withheld for the same reason.
+func configurationReadRoutes() []composable.CrudAction {
+	return []composable.CrudAction{
+		composable.CrudActionGetById,
+		composable.CrudActionGetByUnique,
+		composable.CrudActionSearch,
+		composable.CrudActionExists,
+		composable.CrudActionGetSchema,
+		composable.CrudActionComputeField,
+	}
+}
+
+// templateValueRoutes adds PATCH :id to the reads: the domain service accepts only
+// sales_price_extra there, which changes no variant identity and so needs no reconcile.
+func templateValueRoutes() []composable.CrudAction {
+	return append(configurationReadRoutes(), composable.CrudActionUpdate)
 }
 
 func initProductVariantV1(route *echo.Group) error {
@@ -149,7 +184,7 @@ func initProductVariantV1(route *echo.Group) error {
 func initProductVariantAttributeValueV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductVariantAttributeValueRest) error {
 		return composable.NewRestEngine(models.ProductVariantAttributeValueSchemaName, rest).
-			AddCrudRoutes().
+			AddCrudRoutes(configurationReadRoutes()...).
 			RegisterRoutes(route)
 	})
 }

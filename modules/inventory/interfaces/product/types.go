@@ -58,16 +58,23 @@ type ResolveProductSelectionResultData struct {
 
 type ResolveProductSelectionResult = dyn.OpResult[ResolveProductSelectionResultData]
 
+// GenerateVariantsQuery reconciles a template's variants with its current configuration.
+// DeleteAllowed is the caller's product_variant delete permission, checked by the application
+// service: an invalid variant nothing uses is deleted only when it is true.
 type GenerateVariantsQuery struct {
-	TemplateId string
+	TemplateId    string
+	DeleteAllowed bool
 }
 
 type GenerateVariantsResultData struct {
-	CreatedVariantIds []string
+	CreatedVariantIds  []string
+	ExtendedVariantIds []string
+	RestoredVariantIds []string
+	ArchivedVariantIds []string
+	DeletedVariantIds  []string
 
-	// ObsoleteVariantIds are variants whose combination is no longer valid. Reported rather than
-	// deleted: one a transaction already references must be archived, and only the caller knows
-	// which.
+	// ObsoleteVariantIds are the variants the configuration no longer allows: archived and
+	// deleted together, kept for callers of the earlier shape.
 	ObsoleteVariantIds []string
 
 	UnchangedCount int

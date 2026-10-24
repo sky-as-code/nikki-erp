@@ -571,7 +571,6 @@
 	"role_permission_all": "Toàn quyền",
 	"role_permission_duplicate": "Tài nguyên và hành động này đã được cấp",
 	"role_permission_empty": "Vai trò này chưa được cấp quyền",
-	"role_permission_new": "Mới",
 	"role_permission_selectAction": "Chọn hành động",
 	"role_permission_selectResource": "Chọn tài nguyên",
 	"role_placeholders_description": "Mô tả vai trò này cấp những gì",

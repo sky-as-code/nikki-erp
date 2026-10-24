@@ -1,11 +1,8 @@
 package services
 
 import (
-	"go.bryk.io/pkg/errors"
-
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
@@ -53,23 +50,12 @@ func CascadeArchiveFields(variantId string, archive bool) dmodel.DynamicFields {
 	return update
 }
 
-// AssertTemplateDeletable blocks a hard delete once the template owns any variant: a variant may
-// already be referenced by a transaction, so a template with variants is archived, not deleted.
-func AssertTemplateDeletable(
-	ctx corectx.Context, repo models.ProductSearcher, templateId string, vErrs *ft.ClientErrors,
-) error {
-	if templateId == "" {
-		return nil
-	}
-
-	variants, err := models.FindTemplateVariants(ctx, repo, templateId, 1)
-	if err != nil {
-		return errors.Wrap(err, "AssertTemplateDeletable")
-	}
-	if len(variants) > 0 {
-		vErrs.Append(*ft.NewBusinessViolation(models.ProductTemplateFieldId,
-			ft.ErrorKey("product_template.has_variants", "inventory"),
-			"this template still has variants; archive it instead of deleting it"))
-	}
-	return nil
+// TemplateHasUsedVariantsViolation refuses a template delete while some of its variants are used:
+// the unused ones would be deleted with the template, the used ones must be kept, so the template
+// is archived instead.
+func TemplateHasUsedVariantsViolation(usedCount int) ft.ClientErrorItem {
+	return *ft.NewBusinessViolation(models.ProductTemplateFieldId,
+		ft.ErrorKey("product_template.has_variants", "inventory"),
+		"{{count}} variants of this template are used and cannot be deleted; archive the template instead",
+		map[string]any{"count": usedCount})
 }

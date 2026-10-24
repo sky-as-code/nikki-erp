@@ -318,19 +318,19 @@ Response Should Be Duplicate Combination Error
     Response Should Match Schema    ${resp}    ${schema}    400
 
 Response Should Be Template Has Variants Error
-    [Documentation]    BR-PROD-TPL-005 / AC-PROD-021: a template whose variants may already
-    ...    be referenced by a transaction is archived, never hard-deleted.
+    [Documentation]    BR-PROD-TPL-005 / AC-PROD-021: a template whose variants are already
+    ...    used is archived, never hard-deleted; its unused variants no longer block a delete.
+    ...    The message carries the count, so only its shape is pinned.
     [Arguments]    ${resp}
-    ${schema}=    Same Error Schema    ${{['id']}}
-    ...    inventory:product_template.has_variants
-    ...    this template still has variants; archive it instead of deleting it    business
+    ${schema}=    One Error Schema Message Pattern    id
+    ...    inventory:product_template.has_variants    variants of this template are used
     Response Should Match Schema    ${resp}    ${schema}    400
 
 Response Should Be Template Id Required Error
     [Documentation]    resolve_selection identifies its template through the body, not the
     ...    path, so a missing template_id is a client error rather than a 404.
     [Arguments]    ${resp}
-    ${schema}=    Same Error Schema    ${{['template_id']}}
+    ${schema}=    Same Error Schema    ${{['product_template_id']}}
     ...    inventory:product_template.template_id_required
     ...    a product template must be identified    business
     Response Should Match Schema    ${resp}    ${schema}    400
@@ -362,3 +362,19 @@ Response Should Be Uom Immutable While In Use Error
     ${schema}=    One Error Schema Message Pattern    ${field}
     ...    essential:uom.immutable_while_in_use    already used by
     Response Should Match Schema    ${resp}    ${schema}    400
+
+Response Should Contain Business Error
+    [Documentation]    For the rule errors whose message carries data-dependent vars (ids, counts):
+    ...    asserts the status and that one error item carries exactly ${key} (namespaced
+    ...    "<ns>:<suffix>") and, when given, ${field}. A list of several errors passes as long as
+    ...    the expected one is among them; use the exact-schema keywords above where the whole
+    ...    body is fixed.
+    [Arguments]    ${resp}    ${key}    ${field}=${None}    ${status}=400
+    Response Status Should Be    ${resp}    ${status}
+    ${errors}=    Set Variable    ${resp.json()}
+    Should Be True    isinstance($errors, list) and len($errors) > 0
+    ...    msg=Expected a list of errors, got: ${resp.text}
+    ${matches}=    Evaluate    list(filter(lambda e, k=$key, f=$field: e.get('key') == k and (f is None or e.get('field') == f), $errors))
+    Should Not Be Empty    ${matches}
+    ...    msg=No error with key '${key}' (field '${field}') in: ${resp.text}
+    RETURN    ${matches}[0]

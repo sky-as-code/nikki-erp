@@ -1,30 +1,24 @@
 *** Settings ***
 Documentation     Deleting the Product Attribute under test — always the LAST suite, doubling
-...               as cleanup. Attribute values referencing the attribute must go first: the FK
-...               is ON DELETE NO ACTION, so an attribute with surviving values cannot be
-...               removed.
+...               as cleanup. An attribute no template ever used takes its values with it in
+...               one transaction; one with template history is refused (09_values_and_rules).
 Resource          resources/inventory.resource
 Suite Setup       Run Keywords    Create Authorized API Session    AND    Ensure Product Attribute Under Test
 Test Tags         inventory    product_attribute    delete
 
 
 *** Test Cases ***
-Delete With Referencing Attribute Values Fails
-    [Documentation]    attribute_id is required-for-create on an attribute value, so removing
-    ...    the attribute out from under one would leave it classified as nothing.
-    [Tags]    negative
+Delete Removes The Attribute And Its Unused Values
+    [Documentation]    PROD-006 (CR01 §7.5): deleting an attribute no template ever used removes
+    ...    its values in the same transaction, so a value is never left classified as nothing.
     Ensure Attribute Value Under Test
-    ${resp}=    DELETE On Session    api    ${PRODUCT_ATTRIBUTE_API}/${PRODUCT_ATTRIBUTE_ID}
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
-    Should Not Be Equal As Integers    ${resp.status_code}    200
-    ...    msg=An attribute still referenced by a value must not be deletable
-
-Delete Succeeds
-    [Documentation]    With the referencing value gone the attribute deletes normally.
-    Delete Inventory Fixture    ${ATTRIBUTE_VALUE_API}    ATTRIBUTE_VALUE_ID
     ${resp}=    DELETE On Session    api    ${PRODUCT_ATTRIBUTE_API}/${PRODUCT_ATTRIBUTE_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Should Be Delete Success    ${resp}    count=1
+    ${resp}=    GET On Session    api    ${ATTRIBUTE_VALUE_API}/${ATTRIBUTE_VALUE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    Response Should Be Not Found Error    ${resp}
+    Set Global Variable    ${ATTRIBUTE_VALUE_ID}    ${EMPTY}
 
 Delete Again With Same Id Fails
     [Documentation]    Idempotency check on the just-deleted id; clears the globals so the

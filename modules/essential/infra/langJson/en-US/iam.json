@@ -519,7 +519,6 @@
 	"role_permission_all": "All",
 	"role_permission_duplicate": "This resource and action is already granted",
 	"role_permission_empty": "This role is not granted any entitlements",
-	"role_permission_new": "New",
 	"role_permission_selectAction": "Select action",
 	"role_permission_selectResource": "Select resource",
 	"role_placeholders_description": "Describe what this role grants",

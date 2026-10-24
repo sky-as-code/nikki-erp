@@ -18,6 +18,7 @@ const (
 	ProductVariantAttributeValueFieldProductVariantId         = "product_variant_id"
 	ProductVariantAttributeValueFieldTemplateAttributeValueId = "template_attribute_value_id"
 	ProductVariantAttributeValueFieldSalesPriceExtra          = "sales_price_extra"
+	ProductVariantAttributeValueFieldOrgId                    = "org_id"
 
 	ProductVariantAttributeValueEdgeVariant                = "variant"
 	ProductVariantAttributeValueEdgeTemplateAttributeValue = "template_attribute_value"
@@ -64,4 +65,12 @@ func (this ProductVariantAttributeValue) GetSalesPriceExtra() *decimal.Decimal {
 
 func (this *ProductVariantAttributeValue) SetSalesPriceExtra(v *decimal.Decimal) {
 	this.GetFieldData().SetDecimal(ProductVariantAttributeValueFieldSalesPriceExtra, v)
+}
+
+func (this ProductVariantAttributeValue) GetOrgId() *model.Id {
+	return this.GetFieldData().GetModelId(ProductVariantAttributeValueFieldOrgId)
+}
+
+func (this *ProductVariantAttributeValue) SetOrgId(v *model.Id) {
+	this.GetFieldData().SetModelId(ProductVariantAttributeValueFieldOrgId, v)
 }

@@ -2,6 +2,7 @@
     "type": "object",
     "required": ["id", "created_at", "attribute_id", "code", "name", "etag", "is_archived", "org_id"],
     "properties": {
+        "color_hex": {"type": ["string", "null"], "pattern": "^#[0-9A-Fa-f]{6}$"},
         "id": {
             "type": "string",
             "minLength": 1

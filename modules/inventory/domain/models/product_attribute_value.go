@@ -20,6 +20,7 @@ const (
 	ProductAttributeValueFieldName        = "name"
 	ProductAttributeValueFieldSequence    = "sequence"
 	ProductAttributeValueFieldPriceExtra  = "price_extra"
+	ProductAttributeValueFieldColorHex    = "color_hex"
 	ProductAttributeValueFieldOrgId       = "org_id"
 
 	ProductAttributeValueEdgeAttribute = "attribute"
@@ -91,4 +92,12 @@ func (this ProductAttributeValue) GetOrgId() *model.Id {
 
 func (this *ProductAttributeValue) SetOrgId(v *model.Id) {
 	this.GetFieldData().SetModelId(ProductAttributeValueFieldOrgId, v)
+}
+
+func (this ProductAttributeValue) GetColorHex() *string {
+	return this.GetFieldData().GetString(ProductAttributeValueFieldColorHex)
+}
+
+func (this *ProductAttributeValue) SetColorHex(v *string) {
+	this.GetFieldData().SetString(ProductAttributeValueFieldColorHex, v)
 }

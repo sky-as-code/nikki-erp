@@ -63,9 +63,10 @@ func (*InventoryModule) Deps() []string {
 	}
 }
 
-// Dependants implements InCodeModuleDependants: the modules referencing a product variant, which
-// Inventory asks before deleting one. The variant is the referenced thing throughout — never the
-// template — because the variant is what downstream documents actually name.
+// Dependants implements InCodeModuleDependants: the modules referencing a product variant or
+// template, which Inventory asks before deleting one. Documents name the variant; pricing rules
+// (sales pricelist items, purchase vendor prices) may also name the template, so every dependant
+// answers for both resources.
 //
 // "vendingmachine" ships only in the coremart binary. It is listed anyway, because the list
 // belongs to Inventory and states who references its products wherever Inventory runs; the
@@ -191,6 +192,8 @@ func (*InventoryModule) RegisterModels() error {
 		// and the template-scoped allowed value.
 		dmodel.RegisterSchemaB(models.ProductVariantSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.ProductVariantAttributeValueSchemaBuilder()),
+		// Pairs two template-scoped values, so it follows them.
+		dmodel.RegisterSchemaB(models.ProductTemplateCombinationExclusionSchemaBuilder()),
 
 		// Warehouse topology. Both are referenced by a location, so they precede it.
 		dmodel.RegisterSchemaB(models.WarehouseSchemaBuilder()),

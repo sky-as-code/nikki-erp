@@ -23,6 +23,7 @@ func TestProductSchemasRegisterInOrder(t *testing.T) {
 		ProductTemplateSchemaBuilder(),
 		ProductTemplateAttributeSchemaBuilder(),
 		ProductTemplateAttributeValueSchemaBuilder(),
+		ProductTemplateCombinationExclusionSchemaBuilder(),
 		ProductVariantSchemaBuilder(),
 		ProductVariantAttributeValueSchemaBuilder(),
 		WarehouseSchemaBuilder(),

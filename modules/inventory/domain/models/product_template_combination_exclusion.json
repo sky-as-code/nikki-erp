@@ -1,0 +1,81 @@
+{
+	"name": "inventory_product_template_combination_exclusion",
+	"label": "inventory_product_template_combination_exclusion.label",
+	"table_name": "inventory_product_template_combination_exclusions",
+	"should_build_db": true,
+	"default_search_fields": ["product_template_id", "left_template_attribute_value_id", "right_template_attribute_value_id"],
+	"composite_uniques": [
+		{
+			"index_name": "invty_prod_tpl_comb_excls_tid_ptpl_id_left_right",
+			"fields": ["product_template_id", "left_template_attribute_value_id", "right_template_attribute_value_id"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "product_template_id",
+			"label": "fields.product_template_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "left_template_attribute_value_id",
+			"label": "fields.left_template_attribute_value_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "One side of a pair of template values that may not appear together in a variant. The pair is stored normalized, left id < right id, so the same pair cannot be recorded twice in opposite order."
+			}
+		},
+		{
+			"name": "right_template_attribute_value_id",
+			"label": "fields.right_template_attribute_value_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "The other side of the excluded pair; always the greater id of the two."
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "template",
+			"label": { "en-US": "Product template" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_template",
+			"key_map": { "product_template_id": "id" },
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "left_value",
+			"label": { "en-US": "Left template value" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_template_attribute_value",
+			"key_map": { "left_template_attribute_value_id": "id" },
+			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "right_value",
+			"label": { "en-US": "Right template value" },
+			"type": "many:one",
+			"dest_schema": "inventory_product_template_attribute_value",
+			"key_map": { "right_template_attribute_value_id": "id" },
+			"on_delete": "NO ACTION"
+		}
+	]
+}

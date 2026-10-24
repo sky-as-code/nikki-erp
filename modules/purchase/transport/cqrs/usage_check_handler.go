@@ -42,3 +42,11 @@ func uomTables() []usagecheck.ReferencingTable {
 func resolveRepository(schemaName string) (usagecheck.RowSearcher, error) {
 	return services.RepositoryFor(schemaName)
 }
+
+// templateTables are the Purchase schemas holding a product_template_id. A vendor price always
+// names its template, even when it also narrows the quote to one variant.
+func templateTables() []usagecheck.ReferencingTable {
+	return []usagecheck.ReferencingTable{
+		{SchemaName: models.VendorProductPriceSchemaName, Field: models.VendorProductPriceFieldProductTemplateId},
+	}
+}

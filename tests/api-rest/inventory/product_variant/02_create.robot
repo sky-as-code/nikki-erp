@@ -3,7 +3,7 @@ Documentation     Creating Product Variants, including the combination uniquenes
 ...               BR-PROD-VAR-002. The first test saves the variant under test
 ...               (${PRODUCT_VARIANT_ID}/${PRODUCT_VARIANT_ETAG}) consumed by the later
 ...               suites and deleted last by 08_delete.robot.
-Resource          resources/inventory.resource
+Resource          resources/inventory_configuration.resource
 Suite Setup       Run Keywords    Create Authorized API Session    AND    Ensure Product Template Under Test
 Test Tags         inventory    product_variant    create
 
@@ -19,22 +19,20 @@ Create With Required Fields Succeeds
     Set Global Variable    ${PRODUCT_VARIANT_ETAG}    ${etag}
     Set Global Variable    ${PRODUCT_VARIANT_COMBINATION}    ${key}
 
-Create With Empty Combination Succeeds
-    [Documentation]    BR §4.5 / AC-PROD-008: a template with no variant-generating
-    ...    attributes still has exactly one variant, whose combination key is the empty
-    ...    string. Empty is a real and normal combination, not a missing value — treating it
-    ...    as absent would leave such a template with no transactable SKU at all.
+Template Create Gives One Empty Combination Variant
+    [Documentation]    AC04 / BR §4.5: a template with no generating attribute is created with
+    ...    exactly one complete variant whose combination key is empty, in the same transaction.
+    ...    A second empty-key variant is a duplicate, so a repeated request cannot add another.
     ${template_id}    ${template_etag}=    Create Product Template    Robot Empty Combination Template
+    ${variants}=    Search Template Variants    ${template_id}
+    Length Should Be    ${variants}    1
+    Should Be Equal    ${variants}[0][combination_key]    ${EMPTY}
+    Should Be Equal    ${variants}[0][variant_kind]    complete
     ${sku}=    Unique Code    emptysku
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}
     ...    json=${{ {'product_template_id': $template_id, 'combination_key': '', 'sku': $sku, 'status': 'active', 'org_id': $INV_ORG_ID} }}
-    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/${id}
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_variant.json    200
-    Should Be Equal    ${item}[combination_key]    ${EMPTY}
-    DELETE On Session    api    ${PRODUCT_VARIANT_API}/${id}
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+    ...    expected_status=any
+    Response Should Be Duplicate Combination Error    ${resp}
     DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
@@ -64,10 +62,9 @@ Create Same Combination On Another Template Succeeds
     DELETE On Session    api    ${PRODUCT_TEMPLATE_API}/${template_id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
-Create Defaults To Active And Materialized
+Create Defaults To Active
     [Documentation]    BR §6.2.2: a variant created directly is a real SKU, so it defaults to
-    ...    active and materialized. is_materialized is false only for a dynamic-mode
-    ...    combination that is known valid but has not been used yet.
+    ...    active and carries no archive stamp.
     ${key}=    Unique Code    defcomb
     ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}
     ...    json=${{ {'product_template_id': $PRODUCT_TEMPLATE_ID, 'combination_key': $key, 'org_id': $INV_ORG_ID} }}
@@ -76,7 +73,6 @@ Create Defaults To Active And Materialized
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/product_variant.json    200
     Should Be Equal    ${item}[status]    active
-    Should Be Equal    ${item}[is_materialized]    ${True}
     Should Be True    ${{ not $item.get('archive_source') }}
     ...    msg=A live variant must carry no archive_source stamp
     DELETE On Session    api    ${PRODUCT_VARIANT_API}/${id}

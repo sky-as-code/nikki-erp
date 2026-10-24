@@ -55,15 +55,38 @@ func WrapArchiveSource(s string) *ArchiveSource {
 	return &src
 }
 
+// VariantKind separates the sellable complete variant from the base of a mixed template.
+type VariantKind string
+
+const (
+	// VariantKindComplete carries a value for every variant-creating attribute; the only kind a
+	// transaction may name.
+	VariantKindComplete = VariantKind("complete")
+
+	// VariantKindBase carries only the instant values of a mixed (instant + dynamic) template and
+	// anchors the complete variants resolved under it.
+	VariantKindBase = VariantKind("base")
+)
+
+func (this VariantKind) String() string {
+	return string(this)
+}
+
+func WrapVariantKind(s string) *VariantKind {
+	k := VariantKind(s)
+	return &k
+}
+
 const (
 	ProductVariantSchemaName = "inventory_product_variant"
 
 	ProductVariantFieldId                  = basemodel.FieldId
 	ProductVariantFieldProductTemplateId   = "product_template_id"
 	ProductVariantFieldCombinationKey      = "combination_key"
+	ProductVariantFieldVariantKind         = "variant_kind"
+	ProductVariantFieldBaseVariantId       = "base_variant_id"
 	ProductVariantFieldSku                 = "sku"
 	ProductVariantFieldPrimaryBarcode      = "primary_barcode"
-	ProductVariantFieldIsMaterialized      = "is_materialized"
 	ProductVariantFileVariantImage         = "variant_image"
 	ProductVariantFieldVariantImageUrl     = "variant_image_url"
 	ProductVariantFieldVariantImageFileKey = "variant_image_file_key"
@@ -96,8 +119,11 @@ const (
 	ProductVariantFieldTemplateBaseSalesPrice  = "product_template_base_sales_price"
 	ProductVariantFieldSalesPriceExtraTotal    = "sales_price_extra_total"
 	ProductVariantFieldEffectiveBaseSalesPrice = "effective_base_sales_price"
+	ProductVariantFieldTemplateIsArchived      = "product_template_is_archived"
+	ProductVariantFieldIsTransactionEligible   = "is_transaction_eligible"
 
-	ProductVariantEdgeTemplate = "product_template"
+	ProductVariantEdgeTemplate    = "product_template"
+	ProductVariantEdgeBaseVariant = "base_variant"
 
 	// EmptyCombinationKey is the combination of a template with no variant-generating attributes.
 	// Such a template still gets exactly one concrete variant, which transactions reference.
@@ -155,14 +181,6 @@ func (this ProductVariant) GetPrimaryBarcode() *string {
 
 func (this *ProductVariant) SetPrimaryBarcode(v *string) {
 	this.GetFieldData().SetString(ProductVariantFieldPrimaryBarcode, v)
-}
-
-func (this ProductVariant) GetIsMaterialized() *bool {
-	return this.GetFieldData().GetBool(ProductVariantFieldIsMaterialized)
-}
-
-func (this *ProductVariant) SetIsMaterialized(v *bool) {
-	this.GetFieldData().SetBool(ProductVariantFieldIsMaterialized, v)
 }
 
 // GetVariantImageFileKey is an override; nil means fall back to the template's default image, not
@@ -263,6 +281,38 @@ func (this ProductVariant) IsSelectable() bool {
 	if archived := this.IsArchived(); archived != nil && *archived {
 		return false
 	}
+	if kind := this.GetVariantKind(); kind != nil && *kind == VariantKindBase {
+		return false
+	}
 	status := this.GetStatus()
 	return status == nil || *status == ProductVariantStatusActive
+}
+
+func (this ProductVariant) GetVariantKind() *VariantKind {
+	s := this.GetFieldData().GetString(ProductVariantFieldVariantKind)
+	if s == nil {
+		return nil
+	}
+	return WrapVariantKind(*s)
+}
+
+func (this *ProductVariant) SetVariantKind(v *VariantKind) {
+	if v == nil {
+		this.GetFieldData().SetString(ProductVariantFieldVariantKind, nil)
+		return
+	}
+	s := string(*v)
+	this.GetFieldData().SetString(ProductVariantFieldVariantKind, &s)
+}
+
+func (this ProductVariant) GetBaseVariantId() *model.Id {
+	return this.GetFieldData().GetModelId(ProductVariantFieldBaseVariantId)
+}
+
+func (this *ProductVariant) SetBaseVariantId(v *model.Id) {
+	this.GetFieldData().SetModelId(ProductVariantFieldBaseVariantId, v)
+}
+
+func (this ProductVariant) GetIsTransactionEligible() *bool {
+	return this.GetFieldData().GetBool(ProductVariantFieldIsTransactionEligible)
 }

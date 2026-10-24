@@ -229,3 +229,34 @@ func TestVariantDisplayNameFallsBackToSkuWithoutATemplateName(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "CC-NS-BIG", out[0])
 }
+
+// The template's line order wins over the value order within a line: the values' own sequences
+// are positions in two different lines, and comparing them across lines named the same product
+// "Big, No sugar" or "No sugar, Big" depending on which value happened to sit first in its line.
+func TestVariantDisplayNameFollowsTheTemplateLineOrder(t *testing.T) {
+	lookup, repos := variantAttributeFixture()
+	templateValues := repos[models.ProductTemplateAttributeValueSchemaName].items
+	templateValues[0][models.ProductTemplateAttributeValueFieldTemplateAttributeId] = "line_size"
+	templateValues[0][models.ProductTemplateAttributeValueFieldSequence] = int64(1)
+	templateValues[1][models.ProductTemplateAttributeValueFieldTemplateAttributeId] = "line_sugar"
+	templateValues[1][models.ProductTemplateAttributeValueFieldSequence] = int64(5)
+	lineRepo := &recordingRepo{items: []dmodel.DynamicFields{
+		{basemodel.FieldId: "line_size", models.ProductTemplateAttributeFieldSequence: int64(2)},
+		{basemodel.FieldId: "line_sugar", models.ProductTemplateAttributeFieldSequence: int64(1)},
+	}}
+	withLines := func(name string) (composable.DynamicResourceEngineOnion, bool) {
+		if name == models.ProductTemplateAttributeSchemaName {
+			return &recordingOnion{repo: lineRepo}, true
+		}
+		return lookup(name)
+	}
+	fns := newVariantComputedFunctions(withLines)
+
+	out, err := fns[VariantDisplayNameFn](nil, composable.ComputeFnRequest{
+		Models: []dmodel.DynamicFields{variantRow()},
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "Coca Cola (No sugar, Big)", out[0])
+	assert.Len(t, lineRepo.params, 1, "the line sequences are read once for the page")
+}
