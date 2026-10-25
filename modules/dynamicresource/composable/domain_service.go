@@ -122,7 +122,7 @@ func (this *DefaultDomainServiceImpl) Create(
 		Action:                 this.actionName("create"),
 		BaseRepoGetter:         this.repository,
 		Data:                   NewDynamicEntityFrom(cmd),
-		BeforeValidation:       opts.BeforeValidation,
+		BeforeValidation:       this.withLangJsonNormalization(opts.BeforeValidation),
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 		ValidateExtra:          validateExtra,
 	})
@@ -146,7 +146,7 @@ func (this *DefaultDomainServiceImpl) Update(
 		Action:                 this.actionName("update"),
 		DbRepoGetter:           this.repository,
 		Data:                   NewDynamicEntityFrom(cmd),
-		BeforeValidation:       opts.BeforeValidation,
+		BeforeValidation:       this.withLangJsonNormalization(opts.BeforeValidation),
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 		ValidateExtra:          opts.ValidateExtra,
 	})

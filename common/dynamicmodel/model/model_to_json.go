@@ -1,6 +1,8 @@
 package model
 
 import (
+	"regexp"
+
 	"go.bryk.io/pkg/errors"
 )
 
@@ -139,6 +141,9 @@ func dataTypeToModelJson(dataType FieldDataType) (any, error) {
 			return nil, err
 		}
 		object["min"], object["max"] = length[0], length[1]
+		if re, ok := options[FieldDataTypeOptPattern].(*regexp.Regexp); ok && re != nil {
+			object["regex"] = re.String()
+		}
 
 	case "int32", "int64":
 		bounds, err := intPair(options[FieldDataTypeOptRange], jsonName, "range")

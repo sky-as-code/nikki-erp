@@ -185,11 +185,9 @@ func FieldDataTypeEtag() FieldDataType {
 
 func FieldDataTypeLangJson(minLength int, maxLength int, stringOpts ...FieldDataTypeStringOpts) FieldDataType {
 	validateRangeOrPanic(minLength, maxLength, "FieldDataTypeLangJson")
+	// No language whitelist by default: the supported languages are the tenant's enabled ones, which
+	// only the dynamic resource engine's normalization hook can see.
 	dtOpts := processStringOpts(minLength, maxLength, stringOpts...)
-	dtOpts[FieldDataTypeOptLangJsonWhitelist] = []model.LanguageCode{
-		model.DefaultLanguageCode,
-		model.LanguageCodeViVn,
-	}
 	return fieldDataTypeLangJson{fieldDataTypeBase{name: FieldDataTypeNameLangJson, options: dtOpts}}
 }
 
@@ -247,8 +245,23 @@ func (this fieldDataTypeBase) ToSimplized() any {
 	}{
 		Name:    this.name,
 		IsArray: this.isArray,
-		Options: this.options,
+		Options: simplizeOptions(this.options),
 	}
+}
+
+// simplizeOptions replaces the compiled pattern with its source: *regexp.Regexp has no exported
+// fields, so it would marshal as `{}` and clients could never apply the rule.
+func simplizeOptions(options FieldDataTypeOptions) FieldDataTypeOptions {
+	re, ok := options[FieldDataTypeOptPattern].(*regexp.Regexp)
+	if !ok || re == nil {
+		return options
+	}
+	result := make(FieldDataTypeOptions, len(options))
+	for key, val := range options {
+		result[key] = val
+	}
+	result[FieldDataTypeOptPattern] = re.String()
+	return result
 }
 
 type fieldDataTypeModel struct{ fieldDataTypeBase }
@@ -1179,13 +1192,29 @@ func (this fieldDataTypeLangJson) validateScalar(value value) (value, *ft.Client
 			Key: "lang_json_sanitize_failed", Message: err.Error(), Vars: nil,
 		}
 	}
-	for key, val := range *sanitized {
-		if cErr := validateStringLength(val, this.options); cErr != nil {
-			cErr.Field = "." + key
-			return Value(nil), cErr
-		}
+	if cErr := validateEachTranslation(*sanitized, this.options); cErr != nil {
+		return Value(nil), cErr
 	}
 	return Value(*sanitized), nil
+}
+
+// validateEachTranslation applies the string rules to every translation, so one invalid language
+// invalidates the field. The $ref value is a translation key, not text, and is exempt.
+func validateEachTranslation(langObj model.LangJson, options FieldDataTypeOptions) *ft.ClientErrorItem {
+	for key, text := range langObj {
+		if key == model.LanguageCodeRef {
+			continue
+		}
+		cErr := validateStringLength(text, options)
+		if cErr == nil {
+			cErr = validateStringPattern(text, options)
+		}
+		if cErr != nil {
+			cErr.Field = "." + key
+			return cErr
+		}
+	}
+	return nil
 }
 
 func toLangJson(value any) (model.LangJson, *ft.ClientErrorItem) {

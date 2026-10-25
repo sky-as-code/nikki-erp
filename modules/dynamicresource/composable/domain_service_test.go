@@ -1,14 +1,18 @@
 package composable
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
@@ -143,4 +147,158 @@ func TestCreateGuardIsChainedAheadOfTheCallersHook(t *testing.T) {
 func TestWithCreateGuardIsANoOpWithoutAGuard(t *testing.T) {
 	domSvc := newFakeDomainService(newPlainSchema())
 	assert.Same(t, CrudDomainService(domSvc), withCreateGuard(domSvc, nil))
+}
+
+func newLangJsonSchema() *dmodel.ModelSchema {
+	return dmodel.DefineModel("cmp_langjson_resource").
+		Field(dmodel.DefineField().Name("id").DataType(dmodel.FieldDataTypeString(0, 50))).
+		Field(dmodel.DefineField().Name("label").DataType(dmodel.FieldDataTypeLangJson(0, 100))).
+		Field(dmodel.DefineField().Name("note").DataType(dmodel.FieldDataTypeLangJson(0, 100))).
+		Build()
+}
+
+// withEnabledLanguages installs a process-wide resolver for one test; nothing else installs one in
+// this package's tests, so the cleanup restores nil.
+func withEnabledLanguages(t *testing.T, fn dyn.EnabledLanguagesResolver) {
+	t.Helper()
+	dyn.SetEnabledLanguagesResolver(fn)
+	t.Cleanup(func() { dyn.SetEnabledLanguagesResolver(nil) })
+}
+
+func enabledLanguages(codes ...model.LanguageCode) dyn.EnabledLanguagesResolver {
+	return func(corectx.Context) ([]model.LanguageCode, error) { return codes, nil }
+}
+
+func runLangJsonHook(t *testing.T, hook BeforeValidationFn, data dmodel.DynamicFields) dmodel.DynamicFields {
+	t.Helper()
+	require.NotNil(t, hook)
+	result, err := hook(newTestRequestCtx(), NewDynamicEntityFrom(data), newClientErrors())
+	require.NoError(t, err)
+	return result.GetFieldData()
+}
+
+func newTestRequestCtx() corectx.Context {
+	return corectx.NewRequestContext(context.Background())
+}
+
+func TestLangJsonNormalizerStripsAndFills(t *testing.T) {
+	withEnabledLanguages(t, enabledLanguages("vi-VN", "en-US"))
+	hook := newLangJsonNormalizer(newLangJsonSchema())
+
+	got := runLangJsonHook(t, hook, dmodel.DynamicFields{
+		"label": map[string]any{"en-US": "Hi", "fr-FR": "Salut"},
+	})
+
+	assert.Equal(t, model.LangJson{"en-US": "Hi", "vi-VN": "Hi"}, got["label"])
+	_, hasNote := got["note"]
+	assert.False(t, hasNote, "a field the caller did not send stays absent")
+}
+
+func TestLangJsonNormalizerLeavesRefAndEmptyAlone(t *testing.T) {
+	withEnabledLanguages(t, enabledLanguages("en-US", "vi-VN"))
+	hook := newLangJsonNormalizer(newLangJsonSchema())
+
+	got := runLangJsonHook(t, hook, dmodel.DynamicFields{
+		"label": model.LangJson{"$ref": "a.b"},
+		"note":  model.LangJson{},
+	})
+
+	assert.Equal(t, model.LangJson{"$ref": "a.b"}, got["label"])
+	assert.Equal(t, model.LangJson{}, got["note"])
+}
+
+func TestLangJsonNormalizerWithoutResolverFillsPresentKeysOnly(t *testing.T) {
+	withEnabledLanguages(t, nil)
+	hook := newLangJsonNormalizer(newLangJsonSchema())
+
+	got := runLangJsonHook(t, hook, dmodel.DynamicFields{"label": model.LangJson{"en-US": "", "fr-FR": "Salut"}})
+
+	assert.Equal(t, model.LangJson{"en-US": "Salut", "fr-FR": "Salut"}, got["label"])
+}
+
+func TestLangJsonNormalizerLeavesNonStringEntriesToTheValidator(t *testing.T) {
+	withEnabledLanguages(t, enabledLanguages("en-US", "vi-VN"))
+	hook := newLangJsonNormalizer(newLangJsonSchema())
+	raw := map[string]any{"en-US": "Hi", "vi-VN": 42}
+
+	got := runLangJsonHook(t, hook, dmodel.DynamicFields{"label": raw})
+
+	assert.Equal(t, raw, got["label"])
+}
+
+func TestLangJsonNormalizerIsNilWithoutLangJsonFields(t *testing.T) {
+	assert.Nil(t, newLangJsonNormalizer(newPlainSchema()))
+}
+
+func TestLangJsonNormalizationRunsBeforeTheCallerHook(t *testing.T) {
+	withEnabledLanguages(t, enabledLanguages("en-US", "vi-VN"))
+	service := NewDefaultDomainService(NewDomainServiceParam{Schema: newLangJsonSchema()}).(*DefaultDomainServiceImpl)
+	var seen any
+	callerHook := func(_ corectx.Context, entity *DynamicEntity, _ *ft.ClientErrors) (*DynamicEntity, error) {
+		seen = entity.GetFieldData()["label"]
+		return entity, nil
+	}
+
+	runLangJsonHook(t, service.withLangJsonNormalization(callerHook), dmodel.DynamicFields{
+		"label": model.LangJson{"vi-VN": "Chào"},
+	})
+
+	assert.Equal(t, model.LangJson{"en-US": "Chào", "vi-VN": "Chào"}, seen)
+}
+
+// langJsonRepository answers only what corecrud reads before the BeforeValidation hook runs.
+type langJsonRepository struct {
+	CrudRepository
+	base langJsonBaseRepository
+}
+
+type langJsonBaseRepository struct {
+	dyn.BaseDynamicRepository
+	schema *dmodel.ModelSchema
+}
+
+func (this langJsonBaseRepository) Schema() *dmodel.ModelSchema { return this.schema }
+
+func (this *langJsonRepository) GetBaseRepo() dyn.BaseDynamicRepository { return this.base }
+
+func (this *langJsonRepository) Schema() *dmodel.ModelSchema { return this.base.schema }
+
+func TestCreateAndUpdateFailWhenEnabledLanguagesCannotBeRead(t *testing.T) {
+	withEnabledLanguages(t, func(corectx.Context) ([]model.LanguageCode, error) {
+		return nil, errors.New("languages unavailable")
+	})
+	schema := newLangJsonSchema()
+	service := NewDefaultDomainService(NewDomainServiceParam{
+		Schema:     schema,
+		Repository: &langJsonRepository{base: langJsonBaseRepository{schema: schema}},
+	})
+	cmd := dmodel.DynamicFields{"id": "r1", "label": model.LangJson{"en-US": "Hi"}}
+
+	_, createErr := service.Create(newTestRequestCtx(), cmd)
+	_, updateErr := service.Update(newTestRequestCtx(), cmd)
+
+	require.Error(t, createErr)
+	assert.Contains(t, createErr.Error(), "languages unavailable")
+	require.Error(t, updateErr)
+	assert.Contains(t, updateErr.Error(), "languages unavailable")
+}
+
+func TestChainBeforeValidationStopsAtAViolation(t *testing.T) {
+	var calls []string
+	record := func(name string, violate bool) BeforeValidationFn {
+		return func(_ corectx.Context, entity *DynamicEntity, vErrs *ft.ClientErrors) (*DynamicEntity, error) {
+			calls = append(calls, name)
+			if violate {
+				vErrs.Append(*ft.NewAnonymousBusinessViolation(ft.ErrorKey(name), name))
+			}
+			return entity, nil
+		}
+	}
+	chain := ChainBeforeValidation(nil, record("first", true), record("second", false))
+
+	_, err := chain(nil, NewDynamicEntity(), newClientErrors())
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{"first"}, calls)
+	assert.Nil(t, ChainBeforeValidation(nil, nil))
 }
