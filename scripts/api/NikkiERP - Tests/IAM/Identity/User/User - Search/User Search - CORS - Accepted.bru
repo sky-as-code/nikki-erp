@@ -12,7 +12,7 @@ options {
 
 headers {
   Access-Control-Request-Method: GET
-  Access-Control-Request-Headers: Authorization, Content-Type
+  Access-Control-Request-Headers: X-NIKKI-ACCESSTOKEN, Content-Type
   Origin: {{api_host}}
 }
 
@@ -24,8 +24,8 @@ script:post-response {
   });
   
   const expectedHeaders = {
-    'access-control-allow-methods': 'OPTIONS,HEAD,GET,POST,PUT,DELETE',
-    'access-control-allow-headers': 'Accept,Authorization,Content-Type,Origin',
+    'access-control-allow-methods': 'OPTIONS,HEAD,GET,POST,PUT,PATCH,DELETE',
+    'access-control-allow-headers': 'Accept,Authorization,Content-Type,Origin,X-NIKKI-ACCESSTOKEN',
   };
   
   for (header in expectedHeaders) {  

@@ -5,4 +5,4 @@ type contextKey struct {
 }
 
 var CtxKeyJwtClaims = &contextKey{"JwtClaims"}
-var CtxKeyIsAuthorized = &contextKey{"IsAuthorized"}
+var CtxKeyUserIsAuthorized = &contextKey{"UserIsAuthorized"}

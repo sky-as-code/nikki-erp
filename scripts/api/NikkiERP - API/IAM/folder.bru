@@ -3,10 +3,10 @@ meta {
   seq: 5
 }
 
-auth {
-  mode: bearer
+headers {
+  X-NIKKI-ACCESSTOKEN: {{access_token}}
 }
 
-auth:bearer {
-  token: {{access_token}}
+auth {
+  mode: inherit
 }

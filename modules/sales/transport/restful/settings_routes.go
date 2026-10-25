@@ -12,6 +12,6 @@ import (
 func initSettingsV1() error {
 	return deps.Invoke(func(route *echo.Group, settingsSvc itSettings.SettingsAppService) {
 		route.Group("/v1/sales").PATCH(coreSettings.UpdateSettingsRoutePath,
-			coreSettings.UpdateSettingsHandler(settingsSvc.UpdateSettings), m.SmokeAuthz())
+			coreSettings.UpdateSettingsHandler(settingsSvc.UpdateSettings), m.UserSmokeAuthz())
 	})
 }

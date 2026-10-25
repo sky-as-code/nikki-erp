@@ -11,7 +11,7 @@ import (
 // Each is one line: composable.ServeAction converts the echo context, calls the application
 // method, and answers 400 for a business refusal, 404 for a missing record, or 200 with the
 // shaped data. MutateResponse shapes a write, Identity a read that returns a payload. No
-// authorization here -- the application method asserts it, and SmokeAuthz fails the request if
+// authorization here -- the application method asserts it, and UserSmokeAuthz fails the request if
 // no layer did.
 
 func (this *SalesFulfillmentMethodRest) Archive(echoCtx *echo.Context, payload map[string]any) error {

@@ -147,7 +147,7 @@ Cors Preflight Accepted
     [Tags]    cors
     ${headers}=    Create Dictionary
     ...    Access-Control-Request-Method=GET
-    ...    Access-Control-Request-Headers=Authorization, Content-Type
+    ...    Access-Control-Request-Headers=X-NIKKI-ACCESSTOKEN, Content-Type
     ...    Origin=${API_HOST}
     ${resp}=    OPTIONS On Session    api    ${USER_API}    headers=${headers}
     ${origin}=    Evaluate    $resp.headers.get('access-control-allow-origin')

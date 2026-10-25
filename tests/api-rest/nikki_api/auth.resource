@@ -22,10 +22,10 @@ Ensure Logged In
     Set Global Variable    ${API_REFRESH_TOKEN}    ${resp.json()}[data][refresh_token]
 
 Create Authorized API Session
-    [Documentation]    Session with mTLS client certificate and Bearer token (logging in first if needed).
+    [Documentation]    Session with mTLS client certificate and X-NIKKI-ACCESSTOKEN user token (logging in first if needed).
     [Arguments]    ${alias}=api
     Ensure Logged In
     ${certs}=    Evaluate    ($CLIENT_CERT, $CLIENT_KEY)
-    ${headers}=    Create Dictionary    Authorization=Bearer ${API_ACCESS_TOKEN}
+    ${headers}=    Create Dictionary    X-NIKKI-ACCESSTOKEN=${API_ACCESS_TOKEN}
     Create Client Cert Session    ${alias}    ${API_HOST}    headers=${headers}
     ...    client_certs=${certs}    verify=${SSL_VERIFY}    disable_warnings=${1}

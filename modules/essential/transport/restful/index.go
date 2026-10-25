@@ -154,6 +154,6 @@ func initUomCatV1(route *echo.Group) error {
 func initSettingsV1(route *echo.Group) error {
 	return deps.Invoke(func(settingsSvc itSettings.SettingsAppService) {
 		route.PATCH(coreSettings.UpdateSettingsRoutePath, coreSettings.UpdateSettingsHandler(settingsSvc.UpdateSettings),
-			m.SmokeAuthz())
+			m.UserSmokeAuthz())
 	})
 }

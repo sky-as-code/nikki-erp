@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 	"go.bryk.io/pkg/errors"
@@ -42,7 +43,7 @@ type StaticRequestGuardServiceImpl struct {
 
 func (this *StaticRequestGuardServiceImpl) CalcRequestFingerprint(_ corectx.Context, request *http.Request) (fingerprint string, err error) {
 	if this.configSvc.GetBool(c.RequestGuardAccessTokenEnabled) {
-		rawToken := this.bearerAccessToken(request)
+		rawToken := this.userAccessToken(request)
 		parts := strings.Split(rawToken, ".")
 		if rawToken == "" || len(parts) != 3 {
 			return "", nil
@@ -101,27 +102,16 @@ func (this *StaticRequestGuardServiceImpl) GetUserEntitlements(
 	}, nil
 }
 
-func (this *StaticRequestGuardServiceImpl) VerifyJwt(ctx corectx.Context, request *http.Request) (*VerifyRequestResult, error) {
-	cfg := this.configSvc
-	if !cfg.GetBool(c.RequestGuardAccessTokenEnabled) {
-		return &VerifyRequestResult{
-			IsOk: true,
-		}, nil
+func (this *StaticRequestGuardServiceImpl) VerifyUserAccessToken(
+	ctx corectx.Context, request *http.Request,
+) (*VerifyRequestResult, error) {
+	if !this.configSvc.GetBool(c.RequestGuardAccessTokenEnabled) {
+		return &VerifyRequestResult{IsOk: true}, nil
 	}
 
-	rawToken := this.bearerAccessToken(request)
-	if rawToken == "" {
-		return jwtInvalidFailure(), nil
-	}
-
-	verifyResult, err := this.tokenSvc.VerifyJwt(ctx, coretoken.VerifyJwtParam{
-		Token: rawToken,
-	})
-	if err != nil {
-		return jwtMalformedFailure(), nil
-	}
-	if !verifyResult.IsOk {
-		return jwtInvalidFailure(), nil
+	result, claims, err := this.verifyRawToken(ctx, this.userAccessToken(request))
+	if result != nil || err != nil {
+		return result, err
 	}
 
 	if this.configSvc.GetBool(c.RequestGuardAccessTokenDpopEnabled) {
@@ -132,26 +122,54 @@ func (this *StaticRequestGuardServiceImpl) VerifyJwt(ctx corectx.Context, reques
 	}
 	return &VerifyRequestResult{
 		IsOk:      true,
-		JwtClaims: verifyResult.Claims,
+		JwtClaims: claims,
 	}, nil
 }
 
-func (this *StaticRequestGuardServiceImpl) bearerAccessToken(request *http.Request) string {
-	headerName := strings.TrimSpace(this.configSvc.GetStr(c.RequestGuardAccessTokenHttpHeaderName))
-	prefix := strings.TrimSpace(this.configSvc.GetStr(c.RequestGuardAccessTokenHttpHeaderPrefix))
-	auth := strings.TrimSpace(request.Header.Get(headerName))
+// verifyRawToken returns a non-nil failure result when the token is absent, malformed or invalid,
+// otherwise the verified claims.
+func (this *StaticRequestGuardServiceImpl) verifyRawToken(
+	ctx corectx.Context, rawToken string,
+) (*VerifyRequestResult, jwt.MapClaims, error) {
+	if rawToken == "" {
+		return jwtInvalidFailure(), nil, nil
+	}
+	verifyResult, err := this.tokenSvc.VerifyJwt(ctx, coretoken.VerifyJwtParam{
+		Token: rawToken,
+	})
+	if err != nil {
+		return jwtMalformedFailure(), nil, nil
+	}
+	if !verifyResult.IsOk {
+		return jwtInvalidFailure(), nil, nil
+	}
+	return nil, verifyResult.Claims, nil
+}
 
-	if auth == "" {
+func (this *StaticRequestGuardServiceImpl) userAccessToken(request *http.Request) string {
+	headerName := strings.TrimSpace(this.configSvc.GetStr(c.RequestGuardAccessTokenHttpHeaderName))
+	prefix := this.configSvc.GetStr(c.RequestGuardAccessTokenHttpHeaderPrefix, "")
+	return extractPrefixedToken(request.Header.Get(headerName), prefix)
+}
+
+// extractPrefixedToken reads "{prefix} {token}" from a header value. An empty prefix means the
+// header carries the raw token.
+func extractPrefixedToken(headerValue string, prefix string) string {
+	value := strings.TrimSpace(headerValue)
+	prefix = strings.TrimSpace(prefix)
+	if value == "" {
 		return ""
 	}
-	if len(auth) < len(prefix) || !strings.EqualFold(auth[:len(prefix)], prefix) {
+	if prefix == "" {
+		return value
+	}
+	if len(value) <= len(prefix) || !strings.EqualFold(value[:len(prefix)], prefix) {
 		return ""
 	}
-	raw := strings.TrimSpace(auth[len(prefix):])
-	if raw == "" {
+	if separator := value[len(prefix)]; separator != ' ' && separator != '\t' {
 		return ""
 	}
-	return raw
+	return strings.TrimSpace(value[len(prefix):])
 }
 
 func jwtInvalidFailure() *VerifyRequestResult {

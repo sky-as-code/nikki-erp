@@ -28,7 +28,7 @@ type RouteDefinition struct {
 
 	HandlerFn HandlerFn
 
-	// IsAuthorized adds the SmokeAuthz middleware, which verifies the caller's token and then
+	// IsAuthorized adds the UserSmokeAuthz middleware, which verifies the caller's token and then
 	// asserts that some layer actually performed a permission check. Nil means true. A public
 	// endpoint (false) gets PublicUnauthorized instead; it must never reach an AssertAction.
 	IsAuthorized *bool
@@ -47,7 +47,7 @@ type RestEngine interface {
 	AddRoute(def RouteDefinition) RestEngine
 
 	// RegisterRoutes adds every route under "/{schema}" of the group. The optional middlewares
-	// replace SmokeAuthz on authorized routes, which is what a test passes to avoid the
+	// replace UserSmokeAuthz on authorized routes, which is what a test passes to avoid the
 	// container; a public route keeps PublicUnauthorized regardless.
 	RegisterRoutes(group *echo.Group, authorizedMiddlewares ...echo.MiddlewareFunc) error
 }
@@ -226,7 +226,7 @@ func (this *RestEngineImpl) RegisterRoutes(group *echo.Group, authorizedMiddlewa
 
 	authorized := authorizedMiddlewares
 	if len(authorized) == 0 {
-		authorized = []echo.MiddlewareFunc{m.SmokeAuthz()}
+		authorized = []echo.MiddlewareFunc{m.UserSmokeAuthz()}
 	}
 	for _, route := range ordered {
 		middlewares := []echo.MiddlewareFunc{m.PublicUnauthorized}
