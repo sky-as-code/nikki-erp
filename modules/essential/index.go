@@ -165,6 +165,7 @@ func (*EssentialModule) OnAppStarted() error {
 		// Here rather than in Init() for the same reason the schema registration below is: peer
 		// module init order is nondeterministic, and this needs settings fully built.
 		dyn.SetLocaleResolver(app.NewUserLocaleResolver(effectiveSvc))
+		dyn.SetEnabledLanguagesResolver(app.NewEnabledLanguagesResolver(langSvc))
 
 		return registerSettings(ctx, settingsSvc)
 	})

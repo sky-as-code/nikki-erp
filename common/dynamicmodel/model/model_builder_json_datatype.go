@@ -53,7 +53,8 @@ func constructDataType(dto *dataTypeJsonDto, fieldName string) FieldDataType {
 	case "secret":
 		return FieldDataTypeSecret(jsonToInt(dto.Min, fieldName), jsonToInt(dto.Max, fieldName))
 	case "langjson":
-		return FieldDataTypeLangJson(jsonToInt(dto.Min, fieldName), jsonToInt(dto.Max, fieldName))
+		return FieldDataTypeLangJson(
+			jsonToInt(dto.Min, fieldName), jsonToInt(dto.Max, fieldName), stringOpts(dto, fieldName)...)
 	case "int32":
 		return FieldDataTypeInt32(int32(jsonToInt64(dto.Min, fieldName)), int32(jsonToInt64(dto.Max, fieldName)))
 	case "int64":

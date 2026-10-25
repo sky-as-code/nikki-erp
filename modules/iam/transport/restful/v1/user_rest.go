@@ -98,6 +98,7 @@ func (this UserRest) accountSettings(reqCtx corectx.Context) map[string]any {
 		"timezone":            "Asia/Ho_Chi_Minh",
 		"supported_languages": enabled,
 		"theme_mode":          itExt.ThemeModeAuto,
+		"density":             itExt.DefaultDensity,
 	}
 
 	result, err := this.SettingsSvc.GetEffectiveSettings(reqCtx, itExt.GetEffectiveSettingsQuery{})
@@ -108,6 +109,9 @@ func (this UserRest) accountSettings(reqCtx corectx.Context) map[string]any {
 
 	if mode, ok := values[essentialKey(itExt.SettingThemeMode)].(string); ok {
 		settings["theme_mode"] = mode
+	}
+	if density, ok := values[essentialKey(itExt.SettingDensity)].(string); ok {
+		settings["density"] = density
 	}
 	if language := this.resolveLanguage(reqCtx, values, enabled); language != nil {
 		settings["language"] = *language

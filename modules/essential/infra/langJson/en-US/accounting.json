@@ -1,6 +1,8 @@
 {
 	"accounting.moduleLabel": "Accounting",
 	"accounting.settings.defaultPriceMode": "Default price mode",
+	"accounting.settings.defaultPriceMode.excluded": "Tax excluded",
+	"accounting.settings.defaultPriceMode.included": "Tax included",
 	"accounting.settings.defaultRoundingPolicyCode": "Default rounding policy",
 	"accounting.settings.orgDefaultCurrency": "Default currency",
 	"accounting.settings.orgSettings": "Tax settings",

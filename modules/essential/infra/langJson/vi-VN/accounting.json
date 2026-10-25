@@ -1,6 +1,8 @@
 {
 	"accounting.moduleLabel": "Kế toán",
 	"accounting.settings.defaultPriceMode": "Chế độ giá mặc định",
+	"accounting.settings.defaultPriceMode.excluded": "Chưa gồm thuế",
+	"accounting.settings.defaultPriceMode.included": "Đã gồm thuế",
 	"accounting.settings.defaultRoundingPolicyCode": "Chính sách làm tròn mặc định",
 	"accounting.settings.orgDefaultCurrency": "Tiền tệ mặc định",
 	"accounting.settings.orgSettings": "Thiết lập thuế",

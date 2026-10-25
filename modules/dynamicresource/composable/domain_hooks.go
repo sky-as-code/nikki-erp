@@ -80,6 +80,41 @@ func ChainValidateExtra(fns ...ValidateExtraFn) ValidateExtraFn {
 	}
 }
 
+// ChainBeforeValidation runs the given hooks in order, each on the model the previous one
+// returned, and stops at the first error or reported violation. Nil hooks are skipped; a chain of
+// nothing is nil, which corecrud treats as "no hook".
+func ChainBeforeValidation(fns ...BeforeValidationFn) BeforeValidationFn {
+	live := make([]BeforeValidationFn, 0, len(fns))
+	for _, fn := range fns {
+		if fn != nil {
+			live = append(live, fn)
+		}
+	}
+	switch len(live) {
+	case 0:
+		return nil
+	case 1:
+		return live[0]
+	}
+	return func(ctx corectx.Context, entity *DynamicEntity, vErrs *ft.ClientErrors) (*DynamicEntity, error) {
+		current := entity
+		for _, fn := range live {
+			before := vErrs.Count()
+			next, err := fn(ctx, current, vErrs)
+			if err != nil {
+				return nil, errors.Wrap(err, "ChainBeforeValidation")
+			}
+			if next != nil {
+				current = next
+			}
+			if vErrs.Count() > before {
+				return current, nil
+			}
+		}
+		return current, nil
+	}
+}
+
 // RejectArchivedOnCreate refuses a create that carries is_archived, which is set through the
 // /archived action and never as a create field. The schema validator drops it silently,
 // answering 201 with a record whose visibility is not what the caller asked for, so it is

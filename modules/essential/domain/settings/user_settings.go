@@ -15,6 +15,7 @@ import (
 // and by whatever reads a user's theme or locale, so they are constants rather than literals.
 const (
 	UserSettingThemeMode = "theme_mode"
+	UserSettingDensity   = "density"
 	UserSettingLanguage  = "language"
 	UserSettingTimezone  = "timezone"
 )
@@ -34,6 +35,17 @@ const (
 	ThemeModeLight = "light"
 	ThemeModeDark  = "dark"
 	ThemeModeAuto  = "auto"
+)
+
+// Densities. "spacious" is the look the application had before density existed; "compact" is the
+// default, so a user who expressed no preference gets the denser screen. Density changes spacing
+// only, never text size.
+const (
+	DensitySpacious = "spacious"
+	DensityCompact  = "compact"
+
+	// DefaultDensity must equal the schema's `default_value` in user_settings.json.
+	DefaultDensity = DensityCompact
 )
 
 // UserSettingsSchemaName is the name Essential registers its user-level settings under. It is not
@@ -60,7 +72,7 @@ var orgSettingsSchemaJson string
 //
 // Every field carries allow_override: true. A tenant may still enforce any of them — that is the
 // tenant administrator's choice, made per tenant in the settings UI — but none is something the
-// product locks by default. Theme is a personal accessibility choice, language decides whether a
+// product locks by default. Theme and density are personal accessibility choices, language decides whether a
 // user can read the interface at all, and a timezone is where the person actually is.
 //
 // Timezone is free text rather than an enum: the IANA zone database ships hundreds of names and

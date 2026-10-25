@@ -26,7 +26,7 @@ func TestUserSettingsSchema_IsMetadataOnly(t *testing.T) {
 func TestUserSettingsSchema_DeclaresAllowOverride(t *testing.T) {
 	schema := UserSettingsSchemaBuilder().Build()
 
-	for _, name := range []string{UserSettingThemeMode, UserSettingLanguage} {
+	for _, name := range []string{UserSettingThemeMode, UserSettingDensity, UserSettingLanguage} {
 		field, ok := schema.Field(name)
 		require.True(t, ok, name)
 
@@ -53,6 +53,25 @@ func TestUserSettingsSchema_ThemeModeAcceptsAuto(t *testing.T) {
 	require.NotNil(t, defaultValue.Get())
 	assert.Equal(t, ThemeModeAuto, *defaultValue.Get(),
 		"a user who expressed no preference has not asked for either fixed theme")
+}
+
+// Density only changes spacing. Compact is the default for every user who never chose (UX-018); the
+// backend fallback in IAM's user context reads DefaultDensity, so the schema must agree with it.
+func TestUserSettingsSchema_DensityDefaultsToCompact(t *testing.T) {
+	schema := UserSettingsSchemaBuilder().Build()
+
+	field, ok := schema.Field(UserSettingDensity)
+	require.True(t, ok)
+
+	values, ok := field.DataType().Options()[dmodel.FieldDataTypeOptEnumValues].([]string)
+	require.True(t, ok, "density must be an enum_string")
+	assert.ElementsMatch(t, []string{DensitySpacious, DensityCompact}, values)
+
+	defaultValue := field.Default()
+	require.NotNil(t, defaultValue, "density must default")
+	require.NotNil(t, defaultValue.Get())
+	assert.Equal(t, DensityCompact, *defaultValue.Get())
+	assert.Equal(t, DefaultDensity, *defaultValue.Get())
 }
 
 // The language is a code, not an enum: which codes are allowed is the essential_languages rows
