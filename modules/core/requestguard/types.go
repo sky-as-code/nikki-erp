@@ -17,7 +17,15 @@ type RequestGuardService interface {
 	CalcRequestFingerprint(ctx corectx.Context, request *http.Request) (fingerprint string, err error)
 	GetCorsMiddleware(ctx corectx.Context) (echo.MiddlewareFunc, error)
 	GetUserEntitlements(ctx corectx.Context, query GetUserEntitlementsQuery) (*GetUserEntitlementsResult, error)
-	VerifyJwt(ctx corectx.Context, request *http.Request) (result *VerifyRequestResult, err error)
+	// Verifies the user access token carried by the header named in
+	// CORE.REQUEST_GUARD.ACCESS_TOKEN_HTTP_HEADER_NAME.
+	VerifyUserAccessToken(ctx corectx.Context, request *http.Request) (result *VerifyRequestResult, err error)
+	// Verifies a service token carried by the header named in
+	// CORE.REQUEST_GUARD.SERVICE_TOKEN_HTTP_HEADER_NAME; its "scope" claim must contain at least one
+	// of allowedScopes.
+	VerifyServiceAccessToken(
+		ctx corectx.Context, request *http.Request, allowedScopes []string,
+	) (result *VerifyRequestResult, err error)
 }
 
 type VerifyRequestResult struct {

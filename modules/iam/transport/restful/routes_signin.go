@@ -15,9 +15,9 @@ func initSignInV1() error {
 		routeV1.POST("/signin/continue", loginRest.ContinueSignInFlow, m.PublicUnauthorized)
 		routeV1.POST("/signin/refresh", loginRest.RefreshToken, m.PublicUnauthorized)
 
-		routeV1.POST("/passwords/password", passwordRest.SetPassword, m.SmokeAuthz())
-		routeV1.POST("/passwords/passwordtmp", passwordRest.CreatePasswordTemp, m.SmokeAuthz())
-		routeV1.POST("/passwords/passwordotp", passwordRest.CreatePasswordOtp, m.SmokeAuthz())
-		routeV1.POST("/passwords/passwordotp/confirm", passwordRest.ConfirmPasswordOtp, m.SmokeAuthz())
+		routeV1.POST("/passwords/password", passwordRest.SetPassword, m.UserSmokeAuthz())
+		routeV1.POST("/passwords/passwordtmp", passwordRest.CreatePasswordTemp, m.UserSmokeAuthz())
+		routeV1.POST("/passwords/passwordotp", passwordRest.CreatePasswordOtp, m.UserSmokeAuthz())
+		routeV1.POST("/passwords/passwordotp/confirm", passwordRest.ConfirmPasswordOtp, m.UserSmokeAuthz())
 	})
 }

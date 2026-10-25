@@ -81,6 +81,6 @@ Create Plain User Session
     ${token}=    Set Variable    ${resp.json()}[data][access_token]
 
     ${certs}=    Evaluate    ($CLIENT_CERT, $CLIENT_KEY)
-    ${headers}=    Create Dictionary    Authorization=Bearer ${token}
+    ${headers}=    Create Dictionary    X-NIKKI-ACCESSTOKEN=${token}
     Create Client Cert Session    plain_user    ${API_HOST}    headers=${headers}
     ...    client_certs=${certs}    verify=${SSL_VERIFY}    disable_warnings=${1}

@@ -47,11 +47,11 @@ func initSettingsV1() error {
 // `PATCH /v1/{module_key}/settings/:level`, where it can validate against its own data first, and
 // persists them through core's settings port; a generic write here would let a caller skip that.
 func registerLevelRoutes(routeV1 *echo.Group, settingsRest *v1.SettingsRest) {
-	routeV1.GET("/tenant/:module_key", settingsRest.GetTenantSettings, m.SmokeAuthz())
+	routeV1.GET("/tenant/:module_key", settingsRest.GetTenantSettings, m.UserSmokeAuthz())
 
-	routeV1.GET("/org/:module_key", settingsRest.GetOrgSettings, m.SmokeAuthz())
+	routeV1.GET("/org/:module_key", settingsRest.GetOrgSettings, m.UserSmokeAuthz())
 
-	routeV1.GET("/user/:module_key", settingsRest.GetUserPreferences, m.SmokeAuthz())
+	routeV1.GET("/user/:module_key", settingsRest.GetUserPreferences, m.UserSmokeAuthz())
 }
 
 // registerReadOnly serves a settings resource's reads only: Settings never takes a generic write

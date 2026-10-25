@@ -16,8 +16,8 @@ import (
 func initMeV1() error {
 	return deps.Invoke(func(route *echo.Group, userRest *v1.UserRest, permissionRest *v1.PermissionRest) {
 		routeV1 := route.Group("/v1/iam")
-		routeV1.GET("/me/context", userRest.GetUserContext, m.SmokeAuthz())
-		routeV1.POST("/me/test-permissions", permissionRest.TestMyPermissions, m.SmokeAuthz())
+		routeV1.GET("/me/context", userRest.GetUserContext, m.UserSmokeAuthz())
+		routeV1.POST("/me/test-permissions", permissionRest.TestMyPermissions, m.UserSmokeAuthz())
 	})
 }
 

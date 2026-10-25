@@ -79,16 +79,16 @@ func initResourcesV1(route *echo.Group) error {
 // initInboxV1 registers what a signed-in person calls about their own notifications.
 //
 // These are hand-registered rather than AddRoute actions because they are not addressed by a
-// resource id: "my unread count" names no record. Each therefore carries SmokeAuthz explicitly,
+// resource id: "my unread count" names no record. Each therefore carries UserSmokeAuthz explicitly,
 // which a hand-registered route does not inherit.
 func initInboxV1(route *echo.Group) error {
 	return deps.Invoke(func(inboxRest *v1.InboxRest) {
-		route.GET("/notifications", wrap(inboxRest.GetInbox), m.SmokeAuthz())
-		route.GET("/notifications/unread-count", wrap(inboxRest.GetUnreadCount), m.SmokeAuthz())
-		route.POST("/notifications/mark-read", wrap(inboxRest.MarkRead), m.SmokeAuthz())
+		route.GET("/notifications", wrap(inboxRest.GetInbox), m.UserSmokeAuthz())
+		route.GET("/notifications/unread-count", wrap(inboxRest.GetUnreadCount), m.UserSmokeAuthz())
+		route.POST("/notifications/mark-read", wrap(inboxRest.MarkRead), m.UserSmokeAuthz())
 
 		// After the literal paths above: ":id" would otherwise swallow "unread-count".
-		route.POST("/notifications/:id/read", wrap(inboxRest.MarkOneRead), m.SmokeAuthz())
+		route.POST("/notifications/:id/read", wrap(inboxRest.MarkOneRead), m.UserSmokeAuthz())
 	})
 }
 
@@ -98,7 +98,7 @@ func initInboxV1(route *echo.Group) error {
 // answers a response that never ends — the documented exception for an unusual HTTP surface.
 func initStreamV1(route *echo.Group) error {
 	return deps.Invoke(func(streamRest *v1.StreamRest) {
-		route.GET("/notifications/stream", wrap(streamRest.Stream), m.SmokeAuthz())
+		route.GET("/notifications/stream", wrap(streamRest.Stream), m.UserSmokeAuthz())
 	})
 }
 

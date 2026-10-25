@@ -194,7 +194,8 @@ func (this *AuthTokenServiceImpl) VerifyJwt(ctx corectx.Context, param VerifyJwt
 	}
 
 	claims := jwtToken.Claims.(jwt.MapClaims)
-	jwtId := claims["jti"].(string)
+	// A service token need not carry "jti"; a bare assertion would panic on it.
+	jwtId, _ := claims["jti"].(string)
 	return &VerifyJwtResult{
 		IsOk:   true,
 		Claims: claims,
@@ -226,13 +227,11 @@ func (this *AuthTokenServiceImpl) validateConfig() {
 	cfg := this.configSvc
 	headerName := strings.TrimSpace(cfg.GetStr(c.RequestGuardAccessTokenHttpHeaderName))
 	if headerName == "" {
-		panic(errors.Errorf("config '%s' and '%s' are required", c.RequestGuardAccessTokenHttpHeaderName, c.RequestGuardAccessTokenHttpHeaderPrefix))
+		panic(errors.Errorf("config '%s' is required", c.RequestGuardAccessTokenHttpHeaderName))
 	}
 
-	prefix := strings.TrimSpace(cfg.GetStr(c.RequestGuardAccessTokenHttpHeaderPrefix))
-	if prefix == "" {
-		panic(errors.Errorf("config '%s' is required", c.RequestGuardAccessTokenHttpHeaderPrefix))
-	}
+	// The header prefix is deliberately not validated: an empty one means the header carries the
+	// raw token.
 
 	algo := cfg.GetStr(c.RequestGuardAccessTokenAlgorithm)
 

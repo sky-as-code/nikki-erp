@@ -30,7 +30,7 @@ class StreamProbe:
 
         headers = {"Accept": "application/x-ndjson"}
         if token:
-            headers["Authorization"] = "Bearer %s" % token
+            headers["X-NIKKI-ACCESSTOKEN"] = token
 
         cert = (client_cert, client_key) if client_cert and client_key else None
         query = {key: value for key, value in params.items() if value not in (None, "")}

@@ -184,7 +184,7 @@ Open Session As
     ...    json=${{ {'attempt_id': $attempt_id, 'passwords': {'password': $password}} }}
     Should Be True    ${resp.json()}[done]    msg=Sign-in did not complete for ${username}
     ${certs}=    Evaluate    ($CLIENT_CERT, $CLIENT_KEY)
-    ${headers}=    Create Dictionary    Authorization=Bearer ${resp.json()}[data][access_token]
+    ${headers}=    Create Dictionary    X-NIKKI-ACCESSTOKEN=${resp.json()}[data][access_token]
     Create Client Cert Session    ${alias}    ${API_HOST}    headers=${headers}
     ...    client_certs=${certs}    verify=${SSL_VERIFY}    disable_warnings=${1}
 

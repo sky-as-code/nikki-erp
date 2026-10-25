@@ -51,7 +51,7 @@ func NewUpdateSettingsResponse(data SetSettingsResultData) UpdateSettingsRespons
 const UpdateSettingsRoutePath = "/settings/:level"
 
 // UpdateSettingsHandler is a module's settings update route, mounted as
-// `route.PATCH(UpdateSettingsRoutePath, UpdateSettingsHandler(svc.UpdateSettings), m.SmokeAuthz())`.
+// `route.PATCH(UpdateSettingsRoutePath, UpdateSettingsHandler(svc.UpdateSettings), m.UserSmokeAuthz())`.
 func UpdateSettingsHandler(
 	updateFn func(corectx.Context, UpdateSettingsCommand) (*SetSettingsResult, error),
 ) echo.HandlerFunc {

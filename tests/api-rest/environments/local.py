@@ -34,8 +34,8 @@ SIGNIN_USERNAME = os.getenv("API_TEST_USERNAME", "nguyen.van.an@nikki.com")
 SIGNIN_PASSWORD = os.getenv("API_TEST_PASSWORD", "Passwo0rd123")
 
 # Expected CORS preflight response headers (see CORE.HTTP.CORS_* in config.default.yaml).
-CORS_ALLOW_METHODS = os.getenv("API_CORS_METHODS", "OPTIONS,HEAD,GET,POST,PATCH,DELETE")
-CORS_ALLOW_HEADERS = os.getenv("API_CORS_HEADERS", "Accept,Authorization,Content-Type,Origin")
+CORS_ALLOW_METHODS = os.getenv("API_CORS_METHODS", "OPTIONS,HEAD,GET,POST,PUT,PATCH,DELETE")
+CORS_ALLOW_HEADERS = os.getenv("API_CORS_HEADERS", "Accept,Authorization,Content-Type,Origin,X-NIKKI-ACCESSTOKEN")
 
 # Optional pre-existing seed entities. Left empty, the suites create a sample
 # user/group on the fly and delete them in the suite teardown.
