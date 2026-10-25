@@ -79,6 +79,10 @@ func migrationKinds(t *testing.T, tree, prefix string) []string {
 
 	kinds := make([]string, 0)
 	for _, file := range blockMigrations(t, tree, prefix) {
+		if strings.Contains(file, "seed") || strings.HasSuffix(file, "_iam.sql") {
+			// nikkierp keeps seed and IAM files in scripts/migration-seeds; the legacy coremart tree does not.
+			continue
+		}
 		name := strings.TrimSuffix(file, ".sql")
 		if underscore := strings.Index(name, "_"); underscore >= 0 {
 			name = name[underscore+1:]

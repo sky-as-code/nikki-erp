@@ -37,17 +37,6 @@ BEGIN
 		('01M0CUR1QR4X7FK8H2Z9DAP5BK', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a currency so it is out of the working set', '01M0CUR1QK4N7VZBX2M9TPE5RD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
-
-	IF EXISTS (
-		SELECT FROM information_schema.tables
-		WHERE table_schema = 'public' AND table_name = 'iam_entitlements'
-	) THEN
-		INSERT INTO "iam_entitlements" (
-			"id", "name", "description", "expression", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
-		) VALUES
-		('01M0CUR1QS6Z9HM0K4B1FCR7DM', 'User - Read Currencies', 'Read currencies', 'read:essential_currency:tenant', '01M0CUR1QQ2V5DH6F0X7BYM3ZJ', '01M0CUR1QK4N7VZBX2M9TPE5RD', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
-		ON CONFLICT ("id") DO NOTHING;
-	END IF;
 END $$;
 
 

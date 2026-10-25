@@ -69,7 +69,7 @@ func TestSeededOrderActionsAreDemanded(t *testing.T) {
 func seededActionCodes(t *testing.T, resourceCode string) []string {
 	t.Helper()
 
-	path := filepath.Join("..", "..", "..", "scripts", "migrations", "1006002_purchase_iam.sql")
+	path := filepath.Join("..", "..", "..", "scripts", "migration-seeds", "1006002_purchase_iam.sql")
 	content, err := os.ReadFile(path)
 	require.NoError(t, err, "the purchase IAM migration must be readable from the test")
 

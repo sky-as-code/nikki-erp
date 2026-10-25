@@ -44,8 +44,8 @@ func TestBothTreesCarryTheSameSalesMigrations(t *testing.T) {
 		t.Skip("the coremart tree is not present in this checkout")
 	}
 
-	first := salesMigrations(t, trees[0])
-	second := salesMigrations(t, trees[1])
+	first := withoutDataFiles(salesMigrations(t, trees[0]))
+	second := withoutDataFiles(salesMigrations(t, trees[1]))
 
 	if strings.Join(first, ",") != strings.Join(second, ",") {
 		t.Errorf("the trees carry different Sales migrations:\n  %s: %v\n  %s: %v",
@@ -159,6 +159,18 @@ func salesMigrations(t *testing.T, tree string) []string {
 		t.Fatalf("no Sales migrations found in %s", tree)
 	}
 	return files
+}
+
+// withoutDataFiles drops seed and IAM files: nikkierp keeps them in scripts/migration-seeds, while the legacy
+// coremart tree still carries them among its migrations.
+func withoutDataFiles(files []string) []string {
+	kept := make([]string, 0, len(files))
+	for _, file := range files {
+		if !strings.Contains(file, "seed") && !strings.HasSuffix(file, "_iam.sql") {
+			kept = append(kept, file)
+		}
+	}
+	return kept
 }
 
 func readMigration(t *testing.T, tree, file string) string {

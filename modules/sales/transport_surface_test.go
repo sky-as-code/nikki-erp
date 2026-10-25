@@ -137,10 +137,10 @@ func registeredSchemaNames(t *testing.T) []string {
 func seededResourceCodes(t *testing.T) map[string]bool {
 	t.Helper()
 
-	dir := filepath.Join("..", "..", "scripts", "migrations")
+	dir := filepath.Join("..", "..", "scripts", "migration-seeds")
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		t.Fatalf("reading the migrations directory: %v", err)
+		t.Fatalf("reading the migration-seeds directory: %v", err)
 	}
 
 	codes := map[string]bool{}

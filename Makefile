@@ -10,7 +10,7 @@ cwd := $(dir $(lastword $(MAKEFILE_LIST)))
 endif
 
 .PHONY: build build-mods build-static build-dynamic clean \
-	db-init db-gen db-current db-hash db-migration db-apply db-revert db-infra-apply \
+	db-init db-gen db-current db-hash db-migration db-apply db-seed db-revert db-infra-apply \
 	db-inspect-live db-patch-gen db-patch-apply \
 	infra-up infra-down infra-swarm-up infra-swarm-down infra-swarm-svc install-tools gen-sql run \
 	test-api-rest test-api-rest-deps cert-ca cert-client cert-server-nikki keypair-jwt-nikki
@@ -117,6 +117,12 @@ db-apply:
 		--dir "$(migration_dir)" \
 		--url "postgres://nikki_admin:nikki_password@localhost:5432/nikki_erp?search_path=public&sslmode=disable"
 
+# Apply $(cwd)scripts/migration-seeds (mounted at /seeds by the local compose) in one transaction. Not
+# re-runnable: rebuild with db-infra-apply. MSYS_NO_PATHCONV keeps Git Bash from rewriting /seeds.
+db-seed:
+	@echo "Applying seed files mounted at '/seeds' in nikki_postgres..."
+	MSYS_NO_PATHCONV=1 docker exec nikki_postgres bash /seeds/create_seeds.sh
+
 # Roll back the latest applied migration file.
 db-revert:
 	@echo "Undoing the LATEST APPLIED migration file in '$(migration_dir)'..."
@@ -127,7 +133,7 @@ db-revert:
 		--env local
 
 db-infra-apply:
-	make infra-down && make infra-up && make db-hash && make db-apply
+	make infra-down && make infra-up && make db-hash && make db-apply && make db-seed
 
 # Patch a database built from an older tree, schema only. The tree is $(cwd)scripts/migrations, the output
 # $(cwd)scripts/dbpatch-out/<ts>/. Pass url= or set DBPATCH_URL (keeps the password out of make and history).

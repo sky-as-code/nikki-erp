@@ -9,6 +9,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../migration-seeds:/seeds:ro # applied by `make db-seed`, after the schema
     ports:
       - "5432:5432"
     healthcheck:

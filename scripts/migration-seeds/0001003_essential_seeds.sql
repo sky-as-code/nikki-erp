@@ -33,19 +33,6 @@ BEGIN
 		('01KZJ8Q3ZKK7Y3E8T1AVJZL4F0', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01KZJ8Q3ZKM9Z5F0V3BWK1M6G1', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
 	END IF;
-
-	IF EXISTS (
-		SELECT FROM information_schema.tables
-		WHERE table_schema = 'public' AND table_name = 'iam_entitlements'
-	) THEN
-		-- BR-UOM-ESS §13.3: the system role every user holds gets read on both resources, so
-		-- that any user can pick a UoM in a transaction form without a bespoke grant.
-		INSERT INTO "iam_entitlements" (
-			"id", "name", "description", "expression", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
-		) VALUES
-		('01KZJ8Q3ZKN1A7G2W5CXL3N8H2', 'User - Read Units of Measure', 'Read units of measure', 'read:essential_uom:tenant', '01KZJ8Q3ZKF9T5A1NX3PDVG8B6', '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZJ8Q3ZKP3B9H4X7DYM5P0J3', 'User - Read UoM Categories', 'Read unit-of-measure categories', 'read:essential_uomcat:tenant', '01KZJ8Q3ZKM9Z5F0V3BWK1M6G1', '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
-	END IF;
 END $$;
 
 -- ---------------------------------------------------------------------------

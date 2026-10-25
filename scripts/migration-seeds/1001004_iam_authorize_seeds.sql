@@ -183,6 +183,48 @@ BEGIN
 		('01KNHHJY19X4XW1ZRWD5955TD0', 'Sales Managers - All permissions', 'All permissions in Sales Department', '*:*:orgunit/01K1H8N3L0WX4Q6S8YRKT3D2C1', NULL, NULL, '01KNHHJY19FFBFSXDJSAP7N6Z2', 'orgunit', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C1', false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
 	END IF;
 
+	-- Moved from 0001002_essential_iam.sql: it grants to the "User" system role created above, and seeds now
+	-- run after the whole schema, so the grant has to follow the role.
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_entitlements'
+	) THEN
+		INSERT INTO "iam_entitlements" (
+			"id", "name", "description", "expression", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
+		) VALUES
+		('01M0CUR1QS6Z9HM0K4B1FCR7DM', 'User - Read Currencies', 'Read currencies', 'read:essential_currency:tenant', '01M0CUR1QQ2V5DH6F0X7BYM3ZJ', '01M0CUR1QK4N7VZBX2M9TPE5RD', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
+	-- Moved from 0001003_essential_seeds.sql: it grants to the "User" system role created above, and seeds now
+	-- run after the whole schema, so the grant has to follow the role.
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_entitlements'
+	) THEN
+		-- BR-UOM-ESS §13.3: the system role every user holds gets read on both resources, so
+		-- that any user can pick a UoM in a transaction form without a bespoke grant.
+		INSERT INTO "iam_entitlements" (
+			"id", "name", "description", "expression", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
+		) VALUES
+		('01KZJ8Q3ZKN1A7G2W5CXL3N8H2', 'User - Read Units of Measure', 'Read units of measure', 'read:essential_uom:tenant', '01KZJ8Q3ZKF9T5A1NX3PDVG8B6', '01KZJ8Q3ZK7XN4WVBM2PDHR5T0', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZJ8Q3ZKP3B9H4X7DYM5P0J3', 'User - Read UoM Categories', 'Read unit-of-measure categories', 'read:essential_uomcat:tenant', '01KZJ8Q3ZKM9Z5F0V3BWK1M6G1', '01KZJ8Q3ZKB8F1TC6RJWNQ4XS2', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
+	END IF;
+
+	-- Moved from 0003002_settings_iam.sql: it grants to the "User" system role created above, and seeds now
+	-- run after the whole schema, so the grant has to follow the role.
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_entitlements'
+	) THEN
+		INSERT INTO "iam_entitlements" (
+			"id", "name", "description", "expression", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
+		) VALUES
+		('01MCJZ6P0ETGP6BE4TPQM20NEZ', 'User - Read Setting Schemas', 'Read the setting declarations needed to render the settings page', 'read:settings_schema:tenant', '01MVHMAN7HPNTT9HY8QZ0JDX7G', '01M68990HNE4Z1PR28N6G1R1M2', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01MNJ1KF88AN0A9QWXXQWTY5ZN', 'User - Read Setting Records', 'Read own settings; the service resolves the owner from the request', 'read:settings_record:tenant', '01MFS8N4WX55Z4G0AXKB41SG81', '01MACPJ8N53VVRCDGNB7APWHPG', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
 	-- "User" is the system role every person holds. Flagged rather than assigned per user, so the
 	-- permission cache grants it to users who do not exist yet (iam_calc_user_perm).
 	UPDATE "iam_roles" SET "is_system" = TRUE WHERE "id" = '01KZJ5XRJDXSXZY0DKNNE6S086';
