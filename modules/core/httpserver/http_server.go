@@ -151,8 +151,7 @@ func (this *HttpServer) startHttps() error {
 	}
 
 	var caPool *x509.CertPool
-	// clientAuthType := tls.NoClientCert
-	clientAuthType := tls.RequireAnyClientCert
+	clientAuthType := tls.NoClientCert
 	if mtlsEnabled {
 		clientAuthType = tls.RequireAndVerifyClientCert
 
