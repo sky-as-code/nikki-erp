@@ -4,37 +4,22 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable/filefield"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
-const userAvatarKeyPrefix = "iam/users"
-
-// UserFileFields lists the uploadable files of a user.
-func UserFileFields() []filefield.FileField {
-	return []filefield.FileField{
-		filefield.ImageField(models.UserFileAvatar, models.UserFieldAvatarFileKey,
-			models.UserFieldAvatarFileUrl, userAvatarKeyPrefix),
-	}
-}
-
 // NewUserCrudApplicationService is handed the composable default by the iam_user onion.
 func NewUserCrudApplicationService(
-	base composable.CrudApplicationService, storage filestorage.FileStorageAdapter, domSvc itUser.UserCrudDomainService,
+	base composable.CrudApplicationService, domSvc itUser.UserCrudDomainService,
 ) itUser.UserCrudApplicationService {
-	return &UserCrudApplicationServiceImpl{
-		ApplicationService: filefield.NewApplicationService(base, storage, UserFileFields()),
-		domSvc:             domSvc,
-	}
+	return &UserCrudApplicationServiceImpl{CrudApplicationService: base, domSvc: domSvc}
 }
 
-// UserCrudApplicationServiceImpl is the authorized CRUD of the resource, with the avatar file
-// field presigned on read and written only through files/avatar.
+// UserCrudApplicationServiceImpl is the authorized CRUD of the resource. The avatar is an
+// ordinary avatar_file_id file field, whose lifecycle the composable default service drives.
 type UserCrudApplicationServiceImpl struct {
-	filefield.ApplicationService
+	composable.CrudApplicationService
 	domSvc itUser.UserCrudDomainService
 }
 

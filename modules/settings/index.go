@@ -113,5 +113,6 @@ func (*SettingsModule) RegisterModels() error {
 	return stdErr.Join(
 		dmodel.RegisterSchemaB(models.SettingsSchemaSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.SettingsRecordSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SettingsQuotaSchemaBuilder()),
 	)
 }

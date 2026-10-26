@@ -6,7 +6,6 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
@@ -31,7 +30,6 @@ func registerProductVariantEngine() error {
 			param composable.BuildParam,
 			productSvc itProduct.ProductService,
 			usageDispatcher *usagecheck.Dispatcher,
-			storage filestorage.FileStorageAdapter,
 			catalogPublisher itEvent.CatalogChangedEventPublisher,
 		) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
@@ -43,7 +41,7 @@ func registerProductVariantEngine() error {
 					return services.NewProductVariantDomainService(base, usageDispatcher)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
-					return app.NewProductVariantApplicationService(base, catalogPublisher, productSvc, storage)
+					return app.NewProductVariantApplicationService(base, catalogPublisher, productSvc)
 				},
 				// Resolved lazily, per call: the attribute-value onion is registered by this same
 				// pass, so looking it up while building this one would depend on registration order.
@@ -76,10 +74,8 @@ func registerProductVariantEngine() error {
 		// The org-scoped read, for a caller that reaches this port with no user permission of its
 		// own and so must supply the org itself rather than have it asserted from the caller's
 		// membership.
-		func(
-			domain itProduct.ProductVariantDomainService, storage filestorage.FileStorageAdapter,
-		) itProduct.ProductVariantService {
-			return app.NewProductVariantReadService(domain, storage)
+		func(domain itProduct.ProductVariantDomainService) itProduct.ProductVariantService {
+			return app.NewProductVariantReadService(domain)
 		},
 	))
 }

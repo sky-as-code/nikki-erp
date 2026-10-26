@@ -13,5 +13,4 @@ type ProductService interface {
 	SearchProducts(ctx corectx.Context, query SearchProductsQuery) (*SearchProductsResult, error)
 	SetProductIsArchived(ctx corectx.Context, cmd SetProductIsArchivedCommand) (*SetProductIsArchivedResult, error)
 	UpdateProduct(ctx corectx.Context, cmd UpdateProductCommand) (*dyn.OpResult[dyn.MutateResultData], error)
-	UploadProductThumnail(ctx corectx.Context, cmd UploadProductThumbnailCommand) (*UploadProductThumbnailResult, error)
 }

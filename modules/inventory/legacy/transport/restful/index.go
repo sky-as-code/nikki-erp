@@ -47,7 +47,6 @@ func initProductV1() error {
 		routeV1.POST("/products/:id/archived", productRest.SetIsArchived)
 		routeV1.POST("/products", productRest.Create)
 		routeV1.PUT("/products/:id", productRest.Update)
-		routeV1.PUT("/products/:id/thumbnail", productRest.UploadThumbnail)
 
 		// Nested resource routes, registered by hand.
 		routeV1.DELETE("/products/:product_id/attributes/:id", attributeRest.Delete)
@@ -73,7 +72,6 @@ func initProductV1() error {
 		routeV1.POST("/products/:product_id/variants/exists", variantRest.Exists)
 		routeV1.POST("/products/:product_id/variants", variantRest.Create)
 		routeV1.PUT("/products/:product_id/variants/:id", variantRest.Update)
-		routeV1.PUT("/products/:product_id/variants/:id/image", variantRest.UploadImage)
 
 		routeV1.GET("/variants", variantRest.Search)
 

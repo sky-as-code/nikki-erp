@@ -3,10 +3,12 @@
 
 dbp_lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 dbp_pg_image="postgres:17"
-# A pattern is "<schema>.<object>" even with --schema set. Functions, triggers and views need no pattern:
-# the community build of atlas skips them on its own, and this tool leaves them out of scope anyway.
-dbp_excludes=(--exclude '*.atlas_schema_revisions')
-dbp_inspect_files=(live_schema.sql revisions.tsv inspect.env)
+# A URL with search_path (live from `make db-apply`, the dev database) is schema-scoped and matches a bare
+# "<object>"; one without it matches "<schema>.<object>". Both forms, so atlas's revisions table never reaches a
+# patch. Functions, triggers and views need no pattern: the community build of atlas skips them on its own,
+# and this tool leaves them out of scope anyway.
+dbp_excludes=(--exclude 'atlas_schema_revisions' --exclude '*.atlas_schema_revisions')
+dbp_inspect_files=(live_schema.sql inspect.env)
 
 dbp_die() {
 	echo "Error: $*" >&2

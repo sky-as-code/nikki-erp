@@ -15,7 +15,7 @@ import (
 
 func InitRestfulHandlers() error {
 	return stdErr.Join(
-		deps.Register(v1.NewSettingsRest, v1.NewSettingsSchemaRest, v1.NewSettingsRecordRest),
+		deps.Register(v1.NewSettingsRest, v1.NewSettingsSchemaRest, v1.NewSettingsRecordRest, v1.NewSettingsQuotaRest),
 		initSettingsV1(),
 	)
 }
@@ -25,7 +25,7 @@ func InitRestfulHandlers() error {
 func initSettingsV1() error {
 	return deps.Invoke(func(
 		route *echo.Group, settingsRest *v1.SettingsRest,
-		schemaRest *v1.SettingsSchemaRest, recordRest *v1.SettingsRecordRest,
+		schemaRest *v1.SettingsSchemaRest, recordRest *v1.SettingsRecordRest, quotaRest *v1.SettingsQuotaRest,
 	) error {
 		routeV1 := route.Group("/v1/settings")
 
@@ -35,6 +35,7 @@ func initSettingsV1() error {
 		return stdErr.Join(
 			registerReadOnly(routeV1, models.SettingsSchemaSchemaName, schemaRest),
 			registerReadOnly(routeV1, models.SettingsRecordSchemaName, recordRest),
+			registerReadOnly(routeV1, models.SettingsQuotaSchemaName, quotaRest),
 		)
 	})
 }

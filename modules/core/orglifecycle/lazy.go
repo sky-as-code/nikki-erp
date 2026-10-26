@@ -22,6 +22,8 @@ type lazyService struct {
 }
 
 func (this *lazyService) resolve() (OrgLifecycleService, error) {
+	// IAM fans one org's lifecycle command out to every module of a wave at once, so builds run
+	// concurrently; deps_inject serializes their access to the container.
 	this.once.Do(func() {
 		this.svc, this.err = this.build()
 	})

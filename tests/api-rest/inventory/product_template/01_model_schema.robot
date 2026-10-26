@@ -26,15 +26,23 @@ Schema Declares The Catalog Fields
 
 Schema Declares The Fallback Fields
     [Documentation]    BR §7.6: image, weight and dimensions are the allowlisted fields that
-    ...    exist on both halves. The template's copy is the fallback a variant inherits when
-    ...    it does not override, which is why they are named default_*.
+    ...    exist on both halves. The template's value is the fallback a variant inherits when
+    ...    it does not override, which is why they are named default_* (the image is the
+    ...    template's preview_image_file_id).
     ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    FOR    ${field}    IN    default_image_file_key    default_weight    default_length
+    FOR    ${field}    IN    preview_image_file_id    default_weight    default_length
     ...    default_width    default_height
         Dictionary Should Contain Key    ${fields}    ${field}
     END
+
+Preview Image Is A File Field
+    [Documentation]    The header image is an IT Storage file id, flagged so a form submits it as a file.
+    ${resp}=    GET On Session    api    ${PRODUCT_TEMPLATE_API}/meta/schema
+    Response Status Should Be    ${resp}    200
+    ${field}=    Set Variable    ${resp.json()}[fields][preview_image_file_id]
+    Should Be Equal    ${field}[metadata][file_field]    ${True}
 
 Schema Declares No Variant Owned Fields
     [Documentation]    BR §6.2.2: SKU, barcode and the combination key identify a concrete

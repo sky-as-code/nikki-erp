@@ -69,7 +69,7 @@ func seededActionCodes(t *testing.T) map[string]bool {
 	// Matched by pattern rather than listed by name, because the incremental per-submodule migrations
 	// get folded back into 1007002_sales_iam.sql. A hardcoded list breaks on the consolidation and,
 	// worse, silently stops covering a file that is renamed rather than deleted.
-	pattern := filepath.Join("..", "..", "..", "scripts", "migrations", "*_sales*_iam.sql")
+	pattern := filepath.Join("..", "..", "..", "scripts", "migration-seeds", "*_sales*_iam.sql")
 	paths, err := filepath.Glob(pattern)
 	if err != nil {
 		t.Fatalf("listing the Sales IAM migrations: %v", err)

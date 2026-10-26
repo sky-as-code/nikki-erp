@@ -34,12 +34,13 @@ type EffectiveProductView struct {
 	Sku     string `json:"sku,omitempty"`
 	Barcode string `json:"barcode,omitempty"`
 
-	ImageKey string `json:"-"`
-	ImageUrl string `json:"image_url,omitempty"`
-	Weight   string `json:"weight,omitempty"`
-	Length   string `json:"length,omitempty"`
-	Width    string `json:"width,omitempty"`
-	Height   string `json:"height,omitempty"`
+	// ImageFileId is an IT Storage file id; a client renders it through
+	// /v1/itstorage/files/:id/download.
+	ImageFileId string `json:"image_file_id,omitempty"`
+	Weight      string `json:"weight,omitempty"`
+	Length      string `json:"length,omitempty"`
+	Width       string `json:"width,omitempty"`
+	Height      string `json:"height,omitempty"`
 
 	TemplateStatus string `json:"template_status,omitempty"`
 	VariantStatus  string `json:"variant_status,omitempty"`
@@ -65,7 +66,7 @@ func NewEffectiveProductView(product EffectiveProduct) EffectiveProductView {
 		PurchaseOk:         product.PurchaseOk,
 		Sku:                product.Sku,
 		Barcode:            product.Barcode,
-		ImageKey:           product.ImageKey,
+		ImageFileId:        product.ImageFileId,
 		Weight:             decimalToString(product.Weight),
 		Length:             decimalToString(product.Length),
 		Width:              decimalToString(product.Width),

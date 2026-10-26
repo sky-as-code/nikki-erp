@@ -31,15 +31,6 @@ func userRestEngine(rest *v1.UserCrudRest) composable.RestEngine {
 	return composable.NewRestEngine(models.UserSchemaName, rest).
 		AddCrudRoutes().
 		AddRoute(composable.RouteDefinition{
-			Path: ":id/files/:field", ActionType: composable.ActionTypeUpload, HandlerFn: rest.UploadFile,
-		}).
-		AddRoute(composable.RouteDefinition{
-			Path: ":id/files/:field", ActionType: composable.ActionTypeUploadReplace, HandlerFn: rest.ReplaceFile,
-		}).
-		AddRoute(composable.RouteDefinition{
-			Path: ":id/files/:field", ActionType: composable.ActionTypeDelete, HandlerFn: rest.DeleteFile,
-		}).
-		AddRoute(composable.RouteDefinition{
 			Path: ":id/send_invitation", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.SendInvitation,
 		}).
 		AddRoute(composable.RouteDefinition{

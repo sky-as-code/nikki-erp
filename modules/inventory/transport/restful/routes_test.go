@@ -92,7 +92,7 @@ func TestCustomRoutesRegisterAheadOfIdPatterns(t *testing.T) {
 	templateBase := "/v1/inventory/" + models.ProductTemplateSchemaName
 	assert.Less(t, indexOf(routes, "POST "+templateBase+"/resolve_selection"), indexOf(routes, "GET "+templateBase+"/:id"))
 	assert.Contains(t, routes, "POST "+templateBase+"/:id/generate_variants")
-	assert.Contains(t, routes, "POST "+templateBase+"/:id/copy")
+	assert.Contains(t, routes, "POST "+templateBase+"/:id/duplicate")
 
 	assert.Contains(t, routes, "GET /v1/inventory/"+models.ProductVariantSchemaName+"/:id/effective")
 }
@@ -123,7 +123,7 @@ func templateRoutes(rest *v1.ProductTemplateRest) []composable.RouteDefinition {
 	return []composable.RouteDefinition{
 		{Path: ":id/generate_variants", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.GenerateVariants},
 		{Path: "resolve_selection", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ResolveSelection},
-		{Path: ":id/copy", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Copy},
+		{Path: ":id/duplicate", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Duplicate},
 	}
 }
 

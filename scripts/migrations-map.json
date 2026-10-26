@@ -3,6 +3,7 @@
 	"jobscheduler": "0002001_jobscheduler_schema",
 	"settings": "0003001_settings_schema",
 	"paymentinvoice": "0004001_paymentinvoice_schema",
+	"itstorage": "0005001_itstorage_schema",
 	"iam": "1001001_iam_identity_schema",
 	"iam_identity": "1001001_iam_identity_schema",
 	"contacts": "1002001_contacts_schema",

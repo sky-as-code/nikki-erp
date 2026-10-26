@@ -75,10 +75,14 @@ func Main(param MainParam) {
 		}
 
 		if err == nil {
-			err = deps.Invoke(func(s *httpserver.HttpServer) error {
+			// Start blocks for the server's lifetime, so it must run outside Invoke: Invoke holds the
+			// container lock, and every request that resolves from the container would wait on it.
+			err = deps.Invoke(func(s *httpserver.HttpServer) {
 				server = s
-				return server.Start()
 			})
+		}
+		if err == nil {
+			err = server.Start()
 		}
 		if err != nil {
 			app.Logger().Error("failed to start HTTP server", err)

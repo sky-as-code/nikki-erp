@@ -66,6 +66,7 @@ func (*AppTraitModule) Init() error {
 		httpserverExt.NewPermissionExtServiceImpl,
 		requestguard.NewStaticRequestGuardServiceImpl,
 		external.NewSettingsServiceImpl,
+		external.NewStorageConsumerImpl,
 		func() dyn.NewBaseDynamicRepositoryFn {
 			return baserepo.NewBaseDynamicRepository
 		},

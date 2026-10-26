@@ -8,6 +8,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/storage"
 )
 
 // CrudDomainService holds the business processing of a resource. It performs validation and
@@ -59,6 +60,10 @@ type NewDomainServiceParam struct {
 	// ComputedFunction resolves the Go implementation of a "function"-kind computed field. Nil
 	// when the resource registers none.
 	ComputedFunction func(name string) (ComputedFieldFn, bool)
+
+	// StorageConsumer drives the lifecycle of the schema's file fields (metadata.file_field).
+	// Nil when the binary has no storage module; file fields are then stored unchecked.
+	StorageConsumer storage.StorageConsumer
 }
 
 func NewDefaultDomainService(param NewDomainServiceParam) CrudDomainService {
@@ -76,6 +81,7 @@ func NewDefaultDomainService(param NewDomainServiceParam) CrudDomainService {
 		defaultFields:    defaultFields,
 		crudActions:      crudActions,
 		computedFunction: param.ComputedFunction,
+		files:            newFileLifecycle(param.Schema, param.Repository, param.StorageConsumer),
 	}
 }
 
@@ -89,6 +95,9 @@ type DefaultDomainServiceImpl struct {
 	// crudActions is the allow-list, empty meaning "all supported".
 	crudActions      map[CrudAction]bool
 	computedFunction func(name string) (ComputedFieldFn, bool)
+
+	// files is nil for a schema without file fields.
+	files *fileLifecycle
 }
 
 func (this *DefaultDomainServiceImpl) Schema() *dmodel.ModelSchema {
@@ -106,7 +115,17 @@ func (this *DefaultDomainServiceImpl) Create(
 		return &CreateResult{ClientErrors: *cErrs}, nil
 	}
 	opts := firstOrZero(options)
+	if this.files != nil && this.files.sendsFiles(cmd, true) {
+		return this.files.create(ctx, opts, func(ctx corectx.Context, opts CreateOptions) (*CreateResult, error) {
+			return this.create(ctx, cmd, opts)
+		})
+	}
+	return this.create(ctx, cmd, opts)
+}
 
+func (this *DefaultDomainServiceImpl) create(
+	ctx corectx.Context, cmd CreateCommand, opts CreateOptions,
+) (*CreateResult, error) {
 	// corecrud's create hook takes no foundModel: a create has no stored record to compare
 	// against. The variable stays nil when there is no hook, because corecrud skips the step on
 	// nil and an always-non-nil closure would turn a no-op into a SetFieldData round trip.
@@ -139,7 +158,17 @@ func (this *DefaultDomainServiceImpl) Update(
 		return &MutateResult{ClientErrors: *cErrs}, nil
 	}
 	opts := firstOrZero(options)
+	if this.files != nil && this.files.sendsFiles(cmd, false) {
+		return this.files.update(ctx, opts, func(ctx corectx.Context, opts UpdateOptions) (*MutateResult, error) {
+			return this.update(ctx, cmd, opts)
+		})
+	}
+	return this.update(ctx, cmd, opts)
+}
 
+func (this *DefaultDomainServiceImpl) update(
+	ctx corectx.Context, cmd UpdateCommand, opts UpdateOptions,
+) (*MutateResult, error) {
 	// No shim on this side: UpdateParam.ValidateExtra *is* ValidateExtraFn, and corecrud fetches
 	// the stored record itself to fill foundModel.
 	result, err := corecrud.Update[DynamicEntity](ctx, corecrud.UpdateParam[DynamicEntity, *DynamicEntity]{
@@ -160,7 +189,17 @@ func (this *DefaultDomainServiceImpl) Delete(
 		return &MutateResult{ClientErrors: *cErrs}, nil
 	}
 	opts := firstOrZero(options)
+	if this.files != nil {
+		return this.files.delete(ctx, cmd, func(ctx corectx.Context) (*MutateResult, error) {
+			return this.delete(ctx, cmd, opts)
+		})
+	}
+	return this.delete(ctx, cmd, opts)
+}
 
+func (this *DefaultDomainServiceImpl) delete(
+	ctx corectx.Context, cmd DeleteCommand, opts DeleteOptions,
+) (*MutateResult, error) {
 	// corecrud's delete hook sees only the key fields - it never reads the row it is about to
 	// remove - but a delete guard's whole job is to inspect the stored record ("only a cancelled
 	// order may be deleted"). So the service fetches it here and hands it over as foundModel.

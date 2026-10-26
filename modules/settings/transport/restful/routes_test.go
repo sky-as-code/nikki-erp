@@ -16,6 +16,7 @@ import (
 func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
 	assert.Equal(t, composable.EngineDependencyName(models.SettingsSchemaSchemaName), v1.SettingsSchemaEngineName)
 	assert.Equal(t, composable.EngineDependencyName(models.SettingsRecordSchemaName), v1.SettingsRecordEngineName)
+	assert.Equal(t, composable.EngineDependencyName(models.SettingsQuotaSchemaName), v1.SettingsQuotaEngineName)
 }
 
 func passThrough(next echo.HandlerFunc) echo.HandlerFunc {
@@ -29,6 +30,7 @@ func TestSettingsResourcesServeReadsOnly(t *testing.T) {
 	for schemaName, handlers := range map[string]composable.CrudRestHandlers{
 		models.SettingsSchemaSchemaName: &v1.SettingsSchemaRest{},
 		models.SettingsRecordSchemaName: &v1.SettingsRecordRest{},
+		models.SettingsQuotaSchemaName:  &v1.SettingsQuotaRest{},
 	} {
 		t.Run(schemaName, func(t *testing.T) {
 			echoApp := echo.New()

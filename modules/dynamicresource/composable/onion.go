@@ -144,6 +144,7 @@ func (this *DynamicResourceEngineOnionImpl) buildDomainService() CrudDomainServi
 		DefaultFields:    defaultFields,
 		CrudActions:      this.CrudActions,
 		ComputedFunction: this.ComputedFieldFunction,
+		StorageConsumer:  NewLazyStorageConsumer(),
 	})
 	// Every resource gets computed-field evaluation; a schema without computed fields passes
 	// through untouched. The module's derived service embeds this wrapped one, so its overrides

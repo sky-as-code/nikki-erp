@@ -6,7 +6,6 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/iam/app"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
@@ -29,7 +28,7 @@ func registerUserEngine() error {
 	err := deps.RegisterNamed(
 		composable.EngineDependencyName(models.UserSchemaName),
 		func(
-			param composable.BuildParam, storage filestorage.FileStorageAdapter,
+			param composable.BuildParam,
 			settingsSvc itExt.UserSettingsExtService, permRepo itPerm.PermissionRepository,
 			historyRepo itPerm.PermissionHistoryRepository,
 		) composable.DynamicResourceEngineOnion {
@@ -43,7 +42,7 @@ func registerUserEngine() error {
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					domSvc := base.DomainService().(itUser.UserCrudDomainService)
-					return app.NewUserCrudApplicationService(base, storage, domSvc)
+					return app.NewUserCrudApplicationService(base, domSvc)
 				},
 			}, param)
 		},

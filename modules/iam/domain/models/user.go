@@ -36,17 +36,14 @@ const (
 
 	UserFieldId        = basemodel.FieldId
 	UserFieldAvatarUrl = "avatar_url"
-	// Persisted object key of the uploaded avatar; the "avatar" file field writes it.
-	UserFieldAvatarFileKey = "avatar_file_key"
-	// Presigned GET URL derived from avatar_file_key on read; never stored. Not "avatar_url",
-	// which is an older client-writable URL column.
-	UserFieldAvatarFileUrl = "avatar_file_url"
-	UserFileAvatar         = "avatar"
-	UserFieldDisplayName   = "display_name"
-	UserFieldEmail         = "email"
-	UserFieldIsOwner       = "is_owner"
-	UserFieldOrgUnitId     = "org_unit_id"
-	UserFieldStatus        = "status"
+	// IT Storage file id of the uploaded avatar. Not "avatar_url", which is an older client-writable
+	// URL column.
+	UserFieldAvatarFileId = "avatar_file_id"
+	UserFieldDisplayName  = "display_name"
+	UserFieldEmail        = "email"
+	UserFieldIsOwner      = "is_owner"
+	UserFieldOrgUnitId    = "org_unit_id"
+	UserFieldStatus       = "status"
 
 	UserEdgeGroups                = "groups"
 	UserEdgeOrgs                  = "orgs"

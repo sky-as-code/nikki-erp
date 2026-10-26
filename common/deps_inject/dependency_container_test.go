@@ -1,7 +1,10 @@
 package deps_inject
 
 import (
+	"fmt"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/dig"
@@ -72,4 +75,68 @@ func TestRegisterPlainIsUnaffected(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "plain", resolved.Name)
+}
+
+type concurrentService struct {
+	Calls int
+}
+
+type concurrentLeaf struct{}
+
+// dig is not safe for concurrent use: without the lock this trips "concurrent map read and map
+// write" inside the container. Each goroutine also invokes re-entrantly, the way a constructor
+// that resolves its own dependencies does.
+func TestInvokeFromManyGoroutines(t *testing.T) {
+	assert.NoError(t, Register(func() *concurrentLeaf { return &concurrentLeaf{} }))
+	assert.NoError(t, Register(func(_ *concurrentLeaf) *concurrentService {
+		nested := Invoke(func(_ *concurrentLeaf) {})
+		if nested != nil {
+			panic(nested)
+		}
+		return &concurrentService{}
+	}))
+
+	const workers = 50
+	errs := make(chan error, 2*workers)
+	var wait sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wait.Add(1)
+		go func(index int) {
+			defer wait.Done()
+			errs <- Invoke(func(svc *concurrentService) { svc.Calls++ })
+			errs <- RegisterNamed(fmt.Sprintf("concurrent_%d", index), func() *plainService {
+				return &plainService{Name: "concurrent"}
+			})
+		}(i)
+	}
+	wait.Wait()
+	close(errs)
+
+	for err := range errs {
+		assert.NoError(t, err)
+	}
+	var resolved *concurrentService
+	assert.NoError(t, Invoke(func(svc *concurrentService) { resolved = svc }))
+	assert.Equal(t, workers, resolved.Calls, "the singleton is built once and every Invoke is serialized")
+}
+
+func TestReentrantMutexReleasesOnlyAtTheOutermostUnlock(t *testing.T) {
+	var mutex reentrantMutex
+	mutex.Lock()
+	mutex.Lock()
+	mutex.Unlock()
+
+	acquired := make(chan struct{})
+	go func() {
+		mutex.Lock()
+		close(acquired)
+		mutex.Unlock()
+	}()
+	select {
+	case <-acquired:
+		t.Fatal("another goroutine acquired the mutex while it was still held")
+	case <-time.After(50 * time.Millisecond):
+	}
+	mutex.Unlock()
+	<-acquired
 }

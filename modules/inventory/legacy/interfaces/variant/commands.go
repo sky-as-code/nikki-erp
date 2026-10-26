@@ -1,8 +1,6 @@
 package variant
 
 import (
-	"mime/multipart"
-
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -153,12 +151,3 @@ func (this UpdateVariantCommand) GetSchema() *dmodel.ModelSchema {
 }
 
 type UpdateVariantResult = dyn.OpResult[dyn.MutateResultData]
-
-type UploadVariantImageCommand struct {
-	ProductId  model.Id
-	VariantId  model.Id
-	File       multipart.File
-	FileHeader *multipart.FileHeader
-}
-
-type UploadVariantImageResult = dyn.OpResult[dyn.MutateResultData]

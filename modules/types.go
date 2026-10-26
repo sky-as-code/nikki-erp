@@ -80,6 +80,7 @@ const (
 	ModuleCategoryFoundation  ModuleCategory = "foundation"
 	ModuleCategoryCoremart    ModuleCategory = "coremart"
 	ModuleCategoryCoreparking ModuleCategory = "coreparking"
+	ModuleCategoryItInfra     ModuleCategory = "itinfra"
 )
 
 type InCodeModuleAppStarted interface {

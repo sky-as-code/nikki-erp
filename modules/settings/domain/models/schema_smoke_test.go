@@ -40,6 +40,18 @@ func TestSettingsSchemas_Build(t *testing.T) {
 	}
 }
 
+func TestSettingsQuotaSchema_Build(t *testing.T) {
+	quotaSchema := SettingsQuotaSchemaBuilder().Build()
+	assert.Equal(t, SettingsQuotaSchemaName, quotaSchema.Name())
+	assert.Equal(t, "settings_quotas", quotaSchema.TableName())
+	assert.NotEmpty(t, quotaSchema.PrimaryKeys())
+
+	quota := NewSettingsQuotaFrom(dmodel.DynamicFields{SettingsQuotaFieldItStorageCapacityMibytes: float64(1024)})
+	if assert.NotNil(t, quota.GetItStorageCapacityMibytes()) {
+		assert.Equal(t, int64(1024), *quota.GetItStorageCapacityMibytes())
+	}
+}
+
 // Both tables are real, so both must carry DB metadata. PrimaryKeys() is populated only by
 // populateDbMetadata, which runs only under should_build_db.
 func TestSettingsSchemas_BuildDb(t *testing.T) {

@@ -6,7 +6,6 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
@@ -30,7 +29,6 @@ func registerProductTemplateEngine() error {
 		func(
 			param composable.BuildParam,
 			usageDispatcher *usagecheck.Dispatcher,
-			storage filestorage.FileStorageAdapter,
 			catalogPublisher itEvent.CatalogChangedEventPublisher,
 		) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
@@ -39,10 +37,10 @@ func registerProductTemplateEngine() error {
 					return repo.NewProductTemplateRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewProductTemplateDomainService(base, usageDispatcher)
+					return services.NewProductTemplateDomainService(base, usageDispatcher, composable.NewLazyStorageConsumer())
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
-					return app.NewProductTemplateApplicationService(base, catalogPublisher, storage)
+					return app.NewProductTemplateApplicationService(base, catalogPublisher)
 				},
 				ComputedFunctions: newTemplateComputedFunctions(),
 			}, param)

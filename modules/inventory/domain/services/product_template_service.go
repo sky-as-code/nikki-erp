@@ -7,6 +7,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/storage"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
@@ -20,11 +21,16 @@ const maxTemplateVariants = 1000
 // it embeds so built-in CRUD keeps running unchanged.
 //
 // usageDispatcher asks the dependant modules whether a variant or the template is still used,
-// before reconcile or template delete removes one.
+// before reconcile or template delete removes one. The preview image's lifecycle is the composable
+// default's; files is used only to clone the image when a template is duplicated.
 func NewProductTemplateDomainService(
-	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher,
+	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher, files storage.StorageConsumer,
 ) itProduct.ProductService {
-	return &ProductTemplateDomainServiceImpl{CrudDomainService: base, usageDispatcher: usageDispatcher}
+	return &ProductTemplateDomainServiceImpl{
+		CrudDomainService: base,
+		usageDispatcher:   usageDispatcher,
+		files:             files,
+	}
 }
 
 // ProductTemplateDomainServiceImpl serves the Products capabilities the resource engine cannot
@@ -37,6 +43,7 @@ type ProductTemplateDomainServiceImpl struct {
 	composable.CrudDomainService
 
 	usageDispatcher *usagecheck.Dispatcher
+	files           storage.StorageConsumer
 }
 
 // The derived service must satisfy both contracts — the engine installs it as its resource service,

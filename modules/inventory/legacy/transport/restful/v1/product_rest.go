@@ -4,8 +4,6 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/product"
 )
@@ -82,34 +80,5 @@ func (this ProductRest) Update(echoCtx *echo.Context) (err error) {
 		echoCtx,
 		&itProduct.UpdateProductCommand{},
 		this.ProductSvc.UpdateProduct,
-	)
-}
-
-func (this ProductRest) UploadThumbnail(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeRequestFormData(echoCtx,
-		this.ProductSvc.UploadProductThumnail,
-		func(req UploadProductThumbnailRequest) itProduct.UploadProductThumbnailCommand {
-			cmd := itProduct.UploadProductThumbnailCommand{
-				ProductId: req.ProductId,
-			}
-
-			if req.FileHeader != nil {
-				file, openErr := req.FileHeader.Open()
-				if openErr != nil {
-					panic(httpserver.JsonBadRequest(echoCtx,
-						fault.ClientErrors{*fault.NewValidationError("file", fault.ErrorKey("file_error", "inventory"),
-							openErr.Error())}))
-				}
-				defer file.Close()
-				cmd.File = file
-				cmd.FileHeader = req.FileHeader
-			}
-
-			return cmd
-		},
-		func(data dynamicmodel.MutateResultData) UploadProductThumbnailResponse {
-			return httpserver.NewRestMutateResponse(data)
-		},
-		httpserver.JsonCreated,
 	)
 }

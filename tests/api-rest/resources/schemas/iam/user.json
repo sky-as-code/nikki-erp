@@ -10,13 +10,8 @@
             "type": "string",
             "format": "uri"
         },
-        "avatar_file_key": {
-            "type": "string",
-            "minLength": 1
-        },
-        "avatar_file_url": {
-            "type": "string",
-            "format": "uri"
+        "avatar_file_id": {
+            "type": ["string", "null"]
         },
         "created_at": {
             "type": "string",

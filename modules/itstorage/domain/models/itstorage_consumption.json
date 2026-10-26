@@ -1,0 +1,58 @@
+{
+	"name": "itstorage_consumption",
+	"label": "itstorage_consumption.label",
+	"table_name": "itstorage_consumptions",
+	"should_build_db": true,
+	"record_label_field": "owner_id",
+	"record_sub_label_field": "owner_type",
+	"default_search_fields": ["owner_type", "owner_id", "used_bytes", "reserved_bytes"],
+	"composite_uniques": [
+		{ "index_name": "itstorage_consumptions_owner", "fields": ["owner_type", "owner_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "owner_type",
+			"label": "fields.owner_type",
+			"data_type": { "type": "enum_string", "values": ["tenant", "org", "user"] },
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "owner_id",
+			"label": "fields.owner_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The id of the tenant, organization or user the bytes are counted for. Not a foreign key: the owner may live in another module, or, for a tenant, in no table of this binary."
+			}
+		},
+		{
+			"name": "used_bytes",
+			"label": "fields.used_bytes",
+			"data_type": { "type": "int64", "min": 0, "max": 9007199254740991 },
+			"required_for_create": true,
+			"default_value": 0,
+			"description": {
+				"en-US": "Bytes of the stored files counted for the owner. An upload moves its size here from reserved_bytes when its record commits; a delete takes it off."
+			}
+		},
+		{
+			"name": "reserved_bytes",
+			"label": "fields.reserved_bytes",
+			"data_type": { "type": "int64", "min": 0, "max": 9007199254740991 },
+			"required_for_create": true,
+			"default_value": 0,
+			"description": {
+				"en-US": "Bytes of uploads in flight. The quota check reserves an upload's size here in one conditional statement before the first byte is stored, so concurrent uploads cannot together pass the quota."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	]
+}

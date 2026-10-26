@@ -39,5 +39,8 @@
 	"settings.setting_is_managed": "This setting is managed by your Tenant Administrator",
 	"settings.unknownName": "This setting is not declared by the module",
 	"settings_record.label": "Setting Value",
-	"settings_schema.label": "Settings Definition"
+	"settings_schema.label": "Settings Definition",
+	"settings_quota.label": "Quota",
+	"fields.itstorage_capacity_mibytes": "Storage capacity (MiB)",
+	"fields.name": "Name"
 }

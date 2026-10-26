@@ -46,7 +46,8 @@ func (this *ProductVariantDomainServiceImpl) Create(
 	opts := safe.GetOptional(options, composable.CreateOptions{})
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, normalizeVariantIdentifiers())
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, checkCreateCombination(this.Repository()))
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, validateCreateIdentifiers(this.Repository()))
+	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra,
+		validateCreateIdentifiers(this.Repository()))
 	return this.CrudDomainService.Create(ctx, params, opts)
 }
 

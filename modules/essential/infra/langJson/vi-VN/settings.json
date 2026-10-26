@@ -39,5 +39,8 @@
 	"settings.setting_is_managed": "Cài đặt này do Quản trị viên tổ chức thuê bao quản lý",
 	"settings.unknownName": "Cài đặt này không được khai báo bởi mô-đun",
 	"settings_record.label": "Giá trị cài đặt",
-	"settings_schema.label": "Định nghĩa cài đặt"
+	"settings_schema.label": "Định nghĩa cài đặt",
+	"settings_quota.label": "Hạn mức",
+	"fields.itstorage_capacity_mibytes": "Dung lượng lưu trữ (MiB)",
+	"fields.name": "Tên"
 }

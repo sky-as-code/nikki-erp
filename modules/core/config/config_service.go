@@ -111,7 +111,7 @@ func (this *configServiceImpl) GetInt32(name c.ConfigName, defaultVal ...interfa
 
 func (this *configServiceImpl) GetInt64(name c.ConfigName, defaultVal ...interface{}) int64 {
 	str := this.GetStr(name, defaultVal...)
-	val64, err := strconv.ParseInt(str, 10, 32)
+	val64, err := strconv.ParseInt(str, 10, 64)
 	this.panicOnConversionError("GetInt64()", name, err)
 	return val64
 }

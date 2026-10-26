@@ -85,19 +85,19 @@ func TestEffectiveProductImageFallback(t *testing.T) {
 
 	withoutOverride := newVariant()
 	assert.Equal(t, "01TEMPLATEIMAGE",
-		BuildEffectiveProduct(template, withoutOverride, nil).ImageKey,
+		BuildEffectiveProduct(template, withoutOverride, nil).ImageFileId,
 		"a variant with no image shows the template's")
 
 	withOverride := newVariant()
-	withOverride.SetVariantImageFileKey(strPtr("01VARIANTIMAGE"))
+	withOverride.SetPreviewImageFileId(strPtr("01VARIANTIMAGE"))
 	assert.Equal(t, "01VARIANTIMAGE",
-		BuildEffectiveProduct(template, withOverride, nil).ImageKey,
+		BuildEffectiveProduct(template, withOverride, nil).ImageFileId,
 		"a variant image overrides the template's")
 
 	cleared := newVariant()
-	cleared.SetVariantImageFileKey(nil)
+	cleared.SetPreviewImageFileId(nil)
 	assert.Equal(t, "01TEMPLATEIMAGE",
-		BuildEffectiveProduct(template, cleared, nil).ImageKey,
+		BuildEffectiveProduct(template, cleared, nil).ImageFileId,
 		"clearing the override returns to the template image")
 }
 
@@ -162,7 +162,7 @@ func TestEffectiveProductSelectability(t *testing.T) {
 func TestEffectiveProductFieldMapKeepsConsumerKeys(t *testing.T) {
 	fields := BuildEffectiveProduct(newTemplate(), newVariant(), []string{"Black"}).ToFieldMap()
 
-	for _, key := range []string{"id", "name", "sku", "barcode", "image_file_key", "status", "is_archived"} {
+	for _, key := range []string{"id", "name", "sku", "barcode", "image_file_id", "status", "is_archived"} {
 		assert.Containsf(t, fields, key, "consumers read %q from the product snapshot", key)
 	}
 	// The variant is the concrete product, so "id" must be the variant's.
@@ -195,7 +195,7 @@ func newTemplate() *models.ProductTemplate {
 	template.SetBrandId(strPtr("01BRAND"))
 	template.SetSaleOk(boolPtr(true))
 	template.SetPurchaseOk(boolPtr(true))
-	template.SetDefaultImageFileKey(strPtr("01TEMPLATEIMAGE"))
+	template.SetPreviewImageFileId(strPtr("01TEMPLATEIMAGE"))
 	weight := decimal.RequireFromString("1.5")
 	template.SetDefaultWeight(&weight)
 	status := models.ProductTemplateStatusActive

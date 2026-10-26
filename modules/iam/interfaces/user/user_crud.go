@@ -5,7 +5,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable/filefield"
 )
 
 // The composable layers of the iam_user resource, served at /v1/iam/iam_user. Sign-in, permission
@@ -32,7 +31,6 @@ type UserCrudDomainService interface {
 // UserCrudApplicationService is the authorized surface the REST handler serves.
 type UserCrudApplicationService interface {
 	composable.CrudApplicationService
-	filefield.FileFieldsService
 
 	SendInvitation(ctx corectx.Context, cmd SendUserInvitationCommand) (*SendUserInvitationResult, error)
 	ManageRoles(ctx corectx.Context, cmd ManageUserRolesCommand) (*ManageUserRolesResult, error)

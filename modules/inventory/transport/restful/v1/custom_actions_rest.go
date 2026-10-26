@@ -54,9 +54,9 @@ func (this *ProductTemplateRest) ResolveSelection(echoCtx *echo.Context, payload
 	return composable.ServeAction(echoCtx, "resolve selection", payload, this.productTemplateSvc.ResolveSelection, composable.Identity[any])
 }
 
-// Copy answers like the built-in create: the new template's id and etag.
-func (this *ProductTemplateRest) Copy(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "copy product template", payload, this.productTemplateSvc.Copy,
+// Duplicate answers like the built-in create: the new template's id and etag.
+func (this *ProductTemplateRest) Duplicate(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "duplicate product template", payload, this.productTemplateSvc.Duplicate,
 		func(created dmodel.DynamicFields) any { return httpserver.NewRestCreateResponseDyn(created) })
 }
 

@@ -5,7 +5,6 @@ import (
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable/filefield"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
@@ -22,16 +21,14 @@ type userCrudRestParams struct {
 
 func NewUserCrudRest(params userCrudRestParams) *UserCrudRest {
 	svc := params.Engine.ApplicationService().(itUser.UserCrudApplicationService)
-	rest := &UserCrudRest{Rest: filefield.NewRest("user", svc), userSvc: svc, rolesSvc: params.PrincipalRoles}
+	rest := &UserCrudRest{userSvc: svc, rolesSvc: params.PrincipalRoles}
 	rest.SetApplicationService(params.Engine.ApplicationService())
 	return rest
 }
 
-// UserCrudRest serves the built-in CRUD of the iam_user resource, its file routes and its
-// custom actions.
+// UserCrudRest serves the built-in CRUD of the iam_user resource and its custom actions.
 type UserCrudRest struct {
 	composable.CrudRestBase
-	filefield.Rest
 	userSvc  itUser.UserCrudApplicationService
 	rolesSvc itRole.PrincipalRolesApplicationService
 }
