@@ -49,7 +49,7 @@ func (*AccountingModule) ModelPrefixes() []string {
 }
 
 func (*AccountingModule) HasUi() bool {
-	return true
+	return false
 }
 
 func (*AccountingModule) Category() modules.ModuleCategory {

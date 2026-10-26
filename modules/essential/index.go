@@ -49,7 +49,7 @@ func (*EssentialModule) ModelPrefixes() []string {
 }
 
 func (*EssentialModule) HasUi() bool {
-	return true
+	return false
 }
 
 func (*EssentialModule) Category() modules.ModuleCategory {

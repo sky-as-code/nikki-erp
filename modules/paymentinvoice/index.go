@@ -9,8 +9,9 @@ package paymentinvoice
 
 import (
 	stdErr "errors"
-	pinvCqrs "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/transport/cqrs"
 	"time"
+
+	pinvCqrs "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/transport/cqrs"
 
 	"go.bryk.io/pkg/errors"
 
@@ -57,7 +58,7 @@ func (*PaymentInvoiceModule) ModelPrefixes() []string {
 }
 
 func (*PaymentInvoiceModule) HasUi() bool {
-	return true
+	return false
 }
 
 func (*PaymentInvoiceModule) Category() modules.ModuleCategory {
