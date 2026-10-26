@@ -675,5 +675,6 @@
 	"err_org_deleted": "Tổ chức đang bị xóa và không thể thay đổi",
 	"err_org_not_deleted": "Tổ chức phải được xóa và dọn dữ liệu trước khi bị xóa hẳn",
 	"org.delete_confirm": "Tổ chức sẽ được lưu trữ ngay và bị xóa hẳn sau khi mọi phân hệ đã xóa dữ liệu. Tiếp tục?",
-	"err_cannot_delete_current_org": "Không thể xóa tổ chức bạn đang làm việc. Hãy chuyển sang tổ chức khác trước."
+	"err_cannot_delete_current_org": "Không thể xóa tổ chức bạn đang làm việc. Hãy chuyển sang tổ chức khác trước.",
+	"menu.identity": "Định danh"
 }
