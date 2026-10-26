@@ -350,6 +350,10 @@ func ServeStreamFile[THttpReq FileStreamRequest, TSvcCommand any, TSvcResultData
 	if err := echoCtx.Bind(&request); err != nil {
 		return JsonBadRequest(echoCtx, []any{ft.NewAnonymousValidationError(ft.ErrorKey("err_malformed_request"), "malformed request")})
 	}
+	// Bind reads path, query and body only; the Range header (FileStreamRequestBase) needs its own pass.
+	if err := echo.BindHeaders(echoCtx, &request); err != nil {
+		return JsonBadRequest(echoCtx, []any{ft.NewAnonymousValidationError(ft.ErrorKey("err_malformed_request"), "malformed request")})
+	}
 
 	cmd := requestToCommandFn(request)
 	reqCtx := echoCtx.Request().Context().(corectx.Context)

@@ -4,7 +4,7 @@
 	"should_build_db": true,
 	"record_label_field": "display_name",
 	"record_sub_label_field": "email",
-	"default_search_fields": ["avatar_url", "display_name", "email", "status"],
+	"default_search_fields": ["avatar_url", "avatar_file_path", "display_name", "email", "status"],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
@@ -13,10 +13,10 @@
 			"data_type": "url"
 		},
 		{
-			"name": "avatar_file_key",
-			"data_type": { "type": "string", "min": 1, "max": 3000 },
+			"name": "avatar_file_path",
+			"data_type": { "type": "string", "min": 1, "max": 1024 },
 			"description": {
-				"en-US": "Object storage key of the uploaded avatar. Managed by the /files/avatar routes, never written directly"
+				"en-US": "IT Storage path of the uploaded avatar: upload to /v1/itstorage/files/upload, then write the returned file_path here"
 			}
 		},
 		{

@@ -1,0 +1,82 @@
+{
+	"name": "itstorage_file",
+	"label": "itstorage_file.label",
+	"table_name": "itstorage_files",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["name", "mime_type", "size_bytes", "space_id", "org_id", "created_at"],
+	"search_indexes": [
+		{ "index_name": "itstorage_files_space_id", "fields": ["space_id"] },
+		{ "index_name": "itstorage_files_org_id", "fields": ["org_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The organization the file belongs to; null for a tenant-wide file. Not a foreign key: iam sorts after itstorage in the migration order, so the constraint would point upwards."
+			}
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 255, "regex": "^[^/\\\\\\x00-\\x1f]+$" },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The file's display name, as uploaded. It never reaches the object key, which is built from the file id, so only path separators and control characters are refused."
+			}
+		},
+		{
+			"name": "mime_type",
+			"label": "fields.mime_type",
+			"data_type": { "type": "string", "min": 3, "max": 255, "regex": "^[a-zA-Z0-9!#$&^_.+-]+/[a-zA-Z0-9!#$&^_.+-]+$" },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The ISO media type the client declared. The upload checks it against the content's own signature, so a declared type of the wrong family is refused."
+			}
+		},
+		{
+			"name": "size_bytes",
+			"label": "fields.size_bytes",
+			"data_type": { "type": "int64", "min": 0, "max": 9007199254740991 },
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "space_id",
+			"label": "fields.space_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "object_key",
+			"label": "fields.object_key",
+			"data_type": { "type": "string", "min": 1, "max": 1024 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The immutable key of the stored object, {tenant_id|_}/{space_id}/{file_id}{ext}. Written by the upload only. A space rename never moves an object, which is why the key does not follow the space path."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "space",
+			"label": { "en-US": "Space" },
+			"type": "many:one",
+			"dest_schema": "itstorage_space",
+			"key_map": { "space_id": "id" },
+			"on_delete": "RESTRICT"
+		}
+	]
+}

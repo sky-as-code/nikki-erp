@@ -1,0 +1,106 @@
+{
+	"name": "itstorage_space",
+	"label": "itstorage_space.label",
+	"table_name": "itstorage_spaces",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"record_sub_label_field": "path",
+	"default_search_fields": ["name", "parent_id", "path", "size_bytes", "owner_type", "owner_id"],
+	"partial_uniques_loose": [
+		{ "not_null_fields": ["name"], "nullable_field": "parent_id" }
+	],
+	"search_indexes": [
+		{ "index_name": "itstorage_spaces_owner", "fields": ["owner_type", "owner_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 255, "regex": "^[a-zA-Z0-9!_.*'()-]{1,255}$" },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The space's segment of the path. Restricted to the characters S3 documents as safe in an object key, so a space maps one-to-one onto a key prefix. Unique among its siblings."
+			}
+		},
+		{
+			"name": "parent_id",
+			"label": "fields.parent_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The enclosing space. Null for a root space, which is the tenant's own. Immutable: moving a space would invalidate the path of everything below it."
+			}
+		},
+		{
+			"name": "path",
+			"label": "fields.path",
+			"data_type": { "type": "string", "min": 1, "max": 1024 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The materialised path from the root, the names joined by '/'. Written by the domain service only: on create from the parent's path, on rename for this space and every descendant in one transaction."
+			}
+		},
+		{
+			"name": "size_bytes",
+			"label": "fields.size_bytes",
+			"data_type": { "type": "int64", "min": 0, "max": 9007199254740991 },
+			"required_for_create": true,
+			"default_value": 0,
+			"description": {
+				"en-US": "Total bytes of the files in this space and in every space below it. Maintained by the upload and delete paths, which add a file's size to the space and all its ancestors in one statement."
+			}
+		},
+		{
+			"name": "owner_type",
+			"label": "fields.owner_type",
+			"data_type": { "type": "enum_string", "values": ["tenant", "org", "user"] },
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "owner_id",
+			"label": "fields.owner_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The id of the owning tenant, organization or user. Not a foreign key: iam sorts after itstorage in the migration order, so the constraint would point upwards."
+			}
+		},
+		{
+			"name": "managed_by_type",
+			"label": "fields.managed_by_type",
+			"data_type": { "type": "enum_string", "values": ["system", "module", "user"] },
+			"required_for_create": true,
+			"description": {
+				"en-US": "Who manages the space. A 'system' space is created and removed by the platform, such as an organization's space during the org lifecycle."
+			}
+		},
+		{
+			"name": "managed_by_id",
+			"label": "fields.managed_by_id",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"description": {
+				"en-US": "The id or name of the manager when managed_by_type is not 'system'."
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "parent",
+			"label": { "en-US": "Parent space" },
+			"type": "many:one",
+			"dest_schema": "itstorage_space",
+			"key_map": { "parent_id": "id" },
+			"on_delete": "RESTRICT"
+		}
+	]
+}

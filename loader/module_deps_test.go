@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/itstorage"
 )
 
 // TestEveryDependencyIsLoaded guards the rule cmd.buildDependencyGraph enforces at boot: every name
@@ -64,6 +65,8 @@ func TestEveryDependantIsLoadedOrKnownAbsent(t *testing.T) {
 		// Coremart-only: the vending machine references Inventory's product variants, but the
 		// nikkierp binary has no vending machine to ask.
 		"vendingmachine": true,
+		// Coreparking-only: a parking lot holds an org_id foreign key to iam_org.
+		"parkinglot": true,
 	}
 
 	loaded := make(map[string]bool)
@@ -95,9 +98,24 @@ func TestDependantListsAreWellFormed(t *testing.T) {
 }
 
 // TestEveryModuleIsFoundation pins the category Module Home groups by: every module nikkierp ships
-// is a foundation module, whatever the hosted app later adds on top.
+// is a foundation module, whatever the hosted app later adds on top, except the IT infrastructure
+// modules listed here.
 func TestEveryModuleIsFoundation(t *testing.T) {
+	infra := map[string]bool{itstorage.ModuleSingleton.Name(): true}
 	for _, mod := range (StaticModuleLoader{}).getStaticModules() {
-		assert.Equal(t, modules.ModuleCategoryFoundation, mod.Category(), "module %q", mod.Name())
+		want := modules.ModuleCategoryFoundation
+		if infra[mod.Name()] {
+			want = modules.ModuleCategoryItInfra
+		}
+		assert.Equal(t, want, mod.Category(), "module %q", mod.Name())
+	}
+}
+
+// TestItStorageDependsOnNoFileOwner guards the cycle the file-path uplift could close: iam,
+// inventory and vendingmachine store `*_file_path` and depend on itstorage, so itstorage must
+// never depend on them.
+func TestItStorageDependsOnNoFileOwner(t *testing.T) {
+	for _, dep := range itstorage.ModuleSingleton.Deps() {
+		assert.NotContains(t, []string{"iam", "inventory", "vendingmachine"}, dep)
 	}
 }

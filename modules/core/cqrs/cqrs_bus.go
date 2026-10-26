@@ -327,7 +327,9 @@ func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *Reques
 
 	handleErr := func() {
 		if r := recover(); r != nil {
-			err := errors.Wrap(r.(error), fmt.Sprintf("failed to subscribe for reply from topic %s", packet.replyTopic))
+			// Not r.(error): a non-error panic value made the assertion itself panic inside the deferred
+			// recover, and the runtime aborted the whole process while naming the value's type.
+			err := ft.RecoverPanicFailedTo(r, "subscribe for reply from topic "+packet.replyTopic)
 			errChan <- err
 			close(errChan)
 			close(replyChan)

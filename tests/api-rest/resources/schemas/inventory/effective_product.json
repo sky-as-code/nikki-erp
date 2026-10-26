@@ -42,7 +42,7 @@
         "barcode": {
             "type": "string"
         },
-        "image_url": {
+        "image_file_path": {
             "type": "string"
         },
         "weight": {

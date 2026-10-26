@@ -105,7 +105,7 @@ CREATE TABLE "iam_org_units" (
 CREATE TABLE "iam_users" (
   "id" character varying NOT NULL,
   "avatar_url" character varying NULL,
-  "avatar_file_key" character varying NULL,
+  "avatar_file_path" character varying NULL,
   "display_name" character varying NOT NULL,
   "email" character varying NOT NULL,
   "status" character varying NOT NULL,

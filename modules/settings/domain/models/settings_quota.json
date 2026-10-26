@@ -1,0 +1,58 @@
+{
+	"name": "settings_quota",
+	"label": "settings_quota.label",
+	"table_name": "settings_quotas",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"default_search_fields": ["name", "owner_type", "owner_id", "itstorage_capacity_mibytes"],
+	"composite_uniques": [
+		{ "index_name": "settings_quotas_name_owner", "fields": ["name", "owner_type", "owner_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 100, "regex": "^[a-zA-Z0-9_]+$" },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What the quota caps, e.g. 'itstorage'. A consuming module reads its quota by this name through the Settings Quota port."
+			}
+		},
+		{
+			"name": "owner_type",
+			"label": "fields.owner_type",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["tenant", "org", "user"]
+			},
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "What kind of thing the quota applies to."
+			}
+		},
+		{
+			"name": "owner_id",
+			"label": "fields.owner_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The id of the tenant, organization or user the quota applies to. Not a foreign key: settings must never reference iam tables, because iam depends on settings."
+			}
+		},
+		{
+			"name": "itstorage_capacity_mibytes",
+			"label": "fields.itstorage_capacity_mibytes",
+			"data_type": { "type": "int64", "min": 0, "max": 9007199254740991 },
+			"description": {
+				"en-US": "Storage capacity in MiB (2^20 bytes) that IT Storage allows the owner. The maximum is JavaScript's largest safe integer, so the value survives a round trip through the frontend."
+			}
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model"]
+}

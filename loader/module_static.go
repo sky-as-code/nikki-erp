@@ -14,6 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential"
 	"github.com/sky-as-code/nikki-erp/modules/iam"
+	"github.com/sky-as-code/nikki-erp/modules/itstorage"
 	"github.com/sky-as-code/nikki-erp/modules/settings"
 
 	// "github.com/sky-as-code/nikki-erp/modules/helpdesk"
@@ -53,6 +54,7 @@ func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 		dynamicresource.ModuleSingleton,
 		// helpdesk.ModuleSingleton,
 		iam.ModuleSingleton,
+		itstorage.ModuleSingleton,
 		inventory.ModuleSingleton,
 		jobscheduler.ModuleSingleton,
 		notification.ModuleSingleton,

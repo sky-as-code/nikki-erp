@@ -31,10 +31,7 @@
         "primary_barcode": {
             "type": ["string", "null"]
         },
-        "variant_image_file_key": {
-            "type": ["string", "null"]
-        },
-        "variant_image_url": {
+        "variant_image_file_path": {
             "type": ["string", "null"]
         },
         "weight": {

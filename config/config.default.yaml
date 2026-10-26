@@ -170,6 +170,12 @@ IAM:
   # How long one module may take to set up or clean up an organization before it counts as failed.
   ORG_LIFECYCLE_MODULE_TIMEOUT_SECS: 30
 
+ITSTORAGE:
+  UPLOAD:
+    # Upper bound of one file uploaded through POST /v1/itstorage/files/upload, in bytes
+    # (default 100 MiB). The tenant quota (settings_quota 'itstorage') still applies on top.
+    MAX_FILE_SIZE_BYTES: 104857600
+
 PAYMENTINVOICE:
   # Each gateway is off unless its ENABLED flag is set, and a gateway that is off is not
   # registered at all: asking to pay through it is refused as a client error rather than

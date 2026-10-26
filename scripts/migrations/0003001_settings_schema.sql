@@ -1,3 +1,15 @@
+-- Create "settings_quotas" table
+CREATE TABLE "settings_quotas" (
+  "id" character varying NOT NULL,
+  "name" character varying NOT NULL,
+  "owner_type" character varying NOT NULL,
+  "owner_id" character varying NOT NULL,
+  "itstorage_capacity_mibytes" bigint NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "settings_quotas_name_owner_ukey" UNIQUE ("name", "owner_type", "owner_id")
+);
 -- Create "settings_records" table
 CREATE TABLE "settings_records" (
   "id" character varying NOT NULL,

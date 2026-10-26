@@ -14,16 +14,16 @@ import (
 
 func copySourceTemplate() dmodel.DynamicFields {
 	return dmodel.DynamicFields{
-		basemodel.FieldId:                              "t-1",
-		basemodel.FieldEtag:                            "9",
-		basemodel.FieldIsArchived:                      true,
-		basemodel.FieldOrgId:                           "org-1",
-		models.ProductTemplateFieldName:                map[string]any{"en-US": "Tea", "vi-VN": "Trà"},
-		models.ProductTemplateFieldStatus:              "active",
-		models.ProductTemplateFieldDefaultImageFileKey: "files/tea.png",
-		"external_id":                                  "ext-1",
-		"source_system":                                "erp-x",
-		models.ProductTemplateFieldMinVariantCost:      "1.5",
+		basemodel.FieldId:                               "t-1",
+		basemodel.FieldEtag:                             "9",
+		basemodel.FieldIsArchived:                       true,
+		basemodel.FieldOrgId:                            "org-1",
+		models.ProductTemplateFieldName:                 map[string]any{"en-US": "Tea", "vi-VN": "Trà"},
+		models.ProductTemplateFieldStatus:               "active",
+		models.ProductTemplateFieldDefaultImageFilePath: "files/tea.png",
+		"external_id":                                   "ext-1",
+		"source_system":                                 "erp-x",
+		models.ProductTemplateFieldMinVariantCost:       "1.5",
 	}
 }
 
@@ -35,7 +35,7 @@ func TestCopyTemplateFieldsCarriesOnlyTheTemplatesOwnFields(t *testing.T) {
 	assert.Equal(t, "active", payload[models.ProductTemplateFieldStatus])
 	for _, dropped := range []string{
 		basemodel.FieldId, basemodel.FieldEtag, basemodel.FieldIsArchived, basemodel.FieldOrgId,
-		models.ProductTemplateFieldDefaultImageFileKey, "external_id", "source_system",
+		models.ProductTemplateFieldDefaultImageFilePath, "external_id", "source_system",
 		models.ProductTemplateFieldMinVariantCost,
 	} {
 		assert.NotContains(t, payload, dropped)

@@ -1,0 +1,23 @@
+{
+	"err_mime_type_mismatch": "The file content is {{detected}}, which does not match the declared type {{declared}}",
+	"err_no_storage_space": "There is no storage space to upload into",
+	"err_quota_exceeded": "This upload would exceed the storage quota of your tenant",
+	"err_quota_not_configured": "No storage quota is configured for your tenant",
+	"err_size_mismatch": "The uploaded content does not match the declared file size",
+	"err_space_outside_scope": "The storage space does not belong to this organization",
+	"fields.managed_by_id": "Managed by",
+	"fields.managed_by_type": "Managed by type",
+	"fields.mime_type": "Media type",
+	"fields.name": "Name",
+	"fields.object_key": "Object key",
+	"fields.owner_id": "Owner",
+	"fields.owner_type": "Owner type",
+	"fields.parent_id": "Parent space",
+	"fields.path": "Path",
+	"fields.size_bytes": "Size (bytes)",
+	"fields.space_id": "Space",
+	"itstorage.moduleLabel": "IT Storage",
+	"itstorage_file.label": "File",
+	"itstorage_space.label": "Storage Space",
+	"module.label.itstorage": "IT Storage"
+}

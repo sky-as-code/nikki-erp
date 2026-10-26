@@ -17,7 +17,6 @@ type ProductTemplateDomainService = ProductService
 type ProductTemplateApplicationService interface {
 	composable.CrudApplicationService
 	ProductTemplateActionService
-	FileFieldsService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a

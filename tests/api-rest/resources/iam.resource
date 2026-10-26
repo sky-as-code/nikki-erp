@@ -447,7 +447,7 @@ Avatar File Part
     RETURN    ${part}
 
 Response Should Be File Field Error
-    [Documentation]    One error from the files/:field routes, matched on field and key.
+    [Documentation]    One 400 error on a field, matched on field and on a substring of its key.
     [Arguments]    ${resp}    ${field}    ${key}
     Should Be Equal As Integers    ${resp.status_code}    400
     # Robot's $var is not visible inside a comprehension's scope, so the values go in as names.

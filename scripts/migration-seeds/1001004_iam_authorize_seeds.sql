@@ -225,6 +225,22 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
+	-- From 0005002_itstorage_iam.sql. Every user reads and uploads files of the orgs they belong to
+	-- (bare org scope = membership); a tenant-wide file, such as an avatar, is granted to a holder of
+	-- the action in any of their orgs. Delete is not granted: a file is replaced or cleared through
+	-- the resource that references it, which removes the old file itself.
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_entitlements'
+	) THEN
+		INSERT INTO "iam_entitlements" (
+			"id", "name", "description", "expression", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
+		) VALUES
+		('01M5T2BJTTCZZEC42175BJYQPZ', 'User - Read Files', 'Read and download files of the orgs the user belongs to', 'read:itstorage_file:org', '01M5T2BJTN4RWKKX74SCSEQVQ9', '01M5T2BJTE29YK2T3SSE1QR94J', '01KZJ5XRJDXSXZY0DKNNE6S086', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M5T2BJTWP096NRP6R9YYY05K', 'User - Upload Files', 'Upload files into the spaces of the orgs the user belongs to', 'create:itstorage_file:org', '01M5T2BJTJE1Z13HT710JB1VSS', '01M5T2BJTE29YK2T3SSE1QR94J', '01KZJ5XRJDXSXZY0DKNNE6S086', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
 	-- "User" is the system role every person holds. Flagged rather than assigned per user, so the
 	-- permission cache grants it to users who do not exist yet (iam_calc_user_perm).
 	UPDATE "iam_roles" SET "is_system" = TRUE WHERE "id" = '01KZJ5XRJDXSXZY0DKNNE6S086';

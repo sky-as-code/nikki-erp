@@ -20,6 +20,7 @@ func InitDynamicEngines() error {
 	return stdErr.Join(
 		registerSettingsSchemaEngine(),
 		registerSettingsRecordEngine(),
+		registerSettingsQuotaEngine(),
 	)
 }
 

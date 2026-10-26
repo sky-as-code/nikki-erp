@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable/storagefield"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -9,6 +10,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/external"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
@@ -20,11 +22,17 @@ const maxTemplateVariants = 1000
 // it embeds so built-in CRUD keeps running unchanged.
 //
 // usageDispatcher asks the dependant modules whether a variant or the template is still used,
-// before reconcile or template delete removes one.
+// before reconcile or template delete removes one. fileSvc checks default_image_file_path against
+// IT Storage.
 func NewProductTemplateDomainService(
-	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher,
+	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher, fileSvc itExt.FileStorageExtService,
 ) itProduct.ProductService {
-	return &ProductTemplateDomainServiceImpl{CrudDomainService: base, usageDispatcher: usageDispatcher}
+	return &ProductTemplateDomainServiceImpl{
+		CrudDomainService: base,
+		usageDispatcher:   usageDispatcher,
+		files: storagefield.NewGuard(fileSvc, storagefield.ScopeOrg,
+			models.ProductTemplateFieldDefaultImageFilePath),
+	}
 }
 
 // ProductTemplateDomainServiceImpl serves the Products capabilities the resource engine cannot
@@ -37,6 +45,7 @@ type ProductTemplateDomainServiceImpl struct {
 	composable.CrudDomainService
 
 	usageDispatcher *usagecheck.Dispatcher
+	files           storagefield.Guard
 }
 
 // The derived service must satisfy both contracts — the engine installs it as its resource service,

@@ -60,6 +60,7 @@ func (*InventoryModule) Deps() []string {
 	return []string{
 		"dynamicresource",
 		"essential",
+		"itstorage",
 	}
 }
 

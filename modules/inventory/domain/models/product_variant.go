@@ -80,24 +80,22 @@ func WrapVariantKind(s string) *VariantKind {
 const (
 	ProductVariantSchemaName = "inventory_product_variant"
 
-	ProductVariantFieldId                  = basemodel.FieldId
-	ProductVariantFieldProductTemplateId   = "product_template_id"
-	ProductVariantFieldCombinationKey      = "combination_key"
-	ProductVariantFieldVariantKind         = "variant_kind"
-	ProductVariantFieldBaseVariantId       = "base_variant_id"
-	ProductVariantFieldSku                 = "sku"
-	ProductVariantFieldPrimaryBarcode      = "primary_barcode"
-	ProductVariantFileVariantImage         = "variant_image"
-	ProductVariantFieldVariantImageUrl     = "variant_image_url"
-	ProductVariantFieldVariantImageFileKey = "variant_image_file_key"
-	ProductVariantFieldCost                = "cost"
-	ProductVariantFieldWeight              = "weight"
-	ProductVariantFieldLength              = "length"
-	ProductVariantFieldWidth               = "width"
-	ProductVariantFieldHeight              = "height"
-	ProductVariantFieldStatus              = "status"
-	ProductVariantFieldArchiveSource       = "archive_source"
-	ProductVariantFieldOrgId               = "org_id"
+	ProductVariantFieldId                   = basemodel.FieldId
+	ProductVariantFieldProductTemplateId    = "product_template_id"
+	ProductVariantFieldCombinationKey       = "combination_key"
+	ProductVariantFieldVariantKind          = "variant_kind"
+	ProductVariantFieldBaseVariantId        = "base_variant_id"
+	ProductVariantFieldSku                  = "sku"
+	ProductVariantFieldPrimaryBarcode       = "primary_barcode"
+	ProductVariantFieldVariantImageFilePath = "variant_image_file_path"
+	ProductVariantFieldCost                 = "cost"
+	ProductVariantFieldWeight               = "weight"
+	ProductVariantFieldLength               = "length"
+	ProductVariantFieldWidth                = "width"
+	ProductVariantFieldHeight               = "height"
+	ProductVariantFieldStatus               = "status"
+	ProductVariantFieldArchiveSource        = "archive_source"
+	ProductVariantFieldOrgId                = "org_id"
 
 	// Computed fields copied from the owning template on read. No database column: each is declared
 	// in product_variant.json as a related computed field and filled by the engine.
@@ -183,14 +181,14 @@ func (this *ProductVariant) SetPrimaryBarcode(v *string) {
 	this.GetFieldData().SetString(ProductVariantFieldPrimaryBarcode, v)
 }
 
-// GetVariantImageFileKey is an override; nil means fall back to the template's default image, not
+// GetVariantImageFilePath is an override; nil means fall back to the template's default image, not
 // "no image".
-func (this ProductVariant) GetVariantImageFileKey() *string {
-	return this.GetFieldData().GetString(ProductVariantFieldVariantImageFileKey)
+func (this ProductVariant) GetVariantImageFilePath() *string {
+	return this.GetFieldData().GetString(ProductVariantFieldVariantImageFilePath)
 }
 
-func (this *ProductVariant) SetVariantImageFileKey(v *string) {
-	this.GetFieldData().SetString(ProductVariantFieldVariantImageFileKey, v)
+func (this *ProductVariant) SetVariantImageFilePath(v *string) {
+	this.GetFieldData().SetString(ProductVariantFieldVariantImageFilePath, v)
 }
 
 func (this ProductVariant) GetCost() *decimal.Decimal {

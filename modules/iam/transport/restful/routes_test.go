@@ -58,7 +58,6 @@ func TestIamCustomRoutes(t *testing.T) {
 			engine: userRestEngine(&v1.UserCrudRest{}),
 			expected: []string{
 				"POST /v1/iam/iam_user/:id/send_invitation",
-				"POST /v1/iam/iam_user/:id/files/:field",
 				"POST /v1/iam/iam_user/:id/manage_roles",
 				"GET /v1/iam/iam_user/:id/roles",
 			},
@@ -112,5 +111,13 @@ func TestIamCustomRoutes(t *testing.T) {
 		for _, route := range testCase.expected {
 			assert.Contains(t, routes, route, name)
 		}
+	}
+}
+
+// The avatar is written as avatar_file_path through the plain update; the per-field file routes
+// are gone with filefield.
+func TestUserServesNoFileRoutes(t *testing.T) {
+	for _, route := range registeredRoutes(t, userRestEngine(&v1.UserCrudRest{})) {
+		assert.NotContains(t, route, "/files/")
 	}
 }

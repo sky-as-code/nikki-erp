@@ -5,6 +5,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
@@ -42,11 +43,13 @@ func (this *ProductTemplateDomainServiceImpl) Create(
 	if cErrs.Count() > 0 {
 		return &composable.CreateResult{ClientErrors: cErrs}, nil
 	}
+	opts := safe.GetOptional(options, composable.CreateOptions{})
+	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.files.ValidateCreate())
 	var result *composable.CreateResult
 	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var err error
-			if result, err = this.CrudDomainService.Create(tranxCtx, cmd, options...); err != nil {
+			if result, err = this.CrudDomainService.Create(tranxCtx, cmd, opts); err != nil {
 				return nil, err
 			}
 			if result.ClientErrors.Count() > 0 || !result.HasData {
@@ -68,22 +71,32 @@ func (this *ProductTemplateDomainServiceImpl) Create(
 
 // Update applies the template's own columns and, when the body carries `attribute_lines` or
 // `exclusions`, the configuration with its reconcile. A configuration-only save still moves the
-// template's etag, which is the configuration's version.
+// template's etag, which is the configuration's version. A replaced default image is removed from
+// IT Storage once the whole update has committed.
 func (this *ProductTemplateDomainServiceImpl) Update(
 	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
+) (*composable.MutateResult, error) {
+	return this.files.Update(ctx, safe.GetOptional(options, composable.UpdateOptions{}),
+		func(opts composable.UpdateOptions) (*composable.MutateResult, error) {
+			return this.updateWithConfiguration(ctx, cmd, opts)
+		})
+}
+
+func (this *ProductTemplateDomainServiceImpl) updateWithConfiguration(
+	ctx corectx.Context, cmd composable.UpdateCommand, opts composable.UpdateOptions,
 ) (*composable.MutateResult, error) {
 	input, deleteAllowed, cErrs := liftConfigurationOrRefuse(cmd)
 	if cErrs.Count() > 0 {
 		return &composable.MutateResult{ClientErrors: cErrs}, nil
 	}
 	if input == nil {
-		return this.CrudDomainService.Update(ctx, cmd, options...)
+		return this.CrudDomainService.Update(ctx, cmd, opts)
 	}
 	var result *composable.MutateResult
 	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var err error
-			if result, err = this.CrudDomainService.Update(tranxCtx, cmd, options...); err != nil {
+			if result, err = this.CrudDomainService.Update(tranxCtx, cmd, opts); err != nil {
 				return nil, err
 			}
 			if result.ClientErrors.Count() > 0 || !result.HasData {
