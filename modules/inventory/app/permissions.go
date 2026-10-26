@@ -38,8 +38,8 @@ const PermissionGenerateVariants = "generate_variants"
 // configuration is the template's own update.
 const PermissionPreviewAttributeConfiguration = "preview_attribute_configuration"
 
-// PermissionCopy duplicates a product template with its attribute configuration.
-const PermissionCopy = "copy"
+// PermissionDuplicate duplicates a product template with its attribute configuration.
+const PermissionDuplicate = "duplicate"
 
 // PermissionUpdateValue is held on inventory_product_attribute and guards changing the extra price
 // a template charges for one of its attribute values (PATCH product_template_attribute_value/:id).

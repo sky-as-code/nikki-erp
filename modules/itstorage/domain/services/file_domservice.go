@@ -12,9 +12,11 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/storage"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	c "github.com/sky-as-code/nikki-erp/modules/itstorage/constants"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
+	itConsumption "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/consumption"
 	itExt "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/external"
 	itFile "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/file"
 	itSpace "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/space"
@@ -22,10 +24,11 @@ import (
 
 // FileDomainDeps is what the file domain service needs beyond its composable default.
 type FileDomainDeps struct {
-	SpaceSvc  itSpace.SpaceDomainService
-	Storage   filestorage.FileStorageAdapter
-	QuotaSvc  itExt.QuotaExtService
-	ConfigSvc config.ConfigService
+	SpaceSvc       itSpace.SpaceDomainService
+	Storage        filestorage.FileStorageAdapter
+	QuotaSvc       itExt.QuotaExtService
+	ConsumptionSvc itConsumption.ConsumptionDomainService
+	ConfigSvc      config.ConfigService
 }
 
 // NewFileDomainService is handed the composable default by the itstorage_file onion.
@@ -41,6 +44,7 @@ func NewFileDomainService(base composable.CrudDomainService, deps FileDomainDeps
 		spaceSvc:          deps.SpaceSvc,
 		storage:           deps.Storage,
 		quotaSvc:          deps.QuotaSvc,
+		consumptionSvc:    deps.ConsumptionSvc,
 		maxFileSize:       maxSize,
 	}
 }
@@ -50,13 +54,16 @@ func NewFileDomainService(base composable.CrudDomainService, deps FileDomainDeps
 // after, because storage cannot join the database transaction.
 type FileDomainServiceImpl struct {
 	composable.CrudDomainService
-	repo        itFile.FileRepository
-	spaceSvc    itSpace.SpaceDomainService
-	storage     filestorage.FileStorageAdapter
-	quotaSvc    itExt.QuotaExtService
-	maxFileSize int64
+	repo           itFile.FileRepository
+	spaceSvc       itSpace.SpaceDomainService
+	storage        filestorage.FileStorageAdapter
+	quotaSvc       itExt.QuotaExtService
+	consumptionSvc itConsumption.ConsumptionDomainService
+	maxFileSize    int64
 }
 
+// FindByPath matches the file's current path exactly. Internal references hold the file id; a path
+// serves external apps only, and tracking a rename of the space is their responsibility.
 func (this *FileDomainServiceImpl) FindByPath(ctx corectx.Context, filePath string) (*itFile.ResolvedFile, error) {
 	parsed, ok := models.ParseFilePath(filePath)
 	if !ok {
@@ -66,11 +73,6 @@ func (this *FileDomainServiceImpl) FindByPath(ctx corectx.Context, filePath stri
 	if err != nil || file == nil {
 		return nil, err
 	}
-	// The extension is part of the leaf, so a path naming the right id with another extension
-	// is not this file.
-	if file.LeafName() != parsed.Leaf {
-		return nil, nil
-	}
 	space, err := this.spaceSvc.FindSpace(ctx, file.GetSpaceId())
 	if err != nil {
 		return nil, err
@@ -78,13 +80,15 @@ func (this *FileDomainServiceImpl) FindByPath(ctx corectx.Context, filePath stri
 	if space == nil {
 		return nil, errors.Errorf("file %s points at missing space %s", parsed.FileId, file.GetSpaceId())
 	}
-	// A path issued before a space rename carries the old prefix. It still resolves, by id; the
-	// caller receives the current path (docs/problems itstorage-004).
-	return &itFile.ResolvedFile{
-		File:     file,
-		Space:    space,
-		FilePath: models.BuildFilePath(space.GetPath(), parsed.FileId, models.ExtensionOf(file.GetObjectKey())),
-	}, nil
+	currentPath := models.BuildFilePath(space.GetPath(), parsed.FileId, models.ExtensionOf(file.GetObjectKey()))
+	if currentPath != filePath {
+		return nil, nil
+	}
+	return &itFile.ResolvedFile{File: file, Space: space, FilePath: currentPath}, nil
+}
+
+func (this *FileDomainServiceImpl) FindFile(ctx corectx.Context, fileId model.Id) (*models.File, error) {
+	return this.findFile(ctx, fileId)
 }
 
 func (this *FileDomainServiceImpl) findFile(ctx corectx.Context, fileId model.Id) (*models.File, error) {
@@ -101,9 +105,12 @@ func (this *FileDomainServiceImpl) findFile(ctx corectx.Context, fileId model.Id
 	return models.NewFileFrom(found.Data), nil
 }
 
-// Delete takes the file's size off its spaces in the same transaction as the row, and removes the
-// object once that commits. Inside a transaction the caller opened, the removal precedes the
-// caller's commit, so a later rollback leaves a row without its object.
+// Delete takes the file's size off its spaces and its consumption in the same transaction as the
+// row, and removes the object once that commits. Inside a transaction the caller opened, the
+// removal precedes the caller's commit, so a later rollback leaves a row without its object.
+//
+// A file in use is refused: the record referencing it would keep a dangling id. The record drops
+// the reference instead, which releases the file to expire.
 func (this *FileDomainServiceImpl) Delete(
 	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
 ) (*composable.MutateResult, error) {
@@ -113,6 +120,11 @@ func (this *FileDomainServiceImpl) Delete(
 	}
 	if file == nil {
 		return this.CrudDomainService.Delete(ctx, cmd, options...)
+	}
+	if file.GetStatus() == storage.FileStatusInUse {
+		return &composable.MutateResult{ClientErrors: ft.ClientErrors{*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey("err_file_in_use", c.ItStorageModuleName),
+			"the file is referenced by a record; remove it from that record instead")}}, nil
 	}
 
 	var result *composable.MutateResult
@@ -126,7 +138,10 @@ func (this *FileDomainServiceImpl) Delete(
 			if result.ClientErrors.Count() > 0 {
 				return &result.ClientErrors, nil
 			}
-			return nil, this.spaceSvc.AddSize(tranxCtx, file.GetSpaceId(), -file.GetSizeBytes())
+			if err = this.spaceSvc.AddSize(tranxCtx, file.GetSpaceId(), -file.GetSizeBytes()); err != nil {
+				return nil, err
+			}
+			return nil, this.consumptionSvc.Subtract(tranxCtx, fileOwners(tranxCtx, file), file.GetSizeBytes())
 		})
 	if err != nil {
 		return nil, errors.Wrap(err, "FileDomainService.Delete")
@@ -164,6 +179,9 @@ func (this *FileDomainServiceImpl) DeleteSpaceTree(ctx corectx.Context, space *m
 	if err != nil {
 		return nil, err
 	}
+	if err := this.subtractTreeConsumption(ctx, space, spaceIds); err != nil {
+		return nil, err
+	}
 	if _, err := this.repo.DeleteInSpaces(ctx, spaceIds); err != nil {
 		return nil, err
 	}
@@ -176,6 +194,30 @@ func (this *FileDomainServiceImpl) DeleteSpaceTree(ctx corectx.Context, space *m
 		return nil, err
 	}
 	return objectKeys, nil
+}
+
+// subtractTreeConsumption takes the tree's files off the tenant and their uploaders, and drops the
+// row of the org that owned the tree: the org is going away.
+func (this *FileDomainServiceImpl) subtractTreeConsumption(
+	ctx corectx.Context, space *models.Space, spaceIds []model.Id,
+) error {
+	byUploader, err := this.repo.SumSizesByUploader(ctx, spaceIds)
+	if err != nil {
+		return err
+	}
+	if err := this.consumptionSvc.SubtractEach(ctx, c.OwnerTypeUser, byUploader); err != nil {
+		return err
+	}
+	if tenantId := actingTenantId(ctx); tenantId != "" {
+		tenant := models.ConsumptionOwner{Type: c.OwnerTypeTenant, Id: model.Id(tenantId)}
+		if err := this.consumptionSvc.Subtract(ctx, []models.ConsumptionOwner{tenant}, space.GetSizeBytes()); err != nil {
+			return err
+		}
+	}
+	if ownerId := space.GetOwnerId(); ownerId != nil && space.GetOwnerType() == c.OwnerTypeOrg {
+		return this.consumptionSvc.DeleteOwner(ctx, models.ConsumptionOwner{Type: c.OwnerTypeOrg, Id: *ownerId})
+	}
+	return nil
 }
 
 // RemoveObjects never fails the caller: the rows are already gone, and an object left behind is

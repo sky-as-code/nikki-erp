@@ -2,15 +2,14 @@ package services
 
 import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable/storagefield"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/storage"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/external"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
@@ -22,16 +21,15 @@ const maxTemplateVariants = 1000
 // it embeds so built-in CRUD keeps running unchanged.
 //
 // usageDispatcher asks the dependant modules whether a variant or the template is still used,
-// before reconcile or template delete removes one. fileSvc checks default_image_file_path against
-// IT Storage.
+// before reconcile or template delete removes one. The preview image's lifecycle is the composable
+// default's; files is used only to clone the image when a template is duplicated.
 func NewProductTemplateDomainService(
-	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher, fileSvc itExt.FileStorageExtService,
+	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher, files storage.StorageConsumer,
 ) itProduct.ProductService {
 	return &ProductTemplateDomainServiceImpl{
 		CrudDomainService: base,
 		usageDispatcher:   usageDispatcher,
-		files: storagefield.NewGuard(fileSvc, storagefield.ScopeOrg,
-			models.ProductTemplateFieldDefaultImageFilePath),
+		files:             files,
 	}
 }
 
@@ -45,7 +43,7 @@ type ProductTemplateDomainServiceImpl struct {
 	composable.CrudDomainService
 
 	usageDispatcher *usagecheck.Dispatcher
-	files           storagefield.Guard
+	files           storage.StorageConsumer
 }
 
 // The derived service must satisfy both contracts — the engine installs it as its resource service,

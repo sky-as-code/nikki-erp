@@ -12,16 +12,18 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
+	"github.com/sky-as-code/nikki-erp/modules/core/storage"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	c "github.com/sky-as-code/nikki-erp/modules/itstorage/constants"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
+	itConsumption "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/consumption"
 	itExt "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/external"
 	itFile "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/file"
 )
 
 // Upload refuses everything it can before the first byte reaches storage: the declared metadata,
 // the space, the quota and the content's signature. Only the exact size has to wait for the end
-// of the stream.
+// of the stream. The quota is held as a reservation from then on, and every failure gives it back.
 func (this *FileDomainServiceImpl) Upload(
 	ctx corectx.Context, cmd itFile.UploadFileCommand,
 ) (*itFile.UploadFileResult, error) {
@@ -32,14 +34,26 @@ func (this *FileDomainServiceImpl) Upload(
 	if err != nil || cErrs.Count() > 0 {
 		return &itFile.UploadFileResult{ClientErrors: cErrs}, err
 	}
-	if cErrs, err = this.assertQuota(ctx, cmd.SizeBytes); err != nil || cErrs.Count() > 0 {
+	reservation, cErrs, err := this.reserveQuota(ctx, cmd.OrgId, cmd.SizeBytes)
+	if err != nil || cErrs.Count() > 0 {
 		return &itFile.UploadFileResult{ClientErrors: cErrs}, err
 	}
+	result, err := this.storeUpload(ctx, cmd, space, *reservation)
+	if err != nil || result.ClientErrors.Count() > 0 {
+		this.consumptionSvc.Release(ctx, *reservation)
+	}
+	return result, err
+}
+
+// storeUpload streams the object, tagged pending, then records it; the caller releases the
+// reservation when this does not succeed.
+func (this *FileDomainServiceImpl) storeUpload(
+	ctx corectx.Context, cmd itFile.UploadFileCommand, space *models.Space, reservation itConsumption.Reservation,
+) (*itFile.UploadFileResult, error) {
 	body, cErrs, err := checkContentMime(cmd)
 	if err != nil || cErrs.Count() > 0 {
 		return &itFile.UploadFileResult{ClientErrors: cErrs}, err
 	}
-
 	fileId, err := model.NewId()
 	if err != nil {
 		return nil, errors.Wrap(err, "Upload: new file id")
@@ -49,8 +63,13 @@ func (this *FileDomainServiceImpl) Upload(
 	if cErrs, err = this.putObject(ctx, objectKey, body, cmd); err != nil || cErrs.Count() > 0 {
 		return &itFile.UploadFileResult{ClientErrors: cErrs}, err
 	}
-
-	created, cErrs, err := this.recordUpload(ctx, cmd, space, *fileId, objectKey)
+	fields := dmodel.DynamicFields{
+		models.FileFieldName:      cmd.Name,
+		models.FileFieldMimeType:  cmd.MimeType,
+		models.FileFieldSizeBytes: cmd.SizeBytes,
+		models.FileFieldObjectKey: objectKey,
+	}
+	created, cErrs, err := this.recordFile(ctx, fields, cmd.OrgId, space, *fileId, reservation)
 	if err != nil || cErrs.Count() > 0 {
 		this.RemoveObjects(ctx, []string{objectKey})
 		return &itFile.UploadFileResult{ClientErrors: cErrs}, err
@@ -128,41 +147,115 @@ func (this *FileDomainServiceImpl) resolveNamedSpace(
 	return space, nil, nil
 }
 
-// assertQuota compares the tenant root's rolled-up size with the tenant's quota. A binary without
-// tenants has neither, so it is not limited. A tenant without a quota row is refused: an
-// unconfigured cap must not read as an unlimited one.
-func (this *FileDomainServiceImpl) assertQuota(ctx corectx.Context, sizeBytes int64) (ft.ClientErrors, error) {
+// reserveQuota reserves the size on the tenant, under its quota, and on the file's org and its
+// uploader without a cap. A binary without tenants has no quota. A tenant without a quota row is
+// refused: an unconfigured cap must not read as an unlimited one.
+func (this *FileDomainServiceImpl) reserveQuota(
+	ctx corectx.Context, orgId *model.Id, sizeBytes int64,
+) (*itConsumption.Reservation, ft.ClientErrors, error) {
+	capBytes, cErrs, err := this.tenantCapacity(ctx)
+	if err != nil || cErrs.Count() > 0 {
+		return nil, cErrs, err
+	}
+	owners, err := this.consumptionOwners(ctx, orgId, uploaderOf(ctx))
+	if err != nil {
+		return nil, nil, err
+	}
+	reservation := itConsumption.Reservation{Owners: owners, Bytes: sizeBytes, CapBytes: capBytes}
+	reserved, err := this.consumptionSvc.Reserve(ctx, reservation)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !reserved {
+		return nil, ft.ClientErrors{*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey("err_quota_exceeded", c.ItStorageModuleName),
+			"storing {{size_bytes}} bytes would exceed the storage quota of {{capacity_bytes}} bytes",
+			map[string]any{"size_bytes": sizeBytes, "capacity_bytes": util.ValueOrZeroOf(capBytes)})}, nil
+	}
+	return &reservation, nil, nil
+}
+
+// tenantCapacity is nil, without client errors, in a binary without tenants.
+func (this *FileDomainServiceImpl) tenantCapacity(ctx corectx.Context) (*int64, ft.ClientErrors, error) {
 	tenantId := actingTenantId(ctx)
 	if tenantId == "" {
-		return nil, nil
+		return nil, nil, nil
 	}
 	quota, err := this.quotaSvc.GetQuota(ctx, itExt.GetQuotaQuery{
 		Name: c.QuotaNameItStorage, OwnerType: c.OwnerTypeTenant, OwnerId: tenantId,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Upload: read the storage quota")
+		return nil, nil, errors.Wrap(err, "read the storage quota")
 	}
 	if !quota.HasData || quota.Data.ItStorageCapacityMibytes == nil {
-		return ft.ClientErrors{*ft.NewAnonymousBusinessViolation(
+		return nil, ft.ClientErrors{*ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey("err_quota_not_configured", c.ItStorageModuleName),
 			"no storage quota is configured for this tenant")}, nil
 	}
-	root, err := this.spaceSvc.FindTenantRootSpace(ctx)
-	if err != nil {
-		return nil, err
-	}
-	usedBytes := int64(0)
-	if root != nil {
-		usedBytes = root.GetSizeBytes()
-	}
 	capacityBytes := *quota.Data.ItStorageCapacityMibytes * c.MebiByte
-	if usedBytes+sizeBytes > capacityBytes {
-		return ft.ClientErrors{*ft.NewAnonymousBusinessViolation(
-			ft.ErrorKey("err_quota_exceeded", c.ItStorageModuleName),
-			"the upload of {{size_bytes}} bytes exceeds the storage quota: {{used_bytes}} of {{capacity_bytes}} used",
-			map[string]any{"size_bytes": sizeBytes, "used_bytes": usedBytes, "capacity_bytes": capacityBytes})}, nil
+	return &capacityBytes, nil, nil
+}
+
+// consumptionOwners lists the rows a file counts towards, the tenant first since it is the one
+// capped. A row created now starts from what the owner's space already holds.
+func (this *FileDomainServiceImpl) consumptionOwners(
+	ctx corectx.Context, orgId *model.Id, uploader *model.Id,
+) ([]models.ConsumptionOwner, error) {
+	owners := []models.ConsumptionOwner{}
+	if tenantId := actingTenantId(ctx); tenantId != "" {
+		root, err := this.spaceSvc.FindTenantRootSpace(ctx)
+		if err != nil {
+			return nil, err
+		}
+		owners = append(owners, models.ConsumptionOwner{
+			Type: c.OwnerTypeTenant, Id: model.Id(tenantId), InitialUsedBytes: sizeOf(root),
+		})
 	}
-	return nil, nil
+	if orgId != nil {
+		orgSpace, err := this.spaceSvc.FindOrgSpace(ctx, *orgId)
+		if err != nil {
+			return nil, err
+		}
+		owners = append(owners, models.ConsumptionOwner{
+			Type: c.OwnerTypeOrg, Id: *orgId, InitialUsedBytes: sizeOf(orgSpace),
+		})
+	}
+	if uploader != nil {
+		owners = append(owners, models.ConsumptionOwner{Type: c.OwnerTypeUser, Id: *uploader})
+	}
+	return owners, nil
+}
+
+// fileOwners lists the rows an existing file counts towards. They exist already, so no seed.
+func fileOwners(ctx corectx.Context, file *models.File) []models.ConsumptionOwner {
+	owners := []models.ConsumptionOwner{}
+	if tenantId := actingTenantId(ctx); tenantId != "" {
+		owners = append(owners, models.ConsumptionOwner{Type: c.OwnerTypeTenant, Id: model.Id(tenantId)})
+	}
+	if orgId := file.GetOrgId(); orgId != nil {
+		owners = append(owners, models.ConsumptionOwner{Type: c.OwnerTypeOrg, Id: *orgId})
+	}
+	if uploader := file.GetUploadedBy(); uploader != nil {
+		owners = append(owners, models.ConsumptionOwner{Type: c.OwnerTypeUser, Id: *uploader})
+	}
+	return owners
+}
+
+// uploaderOf is the acting user; a service principal stores files on nobody's account.
+func uploaderOf(ctx corectx.Context) *model.Id {
+	perms := ctx.GetPermissions()
+	if perms.Principal.Kind == corectx.PrincipalKindService || perms.UserId == "" {
+		return nil
+	}
+	userId := perms.UserId
+	return &userId
+}
+
+func sizeOf(space *models.Space) int64 {
+	if space == nil {
+		return 0
+	}
+	return space.GetSizeBytes()
 }
 
 // checkContentMime does not trust the declared type alone: the content's signature must agree
@@ -191,6 +284,7 @@ func (this *FileDomainServiceImpl) putObject(
 	err := this.storage.Put(ctx, objectKey, reader, &filestorage.PutOptions{
 		ContentLength: &cmd.SizeBytes,
 		ContentType:   &cmd.MimeType,
+		Tags:          stateTags(storage.FileStatusPending),
 	})
 	if err == nil && reader.verifyDrained() {
 		return nil, nil
@@ -203,20 +297,20 @@ func (this *FileDomainServiceImpl) putObject(
 		ft.ErrorKey("err_size_mismatch", c.ItStorageModuleName), errSizeMismatch.Error())}, nil
 }
 
-// recordUpload writes the row and adds its size to every enclosing space in one transaction.
-func (this *FileDomainServiceImpl) recordUpload(
-	ctx corectx.Context, cmd itFile.UploadFileCommand, space *models.Space, fileId model.Id, objectKey string,
+// recordFile writes the pending row, adds its size to every enclosing space and settles the
+// reservation, all in one transaction.
+func (this *FileDomainServiceImpl) recordFile(
+	ctx corectx.Context, fields dmodel.DynamicFields, orgId *model.Id, space *models.Space, fileId model.Id,
+	reservation itConsumption.Reservation,
 ) (*itFile.UploadFileResultData, ft.ClientErrors, error) {
-	fields := dmodel.DynamicFields{
-		models.FileFieldId:        fileId,
-		models.FileFieldName:      cmd.Name,
-		models.FileFieldMimeType:  cmd.MimeType,
-		models.FileFieldSizeBytes: cmd.SizeBytes,
-		models.FileFieldSpaceId:   util.ValueOrZeroOf(space.GetId()),
-		models.FileFieldObjectKey: objectKey,
+	fields[models.FileFieldId] = fileId
+	fields[models.FileFieldSpaceId] = util.ValueOrZeroOf(space.GetId())
+	fields[models.FileFieldStatus] = storage.FileStatusPending
+	if orgId != nil {
+		fields[models.FileFieldOrgId] = *orgId
 	}
-	if cmd.OrgId != nil {
-		fields[models.FileFieldOrgId] = *cmd.OrgId
+	if uploader := uploaderOf(ctx); uploader != nil {
+		fields[models.FileFieldUploadedBy] = *uploader
 	}
 	var created *composable.CreateResult
 	cErrs, err := composable.InRefusableTransaction(ctx, this.Repository(),
@@ -225,18 +319,30 @@ func (this *FileDomainServiceImpl) recordUpload(
 			created, err = this.CrudDomainService.Create(tranxCtx, fields, composable.CreateOptions{
 				AfterValidationSuccess: pinFileId(fileId),
 			})
-			if err != nil {
+			if err != nil || created.ClientErrors.Count() > 0 {
+				return clientErrorsOf(created), err
+			}
+			if err = this.spaceSvc.AddSize(tranxCtx, util.ValueOrZeroOf(space.GetId()), reservation.Bytes); err != nil {
 				return nil, err
 			}
-			if created.ClientErrors.Count() > 0 {
-				return &created.ClientErrors, nil
-			}
-			return nil, this.spaceSvc.AddSize(tranxCtx, util.ValueOrZeroOf(space.GetId()), cmd.SizeBytes)
+			return nil, this.consumptionSvc.Commit(tranxCtx, reservation)
 		})
 	if err != nil || (cErrs != nil && cErrs.Count() > 0) {
 		return nil, util.ValueOrZeroOf(cErrs), err
 	}
 	return &itFile.UploadFileResultData{Created: created.Data}, nil, nil
+}
+
+func clientErrorsOf(result *composable.CreateResult) *ft.ClientErrors {
+	if result == nil {
+		return nil
+	}
+	return &result.ClientErrors
+}
+
+// stateTags is the object tag a storage lifecycle rule matches to expire pending objects.
+func stateTags(status string) map[string]string {
+	return map[string]string{c.ObjectTagState: status}
 }
 
 // pinFileId restores the id the object key was built from. Schema validation regenerates every

@@ -8,24 +8,27 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/storage"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
-// ReasonCopyCatalogueArchived refuses a copy whose configuration names archived catalogue rows.
-const ReasonCopyCatalogueArchived = "product_template.copy_catalogue_archived"
+// ReasonDuplicateCatalogueArchived refuses a duplicate whose configuration names archived catalogue
+// rows.
+const ReasonDuplicateCatalogueArchived = "product_template.duplicate_catalogue_archived"
 
-// copyNameSuffix marks the copy's default name in every language the source carries.
-const copyNameSuffix = " (copy)"
+// duplicateNameSuffix marks the duplicate's default name in every language the source carries.
+const duplicateNameSuffix = " (copy)"
 
-// templateCopyFields are the template columns a copy carries. Everything else is the source's own
-// identity or history: id, etag, audit, archive state, import identity (external_id,
-// source_system) and the computed read model. The image file key is not copied: a file belongs to
-// one record, and deleting or replacing it on either template would remove it from the other.
-var templateCopyFields = []string{
+// templateDuplicateFields are the template columns a duplicate carries. Everything else is the
+// source's own identity or history: id, etag, audit, archive state, import identity (external_id,
+// source_system) and the computed read model. The preview image is not carried as is: a file
+// belongs to one record, so the duplicate gets its own clone (duplicatePreviewImage).
+var templateDuplicateFields = []string{
 	models.ProductTemplateFieldName,
 	models.ProductTemplateFieldShortName,
 	models.ProductTemplateFieldProductType,
@@ -46,15 +49,16 @@ var templateCopyFields = []string{
 	models.ProductTemplateFieldStatus,
 }
 
-var _ itProduct.TemplateCopier = (*ProductTemplateDomainServiceImpl)(nil)
+var _ itProduct.TemplateDuplicator = (*ProductTemplateDomainServiceImpl)(nil)
 
-// BuildTemplateCopy builds the create payload of a template's copy (CR01 §11): its own fields and
-// its current configuration only - enabled lines with their selected values, and active exclusions
-// between them - in catalogue ids, so the normal create path plans the variants. Variants, stock,
-// SKUs and archive reasons are not copied. An archived source is allowed; an archived catalogue
-// attribute or value refuses the copy and is listed, never restored on the user's behalf.
-func (this *ProductTemplateDomainServiceImpl) BuildTemplateCopy(
-	ctx corectx.Context, query itProduct.CopyTemplateQuery,
+// BuildTemplateDuplicate builds the create payload of a template's duplicate (CR01 §11): its own
+// fields, a clone of its preview image, and its current configuration only - enabled lines with
+// their selected values, and active exclusions between them - in catalogue ids, so the normal
+// create path plans the variants. Variants, stock, SKUs and archive reasons are not carried. An
+// archived source is allowed; an archived catalogue attribute or value refuses the duplicate and is
+// listed, never restored on the user's behalf.
+func (this *ProductTemplateDomainServiceImpl) BuildTemplateDuplicate(
+	ctx corectx.Context, query itProduct.DuplicateTemplateQuery,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	template, err := this.fetchTemplate(ctx, query.TemplateId)
 	if err != nil || template == nil {
@@ -64,15 +68,18 @@ func (this *ProductTemplateDomainServiceImpl) BuildTemplateCopy(
 	if err != nil {
 		return nil, err
 	}
-	lines, exclusions := copyConfiguration(state)
+	lines, exclusions := duplicateConfiguration(state)
 
 	refused, err := assertCatalogueActive(ctx, lines)
 	if err != nil || refused != nil {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: refused}, err
 	}
 
-	payload, err := copyTemplateFields(template.GetFieldData(), query.Name)
+	payload, err := duplicateTemplateFields(template.GetFieldData(), query.Name)
 	if err != nil {
+		return nil, err
+	}
+	if err := this.duplicatePreviewImage(ctx, template, payload); err != nil {
 		return nil, err
 	}
 	payload[itProduct.ProductTemplateFieldAttributeLines] = lines
@@ -80,9 +87,34 @@ func (this *ProductTemplateDomainServiceImpl) BuildTemplateCopy(
 	return &dyn.OpResult[dmodel.DynamicFields]{Data: payload, HasData: true}, nil
 }
 
-// copyConfiguration reads the enabled lines with their selected values, and the active exclusions
+// duplicatePreviewImage clones the source's image into a new pending file of the same org, which
+// the create of the duplicate then marks in use. It runs last, after every refusal, so a refused
+// duplicate clones nothing; a clone whose create fails stays pending and its object expires.
+func (this *ProductTemplateDomainServiceImpl) duplicatePreviewImage(
+	ctx corectx.Context, template *models.ProductTemplate, payload dmodel.DynamicFields,
+) error {
+	fileId := derefString(template.GetPreviewImageFileId())
+	if fileId == "" {
+		return nil
+	}
+	if this.files == nil {
+		return errors.New("duplicatePreviewImage: no storage consumer to clone the image with")
+	}
+	cloneId, err := this.files.DuplicateFile(ctx, storage.DuplicateFileCommand{
+		FileId: model.Id(fileId), OrgId: template.GetOrgId(),
+	})
+	if err != nil {
+		return errors.Wrap(err, "duplicatePreviewImage")
+	}
+	if cloneId != nil {
+		payload[models.ProductTemplateFieldPreviewImageFileId] = string(*cloneId)
+	}
+	return nil
+}
+
+// duplicateConfiguration reads the enabled lines with their selected values, and the active exclusions
 // whose two values are both still selected.
-func copyConfiguration(
+func duplicateConfiguration(
 	state *templateConfigState,
 ) ([]itProduct.AttributeLineInput, []itProduct.ExclusionInput) {
 	lines := []itProduct.AttributeLineInput{}
@@ -109,22 +141,22 @@ func copyConfiguration(
 	return lines, exclusions
 }
 
-// copyTemplateFields copies the carried columns, round-tripped through JSON so the payload has the
-// shape a REST client sends, and names the copy. An explicit name replaces the default suffix.
-func copyTemplateFields(source dmodel.DynamicFields, name any) (dmodel.DynamicFields, error) {
+// duplicateTemplateFields copies the carried columns, round-tripped through JSON so the payload has the
+// shape a REST client sends, and names the duplicate. An explicit name replaces the default suffix.
+func duplicateTemplateFields(source dmodel.DynamicFields, name any) (dmodel.DynamicFields, error) {
 	carried := map[string]any{}
-	for _, field := range templateCopyFields {
+	for _, field := range templateDuplicateFields {
 		if value, found := source[field]; found && value != nil {
 			carried[field] = value
 		}
 	}
 	encoded, err := json.Marshal(carried)
 	if err != nil {
-		return nil, errors.Wrap(err, "copyTemplateFields")
+		return nil, errors.Wrap(err, "duplicateTemplateFields")
 	}
 	payload := dmodel.DynamicFields{}
 	if err := json.Unmarshal(encoded, &payload); err != nil {
-		return nil, errors.Wrap(err, "copyTemplateFields")
+		return nil, errors.Wrap(err, "duplicateTemplateFields")
 	}
 	if name != nil {
 		payload[models.ProductTemplateFieldName] = name
@@ -133,14 +165,14 @@ func copyTemplateFields(source dmodel.DynamicFields, name any) (dmodel.DynamicFi
 	if names, ok := payload[models.ProductTemplateFieldName].(map[string]any); ok {
 		for language, text := range names {
 			if value, isText := text.(string); isText && value != "" {
-				names[language] = value + copyNameSuffix
+				names[language] = value + duplicateNameSuffix
 			}
 		}
 	}
 	return payload, nil
 }
 
-// assertCatalogueActive lists the archived catalogue attributes and values the copy would name.
+// assertCatalogueActive lists the archived catalogue attributes and values the duplicate would name.
 func assertCatalogueActive(
 	ctx corectx.Context, lines []itProduct.AttributeLineInput,
 ) (ft.ClientErrors, error) {
@@ -161,7 +193,7 @@ func assertCatalogueActive(
 		return nil, nil
 	}
 	return ft.ClientErrors{*ft.NewBusinessViolation(models.ProductTemplateFieldId,
-		ft.ErrorKey(ReasonCopyCatalogueArchived, "inventory"),
+		ft.ErrorKey(ReasonDuplicateCatalogueArchived, "inventory"),
 		"the product uses archived attributes or values; unarchive them or remove them from the product first",
 		map[string]any{"attribute_ids": archivedAttributes, "value_ids": archivedValues})}, nil
 }

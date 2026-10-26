@@ -2,6 +2,8 @@ package context
 
 import (
 	"context"
+	"sync/atomic"
+	"time"
 
 	"github.com/labstack/echo/v5"
 	"go.bryk.io/pkg/errors"
@@ -86,16 +88,11 @@ type ContextPermissions struct {
 }
 
 func NewRequestContext(ctx context.Context) Context {
-	return &RequestContext{
-		Context: ctx,
-	}
+	return newRequestContext(ctx, "")
 }
 
 func NewRequestContextM(ctx context.Context, moduleName string) Context {
-	return &RequestContext{
-		Context:    ctx,
-		moduleName: moduleName,
-	}
+	return newRequestContext(ctx, moduleName)
 }
 
 // NewRequestContextF builds an empty context carrying domain constraints.
@@ -103,11 +100,14 @@ func NewRequestContextM(ctx context.Context, moduleName string) Context {
 // The constraints go through SetDomainConstraints rather than a struct field: GetDomainConstraints
 // reads them back off the inner context's values, so a field set here would never be read.
 func NewRequestContextF(ctx context.Context, moduleName string, domainConstraints dmodel.DynamicFields) Context {
-	out := &RequestContext{
-		Context:    ctx,
-		moduleName: moduleName,
-	}
+	out := newRequestContext(ctx, moduleName)
 	out.SetDomainConstraints(domainConstraints)
+	return out
+}
+
+func newRequestContext(inner context.Context, moduleName string) *RequestContext {
+	out := &RequestContext{moduleName: moduleName}
+	out.setInner(inner)
 	return out
 }
 
@@ -122,14 +122,12 @@ func NewRequestContextF(ctx context.Context, moduleName string, domainConstraint
 //
 // A field added to RequestContext must be added here too.
 func CloneRequestContext(ctx Context) Context {
-	return &RequestContext{
-		Context:     ctx.InnerContext(),
-		logger:      ctx.GetLogger(),
-		repoTrx:     ctx.GetDbTranx(),
-		moduleName:  ctx.GetModuleName(),
-		permissions: ctx.GetPermissions(),
-		user:        ctx.GetUser(),
-	}
+	clone := newRequestContext(ctx.InnerContext(), ctx.GetModuleName())
+	clone.logger = ctx.GetLogger()
+	clone.repoTrx = ctx.GetDbTranx()
+	clone.permissions = ctx.GetPermissions()
+	clone.user = ctx.GetUser()
+	return clone
 }
 
 // CloneWithInner is CloneRequestContext with the inner context replaced, for a caller that has
@@ -138,7 +136,7 @@ func CloneRequestContext(ctx Context) Context {
 // all of those; mutating the original would impose the deadline on the caller's remaining work.
 func CloneWithInner(ctx Context, inner context.Context) Context {
 	clone := CloneRequestContext(ctx).(*RequestContext)
-	clone.Context = inner
+	clone.setInner(inner)
 	return clone
 }
 
@@ -157,8 +155,14 @@ type contextKey struct {
 
 var CtxKeyDomainConstraints = contextKey{"domain_constraints"}
 
+// RequestContext is owned by one goroutine, the one serving the request, which alone may call its
+// setters. It is nevertheless read from others: database/sql watches Done/Err of every query's
+// context from its own goroutine, and so does anything else handed the context to cancel on. Those
+// readers only use the context.Context methods, so the inner context - the one field the setters
+// replace and those methods read - is held atomically. Embedding it as a plain interface field let
+// a reader see a torn value mid-WithValue, which crashed the process (core-001).
 type RequestContext struct {
-	context.Context
+	inner atomic.Pointer[context.Context]
 
 	logger logging.LoggerService
 
@@ -169,11 +173,35 @@ type RequestContext struct {
 	user        dmodel.DynamicFields
 }
 
-func (this RequestContext) InnerContext() context.Context {
-	return this.Context
+func (this *RequestContext) InnerContext() context.Context {
+	inner := this.inner.Load()
+	if inner == nil {
+		return context.Background()
+	}
+	return *inner
 }
 
-func (this RequestContext) GetLogger() logging.LoggerService {
+func (this *RequestContext) setInner(inner context.Context) {
+	this.inner.Store(&inner)
+}
+
+func (this *RequestContext) Deadline() (deadline time.Time, ok bool) {
+	return this.InnerContext().Deadline()
+}
+
+func (this *RequestContext) Done() <-chan struct{} {
+	return this.InnerContext().Done()
+}
+
+func (this *RequestContext) Err() error {
+	return this.InnerContext().Err()
+}
+
+func (this *RequestContext) Value(key any) any {
+	return this.InnerContext().Value(key)
+}
+
+func (this *RequestContext) GetLogger() logging.LoggerService {
 	return this.logger
 }
 
@@ -181,7 +209,7 @@ func (this *RequestContext) SetLogger(logger logging.LoggerService) {
 	this.logger = logger
 }
 
-func (this RequestContext) GetDbTranx() db.DbTransaction {
+func (this *RequestContext) GetDbTranx() db.DbTransaction {
 	return this.repoTrx
 }
 
@@ -189,8 +217,8 @@ func (this *RequestContext) SetDbTranx(trx db.DbTransaction) {
 	this.repoTrx = trx
 }
 
-func (this RequestContext) GetDomainConstraints() dmodel.DynamicFields {
-	val := this.Context.Value(CtxKeyDomainConstraints)
+func (this *RequestContext) GetDomainConstraints() dmodel.DynamicFields {
+	val := this.Value(CtxKeyDomainConstraints)
 	if val == nil {
 		return nil
 	}
@@ -198,10 +226,10 @@ func (this RequestContext) GetDomainConstraints() dmodel.DynamicFields {
 }
 
 func (this *RequestContext) SetDomainConstraints(constraints dmodel.DynamicFields) {
-	this.Context = context.WithValue(this.Context, CtxKeyDomainConstraints, constraints)
+	this.WithValue(CtxKeyDomainConstraints, constraints)
 }
 
-func (this RequestContext) GetPermissions() ContextPermissions {
+func (this *RequestContext) GetPermissions() ContextPermissions {
 	return this.permissions
 }
 
@@ -209,7 +237,7 @@ func (this *RequestContext) SetPermissions(permissions ContextPermissions) {
 	this.permissions = permissions
 }
 
-func (this RequestContext) GetUser() dmodel.DynamicFields {
+func (this *RequestContext) GetUser() dmodel.DynamicFields {
 	return this.user
 }
 
@@ -217,15 +245,14 @@ func (this *RequestContext) SetUser(user dmodel.DynamicFields) {
 	this.user = user
 }
 
-func (this RequestContext) GetModuleName() string {
+func (this *RequestContext) GetModuleName() string {
 	return this.moduleName
 }
 
 // Replace current inner context with a new one that has the given key and value.
+//
+// The load and store are separate, which is safe only because the setters are called by the
+// owning goroutine alone; concurrent readers always see either the old or the new inner context.
 func (this *RequestContext) WithValue(key, val any) {
-	this.Context = context.WithValue(this.Context, key, val)
-}
-
-func (this *RequestContext) Value(key any) any {
-	return this.Context.Value(key)
+	this.setInner(context.WithValue(this.InnerContext(), key, val))
 }

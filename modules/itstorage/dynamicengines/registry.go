@@ -11,6 +11,7 @@ import (
 func InitDynamicEngines() error {
 	return stdErr.Join(
 		registerSpaceEngine(),
+		registerConsumptionEngine(),
 		registerFileEngine(),
 	)
 }
@@ -21,6 +22,11 @@ func SpaceRestActions() []composable.CrudAction {
 		composable.CrudActionGetById, composable.CrudActionSearch, composable.CrudActionExists,
 		composable.CrudActionGetSchema,
 	}
+}
+
+// ConsumptionRestActions are the read built-ins: the counters are kept by the upload and delete.
+func ConsumptionRestActions() []composable.CrudAction {
+	return SpaceRestActions()
 }
 
 // FileRestActions are the built-ins with a route. A file is created by the streamed upload only,

@@ -114,7 +114,7 @@ func TestIamCustomRoutes(t *testing.T) {
 	}
 }
 
-// The avatar is written as avatar_file_path through the plain update; the per-field file routes
+// The avatar is written as avatar_file_id through the plain update; the per-field file routes
 // are gone with filefield.
 func TestUserServesNoFileRoutes(t *testing.T) {
 	for _, route := range registeredRoutes(t, userRestEngine(&v1.UserCrudRest{})) {

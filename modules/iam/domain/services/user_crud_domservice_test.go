@@ -34,7 +34,7 @@ func TestUserCreateSeedsPreferencesAndRebuildsPermissions(t *testing.T) {
 	base := newFakeCrudDomain()
 	settings := &fakeUserSettings{}
 	perms := &fakePermRepo{}
-	svc := NewUserCrudDomainService(base, settings, perms, nil, nil)
+	svc := NewUserCrudDomainService(base, settings, perms, nil)
 
 	result, err := svc.Create(testContext(), dmodel.DynamicFields{
 		domain.UserFieldDisplayName: "Jane", domain.UserFieldIsOwner: true,
@@ -54,7 +54,7 @@ func TestUserCreateRejectedSeedsNothing(t *testing.T) {
 	base.rejectNext = true
 	settings := &fakeUserSettings{}
 	perms := &fakePermRepo{}
-	svc := NewUserCrudDomainService(base, settings, perms, nil, nil)
+	svc := NewUserCrudDomainService(base, settings, perms, nil)
 
 	result, err := svc.Create(testContext(), dmodel.DynamicFields{})
 
@@ -66,7 +66,7 @@ func TestUserCreateRejectedSeedsNothing(t *testing.T) {
 
 func TestUserCreateRefusedSeedingFailsTheCreate(t *testing.T) {
 	base := newFakeCrudDomain()
-	svc := NewUserCrudDomainService(base, &fakeUserSettings{refuse: true}, &fakePermRepo{}, nil, nil)
+	svc := NewUserCrudDomainService(base, &fakeUserSettings{refuse: true}, &fakePermRepo{}, nil)
 
 	_, err := svc.Create(testContext(), dmodel.DynamicFields{domain.UserFieldDisplayName: "Jane"})
 

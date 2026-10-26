@@ -28,8 +28,8 @@ func NewFileRest(params fileRestParams) *FileRest {
 	return rest
 }
 
-// FileRest serves the read and delete built-ins, plus the three file routes whose surface the
-// engine cannot express: a streamed multipart upload and a streamed download.
+// FileRest serves the read and delete built-ins, plus the file routes whose surface the engine
+// cannot express: a streamed multipart upload and the streamed downloads.
 type FileRest struct {
 	composable.CrudRestBase
 	fileSvc itFile.FileApplicationService
@@ -74,21 +74,45 @@ func (this *FileRest) GetMeta(echoCtx *echo.Context) error {
 	)
 }
 
+func (this *FileRest) GetMetaById(echoCtx *echo.Context) error {
+	return httpserver.ServeRequest2(
+		echoCtx, this.fileSvc.GetFileMetaById,
+		func(request GetFileMetaByIdRequest) itFile.GetFileMetaByIdQuery {
+			return itFile.GetFileMetaByIdQuery(request)
+		},
+		composable.Identity[dmodel.DynamicFields],
+		httpserver.JsonOk,
+	)
+}
+
 func (this *FileRest) Download(echoCtx *echo.Context) error {
 	return httpserver.ServeStreamFile(
 		echoCtx, this.fileSvc.DownloadFile,
 		func(request DownloadFileRequest) itFile.DownloadFileQuery {
 			return itFile.DownloadFileQuery{Path: request.Path, RangeHeader: request.GetRangeHeader()}
 		},
-		func(data itFile.DownloadFileResultData) httpserver.GetFileStreamResponse {
-			return httpserver.GetFileStreamResponse{
-				Name:          data.Name,
-				MimeType:      data.MimeType,
-				Body:          data.Body,
-				ContentLength: data.ContentLength,
-				ContentRange:  data.ContentRange,
-			}
-		},
+		toStreamResponse,
 		"file",
 	)
+}
+
+func (this *FileRest) DownloadById(echoCtx *echo.Context) error {
+	return httpserver.ServeStreamFile(
+		echoCtx, this.fileSvc.DownloadFileById,
+		func(request DownloadFileByIdRequest) itFile.DownloadFileByIdQuery {
+			return itFile.DownloadFileByIdQuery{Id: request.Id, RangeHeader: request.GetRangeHeader()}
+		},
+		toStreamResponse,
+		"file",
+	)
+}
+
+func toStreamResponse(data itFile.DownloadFileResultData) httpserver.GetFileStreamResponse {
+	return httpserver.GetFileStreamResponse{
+		Name:          data.Name,
+		MimeType:      data.MimeType,
+		Body:          data.Body,
+		ContentLength: data.ContentLength,
+		ContentRange:  data.ContentRange,
+	}
 }

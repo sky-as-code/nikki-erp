@@ -9,7 +9,6 @@ import (
 	itLanguage "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 	itModule "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
-	itStorage "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/itstorage"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 	// itGrp "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/group"
 	// itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
@@ -23,9 +22,6 @@ import (
 // interfaces in interfaces/external, so a module split changes this file and nothing else.
 func InitExternalServices() error {
 	return stdErr.Join(
-		deps.Register(func(fileSvc itStorage.FileExtService) itExt.FileStorageExtService {
-			return fileSvc
-		}),
 		deps.Register(func(orgSettingsSvc itSettings.OrgSettingsAppService) itExt.OrgSettingsInitExtService {
 			return orgSettingsSvc
 		}),

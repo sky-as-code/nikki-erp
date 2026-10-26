@@ -94,11 +94,12 @@
 			"data_type": { "type": "langjson", "min": 0, "max": 4000 }
 		},
 		{
-			"name": "default_image_file_path",
-			"label": "fields.default_image_file_path",
-			"data_type": { "type": "string", "min": 1, "max": 1024 },
+			"name": "preview_image_file_id",
+			"label": "fields.preview_image_file_id",
+			"data_type": "ulid",
+			"metadata": { "file_field": true },
 			"description": {
-				"en-US": "Shared fallback image. A variant with no image of its own renders this one."
+				"en-US": "IT Storage file id of the template's header image, also the shared fallback: a variant with no image of its own renders this one. No foreign key by design; the file lifecycle is the resource engine's."
 			}
 		},
 		{

@@ -73,7 +73,7 @@ BEGIN
 		('01M0A1P4QS5PTBGTJSN1GS991H', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a product template so it and its variants cannot be used by new transactions', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QBXY1DQFZPP4P4VD1T', jsonb_build_object('en-US', 'Generate variants', 'vi-VN', 'Tạo biến thể'), 'generate_variants', 'Generate or synchronize the variants of a product template', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0A1P4QPRVWATTRCNFGPREVW', jsonb_build_object('en-US', 'Preview attribute configuration', 'vi-VN', 'Xem trước cấu hình thuộc tính'), 'preview_attribute_configuration', 'Dry-run an attribute configuration of a product template and see which variants it would keep, create, archive or delete', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0A1P4QCPYPRDTMPXC0PY001', jsonb_build_object('en-US', 'Copy', 'vi-VN', 'Sao chép'), 'copy', 'Duplicate a product template with its attribute configuration', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0A1P4QCPYPRDTMPXC0PY001', jsonb_build_object('en-US', 'Duplicate', 'vi-VN', 'Nhân bản'), 'duplicate', 'Duplicate a product template with its attribute configuration and its own copy of the preview image', '01M0A1P4QM3P0Y3T60T7RH2KZC', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Product Variant
 		('01M0A1P4Q9YQ7HAFRENHBMJ9TR', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M0A1P4QJ0MFYJY0EQH0NVJ2R', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),

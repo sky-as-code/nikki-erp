@@ -12,47 +12,47 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
-func copySourceTemplate() dmodel.DynamicFields {
+func duplicateSourceTemplate() dmodel.DynamicFields {
 	return dmodel.DynamicFields{
-		basemodel.FieldId:                               "t-1",
-		basemodel.FieldEtag:                             "9",
-		basemodel.FieldIsArchived:                       true,
-		basemodel.FieldOrgId:                            "org-1",
-		models.ProductTemplateFieldName:                 map[string]any{"en-US": "Tea", "vi-VN": "Trà"},
-		models.ProductTemplateFieldStatus:               "active",
-		models.ProductTemplateFieldDefaultImageFilePath: "files/tea.png",
-		"external_id":                                   "ext-1",
-		"source_system":                                 "erp-x",
-		models.ProductTemplateFieldMinVariantCost:       "1.5",
+		basemodel.FieldId:                             "t-1",
+		basemodel.FieldEtag:                           "9",
+		basemodel.FieldIsArchived:                     true,
+		basemodel.FieldOrgId:                          "org-1",
+		models.ProductTemplateFieldName:               map[string]any{"en-US": "Tea", "vi-VN": "Trà"},
+		models.ProductTemplateFieldStatus:             "active",
+		models.ProductTemplateFieldPreviewImageFileId: "01TEAIMAGE",
+		"external_id":                                 "ext-1",
+		"source_system":                               "erp-x",
+		models.ProductTemplateFieldMinVariantCost:     "1.5",
 	}
 }
 
-func TestCopyTemplateFieldsCarriesOnlyTheTemplatesOwnFields(t *testing.T) {
-	payload, err := copyTemplateFields(copySourceTemplate(), nil)
+func TestDuplicateTemplateFieldsCarriesOnlyTheTemplatesOwnFields(t *testing.T) {
+	payload, err := duplicateTemplateFields(duplicateSourceTemplate(), nil)
 
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"en-US": "Tea (copy)", "vi-VN": "Trà (copy)"}, payload[models.ProductTemplateFieldName])
 	assert.Equal(t, "active", payload[models.ProductTemplateFieldStatus])
 	for _, dropped := range []string{
 		basemodel.FieldId, basemodel.FieldEtag, basemodel.FieldIsArchived, basemodel.FieldOrgId,
-		models.ProductTemplateFieldDefaultImageFilePath, "external_id", "source_system",
+		models.ProductTemplateFieldPreviewImageFileId, "external_id", "source_system",
 		models.ProductTemplateFieldMinVariantCost,
 	} {
 		assert.NotContains(t, payload, dropped)
 	}
 }
 
-func TestCopyTemplateFieldsUsesAnExplicitName(t *testing.T) {
+func TestDuplicateTemplateFieldsUsesAnExplicitName(t *testing.T) {
 	name := map[string]any{"en-US": "Iced tea"}
-	payload, err := copyTemplateFields(copySourceTemplate(), name)
+	payload, err := duplicateTemplateFields(duplicateSourceTemplate(), name)
 
 	require.NoError(t, err)
 	assert.Equal(t, name, payload[models.ProductTemplateFieldName])
 }
 
-// Only the current configuration is copied: a disabled line, an unselected value, an archived
+// Only the current configuration is duplicated: a disabled line, an unselected value, an archived
 // exclusion and an exclusion naming an unselected value all stay behind.
-func TestCopyConfigurationTakesTheCurrentConfigurationOnly(t *testing.T) {
+func TestDuplicateConfigurationTakesTheCurrentConfigurationOnly(t *testing.T) {
 	sequence := int32(2)
 	color := &configLineRow{id: "l-1", attributeId: "a-color", enabled: true, snapshot: models.VariantCreationModeInstant,
 		sequence: &sequence, values: []*configValueRow{
@@ -76,7 +76,7 @@ func TestCopyConfigurationTakesTheCurrentConfigurationOnly(t *testing.T) {
 		},
 	}
 
-	lines, exclusions := copyConfiguration(state)
+	lines, exclusions := duplicateConfiguration(state)
 
 	assert.Equal(t, []itProduct.AttributeLineInput{
 		{AttributeId: "a-size", ValueIds: []string{"m"}},

@@ -19,7 +19,13 @@ const MebiByte int64 = 1 << 20
 const (
 	ResourceItStorageSpace = "itstorage_space"
 	ResourceItStorageFile  = "itstorage_file"
+	// ResourceItStorageConsumption is read-only: the upload, duplicate and delete paths keep it.
+	ResourceItStorageConsumption = "itstorage_consumption"
 )
+
+// ObjectTagState is the S3 object tag carrying the file status. A lifecycle rule expires objects
+// tagged ObjectTagState=core/storage.FileStatusPending after 24 hours.
+const ObjectTagState = "itstorage-state"
 
 // QuotaNameItStorage is the settings_quota name whose itstorage_capacity_mibytes caps a tenant's storage.
 const QuotaNameItStorage = "itstorage"
@@ -37,6 +43,12 @@ const (
 	RouteFileUpload   = "/files/upload"
 	RouteFileMeta     = "/files/meta"
 	RouteFileDownload = "/files/download"
+	// RouteFileDownloadById is how this system's own clients fetch a file: by the id a record's
+	// `*_file_id` field holds. The by-path routes above serve external apps only.
+	RouteFileDownloadById = "/files/:id/download"
+	// RouteFileMetaById answers a file's record by id. Unlike the standard itstorage_file GET it
+	// needs no org_id, so a tenant-wide file (an avatar) is readable too.
+	RouteFileMetaById = "/files/:id/meta"
 	// FieldFilePart is the multipart part carrying the binary; it must be the last part.
 	FieldFilePart = "file"
 )

@@ -36,14 +36,14 @@ const (
 
 	UserFieldId        = basemodel.FieldId
 	UserFieldAvatarUrl = "avatar_url"
-	// IT Storage path of the uploaded avatar. Not "avatar_url", which is an older client-writable
+	// IT Storage file id of the uploaded avatar. Not "avatar_url", which is an older client-writable
 	// URL column.
-	UserFieldAvatarFilePath = "avatar_file_path"
-	UserFieldDisplayName    = "display_name"
-	UserFieldEmail          = "email"
-	UserFieldIsOwner        = "is_owner"
-	UserFieldOrgUnitId      = "org_unit_id"
-	UserFieldStatus         = "status"
+	UserFieldAvatarFileId = "avatar_file_id"
+	UserFieldDisplayName  = "display_name"
+	UserFieldEmail        = "email"
+	UserFieldIsOwner      = "is_owner"
+	UserFieldOrgUnitId    = "org_unit_id"
+	UserFieldStatus       = "status"
 
 	UserEdgeGroups                = "groups"
 	UserEdgeOrgs                  = "orgs"

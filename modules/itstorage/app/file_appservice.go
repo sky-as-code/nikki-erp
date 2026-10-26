@@ -13,6 +13,7 @@ import (
 var metaFields = []string{
 	models.FileFieldId, models.FileFieldName, models.FileFieldMimeType, models.FileFieldSizeBytes,
 	models.FileFieldCreatedAt, models.FileFieldSpaceId, models.FileFieldOrgId, models.FileFieldEtag,
+	models.FileFieldStatus,
 }
 
 // NewFileApplicationService is handed the composable default by the itstorage_file onion.
@@ -76,6 +77,56 @@ func (this *FileApplicationServiceImpl) DownloadFile(
 		return nil, err
 	}
 	return &itFile.DownloadFileResult{HasData: true, Data: *stream}, nil
+}
+
+// DownloadFileById is how this system's own clients read a file: by the id a record's file field
+// holds. A missing id answers like one the caller may not see, after the tenant-wide read check.
+func (this *FileApplicationServiceImpl) DownloadFileById(
+	ctx corectx.Context, query itFile.DownloadFileByIdQuery,
+) (*itFile.DownloadFileResult, error) {
+	file, err := this.domSvc.FindFile(ctx, query.Id)
+	if err != nil {
+		return nil, err
+	}
+	if file == nil {
+		if cErrs := assertFileAction(ctx, this, composable.PermissionRead, nil); cErrs != nil {
+			return &itFile.DownloadFileResult{ClientErrors: *cErrs}, nil
+		}
+		return &itFile.DownloadFileResult{ClientErrors: ft.ClientErrors{*ft.NewNotFoundError("id")}}, nil
+	}
+	if cErrs := assertFileRead(ctx, this, file.GetOrgId()); cErrs != nil {
+		return &itFile.DownloadFileResult{ClientErrors: *cErrs}, nil
+	}
+	stream, err := this.domSvc.OpenObject(ctx, file, query.RangeHeader)
+	if err != nil {
+		return nil, err
+	}
+	return &itFile.DownloadFileResult{HasData: true, Data: *stream}, nil
+}
+
+// GetFileMetaById authorizes like DownloadFileById: against the org the stored record carries.
+func (this *FileApplicationServiceImpl) GetFileMetaById(
+	ctx corectx.Context, query itFile.GetFileMetaByIdQuery,
+) (*itFile.GetFileMetaResult, error) {
+	file, err := this.domSvc.FindFile(ctx, query.Id)
+	if err != nil {
+		return nil, err
+	}
+	if file == nil {
+		if cErrs := assertFileAction(ctx, this, composable.PermissionRead, nil); cErrs != nil {
+			return &itFile.GetFileMetaResult{ClientErrors: *cErrs}, nil
+		}
+		return &itFile.GetFileMetaResult{ClientErrors: ft.ClientErrors{*ft.NewNotFoundError("id")}}, nil
+	}
+	if cErrs := assertFileRead(ctx, this, file.GetOrgId()); cErrs != nil {
+		return &itFile.GetFileMetaResult{ClientErrors: *cErrs}, nil
+	}
+	stored := file.GetFieldData()
+	meta := dmodel.DynamicFields{}
+	for _, field := range metaFields {
+		meta[field] = stored[field]
+	}
+	return &itFile.GetFileMetaResult{HasData: true, Data: meta}, nil
 }
 
 // resolveReadable authorizes against the org the stored record carries, never one the caller

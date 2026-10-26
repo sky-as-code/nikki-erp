@@ -46,27 +46,27 @@ func (this ProductType) String() string {
 const (
 	ProductTemplateSchemaName = "inventory_product_template"
 
-	ProductTemplateFieldId                   = basemodel.FieldId
-	ProductTemplateFieldName                 = "name"
-	ProductTemplateFieldShortName            = "short_name"
-	ProductTemplateFieldProductType          = "product_type"
-	ProductTemplateFieldIsCombo              = "is_combo"
-	ProductTemplateFieldUomId                = "uom_id"
-	ProductTemplateFieldCategoryId           = "category_id"
-	ProductTemplateFieldBrandId              = "brand_id"
-	ProductTemplateFieldSaleOk               = "sale_ok"
-	ProductTemplateFieldPurchaseOk           = "purchase_ok"
-	ProductTemplateFieldDescription          = "description"
-	ProductTemplateFieldSalesDescription     = "sales_description"
-	ProductTemplateFieldPurchaseDescription  = "purchase_description"
-	ProductTemplateFieldDefaultImageFilePath = "default_image_file_path"
-	ProductTemplateFieldBaseSalesPrice       = "base_sales_price"
-	ProductTemplateFieldDefaultWeight        = "default_weight"
-	ProductTemplateFieldDefaultLength        = "default_length"
-	ProductTemplateFieldDefaultWidth         = "default_width"
-	ProductTemplateFieldDefaultHeight        = "default_height"
-	ProductTemplateFieldStatus               = "status"
-	ProductTemplateFieldOrgId                = "org_id"
+	ProductTemplateFieldId                  = basemodel.FieldId
+	ProductTemplateFieldName                = "name"
+	ProductTemplateFieldShortName           = "short_name"
+	ProductTemplateFieldProductType         = "product_type"
+	ProductTemplateFieldIsCombo             = "is_combo"
+	ProductTemplateFieldUomId               = "uom_id"
+	ProductTemplateFieldCategoryId          = "category_id"
+	ProductTemplateFieldBrandId             = "brand_id"
+	ProductTemplateFieldSaleOk              = "sale_ok"
+	ProductTemplateFieldPurchaseOk          = "purchase_ok"
+	ProductTemplateFieldDescription         = "description"
+	ProductTemplateFieldSalesDescription    = "sales_description"
+	ProductTemplateFieldPurchaseDescription = "purchase_description"
+	ProductTemplateFieldPreviewImageFileId  = "preview_image_file_id"
+	ProductTemplateFieldBaseSalesPrice      = "base_sales_price"
+	ProductTemplateFieldDefaultWeight       = "default_weight"
+	ProductTemplateFieldDefaultLength       = "default_length"
+	ProductTemplateFieldDefaultWidth        = "default_width"
+	ProductTemplateFieldDefaultHeight       = "default_height"
+	ProductTemplateFieldStatus              = "status"
+	ProductTemplateFieldOrgId               = "org_id"
 
 	// Cost read model. A template has no cost of its own; these expose the range across its
 	// variants and must never be treated as the product's cost.
@@ -206,12 +206,12 @@ func (this *ProductTemplate) SetPurchaseDescription(v *model.LangJson) {
 	this.GetFieldData().SetLangJson(ProductTemplateFieldPurchaseDescription, v)
 }
 
-func (this ProductTemplate) GetDefaultImageFilePath() *string {
-	return this.GetFieldData().GetString(ProductTemplateFieldDefaultImageFilePath)
+func (this ProductTemplate) GetPreviewImageFileId() *string {
+	return this.GetFieldData().GetString(ProductTemplateFieldPreviewImageFileId)
 }
 
-func (this *ProductTemplate) SetDefaultImageFilePath(v *string) {
-	this.GetFieldData().SetString(ProductTemplateFieldDefaultImageFilePath, v)
+func (this *ProductTemplate) SetPreviewImageFileId(v *string) {
+	this.GetFieldData().SetString(ProductTemplateFieldPreviewImageFileId, v)
 }
 
 func (this ProductTemplate) GetBaseSalesPrice() *decimal.Decimal {

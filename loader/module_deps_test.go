@@ -111,9 +111,10 @@ func TestEveryModuleIsFoundation(t *testing.T) {
 	}
 }
 
-// TestItStorageDependsOnNoFileOwner guards the cycle the file-path uplift could close: iam,
-// inventory and vendingmachine store `*_file_path` and depend on itstorage, so itstorage must
-// never depend on them.
+// TestItStorageDependsOnNoFileOwner guards the cycle a file owner could close: iam, inventory and
+// vendingmachine store `*_file_id` fields, and vendingmachine depends on itstorage to serve kiosk
+// files, so itstorage must never depend on them. (iam and inventory reach it through the
+// core/storage port, without a module dependency.)
 func TestItStorageDependsOnNoFileOwner(t *testing.T) {
 	for _, dep := range itstorage.ModuleSingleton.Deps() {
 		assert.NotContains(t, []string{"iam", "inventory", "vendingmachine"}, dep)

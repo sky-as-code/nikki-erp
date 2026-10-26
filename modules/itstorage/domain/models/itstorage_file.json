@@ -4,10 +4,11 @@
 	"table_name": "itstorage_files",
 	"should_build_db": true,
 	"record_label_field": "name",
-	"default_search_fields": ["name", "mime_type", "size_bytes", "space_id", "org_id", "created_at"],
+	"default_search_fields": ["name", "mime_type", "size_bytes", "status", "space_id", "org_id", "created_at"],
 	"search_indexes": [
 		{ "index_name": "itstorage_files_space_id", "fields": ["space_id"] },
-		{ "index_name": "itstorage_files_org_id", "fields": ["org_id"] }
+		{ "index_name": "itstorage_files_org_id", "fields": ["org_id"] },
+		{ "index_name": "itstorage_files_status", "fields": ["status"] }
 	],
 	"extend_before": ["core.basemodel.base_model"],
 
@@ -60,6 +61,33 @@
 			"no_update": true,
 			"description": {
 				"en-US": "The immutable key of the stored object, {tenant_id|_}/{space_id}/{file_id}{ext}. Written by the upload only. A space rename never moves an object, which is why the key does not follow the space path."
+			}
+		},
+		{
+			"name": "status",
+			"label": "fields.status",
+			"data_type": { "type": "enum_string", "values": ["pending", "in_use"] },
+			"required_for_create": true,
+			"default_value": "pending",
+			"description": {
+				"en-US": "pending until a record references the file, in_use while one does, and pending again once that record drops it. The stored object carries the same value in its itstorage-state tag, and a storage lifecycle rule expires objects tagged pending after 24 hours. Written by the storage port only."
+			}
+		},
+		{
+			"name": "in_use_at",
+			"label": "fields.in_use_at",
+			"data_type": "datetime",
+			"description": {
+				"en-US": "When a record first referenced the file. A pending file with this set was released: it can no longer be referenced, because its object is already on its way to expiry."
+			}
+		},
+		{
+			"name": "uploaded_by",
+			"label": "fields.uploaded_by",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "The user who uploaded the file, whose storage consumption it counts towards. Null for a file a service or a seed stored. Not a foreign key: iam sorts after itstorage in the migration order."
 			}
 		}
 	],

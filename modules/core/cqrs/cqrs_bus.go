@@ -171,7 +171,11 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 
 		for {
 			select {
-			case msg := <-msgChan:
+			case msg, isOpen := <-msgChan:
+				if !isOpen {
+					// The subscriber was closed (shutdown); a nil message would panic this goroutine.
+					return
+				}
 				request := handler.NewRequest()
 				reply := handler.NewReply()
 				reqPacket, err := newIncomingRequestPacket(msg, this.marshaler, request)
@@ -183,10 +187,11 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 					)
 					continue
 				}
-				c, _ := context.WithTimeout(context.Background(), this.maxTimeout)
+				c, cancelHandling := context.WithTimeout(context.Background(), this.maxTimeout)
 				reqCtx := this.createIncomingContext(c, msg)
 				reply, err = this.handleRequest(reqCtx, handler, reqPacket, topicName)
 				this.sendResponse(reqPacket, &reply)
+				cancelHandling()
 				// r, err := handler.Handle(reqCtx, reqPacket)
 				// if err != nil {
 				// 	this.logger.Error(
@@ -281,7 +286,7 @@ func (this *WatermillCqrsBus) RequestNoReply(ctx context.Context, request Reques
 		err = ft.RecoverPanicFailedTo(recover(), "send request")
 	}()
 
-	packet, err := this.newRequestPacket(ctx, request)
+	packet, err := this.newRequestPacket(detachContext(ctx), request)
 	ft.PanicOnErr(err)
 	packet.message.Metadata.Set(MetaNoReply, "true")
 
@@ -291,90 +296,104 @@ func (this *WatermillCqrsBus) RequestNoReply(ctx context.Context, request Reques
 	return nil
 }
 
-func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, result any) (err error) {
-	cancellableCtx, cancelSubscription := context.WithCancel(ctx)
+// replyOutcome is the single value the reply goroutine hands back to Request.
+type replyOutcome struct {
+	reply *Reply[any]
+	err   error
+}
 
+func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, result any) (err error) {
+	// The subscription is derived from a snapshot of the caller's context, never from a mutable
+	// corectx.Context, and is cancelled here by the caller's goroutine once Request returns: the
+	// caller keeps calling WithValue on its context afterwards, and a cancel run from the reply
+	// goroutine read that same context concurrently, which crashed the process (core-001).
+	subCtx, cancelSubscription := context.WithCancel(detachContext(ctx))
+	defer cancelSubscription()
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "send request of type "+request.CqrsRequestType().String()); e != nil {
 			err = e
-			cancelSubscription()
 		}
 	}()
 
-	packet, err := this.newRequestPacket(cancellableCtx, request)
+	packet, err := this.newRequestPacket(subCtx, request)
 	ft.PanicOnErr(err)
 
-	replyChan, errChan := this.subscribeReply(cancellableCtx, packet, result, cancelSubscription)
+	outcomeChan, err := this.subscribeReply(subCtx, packet, result)
 	ft.PanicOnErr(err)
 
 	err = this.publisher.Publish(packet.requestTopic, packet.message)
 	ft.PanicOnErr(err)
 
-	select {
-	case reply := <-replyChan:
-		if reply.Error != nil {
-			return errors.New(*reply.Error)
-		}
-		return nil
-	case err := <-errChan:
-		return err
+	outcome := <-outcomeChan
+	if outcome.err != nil {
+		return outcome.err
 	}
+	if outcome.reply.Error != nil {
+		return errors.New(*outcome.reply.Error)
+	}
+	return nil
 }
 
-func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *RequestPacket[Request], result any, cancelSubscription context.CancelFunc) (<-chan *Reply[any], <-chan error) {
-	replyChan := make(chan *Reply[any])
-	errChan := make(chan error)
-
-	handleErr := func() {
-		if r := recover(); r != nil {
-			// Not r.(error): a non-error panic value made the assertion itself panic inside the deferred
-			// recover, and the runtime aborted the whole process while naming the value's type.
-			err := ft.RecoverPanicFailedTo(r, "subscribe for reply from topic "+packet.replyTopic)
-			errChan <- err
-			close(errChan)
-			close(replyChan)
-		}
+// detachContext returns the immutable context.Context chain behind a corectx.Context, whose
+// setters replace its inner context in place. Values (domain constraints, caller metadata) and
+// cancellation are carried over; the request-scoped fields are not needed by the bus.
+func detachContext(ctx context.Context) context.Context {
+	if reqCtx, isReqCtx := ctx.(corectx.Context); isReqCtx {
+		return reqCtx.InnerContext()
 	}
+	return ctx
+}
 
-	defer handleErr()
-
+// subscribeReply listens for the reply to packet and delivers exactly one outcome. The channel is
+// buffered so the goroutine never waits for a reader and always ends, whatever Request does.
+func (this *WatermillCqrsBus) subscribeReply(
+	ctx context.Context, packet *RequestPacket[Request], result any,
+) (<-chan replyOutcome, error) {
 	msgChan, err := this.subscriber.Subscribe(ctx, packet.replyTopic)
 	if err != nil {
-		errChan <- err
-		return replyChan, errChan
+		return nil, errors.Wrap(err, "subscribe for reply from topic "+packet.replyTopic)
 	}
 
+	outcomeChan := make(chan replyOutcome, 1)
 	go func() {
-		defer cancelSubscription()
-		defer handleErr()
-
-		select {
-		case msg := <-msgChan:
-			msg.Ack()
-			reply := &Reply[any]{
-				Result: result,
+		// The send below is the goroutine's last statement, so a recovered panic always finds the
+		// buffer empty.
+		defer func() {
+			if r := recover(); r != nil {
+				outcomeChan <- replyOutcome{err: ft.RecoverPanicFailedTo(r, "receive reply from topic "+packet.replyTopic)}
 			}
-			err = this.marshaler.Unmarshal(msg, reply)
-			if err == nil {
-				replyChan <- reply
-				close(replyChan)
-				close(errChan)
-				return
-			}
-		case <-ctx.Done():
-			err = ctx.Err()
-		case <-time.After(this.maxTimeout):
-			err = errors.Errorf("timeout for request %s (%s)", packet.correlationId, packet.requestTopic)
-		}
-
-		// If we reach here, it means we have an error,
-		// close error channel first to follow the failure path
-		errChan <- err
-		close(errChan)
-		close(replyChan)
+		}()
+		outcomeChan <- this.awaitReply(ctx, msgChan, packet, result)
 	}()
+	return outcomeChan, nil
+}
 
-	return replyChan, errChan
+func (this *WatermillCqrsBus) awaitReply(
+	ctx context.Context, msgChan <-chan *message.Message, packet *RequestPacket[Request], result any,
+) replyOutcome {
+	timer := time.NewTimer(this.maxTimeout)
+	defer timer.Stop()
+
+	select {
+	case msg, isOpen := <-msgChan:
+		if !isOpen {
+			// The subscriber closes the channel when ctx ends; report why rather than a nil message.
+			if ctx.Err() != nil {
+				return replyOutcome{err: ctx.Err()}
+			}
+			return replyOutcome{err: errors.Errorf("reply subscription closed for request %s", packet.correlationId)}
+		}
+		msg.Ack()
+		reply := &Reply[any]{Result: result}
+		if err := this.marshaler.Unmarshal(msg, reply); err != nil {
+			return replyOutcome{err: errors.Wrap(err, "unmarshal reply from topic "+packet.replyTopic)}
+		}
+		return replyOutcome{reply: reply}
+	case <-ctx.Done():
+		return replyOutcome{err: ctx.Err()}
+	case <-timer.C:
+		return replyOutcome{err: errors.Errorf("timeout for request %s (%s)", packet.correlationId, packet.requestTopic)}
+	}
 }
 
 func (this *WatermillCqrsBus) newRequestPacket(cancellableCtx context.Context, request Request) (packet *RequestPacket[Request], err error) {

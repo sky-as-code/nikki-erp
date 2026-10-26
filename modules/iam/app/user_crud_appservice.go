@@ -17,7 +17,7 @@ func NewUserCrudApplicationService(
 }
 
 // UserCrudApplicationServiceImpl is the authorized CRUD of the resource. The avatar is an
-// ordinary avatar_file_path column; the domain service checks it against IT Storage.
+// ordinary avatar_file_id file field, whose lifecycle the composable default service drives.
 type UserCrudApplicationServiceImpl struct {
 	composable.CrudApplicationService
 	domSvc itUser.UserCrudDomainService

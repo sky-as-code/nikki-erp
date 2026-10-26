@@ -46,8 +46,8 @@ func BuildEffectiveProduct(
 	effective.DisplayName = BuildDisplayName(template.GetName(), valueLabels)
 
 	// A nil variant value means "inherit the template's", so these are not simply copied across.
-	effective.ImagePath = firstNonEmpty(
-		derefString(variant.GetVariantImageFilePath()), derefString(template.GetDefaultImageFilePath()))
+	effective.ImageFileId = firstNonEmpty(
+		derefString(variant.GetPreviewImageFileId()), derefString(template.GetPreviewImageFileId()))
 	effective.Weight = firstDecimal(variant.GetWeight(), template.GetDefaultWeight())
 	effective.Length = firstDecimal(variant.GetLength(), template.GetDefaultLength())
 	effective.Width = firstDecimal(variant.GetWidth(), template.GetDefaultWidth())

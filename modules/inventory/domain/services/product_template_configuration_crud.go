@@ -44,7 +44,6 @@ func (this *ProductTemplateDomainServiceImpl) Create(
 		return &composable.CreateResult{ClientErrors: cErrs}, nil
 	}
 	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.files.ValidateCreate())
 	var result *composable.CreateResult
 	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
@@ -76,10 +75,7 @@ func (this *ProductTemplateDomainServiceImpl) Create(
 func (this *ProductTemplateDomainServiceImpl) Update(
 	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
 ) (*composable.MutateResult, error) {
-	return this.files.Update(ctx, safe.GetOptional(options, composable.UpdateOptions{}),
-		func(opts composable.UpdateOptions) (*composable.MutateResult, error) {
-			return this.updateWithConfiguration(ctx, cmd, opts)
-		})
+	return this.updateWithConfiguration(ctx, cmd, safe.GetOptional(options, composable.UpdateOptions{}))
 }
 
 func (this *ProductTemplateDomainServiceImpl) updateWithConfiguration(

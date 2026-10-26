@@ -63,6 +63,14 @@ func (this *fakeStorage) GeneratePresignedUrl(context.Context, string, time.Dura
 	return "", nil
 }
 
+func (this *fakeStorage) SetTags(context.Context, string, map[string]string) error {
+	return nil
+}
+
+func (this *fakeStorage) Copy(context.Context, string, string, *filestorage.CopyOptions) error {
+	return nil
+}
+
 // multipartFile builds a real *multipart.FileHeader the way a browser upload arrives.
 func multipartFile(t *testing.T, name string, content string) *multipart.FileHeader {
 	t.Helper()

@@ -1,3 +1,16 @@
+-- Create "itstorage_consumptions" table
+CREATE TABLE "itstorage_consumptions" (
+  "id" character varying NOT NULL,
+  "owner_type" character varying NOT NULL,
+  "owner_id" character varying NOT NULL,
+  "used_bytes" bigint NOT NULL,
+  "reserved_bytes" bigint NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "itstorage_consumptions_owner_ukey" UNIQUE ("owner_type", "owner_id")
+);
 -- Create "itstorage_spaces" table
 CREATE TABLE "itstorage_spaces" (
   "id" character varying NOT NULL,
@@ -30,6 +43,9 @@ CREATE TABLE "itstorage_files" (
   "size_bytes" bigint NOT NULL,
   "space_id" character varying NOT NULL,
   "object_key" character varying NOT NULL,
+  "status" character varying NOT NULL,
+  "in_use_at" timestamptz NULL,
+  "uploaded_by" character varying NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
   "etag" character varying NOT NULL,
@@ -40,3 +56,5 @@ CREATE TABLE "itstorage_files" (
 CREATE INDEX "itstorage_files_org_id_idx" ON "itstorage_files" ("org_id");
 -- Create index "itstorage_files_space_id_idx" to table: "itstorage_files"
 CREATE INDEX "itstorage_files_space_id_idx" ON "itstorage_files" ("space_id");
+-- Create index "itstorage_files_status_idx" to table: "itstorage_files"
+CREATE INDEX "itstorage_files_status_idx" ON "itstorage_files" ("status");

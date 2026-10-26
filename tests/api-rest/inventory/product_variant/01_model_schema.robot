@@ -58,9 +58,18 @@ Schema Declares The Overridable Fallback Fields
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    FOR    ${field}    IN    variant_image_file_path    weight    length    width    height
+    FOR    ${field}    IN    preview_image_file_id    weight    length    width    height
         Dictionary Should Contain Key    ${fields}    ${field}
     END
+
+Preview Image Is A File Field With A Template Fallback
+    [Documentation]    The variant's own image is a file field; the template's is read through the
+    ...    related computed field, which a client shows when the variant has none.
+    ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
+    Response Status Should Be    ${resp}    200
+    ${fields}=    Set Variable    ${resp.json()}[fields]
+    Should Be Equal    ${fields}[preview_image_file_id][metadata][file_field]    ${True}
+    Dictionary Should Contain Key    ${fields}    product_template_preview_image_file_id
 
 Schema Declares No Default Variant Flag
     [Documentation]    BR-PROD-VAR-005 / AC-PROD-010: there is no "default variant". A

@@ -2,9 +2,10 @@
 // objects in S3. Files are served only through its APIs, never through presigned URLs, so every
 // read passes a permission check.
 //
-// Other modules keep a `*_file_path` pointing into storage and validate it through the
-// interfaces/itstorage port. itstorage must never depend on a module that stores such a path
-// (iam, inventory, vendingmachine): they depend on it.
+// Other modules keep a `<name>_file_id` (metadata.file_field) and drive the file's lifecycle
+// through the core/storage.StorageConsumer port, which this module implements and apptrait
+// registers. They never import this module for it, so itstorage must never depend on a module
+// that stores such an id (iam, inventory, vendingmachine).
 package itstorage
 
 import (
@@ -82,5 +83,6 @@ func (*ItStorageModule) RegisterModels() error {
 	return stdErr.Join(
 		dmodel.RegisterSchemaB(models.SpaceSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.FileSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ConsumptionSchemaBuilder()),
 	)
 }

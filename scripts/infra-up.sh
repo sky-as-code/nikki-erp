@@ -28,6 +28,17 @@ done
 echo "Creating MinIO bucket ${MINIO_BUCKET}..."
 docker exec nikki_minio mc mb --ignore-existing "${MINIO_ALIAS}/${MINIO_BUCKET}"
 
+# IT Storage tags an upload itstorage-state=pending until a record references it, and again once a
+# record drops it; this rule expires such objects after 24 hours (1 day is the rule's minimum unit).
+# Must match constants.ObjectTagState. A deployment on another bucket needs the same rule.
+MINIO_PENDING_TAG="itstorage-state=pending"
+if docker exec nikki_minio mc ilm rule export "${MINIO_ALIAS}/${MINIO_BUCKET}" 2>/dev/null | grep -q '"itstorage-state"'; then
+	echo "MinIO lifecycle rule for ${MINIO_PENDING_TAG} already exists"
+else
+	echo "Adding MinIO lifecycle rule: expire ${MINIO_PENDING_TAG} objects after 1 day..."
+	docker exec nikki_minio mc ilm rule add --expire-days 1 --tags "$MINIO_PENDING_TAG" "${MINIO_ALIAS}/${MINIO_BUCKET}"
+fi
+
 echo "Creating MinIO access token..."
 CREDENTIALS_JSON=$(docker exec nikki_minio mc admin accesskey create "$MINIO_ALIAS" --json)
 

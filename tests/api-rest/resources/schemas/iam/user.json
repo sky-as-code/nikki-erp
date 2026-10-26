@@ -10,7 +10,7 @@
             "type": "string",
             "format": "uri"
         },
-        "avatar_file_path": {
+        "avatar_file_id": {
             "type": ["string", "null"]
         },
         "created_at": {

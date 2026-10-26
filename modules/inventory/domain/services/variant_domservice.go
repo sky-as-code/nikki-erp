@@ -2,7 +2,6 @@ package services
 
 import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable/storagefield"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -15,7 +14,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/external"
 )
 
 // NewProductVariantDomainService derives the variant service from the onion's default one, which
@@ -23,16 +21,12 @@ import (
 //
 // The template_* fields are declared as related computed fields in product_variant.json, and the
 // engine's computed-field layer batches the template read and fills them on every read path.
-//
-// fileSvc checks variant_image_file_path against IT Storage.
 func NewProductVariantDomainService(
-	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher, fileSvc itExt.FileStorageExtService,
+	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher,
 ) *ProductVariantDomainServiceImpl {
 	return &ProductVariantDomainServiceImpl{
 		CrudDomainService: base,
 		usageDispatcher:   usageDispatcher,
-		files: storagefield.NewGuard(fileSvc, storagefield.ScopeOrg,
-			models.ProductVariantFieldVariantImageFilePath),
 	}
 }
 
@@ -42,7 +36,6 @@ type ProductVariantDomainServiceImpl struct {
 	composable.CrudDomainService
 
 	usageDispatcher *usagecheck.Dispatcher
-	files           storagefield.Guard
 }
 
 var _ composable.CrudDomainService = (*ProductVariantDomainServiceImpl)(nil)
@@ -54,7 +47,7 @@ func (this *ProductVariantDomainServiceImpl) Create(
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, normalizeVariantIdentifiers())
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, checkCreateCombination(this.Repository()))
 	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra,
-		validateCreateIdentifiers(this.Repository()), this.files.ValidateCreate())
+		validateCreateIdentifiers(this.Repository()))
 	return this.CrudDomainService.Create(ctx, params, opts)
 }
 
@@ -68,9 +61,7 @@ func (this *ProductVariantDomainServiceImpl) Update(
 	opts.ValidateExtra = composable.ChainValidateExtra(
 		opts.ValidateExtra, validateVariantUpdate(this.Repository(), &submittedTemplateId),
 		validateUpdateIdentifiers(this.Repository()))
-	return this.files.Update(ctx, opts, func(opts composable.UpdateOptions) (*composable.MutateResult, error) {
-		return this.CrudDomainService.Update(ctx, params, opts)
-	})
+	return this.CrudDomainService.Update(ctx, params, opts)
 }
 
 // Delete refuses to remove a base that still has completes, the last active complete of a

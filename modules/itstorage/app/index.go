@@ -5,7 +5,7 @@ import (
 )
 
 // InitApplicationServices registers the services this module publishes beyond its onions: the
-// FileExtService port other modules inject for their `*_file_path` fields.
+// FileExtService port, and the implementation apptrait binds to core/storage.StorageConsumer.
 func InitApplicationServices() error {
-	return deps.Register(NewFileExtService)
+	return deps.Register(NewFileExtService, NewStorageConsumerAppService)
 }

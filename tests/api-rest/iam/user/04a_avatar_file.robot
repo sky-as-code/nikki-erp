@@ -1,7 +1,9 @@
 *** Settings ***
-Documentation     The avatar of the user under test is an IT Storage path. The file is uploaded to
-...               /v1/itstorage/files/upload first, then avatar_file_path is written through the
-...               plain PATCH. No presigned URL is returned and no per-field files route exists.
+Documentation     The avatar of the user under test is an IT Storage file id. The file is uploaded to
+...               /v1/itstorage/files/upload first (it starts pending), then avatar_file_id is
+...               written through the plain PATCH, which marks the file in use. Replacing or
+...               clearing the avatar releases the old file back to pending, so its object expires.
+...               No presigned URL is returned and no per-field files route exists.
 ...               Runs after GET and before EXISTS; every mutation rotates ${USER_ETAG} for the
 ...               suites after it.
 Resource          resources/iam.resource
@@ -11,41 +13,42 @@ Test Tags         iam    user    file
 
 *** Variables ***
 ${STORAGE_UPLOAD_API}    /v1/itstorage/files/upload
+${STORAGE_FILE_API}      /v1/itstorage/files
 
 
 *** Test Cases ***
 Set Avatar From An Uploaded File Succeeds
-    ${path}=    Upload Avatar To Storage    png
+    ${file_id}=    Upload Avatar To Storage    png
     ${resp}=    PATCH On Session    api    ${USER_API}/${USER_ID}
-    ...    json=${{ {'avatar_file_path': $path, 'etag': $USER_ETAG} }}
+    ...    json=${{ {'avatar_file_id': $file_id, 'etag': $USER_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    previous_etag=${USER_ETAG}
     Set Global Variable    ${USER_ETAG}    ${etag}
-    Set Suite Variable    ${FIRST_AVATAR_PATH}    ${path}
+    Set Suite Variable    ${FIRST_AVATAR_ID}    ${file_id}
+    Stored File Status Should Be    ${file_id}    in_use
 
-Get Returns The Path And No Url
+Get Returns The File Id And No Url
     ${resp}=    GET On Session    api    ${USER_API}/${USER_ID}
     ${item}=    Item Should Match Schema    ${resp}    ${IAM_SCHEMA_DIR}/user.json    200
-    Should Be Equal    ${item}[avatar_file_path]    ${FIRST_AVATAR_PATH}
+    Should Be Equal    ${item}[avatar_file_id]    ${FIRST_AVATAR_ID}
     Dictionary Should Not Contain Key    ${item}    avatar_file_url
     Set Global Variable    ${USER_ETAG}    ${item}[etag]
 
-Replace Avatar Succeeds And Removes The Old File
-    ${path}=    Upload Avatar To Storage    gif
+Replace Avatar Succeeds And Releases The Old File
+    ${file_id}=    Upload Avatar To Storage    gif
     ${resp}=    PATCH On Session    api    ${USER_API}/${USER_ID}
-    ...    json=${{ {'avatar_file_path': $path, 'etag': $USER_ETAG} }}
+    ...    json=${{ {'avatar_file_id': $file_id, 'etag': $USER_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    previous_etag=${USER_ETAG}
     Set Global Variable    ${USER_ETAG}    ${etag}
-    ${meta}=    GET On Session    api    /v1/itstorage/files/meta
-    ...    params=${{ {'path': $FIRST_AVATAR_PATH} }}    expected_status=any
-    # IT Storage answers a missing file with err_not_found, a business violation (400), as its own suite asserts.
-    Should Be Equal As Integers    ${meta.status_code}    400
+    Set Suite Variable    ${SECOND_AVATAR_ID}    ${file_id}
+    Stored File Status Should Be    ${file_id}    in_use
+    Stored File Status Should Be    ${FIRST_AVATAR_ID}    pending
 
-Update With An Unknown Path Fails
+Update With An Unknown File Id Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${USER_API}/${USER_ID}
-    ...    json=${{ {'avatar_file_path': '/no/such/01NOSUCHFILE00000000000000.png', 'etag': $USER_ETAG} }}
+    ...    json=${{ {'avatar_file_id': '01NOSUCHFILE00000000000000', 'etag': $USER_ETAG} }}
     ...    expected_status=any
-    Response Should Be File Field Error    ${resp}    avatar_file_path    ${EMPTY}
+    Response Should Be File Field Error    ${resp}    avatar_file_id    ${EMPTY}
 
 The Old Files Route Is Gone
     [Tags]    negative
@@ -54,24 +57,25 @@ The Old Files Route Is Gone
     ...    data=${{ {'etag': $USER_ETAG} }}    files=${part}    expected_status=any
     Should Be True    ${resp.status_code} in (404, 405)
 
-Clear Avatar Succeeds
+Clear Avatar Succeeds And Releases The File
     ${resp}=    PATCH On Session    api    ${USER_API}/${USER_ID}
-    ...    json=${{ {'avatar_file_path': None, 'etag': $USER_ETAG} }}
+    ...    json=${{ {'avatar_file_id': None, 'etag': $USER_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    previous_etag=${USER_ETAG}
     Set Global Variable    ${USER_ETAG}    ${etag}
+    Stored File Status Should Be    ${SECOND_AVATAR_ID}    pending
 
 Get After Clear Has No Avatar
     ${resp}=    GET On Session    api    ${USER_API}/${USER_ID}
     ${item}=    Item Should Match Schema    ${resp}    ${IAM_SCHEMA_DIR}/user.json    200
-    ${path}=    Evaluate    $item.get('avatar_file_path')
-    Should Be Equal    ${path}    ${None}
+    ${file_id}=    Evaluate    $item.get('avatar_file_id')
+    Should Be Equal    ${file_id}    ${None}
     Set Global Variable    ${USER_ETAG}    ${item}[etag]
 
 
 *** Keywords ***
 Upload Avatar To Storage
     [Documentation]    Uploads a real image to the tenant space (a user has no org) and returns
-    ...    its file_path. The text parts precede the file part, as the upload API requires.
+    ...    its file id. The text parts precede the file part, as the upload API requires.
     [Arguments]    ${kind}
     ${part}=    Avatar File Part    ${kind}
     ${size}=    Evaluate    len($part['file'][1])
@@ -79,6 +83,15 @@ Upload Avatar To Storage
     ...    data=${{ {'name': 'avatar.' + $kind, 'mime_type': 'image/' + $kind, 'size_bytes': str($size)} }}
     ...    files=${part}
     Should Be True    ${resp.status_code} in (200, 201)    msg=upload failed: ${resp.text}
-    ${path}=    Set Variable    ${resp.json()}[file_path]
-    Should Not Be Empty    ${path}
-    RETURN    ${path}
+    Should Be Equal    ${resp.json()}[status]    pending
+    ${file_id}=    Set Variable    ${resp.json()}[id]
+    Should Not Be Empty    ${file_id}
+    RETURN    ${file_id}
+
+Stored File Status Should Be
+    [Documentation]    The file's lifecycle state, read by id. An avatar is tenant-wide (no org), so
+    ...    the org-scoped standard itstorage_file GET cannot read it.
+    [Arguments]    ${file_id}    ${expected}
+    ${resp}=    GET On Session    api    ${STORAGE_FILE_API}/${file_id}/meta    expected_status=any
+    Should Be Equal As Integers    ${resp.status_code}    200    msg=file ${file_id}: ${resp.text}
+    Should Be Equal    ${resp.json()}[status]    ${expected}

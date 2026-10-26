@@ -12,6 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/itstorage/infra/repository"
+	itConsumption "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/consumption"
 	itExt "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/external"
 	itFile "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/file"
 	itSpace "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/space"
@@ -30,6 +31,8 @@ type fileEngineBuildParam struct {
 	SpaceSvc itSpace.SpaceDomainService
 	Storage  filestorage.FileStorageAdapter
 	QuotaSvc itExt.QuotaExtService
+	// ConsumptionSvc is the typed layer, not the onion: the file onion only needs its counters.
+	ConsumptionSvc itConsumption.ConsumptionDomainService
 }
 
 // registerFileEngine keeps the onion org-scoped: org_id is optional, but NULL means "the
@@ -40,10 +43,11 @@ func registerFileEngine() error {
 		composable.EngineDependencyName(models.FileSchemaName),
 		func(param fileEngineBuildParam) composable.DynamicResourceEngineOnion {
 			domainDeps := services.FileDomainDeps{
-				SpaceSvc:  param.SpaceSvc,
-				Storage:   param.Storage,
-				QuotaSvc:  param.QuotaSvc,
-				ConfigSvc: param.Build.ConfigSvc,
+				SpaceSvc:       param.SpaceSvc,
+				Storage:        param.Storage,
+				QuotaSvc:       param.QuotaSvc,
+				ConsumptionSvc: param.ConsumptionSvc,
+				ConfigSvc:      param.Build.ConfigSvc,
 			}
 			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.FileSchemaName,

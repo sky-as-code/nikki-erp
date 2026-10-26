@@ -13,7 +13,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/inventory/infra/repository"
 	itEvent "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/event"
-	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/external"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
@@ -30,7 +29,6 @@ func registerProductTemplateEngine() error {
 		func(
 			param composable.BuildParam,
 			usageDispatcher *usagecheck.Dispatcher,
-			fileSvc itExt.FileStorageExtService,
 			catalogPublisher itEvent.CatalogChangedEventPublisher,
 		) composable.DynamicResourceEngineOnion {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
@@ -39,7 +37,7 @@ func registerProductTemplateEngine() error {
 					return repo.NewProductTemplateRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewProductTemplateDomainService(base, usageDispatcher, fileSvc)
+					return services.NewProductTemplateDomainService(base, usageDispatcher, composable.NewLazyStorageConsumer())
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					return app.NewProductTemplateApplicationService(base, catalogPublisher)

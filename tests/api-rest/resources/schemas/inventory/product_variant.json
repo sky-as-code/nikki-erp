@@ -31,7 +31,10 @@
         "primary_barcode": {
             "type": ["string", "null"]
         },
-        "variant_image_file_path": {
+        "preview_image_file_id": {
+            "type": ["string", "null"]
+        },
+        "product_template_preview_image_file_id": {
             "type": ["string", "null"]
         },
         "weight": {

@@ -25,7 +25,7 @@ type (
 type ProductTemplateActionService interface {
 	GenerateVariants(ctx corectx.Context, cmd GenerateTemplateVariantsCommand) (*GenerateTemplateVariantsResult, error)
 	ResolveSelection(ctx corectx.Context, query ResolveSelectionQuery) (*ResolveSelectionResult, error)
-	Copy(ctx corectx.Context, cmd CopyTemplateCommand) (*CopyTemplateResult, error)
+	Duplicate(ctx corectx.Context, cmd DuplicateTemplateCommand) (*DuplicateTemplateResult, error)
 	PreviewAttributeConfiguration(
 		ctx corectx.Context, cmd PreviewAttributeConfigurationCommand,
 	) (*PreviewAttributeConfigurationResult, error)

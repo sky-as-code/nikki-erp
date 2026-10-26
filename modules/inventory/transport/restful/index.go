@@ -113,7 +113,7 @@ func initProductTemplateV1(route *echo.Group) error {
 			AddCrudRoutes().
 			AddRoute(composable.RouteDefinition{Path: ":id/generate_variants", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.GenerateVariants}).
 			AddRoute(composable.RouteDefinition{Path: "resolve_selection", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ResolveSelection}).
-			AddRoute(composable.RouteDefinition{Path: ":id/copy", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Copy}).
+			AddRoute(composable.RouteDefinition{Path: ":id/duplicate", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Duplicate}).
 			AddRoute(composable.RouteDefinition{Path: ":id/preview_attribute_configuration", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.PreviewAttributeConfiguration}).
 			RegisterRoutes(route)
 	})

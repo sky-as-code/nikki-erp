@@ -28,7 +28,7 @@ func registerUserEngine() error {
 	err := deps.RegisterNamed(
 		composable.EngineDependencyName(models.UserSchemaName),
 		func(
-			param composable.BuildParam, files itExt.FileStorageExtService,
+			param composable.BuildParam,
 			settingsSvc itExt.UserSettingsExtService, permRepo itPerm.PermissionRepository,
 			historyRepo itPerm.PermissionHistoryRepository,
 		) composable.DynamicResourceEngineOnion {
@@ -38,7 +38,7 @@ func registerUserEngine() error {
 					return repo.NewUserCrudRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewUserCrudDomainService(base, settingsSvc, permRepo, historyRepo, files)
+					return services.NewUserCrudDomainService(base, settingsSvc, permRepo, historyRepo)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					domSvc := base.DomainService().(itUser.UserCrudDomainService)

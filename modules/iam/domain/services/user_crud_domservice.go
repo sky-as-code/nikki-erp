@@ -8,7 +8,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable/storagefield"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
@@ -21,15 +20,12 @@ func NewUserCrudDomainService(
 	settingsSvc itExt.UserSettingsExtService,
 	permRepo itPerm.PermissionRepository,
 	historyRepo itPerm.PermissionHistoryRepository,
-	fileSvc itExt.FileStorageExtService,
 ) itUser.UserCrudDomainService {
 	return &UserCrudDomainServiceImpl{
 		CrudDomainService: base,
 		settingsSvc:       settingsSvc,
 		permRepo:          permRepo,
 		auditor:           permissionAuditor{historyRepo: historyRepo},
-		// A user belongs to the tenant, not to an org, so its avatar may be any tenant file.
-		files: storagefield.NewGuard(fileSvc, storagefield.ScopeTenant, domain.UserFieldAvatarFilePath),
 	}
 }
 
@@ -38,7 +34,6 @@ type UserCrudDomainServiceImpl struct {
 	settingsSvc itExt.UserSettingsExtService
 	permRepo    itPerm.PermissionRepository
 	auditor     permissionAuditor
-	files       storagefield.Guard
 }
 
 // ManageRoles assigns roles to and removes them from the user, then refreshes the user's
@@ -78,7 +73,6 @@ func (this *UserCrudDomainServiceImpl) Create(
 		opts = options[0]
 	}
 	opts.BeforeValidation = clearIsOwner(opts.BeforeValidation)
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.files.ValidateCreate())
 
 	var result *itUser.CreateUserCrudResult
 	err := composable.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
@@ -94,19 +88,6 @@ func (this *UserCrudDomainServiceImpl) Create(
 		return nil, errors.Wrap(err, "create user")
 	}
 	return result, nil
-}
-
-// Update checks a changed avatar_file_path against IT Storage and removes the replaced file.
-func (this *UserCrudDomainServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
-	opts := composable.UpdateOptions{}
-	if len(options) > 0 {
-		opts = options[0]
-	}
-	return this.files.Update(ctx, opts, func(opts composable.UpdateOptions) (*composable.MutateResult, error) {
-		return this.CrudDomainService.Update(ctx, cmd, opts)
-	})
 }
 
 // clearIsOwner drops is_owner from a create: the owner is set up by the installer, and a normal

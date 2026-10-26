@@ -14,6 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	c "github.com/sky-as-code/nikki-erp/modules/itstorage/constants"
+	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	itFile "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/file"
 )
 
@@ -38,15 +39,28 @@ type DownloadFileRequest struct {
 	Path string `json:"path" query:"path"`
 }
 
-// UploadFileResponse is the built-in create answer plus the path to store in `*_file_path`.
+type GetFileMetaByIdRequest struct {
+	Id model.Id `json:"id" param:"id"`
+}
+
+type DownloadFileByIdRequest struct {
+	httpserver.FileStreamRequestBase
+	Id model.Id `json:"id" param:"id"`
+}
+
+// UploadFileResponse is the built-in create answer plus the file's status, always pending until a
+// record references the id, and its current path, which only external apps use.
 type UploadFileResponse struct {
 	httpserver.RestCreateResponse
+	Status   string `json:"status"`
 	FilePath string `json:"file_path"`
 }
 
 func newUploadFileResponse(data itFile.UploadFileResultData) UploadFileResponse {
+	status, _ := data.Created[models.FileFieldStatus].(string)
 	return UploadFileResponse{
 		RestCreateResponse: *httpserver.NewRestCreateResponseDyn(data.Created),
+		Status:             status,
 		FilePath:           data.FilePath,
 	}
 }

@@ -381,6 +381,7 @@ func moduleMetadataSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 					string(modules.ModuleCategoryFoundation),
 					string(modules.ModuleCategoryCoremart),
 					string(modules.ModuleCategoryCoreparking),
+					string(modules.ModuleCategoryItInfra),
 				})),
 		).
 		Field(

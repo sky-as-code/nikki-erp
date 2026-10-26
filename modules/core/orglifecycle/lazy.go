@@ -14,10 +14,6 @@ func Lazy(build func() (OrgLifecycleService, error)) OrgLifecycleService {
 	return &lazyService{build: build}
 }
 
-// buildMu serializes every lazy build across modules: the dig container they resolve from is not safe for
-// concurrent use, and IAM fans one org's lifecycle command out to every module of a wave at once.
-var buildMu sync.Mutex
-
 type lazyService struct {
 	once  sync.Once
 	build func() (OrgLifecycleService, error)
@@ -26,9 +22,9 @@ type lazyService struct {
 }
 
 func (this *lazyService) resolve() (OrgLifecycleService, error) {
+	// IAM fans one org's lifecycle command out to every module of a wave at once, so builds run
+	// concurrently; deps_inject serializes their access to the container.
 	this.once.Do(func() {
-		buildMu.Lock()
-		defer buildMu.Unlock()
 		this.svc, this.err = this.build()
 	})
 	return this.svc, this.err
