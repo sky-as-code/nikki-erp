@@ -6,13 +6,13 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/sales/repository"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/app"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
+	itFulfillment "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/fulfillment"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/app"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	repo "github.com/sky-as-code/nikki-erp/modules/sales/infra/repository"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
-	itFulfillment "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/fulfillment"
 )
 
 // The fulfillment resources. The fulfillment itself is writable and carries the dispense loop;

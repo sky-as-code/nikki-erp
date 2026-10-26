@@ -4,17 +4,17 @@ import (
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/domain"
+	itAttr "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/attribute"
+	itAttrGrp "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/attributegroup"
+	itAttrVal "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/attributevalue"
+	ext "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/external"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/product"
+	itVariant "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/variant"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/legacy/domain"
-	itAttr "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/attribute"
-	itAttrGrp "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/attributegroup"
-	itAttrVal "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/attributevalue"
-	ext "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/external"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/product"
-	itVariant "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/variant"
 )
 
 type ProductServiceParam struct {

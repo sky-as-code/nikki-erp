@@ -11,7 +11,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // Reservation claims stock for a demand without moving it: everything here changes
@@ -321,7 +321,7 @@ func addToQuantReserved(
 	}
 
 	updated, err := quantEngine.Update(ctx, dmodel.DynamicFields{
-		models.StockQuantFieldId:               quantId,
+		models.StockQuantFieldId: quantId,
 		// The decimal itself, not its text: a repository write goes straight to the query builder,
 		// which refuses a string for a numeric column ("invalid data type, must be a numeric").
 		// Only writes that pass through a domain service get a string parsed for them.

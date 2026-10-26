@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 func outcome(demand, processed string) moveOutcome {

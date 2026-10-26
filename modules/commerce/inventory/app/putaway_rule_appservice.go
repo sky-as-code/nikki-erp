@@ -1,10 +1,10 @@
 package app
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
+	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
-	itWarehouse "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/warehouse"
 )
 
 // NewPutawayRuleApplicationService is handed the composable default by the putaway rule onion.

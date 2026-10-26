@@ -5,7 +5,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // The return state machine. Both rules are pure functions over values rather than records, so

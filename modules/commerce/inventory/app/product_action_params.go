@@ -3,7 +3,7 @@ package app
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 )
 
 // Request fields of resolve_selection. template_id is the name the endpoint was first published

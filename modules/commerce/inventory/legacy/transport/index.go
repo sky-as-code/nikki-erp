@@ -3,7 +3,7 @@ package transport
 import (
 	"errors"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/legacy/transport/restful"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/transport/restful"
 )
 
 func InitTransport() error {

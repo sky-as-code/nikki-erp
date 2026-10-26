@@ -1,9 +1,9 @@
 package attribute
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/domain"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/legacy/domain"
 )
 
 type AttributeRepository interface {

@@ -2,8 +2,8 @@ package services
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // Transaction eligibility has two strengths. Starting new business (a reservation, a transfer, a

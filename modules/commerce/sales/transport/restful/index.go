@@ -6,10 +6,10 @@ import (
 	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/commerce/sales/constants"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	v1 "github.com/sky-as-code/nikki-erp/modules/commerce/sales/transport/restful/v1"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/sales/constants"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	v1 "github.com/sky-as-code/nikki-erp/modules/sales/transport/restful/v1"
 )
 
 // Every Sales resource declares its routes explicitly through the composable RestEngine: the

@@ -368,12 +368,12 @@ func moduleMetadataSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		Field(
 			// Nullable so rows written before this field existed migrate; startup sync fills it.
 			dmodel.DefineField().
-				Name(ModuleMetadataFieldModelPrefix).
-				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldModelPrefix)).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)),
+				Name(ModuleMetadataFieldModelPrefixes).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldModelPrefixes)).
+				DataType(dmodel.FieldDataTypeString(1, 50).ArrayType()),
 		).
 		Field(
-			// Nullable for the same reason as model_prefix.
+			// Nullable for the same reason as model_prefixes.
 			dmodel.DefineField().
 				Name(ModuleMetadataFieldCategory).
 				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldCategory)).

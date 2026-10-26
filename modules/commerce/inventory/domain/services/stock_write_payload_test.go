@@ -9,11 +9,11 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // What the movement flows hand the repository. A repository write goes straight to the query builder,

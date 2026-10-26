@@ -3,9 +3,9 @@ package services
 import (
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
 // Letting a reservation lapse, so that goods nobody has claimed do not sit unsellable forever.

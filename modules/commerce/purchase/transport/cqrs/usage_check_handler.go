@@ -1,9 +1,9 @@
 package cqrs
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
 )
 
 // Purchase's answer to "is this unit of measure still in use", asked before Essential deletes or

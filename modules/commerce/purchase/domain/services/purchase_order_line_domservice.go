@@ -9,7 +9,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
 
 // The line service keeps the stored header totals equal to the sum of the lines: every create,
@@ -24,8 +24,8 @@ func NewPurchaseOrderLineDomainService(
 ) *PurchaseOrderLineDomainServiceImpl {
 	return &PurchaseOrderLineDomainServiceImpl{
 		CrudDomainService: base,
-		products:               products,
-		pricer:                 pricer,
+		products:          products,
+		pricer:            pricer,
 	}
 }
 

@@ -2,8 +2,8 @@ package v1
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	itVariant "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/variant"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	itVariant "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/variant"
 )
 
 type CreateVariantRequest = itVariant.CreateVariantCommand

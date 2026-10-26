@@ -6,7 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // The gate that makes a dispense result safe to deliver twice, and the checks that decide whether a

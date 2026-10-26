@@ -6,12 +6,12 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	c "github.com/sky-as-code/nikki-erp/modules/commerce/sales/constants"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
+	it "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	c "github.com/sky-as-code/nikki-erp/modules/sales/constants"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
-	it "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
 )
 
 func salesChannelOrgRequired() *ft.ClientErrors {

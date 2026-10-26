@@ -10,8 +10,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 )
 
 // Holding a kiosk sale's stock at warehouse level (CR-INV-SALES-WH-RESERVATION §6.2, §9).

@@ -9,8 +9,8 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external/invoicing"
 )
 
 // Requesting a VAT invoice.

@@ -4,8 +4,8 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/product"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/product"
 )
 
 type productRestParams struct {

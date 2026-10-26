@@ -3,10 +3,10 @@ package services
 import (
 	"github.com/shopspring/decimal"
 
+	modconstants "github.com/sky-as-code/nikki-erp/modules/commerce/sales/constants"
+	salessettings "github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/settings"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/sales/constants"
-	salessettings "github.com/sky-as-code/nikki-erp/modules/sales/domain/settings"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
 // SalesPolicy is one resolved snapshot of the settings that govern selling.
@@ -79,7 +79,7 @@ func ResolveSalesPolicy(
 	}
 
 	result, err := settings.GetEffectiveSettings(ctx, itExt.GetEffectiveSettingsQuery{
-		ModuleKeys: []string{modconstants.SalesModuleName},
+		ModuleKeys: []string{modconstants.SettingsModuleKey},
 	})
 	if err != nil || result == nil || !result.HasData || result.ClientErrors.Count() > 0 {
 		return policy
@@ -116,7 +116,7 @@ func ResolveSalesPolicy(
 
 // settingKey builds the "{module_key}.{setting_name}" key GetEffectiveSettings flattens to.
 func settingKey(name string) string {
-	return modconstants.SalesModuleName + "." + name
+	return modconstants.SettingsModuleKey + "." + name
 }
 
 // The readers below all take a fallback and never report failure, for the same reason

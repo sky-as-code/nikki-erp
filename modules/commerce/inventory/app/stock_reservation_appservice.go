@@ -3,9 +3,9 @@ package app
 import (
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 func NewStockReservationApplicationService(base composable.CrudApplicationService) itStock.StockReservationApplicationService {

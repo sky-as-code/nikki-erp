@@ -12,7 +12,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
 
 // Repricing a draft purchase order. A vendor price change must never rewrite an existing order by

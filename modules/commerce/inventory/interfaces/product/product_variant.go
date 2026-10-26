@@ -1,10 +1,10 @@
 package product
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // The Product Variant port other modules bind to. A variant is what is physically stocked and

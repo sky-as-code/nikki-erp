@@ -3,9 +3,9 @@ package cqrs
 import (
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 )
 
 // Inventory's answer to "is this unit of measure still in use", asked before Essential deletes

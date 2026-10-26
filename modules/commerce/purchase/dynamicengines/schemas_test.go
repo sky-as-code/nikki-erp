@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
 // TestMain registers the base mixins once for the whole package: ParseModelJson panics when a named

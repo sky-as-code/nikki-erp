@@ -1,9 +1,9 @@
 package app
 
 import (
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/catalog"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
 )
 
 // NewSalesFulfillmentMethodApplicationService wraps the composable default with the archive

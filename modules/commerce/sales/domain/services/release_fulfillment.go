@@ -2,10 +2,10 @@ package services
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
 // Giving held stock back, and the shared reads every fulfillment flow needs.

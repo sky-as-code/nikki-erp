@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 )
 
 func resultItem(sourceItemId string, quantity int64) itStock.FulfillmentResultItem {

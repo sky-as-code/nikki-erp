@@ -3,8 +3,8 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itWarehouse "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/warehouse"
 )
 
 // WarehouseEngineName is the container name of the warehouse onion, declared once for the struct tag and

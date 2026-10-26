@@ -6,12 +6,12 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/sales/repository"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/app"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/event"
+	itPromotion "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/promotion"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/app"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	repo "github.com/sky-as-code/nikki-erp/modules/sales/infra/repository"
-	itEvent "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/event"
-	itPromotion "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/promotion"
 )
 
 // The promotion and voucher resources: plain CRUD master data the pricing engine reads.

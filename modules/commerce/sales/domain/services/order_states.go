@@ -5,7 +5,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // The four status state machines, as pure transition tables. They stay separate because the four

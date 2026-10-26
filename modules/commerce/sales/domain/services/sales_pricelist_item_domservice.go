@@ -3,11 +3,11 @@ package services
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/catalog"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
 )
 
 // SalesPricelistItemDomainServiceImpl enforces the rules a pricing rule carries that the schema

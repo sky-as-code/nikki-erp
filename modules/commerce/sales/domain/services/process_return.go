@@ -13,9 +13,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
-	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external/invoicing"
 )
 
 // Processing a return, and cancelling one.

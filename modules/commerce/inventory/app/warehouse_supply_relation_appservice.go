@@ -1,8 +1,8 @@
 package app
 
 import (
+	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itWarehouse "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/warehouse"
 )
 
 // NewWarehouseSupplyRelationApplicationService is handed the composable default by the warehouse_supply_relation onion.

@@ -3,7 +3,7 @@ package sales
 import (
 	"testing"
 
-	itBilling "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/billing"
+	itBilling "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/billing"
 )
 
 // The job's command name and the handler's request type are declared in two places and must agree.

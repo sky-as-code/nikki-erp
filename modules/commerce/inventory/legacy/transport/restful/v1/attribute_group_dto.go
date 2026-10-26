@@ -2,8 +2,8 @@ package v1
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	itAttributeGroup "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/attributegroup"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	itAttributeGroup "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/attributegroup"
 )
 
 type CreateAttributeGroupRequest = itAttributeGroup.CreateAttributeGroupCommand

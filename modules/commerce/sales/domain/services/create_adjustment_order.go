@@ -8,7 +8,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // The adjustment order: what the customer kept, after part of a sale came back.

@@ -10,7 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // Settlement and payment status derivation.

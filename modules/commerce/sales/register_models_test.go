@@ -23,7 +23,7 @@ func TestRegisterModelsParsesEverySchema(t *testing.T) {
 		}
 	}()
 
-	if err := ModuleSingleton.RegisterModels(); err != nil {
+	if err := RegisterModels(); err != nil {
 		t.Fatalf("RegisterModels: %v", err)
 	}
 }

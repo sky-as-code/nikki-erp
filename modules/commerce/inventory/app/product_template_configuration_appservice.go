@@ -5,12 +5,12 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // The template's attribute configuration is applied by the template's own create and update (the

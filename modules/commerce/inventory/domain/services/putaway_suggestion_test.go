@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // A criterion a rule leaves empty matches anything, which is what makes a general rule general.

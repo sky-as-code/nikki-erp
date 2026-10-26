@@ -13,7 +13,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // DoScrap executes a draft scrap, removing the goods from usable stock: validate the document, lock

@@ -8,8 +8,8 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 )
 
 // What Inventory does when an executor reports what physically happened.

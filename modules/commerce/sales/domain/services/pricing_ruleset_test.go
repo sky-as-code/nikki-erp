@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // The parts of the rule-set read that decide something without touching a repository: which

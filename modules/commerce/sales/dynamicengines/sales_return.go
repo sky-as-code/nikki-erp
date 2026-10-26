@@ -6,14 +6,14 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/sales/repository"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/app"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external/invoicing"
+	itReturns "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/returns"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/app"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	repo "github.com/sky-as-code/nikki-erp/modules/sales/infra/repository"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
-	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
-	itReturns "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/returns"
 )
 
 // The return resources. The return itself is writable and carries the three lifecycle actions;

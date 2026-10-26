@@ -5,9 +5,9 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
 // The write and delete rules of the Purchase resources, chained into the domain services' own

@@ -10,7 +10,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
 
 // NewPurchaseOrderDomainService derives the order service from the onion's default one. The
@@ -22,9 +22,9 @@ func NewPurchaseOrderDomainService(
 ) *PurchaseOrderDomainServiceImpl {
 	return &PurchaseOrderDomainServiceImpl{
 		CrudDomainService: base,
-		references:             references,
-		products:               products,
-		pricer:                 pricer,
+		references:        references,
+		products:          products,
+		pricer:            pricer,
 	}
 }
 

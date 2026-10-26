@@ -9,12 +9,12 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/external"
 	itVendor "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/vendor"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
-	itExt "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/external"
 
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
 
 type stubVendors struct {

@@ -2,7 +2,7 @@ package services
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // DefaultPossibleCountCap bounds how far the planner counts possible complete combinations. Past it

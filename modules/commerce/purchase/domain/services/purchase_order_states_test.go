@@ -8,7 +8,7 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
 
 // The order transition table.

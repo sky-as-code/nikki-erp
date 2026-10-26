@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	v1 "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/transport/restful/v1"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	v1 "github.com/sky-as-code/nikki-erp/modules/inventory/transport/restful/v1"
 )
 
 // The container names in the REST structs' tags are literals; they must be what the onions are

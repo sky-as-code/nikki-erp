@@ -3,9 +3,9 @@ package services
 import (
 	"github.com/shopspring/decimal"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
 // What a caller is shown about an order's deliveries, and which places could take one on.

@@ -6,11 +6,11 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/sales/repository"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/app"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itIntegration "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/integration"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/app"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	repo "github.com/sky-as-code/nikki-erp/modules/sales/infra/repository"
-	itIntegration "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/integration"
 )
 
 // The two self-records, both read-only.

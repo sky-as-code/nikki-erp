@@ -14,7 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	piconstants "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/constants"
 
-	itEvent "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/event"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/event"
 )
 
 // handleTimeout bounds one event's handling. Applying a verdict reads a payment, writes it, and may

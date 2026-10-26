@@ -3,13 +3,13 @@ package app
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external/invoicing"
+	itFiscal "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/fiscal"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
-	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
-	itFiscal "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/fiscal"
 )
 
 // The fiscal request and billing instruction surfaces.

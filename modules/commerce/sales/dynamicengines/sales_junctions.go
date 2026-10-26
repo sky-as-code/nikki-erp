@@ -7,9 +7,9 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 )
 
 // The association schemas get a repository and nothing else: no onion, no application service, no

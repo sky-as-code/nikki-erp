@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 )
 
 // combinationSeparator joins the pairs of a combination key; combinationPairSeparator joins an

@@ -3,7 +3,7 @@ package dynamicengines
 import (
 	"testing"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // These guard the invariants the composable migration depends on. They parse nothing and touch no

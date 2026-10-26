@@ -2,9 +2,9 @@ package v1
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 type CreateProductAttributeValueRequest = itProduct.CreateProductAttributeValueCommand

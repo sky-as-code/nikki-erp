@@ -2,11 +2,11 @@ package services
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 type previewResult = dyn.OpResult[itProduct.TemplateConfigurationPreview]

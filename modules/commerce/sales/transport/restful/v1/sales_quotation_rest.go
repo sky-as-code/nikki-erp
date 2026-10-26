@@ -3,8 +3,8 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itQuotation "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/quotation"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itQuotation "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/quotation"
 )
 
 const (

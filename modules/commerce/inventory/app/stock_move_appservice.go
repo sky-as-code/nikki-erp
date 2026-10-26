@@ -1,8 +1,8 @@
 package app
 
 import (
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 // NewStockMoveApplicationService is handed the composable default by the stock_move onion.

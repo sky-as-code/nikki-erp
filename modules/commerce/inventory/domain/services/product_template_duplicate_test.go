@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 func duplicateSourceTemplate() dmodel.DynamicFields {

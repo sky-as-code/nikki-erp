@@ -13,7 +13,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // Splitting a bill: one settlement unit becomes several.

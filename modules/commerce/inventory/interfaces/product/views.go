@@ -4,7 +4,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // The wire shapes of the Products capabilities. They live here, not transport/, because the

@@ -6,7 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // The rules that keep a refund's lifecycle separate from a delivery's, and the arithmetic that

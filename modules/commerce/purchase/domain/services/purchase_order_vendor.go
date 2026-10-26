@@ -6,11 +6,11 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	itExt "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/external"
 
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
 
 // Vendor and currency rules for an order. Both references are plain ulid fields with no edge:

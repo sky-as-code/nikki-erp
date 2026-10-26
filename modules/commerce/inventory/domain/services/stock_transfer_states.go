@@ -3,7 +3,7 @@ package services
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // The transfer state machine: pure, no repository or context. A transfer's state is a summary of

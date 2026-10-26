@@ -1,8 +1,8 @@
 package services
 
 import (
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 // NewStockMoveLineDomainService closes the move line's write surface. A move line is an

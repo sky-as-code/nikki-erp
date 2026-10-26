@@ -75,14 +75,16 @@ type essentialOwner struct {
 	dependants []string
 }
 
-func (this *essentialOwner) Name() string           { return this.name }
-func (this *essentialOwner) Deps() []string         { return nil }
-func (this *essentialOwner) LabelKey() string       { return this.name }
-func (this *essentialOwner) Init() error            { return nil }
-func (this *essentialOwner) IsInternal() bool       { return false }
-func (this *essentialOwner) ModelPrefix() string    { return this.name }
-func (this *essentialOwner) HasUi() bool            { return false }
-func (this *essentialOwner) Category() modules.ModuleCategory { return modules.ModuleCategoryFoundation }
+func (this *essentialOwner) Name() string            { return this.name }
+func (this *essentialOwner) Deps() []string          { return nil }
+func (this *essentialOwner) LabelKey() string        { return this.name }
+func (this *essentialOwner) Init() error             { return nil }
+func (this *essentialOwner) IsInternal() bool        { return false }
+func (this *essentialOwner) ModelPrefixes() []string { return []string{this.name} }
+func (this *essentialOwner) HasUi() bool             { return false }
+func (this *essentialOwner) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
 func (this *essentialOwner) Version() semver.SemVer { return *semver.MustParseSemVer("v1.0.0") }
 func (this *essentialOwner) Dependants() []string   { return this.dependants }
 

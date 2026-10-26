@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // planTargets are the records a configuration pre-creates: completes for every valid instant

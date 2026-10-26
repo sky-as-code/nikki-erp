@@ -5,10 +5,10 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // CreateRoot creates an org's root category, the parent every parent-less category is filled
@@ -46,4 +46,3 @@ func (this *ProductCategoryDomainServiceImpl) CreateRoot(
 	}
 	return &itProduct.CreateProductCategoryResult{Data: root, HasData: true}, nil
 }
-

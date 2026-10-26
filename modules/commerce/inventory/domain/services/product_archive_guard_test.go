@@ -10,8 +10,8 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 // Whether a product may be archived: the line is between stock that is still live and stock that is

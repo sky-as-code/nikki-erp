@@ -10,8 +10,8 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 )
 
 // Expiry bookkeeping (CR-INV-SALES-WH-RESERVATION §5.3).

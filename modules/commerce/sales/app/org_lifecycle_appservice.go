@@ -8,16 +8,16 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	orgDefaults "github.com/sky-as-code/nikki-erp/modules/commerce/infra/sales/defaults"
+	c "github.com/sky-as-code/nikki-erp/modules/commerce/sales/constants"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
+	salessettings "github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/settings"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle/defaults"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	c "github.com/sky-as-code/nikki-erp/modules/sales/constants"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
-	salessettings "github.com/sky-as-code/nikki-erp/modules/sales/domain/settings"
-	orgDefaults "github.com/sky-as-code/nikki-erp/modules/sales/infra/defaults"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
 const (
@@ -228,7 +228,7 @@ func (this *OrgLifecycleAppServiceImpl) seedSettings(ctx corectx.Context, orgId 
 		return err
 	}
 	result, err := this.param.Settings.SeedOrgSettings(ctx, itExt.SetSettingsCommand{
-		ModuleKey: c.SalesModuleName,
+		ModuleKey: c.SettingsModuleKey,
 		Items: []itExt.SetSettingItem{
 			{Name: salessettings.OrgSettingOutgoingOperationTypeId, Value: string(operationTypeId)},
 		},

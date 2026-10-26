@@ -10,7 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
 
 // Archiving and unarchiving a vendor price. The two directions are not symmetric: archiving is
@@ -27,7 +27,7 @@ func NewVendorProductPriceDomainService(
 ) *VendorProductPriceDomainServiceImpl {
 	return &VendorProductPriceDomainServiceImpl{
 		CrudDomainService: base,
-		validator:              validator,
+		validator:         validator,
 	}
 }
 

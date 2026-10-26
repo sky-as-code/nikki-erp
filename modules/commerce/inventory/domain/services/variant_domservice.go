@@ -8,12 +8,11 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // NewProductVariantDomainService derives the variant service from the onion's default one, which
@@ -107,7 +106,7 @@ func assertVariantDeletable(
 		return nil
 	}
 
-	return usagecheck.AssertDeletable(ctx, dispatcher, modconstants.InventoryModuleName,
+	return assertDeletable(ctx, dispatcher,
 		models.ProductVariantFieldId, usagecheck.ResourceRef{
 			ResourceName: usagecheck.ResourceProductVariant,
 			Identifier: usagecheck.NewIdentifier(

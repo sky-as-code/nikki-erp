@@ -7,9 +7,9 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	salessettings "github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/settings"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	salessettings "github.com/sky-as-code/nikki-erp/modules/sales/domain/settings"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 )
 
@@ -41,7 +41,7 @@ func (this *stubSettings) GetEffectiveSettings(
 }
 
 func key(name string) string {
-	return "sales." + name
+	return "commerce." + name
 }
 
 // The whole contract of ResolveSalesPolicy: it never fails. A settings read is a call into another

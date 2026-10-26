@@ -44,8 +44,8 @@ func (*AccountingModule) Name() string {
 	return modconstants.AccountingModuleName
 }
 
-func (*AccountingModule) ModelPrefix() string {
-	return modconstants.AccountingModuleName
+func (*AccountingModule) ModelPrefixes() []string {
+	return []string{modconstants.AccountingModuleName}
 }
 
 func (*AccountingModule) HasUi() bool {

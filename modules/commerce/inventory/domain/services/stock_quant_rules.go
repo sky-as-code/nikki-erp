@@ -5,7 +5,7 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // AvailableQuantity is the stock a new demand may still claim. Derived rather than stored, so it

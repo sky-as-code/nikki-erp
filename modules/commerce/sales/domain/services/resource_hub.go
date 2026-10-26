@@ -6,8 +6,8 @@ import (
 
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
 // The resource hub is how one Sales service reaches another resource's repository or domain

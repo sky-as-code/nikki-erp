@@ -3,11 +3,11 @@ package services
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/safe"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/external"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 // Stock's settings for a product line: today, the unit its stock is counted in. Changing that

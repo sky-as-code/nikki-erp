@@ -3,9 +3,9 @@ package cqrs
 import (
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 )
 
 // Sales' answer to "is this still in use", asked before another module deletes something Sales

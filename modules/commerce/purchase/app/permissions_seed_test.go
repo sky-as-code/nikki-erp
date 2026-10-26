@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/constants"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/constants"
 )
 
 // A permission code the application service demands but the seed never created denies every request for that
@@ -69,7 +69,7 @@ func TestSeededOrderActionsAreDemanded(t *testing.T) {
 func seededActionCodes(t *testing.T, resourceCode string) []string {
 	t.Helper()
 
-	path := filepath.Join("..", "..", "..", "scripts", "migration-seeds", "1006002_purchase_iam.sql")
+	path := filepath.Join("..", "..", "..", "..", "scripts", "migration-seeds", "1006002_purchase_iam.sql")
 	content, err := os.ReadFile(path)
 	require.NoError(t, err, "the purchase IAM migration must be readable from the test")
 

@@ -7,10 +7,9 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // Deciding what happens to a variant the configuration no longer allows: delete it when nothing
@@ -108,7 +107,7 @@ func (this usageDecider) applyModuleUsage(
 			ResourceName: usagecheck.ResourceProductVariant, Identifier: usagecheck.NewIdentifier(id, this.orgId),
 		})
 	}
-	outcome, err := this.dispatcher.CheckUsage(withoutTransaction(ctx), modconstants.InventoryModuleName, refs)
+	outcome, err := checkUsage(withoutTransaction(ctx), this.dispatcher, refs)
 	if err != nil {
 		return nil, errors.Wrap(err, "usage check of invalid variants")
 	}

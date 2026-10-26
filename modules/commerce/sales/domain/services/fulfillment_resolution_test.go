@@ -5,8 +5,8 @@ import (
 	"time"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
 // The parts of fulfillment resolution that decide something without reading a row: the target

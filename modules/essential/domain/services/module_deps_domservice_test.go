@@ -15,15 +15,17 @@ type depsTestModule struct {
 	deps []string
 }
 
-func (this *depsTestModule) Deps() []string                   { return this.deps }
-func (this *depsTestModule) LabelKey() string                 { return this.name + ".moduleLabel" }
-func (this *depsTestModule) Name() string                     { return this.name }
-func (this *depsTestModule) Init() error                      { return nil }
-func (this *depsTestModule) IsInternal() bool                 { return false }
-func (this *depsTestModule) ModelPrefix() string              { return this.name }
-func (this *depsTestModule) HasUi() bool                      { return false }
-func (this *depsTestModule) Category() modules.ModuleCategory { return modules.ModuleCategoryFoundation }
-func (this *depsTestModule) Version() semver.SemVer           { return *semver.MustParseSemVer("v1.0.0") }
+func (this *depsTestModule) Deps() []string          { return this.deps }
+func (this *depsTestModule) LabelKey() string        { return this.name + ".moduleLabel" }
+func (this *depsTestModule) Name() string            { return this.name }
+func (this *depsTestModule) Init() error             { return nil }
+func (this *depsTestModule) IsInternal() bool        { return false }
+func (this *depsTestModule) ModelPrefixes() []string { return []string{this.name} }
+func (this *depsTestModule) HasUi() bool             { return false }
+func (this *depsTestModule) Category() modules.ModuleCategory {
+	return modules.ModuleCategoryFoundation
+}
+func (this *depsTestModule) Version() semver.SemVer { return *semver.MustParseSemVer("v1.0.0") }
 
 func TestComputeDepLevels(t *testing.T) {
 	levels, err := computeDepLevels([]modules.InCodeModule{

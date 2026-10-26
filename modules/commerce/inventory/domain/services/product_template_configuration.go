@@ -2,9 +2,9 @@ package services
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // One reconcile path serves every entry point (plan D2): template create and update with a

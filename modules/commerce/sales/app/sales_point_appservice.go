@@ -6,15 +6,15 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	c "github.com/sky-as-code/nikki-erp/modules/commerce/sales/constants"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
+	it "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	c "github.com/sky-as-code/nikki-erp/modules/sales/constants"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
-	it "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
 )
 
 type SalesPointApplicationServiceImpl struct{}

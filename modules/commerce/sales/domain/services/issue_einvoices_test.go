@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/settings"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/settings"
 )
 
 // The issuance delay, which is the part of eligibility that can be checked without a database.

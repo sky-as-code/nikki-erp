@@ -6,10 +6,10 @@ import (
 	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
 
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services/pricing"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services/pricing"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
 // applyPricingBasis re-reads the product's base price and cost onto the pricing input. Most cases

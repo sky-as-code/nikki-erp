@@ -6,16 +6,16 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	orgDefaults "github.com/sky-as-code/nikki-erp/modules/commerce/infra/inventory/defaults"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
+	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle/defaults"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
-	orgDefaults "github.com/sky-as-code/nikki-erp/modules/inventory/infra/defaults"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
-	itWarehouse "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/warehouse"
 )
 
 // The locations a warehouse provisions for itself, which the operation type defaults name.

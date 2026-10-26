@@ -1,11 +1,11 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itChannel "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itChannel "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
 func NewPointPaymentMethodExtService(

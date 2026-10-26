@@ -3,7 +3,7 @@ package services
 import (
 	"sort"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // Promotion conflict resolution: pure, taking the candidate programs and the compatibility rows and

@@ -3,8 +3,8 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // ProductAttributeValueEngineName is the container name of the product_attribute_value onion, declared once for the struct tag and

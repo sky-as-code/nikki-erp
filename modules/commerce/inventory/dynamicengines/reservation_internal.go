@@ -6,10 +6,10 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/inventory/repository"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	repo "github.com/sky-as-code/nikki-erp/modules/inventory/infra/repository"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 // The two internal resources of the warehouse reservation feature. Neither is served over REST:

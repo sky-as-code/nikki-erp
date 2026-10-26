@@ -16,21 +16,21 @@ import (
 // to a table absent from the schema it is given. ForEachOrder is dependency-ordered, so the
 // dependency tables come first.
 func (this *Application) GenSql(moduleName string, dialect string, withDeps bool) string {
-	registry, prefix, registeredCount := this.prepareSqlGen(moduleName)
-	genPrefix := prefix
+	registry, prefixes, registeredCount := this.prepareSqlGen(moduleName)
+	genPrefixes := prefixes
 	if withDeps {
 		// No prefix filter: take everything registered, which registerModelsUpTo limited to
 		// this module plus its transitive dependencies.
-		genPrefix = ""
+		genPrefixes = nil
 	}
-	queries := mustGenCreateSql(registry, dialect, genPrefix)
+	queries := mustGenCreateSql(registry, dialect, genPrefixes)
 
-	// Schemas registered but none matched the prefix: ModelPrefix() is wrong for this module.
+	// Schemas registered but none matched the prefixes: ModelPrefixes() is wrong for this module.
 	if len(queries) == 0 && registeredCount > 0 {
 		fmt.Fprintf(os.Stderr,
 			"module '%s' registered %d schema(s) but none match '%s'; "+
-				"fix ModelPrefix() in the module's index.go\n",
-			moduleName, registeredCount, prefix)
+				"fix ModelPrefixes() in the module's index.go\n",
+			moduleName, registeredCount, strings.Join(prefixes, "', '"))
 		os.Exit(1)
 	}
 	return strings.Join(queries, ";\n")
@@ -43,14 +43,14 @@ func (this *Application) GenSql(moduleName string, dialect string, withDeps bool
 // A baseline rather than Atlas's `exclude`: excluding a table also drops every foreign key
 // that references it, which is every cross-module foreign key.
 func (this *Application) GenDepsSql(moduleName string, dialect string) string {
-	registry, prefix, _ := this.prepareSqlGen(moduleName)
+	registry, prefixes, _ := this.prepareSqlGen(moduleName)
 	own := make(map[string]struct{})
-	for _, query := range mustGenCreateSql(registry, dialect, prefix) {
+	for _, query := range mustGenCreateSql(registry, dialect, prefixes) {
 		own[query] = struct{}{}
 	}
 
 	depQueries := make([]string, 0)
-	for _, query := range mustGenCreateSql(registry, dialect, "") {
+	for _, query := range mustGenCreateSql(registry, dialect, nil) {
 		if _, isOwn := own[query]; !isOwn {
 			depQueries = append(depQueries, query)
 		}
@@ -62,8 +62,8 @@ func (this *Application) GenDepsSql(moduleName string, dialect string) string {
 }
 
 // prepareSqlGen registers the module's dependency closure and finalizes it, returning the
-// registry, the module's schema prefix and how many schemas the module itself registered.
-func (this *Application) prepareSqlGen(moduleName string) (*dmodel.SchemaRegistry, string, int) {
+// registry, the module's schema prefixes (each with its "_" separator) and how many schemas the module itself registered.
+func (this *Application) prepareSqlGen(moduleName string) (*dmodel.SchemaRegistry, []string, int) {
 	registeredCount, err := this.registerModelsUpTo(moduleName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to register models: %v\n", err)
@@ -80,12 +80,16 @@ func (this *Application) prepareSqlGen(moduleName string) (*dmodel.SchemaRegistr
 		os.Exit(1)
 	}
 
-	prefix := this.buildModuleMap()[moduleName].(modules.DynamicModule).ModelPrefix() + "_"
-	return registry, prefix, registeredCount
+	modelPrefixes := this.buildModuleMap()[moduleName].(modules.DynamicModule).ModelPrefixes()
+	prefixes := make([]string, 0, len(modelPrefixes))
+	for _, prefix := range modelPrefixes {
+		prefixes = append(prefixes, prefix+"_")
+	}
+	return registry, prefixes, registeredCount
 }
 
-func mustGenCreateSql(registry *dmodel.SchemaRegistry, dialect string, schemaPrefix string) []string {
-	queries, err := orm.GenCreateSql(registry, dialect, schemaPrefix)
+func mustGenCreateSql(registry *dmodel.SchemaRegistry, dialect string, schemaPrefixes []string) []string {
+	queries, err := orm.GenCreateSql(registry, dialect, schemaPrefixes...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to generate create SQL: %v\n", err)
 		os.Exit(1)

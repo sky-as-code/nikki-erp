@@ -5,7 +5,7 @@ import (
 
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
 
 // The per-organization purchase policy, and what happens when an organization has not set one.

@@ -20,7 +20,7 @@ type HelpdeskModule struct{}
 
 func (*HelpdeskModule) LabelKey() string                 { return "helpdesk.moduleLabel" }
 func (*HelpdeskModule) Name() string                     { return modconstants.HelpdeskModuleName }
-func (*HelpdeskModule) ModelPrefix() string              { return modconstants.HelpdeskModuleName }
+func (*HelpdeskModule) ModelPrefixes() []string          { return []string{modconstants.HelpdeskModuleName} }
 func (*HelpdeskModule) HasUi() bool                      { return false }
 func (*HelpdeskModule) Category() modules.ModuleCategory { return modules.ModuleCategoryFoundation }
 func (*HelpdeskModule) Deps() []string                   { return []string{} }

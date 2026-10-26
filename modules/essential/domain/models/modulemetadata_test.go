@@ -21,7 +21,7 @@ func (this *categoryTestModule) LabelKey() string                 { return "test
 func (this *categoryTestModule) Name() string                     { return "test" }
 func (this *categoryTestModule) Init() error                      { return nil }
 func (this *categoryTestModule) IsInternal() bool                 { return false }
-func (this *categoryTestModule) ModelPrefix() string              { return "test" }
+func (this *categoryTestModule) ModelPrefixes() []string          { return []string{"test"} }
 func (this *categoryTestModule) HasUi() bool                      { return true }
 func (this *categoryTestModule) Category() modules.ModuleCategory { return this.category }
 func (this *categoryTestModule) Version() semver.SemVer           { return *semver.MustParseSemVer("v1.0.0") }
@@ -36,7 +36,7 @@ func syncedMetadata(mod modules.InCodeModule, category *modules.ModuleCategory) 
 	meta.SetLabel(&label)
 	meta.SetVersion(util.ToPtr(mod.Version()))
 	meta.SetHasUi(util.ToPtr(mod.HasUi()))
-	meta.SetModelPrefix(util.ToPtr(mod.ModelPrefix()))
+	meta.SetModelPrefixes(mod.ModelPrefixes())
 	meta.SetCategory(category)
 	meta.SetIsEnabled(util.ToPtr(true))
 	meta.SetDepLevel(util.ToPtr(int32(0)))

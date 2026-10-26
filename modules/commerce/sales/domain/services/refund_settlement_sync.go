@@ -4,8 +4,8 @@ import (
 	"github.com/shopspring/decimal"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
 // Turning settled money into settled quantities.

@@ -6,10 +6,10 @@ import (
 	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/constants"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
+	v1 "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/transport/restful/v1"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/constants"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
-	v1 "github.com/sky-as-code/nikki-erp/modules/purchase/transport/restful/v1"
 )
 
 // Every Purchase resource declares its routes through the composable RestEngine: the built-in CRUD

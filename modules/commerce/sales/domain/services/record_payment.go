@@ -11,10 +11,10 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
-	itChannel "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
+	itChannel "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 )
 
 // Recording a payment.

@@ -5,7 +5,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 )
 
 // The guard of slot-level reservation: stock for a vending sale is held at the individual slot, and

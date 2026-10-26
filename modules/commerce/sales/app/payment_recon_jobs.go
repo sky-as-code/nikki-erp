@@ -8,9 +8,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
-	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external/invoicing"
 )
 
 // The payment reconciliation sweep, which is what makes a gateway payment safe to rely on.

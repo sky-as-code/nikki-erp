@@ -4,8 +4,8 @@ import (
 	stdErr "errors"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/external"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
-	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/external"
 )
 
 // This file is the only place in the product feature that may import another module. Everything

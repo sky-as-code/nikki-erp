@@ -7,9 +7,9 @@ package dynamicengines
 import (
 	stdErr "errors"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
 )
 
 // junctionSchemas lists association schemas that need an engine built but not served: a schema here

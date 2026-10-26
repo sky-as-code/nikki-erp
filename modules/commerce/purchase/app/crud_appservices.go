@@ -1,12 +1,12 @@
 package app
 
 import (
+	itAgreement "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/agreement"
+	itAudit "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/audit"
+	itConfiguration "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/configuration"
+	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/order"
+	itVendorPrice "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/vendorprice"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itAgreement "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/agreement"
-	itAudit "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/audit"
-	itConfiguration "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/configuration"
-	itOrder "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/order"
-	itVendorPrice "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/vendorprice"
 )
 
 // The application services of the resources that add nothing to the built-in CRUD. The default

@@ -3,8 +3,8 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 // StockMoveDependencyEngineName is the container name of the stock_move_dependency onion, declared once for the struct tag and

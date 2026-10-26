@@ -1,8 +1,8 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
 // DeriveCustomerIdentityMode calculates the identity snapshot an order is created with, from the

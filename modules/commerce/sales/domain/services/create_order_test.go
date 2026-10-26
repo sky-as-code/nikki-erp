@@ -5,8 +5,8 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
 // The pure validation of creating an order; CreateOrder itself is exercised live.

@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sky-as-code/nikki-erp/common/util"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 )
 
 func linesInput(lines ...itProduct.AttributeLineInput) itProduct.TemplateConfigurationInput {
@@ -170,9 +170,9 @@ func TestCollectBaseIdsUsesExtendedKey(t *testing.T) {
 
 func TestLiftTemplateConfigurationSeparatesPayload(t *testing.T) {
 	cmd := map[string]any{
-		"name":                   "Shirt",
-		"attribute_lines":        []any{map[string]any{"attribute_id": "COLOR", "value_ids": []any{"RED"}, "sequence": 1}},
-		"variant_delete_allowed": true,
+		"name":                    "Shirt",
+		"attribute_lines":         []any{map[string]any{"attribute_id": "COLOR", "value_ids": []any{"RED"}, "sequence": 1}},
+		"variant_delete_allowed":  true,
 		"attribute_configuration": map[string]any{"ignored": true},
 	}
 	input, deleteAllowed, malformed := itProduct.LiftTemplateConfiguration(cmd)

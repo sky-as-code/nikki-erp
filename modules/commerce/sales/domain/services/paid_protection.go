@@ -9,8 +9,8 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 )
 
 // Protecting a paid order's holds (CR-INV-SALES-WH-RESERVATION §7.2, §7.3).

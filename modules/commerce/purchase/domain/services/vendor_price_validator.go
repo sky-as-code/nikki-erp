@@ -6,9 +6,9 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/external"
 )
 
 // VendorPriceValidator checks a vendor price against the vendor, product and unit masters it

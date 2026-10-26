@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/external"
 )
 
 type stubUomLookup struct {

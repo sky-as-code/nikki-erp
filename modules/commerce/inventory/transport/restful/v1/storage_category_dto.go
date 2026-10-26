@@ -2,9 +2,9 @@ package v1
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	itWarehouse "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/warehouse"
 )
 
 type CreateStorageCategoryRequest = itWarehouse.CreateStorageCategoryCommand

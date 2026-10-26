@@ -3,15 +3,15 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itFulfillment "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/fulfillment"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itFulfillment "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/fulfillment"
 )
 
 const (
-	SalesOrderFulfillmentEngineName = "dynengine_sales_order_fulfillment"
-	SalesOrderFulfillmentItemEngineName = "dynengine_sales_order_fulfillment_item"
-	SalesFulfillmentAttemptEngineName = "dynengine_sales_fulfillment_attempt"
-	SalesFulfillmentAttemptItemEngineName = "dynengine_sales_fulfillment_attempt_item"
+	SalesOrderFulfillmentEngineName        = "dynengine_sales_order_fulfillment"
+	SalesOrderFulfillmentItemEngineName    = "dynengine_sales_order_fulfillment_item"
+	SalesFulfillmentAttemptEngineName      = "dynengine_sales_fulfillment_attempt"
+	SalesFulfillmentAttemptItemEngineName  = "dynengine_sales_fulfillment_attempt_item"
 	SalesFulfillmentTargetChangeEngineName = "dynengine_sales_fulfillment_target_change"
 )
 

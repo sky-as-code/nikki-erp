@@ -51,9 +51,9 @@ func (*SettingsModule) Name() string {
 	return modconstants.SettingsModuleName
 }
 
-// ModelPrefix implements NikkiModule.
-func (*SettingsModule) ModelPrefix() string {
-	return modconstants.SettingsModuleName
+// ModelPrefixes implements NikkiModule.
+func (*SettingsModule) ModelPrefixes() []string {
+	return []string{modconstants.SettingsModuleName}
 }
 
 func (*SettingsModule) HasUi() bool {

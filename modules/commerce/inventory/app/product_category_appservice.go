@@ -2,11 +2,11 @@ package app
 
 import (
 	"github.com/samber/lo"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/event"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itEvent "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/event"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // NewProductCategoryApplicationService is handed the composable default by the product_category onion.

@@ -1,8 +1,8 @@
 package services
 
 import (
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/external"
 )
 
 // The reservation resource's domain service. The composable defaults serve every read; the

@@ -3,8 +3,8 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 // StockProductConfigEngineName is the container name of the stock_product_config onion, declared once for the struct tag and

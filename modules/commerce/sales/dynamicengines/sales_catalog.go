@@ -6,14 +6,14 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/sales/repository"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/app"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/catalog"
+	itChannel "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/event"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/app"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
-	repo "github.com/sky-as-code/nikki-erp/modules/sales/infra/repository"
-	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
-	itChannel "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
-	itEvent "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/event"
 )
 
 // The catalogue resources: the fulfillment policies, channels and points a sale happens through,

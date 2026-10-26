@@ -5,7 +5,7 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // The arithmetic behind a return, with no repository so it tests without a database.

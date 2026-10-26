@@ -15,8 +15,8 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 )
 
 // NewStockTransferDomainService derives the transfer service from the onion's default one, which

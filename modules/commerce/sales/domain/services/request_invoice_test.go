@@ -5,8 +5,8 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external/invoicing"
 )
 
 // The invoicing rules that can be pinned without a repository: the parts where being wrong means

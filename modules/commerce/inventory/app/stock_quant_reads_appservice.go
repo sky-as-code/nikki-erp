@@ -5,8 +5,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 // The reads that let the Product UI show stock it does not own. They hang off the quant because

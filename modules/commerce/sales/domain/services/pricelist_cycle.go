@@ -3,8 +3,8 @@ package services
 import (
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
 // Cycle detection for FORMULA rules that price against another list.

@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/model"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
 )
 
 // The warehouse-level reservation seam (CR-INV-SALES-WH-RESERVATION). Unlike the location holds

@@ -4,9 +4,9 @@ import (
 	"github.com/shopspring/decimal"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/legacy/domain"
 )
 
 func init() {

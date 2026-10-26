@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
 )
 
 // These read index.go as text rather than building a container, so they run in CI with no

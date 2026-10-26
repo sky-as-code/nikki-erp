@@ -168,7 +168,7 @@ func (this *ModuleDomainServiceImpl) syncCreateModule(
 	module.SetIsInternal(util.ToPtr(installedModule.IsInternal()))
 	module.SetVersion(util.ToPtr(installedModule.Version()))
 	module.SetHasUi(util.ToPtr(installedModule.HasUi()))
-	module.SetModelPrefix(util.ToPtr(installedModule.ModelPrefix()))
+	module.SetModelPrefixes(installedModule.ModelPrefixes())
 	module.SetCategory(util.ToPtr(installedModule.Category()))
 	module.SetIsEnabled(util.ToPtr(true))
 	module.SetDependencies(installedModule.Deps())

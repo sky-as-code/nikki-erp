@@ -5,92 +5,19 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/semver"
-	"github.com/sky-as-code/nikki-erp/modules"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/app"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/dynamicengines"
+	itMessage "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/message"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/transport/restful"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/dynamicengines"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/external"
-	itMessage "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/message"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
-	invcqrs "github.com/sky-as-code/nikki-erp/modules/inventory/transport/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/transport/restful"
 )
 
-var ModuleSingleton modules.InCodeModule = &InventoryModule{}
-
-// OnAppStarted is found by a runtime type assertion, so this assertion is what turns a rename or a
-// signature change into a compile error rather than a silently unregistered sweep.
-var _ modules.InCodeModuleAppStarted = &InventoryModule{}
-
-type InventoryModule struct {
-}
-
-// LabelKey implements NikkiModule.
-func (*InventoryModule) LabelKey() string {
-	return "inventory.moduleLabel"
-}
-
-// Name implements NikkiModule.
-func (*InventoryModule) Name() string {
-	return modconstants.InventoryModuleName
-}
-
-// ModelPrefix implements DynamicModule.
-func (*InventoryModule) ModelPrefix() string {
-	return modconstants.InventoryModuleName
-}
-
-func (*InventoryModule) HasUi() bool {
-	return true
-}
-
-func (*InventoryModule) Category() modules.ModuleCategory {
-	return modules.ModuleCategoryFoundation
-}
-
-// Deps implements NikkiModule.
-func (*InventoryModule) Deps() []string {
-	return []string{
-		"dynamicresource",
-		"essential",
-	}
-}
-
-// Dependants implements InCodeModuleDependants: the modules referencing a product variant or
-// template, which Inventory asks before deleting one. Documents name the variant; pricing rules
-// (sales pricelist items, purchase vendor prices) may also name the template, so every dependant
-// answers for both resources.
-//
-// "vendingmachine" ships only in the coremart binary. It is listed anyway, because the list
-// belongs to Inventory and states who references its products wherever Inventory runs; the
-// registry skips a dependant this binary did not load. See docs/problems/inventory/001 for why
-// that makes an absent dependant indistinguishable from a misspelled one.
-func (*InventoryModule) Dependants() []string {
-	return []string{
-		"sales",
-		"purchase",
-		"vendingmachine",
-	}
-}
-
-// IsInternal implements InCodeModule.
-func (*InventoryModule) IsInternal() bool {
-	return false
-}
-
-// Version implements NikkiModule.
-func (*InventoryModule) Version() semver.SemVer {
-	return *semver.MustParseSemVer("v1.0.0")
-}
-
-// Init implements NikkiModule.
+// InitSubModule builds the Inventory part of Commerce. Its external ports are bound beforehand by
+// commerce/infra.InitSubModule, because a derived service resolves its ports at construction.
 //
 // The onions are container constructors, so the layers they derive from one another (the location
 // service needs the quant's usage port, the warehouse orchestration needs the location service)
@@ -98,17 +25,8 @@ func (*InventoryModule) Version() semver.SemVer {
 // what builds them all before the first request.
 //
 // The superseded ./legacy implementation is deliberately not initialized; see ./legacy/README.md.
-func (*InventoryModule) Init() error {
-	// Ports bind first: a derived service resolves its ports at construction.
-	if err := external.InitExternal(); err != nil {
-		return err
-	}
+func InitSubModule() error {
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
-		return err
-	}
-	// Inventory holds a uom_id on every stock movement and balance, so Essential asks this
-	// module before letting a unit be edited or deleted.
-	if err := invcqrs.InitCqrsHandlers(); err != nil {
 		return err
 	}
 	if err := restful.InitRestfulHandlers(); err != nil {
@@ -121,7 +39,7 @@ func (*InventoryModule) Init() error {
 // OnAppStarted registers the reservation expiry sweep and checks that every resource the
 // services may reach at call time was built. The sweep registers here rather than in Init so it
 // never ticks against a half-built container.
-func (*InventoryModule) OnAppStarted() error {
+func OnAppStarted() error {
 	if err := assertEveryResourceInstalled(); err != nil {
 		return err
 	}
@@ -131,16 +49,7 @@ func (*InventoryModule) OnAppStarted() error {
 		publisher itMessage.IntegrationEventPublisher,
 		cronjobs job.CronjobRegistry,
 		logger logging.LoggerService,
-		cqrsBus cqrs.CqrsBus,
-		dependants *modules.ModuleDependantRegistry,
 	) error {
-		// Here rather than in Init(): a dependant subscribes its usage handler during its own
-		// Init, and peer init order is nondeterministic, so this is the first point at which
-		// every module that was going to subscribe has done so.
-		if err := usagecheck.AssertDependantsSubscribed(
-			cqrsBus, dependants, modconstants.InventoryModuleName); err != nil {
-			return err
-		}
 		outbox := app.NewOutboxJobs(publisher, logger)
 		if err := outbox.RegisterJobs(cronjobs); err != nil {
 			return err
@@ -169,11 +78,11 @@ func assertEveryResourceInstalled() error {
 	return errors.Join(missing...)
 }
 
-// RegisterModels implements DynamicModule.
+// RegisterModels registers the Inventory schemas.
 //
 // Schemas must be registered referenced-before-referencing: an edge is resolved against the schema
 // registry at registration time.
-func (*InventoryModule) RegisterModels() error {
+func RegisterModels() error {
 	return errors.Join(
 		// Master data: referenced by the template, so registered first.
 		dmodel.RegisterSchemaB(models.ProductCategorySchemaBuilder()),

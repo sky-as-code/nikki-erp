@@ -9,7 +9,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 )
 
 func valueName(id string, enName string) attributeValueName {

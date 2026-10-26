@@ -4,7 +4,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 )
 
 // The electronic-invoice job's registration.

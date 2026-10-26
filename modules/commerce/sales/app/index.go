@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
 )
 
 // InitApplicationServices registers the Sales application services in the DI container.

@@ -1,5 +1,7 @@
 package constants
 
+// InventoryModuleName names the Inventory part of Commerce: its schema prefix and translation
+// namespace. The module itself is commerce/constants.CommerceModuleName.
 const InventoryModuleName = "inventory"
 
 // Resource codes for authorization. They must be byte-identical to the dynamic-model schema names,

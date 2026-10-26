@@ -31,9 +31,9 @@ func (*AppTraitModule) Name() string {
 	return c.AppTraitModuleName
 }
 
-// ModelPrefix implements DynamicModule.
-func (*AppTraitModule) ModelPrefix() string {
-	return c.AppTraitModuleName
+// ModelPrefixes implements DynamicModule.
+func (*AppTraitModule) ModelPrefixes() []string {
+	return []string{c.AppTraitModuleName}
 }
 
 func (*AppTraitModule) HasUi() bool {

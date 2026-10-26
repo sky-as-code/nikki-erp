@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // recordingOnion captures the search params of one schema and answers with canned rows.
@@ -74,14 +74,14 @@ func variantAttributeFixture() (
 		}},
 		models.ProductAttributeValueSchemaName: {items: []dmodel.DynamicFields{
 			{
-				basemodel.FieldId:                             "av_big",
-				models.ProductAttributeValueFieldName:         model.LangJson{"en-US": "Big"},
-				models.ProductAttributeValueFieldAttributeId:  "attr_size",
+				basemodel.FieldId:                            "av_big",
+				models.ProductAttributeValueFieldName:        model.LangJson{"en-US": "Big"},
+				models.ProductAttributeValueFieldAttributeId: "attr_size",
 			},
 			{
-				basemodel.FieldId:                             "av_nosugar",
-				models.ProductAttributeValueFieldName:         model.LangJson{"en-US": "No sugar"},
-				models.ProductAttributeValueFieldAttributeId:  "attr_sugar",
+				basemodel.FieldId:                            "av_nosugar",
+				models.ProductAttributeValueFieldName:        model.LangJson{"en-US": "No sugar"},
+				models.ProductAttributeValueFieldAttributeId: "attr_sugar",
 			},
 		}},
 		models.ProductAttributeSchemaName: {items: []dmodel.DynamicFields{
@@ -101,9 +101,9 @@ func variantAttributeFixture() (
 
 func variantRow() dmodel.DynamicFields {
 	return dmodel.DynamicFields{
-		basemodel.FieldId:                          "v1",
-		models.ProductVariantFieldTemplateName:     model.LangJson{"en-US": "Coca Cola"},
-		models.ProductVariantFieldSku:              "CC-NS-BIG",
+		basemodel.FieldId:                      "v1",
+		models.ProductVariantFieldTemplateName: model.LangJson{"en-US": "Coca Cola"},
+		models.ProductVariantFieldSku:          "CC-NS-BIG",
 	}
 }
 

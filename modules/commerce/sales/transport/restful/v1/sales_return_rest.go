@@ -3,13 +3,13 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itReturns "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/returns"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itReturns "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/returns"
 )
 
 const (
-	SalesReturnEngineName = "dynengine_sales_return"
-	SalesReturnLineEngineName = "dynengine_sales_return_line"
+	SalesReturnEngineName        = "dynengine_sales_return"
+	SalesReturnLineEngineName    = "dynengine_sales_return_line"
 	SalesRefundPaymentEngineName = "dynengine_sales_refund_payment"
 )
 

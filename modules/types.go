@@ -45,9 +45,10 @@ type InCodeModule interface {
 	Init() error
 	IsInternal() bool
 	Version() semver.SemVer
-	// ModelPrefix returns the prefix this module's schemas are named with, without a
-	// trailing separator - GenSql appends the "_" itself.
-	ModelPrefix() string
+	// ModelPrefixes returns the prefixes this module's schemas are named with, without a
+	// trailing separator - GenSql appends the "_" itself. Most modules own one prefix, their
+	// name; a module made of parts (commerce) owns one per part.
+	ModelPrefixes() []string
 	// HasUi reports whether the module has a frontend micro-app, so Module Home lists it.
 	HasUi() bool
 	// Category is the product line the module ships with; Module Home groups modules by it.
@@ -63,9 +64,10 @@ type DynamicModule interface {
 	IsInternal() bool
 	RegisterModels() error
 	Version() semver.SemVer
-	// ModelPrefix returns the prefix this module's schemas are named with, without a
-	// trailing separator - GenSql appends the "_" itself.
-	ModelPrefix() string
+	// ModelPrefixes returns the prefixes this module's schemas are named with, without a
+	// trailing separator - GenSql appends the "_" itself. Most modules own one prefix, their
+	// name; a module made of parts (commerce) owns one per part.
+	ModelPrefixes() []string
 	// HasUi reports whether the module has a frontend micro-app, so Module Home lists it.
 	HasUi() bool
 	// Category is the product line the module ships with; Module Home groups modules by it.

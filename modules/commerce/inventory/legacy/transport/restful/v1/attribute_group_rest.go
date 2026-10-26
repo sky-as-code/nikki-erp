@@ -4,8 +4,8 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	itAttributeGroup "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/attributegroup"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	itAttributeGroup "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/attributegroup"
 )
 
 type attributeGroupRestParams struct {

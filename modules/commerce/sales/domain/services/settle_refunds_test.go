@@ -6,7 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // Refund-aware payment status, which was unreachable before Phase 6: the live path derived status

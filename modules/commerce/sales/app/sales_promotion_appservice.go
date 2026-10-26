@@ -2,11 +2,11 @@ package app
 
 import (
 	"github.com/samber/lo"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/event"
+	itPromotion "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/promotion"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itEvent "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/event"
-	itPromotion "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/promotion"
 )
 
 // The promotion and voucher application services. No custom actions: a discount is defined here

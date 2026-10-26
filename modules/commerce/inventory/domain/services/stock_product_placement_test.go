@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 )
 
 // Where a variant's stock sits, grouped two ways: a suspended place still shows its contents, and

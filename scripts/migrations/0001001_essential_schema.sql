@@ -69,7 +69,7 @@ CREATE TABLE "essential_modules" (
   "is_internal" boolean NOT NULL,
   "version" character varying NOT NULL,
   "has_ui" boolean NOT NULL,
-  "model_prefix" character varying NULL,
+  "model_prefixes" character varying[] NULL,
   "category" character varying NULL,
   "is_enabled" boolean NOT NULL,
   "dependencies" character varying[] NULL,

@@ -7,8 +7,8 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/catalog"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
 )
 
 // The container names of the catalogue onions, declared once for the struct tags and checked

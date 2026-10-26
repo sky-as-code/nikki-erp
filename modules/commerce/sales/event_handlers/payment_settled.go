@@ -11,8 +11,8 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
-	itEvent "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/event"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/event"
 )
 
 // paymentSettledHandler applies one verdict to the payment awaiting it.

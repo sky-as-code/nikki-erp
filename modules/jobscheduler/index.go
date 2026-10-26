@@ -44,9 +44,9 @@ func (*JobSchedulerModule) Name() string {
 	return constants.JobSchedulerModuleName
 }
 
-// ModelPrefix implements NikkiModule.
-func (*JobSchedulerModule) ModelPrefix() string {
-	return constants.JobSchedulerModuleName
+// ModelPrefixes implements NikkiModule.
+func (*JobSchedulerModule) ModelPrefixes() []string {
+	return []string{constants.JobSchedulerModuleName}
 }
 
 func (*JobSchedulerModule) HasUi() bool {

@@ -6,12 +6,12 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/inventory/repository"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/app"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/app"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
-	repo "github.com/sky-as-code/nikki-erp/modules/inventory/infra/repository"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 type productTemplateCombinationExclusionEngineParam struct {

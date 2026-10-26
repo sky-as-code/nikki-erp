@@ -7,7 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 )
 
 // The reservation expiry sweep, Inventory's first cron.

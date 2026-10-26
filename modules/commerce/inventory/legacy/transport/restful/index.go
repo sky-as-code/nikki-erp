@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	v1 "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/transport/restful/v1"
+	v1 "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/transport/restful/v1"
 )
 
 func InitRestfulHandlers() error {

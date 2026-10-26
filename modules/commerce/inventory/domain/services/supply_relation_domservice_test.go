@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // A relation declares who may restock whom. Both endpoints are required and they must differ:

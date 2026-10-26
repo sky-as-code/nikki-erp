@@ -3,13 +3,13 @@ package services
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/safe"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
+	itAgreement "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/agreement"
+	itAudit "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/audit"
+	itConfiguration "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/configuration"
+	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/order"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
-	itAgreement "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/agreement"
-	itAudit "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/audit"
-	itConfiguration "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/configuration"
-	itOrder "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/order"
 )
 
 // The CRUD domain services of the resources that add no write rule of their own, and of the two a

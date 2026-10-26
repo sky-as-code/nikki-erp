@@ -6,9 +6,9 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // usageScanPageSize is how many quants are read at a time. The scan pages to the end rather than

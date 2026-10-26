@@ -6,7 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // The adjustment order's line arithmetic, which is where a mistake would misstate what a customer

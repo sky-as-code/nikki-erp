@@ -3,8 +3,8 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // ProductTemplateCombinationExclusionEngineName is the container name of the exclusion onion,

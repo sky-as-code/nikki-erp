@@ -3,12 +3,11 @@ package services
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // NewStockQuantDomainService derives the quant service from the engine's default one, which it
@@ -70,7 +69,7 @@ func assertQuantDeletable(
 		return nil
 	}
 
-	return usagecheck.AssertDeletable(ctx, dispatcher, modconstants.InventoryModuleName,
+	return assertDeletable(ctx, dispatcher,
 		models.StockQuantFieldId, usagecheck.ResourceRef{
 			ResourceName: usagecheck.ResourceStockQuant,
 			Identifier: usagecheck.NewIdentifier(

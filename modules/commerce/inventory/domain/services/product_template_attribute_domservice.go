@@ -1,8 +1,8 @@
 package services
 
 import (
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // NewProductTemplateAttributeDomainService is handed the composable default by the product_template_attribute onion. The resource is plain

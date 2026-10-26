@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // The rule-consistency checks. Every case here is a row that would otherwise be ACCEPTED and then

@@ -6,8 +6,8 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itStock "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/stock"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 )
 
 // CheckWarehouseAvailability reports H, R, A and the shortage for one request, as of now. It takes

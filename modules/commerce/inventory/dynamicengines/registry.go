@@ -10,9 +10,9 @@ package dynamicengines
 import (
 	stdErr "errors"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/services"
 )
 
 // InitDynamicEngines registers every resource onion this module owns. Nothing is built here: an

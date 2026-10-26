@@ -2,8 +2,8 @@ package v1
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	itAttribute "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/attribute"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/attribute"
 )
 
 type CreateAttributeRequest = itAttribute.CreateAttributeCommand

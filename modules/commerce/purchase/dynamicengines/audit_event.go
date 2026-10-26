@@ -6,12 +6,12 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/purchase/repository"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/app"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
+	itAudit "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/audit"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/app"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
-	repo "github.com/sky-as-code/nikki-erp/modules/purchase/infra/repository"
-	itAudit "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/audit"
 )
 
 // The audit trail, written by the audit helper only; every client write is refused.

@@ -4,8 +4,8 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	itProductCategory "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/productcategory"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	itProductCategory "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/productcategory"
 )
 
 type productCategoryRestParams struct {

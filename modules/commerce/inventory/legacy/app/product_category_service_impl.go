@@ -1,12 +1,12 @@
 package app
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/domain"
+	it "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/productcategory"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/legacy/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/productcategory"
 )
 
 func NewProductCategoryServiceImpl(

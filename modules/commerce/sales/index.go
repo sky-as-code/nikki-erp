@@ -14,94 +14,27 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/semver"
-	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/app"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/dynamicengines"
+	eventhandlers "github.com/sky-as-code/nikki-erp/modules/commerce/sales/event_handlers"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
+	itInvoicing "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external/invoicing"
+	itMessage "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/message"
+	salescqrs "github.com/sky-as-code/nikki-erp/modules/commerce/sales/transport/cqrs"
+	eventtransport "github.com/sky-as-code/nikki-erp/modules/commerce/sales/transport/event"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/transport/restful"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/sales/app"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/sales/constants"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
-	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
-	eventhandlers "github.com/sky-as-code/nikki-erp/modules/sales/event_handlers"
-	"github.com/sky-as-code/nikki-erp/modules/sales/infra/external"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
-	itInvoicing "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external/invoicing"
-	itMessage "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/message"
-	salescqrs "github.com/sky-as-code/nikki-erp/modules/sales/transport/cqrs"
-	eventtransport "github.com/sky-as-code/nikki-erp/modules/sales/transport/event"
-	"github.com/sky-as-code/nikki-erp/modules/sales/transport/restful"
 )
 
-// ModuleSingleton is the symbol the plugin loader looks up. It is typed DynamicModule rather than
-// InCodeModule so that dropping RegisterModels fails the build instead of silently registering no
-// schemas.
-var ModuleSingleton modules.DynamicModule = &SalesModule{}
-
-// OnAppStarted is found by a runtime type assertion, so this assertion is what turns a rename or
-// signature change into a compile error rather than a silently unregistered settings schema.
-var _ modules.InCodeModuleAppStarted = &SalesModule{}
-
-type SalesModule struct{}
-
-func (*SalesModule) LabelKey() string {
-	return "sales.moduleLabel"
-}
-
-func (*SalesModule) Name() string {
-	return modconstants.SalesModuleName
-}
-
-func (*SalesModule) ModelPrefix() string {
-	return modconstants.SalesModuleName
-}
-
-func (*SalesModule) HasUi() bool {
-	return true
-}
-
-func (*SalesModule) Category() modules.ModuleCategory {
-	return modules.ModuleCategoryFoundation
-}
-
-// Deps names every module Sales reads through a port. essential and core are injected automatically
-// by buildDependencyGraph; essential is named anyway because Sales consumes it directly.
-func (*SalesModule) Deps() []string {
-	return []string{
-		"dynamicresource",
-		"essential",
-		"settings",
-		"inventory",
-		"contacts",
-		"paymentinvoice",
-
-		// The electronic-invoice job is registered with the scheduler at boot, so the scheduler must
-		// have built its engines before Sales starts.
-		// "jobscheduler",
-
-		// The reprice action resolves accounting's tax port eagerly at Init, so accounting must
-		// have registered its service before Sales starts. Without naming it here the loader
-		// starts Sales first.
-		"accounting",
-	}
-}
-
-func (*SalesModule) IsInternal() bool {
-	return false
-}
-
-func (*SalesModule) Version() semver.SemVer {
-	return *semver.MustParseSemVer("v1.0.0")
-}
-
-// Init implements DynamicModule. The order is load-bearing: external ports bind first because a
-// derived service resolves its ports at construction; engines precede derived services because a
+// InitSubModule builds the Sales part of Commerce. The order is load-bearing: external ports are
+// bound beforehand by commerce/infra.InitSubModule because a derived service resolves its ports at
+// construction; engines precede derived services because a
 // derived service wraps the engine's own; REST registers last because it registers engine routes.
-func (*SalesModule) Init() error {
-	if err := external.InitExternal(); err != nil {
-		return err
-	}
+func InitSubModule() error {
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}
@@ -151,11 +84,11 @@ func assertEveryResourceInstalled() error {
 	return stdErr.Join(missing...)
 }
 
-// OnAppStarted implements InCodeModuleAppStarted. The settings schema registers here, not in Init,
+// OnAppStarted is called by Commerce's OnAppStarted. The settings schema registers here, not in Init,
 // because peer module init order is nondeterministic and the settings module may not have built its
 // engines yet; registration is idempotent. The outbox sweep registers here too so it never ticks
 // against a half-built container.
-func (*SalesModule) OnAppStarted() error {
+func OnAppStarted() error {
 	return deps.Invoke(func(
 		settingsSvc itExt.SettingsRegistrationExtService,
 		publisher itMessage.IntegrationEventPublisher,
@@ -216,10 +149,10 @@ func (*SalesModule) OnAppStarted() error {
 	})
 }
 
-// RegisterModels implements DynamicModule. Order is load-bearing: edges resolve against the schema
+// RegisterModels registers the Sales schemas. Order is load-bearing: edges resolve against the schema
 // registry at registration time, so a referenced schema must be registered before the one pointing
 // at it. All schemas are listed here so that order is visible in one place.
-func (*SalesModule) RegisterModels() error {
+func RegisterModels() error {
 	return stdErr.Join(
 		// The fulfillment method registers before the channel and point, whose default_*_id
 		// columns and allowed-method mapping point at it.

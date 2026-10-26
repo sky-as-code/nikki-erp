@@ -14,7 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 // Creating a return. A return is a new document, never an edit of the order: the order is what the

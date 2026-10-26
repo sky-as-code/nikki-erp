@@ -12,17 +12,17 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	commconstants "github.com/sky-as-code/nikki-erp/modules/commerce/constants"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
-// Deleting a variant asks Sales, Purchase and the vending machine first. The foreign keys are
-// ON DELETE RESTRICT, so the database refuses the statement anyway — but only as a driver error
-// naming a constraint. These tests pin the business answer: a refusal that says which module to
-// go and clear.
+// Deleting a variant asks the dependants over the bus, and the Purchase and Sales parts of Commerce
+// in process, first. The foreign keys are ON DELETE RESTRICT, so the database refuses the statement
+// anyway — but only as a driver error naming a constraint. These tests pin the business answer: a
+// refusal that says which module to go and clear.
 
 type variantUsageReply struct {
 	module  string
@@ -77,13 +77,13 @@ type variantOwnerModule struct {
 	dependants []string
 }
 
-func (this *variantOwnerModule) Name() string        { return this.name }
-func (this *variantOwnerModule) Deps() []string      { return nil }
-func (this *variantOwnerModule) LabelKey() string    { return this.name }
-func (this *variantOwnerModule) Init() error         { return nil }
-func (this *variantOwnerModule) IsInternal() bool    { return false }
-func (this *variantOwnerModule) ModelPrefix() string { return this.name }
-func (this *variantOwnerModule) HasUi() bool         { return false }
+func (this *variantOwnerModule) Name() string            { return this.name }
+func (this *variantOwnerModule) Deps() []string          { return nil }
+func (this *variantOwnerModule) LabelKey() string        { return this.name }
+func (this *variantOwnerModule) Init() error             { return nil }
+func (this *variantOwnerModule) IsInternal() bool        { return false }
+func (this *variantOwnerModule) ModelPrefixes() []string { return []string{this.name} }
+func (this *variantOwnerModule) HasUi() bool             { return false }
 func (this *variantOwnerModule) Category() modules.ModuleCategory {
 	return modules.ModuleCategoryFoundation
 }
@@ -101,7 +101,7 @@ func variantDispatcher(t *testing.T, replies ...variantUsageReply) *usagecheck.D
 	}
 
 	loaded := []modules.InCodeModule{
-		&variantOwnerModule{name: modconstants.InventoryModuleName, dependants: dependants},
+		&variantOwnerModule{name: commconstants.CommerceModuleName, dependants: dependants},
 	}
 	for _, dependant := range dependants {
 		loaded = append(loaded, &variantOwnerModule{name: dependant})
@@ -192,4 +192,43 @@ func TestAssertVariantDeletableSkipsWithoutAnId(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Zero(t, vErrs.Count())
+}
+
+// Purchase and Sales are parts of Commerce, not dependants: they answer in process, and a part
+// still naming the variant blocks the delete exactly as a dependant does.
+func TestAssertVariantDeletableBlocksOnASameModulePart(t *testing.T) {
+	registry := usagecheck.NewCheckerRegistry()
+	require.NoError(t, registry.Register(commconstants.CommerceModuleName, usagecheck.ResourceProductVariant,
+		usagecheck.CheckerFunc(func(corectx.Context, usagecheck.ResourceRef) (bool, string, error) {
+			return true, "sales_order_line", nil
+		})))
+	SetSameModuleParts(SameModulePart{Name: "sales", Registry: registry})
+	t.Cleanup(func() { SetSameModuleParts() })
+	vErrs := ft.NewClientErrors()
+
+	err := assertVariantDeletable(
+		corectx.NewRequestContext(context.Background()),
+		variantDispatcher(t, variantUsageReply{module: "vendingmachine", used: false}),
+		variantParams(), vErrs)
+
+	require.NoError(t, err)
+	require.Equal(t, 1, vErrs.Count())
+	assert.Contains(t, (*vErrs)[0].Message, "sales")
+}
+
+// A part that registered no checker for the resource cannot answer, and an unanswered question
+// is not a "no".
+func TestAssertVariantDeletableRefusesWhenAPartHasNoChecker(t *testing.T) {
+	SetSameModuleParts(SameModulePart{Name: "purchase", Registry: usagecheck.NewCheckerRegistry()})
+	t.Cleanup(func() { SetSameModuleParts() })
+	vErrs := ft.NewClientErrors()
+
+	err := assertVariantDeletable(
+		corectx.NewRequestContext(context.Background()),
+		variantDispatcher(t, variantUsageReply{module: "vendingmachine", used: false}),
+		variantParams(), vErrs)
+
+	require.NoError(t, err)
+	require.Equal(t, 1, vErrs.Count())
+	assert.Contains(t, (*vErrs)[0].Message, "purchase")
 }

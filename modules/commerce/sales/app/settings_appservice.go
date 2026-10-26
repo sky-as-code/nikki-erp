@@ -2,11 +2,11 @@ package app
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/commerce/sales/constants"
+	salessettings "github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/settings"
+	itSettings "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/settings"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/sales/constants"
-	salessettings "github.com/sky-as-code/nikki-erp/modules/sales/domain/settings"
-	itSettings "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/settings"
 )
 
 // NewSettingsApplicationServiceImpl validates Sales's org-level settings against the schema it
@@ -20,7 +20,7 @@ func NewSettingsApplicationServiceImpl(settingsSvc coreSettings.SettingsService)
 		coreSettings.LevelOrg: salessettings.OrgSettingsSchemaBuilder().Build(),
 	}
 	return &SettingsApplicationServiceImpl{
-		writer: coreSettings.NewModuleSettingsWriter(modconstants.SalesModuleName, schemas, settingsSvc),
+		writer: coreSettings.NewModuleSettingsWriter(modconstants.SettingsModuleKey, schemas, settingsSvc),
 	}
 }
 

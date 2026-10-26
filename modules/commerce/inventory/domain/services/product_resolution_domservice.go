@@ -6,8 +6,8 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 )
 
 // BuildEffectiveProduct flattens a variant and its template into the view consumers read.

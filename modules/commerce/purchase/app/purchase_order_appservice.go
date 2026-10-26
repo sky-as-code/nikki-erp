@@ -1,11 +1,11 @@
 package app
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/constants"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
+	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/order"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/constants"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
-	itOrder "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/order"
 )
 
 // The purchase order's authorized surface: the built-in CRUD plus the lifecycle actions. Each

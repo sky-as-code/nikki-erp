@@ -2,9 +2,9 @@ package warehouse
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // SearchWarehousesReadQuery is the org-scoped counterpart of SearchWarehousesQuery (the composable

@@ -6,9 +6,9 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itExt "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/external"
 )
 
 // The rules behind a product's inventory unit. Inventory holds only a reference: the UoM master,

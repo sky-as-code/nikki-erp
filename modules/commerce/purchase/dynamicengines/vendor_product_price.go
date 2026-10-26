@@ -6,13 +6,13 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/purchase/repository"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/app"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/external"
+	itVendorPrice "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/vendorprice"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/app"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
-	repo "github.com/sky-as-code/nikki-erp/modules/purchase/infra/repository"
-	itExt "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/external"
-	itVendorPrice "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/vendorprice"
 )
 
 // The vendor price list. Its domain service validates a price as it will be on create and update,

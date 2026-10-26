@@ -3,13 +3,13 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itFiscal "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/fiscal"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itFiscal "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/fiscal"
 )
 
 const (
-	SalesFiscalRequestEngineName = "dynengine_sales_fiscal_request"
-	SalesBillingInstructionEngineName = "dynengine_sales_billing_instruction"
+	SalesFiscalRequestEngineName          = "dynengine_sales_fiscal_request"
+	SalesBillingInstructionEngineName     = "dynengine_sales_billing_instruction"
 	SalesBillingIssuanceAttemptEngineName = "dynengine_sales_billing_issuance_attempt"
 )
 

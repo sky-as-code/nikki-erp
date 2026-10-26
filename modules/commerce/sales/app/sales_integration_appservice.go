@@ -1,8 +1,8 @@
 package app
 
 import (
+	itIntegration "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/integration"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itIntegration "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/integration"
 )
 
 func NewSalesManualDiscountApplicationService(base composable.CrudApplicationService) itIntegration.SalesManualDiscountApplicationService {

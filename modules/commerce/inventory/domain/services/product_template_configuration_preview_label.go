@@ -3,9 +3,9 @@ package services
 import (
 	"sort"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // previewLabeler names preview items the way a variant's computed display_name does (see

@@ -4,9 +4,9 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // Duplicate duplicates a template with its current configuration and its own clone of the preview

@@ -10,76 +10,19 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/semver"
-	"github.com/sky-as-code/nikki-erp/modules"
-	modconstants "github.com/sky-as-code/nikki-erp/modules/purchase/constants"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/dynamicengines"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/infra/external"
-	purchasecqrs "github.com/sky-as-code/nikki-erp/modules/purchase/transport/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/transport/restful"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/dynamicengines"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/transport/restful"
 )
 
-// ModuleSingleton is the symbol the plugin loader looks up. It is typed DynamicModule, not
-// InCodeModule, so that dropping RegisterModels fails the build instead of silently registering
-// no schemas.
-var ModuleSingleton modules.DynamicModule = &PurchaseModule{}
-
-type PurchaseModule struct{}
-
-func (*PurchaseModule) LabelKey() string {
-	return "purchase.moduleLabel"
-}
-
-func (*PurchaseModule) Name() string {
-	return modconstants.PurchaseModuleName
-}
-
-func (*PurchaseModule) ModelPrefix() string {
-	return modconstants.PurchaseModuleName
-}
-
-func (*PurchaseModule) HasUi() bool {
-	return true
-}
-
-func (*PurchaseModule) Category() modules.ModuleCategory {
-	return modules.ModuleCategoryFoundation
-}
-
-// Deps names every module Purchase reads through a port: dynamicresource hosts the composable
-// onions, essential supplies UoM conversion and currency, inventory the product variant and its
-// purchase_ok flag, contacts the vendor party and its vendor profile.
-func (*PurchaseModule) Deps() []string {
-	return []string{
-		"dynamicresource",
-		"essential",
-		"inventory",
-		"contacts",
-	}
-}
-
-func (*PurchaseModule) IsInternal() bool {
-	return false
-}
-
-func (*PurchaseModule) Version() semver.SemVer {
-	return *semver.MustParseSemVer("v1.0.0")
-}
-
-// Init implements DynamicModule. The order is load-bearing: external ports first because the
-// onions inject them, then the onion registrations, then the usage-check handler and the routes.
+// InitSubModule builds the Purchase part of Commerce. The order is load-bearing: the external ports
+// the onions inject are bound beforehand by commerce/infra.InitSubModule, then the onion
+// registrations, then the routes.
 // BuildAllEngines forces every onion no route resolved, so the resource hub the lifecycle
 // operations and the usage checker read through is complete before the first request.
-func (*PurchaseModule) Init() error {
-	if err := external.InitExternal(); err != nil {
-		return err
-	}
+func InitSubModule() error {
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
-		return err
-	}
-	if err := purchasecqrs.InitCqrsHandlers(); err != nil {
 		return err
 	}
 	if err := restful.InitRestfulHandlers(); err != nil {
@@ -108,10 +51,10 @@ func assertEveryResourceInstalled() error {
 	return stdErr.Join(missing...)
 }
 
-// RegisterModels implements DynamicModule. The order is load-bearing: an edge is resolved against
+// RegisterModels registers the Purchase schemas. The order is load-bearing: an edge is resolved against
 // the schema registry at registration time, so the agreement must exist before the line pointing at
 // it, and the order before its own line.
-func (*PurchaseModule) RegisterModels() error {
+func RegisterModels() error {
 	return stdErr.Join(
 		dmodel.RegisterSchemaB(models.ConfigurationSchemaBuilder()),
 		// Vendor prices reference nothing in Purchase (vendor and product are plain ulids into other

@@ -6,15 +6,15 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/sales/repository"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/app"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
+	itBilling "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/billing"
+	itChannel "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/app"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
-	repo "github.com/sky-as-code/nikki-erp/modules/sales/infra/repository"
-	itBilling "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/billing"
-	itChannel "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
 )
 
 // The billing resources. The bill takes its four ports as dig arguments, which retires

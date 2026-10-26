@@ -3,8 +3,8 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/order"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itOrder "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/order"
 )
 
 const (

@@ -2,11 +2,11 @@ package app
 
 import (
 	"github.com/samber/lo"
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/catalog"
+	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/event"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
-	itEvent "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/event"
 )
 
 func NewSalesPricelistApplicationService(

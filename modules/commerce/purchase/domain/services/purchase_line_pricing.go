@@ -8,11 +8,11 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	itExt "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/external"
 
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services/vendorpricing"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services/vendorpricing"
 )
 
 // Purchase price resolution, the impure half: vendorpricing ranks the candidates, this file reads

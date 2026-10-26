@@ -1,6 +1,6 @@
 package constants
 
-import "github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+import "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 
 // Resource codes for authorization. Each must be byte-identical to its schema name, because the
 // application service derives the code it asserts against from the schema name; a drifted code denies every

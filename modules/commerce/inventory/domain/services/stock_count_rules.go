@@ -7,7 +7,7 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // The pure rules behind a physical inventory count. None touches a repository, so all test without

@@ -6,7 +6,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 )
 
 type OrderPaymentHooks struct {

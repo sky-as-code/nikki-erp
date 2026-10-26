@@ -10,8 +10,8 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/catalog"
 )
 
 // Handing the whole pricing rule set to a caller that prices its own baskets.

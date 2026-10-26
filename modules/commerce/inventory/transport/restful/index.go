@@ -6,9 +6,9 @@ import (
 	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	v1 "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/transport/restful/v1"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	v1 "github.com/sky-as-code/nikki-erp/modules/inventory/transport/restful/v1"
 )
 
 func InitRestfulHandlers() error {

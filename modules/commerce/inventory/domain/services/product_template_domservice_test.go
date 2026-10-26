@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // The archive-cascade rules: which variants a template's archive takes down, and which its

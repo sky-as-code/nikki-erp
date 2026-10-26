@@ -9,9 +9,9 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
 )
 
 // Deleting a stock quant asks every dependant in Inventory's Dependants(). None of them holds a

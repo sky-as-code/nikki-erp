@@ -3,7 +3,7 @@ package services
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
 
 // The purchase order and agreement state machines. Both are pure string tables, so the rules are

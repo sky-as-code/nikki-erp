@@ -35,9 +35,9 @@ func (*NotificationModule) Name() string {
 	return modconstants.NotificationModuleName
 }
 
-// ModelPrefix implements DynamicModule.
-func (*NotificationModule) ModelPrefix() string {
-	return modconstants.NotificationModuleName
+// ModelPrefixes implements DynamicModule.
+func (*NotificationModule) ModelPrefixes() []string {
+	return []string{modconstants.NotificationModuleName}
 }
 
 func (*NotificationModule) HasUi() bool {

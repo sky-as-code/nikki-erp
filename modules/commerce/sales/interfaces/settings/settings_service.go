@@ -6,7 +6,7 @@ import (
 )
 
 // SettingsAppService is Sales's own update of the settings it declares, served at
-// `PATCH /v1/sales/settings/:level`.
+// `PATCH /v1/commerce/settings/:level`.
 type SettingsAppService interface {
 	UpdateSettings(
 		ctx corectx.Context, cmd coreSettings.UpdateSettingsCommand,

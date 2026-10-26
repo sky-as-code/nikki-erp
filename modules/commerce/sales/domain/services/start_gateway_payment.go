@@ -7,9 +7,9 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itChannel "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
-	itExt "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/external"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itChannel "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 )
 
 // Starting a gateway payment.

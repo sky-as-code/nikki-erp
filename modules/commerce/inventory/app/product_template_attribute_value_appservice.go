@@ -1,10 +1,10 @@
 package app
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/constants"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/constants"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // templateValueUpdatePermission is what PATCH product_template_attribute_value/:id asserts. The

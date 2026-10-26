@@ -8,8 +8,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/services"
-	itMessage "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/message"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
+	itMessage "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/message"
 )
 
 // The outbox sweep. Domain services write the outbox row inside their own transaction; this sweep

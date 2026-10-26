@@ -1,8 +1,8 @@
 package services
 
 import (
+	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itWarehouse "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/warehouse"
 )
 
 // NewPutawayRuleDomainService is handed the composable default by the putaway_rule onion. The resource is plain

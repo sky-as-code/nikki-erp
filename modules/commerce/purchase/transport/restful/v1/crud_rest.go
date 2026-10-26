@@ -3,9 +3,9 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itAgreement "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/agreement"
+	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/order"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itAgreement "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/agreement"
-	itOrder "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/order"
 )
 
 // The container names the REST structs inject. A dig name tag must be a literal, so routes_test.go

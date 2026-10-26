@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sky-as-code/nikki-erp/modules/sales/dynamicengines"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/dynamicengines"
 )
 
 // These tests hold one IAM row per schema, a translation for every label, and a route for every
@@ -137,7 +137,7 @@ func registeredSchemaNames(t *testing.T) []string {
 func seededResourceCodes(t *testing.T) map[string]bool {
 	t.Helper()
 
-	dir := filepath.Join("..", "..", "scripts", "migration-seeds")
+	dir := filepath.Join("..", "..", "..", "scripts", "migration-seeds")
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		t.Fatalf("reading the migration-seeds directory: %v", err)
@@ -213,7 +213,7 @@ func referencedLabels(t *testing.T) map[string]bool {
 func translationsFor(t *testing.T, locale string) map[string]any {
 	t.Helper()
 
-	path := filepath.Join("..", "essential", "infra", "langJson", locale, "sales.json")
+	path := filepath.Join("..", "..", "essential", "infra", "langJson", locale, "sales.json")
 	content, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("reading the %s translations: %v", locale, err)

@@ -9,10 +9,10 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
 )
 
 // Asking an executor to hand goods over, and recording that we asked.

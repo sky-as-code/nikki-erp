@@ -4,13 +4,13 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/domain"
+	itAttribute "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/attribute"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/product"
+	it "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/variant"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/legacy/domain"
-	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/attribute"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/product"
-	it "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/variant"
 )
 
 func NewVariantService(prodSvc itProduct.ProductService) it.VariantService {

@@ -52,8 +52,8 @@ func (*PaymentInvoiceModule) Name() string {
 	return modconstants.PaymentInvoiceModuleName
 }
 
-func (*PaymentInvoiceModule) ModelPrefix() string {
-	return modconstants.PaymentInvoiceModuleName
+func (*PaymentInvoiceModule) ModelPrefixes() []string {
+	return []string{modconstants.PaymentInvoiceModuleName}
 }
 
 func (*PaymentInvoiceModule) HasUi() bool {

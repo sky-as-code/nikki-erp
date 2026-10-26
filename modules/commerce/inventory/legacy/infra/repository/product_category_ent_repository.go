@@ -6,14 +6,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/domain"
+	it "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/interfaces/productcategory"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/legacy/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/interfaces/productcategory"
 )
 
 type ProductCategoryDynamicRepositoryParam struct {

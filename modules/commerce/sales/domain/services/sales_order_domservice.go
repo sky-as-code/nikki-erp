@@ -7,11 +7,11 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/order"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/sales/domain/models"
-	itOrder "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/order"
 )
 
 // SalesOrderDomainServiceImpl derives the order resource, adding the rules the built-in CRUD

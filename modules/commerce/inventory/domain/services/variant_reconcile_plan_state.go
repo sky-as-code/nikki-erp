@@ -3,7 +3,7 @@ package services
 import (
 	"sort"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // planDimension is one attribute line with its selected values deduplicated.

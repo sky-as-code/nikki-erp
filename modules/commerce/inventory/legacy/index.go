@@ -3,10 +3,10 @@ package legacy
 import (
 	"errors"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/legacy/app"
-	ext "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/infra/external"
-	repo "github.com/sky-as-code/nikki-erp/modules/inventory/legacy/infra/repository"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/legacy/transport"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/app"
+	ext "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/infra/external"
+	repo "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/infra/repository"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/legacy/transport"
 )
 
 func Init() error {

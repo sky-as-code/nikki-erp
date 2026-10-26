@@ -36,9 +36,9 @@ func (*CoreModule) Name() string {
 	return coreconstants.CoreModuleName
 }
 
-// ModelPrefix implements DynamicModule.
-func (*CoreModule) ModelPrefix() string {
-	return coreconstants.CoreModuleName
+// ModelPrefixes implements DynamicModule.
+func (*CoreModule) ModelPrefixes() []string {
+	return []string{coreconstants.CoreModuleName}
 }
 
 func (*CoreModule) HasUi() bool {

@@ -10,8 +10,8 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
-	itMessage "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/message"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itMessage "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/message"
 )
 
 // Writing integration events.

@@ -1,8 +1,8 @@
 package external
 
 import (
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // ProductPricingBasisExtService is Sales' port onto the product values a price may be computed FROM:

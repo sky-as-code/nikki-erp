@@ -3,8 +3,8 @@ package services
 import (
 	"sort"
 
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/interfaces/product"
 )
 
 // Reads of the configuration for a page of templates, behind the template's function-kind

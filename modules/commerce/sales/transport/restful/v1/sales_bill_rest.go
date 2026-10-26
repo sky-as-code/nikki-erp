@@ -3,16 +3,16 @@ package v1
 import (
 	"go.uber.org/dig"
 
+	itBilling "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/billing"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itBilling "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/billing"
 )
 
 const (
-	SalesBillEngineName = "dynengine_sales_bill"
-	SalesBillLineEngineName = "dynengine_sales_bill_line"
-	SalesBillRelationEngineName = "dynengine_sales_bill_relation"
-	SalesPaymentEngineName = "dynengine_sales_payment"
-	SalesFulfillmentRequestEngineName = "dynengine_sales_fulfillment_request"
+	SalesBillEngineName                   = "dynengine_sales_bill"
+	SalesBillLineEngineName               = "dynengine_sales_bill_line"
+	SalesBillRelationEngineName           = "dynengine_sales_bill_relation"
+	SalesPaymentEngineName                = "dynengine_sales_payment"
+	SalesFulfillmentRequestEngineName     = "dynengine_sales_fulfillment_request"
 	SalesFulfillmentRequestLineEngineName = "dynengine_sales_fulfillment_request_line"
 )
 

@@ -1,11 +1,11 @@
 package app
 
 import (
+	itCatalog "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/catalog"
+	itChannel "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	itCatalog "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/catalog"
-	itChannel "github.com/sky-as-code/nikki-erp/modules/sales/interfaces/channel"
 )
 
 // NewSalesPointCrudApplicationService wraps the composable default with the point lifecycle.

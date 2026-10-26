@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/inventory/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // planReconciler decides the outcome of each existing variant against the next configuration.

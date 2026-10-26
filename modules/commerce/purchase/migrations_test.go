@@ -19,9 +19,8 @@ import (
 // appear in a filename for it to belong to that block.
 var checkedBlocks = []struct{ prefix, module string }{
 	{"1002", "contacts"},
-	{"1005", "inventory"},
-	{"1006", "purchase"},
-	{"1007", "sales"},
+	// Inventory, Purchase and Sales are generated as one Commerce schema in the 1007 block.
+	{"1007", "commerce"},
 }
 
 // postgresIdentifierLimit is where Postgres truncates a name, with no error or warning: the DDL
@@ -53,7 +52,7 @@ func TestPricingMigrationIdentifiersFitPostgres(t *testing.T) {
 func TestBothTreesCarryTheSamePricingMigrations(t *testing.T) {
 	trees := pricingMigrationTrees(t)
 	if len(trees) < 2 {
-		t.Skip("the coremart tree is not present in this checkout")
+		t.Skip("the multi-tenant tree is not present in this checkout")
 	}
 
 	for _, block := range checkedBlocks {
@@ -99,7 +98,7 @@ func migrationKinds(t *testing.T, tree, prefix string) []string {
 func TestCoremartPricingTablesAreTenantScoped(t *testing.T) {
 	trees := pricingMigrationTrees(t)
 	if len(trees) < 2 {
-		t.Skip("the coremart tree is not present in this checkout")
+		t.Skip("the multi-tenant tree is not present in this checkout")
 	}
 	coremart := trees[1]
 
@@ -141,7 +140,7 @@ func TestCoremartPricingTablesAreTenantScoped(t *testing.T) {
 func TestCoremartPricingInsertsCarryATenant(t *testing.T) {
 	trees := pricingMigrationTrees(t)
 	if len(trees) < 2 {
-		t.Skip("the coremart tree is not present in this checkout")
+		t.Skip("the multi-tenant tree is not present in this checkout")
 	}
 	coremart := trees[1]
 
@@ -198,7 +197,7 @@ func TestPricingMigrationBlocksAreExclusive(t *testing.T) {
 func TestTheVendorPriceTableExistsInBothTrees(t *testing.T) {
 	for _, tree := range pricingMigrationTrees(t) {
 		found := false
-		for _, file := range blockMigrations(t, tree, "1006") {
+		for _, file := range blockMigrations(t, tree, "1007") {
 			if strings.Contains(readPricingMigration(t, tree, file),
 				`CREATE TABLE "purchase_vendor_product_prices"`) {
 				found = true
@@ -212,19 +211,21 @@ func TestTheVendorPriceTableExistsInBothTrees(t *testing.T) {
 	}
 }
 
-// pricingMigrationTrees returns the migration directories to check, nikkierp first. A missing
-// coremart tree skips rather than fails, since the invariant does not apply to a one-tree checkout.
+// pricingMigrationTrees returns the migration directories to check: nikkierp first, then the hosted
+// application's multi-tenant tree at the coreplatform root. The legacy coremart/scripts/migrations is
+// applied by nothing any more and is not checked. A missing root tree skips rather than fails, since
+// the invariant does not apply to a one-tree checkout.
 func pricingMigrationTrees(t *testing.T) []string {
 	t.Helper()
 
-	trees := []string{filepath.Join("..", "..", "scripts", "migrations")}
+	trees := []string{filepath.Join("..", "..", "..", "scripts", "migrations")}
 	if _, err := os.Stat(trees[0]); err != nil {
 		t.Fatalf("the nikkierp migrations directory must be readable: %v", err)
 	}
 
-	coremart := filepath.Join("..", "..", "..", "coremart", "scripts", "migrations")
-	if _, err := os.Stat(coremart); err == nil {
-		trees = append(trees, coremart)
+	platform := filepath.Join("..", "..", "..", "..", "scripts", "migrations")
+	if _, err := os.Stat(platform); err == nil {
+		trees = append(trees, platform)
 	}
 	return trees
 }

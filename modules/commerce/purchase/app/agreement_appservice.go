@@ -1,11 +1,11 @@
 package app
 
 import (
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/constants"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
+	itAgreement "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/agreement"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/constants"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
-	itAgreement "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/agreement"
 )
 
 // The agreement's authorized surface: the built-in CRUD plus confirm, close, cancel and

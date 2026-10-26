@@ -9,9 +9,11 @@ import (
 	"testing"
 )
 
-// Every Sales table is written twice — once here, once in coremart with a tenant_id on every table
-// and unique constraint. The trees drift silently, so these tests parse and compare both. The
-// coremart tree is reached by a relative path; when it is absent the cross-tree checks skip.
+// Every Sales table is written twice — once here, once in the hosted application's multi-tenant tree
+// (the coreplatform root) with a tenant_id on every table and unique constraint. Sales is generated
+// inside the Commerce schema, so the 1007 block is Commerce's. The trees drift silently, so these
+// tests parse and compare both. The root tree is reached by a relative path; when it is absent the
+// cross-tree checks skip.
 
 // postgresIdentifierLimit is where Postgres truncates a name silently: the constraint is created
 // under a shortened name, so every later DROP CONSTRAINT by the declared name fails instead.
@@ -41,7 +43,7 @@ func TestMigrationIdentifiersFitPostgres(t *testing.T) {
 func TestBothTreesCarryTheSameSalesMigrations(t *testing.T) {
 	trees := migrationTrees(t)
 	if len(trees) < 2 {
-		t.Skip("the coremart tree is not present in this checkout")
+		t.Skip("the multi-tenant tree is not present in this checkout")
 	}
 
 	first := withoutDataFiles(salesMigrations(t, trees[0]))
@@ -59,7 +61,7 @@ func TestBothTreesCarryTheSameSalesMigrations(t *testing.T) {
 func TestCoremartTablesAreTenantScoped(t *testing.T) {
 	trees := migrationTrees(t)
 	if len(trees) < 2 {
-		t.Skip("the coremart tree is not present in this checkout")
+		t.Skip("the multi-tenant tree is not present in this checkout")
 	}
 	coremart := trees[1]
 
@@ -97,7 +99,7 @@ func TestCoremartTablesAreTenantScoped(t *testing.T) {
 // The Sales migrations own their numeric block exclusively: another module numbering into it would
 // interleave on a fresh install, creating a Sales table before something it references. Existing
 // installs are unaffected, so it only shows up when provisioning a new environment.
-func TestTheSalesMigrationBlockIsExclusivelySales(t *testing.T) {
+func TestTheCommerceMigrationBlockIsExclusive(t *testing.T) {
 	for _, tree := range migrationTrees(t) {
 		entries, err := os.ReadDir(tree)
 		if err != nil {
@@ -109,30 +111,31 @@ func TestTheSalesMigrationBlockIsExclusivelySales(t *testing.T) {
 			if !strings.HasPrefix(name, salesMigrationPrefix) {
 				continue
 			}
-			if !strings.Contains(name, "sales") {
-				t.Errorf("%s/%s is in the %s block but is not a Sales migration; the block must "+
-					"stay exclusively Sales so a fresh install orders them correctly",
+			if !strings.Contains(name, "commerce") {
+				t.Errorf("%s/%s is in the %s block but is not a Commerce migration; the block must "+
+					"stay exclusively Commerce so a fresh install orders them correctly",
 					filepath.Base(tree), name, salesMigrationPrefix)
 			}
 		}
 	}
 }
 
-// salesMigrationPrefix is the numeric block Sales owns.
+// salesMigrationPrefix is the numeric block Commerce, and so Sales, owns.
 const salesMigrationPrefix = "1007"
 
-// migrationTrees returns the migration directories to check, nikkierp first.
+// migrationTrees returns the migration directories to check, nikkierp first, then the root tree.
 func migrationTrees(t *testing.T) []string {
 	t.Helper()
 
-	trees := []string{filepath.Join("..", "..", "scripts", "migrations")}
+	trees := []string{filepath.Join("..", "..", "..", "scripts", "migrations")}
 	if _, err := os.Stat(trees[0]); err != nil {
 		t.Fatalf("the nikkierp migrations directory must be readable: %v", err)
 	}
 
-	coremart := filepath.Join("..", "..", "..", "coremart", "scripts", "migrations")
-	if _, err := os.Stat(coremart); err == nil {
-		trees = append(trees, coremart)
+	// The hosted application's tree; the legacy coremart/scripts/migrations is applied by nothing.
+	platform := filepath.Join("..", "..", "..", "..", "scripts", "migrations")
+	if _, err := os.Stat(platform); err == nil {
+		trees = append(trees, platform)
 	}
 	return trees
 }
