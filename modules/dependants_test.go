@@ -21,7 +21,7 @@ func (this *plainModule) Deps() []string           { return nil }
 func (this *plainModule) LabelKey() string         { return this.name }
 func (this *plainModule) Init() error              { return nil }
 func (this *plainModule) IsInternal() bool         { return false }
-func (this *plainModule) ModelPrefix() string      { return this.name }
+func (this *plainModule) ModelPrefixes() []string  { return []string{this.name} }
 func (this *plainModule) HasUi() bool              { return false }
 func (this *plainModule) Category() ModuleCategory { return ModuleCategoryFoundation }
 func (this *plainModule) Version() semver.SemVer   { return *semver.MustParseSemVer("v1.0.0") }

@@ -73,12 +73,11 @@
 			"default_value": false
 		},
 		{
-			"name": "model_prefix",
-			"label": "fields.model_prefix",
-			"data_type": {
-				"type": "string",
-				"min": 1,
-				"max": 50
+			"name": "model_prefixes",
+			"label": "fields.model_prefixes",
+			"data_type": { "type": "string", "array": true, "min": 1, "max": 50 },
+			"description": {
+				"en-US": "Prefixes this module's schemas are named with, as its ModelPrefixes() declared at the last boot. A module made of parts owns one per part."
 			}
 		},
 		{

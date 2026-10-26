@@ -265,6 +265,8 @@
 	"nikki.shell.appLoading.description": "Please wait a moment. The app is loading...",
 	"nikki.shell.appLoading.title": "Loading app",
 	"nikki.shell.menuBar.allApps": "All apps",
+	"nikki.shell.ribbon.collapse": "Collapse the ribbon",
+	"nikki.shell.ribbon.pin": "Always show the ribbon",
 	"not_found_hint": "The page you're looking for doesn't exist or has been moved.",
 	"org.manageOrganizations": "Manage organization",
 	"page_not_found": "Page not found",

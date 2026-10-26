@@ -21,9 +21,9 @@ func (*DynamicResourceModule) Name() string {
 	return ModuleName
 }
 
-// ModelPrefix implements DynamicModule.
-func (*DynamicResourceModule) ModelPrefix() string {
-	return ModuleName
+// ModelPrefixes implements DynamicModule.
+func (*DynamicResourceModule) ModelPrefixes() []string {
+	return []string{ModuleName}
 }
 
 func (*DynamicResourceModule) HasUi() bool {

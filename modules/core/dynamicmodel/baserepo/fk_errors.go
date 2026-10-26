@@ -121,18 +121,25 @@ func referencingTableOf(pgErr *pq.Error, schema *dmodel.ModelSchema) string {
 	return "another record"
 }
 
-// languageNamespaceOf answers the translation namespace a table's label lives in: the Name() of
-// the module whose ModelPrefix() the table is named with. The two differ for some modules
-// ("vdmc" tables belong to "vendingmachine"), which is why the prefix alone is not the answer.
+// languageNamespaceOf answers the translation namespace a table's label lives in. For a module with
+// one prefix it is the module's Name(): the two differ for some modules ("vdmc" tables belong to
+// "vendingmachine"), which is why the prefix alone is not the answer. A module made of parts owns
+// one prefix per part, and each part keeps its own namespace named after that prefix ("inventory_"
+// tables are labelled in "inventory", although the module is "commerce").
 // The longest matching prefix wins; a table no loaded module claims falls back to "common".
 func languageNamespaceOf(table string) string {
 	namespace, matchedLen := "common", 0
 	for _, mod := range loadedModules() {
-		prefix := mod.ModelPrefix()
-		if prefix == "" || len(prefix) <= matchedLen || !strings.HasPrefix(table, prefix+"_") {
-			continue
+		prefixes := mod.ModelPrefixes()
+		for _, prefix := range prefixes {
+			if prefix == "" || len(prefix) <= matchedLen || !strings.HasPrefix(table, prefix+"_") {
+				continue
+			}
+			namespace, matchedLen = mod.Name(), len(prefix)
+			if len(prefixes) > 1 {
+				namespace = prefix
+			}
 		}
-		namespace, matchedLen = mod.Name(), len(prefix)
 	}
 	return namespace
 }

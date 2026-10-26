@@ -37,8 +37,16 @@ func AssertDeletable(
 	if err != nil {
 		return err
 	}
+	AppendBlockingViolation(outcome, idField, ref, vErrs)
+	return nil
+}
+
+// AppendBlockingViolation appends AssertDeletable's refusal when the outcome blocks the delete. It
+// is the second half of AssertDeletable, for an owner that adds answers of its own to the outcome
+// before deciding: a module made of parts asks its other parts in process, not over the bus.
+func AppendBlockingViolation(outcome *CheckOutcome, idField string, ref ResourceRef, vErrs *ft.ClientErrors) {
 	if outcome.MayDelete() {
-		return nil
+		return
 	}
 
 	blocking := outcome.BlockingModules()
@@ -52,7 +60,6 @@ func AssertDeletable(
 			"used_by":       blocking,
 		},
 	))
-	return nil
 }
 
 // AssertDependantsSubscribed fails startup when a loaded dependant never subscribed a usage

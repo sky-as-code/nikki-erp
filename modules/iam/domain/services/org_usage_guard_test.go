@@ -1,8 +1,8 @@
 package services
 
 import (
-	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"context"
+	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,7 +62,7 @@ func (this *orgTestModule) Deps() []string                   { return nil }
 func (this *orgTestModule) LabelKey() string                 { return this.name }
 func (this *orgTestModule) Init() error                      { return nil }
 func (this *orgTestModule) IsInternal() bool                 { return false }
-func (this *orgTestModule) ModelPrefix() string              { return this.name }
+func (this *orgTestModule) ModelPrefixes() []string          { return []string{this.name} }
 func (this *orgTestModule) HasUi() bool                      { return false }
 func (this *orgTestModule) Category() modules.ModuleCategory { return modules.ModuleCategoryFoundation }
 func (this *orgTestModule) Version() semver.SemVer           { return *semver.MustParseSemVer("v1.0.0") }

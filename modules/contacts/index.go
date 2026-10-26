@@ -39,9 +39,9 @@ func (*ContactsModule) Name() string {
 	return modconstants.ContactsModuleName
 }
 
-// ModelPrefix implements NikkiModule.
-func (*ContactsModule) ModelPrefix() string {
-	return modconstants.ContactsModuleName
+// ModelPrefixes implements NikkiModule.
+func (*ContactsModule) ModelPrefixes() []string {
+	return []string{modconstants.ContactsModuleName}
 }
 
 func (*ContactsModule) HasUi() bool {

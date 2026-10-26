@@ -1,0 +1,213 @@
+package services
+
+import (
+	"go.bryk.io/pkg/errors"
+
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+)
+
+// The Stock side of the Product lifecycle contract: what would be stranded if a variant were
+// archived now. It reports and never decides; whether the numbers block an archive is Product's
+// rule in product_archive_guard.go.
+//
+// Archiving must never tidy up on the way through — no unreserving, cancelling, zeroing or scrap —
+// which is why this is a reader with no write path at all.
+
+var _ itStock.StockProductUsageReader = (*StockQuantDomainServiceImpl)(nil)
+
+// GetProductUsage reports what one variant would strand.
+func (this *StockQuantDomainServiceImpl) GetProductUsage(
+	ctx corectx.Context, query itStock.GetProductUsageQuery,
+) (*itStock.GetProductUsageResult, error) {
+	if query.VariantId == "" {
+		return nil, errors.New("GetProductUsage requires a variant id")
+	}
+
+	batch, err := this.GetProductUsageBatch(
+		ctx, itStock.GetProductUsageBatchQuery{VariantIds: []string{query.VariantId}})
+	if err != nil {
+		return nil, err
+	}
+
+	return &itStock.GetProductUsageResult{
+		HasData: true,
+		Data: itStock.GetProductUsageResultData{
+			Usage: batch.Data.Usages[query.VariantId],
+		},
+	}, nil
+}
+
+// GetProductUsageBatch reports a whole set of variants together. Archiving a template must clear
+// every variant before archiving any, so the guard needs the whole set before it writes; reading
+// them one at a time inside the cascade loop leaves half a template archived when the last variant
+// turns out to hold stock.
+func (this *StockQuantDomainServiceImpl) GetProductUsageBatch(
+	ctx corectx.Context, query itStock.GetProductUsageBatchQuery,
+) (*itStock.GetProductUsageBatchResult, error) {
+	variantIds := dedupeNonEmpty(query.VariantIds)
+	usages := make(map[string]itStock.ProductUsage, len(variantIds))
+	for _, id := range variantIds {
+		usages[id] = itStock.ProductUsage{}
+	}
+	if len(variantIds) == 0 {
+		return &itStock.GetProductUsageBatchResult{
+			HasData: true,
+			Data:    itStock.GetProductUsageBatchResultData{Usages: usages},
+		}, nil
+	}
+
+	if err := this.accumulateUsageQuantities(ctx, variantIds, usages); err != nil {
+		return nil, err
+	}
+	if err := this.accumulateOpenWork(ctx, variantIds, usages); err != nil {
+		return nil, err
+	}
+
+	return &itStock.GetProductUsageBatchResult{
+		HasData: true,
+		Data:    itStock.GetProductUsageBatchResultData{Usages: usages},
+	}, nil
+}
+
+// accumulateUsageQuantities totals on-hand and reserved across the locations holding stock we own.
+// A vendor or other virtual location goes negative by what it supplied, so counting it would net a
+// receipt to zero and let a product with stock on the shelf be archived.
+func (this *StockQuantDomainServiceImpl) accumulateUsageQuantities(
+	ctx corectx.Context, variantIds []string, usages map[string]itStock.ProductUsage,
+) error {
+	engine, err := repoFor(models.StockQuantSchemaName)
+	if err != nil {
+		return err
+	}
+	owned, err := this.ownedLocationIds(ctx)
+	if err != nil {
+		return err
+	}
+
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(
+			models.StockQuantFieldProductVariantId, dmodel.In, toAnySlice(variantIds)...),
+	)
+
+	for page := 0; page < maxSummaryQuantPages; page++ {
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
+			Graph: graph,
+			Page:  page,
+			Size:  summaryScanPageSize,
+		})
+		if err != nil {
+			return errors.Wrap(err, "accumulateUsageQuantities")
+		}
+		if found == nil || !found.HasData || len(found.Data.Items) == 0 {
+			break
+		}
+
+		for _, row := range found.Data.Items {
+			quant := models.NewStockQuantFrom(row)
+			variantId := derefId(quant.GetProductVariantId())
+			usage, tracked := usages[variantId]
+			if !tracked || !owned[derefId(quant.GetLocationId())] {
+				continue
+			}
+			usage.OnHandQuantity = usage.OnHandQuantity.Add(derefDecimal(quant.GetOnHandQuantity()))
+			usage.ReservedQuantity = usage.ReservedQuantity.Add(
+				derefDecimal(quant.GetReservedQuantity()))
+			usages[variantId] = usage
+		}
+
+		if len(found.Data.Items) < summaryScanPageSize {
+			break
+		}
+	}
+	return nil
+}
+
+// ownedLocationIds are the internal and transit locations: stock on our shelves or on its way
+// between them.
+func (this *StockQuantDomainServiceImpl) ownedLocationIds(ctx corectx.Context) (map[string]bool, error) {
+	owned, err := this.internalLocationIds(ctx)
+	if err != nil {
+		return nil, err
+	}
+	transit, err := this.transitLocationIds(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for id := range transit {
+		owned[id] = true
+	}
+	return owned, nil
+}
+
+// accumulateOpenWork counts the moves and transfers still in flight for each variant. Done and
+// cancelled are excluded: a variant referenced only by completed movement archives fine, so
+// counting it would block a safe archive forever.
+//
+// Transfers are counted through their moves, since a transfer names no product itself. Distinct
+// transfer ids are collected so a transfer carrying three lines of the same product counts once.
+func (this *StockQuantDomainServiceImpl) accumulateOpenWork(
+	ctx corectx.Context, variantIds []string, usages map[string]itStock.ProductUsage,
+) error {
+	engine, err := repoFor(models.StockMoveSchemaName)
+	if err != nil {
+		return err
+	}
+
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(
+			models.StockMoveFieldProductVariantId, dmodel.In, toAnySlice(variantIds)...),
+		*dmodel.NewSearchNode().NewCondition(
+			models.StockMoveFieldStatus, dmodel.NotIn, closedMoveStatuses()),
+	)
+
+	transfersSeen := map[string]map[string]bool{}
+	for page := 0; page < maxSummaryQuantPages; page++ {
+		found, err := engine.Search(ctx, dyn.RepoSearchParam{
+			Graph: graph,
+			Page:  page,
+			Size:  summaryScanPageSize,
+		})
+		if err != nil {
+			return errors.Wrap(err, "accumulateOpenWork")
+		}
+		if found == nil || !found.HasData || len(found.Data.Items) == 0 {
+			break
+		}
+
+		for _, row := range found.Data.Items {
+			move := models.NewStockMoveFrom(row)
+			variantId := derefId(move.GetProductVariantId())
+			usage, tracked := usages[variantId]
+			if !tracked {
+				continue
+			}
+
+			usage.OpenMoveCount++
+			usages[variantId] = usage
+
+			if transferId := derefId(move.GetTransferId()); transferId != "" {
+				if transfersSeen[variantId] == nil {
+					transfersSeen[variantId] = map[string]bool{}
+				}
+				transfersSeen[variantId][transferId] = true
+			}
+		}
+
+		if len(found.Data.Items) < summaryScanPageSize {
+			break
+		}
+	}
+
+	for variantId, transfers := range transfersSeen {
+		usage := usages[variantId]
+		usage.OpenTransferCount = len(transfers)
+		usages[variantId] = usage
+	}
+	return nil
+}

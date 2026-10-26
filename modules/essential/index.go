@@ -43,13 +43,13 @@ func (*EssentialModule) Name() string {
 	return modconstants.EssentialModuleName
 }
 
-// ModelPrefix implements DynamicModule.
-func (*EssentialModule) ModelPrefix() string {
-	return modconstants.EssentialModuleName
+// ModelPrefixes implements DynamicModule.
+func (*EssentialModule) ModelPrefixes() []string {
+	return []string{modconstants.EssentialModuleName}
 }
 
 func (*EssentialModule) HasUi() bool {
-	return true
+	return false
 }
 
 func (*EssentialModule) Category() modules.ModuleCategory {
@@ -76,9 +76,8 @@ func (*EssentialModule) Deps() []string {
 // NULL) — silently blanking the unit from a quantity already recorded.
 func (*EssentialModule) Dependants() []string {
 	return []string{
-		"sales",
-		"purchase",
-		"inventory",
+		// Commerce answers for inventory, purchase and sales in one handler.
+		"commerce",
 		// Accounting holds rate_uom_id on a tax rate version: a specific-duty tax is charged per
 		// unit, and superseded versions stay readable, so the unit must survive with them.
 		"accounting",

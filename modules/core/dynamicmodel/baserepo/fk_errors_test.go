@@ -56,8 +56,8 @@ type fkTestModule struct {
 	prefix string
 }
 
-func (this fkTestModule) Name() string        { return this.name }
-func (this fkTestModule) ModelPrefix() string { return this.prefix }
+func (this fkTestModule) Name() string            { return this.name }
+func (this fkTestModule) ModelPrefixes() []string { return []string{this.prefix} }
 
 func withLoadedModules(t *testing.T, mods ...modules.InCodeModule) {
 	original := loadedModules

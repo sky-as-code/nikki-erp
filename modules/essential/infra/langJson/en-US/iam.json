@@ -619,5 +619,6 @@
 	"err_org_deleted": "The organization is being deleted and can no longer be changed",
 	"err_org_not_deleted": "The organization must be deleted and cleaned up before it is removed",
 	"org.delete_confirm": "The organization is archived now and removed after every module has deleted its data. Continue?",
-	"err_cannot_delete_current_org": "You cannot delete the organization you are working in. Switch to another one first."
+	"err_cannot_delete_current_org": "You cannot delete the organization you are working in. Switch to another one first.",
+	"menu.identity": "Identity"
 }

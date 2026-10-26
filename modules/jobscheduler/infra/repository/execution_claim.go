@@ -12,7 +12,7 @@
 // claim, the lease reaper and the timer's horizon query are hand-written, and only because the
 // alternative is a race that no amount of application-level care can close.
 //
-// Note for a reviewer who knows modules/inventory/domain/services/stock_quant_lock.go: there is
+// Note for a reviewer who knows modules/commerce/inventory/domain/services/stock_quant_lock.go: there is
 // deliberately no tenant predicate anywhere in this file. The scheduler's three tables are not
 // tenant-scoped in either binary - they decline the base_model mixin that carries the tenant key -
 // because a technical job is infrastructure owned by a module rather than by a tenant, and its

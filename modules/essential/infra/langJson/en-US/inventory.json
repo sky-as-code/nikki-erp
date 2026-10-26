@@ -397,7 +397,6 @@
 	"menu_variants": "Variants",
 	"menu_warehouse": "Warehouse",
 	"menu_warehouses": "Warehouses",
-	"module.label.inventory": "Inventory",
 	"move_status.assigned": "Ready",
 	"move_status.cancelled": "Cancelled",
 	"move_status.confirmed": "Confirmed",

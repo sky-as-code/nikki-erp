@@ -19,7 +19,7 @@ const (
 // schemaPrefix limits output to schemas whose name starts with it, so a migration can be
 // scoped to one module while the registry still holds that module's dependencies — they
 // must stay registered to resolve base schemas and act as FK targets, but their tables
-// belong in their own migration files. Pass "" to emit every schema.
+// belong in their own migration files.
 //
 // Prefix matches the schema name (ModelSchemaBuilder.Name), not the table name; the two
 // differ for some modules.
@@ -27,7 +27,10 @@ const (
 // Matching nothing is not an error here — a module may legitimately register no schema at
 // all. Callers that can tell a schema-less module from a mistyped prefix should check the
 // result themselves.
-func GenCreateSql(registry *model.SchemaRegistry, dialect string, schemaPrefix string) ([]string, error) {
+//
+// A module made of parts owns several prefixes; a schema matching any of them is emitted. Pass no
+// prefix to emit every schema.
+func GenCreateSql(registry *model.SchemaRegistry, dialect string, schemaPrefixes ...string) ([]string, error) {
 	if registry == nil {
 		return nil, errors.New("GenCreateSql: schema registry is required")
 	}
@@ -37,7 +40,7 @@ func GenCreateSql(registry *model.SchemaRegistry, dialect string, schemaPrefix s
 	builder := NewPgQueryBuilder()
 	var results []string
 	err := registry.ForEachOrder(func(schemaName string, s *model.ModelSchema) error {
-		if schemaPrefix != "" && !strings.HasPrefix(schemaName, schemaPrefix) {
+		if !hasAnyPrefix(schemaName, schemaPrefixes) {
 			return nil
 		}
 		sqlParts, clientErrs, genErr := builder.SqlCreateTable(s, registry)
@@ -54,6 +57,20 @@ func GenCreateSql(registry *model.SchemaRegistry, dialect string, schemaPrefix s
 		return nil, err
 	}
 	return results, nil
+}
+
+// hasAnyPrefix reports whether name starts with one of prefixes. An empty prefix list, or an empty
+// prefix in it, matches every name.
+func hasAnyPrefix(name string, prefixes []string) bool {
+	if len(prefixes) == 0 {
+		return true
+	}
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func isFkOwnerRelationType(relType model.RelationType) bool {

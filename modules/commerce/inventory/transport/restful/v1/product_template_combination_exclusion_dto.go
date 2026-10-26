@@ -1,0 +1,29 @@
+package v1
+
+import (
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+)
+
+type CreateProductTemplateCombinationExclusionRequest = itProduct.CreateProductTemplateCombinationExclusionCommand
+type CreateProductTemplateCombinationExclusionResponse = httpserver.RestCreateResponse
+
+type UpdateProductTemplateCombinationExclusionRequest = itProduct.UpdateProductTemplateCombinationExclusionCommand
+type UpdateProductTemplateCombinationExclusionResponse = httpserver.RestMutateResponse
+
+type DeleteProductTemplateCombinationExclusionRequest = itProduct.DeleteProductTemplateCombinationExclusionCommand
+type DeleteProductTemplateCombinationExclusionResponse = httpserver.RestMutateResponse
+
+type SetProductTemplateCombinationExclusionArchivedRequest = itProduct.SetProductTemplateCombinationExclusionArchivedCommand
+type SetProductTemplateCombinationExclusionArchivedResponse = httpserver.RestMutateResponse
+
+type GetProductTemplateCombinationExclusionRequest = itProduct.GetProductTemplateCombinationExclusionByIdQuery
+type GetProductTemplateCombinationExclusionResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
+
+type ProductTemplateCombinationExclusionExistsRequest = itProduct.ProductTemplateCombinationExclusionExistsQuery
+type ProductTemplateCombinationExclusionExistsResponse = dyn.ExistsResultData
+
+type SearchProductTemplateCombinationExclusionsRequest = itProduct.SearchProductTemplateCombinationExclusionsQuery
+type SearchProductTemplateCombinationExclusionsResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]

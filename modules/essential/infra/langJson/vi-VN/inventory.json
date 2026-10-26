@@ -397,7 +397,6 @@
 	"menu_variants": "Biến thể",
 	"menu_warehouse": "Kho hàng",
 	"menu_warehouses": "Danh sách kho",
-	"module.label.inventory": "Kho hàng",
 	"move_status.assigned": "Sẵn sàng",
 	"move_status.cancelled": "Đã hủy",
 	"move_status.confirmed": "Đã xác nhận",

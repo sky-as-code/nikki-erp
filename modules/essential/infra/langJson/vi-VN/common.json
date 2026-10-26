@@ -265,6 +265,8 @@
 	"nikki.shell.appLoading.description": "Vui lòng đợi trong giây lát. Ứng dụng đang được tải...",
 	"nikki.shell.appLoading.title": "Đang tải ứng dụng",
 	"nikki.shell.menuBar.allApps": "Tất cả ứng dụng",
+	"nikki.shell.ribbon.collapse": "Thu gọn thanh công cụ",
+	"nikki.shell.ribbon.pin": "Luôn hiện thanh công cụ",
 	"not_found_hint": "Trang bạn tìm kiếm không tồn tại hoặc đã được di chuyển.",
 	"org.manageOrganizations": "Quản lý tổ chức",
 	"page_not_found": "Không tìm thấy trang",

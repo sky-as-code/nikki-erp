@@ -36,8 +36,8 @@ func (*ItStorageModule) Name() string {
 	return c.ItStorageModuleName
 }
 
-func (*ItStorageModule) ModelPrefix() string {
-	return c.ItStorageModuleName
+func (*ItStorageModule) ModelPrefixes() []string {
+	return []string{c.ItStorageModuleName}
 }
 
 func (*ItStorageModule) HasUi() bool {

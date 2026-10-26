@@ -15,18 +15,18 @@ import (
 const (
 	ModuleMetadataSchemaName = "essential_module_metadata"
 
-	ModuleMetadataFieldId          = basemodel.FieldId
-	ModuleMetadataFieldName        = "name"
-	ModuleMetadataFieldLabel       = "label"
-	ModuleMetadataFieldIsInternal  = "is_internal"
-	ModuleMetadataFieldIsOrphaned  = "is_orphaned"
-	ModuleMetadataFieldVersion     = "version"
-	ModuleMetadataFieldHasUi       = "has_ui"
-	ModuleMetadataFieldModelPrefix = "model_prefix"
-	ModuleMetadataFieldCategory    = "category"
-	ModuleMetadataFieldIsEnabled   = "is_enabled"
-	ModuleMetadataFieldDeps        = "dependencies"
-	ModuleMetadataFieldDepLevel    = "dep_level"
+	ModuleMetadataFieldId            = basemodel.FieldId
+	ModuleMetadataFieldName          = "name"
+	ModuleMetadataFieldLabel         = "label"
+	ModuleMetadataFieldIsInternal    = "is_internal"
+	ModuleMetadataFieldIsOrphaned    = "is_orphaned"
+	ModuleMetadataFieldVersion       = "version"
+	ModuleMetadataFieldHasUi         = "has_ui"
+	ModuleMetadataFieldModelPrefixes = "model_prefixes"
+	ModuleMetadataFieldCategory      = "category"
+	ModuleMetadataFieldIsEnabled     = "is_enabled"
+	ModuleMetadataFieldDeps          = "dependencies"
+	ModuleMetadataFieldDepLevel      = "dep_level"
 )
 
 //go:embed module.json
@@ -97,12 +97,12 @@ func (this *ModuleMetadata) SetHasUi(v *bool) {
 	this.GetFieldData().SetBool(ModuleMetadataFieldHasUi, v)
 }
 
-func (this ModuleMetadata) GetModelPrefix() *string {
-	return this.GetFieldData().GetString(ModuleMetadataFieldModelPrefix)
+func (this ModuleMetadata) GetModelPrefixes() []string {
+	return this.GetFieldData().GetStrings(ModuleMetadataFieldModelPrefixes)
 }
 
-func (this *ModuleMetadata) SetModelPrefix(v *string) {
-	this.GetFieldData().SetString(ModuleMetadataFieldModelPrefix, v)
+func (this *ModuleMetadata) SetModelPrefixes(v []string) {
+	this.GetFieldData().SetStrings(ModuleMetadataFieldModelPrefixes, v)
 }
 
 func (this ModuleMetadata) GetCategory() *modules.ModuleCategory {
@@ -199,8 +199,8 @@ func (this ModuleMetadata) ModifiedFields(other modules.InCodeModule, depLevel i
 		count++
 	}
 
-	if this.GetModelPrefix() == nil || *this.GetModelPrefix() != other.ModelPrefix() {
-		modified.SetModelPrefix(util.ToPtr(other.ModelPrefix()))
+	if !slices.Equal(this.GetModelPrefixes(), other.ModelPrefixes()) {
+		modified.SetModelPrefixes(other.ModelPrefixes())
 		count++
 	}
 

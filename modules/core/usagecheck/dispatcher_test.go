@@ -109,16 +109,16 @@ type testModule struct {
 	dependants []string
 }
 
-func (this *testModule) Name() string           { return this.name }
-func (this *testModule) Deps() []string         { return nil }
-func (this *testModule) LabelKey() string       { return this.name }
-func (this *testModule) Init() error            { return nil }
-func (this *testModule) IsInternal() bool       { return false }
-func (this *testModule) ModelPrefix() string    { return this.name }
-func (this *testModule) HasUi() bool            { return false }
+func (this *testModule) Name() string                     { return this.name }
+func (this *testModule) Deps() []string                   { return nil }
+func (this *testModule) LabelKey() string                 { return this.name }
+func (this *testModule) Init() error                      { return nil }
+func (this *testModule) IsInternal() bool                 { return false }
+func (this *testModule) ModelPrefixes() []string          { return []string{this.name} }
+func (this *testModule) HasUi() bool                      { return false }
 func (this *testModule) Category() modules.ModuleCategory { return modules.ModuleCategoryFoundation }
-func (this *testModule) Version() semver.SemVer { return *semver.MustParseSemVer("v1.0.0") }
-func (this *testModule) Dependants() []string   { return this.dependants }
+func (this *testModule) Version() semver.SemVer           { return *semver.MustParseSemVer("v1.0.0") }
+func (this *testModule) Dependants() []string             { return this.dependants }
 
 func registryWith(t *testing.T, owner string, dependants ...string) *modules.ModuleDependantRegistry {
 	t.Helper()
