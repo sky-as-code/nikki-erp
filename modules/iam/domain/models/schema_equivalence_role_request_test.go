@@ -92,6 +92,7 @@ func roleRequestSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 			basemodel.DefineFieldId(RoleReqFieldResponderId),
 		).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(RoleReqEdgeRole).

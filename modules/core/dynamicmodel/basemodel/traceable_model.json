@@ -1,7 +1,11 @@
 {
 	"name": "core.basemodel.traceable_model",
 	"fields": [
-		{"name": "created_by", "data_type": "ulid"},
-		{"name": "updated_by", "data_type": "ulid"}
+		{"name": "created_by", "label": "fields.created_by", "data_type": "ulid", "no_update": true},
+		{"name": "updated_by", "label": "fields.updated_by", "data_type": "ulid"}
+	],
+	"edges_to": [
+		{"edge": "created_by_user", "label": "fields.created_by_user", "type": "many:one", "dest_schema": "iam_user", "key_map": {"created_by": "id"}, "on_delete": "SET NULL"},
+		{"edge": "updated_by_user", "label": "fields.updated_by_user", "type": "many:one", "dest_schema": "iam_user", "key_map": {"updated_by": "id"}, "on_delete": "SET NULL"}
 	]
 }

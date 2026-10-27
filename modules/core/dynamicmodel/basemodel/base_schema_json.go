@@ -35,6 +35,15 @@ var traceableModelJson string
 //go:embed traceable_readonly_model.json
 var traceableReadonlyModelJson string
 
+//go:embed traceable_loose_model.json
+var traceableLooseModelJson string
+
+//go:embed traceable_loose_readonly_model.json
+var traceableLooseReadonlyModelJson string
+
+//go:embed managed_model.json
+var managedModelJson string
+
 //go:embed versioned_model.json
 var versionedModelJson string
 
@@ -61,18 +70,31 @@ func AuditableReadonlyModelSchemaBuilderJson() *dmodel.ModelSchemaBuilder {
 // TraceableModelSchemaBuilderJson parses the field shape from JSON, then attaches the
 // service-injection functions, which have no JSON representation.
 func TraceableModelSchemaBuilderJson() *dmodel.ModelSchemaBuilder {
-	builder := dmodel.ParseModelJson(traceableModelJson)
-	builder.GetField(FieldCreatedBy).ServiceInjected(injectCreatedBy)
-	builder.GetField(FieldUpdatedBy).ServiceInjected(injectUpdatedBy)
-
-	return builder
+	return injectTraceable(dmodel.ParseModelJson(traceableModelJson), true)
 }
 
 func TraceableReadonlyModelSchemaBuilderJson() *dmodel.ModelSchemaBuilder {
-	builder := dmodel.ParseModelJson(traceableReadonlyModelJson)
-	builder.GetField(FieldCreatedBy).ServiceInjected(injectCreatedBy)
+	return injectTraceable(dmodel.ParseModelJson(traceableReadonlyModelJson), false)
+}
 
+func TraceableLooseModelSchemaBuilderJson() *dmodel.ModelSchemaBuilder {
+	return injectTraceable(dmodel.ParseModelJson(traceableLooseModelJson), true)
+}
+
+func TraceableLooseReadonlyModelSchemaBuilderJson() *dmodel.ModelSchemaBuilder {
+	return injectTraceable(dmodel.ParseModelJson(traceableLooseReadonlyModelJson), false)
+}
+
+func injectTraceable(builder *dmodel.ModelSchemaBuilder, withUpdatedBy bool) *dmodel.ModelSchemaBuilder {
+	builder.GetField(FieldCreatedBy).ServiceInjected(injectCreatedBy)
+	if withUpdatedBy {
+		builder.GetField(FieldUpdatedBy).ServiceInjected(injectUpdatedBy)
+	}
 	return builder
+}
+
+func ManagedModelSchemaBuilderJson() *dmodel.ModelSchemaBuilder {
+	return dmodel.ParseModelJson(managedModelJson)
 }
 
 func VersionedModelSchemaBuilderJson() *dmodel.ModelSchemaBuilder {
@@ -84,14 +106,17 @@ func VersionedModelSchemaBuilderJson() *dmodel.ModelSchemaBuilder {
 // that extends one of them.
 func RegisterJsonBaseSchemas() error {
 	factories := map[string]func() *dmodel.ModelSchemaBuilder{
-		BaseModelSchemaName:              BaseModelSchemaBuilderJson,
-		OrgBaseModelSchemaName:           OrgIdModelSchemaBuilderJson,
-		ArchivableModelSchemaName:        ArchivableModelSchemaBuilderJson,
-		AuditableModelSchemaName:         AuditableModelSchemaBuilderJson,
-		AuditableReadonlyModelSchemaName: AuditableReadonlyModelSchemaBuilderJson,
-		TraceableModelSchemaName:         TraceableModelSchemaBuilderJson,
-		TraceableReadonlyModelSchemaName: TraceableReadonlyModelSchemaBuilderJson,
-		VersionedModelSchemaName:         VersionedModelSchemaBuilderJson,
+		BaseModelSchemaName:                   BaseModelSchemaBuilderJson,
+		OrgBaseModelSchemaName:                OrgIdModelSchemaBuilderJson,
+		ArchivableModelSchemaName:             ArchivableModelSchemaBuilderJson,
+		AuditableModelSchemaName:              AuditableModelSchemaBuilderJson,
+		AuditableReadonlyModelSchemaName:      AuditableReadonlyModelSchemaBuilderJson,
+		TraceableModelSchemaName:              TraceableModelSchemaBuilderJson,
+		TraceableReadonlyModelSchemaName:      TraceableReadonlyModelSchemaBuilderJson,
+		TraceableLooseModelSchemaName:         TraceableLooseModelSchemaBuilderJson,
+		TraceableLooseReadonlyModelSchemaName: TraceableLooseReadonlyModelSchemaBuilderJson,
+		VersionedModelSchemaName:              VersionedModelSchemaBuilderJson,
+		ManagedModelSchemaName:                ManagedModelSchemaBuilderJson,
 	}
 
 	var err error

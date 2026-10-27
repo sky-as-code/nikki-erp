@@ -33,9 +33,9 @@ script:post-response {
         type: "string",
         minLength: 1,
       },
-      avatar_url: {
+      type: {
         type: "string",
-        format: "uri",
+        enum: ["user", "service"],
       },
       created_at: {
         type: "string",

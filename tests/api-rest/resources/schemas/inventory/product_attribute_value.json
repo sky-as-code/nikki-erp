@@ -11,6 +11,12 @@
             "type": "string",
             "minLength": 20
         },
+        "created_by": {
+            "type": ["string", "null"]
+        },
+        "updated_by": {
+            "type": ["string", "null"]
+        },
         "updated_at": {
             "type": "string",
             "minLength": 20

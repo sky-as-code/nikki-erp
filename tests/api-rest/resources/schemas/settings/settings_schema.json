@@ -6,6 +6,12 @@
     "level":      { "type": "string", "enum": ["tenant", "org", "user"] },
     "schema":     { "type": "object" },
     "created_at": { "type": "string" },
+    "created_by": {
+        "type": ["string", "null"]
+    },
+    "updated_by": {
+        "type": ["string", "null"]
+    },
     "updated_at": { "type": ["string", "null"] }
   },
   "required": ["id", "module_key", "level"],

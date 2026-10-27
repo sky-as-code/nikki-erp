@@ -17,6 +17,7 @@ import (
 func InitDynamicEngines() error {
 	return stdErr.Join(
 		registerUserEngine(),
+		registerServiceEngine(),
 		registerOrgEngine(),
 		registerOrgUnitEngine(),
 		registerGroupEngine(),

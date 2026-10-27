@@ -21,6 +21,7 @@ const (
 	ResourceIamGrantRequest = "iam_grant_request"
 	ResourceIamEntitlement  = "iam_entitlement"
 	ResourceIamUser         = "iam_user"
+	ResourceIamService      = "iam_service"
 	ResourceIamGroup        = "iam_group"
 	ResourceIamOrganization = "iam_org"
 	ResourceIamOrgUnit      = "iam_orgunit"

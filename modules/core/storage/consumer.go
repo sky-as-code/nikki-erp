@@ -46,6 +46,10 @@ type StorageConsumer interface {
 	// copy is reserved against the quota like an upload. Client errors (source missing, quota
 	// exceeded) come back as a composable ClientErrorSignal.
 	DuplicateFile(ctx corectx.Context, cmd DuplicateFileCommand) (*model.Id, error)
+	// GetFileMeta reads what a rule needs to know about a stored file, such as its MIME type. The
+	// file must be in OrgId's space (the tenant's when OrgId is nil); a missing or foreign one is a
+	// client error on Field.
+	GetFileMeta(ctx corectx.Context, query GetFileMetaQuery) (*FileMeta, ft.ClientErrors, error)
 }
 
 type AssertFilesUsableQuery struct {
@@ -66,4 +70,17 @@ type ReleaseFilesCommand struct {
 type DuplicateFileCommand struct {
 	FileId model.Id
 	OrgId  *model.Id
+}
+
+type GetFileMetaQuery struct {
+	FileId model.Id
+	// Field is the record field holding the id, so a refusal names it.
+	Field string
+	OrgId *model.Id
+}
+
+type FileMeta struct {
+	// MimeType is sniffed from the content at upload, so a rule may trust it.
+	MimeType  string
+	SizeBytes int64
 }

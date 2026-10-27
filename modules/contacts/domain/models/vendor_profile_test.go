@@ -60,7 +60,7 @@ func TestVendorProfileCurrencyIsNotAnEdge(t *testing.T) {
 // The profile hangs off the party and cannot outlive it.
 func TestVendorProfileCascadesFromParty(t *testing.T) {
 	requireBaseSchemasRegistered(t)
-	relations := VendorProfileSchemaBuilder().Build().ToRelations()
+	relations := partyChildRelations(VendorProfileSchemaBuilder().Build())
 
 	require.Len(t, relations, 1)
 	assert.Equal(t, VendorProfileEdgeParty, relations[0].Edge)

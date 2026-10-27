@@ -67,6 +67,7 @@ func requireBaseSchemasRegistered(t *testing.T) {
 	t.Helper()
 	// Normally done by CoreModule.RegisterModels during app start-up.
 	_ = basemodel.RegisterJsonBaseSchemas()
+	_ = basemodel.RegisterIamUserStub()
 }
 
 // requireEssentialSchemasRegistered registers the Essential schemas Inventory's edges point at.

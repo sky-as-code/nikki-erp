@@ -18,6 +18,7 @@ type modelJsonDto struct {
 	Description         any      `json:"description"`
 	TableName           string   `json:"table_name"`
 	ShouldBuildDb       bool     `json:"should_build_db"`
+	SharesTable         bool     `json:"shares_table"`
 	RecordLabelField    string   `json:"record_label_field"`
 	RecordSubLabelField string   `json:"record_sub_label_field"`
 	DefaultSearchFields []string `json:"default_search_fields"`
@@ -108,6 +109,9 @@ type edgeJsonDto struct {
 
 	OnDelete string `json:"on_delete"`
 	OnUpdate string `json:"on_update"`
+
+	// Nil means true: only an explicit false makes the edge loose.
+	DbConstraint *bool `json:"db_constraint"`
 }
 
 type existingEdgeDto struct {
@@ -176,6 +180,9 @@ func buildFromDto(dto *modelJsonDto) *ModelSchemaBuilder {
 	}
 	if dto.ShouldBuildDb {
 		builder.ShouldBuildDb()
+	}
+	if dto.SharesTable {
+		builder.SharesTable()
 	}
 	if dto.RecordLabelField != "" {
 		builder.RecordLabelField(dto.RecordLabelField)
@@ -380,6 +387,9 @@ func buildRelationFromDto(dto *edgeJsonDto) *RelationBuilder {
 	}
 	if dto.OnUpdate != "" {
 		relation.OnUpdate(RelationCascade(dto.OnUpdate))
+	}
+	if dto.DbConstraint != nil && !*dto.DbConstraint {
+		relation.NoDbConstraint()
 	}
 
 	return relation

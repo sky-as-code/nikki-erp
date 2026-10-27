@@ -52,6 +52,16 @@ type CrudApplicationService interface {
 	ConstrainSearchToOrg(params dmodel.DynamicFields, orgId model.Id) error
 	AssertRecordInOrg(ctx corectx.Context, params dmodel.DynamicFields, orgId model.Id) (*ft.ClientErrors, error)
 	FetchByKeys(ctx corectx.Context, keys dmodel.DynamicFields, vErrs *ft.ClientErrors) (dmodel.DynamicFields, error)
+
+	// Field-level authorization (see app_fieldauth.go), for a custom action that writes or returns
+	// a field map of this resource.
+	AssertFieldAction(ctx corectx.Context, actionCode string, params dmodel.DynamicFields) (*model.Id, *ft.ClientErrors)
+	AssertFields(ctx corectx.Context, actionCode string, orgId *model.Id, fields dmodel.DynamicFields) *ft.ClientErrors
+	AssertFieldNames(ctx corectx.Context, actionCode string, orgId *model.Id, names []string) *ft.ClientErrors
+	NarrowReadFields(
+		ctx corectx.Context, orgId *model.Id, desiredFields []string, records ...dmodel.DynamicFields,
+	) []string
+	AssertGraphReadable(ctx corectx.Context, orgId *model.Id, rawGraph any) (*ft.ClientErrors, error)
 }
 
 // NewAppServiceParam carries what a default application service needs to work.
@@ -132,7 +142,11 @@ func (this *DefaultApplicationServiceImpl) Create(
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionCreate); cErrs != nil {
 		return &CreateResult{ClientErrors: *cErrs}, nil
 	}
-	if _, cErrs := this.guardCreateLike(ctx, cmd); cErrs != nil {
+	orgId, cErrs := this.guardCreateLike(ctx, cmd)
+	if cErrs == nil {
+		cErrs = this.AssertFields(ctx, PermissionCreate, orgId, cmd)
+	}
+	if cErrs != nil {
 		return &CreateResult{ClientErrors: *cErrs}, nil
 	}
 	return this.domSvc.Create(ctx, cmd)
@@ -152,7 +166,11 @@ func (this *DefaultApplicationServiceImpl) orgIdIsSchemaRequired() bool {
 func (this *DefaultApplicationServiceImpl) Update(
 	ctx corectx.Context, cmd UpdateCommand,
 ) (*MutateResult, error) {
-	if cErrs, err := this.guardRecord(ctx, CrudActionUpdate, PermissionUpdate, cmd); err != nil || cErrs != nil {
+	access, cErrs, err := this.guardRecord(ctx, CrudActionUpdate, PermissionUpdate, cmd)
+	if err == nil && cErrs == nil {
+		cErrs = this.assertFieldsIn(ctx, PermissionUpdate, access, cmd)
+	}
+	if err != nil || cErrs != nil {
 		return mutateFailure(cErrs, err)
 	}
 	return this.domSvc.Update(ctx, cmd)
@@ -161,7 +179,7 @@ func (this *DefaultApplicationServiceImpl) Update(
 func (this *DefaultApplicationServiceImpl) Delete(
 	ctx corectx.Context, cmd DeleteCommand,
 ) (*MutateResult, error) {
-	if cErrs, err := this.guardRecord(ctx, CrudActionDelete, PermissionDelete, cmd); err != nil || cErrs != nil {
+	if _, cErrs, err := this.guardRecord(ctx, CrudActionDelete, PermissionDelete, cmd); err != nil || cErrs != nil {
 		return mutateFailure(cErrs, err)
 	}
 	return this.domSvc.Delete(ctx, cmd)
@@ -170,7 +188,8 @@ func (this *DefaultApplicationServiceImpl) Delete(
 func (this *DefaultApplicationServiceImpl) SetArchived(
 	ctx corectx.Context, cmd SetArchivedCommand,
 ) (*MutateResult, error) {
-	if cErrs, err := this.guardRecord(ctx, CrudActionSetArchived, PermissionSetArchived, cmd); err != nil || cErrs != nil {
+	_, cErrs, err := this.guardRecord(ctx, CrudActionSetArchived, PermissionSetArchived, cmd)
+	if err != nil || cErrs != nil {
 		return mutateFailure(cErrs, err)
 	}
 	return this.domSvc.SetArchived(ctx, cmd)
@@ -179,14 +198,15 @@ func (this *DefaultApplicationServiceImpl) SetArchived(
 func (this *DefaultApplicationServiceImpl) GetById(
 	ctx corectx.Context, query GetByIdQuery,
 ) (*GetOneResult, error) {
-	cErrs, err := this.guardRecord(ctx, CrudActionGetById, PermissionRead, query)
+	access, cErrs, err := this.guardRecord(ctx, CrudActionGetById, PermissionRead, query)
 	if err != nil {
 		return nil, err
 	}
 	if cErrs != nil {
 		return &GetOneResult{ClientErrors: *cErrs}, nil
 	}
-	return this.domSvc.GetById(ctx, query)
+	mask := this.stripUnreadableEdges(ctx, access, query)
+	return this.narrowSingle(ctx, access, mask)(this.domSvc.GetById(ctx, query))
 }
 
 // GetOne is org-confined through the normalized org_id itself: the domain service turns every
@@ -194,10 +214,17 @@ func (this *DefaultApplicationServiceImpl) GetById(
 func (this *DefaultApplicationServiceImpl) GetOne(
 	ctx corectx.Context, query GetOneQuery,
 ) (*GetOneResult, error) {
-	if cErrs := this.guard(ctx, CrudActionGetByUnique, PermissionRead, query); cErrs != nil {
+	orgId, cErrs := this.guard(ctx, CrudActionGetByUnique, PermissionRead, query)
+	if cErrs == nil {
+		// Every column-named param is an equality condition, so it must be readable like a filter.
+		cErrs = this.AssertFields(ctx, PermissionRead, orgId, query)
+	}
+	if cErrs != nil {
 		return &GetOneResult{ClientErrors: *cErrs}, nil
 	}
-	return this.domSvc.GetOne(ctx, query)
+	access := recordAccess{orgId: orgId}
+	mask := this.stripUnreadableEdges(ctx, access, query)
+	return this.narrowSingle(ctx, access, mask)(this.domSvc.GetOne(ctx, query))
 }
 
 func (this *DefaultApplicationServiceImpl) Search(
@@ -206,36 +233,38 @@ func (this *DefaultApplicationServiceImpl) Search(
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionSearch); cErrs != nil {
 		return &SearchResult{ClientErrors: *cErrs}, nil
 	}
-	orgId, cErrs := this.AssertAction(ctx, PermissionRead, query)
+	access, cErrs := this.searchAccess(ctx, query)
 	if cErrs != nil {
 		return &SearchResult{ClientErrors: *cErrs}, nil
 	}
-	if orgId != nil {
-		if err := this.ConstrainSearchToOrg(query, *orgId); err != nil {
-			return nil, err
-		}
+	cErrs, err := this.assertGraphReadableIn(ctx, access, query[fieldNameGraph])
+	if err != nil || cErrs != nil {
+		return searchFailure(cErrs, err)
 	}
-	return this.domSvc.Search(ctx, query)
+	if err := this.constrainSearch(ctx, query, access); err != nil {
+		return nil, err
+	}
+	mask := this.stripUnreadableEdges(ctx, access, query)
+	return this.narrowPaged(ctx, access, mask)(this.domSvc.Search(ctx, query))
 }
 
 func (this *DefaultApplicationServiceImpl) Exists(
 	ctx corectx.Context, query ExistsQuery,
 ) (*ExistsResult, error) {
-	if cErrs := this.guard(ctx, CrudActionExists, PermissionRead, query); cErrs != nil {
+	if _, cErrs := this.guard(ctx, CrudActionExists, PermissionRead, query); cErrs != nil {
 		return &ExistsResult{ClientErrors: *cErrs}, nil
 	}
 	return this.domSvc.Exists(ctx, query)
 }
 
-// GetSchema serves the resource schema in the simplified shape the clients cache. Schema
-// metadata belongs to no org, so read in any org the caller belongs to is enough.
+// GetSchema serves the resource schema in the simplified shape the clients cache. It asserts no
+// permission - the authenticated route is the only gate: the schema is metadata, identical for
+// every caller (ToSimplized takes no caller input), which is what lets the Web BFF cache it across
+// callers. A client needs it to render a locked field or edge it may not read.
 func (this *DefaultApplicationServiceImpl) GetSchema(
-	ctx corectx.Context, _ GetSchemaQuery,
+	_ corectx.Context, _ GetSchemaQuery,
 ) (*GetSchemaResult, error) {
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionGetSchema); cErrs != nil {
-		return &GetSchemaResult{ClientErrors: *cErrs}, nil
-	}
-	if cErrs := this.assertReadInAnyOrg(ctx); cErrs != nil {
 		return &GetSchemaResult{ClientErrors: *cErrs}, nil
 	}
 	return &GetSchemaResult{Data: this.Schema().ToSimplized(), HasData: true}, nil
@@ -256,34 +285,67 @@ func (this *DefaultApplicationServiceImpl) ComputeField(
 	return this.domSvc.ComputeField(ctx, cmd)
 }
 
-// guard is the allow-list check followed by AssertAction, for actions that touch no single row.
+// guard is the allow-list check followed by the permission check, for actions that touch no
+// single row. It returns the org the request is confined to.
 func (this *DefaultApplicationServiceImpl) guard(
 	ctx corectx.Context, action CrudAction, permission string, params dmodel.DynamicFields,
-) *ft.ClientErrors {
+) (*model.Id, *ft.ClientErrors) {
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), action); cErrs != nil {
-		return cErrs
+		return nil, cErrs
 	}
-	_, cErrs := this.AssertAction(ctx, permission, params)
-	return cErrs
+	return this.assertCrudAction(ctx, permission, params)
+}
+
+// assertCrudAction gates a built-in action. Create, read and update can be granted per field, so
+// a field grant lets the caller through and the action then narrows to the granted fields; delete
+// and set_archived act on the whole record and need the resource-level grant.
+func (this *DefaultApplicationServiceImpl) assertCrudAction(
+	ctx corectx.Context, permission string, params dmodel.DynamicFields,
+) (*model.Id, *ft.ClientErrors) {
+	orgId, cErrs := this.ResolveOrgScope(ctx, params)
+	if cErrs != nil {
+		return nil, cErrs
+	}
+	return orgId, this.gate(ctx, permission, recordAccess{orgId: orgId})
+}
+
+func (this *DefaultApplicationServiceImpl) gate(
+	ctx corectx.Context, permission string, access recordAccess,
+) *ft.ClientErrors {
+	switch permission {
+	case PermissionCreate, PermissionRead, PermissionUpdate:
+		return this.assertAnyFieldIn(ctx, permission, access)
+	}
+	return requestguard.AssertPermission(ctx, this.permFor(permission, access))
 }
 
 // guardRecord is guard plus AssertRecordInOrg, for the actions that identify exactly one existing
 // row by id: the org has to be checked before the crud command runs, because the command itself
-// carries only the id.
+// carries only the id. A caller refused at the resource's scope may still act through a private
+// grant on a record they created (see ownerFallback).
 func (this *DefaultApplicationServiceImpl) guardRecord(
 	ctx corectx.Context, action CrudAction, permission string, params dmodel.DynamicFields,
-) (*ft.ClientErrors, error) {
+) (recordAccess, *ft.ClientErrors, error) {
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), action); cErrs != nil {
-		return cErrs, nil
+		return recordAccess{}, cErrs, nil
 	}
-	orgId, cErrs := this.AssertAction(ctx, permission, params)
+	orgId, cErrs := this.ResolveOrgScope(ctx, params)
 	if cErrs != nil {
-		return cErrs, nil
+		return recordAccess{}, cErrs, nil
+	}
+	access := recordAccess{orgId: orgId}
+	if refused := this.gate(ctx, permission, access); refused != nil {
+		owned, err := this.ownerFallback(ctx, permission, params, orgId)
+		if err != nil || !owned {
+			return access, refused, err
+		}
+		access.owned = true
 	}
 	if orgId == nil {
-		return nil, nil
+		return access, nil, nil
 	}
-	return this.AssertRecordInOrg(ctx, params, *orgId)
+	cErrs, err := this.AssertRecordInOrg(ctx, params, *orgId)
+	return access, cErrs, err
 }
 
 func mutateFailure(cErrs *ft.ClientErrors, err error) (*MutateResult, error) {

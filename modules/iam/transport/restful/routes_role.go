@@ -22,6 +22,9 @@ func roleRestEngine(rest *v1.RoleCrudRest) composable.RestEngine {
 			Path: ":id/manage_users", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ManageUsers,
 		}).
 		AddRoute(composable.RouteDefinition{
+			Path: ":id/manage_services", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ManageServices,
+		}).
+		AddRoute(composable.RouteDefinition{
 			Path: ":id/manage_groups", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ManageGroups,
 		}).
 		AddRoute(composable.RouteDefinition{

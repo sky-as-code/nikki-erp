@@ -13,6 +13,7 @@ import (
 	repo "github.com/sky-as-code/nikki-erp/modules/iam/infra/repository"
 	itGroup "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/group"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
+	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
 type groupEngineParam struct {
@@ -29,6 +30,7 @@ func registerGroupEngine() error {
 		func(
 			param composable.BuildParam,
 			permRepo itPerm.PermissionRepository, historyRepo itPerm.PermissionHistoryRepository,
+			userRepo itUser.UserCrudRepository,
 		) composable.DynamicResourceEngineOnion {
 			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName: models.GroupSchemaName,
@@ -36,7 +38,7 @@ func registerGroupEngine() error {
 					return repo.NewGroupCrudRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewGroupCrudDomainService(base, permRepo, historyRepo)
+					return services.NewGroupCrudDomainService(base, permRepo, historyRepo, userRepo)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					return app.NewGroupCrudApplicationService(base, base.DomainService().(itGroup.GroupCrudDomainService))

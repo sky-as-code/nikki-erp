@@ -37,6 +37,7 @@ const (
 
 	OrgEdgeOrgUnits     = "org_units"
 	OrgEdgeUsers        = "users"
+	OrgEdgeServices     = "services"
 	OrgEdgeEntitlements = "entitlements"
 )
 

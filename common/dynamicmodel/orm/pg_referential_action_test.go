@@ -112,12 +112,14 @@ func TestReferentialAction_DbNullableDropsNotNullButKeepsRequired(t *testing.T) 
 	assert.True(t, field.IsNullable())
 }
 
-// Without the override, required_for_create still means NOT NULL.
-func TestReferentialAction_RequiredStaysNotNullByDefault(t *testing.T) {
+// Required-ness no longer reaches DDL: only the primary and tenant keys are NOT NULL.
+func TestReferentialAction_RequiredColumnIsNullable(t *testing.T) {
 	child := dmodel.DefineModel("refact_child2").
 		TableName("refact_children2").
 		ShouldBuildDb().
 		Field(dmodel.DefineField().Name("id").DataType(dmodel.FieldDataTypeUlid()).PrimaryKey()).
+		Field(dmodel.DefineField().Name("tenant_id").DataType(dmodel.FieldDataTypeUlid()).
+			RequiredForCreate().TenantKey()).
 		Field(dmodel.DefineField().Name("parent_id").DataType(dmodel.FieldDataTypeUlid()).
 			RequiredForCreate()).
 		Build()
@@ -125,5 +127,7 @@ func TestReferentialAction_RequiredStaysNotNullByDefault(t *testing.T) {
 	sqls, _, err := NewPgQueryBuilder().SqlCreateTable(child, dmodel.NewSchemaRegistry())
 	require.NoError(t, err)
 
-	assert.Contains(t, sqls[0], `"parent_id" character varying NOT NULL`)
+	assert.Contains(t, sqls[0], `"parent_id" character varying NULL`)
+	assert.Contains(t, sqls[0], `"id" character varying NOT NULL`)
+	assert.Contains(t, sqls[0], `"tenant_id" character varying NOT NULL`)
 }

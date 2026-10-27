@@ -113,6 +113,8 @@
 		}
 	],
 
+	"extend_after": ["core.basemodel.traceable_loose_readonly_model"],
+
 	"edges_to": [
 		{
 			"edge": "job",

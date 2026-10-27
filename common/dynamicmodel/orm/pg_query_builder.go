@@ -40,7 +40,13 @@ func NewPgQueryBuilder() QueryBuilder {
 func (this *PgQueryBuilder) SqlCreateTable(
 	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry,
 ) ([]string, *ft.ClientErrors, error) {
-	createSql, err := this.buildCreateTableSql(schema, registry)
+	return this.sqlCreateTablePlaced(schema, registry, nil)
+}
+
+func (this *PgQueryBuilder) sqlCreateTablePlaced(
+	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, placement *fkPlacement,
+) ([]string, *ft.ClientErrors, error) {
+	createSql, err := this.buildCreateTableSql(schema, registry, placement)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -58,7 +64,7 @@ func (this *PgQueryBuilder) SqlCreateTable(
 }
 
 func (this *PgQueryBuilder) buildCreateTableSql(
-	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry,
+	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, placement *fkPlacement,
 ) (string, error) {
 	builder := sqlbuilder.PostgreSQL.NewCreateTableBuilder().CreateTable(pgQuote(schema.TableName()))
 	if err := this.defineColumns(builder, schema); err != nil {
@@ -67,7 +73,7 @@ func (this *PgQueryBuilder) buildCreateTableSql(
 	if err := this.defineKeys(builder, schema); err != nil {
 		return "", err
 	}
-	if err := this.defineForeignKeys(builder, schema, registry); err != nil {
+	if err := this.defineForeignKeys(builder, schema, registry, placement); err != nil {
 		return "", err
 	}
 	sql, _ := builder.Build()
@@ -312,18 +318,20 @@ func resolveCompositeUniqueIndexName(
 
 func (this *PgQueryBuilder) defineForeignKeys(
 	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry,
+	placement *fkPlacement,
 ) error {
-	if err := this.defineForeignKeysDeclaredOnSchema(builder, schema, registry); err != nil {
+	if err := this.defineForeignKeysDeclaredOnSchema(builder, schema, registry, placement); err != nil {
 		return err
 	}
-	return this.defineForeignKeysFromParentOneToMany(builder, schema, registry)
+	return this.defineForeignKeysFromParentOneToMany(builder, schema, registry, placement)
 }
 
 func (this *PgQueryBuilder) defineForeignKeysDeclaredOnSchema(
 	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry,
+	placement *fkPlacement,
 ) error {
 	for _, rel := range schema.ToRelations() {
-		if !isFkOwnerRelationType(rel.RelationType) {
+		if !isFkOwnerRelationType(rel.RelationType) || rel.NoDbConstraint {
 			continue
 		}
 		refSchema := registry.Get(rel.DestSchemaName)
@@ -332,7 +340,11 @@ func (this *PgQueryBuilder) defineForeignKeysDeclaredOnSchema(
 				"defineForeignKeys: referenced schema not found for relation '%s'", rel.Edge,
 			)
 		}
-		if err := this.appendCompositeForeignKey(builder, schema, refSchema, rel); err != nil {
+		// The table's owner schema already declares the constraint to the same table.
+		if refSchema.SharesTable() {
+			continue
+		}
+		if err := this.appendCompositeForeignKey(builder, schema, refSchema, rel, placement); err != nil {
 			return err
 		}
 	}
@@ -341,16 +353,18 @@ func (this *PgQueryBuilder) defineForeignKeysDeclaredOnSchema(
 
 func (this *PgQueryBuilder) defineForeignKeysFromParentOneToMany(
 	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry,
+	placement *fkPlacement,
 ) error {
 	return registry.ForEach(func(_ string, parentSch *dmodel.ModelSchema) error {
 		for _, rel := range parentSch.ToRelations() {
-			if rel.RelationType != dmodel.RelationTypeOneToMany || rel.DestSchemaName != schema.Name() {
+			if rel.RelationType != dmodel.RelationTypeOneToMany || rel.DestSchemaName != schema.Name() ||
+				rel.NoDbConstraint || parentSch.SharesTable() {
 				continue
 			}
 			if schemaAlreadyDeclaresFkToParent(schema, parentSch, rel) {
 				continue
 			}
-			if err := this.appendCompositeForeignKey(builder, schema, parentSch, rel); err != nil {
+			if err := this.appendCompositeForeignKey(builder, schema, parentSch, rel, placement); err != nil {
 				return err
 			}
 		}
@@ -377,6 +391,7 @@ func (this *PgQueryBuilder) appendCompositeForeignKey(
 	fkOwner *dmodel.ModelSchema,
 	refSchema *dmodel.ModelSchema,
 	rel dmodel.ModelRelation,
+	placement *fkPlacement,
 ) error {
 	pairs := rel.EffectiveForeignKeys()
 	if len(pairs) == 0 {
@@ -396,6 +411,10 @@ func (this *PgQueryBuilder) appendCompositeForeignKey(
 	fkBody := fmt.Sprintf("(%s) REFERENCES %s (%s) ON UPDATE %s ON DELETE %s",
 		strings.Join(fkCols, ", "), pgQuote(refSchema.TableName()), strings.Join(refCols, ", "),
 		rel.OnUpdate.Sql(), rel.OnDelete.Sql())
+	if placement.mustDefer(fkOwner, refSchema) {
+		placement.deferConstraint(fkOwner, fkName, fkBody)
+		return nil
+	}
 	builder.Define(fmt.Sprintf("CONSTRAINT %s FOREIGN KEY", fkName), fkBody)
 	return nil
 }

@@ -40,6 +40,7 @@ func LoginAttemptSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().Name(AttemptFieldMethods).
 				DataType(dmodel.FieldDataTypeString(1, 64).ArrayType()).

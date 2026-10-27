@@ -47,7 +47,7 @@ func (this UserRest) GetUserContext(echoCtx *echo.Context) (err error) {
 	user := models.NewUserFrom(reqCtx.GetUser())
 	echoCtx.JSON(http.StatusOK, GetUserContextResponse{
 		Id:           string(user.MustGetId()),
-		AvatarUrl:    user.GetAvatarUrl(),
+		AvatarFileId: idToStringPtr(user.GetAvatarFileId()),
 		DisplayName:  user.MustGetDisplayName(),
 		Email:        user.MustGetEmail(),
 		Entitlements: userPerm.Entitlements.ToSlice(),

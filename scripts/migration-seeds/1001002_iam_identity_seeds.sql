@@ -30,19 +30,19 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_users'
 	) THEN
 		INSERT INTO "iam_users" (
-			"id", "avatar_url", "display_name", "email", "status", "is_owner", "org_unit_id",
+			"id", "type", "display_name", "email", "status", "is_owner", "org_unit_id",
 			"is_archived", "etag", "created_at", "updated_at"
 		) VALUES
-		('01JWNNJGS70Y07MBEV3AQ0M526', NULL, 'System', 'system@nikki.com', 'active', NULL, NULL, FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JWNMZ36QHC7CQQ748H9NQ6J6', NULL, 'Admin Owner', 'owner@nikki.com', 'active', TRUE, NULL, FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JWNXT3EY7FG47VDJTEPTDC98', NULL, 'Nguyễn Văn An Domain Admin', 'nguyen.van.an@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A2', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JWNXXTF8958VVYAV33MVVMDN', NULL, 'Trần Thị Bình Ident Readonly', 'tran.thi.binh@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A3', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JZQFDH0N51Q3BFQFMFFGSCSV', NULL, 'Lê Văn Cường Authz Admin', 'le.van.cuong@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A4', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JZQFF9QEXH71P2CG9Y9MY8MM', NULL, 'Phạm Thị Dung Authz Mod', 'pham.thi.dung@nikki.com', 'suspended', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A5', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JZQFFDKY8T4JB8R6NSY1331J', NULL, 'Hoàng Văn Em My Company Org Admin', 'hoang.van.em@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JZQFGVKZCTV7S310W0BDMWCS', NULL, 'Đặng Thị Phương Membership Company Org Admin', 'dang.thi.phuong@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C0', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JZQFY6EXRG0959Z95Y2EM3AM', NULL, 'Võ Văn Giang', 'vo.van.giang@nikki.com', 'suspended', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C1', TRUE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JZQFZFK6GM2D5X6MYHWH6FND', NULL, 'Bùi Thị Hoa', 'bui.thi.hoa@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C2', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL);
+		('01JWNNJGS70Y07MBEV3AQ0M526', 'user', 'System', 'system@nikki.com', 'active', NULL, NULL, FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JWNMZ36QHC7CQQ748H9NQ6J6', 'user', 'Admin Owner', 'owner@nikki.com', 'active', TRUE, NULL, FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JWNXT3EY7FG47VDJTEPTDC98', 'user', 'Nguyễn Văn An Domain Admin', 'nguyen.van.an@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A2', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JWNXXTF8958VVYAV33MVVMDN', 'user', 'Trần Thị Bình Ident Readonly', 'tran.thi.binh@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A3', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JZQFDH0N51Q3BFQFMFFGSCSV', 'user', 'Lê Văn Cường Authz Admin', 'le.van.cuong@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A4', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JZQFF9QEXH71P2CG9Y9MY8MM', 'user', 'Phạm Thị Dung Authz Mod', 'pham.thi.dung@nikki.com', 'suspended', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A5', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JZQFFDKY8T4JB8R6NSY1331J', 'user', 'Hoàng Văn Em My Company Org Admin', 'hoang.van.em@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JZQFGVKZCTV7S310W0BDMWCS', 'user', 'Đặng Thị Phương Membership Company Org Admin', 'dang.thi.phuong@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C0', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JZQFY6EXRG0959Z95Y2EM3AM', 'user', 'Võ Văn Giang', 'vo.van.giang@nikki.com', 'suspended', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C1', TRUE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JZQFZFK6GM2D5X6MYHWH6FND', 'user', 'Bùi Thị Hoa', 'bui.thi.hoa@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C2', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL);
 	END IF;
 
 	IF EXISTS (

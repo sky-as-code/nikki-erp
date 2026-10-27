@@ -221,6 +221,7 @@ func (this *AttemptDomainServiceImpl) assertUserExists(
 		cErrs.Append(*ft.NewNotFoundError(models.AttemptFieldUsername))
 		return nil, nil
 	}
+	// GetUser sees principals of type user only, so a service is "not found" above.
 	user := userRes.Data
 	// Existence is not enough: a suspended or archived account must not be able to
 	// begin a sign-in attempt at all. Checking it only later, when the password is

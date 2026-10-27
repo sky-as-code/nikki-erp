@@ -104,6 +104,7 @@
 	"extend_after": [
 		"core.basemodel.archivable_model",
 		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model",
 		"core.basemodel.versioned_model"
 	],
 

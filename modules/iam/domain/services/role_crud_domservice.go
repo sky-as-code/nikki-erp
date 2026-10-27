@@ -16,6 +16,7 @@ import (
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 	itRes "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/resource"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
+	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
 // RoleCrudDeps are what the role rules read and write beside the role itself: the entitlements
@@ -31,6 +32,8 @@ type RoleCrudDeps struct {
 	OrgUnitRepo     itOrgUnit.OrgUnitCrudRepository
 	PermRepo        itPerm.PermissionRepository
 	HistoryRepo     itPerm.PermissionHistoryRepository
+	// UserRepo tells a user from a service: both live in iam_users (see principalTypeScope).
+	UserRepo itUser.UserCrudRepository
 }
 
 // NewRoleCrudDomainService is handed the composable default by the iam_role onion.
@@ -45,6 +48,7 @@ func NewRoleCrudDomainService(base composable.CrudDomainService, deps RoleCrudDe
 		orgUnitRepo:       deps.OrgUnitRepo,
 		permRepo:          deps.PermRepo,
 		auditor:           permissionAuditor{historyRepo: deps.HistoryRepo},
+		userRepo:          deps.UserRepo,
 	}
 }
 
@@ -61,6 +65,17 @@ type RoleCrudDomainServiceImpl struct {
 	orgUnitRepo itOrgUnit.OrgUnitCrudRepository
 	permRepo    itPerm.PermissionRepository
 	auditor     permissionAuditor
+	userRepo    composable.CrudRepository
+}
+
+// Create refuses a role claiming to be system-managed: those come from seeds only.
+func (this *RoleCrudDomainServiceImpl) Create(
+	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
+) (*composable.CreateResult, error) {
+	opts := withRoleManagedCreateGuard(options)
+	opts.ValidateExtra = composable.ChainValidateExtra(
+		refuseServiceIn(this.userRepo, domain.RoleFieldOwnerUserId), opts.ValidateExtra)
+	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 // Update applies the role's own columns and, when the body carries `entitlements`, the
@@ -70,6 +85,10 @@ type RoleCrudDomainServiceImpl struct {
 func (this *RoleCrudDomainServiceImpl) Update(
 	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
 ) (*composable.MutateResult, error) {
+	opts := withRoleManagedUpdateGuard(options)
+	opts.ValidateExtra = composable.ChainValidateExtra(
+		opts.ValidateExtra, refuseServiceIn(this.userRepo, domain.RoleFieldOwnerUserId))
+	options = []composable.UpdateOptions{opts}
 	delta, malformed := itRole.LiftEntitlementsDelta(cmd)
 	if malformed {
 		return &composable.MutateResult{ClientErrors: ft.ClientErrors{*ft.NewValidationError(
@@ -125,7 +144,7 @@ func (this *RoleCrudDomainServiceImpl) SetArchived(
 	return result, nil
 }
 
-// Delete refuses a private role.
+// Delete refuses a private or system-managed role.
 func (this *RoleCrudDomainServiceImpl) Delete(
 	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
 ) (*composable.MutateResult, error) {
@@ -133,7 +152,8 @@ func (this *RoleCrudDomainServiceImpl) Delete(
 	if len(options) > 0 {
 		opts = options[0]
 	}
-	opts.ValidateExtra = composable.ChainValidateExtra(assertRoleNotPrivate, opts.ValidateExtra)
+	opts.ValidateExtra = composable.ChainValidateExtra(
+		assertRoleNotSystemManaged, assertRoleNotPrivate, opts.ValidateExtra)
 	return this.CrudDomainService.Delete(ctx, cmd, opts)
 }
 

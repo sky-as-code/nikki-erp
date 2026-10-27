@@ -33,7 +33,8 @@ func TicketActivitySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().Name(TicketActivityFieldVisibility).DataType(dmodel.FieldDataTypeEnumString([]string{
 			"internal", "customer",
 		})).Default("internal")).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 type TicketActivity struct{ basemodel.DynamicModelBase }

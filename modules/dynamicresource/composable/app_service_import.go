@@ -42,6 +42,9 @@ func (this *DefaultApplicationServiceImpl) Import(
 		return &BulkCreateResult{ClientErrors: *cErrs}, nil
 	}
 	orgId, cErrs := this.guardCreateLike(ctx, cmd.Params)
+	if cErrs == nil {
+		cErrs = this.AssertFieldNames(ctx, PermissionCreate, orgId, mappedFieldNames(cmd.Mapping))
+	}
 	if cErrs != nil {
 		return &BulkCreateResult{ClientErrors: *cErrs}, nil
 	}
@@ -144,6 +147,15 @@ func (this *DefaultApplicationServiceImpl) readImportFile(
 			"the file could not be read as {{extension}}", map[string]any{"extension": ext})), nil
 	}
 	return table, nil, nil
+}
+
+// mappedFieldNames is what an import writes: the target of every mapped column.
+func mappedFieldNames(mapping ImportMapping) []string {
+	names := make([]string, 0, len(mapping.Columns))
+	for _, column := range mapping.Columns {
+		names = append(names, column.Target)
+	}
+	return names
 }
 
 func importRefused(item *ft.ClientErrorItem) *BulkCreateResult {

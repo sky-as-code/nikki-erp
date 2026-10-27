@@ -156,3 +156,61 @@ func TestParsedExpression_HasWildcard(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildFieldExpression(t *testing.T) {
+	assert.Equal(t, "update:iam_user.display_name:tenant",
+		BuildFieldExpression("update", "iam_user", "display_name", ResourceScopeTenant, nil))
+	assert.Equal(t, "*:iam_user.display_name:org/ORG1",
+		BuildFieldExpression("", "iam_user", "display_name", ResourceScopeOrg, idOf("ORG1")))
+	assert.Equal(t, "update:iam_user:tenant",
+		BuildFieldExpression("update", "iam_user", "", ResourceScopeTenant, nil),
+		"an empty field builds the resource-level expression")
+}
+
+func TestParseExpression_Field(t *testing.T) {
+	tests := []struct {
+		expr     string
+		action   string
+		resource string
+		field    string
+		scope    ResourceScope
+	}{
+		{"update:iam_user.display_name:tenant", "update", "iam_user", "display_name", ResourceScopeTenant},
+		{"read:iam_user.avatar_file_id:private", "read", "iam_user", "avatar_file_id", ResourceScopePrivate},
+		{"*:iam_user.display_name:org/ORG1", Wildcard, "iam_user", "display_name", ResourceScopeOrg},
+		{"read:iam_user:tenant", "read", "iam_user", "", ResourceScopeTenant},
+	}
+
+	for _, test := range tests {
+		t.Run(test.expr, func(t *testing.T) {
+			parsed, err := ParseExpression(test.expr)
+			require.NoError(t, err)
+			assert.Equal(t, test.action, parsed.ActionCode)
+			assert.Equal(t, test.resource, parsed.ResourceCode)
+			assert.Equal(t, test.field, parsed.FieldName)
+			assert.Equal(t, test.scope, parsed.Scope)
+			assert.Equal(t, test.expr, parsed.String())
+		})
+	}
+}
+
+// A field always belongs to a named resource, and a field name is one snake-case identifier: a
+// wildcard field would be a resource grant in disguise, and a second separator names nothing.
+func TestParseExpression_InvalidField(t *testing.T) {
+	tests := []string{
+		"read:iam_user.:tenant",
+		"read:.display_name:tenant",
+		"read:*.display_name:tenant",
+		"read:iam_user.*:tenant",
+		"read:iam_user.a.b:tenant",
+		"read:iam_user.Display-Name:tenant",
+	}
+
+	for _, expr := range tests {
+		t.Run(expr, func(t *testing.T) {
+			parsed, err := ParseExpression(expr)
+			assert.Error(t, err, "expected %q to be rejected", expr)
+			assert.Nil(t, parsed)
+		})
+	}
+}

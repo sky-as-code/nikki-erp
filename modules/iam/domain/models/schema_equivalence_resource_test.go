@@ -80,6 +80,7 @@ func resourceSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 				}),
 		).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		EdgeFrom(
 			dmodel.Edge(ResourceEdgeActions).

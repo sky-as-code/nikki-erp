@@ -22,6 +22,7 @@ const (
 	EntitlementFieldExpression  = "expression"
 	EntitlementFieldActionId    = "action_id"
 	EntitlementFieldResourceId  = "resource_id"
+	EntitlementFieldFieldName   = "field_name"
 	EntitlementFieldScope       = "scope"
 	EntitlementFieldOrgId       = "org_id"
 	EntitlementFieldOrgUnitId   = "org_unit_id"
@@ -54,14 +55,20 @@ func EntitlementSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(entitlementSchemaJson)
 }
 
+// EntitlementExpressionMaxLength leaves room for a field-level expression
+// ({action}:{resource}.{field}:{scope}) with an org or org-unit id.
+const EntitlementExpressionMaxLength = 200
+
 func DefineEntitlementFieldExpression(fieldName ...string) *dmodel.FieldBuilder {
 	name := EntitlementFieldExpression
 	if len(fieldName) > 0 {
 		name = fieldName[0]
 	}
 	return dmodel.DefineField().Name(name).
-		DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_SHORT_NAME_LENGTH, dmodel.FieldDataTypeStringOpts{
-			Regex: regexp.MustCompile(`^([a-zA-Z0-9_]+|\*):([a-zA-Z0-9_]+|\*):(domain|private|org|org/[a-zA-Z0-9\-]+|orgunit|orgunit/[a-zA-Z0-9\-]+)$`),
+		DataType(dmodel.FieldDataTypeString(1, EntitlementExpressionMaxLength, dmodel.FieldDataTypeStringOpts{
+			Regex: regexp.MustCompile(
+				`^([a-zA-Z0-9_]+|\*):([a-zA-Z0-9_]+|\*)(\.[a-z0-9_]+)?:` +
+					`(tenant|private|org|org/[a-zA-Z0-9\-]+|orgunit|orgunit/[a-zA-Z0-9\-]+)$`),
 		}))
 }
 

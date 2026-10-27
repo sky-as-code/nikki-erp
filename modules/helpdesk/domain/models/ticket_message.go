@@ -31,7 +31,8 @@ func TicketMessageSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().Name(TicketMessageFieldBody).DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH))).
 		Field(dmodel.DefineField().Name(TicketMessageFieldAttachments).DataType(dmodel.FieldDataTypeModel())).
 		Field(dmodel.DefineField().Name(TicketMessageFieldIsInternalNote).DataType(dmodel.FieldDataTypeBoolean()).Default(false)).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 type TicketMessage struct{ basemodel.DynamicModelBase }

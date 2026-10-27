@@ -57,6 +57,12 @@ func (this *fakeStorageConsumer) DuplicateFile(
 	return nil, nil
 }
 
+func (this *fakeStorageConsumer) GetFileMeta(
+	_ corectx.Context, _ storage.GetFileMetaQuery,
+) (*storage.FileMeta, ft.ClientErrors, error) {
+	return nil, nil, nil
+}
+
 func newFileSchema() *dmodel.ModelSchema {
 	fileFlag := map[string]any{storage.MetadataFileField: true}
 	return dmodel.DefineModel("cmp_file_resource").

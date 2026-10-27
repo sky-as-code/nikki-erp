@@ -42,6 +42,9 @@ type UserCrudDomainServiceImpl struct {
 func (this *UserCrudDomainServiceImpl) ManageRoles(
 	ctx corectx.Context, cmd itUser.ManageUserRolesCommand,
 ) (*itUser.ManageUserRolesResult, error) {
+	if refused, err := userTypeScope.assertOfType(ctx, this.Repository(), cmd); err != nil || refused != nil {
+		return refused, err
+	}
 	return composable.ManageM2m(ctx, this.Repository(), cmd, composable.ManageM2mParam{
 		Action:          "manage user role assignments",
 		DestSchemaName:  domain.RoleSchemaName,
@@ -73,6 +76,8 @@ func (this *UserCrudDomainServiceImpl) Create(
 		opts = options[0]
 	}
 	opts.BeforeValidation = clearIsOwner(opts.BeforeValidation)
+	// iam_user creates humans only; a service is created through iam_service.
+	cmd[domain.UserFieldType] = string(domain.UserTypeUser)
 
 	var result *itUser.CreateUserCrudResult
 	err := composable.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {

@@ -59,6 +59,7 @@ func organizationalUnitSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(OrgUnitEdgeParent).
 				Label(model.LangJson{"en-US": "Parent unit"}).

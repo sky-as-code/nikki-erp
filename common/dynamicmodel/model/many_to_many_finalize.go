@@ -260,37 +260,33 @@ func injectThroughSchemaManyToOnes(reg *SchemaRegistry) error {
 			if err != nil {
 				return errors.Wrap(err, "injectThroughSchemaManyToOnes")
 			}
-			for _, pk := range srcSch.PrimaryKeys() {
-				col := PrefixedThroughColumn(rel.M2mSrcFieldPrefix, pk)
-				inj := ModelRelation{
-					Edge:           throughFkImplicitEdgeName(col),
-					SrcField:       col,
-					RelationType:   RelationTypeManyToOne,
-					DestSchemaName: srcSch.Name(),
-					DestField:      pk,
-					ForeignKeys:    []ForeignKeyColumnPair{{FkColumn: col, ReferencedColumn: pk}},
-					OnDelete:       rel.OnDelete,
-					OnUpdate:       rel.OnUpdate,
-				}
-				appendManyToOneToThroughSchema(through, inj)
+			// A table-sharing schema reuses the owner's junction columns; the owner already holds the
+			// junction's many:one, and a second one under the same edge name would be ambiguous.
+			if !srcSch.sharesTable {
+				injectThroughManyToOnes(through, srcSch, rel.M2mSrcFieldPrefix, *rel)
 			}
-			for _, pk := range peerSch.PrimaryKeys() {
-				col := PrefixedThroughColumn(rel.M2mDestFieldPrefix, pk)
-				inj := ModelRelation{
-					Edge:           throughFkImplicitEdgeName(col),
-					SrcField:       col,
-					RelationType:   RelationTypeManyToOne,
-					DestSchemaName: peerSch.Name(),
-					DestField:      pk,
-					ForeignKeys:    []ForeignKeyColumnPair{{FkColumn: col, ReferencedColumn: pk}},
-					OnDelete:       peerRel.OnDelete,
-					OnUpdate:       peerRel.OnUpdate,
-				}
-				appendManyToOneToThroughSchema(through, inj)
+			if !peerSch.sharesTable {
+				injectThroughManyToOnes(through, peerSch, rel.M2mDestFieldPrefix, peerRel)
 			}
 		}
 	}
 	return nil
+}
+
+func injectThroughManyToOnes(through, destSch *ModelSchema, prefix string, rel ModelRelation) {
+	for _, pk := range destSch.PrimaryKeys() {
+		col := PrefixedThroughColumn(prefix, pk)
+		appendManyToOneToThroughSchema(through, ModelRelation{
+			Edge:           throughFkImplicitEdgeName(col),
+			SrcField:       col,
+			RelationType:   RelationTypeManyToOne,
+			DestSchemaName: destSch.Name(),
+			DestField:      pk,
+			ForeignKeys:    []ForeignKeyColumnPair{{FkColumn: col, ReferencedColumn: pk}},
+			OnDelete:       rel.OnDelete,
+			OnUpdate:       rel.OnUpdate,
+		})
+	}
 }
 
 func throughFkImplicitEdgeName(fkCol string) string {

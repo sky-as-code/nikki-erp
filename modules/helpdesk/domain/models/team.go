@@ -27,7 +27,8 @@ func TeamSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(basemodel.DefineFieldId(TeamFieldGroupId)).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 type Team struct{ basemodel.DynamicModelBase }

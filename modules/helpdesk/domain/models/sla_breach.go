@@ -27,7 +27,8 @@ func SlaBreachSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			"response", "resolution",
 		})).RequiredForCreate()).
 		Field(dmodel.DefineField().Name(SlaBreachFieldBreachedAt).DataType(dmodel.FieldDataTypeDateTime()).RequiredForCreate()).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 type SlaBreach struct{ basemodel.DynamicModelBase }

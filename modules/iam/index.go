@@ -136,6 +136,7 @@ func (this *IamModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.GroupUserRelSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.GroupSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.UserSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ServiceSchemaBuilder()),
 
 		dmodel.RegisterSchemaB(models.ActionSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.ResourceSchemaBuilder()),

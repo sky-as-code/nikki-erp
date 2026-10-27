@@ -9,6 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 )
@@ -56,7 +57,36 @@ func (this *EntitlementCrudDomainServiceImpl) calculateExpression(
 	}
 
 	ent.CalculateExpression(actionCode, resourceCode)
+	applyFieldName(ent, actionCode, resourceCode)
 	return nil
+}
+
+// applyFieldName narrows the expression of a field-level entitlement to its field:
+// `{action}:{resource}.{field_name}:{scope}`. The guard matches exactly what
+// reguard.BuildFieldExpression produces, so the expression is rebuilt through it rather than
+// patched as a string. A resource-level entitlement (no field_name) keeps what CalculateExpression
+// wrote; resource_id is required, so a field never hangs off the wildcard resource.
+func applyFieldName(ent *domain.Entitlement, actionCode *string, resourceCode *string) {
+	fieldName := ent.GetFieldData().GetString(domain.EntitlementFieldFieldName)
+	scope := ent.GetScope()
+	if fieldName == nil || *fieldName == "" || scope == nil || resourceCode == nil {
+		return
+	}
+	scopeId := ent.GetOrgId()
+	if *scope == c.ResourceScopeOrgUnit {
+		scopeId = ent.GetOrgUnitId()
+	}
+	expr := reguard.BuildFieldExpression(
+		valueOr(actionCode, reguard.Wildcard), *resourceCode, *fieldName, *scope, scopeId,
+	)
+	ent.GetFieldData().SetString(domain.EntitlementFieldExpression, &expr)
+}
+
+func valueOr(val *string, fallback string) string {
+	if val == nil {
+		return fallback
+	}
+	return *val
 }
 
 func (this *EntitlementCrudDomainServiceImpl) resolveActionCode(

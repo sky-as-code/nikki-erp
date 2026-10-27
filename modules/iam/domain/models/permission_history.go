@@ -99,6 +99,7 @@ func PermissionHistorySchemaBuilder() *dmodel.ModelSchemaBuilder {
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_SHORT_NAME_LENGTH)),
 		).
 		Extend(basemodel.AuditableReadonlyModelSchemaBuilder()).
+		Extend(basemodel.TraceableReadonlyModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge("role").
 				Label(model.LangJson{"en-US": "Role"}).

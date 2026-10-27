@@ -160,3 +160,42 @@ func TestCandidateExpressions_AllParseable(t *testing.T) {
 		}
 	}
 }
+
+// A field-level requirement is answered by any grant that answers the resource-level one, plus
+// the field grants at the same scopes. Field grants never carry a resource wildcard, and a grant
+// on another field never answers.
+func TestCandidateExpressions_Field(t *testing.T) {
+	orgId := model.Id("ORG1")
+	required := PermFor("update", "iam_user", ResourceScopeOrg).InOrg(&orgId).ForField("display_name")
+	candidates := CandidateExpressions(required, EvalContext{UserOrgIds: []model.Id{orgId}})
+
+	for _, expected := range []string{
+		"*:*:*", "update:iam_user:tenant", "update:*:tenant", "update:iam_user:org/ORG1",
+		"update:iam_user.display_name:tenant", "*:iam_user.display_name:tenant",
+		"update:iam_user.display_name:org/ORG1", "update:iam_user.display_name:org",
+	} {
+		assert.Contains(t, candidates, expected)
+	}
+	for _, forbidden := range []string{
+		"update:iam_user.email:tenant", "update:*.display_name:tenant", "read:iam_user.display_name:tenant",
+	} {
+		assert.NotContains(t, candidates, forbidden)
+	}
+}
+
+func TestCandidateExpressions_FieldCandidatesAreParseable(t *testing.T) {
+	orgId := model.Id("ORG1")
+	unitId := model.Id("OU1")
+	scopes := []ResourceScope{ResourceScopeTenant, ResourceScopeOrg, ResourceScopeOrgUnit, ResourceScopePrivate}
+
+	for _, scope := range scopes {
+		required := PermFor("read", "iam_user", scope).InOrg(&orgId).InOrgUnit(&unitId).ForField("email")
+		for _, candidate := range CandidateExpressions(required, EvalContext{}) {
+			parsed, err := ParseExpression(candidate)
+			assert.NoError(t, err, "candidate %q must parse", candidate)
+			if err == nil {
+				assert.Equal(t, candidate, parsed.String())
+			}
+		}
+	}
+}

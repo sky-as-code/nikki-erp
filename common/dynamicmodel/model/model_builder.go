@@ -56,6 +56,14 @@ func (this *ModelSchemaBuilder) ShouldBuildDb() *ModelSchemaBuilder {
 	return this
 }
 
+// SharesTable declares a schema over a table another schema owns: database metadata is still
+// populated (so the repository can read and write it), but no DDL is generated for it.
+func (this *ModelSchemaBuilder) SharesTable() *ModelSchemaBuilder {
+	this.schema.sharesTable = true
+	this.shouldBuildDb = true
+	return this
+}
+
 func (this *ModelSchemaBuilder) Field(fieldBuilder *FieldBuilder) *ModelSchemaBuilder {
 	if fieldBuilder == nil {
 		return this
@@ -737,12 +745,9 @@ func (this *FieldBuilder) RequiredForCreate() *FieldBuilder {
 	return this
 }
 
-// DbNullable drops the column's NOT NULL constraint while leaving the field required for create.
-//
-// Use it only where the database itself must be able to write NULL: a foreign key declared
-// ON DELETE SET NULL clears the column when the parent is deleted, which a NOT NULL column would
-// refuse. It does not make the field optional to a client - RequiredForCreate still applies -
-// so it never widens what the API accepts.
+// DbNullable is obsolete: every column other than the primary and tenant keys is NULL in DDL
+// regardless of required-ness (see ModelField.ColumnNullable). It is kept so existing schemas
+// declaring `db_nullable` still parse, and has no effect.
 func (this *FieldBuilder) DbNullable() *FieldBuilder {
 	this.field.isDbNullable = true
 	return this
@@ -983,6 +988,14 @@ func (this *RelationBuilder) OnUpdate(onUpdate RelationCascade) *RelationBuilder
 			this.relation.Edge, onUpdate))
 	}
 	this.relation.OnUpdate = onUpdate
+	return this
+}
+
+// NoDbConstraint makes the edge loose: no FOREIGN KEY is generated for it. Use it when the
+// destination table is created later in the migration order than this one, which a constraint
+// cannot reference.
+func (this *RelationBuilder) NoDbConstraint() *RelationBuilder {
+	this.relation.NoDbConstraint = true
 	return this
 }
 

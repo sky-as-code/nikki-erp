@@ -13,6 +13,7 @@ func InitRestfulHandlers() error {
 	err := deps.Register(
 		v1.NewUserRest,
 		v1.NewUserCrudRest,
+		v1.NewServiceCrudRest,
 		v1.NewGroupCrudRest,
 		v1.NewOrgCrudRest,
 		v1.NewOrgUnitCrudRest,
@@ -29,6 +30,7 @@ func InitRestfulHandlers() error {
 		err,
 		initMeV1(),
 		initUserCrudV1(),
+		initServiceCrudV1(),
 		initOrgV1(),
 		initOrgUnitV1(),
 		initGroupV1(),

@@ -152,6 +152,24 @@ func parityScenarios() []parityScenario {
 			expected: false,
 		},
 		{
+			name:     "a private grant answers an org question about the caller's own record",
+			grants:   []string{"update:iam_user:private"},
+			required: PermFor("update", "iam_user", ResourceScopeOrg).InOrg(orgId()).OwnedByCaller(true),
+			expected: true,
+		},
+		{
+			name:     "a private grant does not answer an org question about another's record",
+			grants:   []string{"update:iam_user:private"},
+			required: PermFor("update", "iam_user", ResourceScopeOrg).InOrg(orgId()),
+			expected: false,
+		},
+		{
+			name:     "a private field grant answers a tenant field question about the caller's own record",
+			grants:   []string{"read:iam_user.email:private"},
+			required: PermFor("read", "iam_user", ResourceScopeTenant).ForField("email").OwnedByCaller(true),
+			expected: true,
+		},
+		{
 			name:     "a narrower grant does not satisfy a wider requirement",
 			grants:   []string{"create:iam_user:org/ORG1"},
 			required: PermFor("create", "iam_user", ResourceScopeTenant),
@@ -161,6 +179,43 @@ func parityScenarios() []parityScenario {
 			name:     "the wrong action denies",
 			grants:   []string{"view:iam_user:tenant"},
 			required: PermFor("delete", "iam_user", ResourceScopeTenant),
+			expected: false,
+		},
+		{
+			name:     "a resource grant answers a field question",
+			grants:   []string{"update:iam_user:tenant"},
+			required: PermFor("update", "iam_user", ResourceScopeTenant).ForField("display_name"),
+			expected: true,
+		},
+		{
+			name:     "a field grant answers its own field",
+			grants:   []string{"update:iam_user.display_name:tenant"},
+			required: PermFor("update", "iam_user", ResourceScopeTenant).ForField("display_name"),
+			expected: true,
+		},
+		{
+			name:     "a field grant does not answer another field",
+			grants:   []string{"update:iam_user.display_name:tenant"},
+			required: PermFor("update", "iam_user", ResourceScopeTenant).ForField("email"),
+			expected: false,
+		},
+		{
+			name:     "a field grant does not answer the whole resource",
+			grants:   []string{"update:iam_user.display_name:tenant"},
+			required: PermFor("update", "iam_user", ResourceScopeTenant),
+			expected: false,
+		},
+		{
+			name:     "an org field grant answers a member's field question",
+			grants:   []string{"read:iam_user.email:org"},
+			required: PermFor("read", "iam_user", ResourceScopeOrg).InOrg(orgId()).ForField("email"),
+			evalCtx:  EvalContext{UserOrgIds: []model.Id{*orgId()}},
+			expected: true,
+		},
+		{
+			name:     "a private field grant denies someone else's record",
+			grants:   []string{"read:iam_user.email:private"},
+			required: PermFor("read", "iam_user", ResourceScopePrivate).ForField("email"),
 			expected: false,
 		},
 		{

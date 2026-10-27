@@ -2,6 +2,7 @@ package requestguard
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -21,21 +22,46 @@ const Wildcard = "*"
 // grants and carried into the database.
 const maxSegmentLength = 128
 
-// An entitlement expression has the shape `{action}:{resource}:{scope}[/{scopeId}]`
-// where action and resource may be the wildcard `*`, and the scope segment carries
-// an optional id for the org / orgunit scopes.
+// FieldSeparator splits a field-level resource segment `{resource}.{field}`.
+const FieldSeparator = "."
+
+// fieldNamePattern is the shape of a field name in a field-level expression. It matches the snake
+// lower case every schema field name follows, and rules out the wildcard and a second separator.
+var fieldNamePattern = regexp.MustCompile(`^[a-z0-9_]+$`)
+
+// An entitlement expression has the shape `{action}:{resource}[.{field}]:{scope}[/{scopeId}]`
+// where action and resource may be the wildcard `*`, the optional field narrows the grant to one
+// field of the resource, and the scope segment carries an optional id for the org / orgunit scopes.
 //
-// BuildExpression is the ONLY producer of expressions in the codebase: the
-// entitlement model persists what it returns, the guard matches against what it
-// returns, and the SQL matcher builds its IN-list from it. Any second
-// implementation is a defect - the two sides silently drift apart (see plan D1/D4).
+// BuildExpression and BuildFieldExpression are the ONLY producers of expressions in the codebase:
+// the entitlement model persists what they return, the guard matches against what they return,
+// and the SQL matcher builds its IN-list from it. Any second implementation is a defect - the two
+// sides silently drift apart (see plan D1/D4).
 func BuildExpression(actionCode string, resourceCode string, scope ResourceScope, scopeId *model.Id) string {
+	return BuildFieldExpression(actionCode, resourceCode, "", scope, scopeId)
+}
+
+// BuildFieldExpression is BuildExpression for a field-level grant. An empty fieldName builds the
+// resource-level expression. A field-level expression always names its resource: a field of "any
+// resource" means nothing, so the caller must not pass a wildcard resource with a field.
+func BuildFieldExpression(
+	actionCode string, resourceCode string, fieldName string, scope ResourceScope, scopeId *model.Id,
+) string {
 	action := orWildcard(actionCode)
-	resource := orWildcard(resourceCode)
+	resource := ResourceSegment(orWildcard(resourceCode), fieldName)
 	if scopeId != nil && *scopeId != "" {
 		return fmt.Sprintf("%s:%s:%s/%s", action, resource, string(scope), string(*scopeId))
 	}
 	return fmt.Sprintf("%s:%s:%s", action, resource, string(scope))
+}
+
+// ResourceSegment is the middle segment of an expression: the resource code, followed by the
+// field name when there is one.
+func ResourceSegment(resourceCode string, fieldName string) string {
+	if fieldName == "" {
+		return resourceCode
+	}
+	return resourceCode + FieldSeparator + fieldName
 }
 
 func orWildcard(code string) string {
@@ -55,8 +81,10 @@ func OmnipotentExpression() string {
 type ParsedExpression struct {
 	ActionCode   string
 	ResourceCode string
-	Scope        ResourceScope
-	ScopeId      *model.Id
+	// FieldName is empty for a resource-level expression.
+	FieldName string
+	Scope     ResourceScope
+	ScopeId   *model.Id
 }
 
 // HasWildcard reports whether the expression grants across all actions or all
@@ -73,7 +101,7 @@ func (this ParsedExpression) String() string {
 	if string(this.Scope) == Wildcard {
 		return OmnipotentExpression()
 	}
-	return BuildExpression(this.ActionCode, this.ResourceCode, this.Scope, this.ScopeId)
+	return BuildFieldExpression(this.ActionCode, this.ResourceCode, this.FieldName, this.Scope, this.ScopeId)
 }
 
 // ParseExpression decomposes an entitlement expression. It is strict on purpose:
@@ -103,6 +131,10 @@ func ParseExpression(expr string) (*ParsedExpression, error) {
 		return &ParsedExpression{ActionCode: Wildcard, ResourceCode: Wildcard, Scope: ResourceScope(Wildcard)}, nil
 	}
 
+	resourceCode, fieldName, err := splitResourceSegment(resource)
+	if err != nil {
+		return nil, err
+	}
 	scopeName, scopeId, err := splitScopeSegment(scopeSegment)
 	if err != nil {
 		return nil, err
@@ -110,10 +142,25 @@ func ParseExpression(expr string) (*ParsedExpression, error) {
 
 	return &ParsedExpression{
 		ActionCode:   action,
-		ResourceCode: resource,
+		ResourceCode: resourceCode,
+		FieldName:    fieldName,
 		Scope:        scopeName,
 		ScopeId:      scopeId,
 	}, nil
+}
+
+func splitResourceSegment(segment string) (string, string, error) {
+	resourceCode, fieldName, hasField := strings.Cut(segment, FieldSeparator)
+	if !hasField {
+		return segment, "", nil
+	}
+	if resourceCode == "" || resourceCode == Wildcard {
+		return "", "", fmt.Errorf("a field-level expression must name its resource")
+	}
+	if !fieldNamePattern.MatchString(fieldName) {
+		return "", "", fmt.Errorf("field %q is not a valid field name", fieldName)
+	}
+	return resourceCode, fieldName, nil
 }
 
 func splitScopeSegment(segment string) (ResourceScope, *model.Id, error) {
