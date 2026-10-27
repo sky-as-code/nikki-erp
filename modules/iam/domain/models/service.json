@@ -1,0 +1,51 @@
+{
+	"name": "iam_service",
+	"description": {
+		"en-US": "A machine principal. Stored in iam_users as rows of type service; the user domain service never sees them."
+	},
+	"table_name": "iam_users",
+	"shares_table": true,
+	"record_label_field": "display_name",
+	"default_search_fields": ["display_name", "status"],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "display_name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
+			"required_for_create": true
+		},
+		{
+			"name": "status",
+			"data_type": { "type": "enum_string", "values": ["draft", "invited", "active", "suspended"] },
+			"required_for_create": true,
+			"default_value": "draft"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.versioned_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "orgs",
+			"type": "many:many",
+			"peer_schema": "iam_org",
+			"through_schema": "iam_org_user_rel",
+			"src_field_prefix": "user",
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "roles",
+			"type": "many:many",
+			"peer_schema": "iam_role",
+			"through_schema": "iam_role_user_assignment",
+			"src_field_prefix": "receiver_user",
+			"on_delete": "CASCADE"
+		}
+	]
+}

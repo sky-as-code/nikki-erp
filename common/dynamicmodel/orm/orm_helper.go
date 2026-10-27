@@ -37,13 +37,17 @@ func GenCreateSql(registry *model.SchemaRegistry, dialect string, schemaPrefixes
 	if dialect != DialectPostgres {
 		return nil, errors.Errorf("GenCreateSql: dialect '%s' is not supported", dialect)
 	}
-	builder := NewPgQueryBuilder()
+	builder := NewPgQueryBuilder().(*PgQueryBuilder)
+	placement := newFkPlacement()
 	var results []string
 	err := registry.ForEachOrder(func(schemaName string, s *model.ModelSchema) error {
-		if !hasAnyPrefix(schemaName, schemaPrefixes) {
+		// Marked even when filtered out: a table outside the prefixes still precedes this one in
+		// the baseline the migration is diffed against.
+		placement.markCreated(schemaName)
+		if s.SharesTable() || !hasAnyPrefix(schemaName, schemaPrefixes) {
 			return nil
 		}
-		sqlParts, clientErrs, genErr := builder.SqlCreateTable(s, registry)
+		sqlParts, clientErrs, genErr := builder.sqlCreateTablePlaced(s, registry, placement)
 		if genErr != nil {
 			return errors.Wrapf(genErr, "GenCreateSql: schema '%s'", schemaName)
 		}
@@ -56,7 +60,7 @@ func GenCreateSql(registry *model.SchemaRegistry, dialect string, schemaPrefixes
 	if err != nil {
 		return nil, err
 	}
-	return results, nil
+	return append(results, placement.deferred...), nil
 }
 
 // hasAnyPrefix reports whether name starts with one of prefixes. An empty prefix list, or an empty

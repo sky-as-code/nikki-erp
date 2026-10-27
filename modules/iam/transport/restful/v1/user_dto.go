@@ -6,7 +6,7 @@ import (
 
 type GetUserContextResponse struct {
 	Id           string   `json:"id"`
-	AvatarUrl    *string  `json:"avatar_url"`
+	AvatarFileId *string  `json:"avatar_file_id"`
 	DisplayName  string   `json:"display_name"`
 	Email        string   `json:"email"`
 	Entitlements []string `json:"entitlements"`

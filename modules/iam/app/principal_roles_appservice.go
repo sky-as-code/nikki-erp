@@ -7,15 +7,19 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itGroup "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/group"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
+	itService "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/service"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
 func NewPrincipalRolesApplicationService(
 	userSvc itUser.UserCrudApplicationService,
+	serviceSvc itService.ServiceCrudApplicationService,
 	groupSvc itGroup.GroupCrudApplicationService,
 	roleDomSvc itRole.RoleCrudDomainService,
 ) itRole.PrincipalRolesApplicationService {
-	return &PrincipalRolesApplicationServiceImpl{userSvc: userSvc, groupSvc: groupSvc, roleDomSvc: roleDomSvc}
+	return &PrincipalRolesApplicationServiceImpl{
+		userSvc: userSvc, serviceSvc: serviceSvc, groupSvc: groupSvc, roleDomSvc: roleDomSvc,
+	}
 }
 
 // PrincipalRolesApplicationServiceImpl stands apart from the user and group onions because it
@@ -23,6 +27,7 @@ func NewPrincipalRolesApplicationService(
 // user onion cannot depend on it in return.
 type PrincipalRolesApplicationServiceImpl struct {
 	userSvc    itUser.UserCrudApplicationService
+	serviceSvc itService.ServiceCrudApplicationService
 	groupSvc   itGroup.GroupCrudApplicationService
 	roleDomSvc itRole.RoleCrudDomainService
 }
@@ -33,6 +38,14 @@ func (this *PrincipalRolesApplicationServiceImpl) UserRoles(
 	ctx corectx.Context, query composable.SearchQuery,
 ) (*composable.SearchResult, error) {
 	return this.principalRoles(ctx, this.userSvc, query, models.RoleEdgeAssignedUsers)
+}
+
+// ServiceRoles reads the same assignment rows as UserRoles, through the role's assigned_services
+// edge; the principal is confined to the service resource like a read of the service.
+func (this *PrincipalRolesApplicationServiceImpl) ServiceRoles(
+	ctx corectx.Context, query composable.SearchQuery,
+) (*composable.SearchResult, error) {
+	return this.principalRoles(ctx, this.serviceSvc, query, models.RoleEdgeAssignedServices)
 }
 
 func (this *PrincipalRolesApplicationServiceImpl) GroupRoles(

@@ -136,14 +136,26 @@ func TestRelationshipHasNoOrgId(t *testing.T) {
 func TestPartyChildEdgesCascadeOnDelete(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
-	for _, relation := range CommChannelSchemaBuilder().Build().ToRelations() {
+	for _, relation := range partyChildRelations(CommChannelSchemaBuilder().Build()) {
 		assert.Equal(t, dmodel.RelationCascadeCascade, relation.OnDelete,
 			"comm channel edge %q must cascade", relation.Edge)
 	}
-	for _, relation := range RelationshipSchemaBuilder().Build().ToRelations() {
+	for _, relation := range partyChildRelations(RelationshipSchemaBuilder().Build()) {
 		assert.Equal(t, dmodel.RelationCascadeCascade, relation.OnDelete,
 			"relationship edge %q must cascade", relation.Edge)
 	}
+}
+
+// partyChildRelations leaves out the traceable edges to iam_user, which belong to every audited
+// model and clear rather than cascade.
+func partyChildRelations(schema *dmodel.ModelSchema) []dmodel.ModelRelation {
+	out := make([]dmodel.ModelRelation, 0)
+	for _, relation := range schema.ToRelations() {
+		if relation.DestSchemaName != "iam_user" {
+			out = append(out, relation)
+		}
+	}
+	return out
 }
 
 func requireBaseSchemasRegistered(t *testing.T) {
@@ -255,6 +267,7 @@ func partySchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		EdgeFrom(
 			dmodel.Edge(PartyEdgeCommChannels).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Communication Channels"}).
@@ -318,6 +331,7 @@ func commChannelSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(CommChannelEdgeParty).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Party"}).
@@ -367,6 +381,7 @@ func relationshipSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(RelationshipEdgeSourceParty).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Source Party"}).

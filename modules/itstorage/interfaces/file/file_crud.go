@@ -55,6 +55,7 @@ type FileDomainService interface {
 	MarkFilesInUse(ctx corectx.Context, cmd storage.MarkFilesInUseCommand) error
 	ReleaseFiles(ctx corectx.Context, cmd storage.ReleaseFilesCommand) error
 	DuplicateFile(ctx corectx.Context, cmd storage.DuplicateFileCommand) (*model.Id, error)
+	GetFileMeta(ctx corectx.Context, query storage.GetFileMetaQuery) (*storage.FileMeta, ft.ClientErrors, error)
 
 	// OpenObject streams the stored object, honouring an HTTP Range header when given.
 	OpenObject(ctx corectx.Context, file *models.File, rangeHeader string) (*DownloadFileResultData, error)

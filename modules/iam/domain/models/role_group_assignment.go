@@ -53,6 +53,7 @@ func RoleGroupAssignmentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Description(model.LangJson{"en-US": "The date and time when the entitlement grant expires."}),
 		).
 		Extend(basemodel.AuditableReadonlyModelSchemaBuilder()).
+		Extend(basemodel.TraceableReadonlyModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(RoleGroupAssignEdgeRoleRequest).
 				Label(model.LangJson{"en-US": "Role Request"}).

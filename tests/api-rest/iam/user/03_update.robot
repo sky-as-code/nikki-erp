@@ -12,7 +12,7 @@ Update Succeeds
     ${email}=    Unique Email    robot.updated
     ${name}=    Unique Display Name    Robot Updated User
     ${resp}=    PATCH On Session    api    ${USER_API}/${USER_ID}
-    ...    json=${{ {'avatar_url': 'https://cdn.e2e.nikki.vn/avatars/updated.jpg', 'display_name': $name, 'email': $email, 'etag': $USER_ETAG, 'status': 'invited'} }}
+    ...    json=${{ {'display_name': $name, 'email': $email, 'etag': $USER_ETAG, 'status': 'invited'} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${USER_ETAG}
     IF    $etag is not None    Set Global Variable    ${USER_ETAG}    ${etag}
     Set Global Variable    ${USER_EMAIL}    ${email}
@@ -20,7 +20,7 @@ Update Succeeds
 Update With Empty Strings Fails
     [Tags]    negative
     ${resp}=    PATCH On Session    api    ${USER_API}/${USER_ID}
-    ...    json=${{ {'avatar_url': '', 'display_name': '', 'email': '', 'etag': ''} }}    expected_status=any
+    ...    json=${{ {'display_name': '', 'email': '', 'etag': ''} }}    expected_status=any
     Response Should Be Missing Fields Error    ${resp}    etag
 
 Update With Invalid Id Format Fails

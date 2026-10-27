@@ -250,8 +250,10 @@ func TestAuditEventIsImmutable(t *testing.T) {
 func TestAuditEventHasNoEdgeToItsSubject(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
-	assert.Empty(t, AuditEventSchemaBuilder().Build().ToRelations(),
-		"an audit event must survive the deletion of the record it describes")
+	for _, relation := range AuditEventSchemaBuilder().Build().ToRelations() {
+		assert.Equal(t, "iam_user", relation.DestSchemaName,
+			"an audit event must survive the deletion of the record it describes; only its actor edge is kept")
+	}
 }
 
 // Status values are lower-case in the database; upper-case spellings elsewhere are presentation.

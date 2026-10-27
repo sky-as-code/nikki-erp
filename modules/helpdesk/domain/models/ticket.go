@@ -73,6 +73,7 @@ func TicketSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(TicketEdgeActivities).
 				OneToMany(TicketActivitySchemaName, dmodel.DynamicFields{

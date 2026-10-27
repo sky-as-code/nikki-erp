@@ -10,6 +10,9 @@ Documentation     Scope semantics over the wire.
 ...               That last one is deliberate rather than an oversight: unit grants apply
 ...               to the unit itself so that moving a unit in the tree cannot silently
 ...               change anybody's access.
+...
+...               The scopes are exercised on iam_group: the system "User" role grants every
+...               user read:iam_user:tenant, which would answer every iam_user question here.
 Resource          ../../resources/iam.resource
 Suite Setup       Set Up Scope Fixtures
 
@@ -19,7 +22,7 @@ Set Up Scope Fixtures
     [Documentation]    Two orgs and a parent/child unit pair, plus a user with their own
     ...    session, so every scope combination has something concrete to name.
     Create Authorized API Session
-    ${resource_id}    ${action_id}=    Resolve Resource And Action    iam_user    read
+    ${resource_id}    ${action_id}=    Resolve Resource And Action    iam_group    read
     Set Suite Variable    ${SCOPE_RESOURCE_ID}    ${resource_id}
     Set Suite Variable    ${SCOPE_ACTION_ID}    ${action_id}
 
@@ -84,35 +87,35 @@ A Tenant Grant Satisfies An Org Scoped Question
     [Documentation]    Widening: tenant is the widest scope, so it answers a question
     ...    asked about any particular org.
     ${role_id}=    Grant Scoped Role    Perm Scope Tenant    tenant
-    Permission Should Be Granted    scope_user    read:iam_user:org/${ORG_A}
-    Permission Should Be Granted    scope_user    read:iam_user:org/${ORG_B}
+    Permission Should Be Granted    scope_user    read:iam_group:org/${ORG_A}
+    Permission Should Be Granted    scope_user    read:iam_group:org/${ORG_B}
     [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
 A Tenant Grant Satisfies A Unit Scoped Question
     ${role_id}=    Grant Scoped Role    Perm Scope Tenant Unit    tenant
-    Permission Should Be Granted    scope_user    read:iam_user:orgunit/${UNIT_CHILD}
+    Permission Should Be Granted    scope_user    read:iam_group:orgunit/${UNIT_CHILD}
     [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
 An Org Grant Answers Only For Its Own Org
     [Documentation]    Narrowing in the other direction: naming org A must not grant
     ...    anything about org B. This is the isolation the org scope exists to provide.
     ${role_id}=    Grant Scoped Role    Perm Scope Org A    org    org_id    ${ORG_A}
-    Permission Should Be Granted    scope_user    read:iam_user:org/${ORG_A}
-    Permission Should Be Denied    scope_user    read:iam_user:org/${ORG_B}
+    Permission Should Be Granted    scope_user    read:iam_group:org/${ORG_A}
+    Permission Should Be Denied    scope_user    read:iam_group:org/${ORG_B}
     [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
 An Org Grant Satisfies A Question About A Unit Inside That Org
     [Documentation]    The org-to-unit fallback: a unit belongs to an org, so a grant over
     ...    that org covers the records inside its units.
     ${role_id}=    Grant Scoped Role    Perm Scope Org Fallback    org    org_id    ${ORG_A}
-    Permission Should Be Granted    scope_user    read:iam_user:orgunit/${UNIT_CHILD}
+    Permission Should Be Granted    scope_user    read:iam_group:orgunit/${UNIT_CHILD}
     [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
 A Unit Grant Answers Only For Its Own Unit
     Skip Unless Unit Scope Is Grantable
     ${role_id}=    Grant Scoped Role    Perm Scope Unit Child    orgunit    org_unit_id    ${UNIT_CHILD}
-    Permission Should Be Granted    scope_user    read:iam_user:orgunit/${UNIT_CHILD}
-    Permission Should Be Denied    scope_user    read:iam_user:orgunit/${UNIT_PARENT}
+    Permission Should Be Granted    scope_user    read:iam_group:orgunit/${UNIT_CHILD}
+    Permission Should Be Denied    scope_user    read:iam_group:orgunit/${UNIT_PARENT}
     # A skipped case never granted the role, so there is no ${role_id} to revoke.
     [Teardown]    Run Keyword If    '${TEST STATUS}' != 'SKIP'
     ...    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
@@ -124,8 +127,8 @@ A Parent Unit Grant Does Not Reach A Child Unit
     ...    written.
     Skip Unless Unit Scope Is Grantable
     ${role_id}=    Grant Scoped Role    Perm Scope Unit Parent    orgunit    org_unit_id    ${UNIT_PARENT}
-    Permission Should Be Granted    scope_user    read:iam_user:orgunit/${UNIT_PARENT}
-    Permission Should Be Denied    scope_user    read:iam_user:orgunit/${UNIT_CHILD}
+    Permission Should Be Granted    scope_user    read:iam_group:orgunit/${UNIT_PARENT}
+    Permission Should Be Denied    scope_user    read:iam_group:orgunit/${UNIT_CHILD}
     # A skipped case never granted the role, so there is no ${role_id} to revoke.
     [Teardown]    Run Keyword If    '${TEST STATUS}' != 'SKIP'
     ...    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
@@ -134,7 +137,7 @@ A Narrow Grant Does Not Satisfy A Tenant Question
     [Documentation]    Widening runs one way only. Holding a permission over one org says
     ...    nothing about holding it everywhere.
     ${role_id}=    Grant Scoped Role    Perm Scope Narrow    org    org_id    ${ORG_A}
-    Permission Should Be Denied    scope_user    read:iam_user:tenant
+    Permission Should Be Denied    scope_user    read:iam_group:tenant
     [Teardown]    Unassign Role From User    ${SCOPE_USER_ID}    ${role_id}
 
 An Expired Grant Stops Answering Without Any Rebuild

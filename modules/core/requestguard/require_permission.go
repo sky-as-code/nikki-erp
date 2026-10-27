@@ -8,8 +8,11 @@ import (
 
 type Perm struct {
 	ResourceCode string
-	ActionCode   string
-	Scope        ResourceScope
+	// FieldName narrows the requirement to one field of the resource. Empty means the whole
+	// resource. See CandidateExpressions for what answers a field-level requirement.
+	FieldName  string
+	ActionCode string
+	Scope      ResourceScope
 	// This is Org Unit ID to which the resource belongs (if any).
 	// If this is not nil, then OrgId must be this Org Unit's Org ID.
 	OrgUnitId *model.Id
@@ -30,6 +33,13 @@ type Perm struct {
 // grant, which is how org-scoped checks silently degraded before.
 func PermFor(actionCode string, resourceCode string, scope ResourceScope) Perm {
 	return Perm{ActionCode: actionCode, ResourceCode: resourceCode, Scope: scope}
+}
+
+// ForField narrows the requirement to one field of the resource; an empty name widens it back
+// to the whole resource.
+func (this Perm) ForField(fieldName string) Perm {
+	this.FieldName = fieldName
+	return this
 }
 
 // InOrg names the org the record belongs to.
@@ -118,13 +128,16 @@ func unauthenticated() *ft.ClientErrors {
 // insufficient names the exact expression the caller was missing, which is the
 // one piece of information that makes a 403 actionable for an administrator.
 func insufficient(requiredPerm Perm) *ft.ClientErrors {
-	exact := BuildExpression(
-		requiredPerm.ActionCode, requiredPerm.ResourceCode,
+	cErrs := ft.NewClientErrors()
+	cErrs.Append(*ft.NewInsufficientPermissionsError([]string{exactExpression(requiredPerm)}))
+	return cErrs
+}
+
+func exactExpression(requiredPerm Perm) string {
+	return BuildFieldExpression(
+		requiredPerm.ActionCode, requiredPerm.ResourceCode, requiredPerm.FieldName,
 		requiredPerm.Scope, scopeIdOf(requiredPerm),
 	)
-	cErrs := ft.NewClientErrors()
-	cErrs.Append(*ft.NewInsufficientPermissionsError([]string{exact}))
-	return cErrs
 }
 
 func scopeIdOf(requiredPerm Perm) *model.Id {

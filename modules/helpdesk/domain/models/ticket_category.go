@@ -31,6 +31,7 @@ func TicketCategorySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(TicketCategoryEdgeTickets).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Tickets"}).

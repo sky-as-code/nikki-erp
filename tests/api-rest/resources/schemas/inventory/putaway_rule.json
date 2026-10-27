@@ -4,6 +4,12 @@
     "properties": {
         "id": { "type": "string", "minLength": 1 },
         "created_at": { "type": "string", "minLength": 20 },
+        "created_by": {
+            "type": ["string", "null"]
+        },
+        "updated_by": {
+            "type": ["string", "null"]
+        },
         "updated_at": { "type": "string", "minLength": 20 },
         "code": { "type": "string", "minLength": 1 },
         "warehouse_id": { "type": "string", "minLength": 1 },

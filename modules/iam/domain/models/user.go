@@ -14,6 +14,13 @@ import (
 
 type UserStatus string
 
+type UserType string
+
+const (
+	UserTypeUser    = UserType("user")
+	UserTypeService = UserType("service")
+)
+
 const (
 	UserStatusDraft     = UserStatus("draft")
 	UserStatusInvited   = UserStatus("invited")
@@ -35,15 +42,13 @@ const (
 	UserSchemaName = "iam_user"
 
 	UserFieldId        = basemodel.FieldId
-	UserFieldAvatarUrl = "avatar_url"
-	// IT Storage file id of the uploaded avatar. Not "avatar_url", which is an older client-writable
-	// URL column.
 	UserFieldAvatarFileId = "avatar_file_id"
 	UserFieldDisplayName  = "display_name"
 	UserFieldEmail        = "email"
 	UserFieldIsOwner      = "is_owner"
 	UserFieldOrgUnitId    = "org_unit_id"
 	UserFieldStatus       = "status"
+	UserFieldType         = "type"
 
 	UserEdgeGroups                = "groups"
 	UserEdgeOrgs                  = "orgs"
@@ -110,12 +115,27 @@ func (this *User) SetIsArchived(v *bool) {
 	this.GetFieldData().SetBool(basemodel.FieldIsArchived, v)
 }
 
-func (this User) GetAvatarUrl() *string {
-	return this.GetFieldData().GetString(UserFieldAvatarUrl)
+func (this User) GetAvatarFileId() *model.Id {
+	return this.GetFieldData().GetModelId(UserFieldAvatarFileId)
 }
 
-func (this *User) SetAvatarUrl(v *string) {
-	this.GetFieldData().SetString(UserFieldAvatarUrl, v)
+// GetType returns nil when the field was not selected; callers decide the fallback.
+func (this User) GetType() *UserType {
+	val := this.GetFieldData().GetString(UserFieldType)
+	if val == nil {
+		return nil
+	}
+	userType := UserType(*val)
+	return &userType
+}
+
+func (this *User) SetType(v *UserType) {
+	if v == nil {
+		this.GetFieldData().SetString(UserFieldType, nil)
+		return
+	}
+	val := string(*v)
+	this.GetFieldData().SetString(UserFieldType, &val)
 }
 
 func (this User) MustGetDisplayName() string {

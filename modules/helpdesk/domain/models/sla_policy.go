@@ -29,7 +29,8 @@ func SlaPolicySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().Name(SlaPolicyFieldEscalationRules).DataType(dmodel.FieldDataTypeModel())).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 type SlaPolicy struct{ basemodel.DynamicModelBase }

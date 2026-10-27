@@ -29,6 +29,7 @@ func (this *SchemaRegistry) FinalizeRelations() error {
 func (this *SchemaRegistry) finalizeCoreRelations() error {
 	this.mu.Lock()
 	defer this.mu.Unlock()
+	pruneUnresolvableLooseRelationsUnlocked(this)
 	if err := normalizeAllForeignKeyMapsUnlocked(this); err != nil {
 		return err
 	}

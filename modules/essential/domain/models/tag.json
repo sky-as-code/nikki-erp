@@ -30,6 +30,7 @@
 	],
 	"extend_after": [
 		"core.basemodel.versioned_model",
-		"core.basemodel.auditable_model"
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_loose_model"
 	]
 }

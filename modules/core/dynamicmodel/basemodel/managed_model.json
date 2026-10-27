@@ -1,0 +1,21 @@
+{
+	"name": "core.basemodel.managed_model",
+	"fields": [
+		{
+			"name": "managed_by_type",
+			"label": "fields.managed_by_type",
+			"data_type": { "type": "enum_string", "values": ["system", "module", "user"] },
+			"no_update": true,
+			"description": {
+				"en-US": "Who manages the record. Empty means a client manages it; a 'system' record is created and maintained by the platform and refuses client changes."
+			}
+		},
+		{
+			"name": "managed_by_id",
+			"label": "fields.managed_by_id",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"no_update": true,
+			"description": { "en-US": "The id or name of the manager when managed_by_type is not 'system'." }
+		}
+	]
+}

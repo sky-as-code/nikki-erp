@@ -17,6 +17,10 @@
 		"description": { "$ref": "#/$defs/langJson" },
 		"table_name": { "type": "string" },
 		"should_build_db": { "type": "boolean" },
+		"shares_table": {
+			"description": "The table (table_name) belongs to another schema: database metadata is populated but no DDL or foreign key is generated for this schema.",
+			"type": "boolean"
+		},
 		"record_label_field": { "type": "string" },
 		"record_sub_label_field": { "type": "string" },
 		"default_search_fields": {
@@ -575,7 +579,11 @@
 				"through_schema": { "type": "string", "minLength": 1 },
 				"src_field_prefix": { "type": "string", "minLength": 1 },
 				"on_delete": { "$ref": "#/$defs/relationCascade" },
-				"on_update": { "$ref": "#/$defs/relationCascade" }
+				"on_update": { "$ref": "#/$defs/relationCascade" },
+				"db_constraint": {
+					"type": "boolean",
+					"description": "false makes the edge loose: no FOREIGN KEY is generated, and the edge is dropped when dest_schema is not registered. For a reference against the migration order (e.g. a module created before IAM pointing at iam_user). Default true."
+				}
 			},
 
 			"allOf": [

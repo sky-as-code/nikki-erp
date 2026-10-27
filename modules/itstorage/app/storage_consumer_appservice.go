@@ -39,3 +39,9 @@ func (this *StorageConsumerAppServiceImpl) DuplicateFile(
 ) (*model.Id, error) {
 	return this.fileSvc.DuplicateFile(ctx, cmd)
 }
+
+func (this *StorageConsumerAppServiceImpl) GetFileMeta(
+	ctx corectx.Context, query storage.GetFileMetaQuery,
+) (*storage.FileMeta, ft.ClientErrors, error) {
+	return this.fileSvc.GetFileMeta(ctx, query)
+}

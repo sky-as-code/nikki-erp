@@ -47,7 +47,7 @@ Create With All Fields Succeeds
     ${name}=    Unique Display Name    Robot Full User
     ${xss_name}=    Set Variable    <button onclick="alert('js')">${name}</button>
     ${resp}=    POST On Session    api    ${USER_API}
-    ...    json=${{ {'avatar_url': 'https://cdn.e2e.nikki.vn/avatars/robot.jpg', 'display_name': $xss_name, 'email': $email, 'status': 'invited'} }}
+    ...    json=${{ {'type': 'user', 'display_name': $xss_name, 'email': $email, 'status': 'invited'} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
 
 Create With Missing Required Fields Fails

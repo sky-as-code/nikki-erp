@@ -20,6 +20,9 @@ type rolePrincipalKind struct {
 	assignIdField string
 	addReason     domain.PermissionHistoryReason
 	removeReason  domain.PermissionHistoryReason
+	// refusedType, when set, is the principal type the added ids must not be: users and services
+	// share the junction, so the schema cannot tell them apart.
+	refusedType *principalTypeScope
 }
 
 // ManageUsers assigns users to, and removes them from, one role.
@@ -32,6 +35,22 @@ func (this *RoleCrudDomainServiceImpl) ManageUsers(
 		assignIdField: domain.RoleUserAssignFieldId,
 		addReason:     domain.PermissionHistoryReasonRoleAdded,
 		removeReason:  domain.PermissionHistoryReasonRoleRemoved,
+		refusedType:   &serviceTypeScope,
+	})
+}
+
+// ManageServices assigns services to, and removes them from, one role: the same junction rows as
+// ManageUsers, refusing user ids instead of service ids.
+func (this *RoleCrudDomainServiceImpl) ManageServices(
+	ctx corectx.Context, cmd itRole.ManageRoleServicesCommand,
+) (*itRole.ManageRoleServicesResult, error) {
+	return this.managePrincipals(ctx, cmd, rolePrincipalKind{
+		action:        "manage role services",
+		destSchema:    domain.ServiceSchemaName,
+		assignIdField: domain.RoleUserAssignFieldId,
+		addReason:     domain.PermissionHistoryReasonRoleAdded,
+		removeReason:  domain.PermissionHistoryReasonRoleRemoved,
+		refusedType:   &userTypeScope,
 	})
 }
 
@@ -60,7 +79,10 @@ func (this *RoleCrudDomainServiceImpl) managePrincipals(
 		DestSchemaName:  kind.destSchema,
 		JunctionIdField: kind.assignIdField,
 		Validate: func(ctx corectx.Context, change composable.M2mChange, vErrs *ft.ClientErrors) error {
-			return this.assertRoleAssignable(ctx, change.SrcId, vErrs)
+			if err := this.assertRoleAssignable(ctx, change.SrcId, vErrs); err != nil || kind.refusedType == nil {
+				return err
+			}
+			return kind.refusedType.refuseIdsOfType(ctx, this.userRepo, composable.FieldM2mAdd, change.Added, vErrs)
 		},
 		AfterChange: func(tranxCtx corectx.Context, change composable.M2mChange) error {
 			if err := this.permRepo.RebuildUserPermissionsForRole(tranxCtx, change.SrcId); err != nil {

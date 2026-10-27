@@ -26,7 +26,8 @@ func TeamMembershipSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().Name(TeamMembershipFieldRole).DataType(
 			dmodel.FieldDataTypeEnumString([]string{"agent", "supervisor"}),
 		).RequiredForCreate()).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 type TeamMembership struct{ basemodel.DynamicModelBase }

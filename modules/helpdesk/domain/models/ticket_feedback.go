@@ -23,7 +23,8 @@ func TicketFeedbackSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(basemodel.DefineFieldId(TicketFeedbackFieldTicketId).RequiredForCreate().Unique()).
 		Field(dmodel.DefineField().Name(TicketFeedbackFieldRating).DataType(dmodel.FieldDataTypeInt32(1, 5)).RequiredForCreate()).
 		Field(dmodel.DefineField().Name(TicketFeedbackFieldComment).DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH))).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 type TicketFeedback struct{ basemodel.DynamicModelBase }

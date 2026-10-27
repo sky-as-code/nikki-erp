@@ -177,7 +177,7 @@ func parseProbeExpression(expression string) (*reguard.ParsedExpression, *ft.Cli
 func (this *PermissionApplicationServiceImpl) probePermOf(
 	ctx corectx.Context, parsed reguard.ParsedExpression,
 ) (*reguard.Perm, error) {
-	required := reguard.PermFor(parsed.ActionCode, parsed.ResourceCode, parsed.Scope)
+	required := reguard.PermFor(parsed.ActionCode, parsed.ResourceCode, parsed.Scope).ForField(parsed.FieldName)
 	switch parsed.Scope {
 	case reguard.ResourceScopeOrg:
 		required = required.InOrg(parsed.ScopeId)
@@ -303,7 +303,7 @@ func (this *PermissionApplicationServiceImpl) getEnabledUser(ctx corectx.Context
 		Id:    userId,
 		Fields: []string{
 			models.UserFieldId,
-			models.UserFieldAvatarUrl,
+			models.UserFieldAvatarFileId,
 			models.UserFieldDisplayName,
 			models.UserFieldEmail,
 			models.UserFieldIsOwner,

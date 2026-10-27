@@ -24,12 +24,13 @@ const (
 	RoleFieldIsRequiredComment = "is_required_comment"
 	RoleFieldOrgId             = "org_id"
 
-	RoleEdgeRoleRequests   = "role_requests"
-	RoleEdgeEntitlements   = "entitlements"
-	RoleEdgeAssignedGroups = "assigned_groups"
-	RoleEdgeAssignedUsers  = "assigned_users"
-	RoleEdgeOwnerGroup     = "owner_group"
-	RoleEdgeOwnerUser      = "owner_user"
+	RoleEdgeRoleRequests     = "role_requests"
+	RoleEdgeEntitlements     = "entitlements"
+	RoleEdgeAssignedGroups   = "assigned_groups"
+	RoleEdgeAssignedUsers    = "assigned_users"
+	RoleEdgeAssignedServices = "assigned_services"
+	RoleEdgeOwnerGroup       = "owner_group"
+	RoleEdgeOwnerUser        = "owner_user"
 )
 
 //go:embed role.json

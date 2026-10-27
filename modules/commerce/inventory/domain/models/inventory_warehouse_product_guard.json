@@ -38,7 +38,8 @@
 	],
 
 	"extend_after": [
-		"core.basemodel.auditable_model"
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model"
 	],
 
 	"edges_to": [

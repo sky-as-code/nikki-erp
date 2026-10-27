@@ -50,6 +50,23 @@ func (this *FileDomainServiceImpl) AssertFilesUsable(
 	return cErrs, nil
 }
 
+func (this *FileDomainServiceImpl) GetFileMeta(
+	ctx corectx.Context, query storage.GetFileMetaQuery,
+) (*storage.FileMeta, ft.ClientErrors, error) {
+	files, err := this.findFiles(ctx, []model.Id{query.FileId})
+	if err != nil {
+		return nil, nil, err
+	}
+	file := files[query.FileId]
+	if file == nil || !sameOrg(file.GetOrgId(), query.OrgId) {
+		cErrs := ft.ClientErrors{}
+		cErrs.Append(*ft.NewValidationError(query.Field,
+			ft.ErrorKey("err_file_not_usable", c.ItStorageModuleName), "no stored file of this organization has this id"))
+		return nil, cErrs, nil
+	}
+	return &storage.FileMeta{MimeType: file.GetMimeType(), SizeBytes: file.GetSizeBytes()}, nil, nil
+}
+
 func unusableReason(file *models.File, orgId *model.Id) string {
 	switch {
 	case file == nil:

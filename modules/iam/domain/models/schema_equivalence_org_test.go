@@ -108,9 +108,16 @@ func organizationSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(OrgEdgeUsers).
 				ManyToMany(UserSchemaName, OrgUsrRelSchemaName, "org").
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeTo(
+			dmodel.Edge(OrgEdgeServices).
+				Label(model.LangJson{"en-US": "Services"}).
+				ManyToMany(ServiceSchemaName, OrgUsrRelSchemaName, "org").
 				OnDelete(dmodel.RelationCascadeCascade),
 		).
 		EdgeFrom(

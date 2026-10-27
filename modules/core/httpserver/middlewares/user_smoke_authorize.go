@@ -14,6 +14,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
+	coretoken "github.com/sky-as-code/nikki-erp/modules/core/authtoken"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	c "github.com/sky-as-code/nikki-erp/modules/core/httpserver/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
@@ -153,11 +154,10 @@ func loadUserPermissions(
 		IsOwner:      resUser.Data.IsOwner,
 		Entitlements: ents,
 		UserId:       resUser.Data.UserId,
-		// This middleware authenticates a person through a JWT, so the actor is always a
-		// user. A service reaches the application by another route and sets its own
-		// principal there.
+		// The kind comes from the token's user type claim: an IAM user of type service signs its
+		// tokens as a service principal. A token without the claim is a user's.
 		Principal: corectx.Principal{
-			Kind:        corectx.PrincipalKindUser,
+			Kind:        coretoken.PrincipalKindFromClaims(claims),
 			Id:          resUser.Data.UserId,
 			DisplayName: userEmail,
 		},

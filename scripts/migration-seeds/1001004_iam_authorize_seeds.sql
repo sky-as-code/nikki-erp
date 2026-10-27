@@ -14,6 +14,7 @@ BEGIN
 		('01JWNX10DN9E2PVZTVPJNTWR7D', jsonb_build_object('en-US', 'IAM - Entitlement', 'vi-VN', 'IAM - Quyền hạn'), 'iam_entitlement', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01KF32E4TSX9DVV9KVKBS7GQ0T', jsonb_build_object('en-US', 'IAM - Grant Request', 'vi-VN', 'IAM - Yêu cầu cấp quyền'), 'iam_grant_request', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWNYQ2A04PPV4135QGXX7W0M', jsonb_build_object('en-US', 'IAM - User', 'vi-VN', 'IAM - Người dùng'), 'iam_user', NULL, 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M8938CCT6E11ZTT25VEZDGRB', jsonb_build_object('en-US', 'IAM - Service', 'vi-VN', 'IAM - Dịch vụ'), 'iam_service', NULL, 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWNYQNN68RKN62TNG5K0CPCE', jsonb_build_object('en-US', 'IAM - Group', 'vi-VN', 'IAM - Nhóm'), 'iam_group', NULL, 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWNYQTHN6JTRNWKJ1BMCYB80', jsonb_build_object('en-US', 'IAM - Organization', 'vi-VN', 'IAM - Tổ chức'), 'iam_org', NULL, 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWNYRSKZ56EAE2QRFHJWRZPT', jsonb_build_object('en-US', 'IAM - Organizational Unit', 'vi-VN', 'IAM - Đơn vị tổ chức'), 'iam_orgunit', NULL, 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text);
@@ -68,6 +69,13 @@ BEGIN
 		('01KNV107H943VH4YJ2PFCQXH01', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', NULL, '01JWNYQ2A04PPV4135QGXX7W0M', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01KNRA5MGRAS5GNXKW3VBQZ001', jsonb_build_object('en-US', 'Manage role assignments', 'vi-VN', 'Quản lý gán vai trò'), 'manage_role_assignments', 'Assign or remove roles of a user', '01JWNYQ2A04PPV4135QGXX7W0M', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01KNVA5MGRAS5GNXKW3VBQZ777', jsonb_build_object('en-US', 'Manage credentials', 'vi-VN', 'Quản lý thông tin đăng nhập'), 'manage_credentials', 'Issue a temporary password and read it back, for account recovery', '01JWNYQ2A04PPV4135QGXX7W0M', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		-- IdentityService
+		('01M8CZMT8GQM507DHKCH5K9RMQ', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M8938CCT6E11ZTT25VEZDGRB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M86RRMPVJ92FRNKC33E1Y88F', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M8938CCT6E11ZTT25VEZDGRB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M8KCHEX5MNRSSN7SPJZ047EX', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M8938CCT6E11ZTT25VEZDGRB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M8PY2AJ3N8E4FEDXJ8RPC2G8', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M8938CCT6E11ZTT25VEZDGRB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M8NTAE0DMQ5BTY097PS60M8H', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', NULL, '01M8938CCT6E11ZTT25VEZDGRB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M8AFBXAQ3GJBZB9R8A9SAB5R', jsonb_build_object('en-US', 'Manage role assignments', 'vi-VN', 'Quản lý gán vai trò'), 'manage_role_assignments', 'Assign or remove roles of a service', '01M8938CCT6E11ZTT25VEZDGRB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- IdentityGroup
 		('01JWNZ4QY0ECRHAKR0ERQW97HW', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01JWNYQNN68RKN62TNG5K0CPCE', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWNZ4V0ZDTEEMZPRZF6282SP', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01JWNYQNN68RKN62TNG5K0CPCE', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
@@ -147,16 +155,19 @@ BEGIN
 
 		-- Identity module Readonly: Read actions on Identity resources
 		('01JWP8EARV3B9A1HWFPMQZQ6HZ', 'Identity Readonly - Read Users', 'Read users in Identity module', 'read:iam_user:tenant', '01JWNZ3XVWDP73JGHRRBFAHQYJ', '01JWNYQ2A04PPV4135QGXX7W0M', '01JWP80E084MTYF2C882WNR6MJ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M8WK617MB6H56MTCACMJ6WYW', 'Identity Readonly - Read Services', 'Read services in Identity module', 'read:iam_service:tenant', '01M8PY2AJ3N8E4FEDXJ8RPC2G8', '01M8938CCT6E11ZTT25VEZDGRB', '01JWP80E084MTYF2C882WNR6MJ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWP8EFENXFNN17GSEJP0RCXZ', 'Identity Readonly - Read Groups', 'Read groups in Identity module', 'read:iam_group:tenant', '01JWNZ516R64X2S8A7STFXTP9B', '01JWNYQNN68RKN62TNG5K0CPCE', '01JWP80E084MTYF2C882WNR6MJ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Identity module Administrator: All actions on Identity resources
 		('01JWP8KSP3Q3YH6RKND552DWRR', 'Identity Admin - All User actions', 'All user actions in Identity module', '*:iam_user:tenant', NULL, '01JWNYQ2A04PPV4135QGXX7W0M', '01JWP80NHTHXSZDB1MZJXQ0MGQ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M8AXV57855ZEY2BBVBTPME2D', 'Identity Admin - All Service actions', 'All service actions in Identity module', '*:iam_service:tenant', NULL, '01M8938CCT6E11ZTT25VEZDGRB', '01JWP80NHTHXSZDB1MZJXQ0MGQ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWP8KP39GKAH67FEAC7TZ631', 'Identity Admin - All Group actions', 'All group actions in Identity module', '*:iam_group:tenant', NULL, '01JWNYQNN68RKN62TNG5K0CPCE', '01JWP80NHTHXSZDB1MZJXQ0MGQ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWP8KK6K1M9WMP59BBAGEMB1', 'Identity Admin - All Organization actions', 'All organization actions in Identity module', '*:iam_org:tenant', NULL, '01JWNYQTHN6JTRNWKJ1BMCYB80', '01JWP80NHTHXSZDB1MZJXQ0MGQ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWP8KG15N26CRWNRM6F5CB29', 'Identity Admin - All Organizational Units actions', 'All organizational units actions in Identity module', '*:iam_orgunit:tenant', NULL, '01JWNYRSKZ56EAE2QRFHJWRZPT', '01JWP80NHTHXSZDB1MZJXQ0MGQ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Identity module User Manager: All actions on Identity resources
 		('01KNHHJY192QRXZCD7VP5HPPYG', 'Identity User Manager - All User actions', 'All user actions in Identity module', '*:iam_user:tenant', NULL, '01JWNYQ2A04PPV4135QGXX7W0M', '01JWPB7TC3CG1EB567WYQCJM79', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M8PB1H2S8YKPKVWTBZX7C1XA', 'Identity User Manager - All Service actions', 'All service actions in Identity module', '*:iam_service:tenant', NULL, '01M8938CCT6E11ZTT25VEZDGRB', '01JWPB7TC3CG1EB567WYQCJM79', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01KNHHJY19KR6DK03ZBZ09KXPM', 'Identity User Manager - All Group actions', 'All group actions in Identity module', '*:iam_group:tenant', NULL, '01JWNYQNN68RKN62TNG5K0CPCE', '01JWPB7TC3CG1EB567WYQCJM79', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		
 		-- Authorize module Readonly: Read actions on Authorize resources
@@ -241,9 +252,23 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
+	-- PERM-017. "User" reads every user of the tenant; "Identity module Readonly" may also rename
+	-- users: a field-level grant ({action}:{resource}.{field}:{scope}) covering display_name only.
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'iam_entitlements'
+	) THEN
+		INSERT INTO "iam_entitlements" (
+			"id", "name", "description", "expression", "field_name", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
+		) VALUES
+		('01M5Y771TQ063AY96ZCG2F77ZP', 'User - Read Users', 'Read every user of the tenant', 'read:iam_user:tenant', NULL, '01JWNZ3XVWDP73JGHRRBFAHQYJ', '01JWNYQ2A04PPV4135QGXX7W0M', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M5Y771V35MD0HNRRQPPKEXGY', 'Identity Readonly - Update User Display Name', 'Update the display name of users in Identity module', 'update:iam_user.display_name:tenant', 'display_name', '01JWNZ3TQ7AVCFDTSS0VHXHCAB', '01JWNYQ2A04PPV4135QGXX7W0M', '01JWP80E084MTYF2C882WNR6MJ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT ("id") DO NOTHING;
+	END IF;
+
 	-- "User" is the system role every person holds. Flagged rather than assigned per user, so the
 	-- permission cache grants it to users who do not exist yet (iam_calc_user_perm).
-	UPDATE "iam_roles" SET "is_system" = TRUE WHERE "id" = '01KZJ5XRJDXSXZY0DKNNE6S086';
+	UPDATE "iam_roles" SET "is_system" = TRUE, "managed_by_type" = 'system' WHERE "id" = '01KZJ5XRJDXSXZY0DKNNE6S086';
 
 	PERFORM iam_rebuild_all_user_perms();
 

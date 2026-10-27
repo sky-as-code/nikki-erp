@@ -23,6 +23,9 @@ func (this *DefaultApplicationServiceImpl) CreateBulk(
 		return &BulkCreateResult{ClientErrors: *cErrs}, nil
 	}
 	rows, cErrs := paramsToBulkRows(cmd)
+	if cErrs == nil {
+		cErrs = this.AssertFieldNames(ctx, PermissionCreate, orgId, bulkFieldNames(rows))
+	}
 	if cErrs != nil {
 		return &BulkCreateResult{ClientErrors: *cErrs}, nil
 	}
@@ -37,9 +40,21 @@ func (this *DefaultApplicationServiceImpl) guardCreateLike(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*model.Id, *ft.ClientErrors) {
 	if this.orgIdIsSchemaRequired() && readString(params, basemodel.FieldOrgId) == "" {
-		return nil, this.AssertPermission(ctx, PermissionCreate, nil)
+		return nil, this.assertAnyField(ctx, PermissionCreate, nil)
 	}
-	return this.AssertAction(ctx, PermissionCreate, params)
+	return this.AssertFieldAction(ctx, PermissionCreate, params)
+}
+
+// bulkFieldNames is every field any row writes: one row naming a field the caller may not create
+// refuses the whole call, as the single create would.
+func bulkFieldNames(rows []BulkRow) []string {
+	names := make([]string, 0)
+	for _, row := range rows {
+		for name := range row.Fields {
+			names = append(names, name)
+		}
+	}
+	return names
 }
 
 // forceOrgId stamps the resolved org onto every row: the permission was checked against ONE

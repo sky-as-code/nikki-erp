@@ -68,7 +68,8 @@
 	"extend_after": [
 		"core.basemodel.versioned_model",
 		"core.basemodel.archivable_model",
-		"core.basemodel.auditable_model"
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model"
 	],
 
 	"edges_to": [
@@ -76,6 +77,15 @@
 			"edge": "users",
 			"type": "many:many",
 			"peer_schema": "iam_user",
+			"through_schema": "iam_org_user_rel",
+			"src_field_prefix": "org",
+			"on_delete": "CASCADE"
+		},
+		{
+			"edge": "services",
+			"label": { "en-US": "Services" },
+			"type": "many:many",
+			"peer_schema": "iam_service",
 			"through_schema": "iam_org_user_rel",
 			"src_field_prefix": "org",
 			"on_delete": "CASCADE"

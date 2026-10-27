@@ -52,6 +52,19 @@ func (this *RoleCrudApplicationServiceImpl) ManageUsers(
 	return this.domSvc.ManageUsers(ctx, cmd)
 }
 
+// ManageServices mirrors iam_service/:id/manage_roles the same way.
+func (this *RoleCrudApplicationServiceImpl) ManageServices(
+	ctx corectx.Context, cmd itRole.ManageRoleServicesCommand,
+) (*itRole.ManageRoleServicesResult, error) {
+	cErrs, err := composable.AssertRecordAction(ctx, this, cmd, composable.ActionPermission{
+		ActionCode: actionManageRoleAssignments, ResourceCode: c.ResourceIamService,
+	})
+	if err != nil || cErrs != nil {
+		return mutateRefused(cErrs, err)
+	}
+	return this.domSvc.ManageServices(ctx, cmd)
+}
+
 // ManageGroups mirrors iam_group/:id/manage_roles the same way.
 func (this *RoleCrudApplicationServiceImpl) ManageGroups(
 	ctx corectx.Context, cmd itRole.ManageRoleGroupsCommand,

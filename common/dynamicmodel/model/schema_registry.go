@@ -303,7 +303,7 @@ func fkDependencies(s *ModelSchema, known map[string]bool) []string {
 	var deps []string
 	appendDeps := func(rels []ModelRelation) {
 		for _, rel := range rels {
-			if rel.IsInverse {
+			if rel.IsInverse || rel.NoDbConstraint {
 				continue
 			}
 			if isFkOwnerRelation(rel.RelationType) && known[rel.DestSchemaName] {

@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 )
 
@@ -35,8 +36,20 @@ type stubCrudRepo struct {
 	updates []dmodel.DynamicFields
 }
 
+// GetOne matches the id and every other filter key; a row without a type is a user, which is
+// what the type scope of the principal domain services filters on.
 func (this *stubCrudRepo) GetOne(_ corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	row, ok := this.rows[composable.ParamString(param.Filter, "id")]
+	for key, want := range param.Filter {
+		if !ok || key == "id" {
+			continue
+		}
+		got, present := row[key]
+		if !present && key == domain.UserFieldType {
+			got = string(domain.UserTypeUser)
+		}
+		ok = got == want
+	}
 	return &dyn.OpResult[dmodel.DynamicFields]{Data: row, HasData: ok}, nil
 }
 

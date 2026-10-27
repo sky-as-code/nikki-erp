@@ -141,7 +141,8 @@ func (this *OrgUnitCrudDomainServiceImpl) assertMembershipChange(
 			return nil
 		}
 	}
-	return nil
+	// A service is a machine principal: it may join an org, never an org unit.
+	return serviceTypeScope.refuseIdsOfType(ctx, this.userRepo, composable.FieldM2mAdd, change.Added, vErrs)
 }
 
 func (this *OrgUnitCrudDomainServiceImpl) applyMembership(ctx corectx.Context, change composable.M2mChange) (int, error) {

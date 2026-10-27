@@ -242,16 +242,16 @@ func (this *DefaultApplicationServiceImpl) assertKeysAreWellFormed(
 }
 
 // assertReadInAnyOrg answers for an org-less read of metadata: granted when the caller may read
-// this resource tenant-wide or in any org they belong to. Checking with no org at all matched only
+// this resource - or any of its fields - tenant-wide or in any org they belong to. Checking with no org at all matched only
 // tenant and omnipotent grants, so a holder of read:X:org/<id> could read the rows but not the
 // schema needed to show them, and every list they opened loaded forever.
 func (this *DefaultApplicationServiceImpl) assertReadInAnyOrg(ctx corectx.Context) *ft.ClientErrors {
-	refused := this.AssertPermission(ctx, PermissionRead, nil)
+	refused := this.assertAnyField(ctx, PermissionRead, nil)
 	if refused == nil {
 		return nil
 	}
 	for _, orgId := range ctx.GetPermissions().UserOrgIds.ToSlice() {
-		if this.AssertPermission(ctx, PermissionRead, &orgId) == nil {
+		if this.assertAnyField(ctx, PermissionRead, &orgId) == nil {
 			return nil
 		}
 	}

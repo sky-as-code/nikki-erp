@@ -34,6 +34,11 @@ func (this *RoleCrudRest) ManageUsers(echoCtx *echo.Context, payload map[string]
 		composable.MutateResponse)
 }
 
+func (this *RoleCrudRest) ManageServices(echoCtx *echo.Context, payload map[string]any) error {
+	return composable.ServeAction(echoCtx, "manage role services", payload, this.roleSvc.ManageServices,
+		composable.MutateResponse)
+}
+
 func (this *RoleCrudRest) ManageGroups(echoCtx *echo.Context, payload map[string]any) error {
 	return composable.ServeAction(echoCtx, "manage role groups", payload, this.roleSvc.ManageGroups,
 		composable.MutateResponse)

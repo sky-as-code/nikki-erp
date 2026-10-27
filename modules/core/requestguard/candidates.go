@@ -42,6 +42,11 @@ func (this EvalContext) belongsToOrgUnit(orgUnitId *model.Id) bool {
 // system whose "can I?" and "may I?" answers differ is a security defect, not an
 // inconsistency.
 //
+// A field-level requirement (Perm.FieldName set) is answered by every resource-level candidate -
+// a grant on the whole resource covers each of its fields - plus the field-level grants at the
+// same scopes. Field grants are additive and never widen to other fields or resources, so they
+// carry no resource wildcard.
+//
 // Scope widening runs tenant > org > orgunit: a wider grant satisfies a narrower
 // requirement. There is deliberately NO inheritance between org units - a grant on
 // a parent unit does not reach its children, which is the documented entitlement
@@ -81,6 +86,13 @@ func CandidateExpressions(required Perm, evalCtx EvalContext) []string {
 		add(scopeVariants(required, ResourceScopePrivate, nil)...)
 	}
 
+	// A private grant answers for the caller's own record whatever scope the resource is checked
+	// at: the record being theirs is the whole condition. Without this an org-scoped resource could
+	// never honour a private grant.
+	if required.IsRecordOwnedByCaller && required.Scope != ResourceScopePrivate {
+		add(scopeVariants(required, ResourceScopePrivate, nil)...)
+	}
+
 	return dedupe(candidates)
 }
 
@@ -97,15 +109,22 @@ func orgCandidates(required Perm, evalCtx EvalContext, orgId *model.Id) []string
 	return result
 }
 
-// scopeVariants returns the four wildcard combinations at one scope, widest last
-// so that a reader of the slice sees exact-first ordering.
+// scopeVariants returns the wildcard combinations at one scope, widest last so that a reader of
+// the slice sees exact-first ordering: the field-level ones (if any), then the four resource-level.
 func scopeVariants(required Perm, scope ResourceScope, scopeId *model.Id) []string {
-	return []string{
+	result := make([]string, 0, 6)
+	if required.FieldName != "" {
+		result = append(result,
+			BuildFieldExpression(required.ActionCode, required.ResourceCode, required.FieldName, scope, scopeId),
+			BuildFieldExpression(Wildcard, required.ResourceCode, required.FieldName, scope, scopeId),
+		)
+	}
+	return append(result,
 		BuildExpression(required.ActionCode, required.ResourceCode, scope, scopeId),
 		BuildExpression(Wildcard, required.ResourceCode, scope, scopeId),
 		BuildExpression(required.ActionCode, Wildcard, scope, scopeId),
 		BuildExpression(Wildcard, Wildcard, scope, scopeId),
-	}
+	)
 }
 
 func dedupe(items []string) []string {

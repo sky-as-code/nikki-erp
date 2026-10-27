@@ -296,6 +296,23 @@ func TestParseModelJson_EdgeOnDeleteRestrict(t *testing.T) {
 	assert.Equal(t, RelationCascadeRestrict, toRelations[0].OnDelete)
 }
 
+func TestParseModelJson_EdgeDbConstraintFalseIsLoose(t *testing.T) {
+	schema := ParseModelJson(`{
+		"name": "test_edge_loose",
+		"fields": [{"name": "owner_id", "data_type": "ulid"}, {"name": "other_id", "data_type": "ulid"}],
+		"edges_to": [
+			{"edge": "owner", "type": "many:one", "dest_schema": "iam_user",
+				"key_map": {"owner_id": "id"}, "db_constraint": false},
+			{"edge": "other", "type": "many:one", "dest_schema": "iam_user", "key_map": {"other_id": "id"}}
+		]
+	}`).Build()
+
+	toRelations := schema.ToRelations()
+	require.Len(t, toRelations, 2)
+	assert.True(t, toRelations[0].NoDbConstraint)
+	assert.False(t, toRelations[1].NoDbConstraint, "the constraint is generated unless disabled")
+}
+
 // The JSON file carries the action as a free string, so a misspelling has to be caught here —
 // otherwise it travels all the way to the database as invalid DDL.
 func TestParseModelJson_EdgeOnDeleteRejectsUnknown(t *testing.T) {

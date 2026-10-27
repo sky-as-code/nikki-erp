@@ -26,11 +26,19 @@
 			"data_type": {
 				"type": "string",
 				"min": 1,
-				"max": 100,
-				"regex": "^([a-zA-Z0-9_]+|\\*):([a-zA-Z0-9_]+|\\*):(domain|private|org|org/[a-zA-Z0-9\\-]+|orgunit|orgunit/[a-zA-Z0-9\\-]+)$"
+				"max": 200,
+				"regex": "^([a-zA-Z0-9_]+|\\*):([a-zA-Z0-9_]+|\\*)(\\.[a-z0-9_]+)?:(tenant|private|org|org/[a-zA-Z0-9\\-]+|orgunit|orgunit/[a-zA-Z0-9\\-]+)$"
 			},
 			"required_for_create": true,
 			"auto_generated": true
+		},
+		{
+			"name": "field_name",
+			"data_type": { "type": "string", "min": 1, "max": 100, "regex": "^[a-z0-9_]+$" },
+			"no_update": true,
+			"description": {
+				"en-US": "When set, the entitlement grants the action on this one field of the resource only (expression {action}:{resource}.{field}:{scope}). Empty grants the whole resource."
+			}
 		},
 		{
 			"name": "action_id",
@@ -76,6 +84,7 @@
 	"extend_after": [
 		"core.basemodel.archivable_model",
 		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model",
 		"core.basemodel.versioned_model"
 	],
 

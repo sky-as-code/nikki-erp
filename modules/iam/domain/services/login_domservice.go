@@ -72,7 +72,7 @@ func (this *LoginDomainServiceImpl) Authenticate(ctx corectx.Context, cmd it.Aut
 	}()
 
 	// TODO: Prevent login with "system" account.
-	dbAttempt, cErrs, err := this.validateAuthInput(ctx, cmd)
+	dbAttempt, principal, cErrs, err := this.validateAuthInput(ctx, cmd)
 	ft.PanicOnErr(err)
 
 	if cErrs.Count() > 0 {
@@ -104,6 +104,7 @@ func (this *LoginDomainServiceImpl) Authenticate(ctx corectx.Context, cmd it.Aut
 		ctx,
 		dbAttempt.MustGetUsername(),
 		dbAttempt.MustGetPrincipalType(),
+		userTypeOf(principal),
 	)
 	if err != nil {
 		return nil, err
@@ -147,7 +148,9 @@ func (this *LoginDomainServiceImpl) RefreshToken(ctx corectx.Context, cmd it.Ref
 	username := subParts[0]
 	principalType := models.PrincipalType(subParts[1])
 
-	_, err = this.principalHelper.assertPrincipalExists(
+	// The user type is re-read rather than copied from the old token, so the refreshed pair
+	// reflects the account as it is now.
+	principal, err := this.principalHelper.assertPrincipalExists(
 		ctx, principalType, nil, &username, &cErrs,
 	)
 	if err != nil {
@@ -156,7 +159,7 @@ func (this *LoginDomainServiceImpl) RefreshToken(ctx corectx.Context, cmd it.Ref
 	if cErrs.Count() > 0 {
 		return &it.RefreshTokenResult{ClientErrors: cErrs}, nil
 	}
-	tokenPack, err := this.buildTokenPack(ctx, username, principalType)
+	tokenPack, err := this.buildTokenPack(ctx, username, principalType, userTypeOf(principal))
 	if err != nil {
 		return nil, err
 	}
@@ -172,12 +175,15 @@ func (this *LoginDomainServiceImpl) RefreshToken(ctx corectx.Context, cmd it.Ref
 	}, nil
 }
 
-func (this *LoginDomainServiceImpl) validateAuthInput(ctx corectx.Context, cmd it.AuthenticateCommand) (*models.LoginAttempt, ft.ClientErrors, error) {
+func (this *LoginDomainServiceImpl) validateAuthInput(
+	ctx corectx.Context, cmd it.AuthenticateCommand,
+) (*models.LoginAttempt, *loginPrincipal, ft.ClientErrors, error) {
 	var dbAttempt *models.LoginAttempt
+	var principal *loginPrincipal
 
 	sanitized, cErrs := cmd.GetSchema().ValidateStruct(cmd)
 	if cErrs.Count() > 0 {
-		return nil, cErrs, nil
+		return nil, nil, cErrs, nil
 	}
 	cmd = *sanitized.(*it.AuthenticateCommand)
 
@@ -194,7 +200,7 @@ func (this *LoginDomainServiceImpl) validateAuthInput(ctx corectx.Context, cmd i
 		}).
 		Step(func(cErrs *ft.ClientErrors) error {
 			var err error
-			_, err = this.principalHelper.assertPrincipalExists(
+			principal, err = this.principalHelper.assertPrincipalExists(
 				ctx, dbAttempt.MustGetPrincipalType(), nil, dbAttempt.GetUsername(), cErrs,
 			)
 			return err
@@ -202,9 +208,9 @@ func (this *LoginDomainServiceImpl) validateAuthInput(ctx corectx.Context, cmd i
 		End()
 
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return dbAttempt, cErrs, nil
+	return dbAttempt, principal, cErrs, nil
 }
 
 func (this *LoginDomainServiceImpl) performLoginMethods(
@@ -287,12 +293,13 @@ func (this *LoginDomainServiceImpl) updateAttemptStatus(ctx corectx.Context, dbA
 }
 
 func (this *LoginDomainServiceImpl) buildTokenPack(
-	ctx corectx.Context, username string, principalType models.PrincipalType,
+	ctx corectx.Context, username string, principalType models.PrincipalType, userType models.UserType,
 ) (*it.AuthenticateSuccessData, error) {
 	sub := fmt.Sprintf("%s:%s", username, principalType)
 	jwtAccess, err := this.tokenSvc.CreateJwt(ctx, coretoken.CreateJwtParam{
-		Sub:     sub,
-		Purpose: coretoken.JwtPurposeAccessToken,
+		Sub:          sub,
+		Purpose:      coretoken.JwtPurposeAccessToken,
+		CustomClaims: coretoken.UserTypeClaims(string(userType)),
 	})
 
 	if err != nil {
@@ -301,9 +308,10 @@ func (this *LoginDomainServiceImpl) buildTokenPack(
 
 	jwtId := jwtAccess.Claims["jti"].(string)
 	jwtRefresh, err := this.tokenSvc.CreateJwt(ctx, coretoken.CreateJwtParam{
-		Sub:     sub,
-		Jti:     &jwtId,
-		Purpose: coretoken.JwtPurposeRefreshToken,
+		Sub:          sub,
+		Jti:          &jwtId,
+		Purpose:      coretoken.JwtPurposeRefreshToken,
+		CustomClaims: coretoken.UserTypeClaims(string(userType)),
 	})
 
 	if err != nil {

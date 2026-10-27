@@ -12,6 +12,8 @@ Resource          ${CURDIR}/../nikki_api/data.resource
 
 *** Variables ***
 ${USER_API}             /v1/iam/iam_user
+${SERVICE_API}          /v1/iam/iam_service
+${ORGUNIT_API}          /v1/iam/iam_orgunit
 ${GROUP_API}            /v1/iam/iam_group
 ${ROLE_API}             /v1/iam/iam_role
 ${ENTITLEMENT_API}      /v1/iam/iam_entitlement
@@ -291,8 +293,10 @@ Resolve Resource And Action
 Create Probe Role
     [Documentation]    Creates a role carrying one entitlement, built from the action and
     ...    resource codes so the stored expression is the one the guard looks for.
+    ...    A field_name narrows the entitlement to one field of the resource.
     ...    Returns the role id.
     [Arguments]    ${label}    ${action_id}    ${resource_id}    ${scope}=tenant    ${scope_field}=${EMPTY}    ${scope_id}=${EMPTY}
+    ...    ${field_name}=${EMPTY}
     ${rname}=    Unique Display Name    ${label}
     ${resp}=    POST On Session    api    ${ROLE_API}
     ...    json=${{ {'name': $rname, 'description': 'Robot permission suite role', 'is_requestable': False} }}
@@ -303,6 +307,9 @@ Create Probe Role
     ...    action_id=${action_id}    resource_id=${resource_id}    scope=${scope}
     IF    $scope_field
         Set To Dictionary    ${ent}    ${scope_field}=${scope_id}
+    END
+    IF    $field_name
+        Set To Dictionary    ${ent}    field_name=${field_name}
     END
     ${resp}=    POST On Session    api    ${ENTITLEMENT_API}    json=${ent}
     ${ent_id}    ${ent_etag}=    Response Should Be Create Success    ${resp}
@@ -344,9 +351,9 @@ Delete Permission Fixtures
     ...    failed run still cleans up what it did create.
     ${fixtures}=    Get Variable Value    ${PERM_FIXTURES}    ${None}
     IF    $fixtures is None    RETURN
-    @{order}=    Create List    entitlements    roles    groups    users
+    @{order}=    Create List    entitlements    roles    groups    services    users
     &{paths}=    Create Dictionary    entitlements=${ENTITLEMENT_API}    roles=${ROLE_API}
-    ...    groups=${GROUP_API}    users=${USER_API}
+    ...    groups=${GROUP_API}    services=${SERVICE_API}    users=${USER_API}
     FOR    ${kind}    IN    @{order}
         ${bucket}=    Get From Dictionary    ${fixtures}    ${kind}    default=${None}
         IF    $bucket is None    CONTINUE
@@ -356,6 +363,25 @@ Delete Permission Fixtures
         END
     END
     Set Global Variable    ${PERM_FIXTURES}    ${None}
+
+Create Service
+    [Documentation]    Creates an active iam_service principal, tracked for Delete Permission Fixtures.
+    [Arguments]    ${label}=Robot Service
+    ${name}=    Unique Display Name    ${label}
+    ${resp}=    POST On Session    api    ${SERVICE_API}    json=${{ {'display_name': $name, 'status': 'active'} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Track Permission Fixture    services    ${id}
+    RETURN    ${id}
+
+Create Plain User
+    [Documentation]    Creates an iam_user principal, tracked for Delete Permission Fixtures.
+    [Arguments]    ${label}=Robot Plain User
+    ${email}=    Unique Email    robot.plain
+    ${name}=    Unique Display Name    ${label}
+    ${resp}=    POST On Session    api    ${USER_API}    json=${{ {'display_name': $name, 'email': $email} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    Track Permission Fixture    users    ${id}
+    RETURN    ${id}
 
 Delete Seed Data
     [Documentation]    Best-effort removal of the on-the-fly seed group/user (in that

@@ -29,7 +29,8 @@ func EscalationRuleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().Name(EscalationRuleFieldPriorityUpgrade).DataType(dmodel.FieldDataTypeEnumString([]string{
 			"low", "medium", "high", "urgent",
 		}))).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 type EscalationRule struct{ basemodel.DynamicModelBase }

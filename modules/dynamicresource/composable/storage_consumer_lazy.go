@@ -72,3 +72,13 @@ func (this *lazyStorageConsumer) DuplicateFile(
 	}
 	return nil, errors.New("no storage module is registered to duplicate a file")
 }
+
+// GetFileMeta answers nothing without a storage module, so a rule that needs the metadata skips.
+func (this *lazyStorageConsumer) GetFileMeta(
+	ctx corectx.Context, query storage.GetFileMetaQuery,
+) (*storage.FileMeta, ft.ClientErrors, error) {
+	if consumer := this.resolve(); consumer != nil {
+		return consumer.GetFileMeta(ctx, query)
+	}
+	return nil, nil, nil
+}

@@ -19,6 +19,7 @@ type RoleCrudDomainService interface {
 	composable.CrudDomainService
 
 	ManageUsers(ctx corectx.Context, cmd ManageRoleUsersCommand) (*ManageRoleUsersResult, error)
+	ManageServices(ctx corectx.Context, cmd ManageRoleServicesCommand) (*ManageRoleServicesResult, error)
 	ManageGroups(ctx corectx.Context, cmd ManageRoleGroupsCommand) (*ManageRoleGroupsResult, error)
 	DescribeRoles(ctx corectx.Context, query DescribeRolesQuery) (*DescribeRolesResult, error)
 
@@ -33,22 +34,26 @@ type RoleCrudApplicationService interface {
 	composable.CrudApplicationService
 
 	ManageUsers(ctx corectx.Context, cmd ManageRoleUsersCommand) (*ManageRoleUsersResult, error)
+	ManageServices(ctx corectx.Context, cmd ManageRoleServicesCommand) (*ManageRoleServicesResult, error)
 	ManageGroups(ctx corectx.Context, cmd ManageRoleGroupsCommand) (*ManageRoleGroupsResult, error)
 	Describe(ctx corectx.Context, query DescribeRolesParams) (*DescribeRolesResult, error)
 }
 
-// PrincipalRolesApplicationService serves GET iam_user/:id/roles and iam_group/:id/roles: the
-// roles assigned to one principal, as a scoped read of the role schema.
+// PrincipalRolesApplicationService serves GET iam_user/:id/roles, iam_service/:id/roles and
+// iam_group/:id/roles: the roles assigned to one principal, as a scoped read of the role schema.
 type PrincipalRolesApplicationService interface {
 	UserRoles(ctx corectx.Context, query composable.SearchQuery) (*composable.SearchResult, error)
+	ServiceRoles(ctx corectx.Context, query composable.SearchQuery) (*composable.SearchResult, error)
 	GroupRoles(ctx corectx.Context, query composable.SearchQuery) (*composable.SearchResult, error)
 }
 
 type (
-	ManageRoleUsersCommand  = composable.ManageM2mCommand
-	ManageRoleUsersResult   = composable.MutateResult
-	ManageRoleGroupsCommand = composable.ManageM2mCommand
-	ManageRoleGroupsResult  = composable.MutateResult
+	ManageRoleUsersCommand    = composable.ManageM2mCommand
+	ManageRoleUsersResult     = composable.MutateResult
+	ManageRoleServicesCommand = composable.ManageM2mCommand
+	ManageRoleServicesResult  = composable.MutateResult
+	ManageRoleGroupsCommand   = composable.ManageM2mCommand
+	ManageRoleGroupsResult    = composable.MutateResult
 
 	// DescribeRolesParams carries `role_id`, one value or several.
 	DescribeRolesParams = composable.SearchQuery

@@ -96,5 +96,5 @@
 		}
 	],
 
-	"extend_after": ["core.basemodel.auditable_model"]
+	"extend_after": ["core.basemodel.auditable_model", "core.basemodel.traceable_loose_model"]
 }

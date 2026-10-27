@@ -31,7 +31,8 @@ func TicketAssignmentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().Name(TicketAssignmentFieldReason).DataType(
 			dmodel.FieldDataTypeEnumString([]string{"manual", "auto", "escalation"}),
 		).RequiredForCreate()).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 type TicketAssignment struct{ basemodel.DynamicModelBase }

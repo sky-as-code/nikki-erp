@@ -12,23 +12,25 @@ import (
 )
 
 // GetUser reads one user by id or email, archived or not. It asserts nothing: it is the sign-in
-// and principal-resolution path's read, which runs before there is a caller to authorize.
+// and principal-resolution path's read, which runs before there is a caller to authorize. It sees
+// only principals of type user, so a service signing in is "user not found".
 func (this *UserCrudDomainServiceImpl) GetUser(
 	ctx corectx.Context, query itUser.GetUserQuery,
 ) (*itUser.GetUserDomainResult, error) {
-	return this.getUserWithArchived(ctx, query, nil)
+	return this.getUserWithArchived(ctx, query, nil, userTypeScope.typeNode())
 }
 
-// GetEnabledUser is GetUser restricted to unarchived users: the request guard's read, through
-// which an archived user stops being able to act.
+// GetEnabledUser is the request guard's read of any principal, restricted to unarchived ones:
+// through it an archived principal stops being able to act. It reads every type, so a service
+// principal stays authorizable.
 func (this *UserCrudDomainServiceImpl) GetEnabledUser(
 	ctx corectx.Context, query itUser.GetUserQuery,
 ) (*itUser.GetUserDomainResult, error) {
-	return this.getUserWithArchived(ctx, query, util.ToPtr(false))
+	return this.getUserWithArchived(ctx, query, util.ToPtr(false), dmodel.NewSearchNode())
 }
 
 func (this *UserCrudDomainServiceImpl) getUserWithArchived(
-	ctx corectx.Context, query itUser.GetUserQuery, isArchived *bool,
+	ctx corectx.Context, query itUser.GetUserQuery, isArchived *bool, typeNode *dmodel.SearchNode,
 ) (*itUser.GetUserDomainResult, error) {
 	sanitized, cErrs := query.GetSchema().ValidateStruct(query)
 	if cErrs.Count() > 0 {
@@ -48,7 +50,7 @@ func (this *UserCrudDomainServiceImpl) getUserWithArchived(
 		keyNode.NewCondition(domain.UserFieldEmail, dmodel.Equals, *query.Email)
 	}
 	graph := &dmodel.SearchGraph{}
-	graph.And(*statusNode, *keyNode)
+	graph.And(*statusNode, *keyNode, *typeNode)
 
 	searchRes, err := corecrud.Search[domain.User](ctx, corecrud.SearchParam{
 		Action:       "get user",

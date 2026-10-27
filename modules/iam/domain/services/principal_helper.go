@@ -20,6 +20,16 @@ type loginPrincipal struct {
 	Id       model.Id
 	Name     string
 	Username string
+	Type     models.UserType
+}
+
+// userTypeOf is the type the principal's tokens carry. A principal that is not an IAM user, or a
+// user row read before the field existed, is a person.
+func userTypeOf(principal *loginPrincipal) models.UserType {
+	if principal == nil || principal.Type == "" {
+		return models.UserTypeUser
+	}
+	return principal.Type
 }
 
 func (this *principalHelper) assertPrincipalExists(
@@ -73,9 +83,13 @@ func (this *principalHelper) assertUserExists(
 		return nil, nil
 	}
 
-	return &loginPrincipal{
+	principal := &loginPrincipal{
 		Id:       result.Data.MustGetId(),
 		Name:     result.Data.MustGetDisplayName(),
 		Username: result.Data.MustGetEmail(),
-	}, nil
+	}
+	if userType := result.Data.GetType(); userType != nil {
+		principal.Type = *userType
+	}
+	return principal, nil
 }

@@ -4,14 +4,10 @@
 	"should_build_db": true,
 	"record_label_field": "display_name",
 	"record_sub_label_field": "email",
-	"default_search_fields": ["avatar_url", "avatar_file_id", "display_name", "email", "status"],
+	"default_search_fields": ["avatar_file_id", "display_name", "email", "status"],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
-		{
-			"name": "avatar_url",
-			"data_type": "url"
-		},
 		{
 			"name": "avatar_file_id",
 			"data_type": "ulid",
@@ -30,6 +26,14 @@
 			"data_type": "email",
 			"required_for_create": true,
 			"unique": true
+		},
+		{
+			"name": "type",
+			"data_type": { "type": "enum_string", "values": ["user", "service"] },
+			"required_for_create": true,
+			"default_value": "user",
+			"no_update": true,
+			"description": { "en-US": "user: a human principal; service: a machine principal, which cannot sign in" }
 		},
 		{
 			"name": "status",
@@ -53,7 +57,8 @@
 	"extend_after": [
 		"core.basemodel.archivable_model",
 		"core.basemodel.versioned_model",
-		"core.basemodel.auditable_model"
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model"
 	],
 
 	"edges_to": [
