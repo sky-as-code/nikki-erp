@@ -70,5 +70,5 @@
 		{ "index_name": "purch_audit_evts_tid_org_id", "fields": ["org_id"] }
 	],
 
-	"extend_after": ["core.basemodel.auditable_readonly_model", "core.basemodel.traceable_readonly_model"]
+	"extend_after": ["core.basemodel.auditable_readonly_model", "core.basemodel.traceable_model"]
 }

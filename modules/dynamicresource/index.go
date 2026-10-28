@@ -1,6 +1,9 @@
 package dynamicresource
 
 import (
+	stdErr "errors"
+
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
@@ -56,9 +59,13 @@ func (*DynamicResourceModule) Version() semver.SemVer {
 	return *semver.MustParseSemVer("v1.0.0")
 }
 
-// Init implements InCodeModule.
+// Init implements InCodeModule. The engine registry answers core/resourceaccess itself: every
+// engine resource is reachable from it, so there is no feature module to bind the port to.
 func (*DynamicResourceModule) Init() error {
-	return orglifecycle.RegisterNoop(ModuleName)
+	return stdErr.Join(
+		orglifecycle.RegisterNoop(ModuleName),
+		deps.Register(composable.NewResourceAccess),
+	)
 }
 
 // OnAppStarted implements InCodeModuleAppStarted.

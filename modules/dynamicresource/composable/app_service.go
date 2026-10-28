@@ -84,6 +84,9 @@ type NewAppServiceParam struct {
 	Storage      filestorage.FileStorageAdapter
 	ImportLimits ImportLimits
 	Logger       logging.LoggerService
+
+	// AuditSink records GetById and Search. Nil unless the resource opted in (AuditReads).
+	AuditSink AuditRecorder
 }
 
 func NewDefaultApplicationService(param NewAppServiceParam) CrudApplicationService {
@@ -103,6 +106,7 @@ func NewDefaultApplicationService(param NewAppServiceParam) CrudApplicationServi
 		storage:      param.Storage,
 		importLimits: param.ImportLimits,
 		logger:       param.Logger,
+		readAudit:    param.AuditSink,
 	}
 }
 
@@ -114,6 +118,7 @@ type DefaultApplicationServiceImpl struct {
 	storage      filestorage.FileStorageAdapter
 	importLimits ImportLimits
 	logger       logging.LoggerService
+	readAudit    AuditRecorder
 }
 
 func (this *DefaultApplicationServiceImpl) DomainService() CrudDomainService {
@@ -206,7 +211,8 @@ func (this *DefaultApplicationServiceImpl) GetById(
 		return &GetOneResult{ClientErrors: *cErrs}, nil
 	}
 	mask := this.stripUnreadableEdges(ctx, access, query)
-	return this.narrowSingle(ctx, access, mask)(this.domSvc.GetById(ctx, query))
+	result, err := this.narrowSingle(ctx, access, mask)(this.domSvc.GetById(ctx, query))
+	return result, this.auditGet(ctx, access.orgId, query, result, err)
 }
 
 // GetOne is org-confined through the normalized org_id itself: the domain service turns every
@@ -245,7 +251,8 @@ func (this *DefaultApplicationServiceImpl) Search(
 		return nil, err
 	}
 	mask := this.stripUnreadableEdges(ctx, access, query)
-	return this.narrowPaged(ctx, access, mask)(this.domSvc.Search(ctx, query))
+	result, err := this.narrowPaged(ctx, access, mask)(this.domSvc.Search(ctx, query))
+	return result, this.auditSearch(ctx, access.orgId, query, result, err)
 }
 
 func (this *DefaultApplicationServiceImpl) Exists(

@@ -19,7 +19,6 @@ CREATE TABLE "jobscheduler_jobs" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "jobsched_jobs_module_job_key_ukey" UNIQUE ("module_name", "job_key")

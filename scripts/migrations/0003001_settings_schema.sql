@@ -8,7 +8,6 @@ CREATE TABLE "settings_quotas" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "settings_quotas_name_owner_ukey" UNIQUE ("name", "owner_type", "owner_id")
 );
@@ -26,7 +25,6 @@ CREATE TABLE "settings_records" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "settings_records_mod_name_owner_ukey" UNIQUE ("module_key", "name", "owner_id")
 );
@@ -39,7 +37,6 @@ CREATE TABLE "settings_schemas" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "settings_schemas_mod_lvl_ukey" UNIQUE ("module_key", "level")
 );

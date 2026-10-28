@@ -1,0 +1,51 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["items", "total", "page", "size"],
+	"properties": {
+		"total": { "type": "integer", "minimum": 0 },
+		"page": { "type": "integer", "minimum": 0 },
+		"size": { "type": "integer", "minimum": 1 },
+		"items": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["id", "action", "created_at", "request_id", "actor", "changes", "masked_fields"],
+				"properties": {
+					"id": { "type": "string", "minLength": 1 },
+					"action": { "type": "string", "minLength": 1 },
+					"created_at": { "type": "string", "minLength": 1 },
+					"request_id": { "type": ["string", "null"] },
+					"actor": {
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["id", "type", "display_name", "avatar_file_id"],
+						"properties": {
+							"id": { "type": ["string", "null"] },
+							"type": { "type": "string", "enum": ["user", "service", "system"] },
+							"display_name": { "type": ["string", "null"] },
+							"avatar_file_id": { "type": ["string", "null"] }
+						}
+					},
+					"changes": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"additionalProperties": false,
+							"required": ["field", "old", "new"],
+							"properties": {
+								"field": { "type": "string", "minLength": 1 },
+								"old": {},
+								"new": {},
+								"labels": { "type": "object", "additionalProperties": { "type": "string" } }
+							}
+						}
+					},
+					"masked_fields": { "type": "array", "items": { "type": "string" } }
+				}
+			}
+		}
+	}
+}

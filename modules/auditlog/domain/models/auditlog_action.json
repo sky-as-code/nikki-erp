@@ -1,0 +1,121 @@
+{
+	"name": "auditlog_action",
+	"label": "auditlog_action.label",
+	"table_name": "auditlog_actions",
+	"should_build_db": true,
+	"record_label_field": "action",
+	"record_sub_label_field": "resource_code",
+	"default_search_fields": [
+		"action", "resource_code", "resource_id", "actor_type", "actor_id", "actor_display_name",
+		"before", "after", "request_id", "source", "org_id", "created_at"
+	],
+	"search_indexes": [
+		{ "index_name": "auditlog_actions_res", "fields": ["resource_code", "resource_id", "created_at"] },
+		{ "index_name": "auditlog_actions_org", "fields": ["org_id", "created_at"] },
+		{ "index_name": "auditlog_actions_actor", "fields": ["actor_id", "created_at"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The org of the record acted on. Null for a global record, such as a role that belongs to no org. Not a foreign key: an entry must outlive the org's cleanup order and never block it."
+			}
+		},
+		{
+			"name": "action",
+			"label": "fields.action",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "create, update, delete, archive, unarchive, link, unlink, get, search, or the code of a custom action such as suspend. A plain string rather than an enum, so a new custom action needs no migration."
+			}
+		},
+		{
+			"name": "resource_code",
+			"label": "fields.resource_code",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"required_for_create": true,
+			"description": {
+				"en-US": "The schema name of the resource acted on, such as purchase_order. It is also the permission resource code the history route authorizes against."
+			}
+		},
+		{
+			"name": "resource_id",
+			"label": "fields.resource_id",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"description": {
+				"en-US": "The record acted on. Null for a search. No foreign key: the entry must outlive the record it describes."
+			}
+		},
+		{
+			"name": "actor_type",
+			"label": "fields.actor_type",
+			"data_type": { "type": "enum_string", "values": ["user", "service", "system"] },
+			"required_for_create": true
+		},
+		{
+			"name": "actor_id",
+			"label": "fields.actor_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The user behind the action. Null for a job or the platform acting with no user behind it."
+			}
+		},
+		{
+			"name": "actor_display_name",
+			"label": "fields.actor_display_name",
+			"data_type": { "type": "string", "min": 0, "max": 300 },
+			"description": {
+				"en-US": "The actor's name when the entry was written, kept so the history still reads after the user is renamed or removed."
+			}
+		},
+		{
+			"name": "before",
+			"label": "fields.before",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "The old values of the fields that changed. Empty on create."
+			}
+		},
+		{
+			"name": "after",
+			"label": "fields.after",
+			"data_type": "jsonmap",
+			"description": {
+				"en-US": "The new values of the fields that changed. Empty on delete. For a search, the graph and fields that were asked for."
+			}
+		},
+		{
+			"name": "request_id",
+			"label": "fields.request_id",
+			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"description": {
+				"en-US": "Shared by every entry one request, job run or message wrote, so a call that changed several records reads as one."
+			}
+		},
+		{
+			"name": "source",
+			"label": "fields.source",
+			"data_type": { "type": "enum_string", "values": ["http", "job", "event", "system"] },
+			"required_for_create": true
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_readonly_model"],
+
+	"edges_to": [
+		{
+			"edge": "actor_user",
+			"label": "fields.actor_user",
+			"type": "many:one",
+			"dest_schema": "iam_user",
+			"key_map": { "actor_id": "id" },
+			"on_delete": "SET NULL",
+			"db_constraint": false
+		}
+	]
+}

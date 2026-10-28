@@ -37,6 +37,9 @@ const (
 	// buses scope a handler the same way; see EventDelivery for why this belongs on the message
 	// rather than inside each event's payload.
 	MetaDomainConstraints = "domain_constraints"
+
+	// MetaRequestId carries the publisher's request id, under the CQRS bus's name for it.
+	MetaRequestId = "request_id"
 )
 
 type EventBusParams struct {
@@ -90,6 +93,7 @@ func (bus *EventBusImpl) PublishRequest(ctx context.Context, request EventReques
 	msg.Metadata.Set(MetaReplyTopic, request.replyTopic)
 	msg.Metadata.Set(MetaNoReply, "false")
 	setDomainConstraints(ctx, msg)
+	setRequestId(ctx, msg)
 
 	// Publish the event
 	err = bus.publisher.Publish(request.eventTopic, msg)
@@ -214,6 +218,7 @@ func (bus *EventBusImpl) SubscribeEvent(
 				deliveryChan <- EventDelivery{
 					Payload:     payload,
 					Constraints: bus.domainConstraintsOf(msg, request.eventTopic),
+					RequestMeta: deliveryRequestMeta(msg),
 				}
 			case <-ctx.Done():
 				bus.subscriptions.Delete(request.eventTopic)
@@ -244,6 +249,20 @@ func (bus *EventBusImpl) domainConstraintsOf(msg *message.Message, topic string)
 		return nil
 	}
 	return constraints
+}
+
+// deliveryRequestMeta keeps the publisher's request id; the delivery itself is the event source.
+func deliveryRequestMeta(msg *message.Message) corectx.RequestMeta {
+	if id := msg.Metadata.Get(MetaRequestId); id != "" {
+		return corectx.RequestMeta{Id: id, Source: corectx.RequestSourceEvent}
+	}
+	return corectx.NewRequestMeta(corectx.RequestSourceEvent)
+}
+
+func setRequestId(ctx context.Context, msg *message.Message) {
+	if meta, ok := corectx.RequestMetaOf(ctx); ok {
+		msg.Metadata.Set(MetaRequestId, meta.Id)
+	}
 }
 
 // setDomainConstraints stamps the publisher's scope onto an outgoing message.

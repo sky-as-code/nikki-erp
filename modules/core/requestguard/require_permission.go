@@ -1,6 +1,8 @@
 package requestguard
 
 import (
+	"strings"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -74,6 +76,25 @@ type PermissionContext struct {
 // SQL matcher and the permission probe ask the same function, which is what keeps
 // the three of them from drifting into disagreeing about the same question.
 func AssertPermission(ctx corectx.Context, requiredPerm Perm) *ft.ClientErrors {
+	refused := assertPermission(ctx, requiredPerm)
+	if refused == nil && isCustomWriteAction(requiredPerm.ActionCode) {
+		corectx.SetRequestAction(ctx, requiredPerm.ActionCode)
+	}
+	return refused
+}
+
+// builtinActionCodes are the CRUD permissions, whose writes the audit trail names by itself.
+var builtinActionCodes = map[string]bool{
+	"create": true, "read": true, "update": true, "delete": true, "set_archived": true, "*": true,
+}
+
+// isCustomWriteAction tells whether a passed check names a custom action whose writes the audit
+// trail should be labelled with. A read-like code ("read_inbox") never labels a write.
+func isCustomWriteAction(actionCode string) bool {
+	return actionCode != "" && !builtinActionCodes[actionCode] && !strings.HasPrefix(actionCode, "read")
+}
+
+func assertPermission(ctx corectx.Context, requiredPerm Perm) *ft.ClientErrors {
 	userPerm := ctx.GetPermissions()
 
 	// Fail closed on an unauthenticated execution. Without this the check still denies - an empty

@@ -56,8 +56,6 @@ func (*ContactsModule) Category() modules.ModuleCategory {
 func (*ContactsModule) Deps() []string {
 	return []string{
 		"dynamicresource",
-		// created_by / updated_by carry a foreign key to iam_users, so IAM's tables must exist first.
-		"iam",
 	}
 }
 

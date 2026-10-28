@@ -9,6 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/accounting"
 	"github.com/sky-as-code/nikki-erp/modules/apptrait"
+	"github.com/sky-as-code/nikki-erp/modules/auditlog"
 	"github.com/sky-as-code/nikki-erp/modules/contacts"
 	"github.com/sky-as-code/nikki-erp/modules/core"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
@@ -46,6 +47,7 @@ func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 		// Sort alphabetically. The order of initialization will be handled properly.
 		accounting.ModuleSingleton,
 		apptrait.ModuleSingleton,
+		auditlog.ModuleSingleton,
 		essential.ModuleSingleton,
 		core.ModuleSingleton,
 		contacts.ModuleSingleton,

@@ -1,9 +1,0 @@
-{
-	"name": "core.basemodel.traceable_loose_readonly_model",
-	"fields": [
-		{"name": "created_by", "label": "fields.created_by", "data_type": "ulid", "no_update": true}
-	],
-	"edges_to": [
-		{"edge": "created_by_user", "label": "fields.created_by_user", "type": "many:one", "dest_schema": "iam_user", "key_map": {"created_by": "id"}, "on_delete": "SET NULL", "db_constraint": false}
-	]
-}

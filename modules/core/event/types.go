@@ -41,6 +41,10 @@ type EventDelivery struct {
 	// Constraints is what the publisher's context was scoped by, the tenant above all. Nil when it
 	// was scoped by nothing, which is every publish in a single-tenant build.
 	Constraints dmodel.DynamicFields
+
+	// RequestMeta is the publisher's request id when it sent one, else one minted for this
+	// delivery, so the entries the handler writes read as one execution.
+	RequestMeta corectx.RequestMeta
 }
 
 // ScopeContext re-establishes the publisher's scope on the context a handler will be given.
@@ -50,6 +54,9 @@ type EventDelivery struct {
 func (this EventDelivery) ScopeContext(ctx corectx.Context) {
 	if len(this.Constraints) > 0 {
 		ctx.SetDomainConstraints(this.Constraints)
+	}
+	if this.RequestMeta.Id != "" {
+		corectx.SetRequestMeta(ctx, this.RequestMeta)
 	}
 }
 

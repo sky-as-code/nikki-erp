@@ -16,9 +16,6 @@
         "created_by": {
             "type": ["string", "null"]
         },
-        "updated_by": {
-            "type": ["string", "null"]
-        },
         "name": {
             "type": "object"
         },

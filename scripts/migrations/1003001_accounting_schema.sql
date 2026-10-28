@@ -11,12 +11,9 @@ CREATE TABLE "accounting_taxes" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "acc_taxes_tid_code_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "accounting_taxes_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "accounting_taxes_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "acc_taxes_tid_code_ukey" UNIQUE ("code", "org_id")
 );
 -- Create "accounting_tax_jurisdictions" table
 CREATE TABLE "accounting_tax_jurisdictions" (
@@ -32,13 +29,10 @@ CREATE TABLE "accounting_tax_jurisdictions" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "acc_tx_juris_tid_code_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "accounting_tax_jurisdictions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "accounting_tax_jurisdictions_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "accounting_tax_jurisdictions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "accounting_tax_jurisdictions_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "accounting_tax_jurisdictions_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "accounting_tax_jurisdictions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "acc_tx_juris_tid_parent_idx" to table: "accounting_tax_jurisdictions"
 CREATE INDEX "acc_tx_juris_tid_parent_idx" ON "accounting_tax_jurisdictions" ("parent_id");
@@ -55,12 +49,9 @@ CREATE TABLE "accounting_tax_groups" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "acc_tx_grp_tid_code_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "accounting_tax_groups_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "accounting_tax_groups_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "acc_tx_grp_tid_code_ukey" UNIQUE ("code", "org_id")
 );
 -- Create "accounting_tax_definition_versions" table
 CREATE TABLE "accounting_tax_definition_versions" (
@@ -86,16 +77,13 @@ CREATE TABLE "accounting_tax_definition_versions" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "acc_tx_def_tid_tax_ver_ukey" UNIQUE ("tax_id", "version_no", "org_id"),
-  CONSTRAINT "accounting_tax_definition_versions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "accounting_tax_definition_versions_jurisdiction_id_fkey" FOREIGN KEY ("jurisdiction_id") REFERENCES "accounting_tax_jurisdictions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "accounting_tax_definition_versions_supersedes_version_id_fkey" FOREIGN KEY ("supersedes_version_id") REFERENCES "accounting_tax_definition_versions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "accounting_tax_definition_versions_tax_group_id_fkey" FOREIGN KEY ("tax_group_id") REFERENCES "accounting_tax_groups" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "accounting_tax_definition_versions_tax_id_fkey" FOREIGN KEY ("tax_id") REFERENCES "accounting_taxes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "accounting_tax_definition_versions_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "accounting_tax_definition_versions_tax_id_fkey" FOREIGN KEY ("tax_id") REFERENCES "accounting_taxes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "acc_tx_def_tid_eff_idx" to table: "accounting_tax_definition_versions"
 CREATE INDEX "acc_tx_def_tid_eff_idx" ON "accounting_tax_definition_versions" ("tax_id", "effective_from", "effective_to");
@@ -111,14 +99,11 @@ CREATE TABLE "accounting_tax_components" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "acc_tx_comp_tid_par_child_ukey" UNIQUE ("parent_tax_definition_version_id", "component_tax_id", "org_id"),
   CONSTRAINT "accounting_tax_components_component_tax_id_fkey" FOREIGN KEY ("component_tax_id") REFERENCES "accounting_taxes" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "accounting_tax_components_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "accounting_tax_components_parent_tax_definition_version_id_fkey" FOREIGN KEY ("parent_tax_definition_version_id") REFERENCES "accounting_tax_definition_versions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "accounting_tax_components_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "accounting_tax_components_parent_tax_definition_version_id_fkey" FOREIGN KEY ("parent_tax_definition_version_id") REFERENCES "accounting_tax_definition_versions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "accounting_tax_mappings" table
 CREATE TABLE "accounting_tax_mappings" (
@@ -136,13 +121,10 @@ CREATE TABLE "accounting_tax_mappings" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "acc_tx_map_tid_code_ver_ukey" UNIQUE ("code", "version_no", "org_id"),
-  CONSTRAINT "accounting_tax_mappings_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "accounting_tax_mappings_supersedes_mapping_id_fkey" FOREIGN KEY ("supersedes_mapping_id") REFERENCES "accounting_tax_mappings" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "accounting_tax_mappings_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "accounting_tax_mappings_supersedes_mapping_id_fkey" FOREIGN KEY ("supersedes_mapping_id") REFERENCES "accounting_tax_mappings" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "accounting_tax_mapping_lines" table
 CREATE TABLE "accounting_tax_mapping_lines" (
@@ -156,15 +138,12 @@ CREATE TABLE "accounting_tax_mapping_lines" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "acc_tx_mapln_tid_map_src_ukey" UNIQUE ("tax_mapping_id", "source_tax_id", "org_id"),
-  CONSTRAINT "accounting_tax_mapping_lines_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "accounting_tax_mapping_lines_source_tax_id_fkey" FOREIGN KEY ("source_tax_id") REFERENCES "accounting_taxes" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "accounting_tax_mapping_lines_target_tax_id_fkey" FOREIGN KEY ("target_tax_id") REFERENCES "accounting_taxes" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "accounting_tax_mapping_lines_tax_mapping_id_fkey" FOREIGN KEY ("tax_mapping_id") REFERENCES "accounting_tax_mappings" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "accounting_tax_mapping_lines_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "accounting_tax_mapping_lines_tax_mapping_id_fkey" FOREIGN KEY ("tax_mapping_id") REFERENCES "accounting_tax_mappings" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "accounting_tax_product_classifications" table
 CREATE TABLE "accounting_tax_product_classifications" (
@@ -179,13 +158,10 @@ CREATE TABLE "accounting_tax_product_classifications" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "acc_tx_class_tid_code_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "accounting_tax_product_classifications_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "accounting_tax_product_classifications_jurisdiction_id_fkey" FOREIGN KEY ("jurisdiction_id") REFERENCES "accounting_tax_jurisdictions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "accounting_tax_product_classifications_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "accounting_tax_product_classifications_jurisdiction_id_fkey" FOREIGN KEY ("jurisdiction_id") REFERENCES "accounting_tax_jurisdictions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "accounting_tax_rate_versions" table
 CREATE TABLE "accounting_tax_rate_versions" (
@@ -206,14 +182,11 @@ CREATE TABLE "accounting_tax_rate_versions" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "acc_tx_rate_tid_tax_ver_ukey" UNIQUE ("tax_id", "version_no", "org_id"),
-  CONSTRAINT "accounting_tax_rate_versions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "accounting_tax_rate_versions_rate_uom_id_fkey" FOREIGN KEY ("rate_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "accounting_tax_rate_versions_tax_id_fkey" FOREIGN KEY ("tax_id") REFERENCES "accounting_taxes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "accounting_tax_rate_versions_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "accounting_tax_rate_versions_tax_id_fkey" FOREIGN KEY ("tax_id") REFERENCES "accounting_taxes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "acc_tx_rate_tid_eff_idx" to table: "accounting_tax_rate_versions"
 CREATE INDEX "acc_tx_rate_tid_eff_idx" ON "accounting_tax_rate_versions" ("tax_id", "effective_from", "effective_to");
@@ -238,14 +211,11 @@ CREATE TABLE "accounting_tax_rounding_policies" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "acc_tx_pol_tid_code_ver_ukey" UNIQUE ("code", "version_no", "org_id"),
-  CONSTRAINT "accounting_tax_rounding_policies_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "accounting_tax_rounding_policies_jurisdiction_id_fkey" FOREIGN KEY ("jurisdiction_id") REFERENCES "accounting_tax_jurisdictions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "accounting_tax_rounding_policies_supersedes_policy_id_fkey" FOREIGN KEY ("supersedes_policy_id") REFERENCES "accounting_tax_rounding_policies" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "accounting_tax_rounding_policies_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "accounting_tax_rounding_policies_supersedes_policy_id_fkey" FOREIGN KEY ("supersedes_policy_id") REFERENCES "accounting_tax_rounding_policies" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "acc_tx_pol_tid_lookup_idx" to table: "accounting_tax_rounding_policies"
 CREATE INDEX "acc_tx_pol_tid_lookup_idx" ON "accounting_tax_rounding_policies" ("currency_code", "effective_from", "effective_to");
@@ -268,14 +238,11 @@ CREATE TABLE "accounting_tax_rules" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "acc_tx_rule_tid_code_ver_ukey" UNIQUE ("code", "version_no", "org_id"),
-  CONSTRAINT "accounting_tax_rules_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "accounting_tax_rules_jurisdiction_id_fkey" FOREIGN KEY ("jurisdiction_id") REFERENCES "accounting_tax_jurisdictions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "accounting_tax_rules_supersedes_rule_id_fkey" FOREIGN KEY ("supersedes_rule_id") REFERENCES "accounting_tax_rules" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "accounting_tax_rules_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "accounting_tax_rules_supersedes_rule_id_fkey" FOREIGN KEY ("supersedes_rule_id") REFERENCES "accounting_tax_rules" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "acc_tx_rule_tid_eval_idx" to table: "accounting_tax_rules"
 CREATE INDEX "acc_tx_rule_tid_eval_idx" ON "accounting_tax_rules" ("priority", "effective_from", "effective_to");
@@ -293,12 +260,9 @@ CREATE TABLE "accounting_tax_rule_conditions" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "accounting_tax_rule_conditions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "accounting_tax_rule_conditions_tax_rule_id_fkey" FOREIGN KEY ("tax_rule_id") REFERENCES "accounting_tax_rules" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "accounting_tax_rule_conditions_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "accounting_tax_rule_conditions_tax_rule_id_fkey" FOREIGN KEY ("tax_rule_id") REFERENCES "accounting_tax_rules" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "acc_tx_cond_tid_rule_idx" to table: "accounting_tax_rule_conditions"
 CREATE INDEX "acc_tx_cond_tid_rule_idx" ON "accounting_tax_rule_conditions" ("tax_rule_id");
@@ -316,14 +280,11 @@ CREATE TABLE "accounting_tax_rule_results" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "accounting_tax_rule_results_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "accounting_tax_rule_results_tax_id_fkey" FOREIGN KEY ("tax_id") REFERENCES "accounting_taxes" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "accounting_tax_rule_results_tax_mapping_id_fkey" FOREIGN KEY ("tax_mapping_id") REFERENCES "accounting_tax_mappings" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "accounting_tax_rule_results_tax_rule_id_fkey" FOREIGN KEY ("tax_rule_id") REFERENCES "accounting_tax_rules" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "accounting_tax_rule_results_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "accounting_tax_rule_results_tax_rule_id_fkey" FOREIGN KEY ("tax_rule_id") REFERENCES "accounting_tax_rules" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "acc_tx_res_tid_rule_idx" to table: "accounting_tax_rule_results"
 CREATE INDEX "acc_tx_res_tid_rule_idx" ON "accounting_tax_rule_results" ("tax_rule_id");

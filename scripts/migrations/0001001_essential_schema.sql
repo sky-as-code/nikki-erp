@@ -11,7 +11,6 @@ CREATE TABLE "essential_currencies" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "essent_currencies_code_ukey" UNIQUE ("code")
@@ -28,7 +27,6 @@ CREATE TABLE "essential_enums" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id")
 );
 -- Create "essential_languages" table
@@ -48,7 +46,6 @@ CREATE TABLE "essential_languages" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "essential_languages_iso_code_ukey" UNIQUE ("iso_code")
 );
@@ -65,7 +62,6 @@ CREATE TABLE "essential_model_metadata" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id")
 );
 -- Create "essential_modules" table
@@ -86,7 +82,6 @@ CREATE TABLE "essential_modules" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "essential_modules_name_ukey" UNIQUE ("name")
 );
@@ -99,7 +94,6 @@ CREATE TABLE "essential_tags" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id")
 );
 -- Create "essential_field_metadata" table
@@ -116,7 +110,6 @@ CREATE TABLE "essential_field_metadata" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "essential_field_metadata_model_metadata_id_code_ukey" UNIQUE ("model_metadata_id", "code"),
   CONSTRAINT "essential_field_metadata_model_metadata_id_fkey" FOREIGN KEY ("model_metadata_id") REFERENCES "essential_model_metadata" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
@@ -131,7 +124,6 @@ CREATE TABLE "essential_uomcats" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "essential_uomcats_name_org_id_ukey" UNIQUE ("name", "org_id")
@@ -150,7 +142,6 @@ CREATE TABLE "essential_uoms" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "essential_uoms_symbol_org_id_ukey" UNIQUE ("symbol", "org_id"),

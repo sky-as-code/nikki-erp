@@ -19,10 +19,7 @@ CREATE TABLE "contacts_parties" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "contacts_parties_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "contacts_parties_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  PRIMARY KEY ("id")
 );
 -- Create index "contacts_parties_tid_org_id_idx" to table: "contacts_parties"
 CREATE INDEX "contacts_parties_tid_org_id_idx" ON "contacts_parties" ("org_id");
@@ -44,11 +41,8 @@ CREATE TABLE "contacts_comm_channels" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "contacts_comm_channels_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "contacts_comm_channels_party_id_fkey" FOREIGN KEY ("party_id") REFERENCES "contacts_parties" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "contacts_comm_channels_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "contacts_comm_channels_party_id_fkey" FOREIGN KEY ("party_id") REFERENCES "contacts_parties" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "contacts_comm_chans_tid_org_id_idx" to table: "contacts_comm_channels"
 CREATE INDEX "contacts_comm_chans_tid_org_id_idx" ON "contacts_comm_channels" ("org_id");
@@ -66,12 +60,9 @@ CREATE TABLE "contacts_relationships" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "contacts_relationships_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "contacts_relationships_party_id_fkey" FOREIGN KEY ("party_id") REFERENCES "contacts_parties" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "contacts_relationships_target_party_id_fkey" FOREIGN KEY ("target_party_id") REFERENCES "contacts_parties" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "contacts_relationships_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "contacts_relationships_target_party_id_fkey" FOREIGN KEY ("target_party_id") REFERENCES "contacts_parties" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "contacts_rels_tid_party_id_idx" to table: "contacts_relationships"
 CREATE INDEX "contacts_rels_tid_party_id_idx" ON "contacts_relationships" ("party_id");
@@ -93,12 +84,9 @@ CREATE TABLE "contacts_vendor_profiles" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "contacts_vnd_profiles_tid_party_id_ukey" UNIQUE ("party_id", "org_id"),
-  CONSTRAINT "contacts_vendor_profiles_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "contacts_vendor_profiles_party_id_fkey" FOREIGN KEY ("party_id") REFERENCES "contacts_parties" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "contacts_vendor_profiles_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "contacts_vendor_profiles_party_id_fkey" FOREIGN KEY ("party_id") REFERENCES "contacts_parties" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "contacts_vnd_profiles_tid_org_id_idx" to table: "contacts_vendor_profiles"
 CREATE INDEX "contacts_vnd_profiles_tid_org_id_idx" ON "contacts_vendor_profiles" ("org_id");
