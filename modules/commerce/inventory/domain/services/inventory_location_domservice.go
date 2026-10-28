@@ -57,6 +57,38 @@ func (this *InventoryLocationDomainServiceImpl) Create(
 	return this.CrudDomainService.Create(ctx, prepared)
 }
 
+func (this *InventoryLocationDomainServiceImpl) CreateBulk(
+	ctx corectx.Context, cmds []composable.CreateCommand,
+) (*dyn.OpResult[[]dmodel.DynamicFields], error) {
+	created := make([]dmodel.DynamicFields, 0, len(cmds))
+	var refused ft.ClientErrors
+
+	err := withLocationTransaction(ctx, func(tranxCtx corectx.Context) error {
+		for _, cmd := range cmds {
+			res, err := this.Create(tranxCtx, cmd)
+			if err != nil {
+				return err
+			}
+			if res.ClientErrors.Count() > 0 {
+				refused = res.ClientErrors
+				return errLocationBulkRefused
+			}
+			created = append(created, res.Data)
+		}
+		return nil
+	})
+	if errors.Is(err, errLocationBulkRefused) {
+		return &dyn.OpResult[[]dmodel.DynamicFields]{ClientErrors: refused}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &dyn.OpResult[[]dmodel.DynamicFields]{Data: created, HasData: true}, nil
+}
+
+var errLocationBulkRefused = errors.New("inventory location bulk create refused; rolling back")
+
 // Update applies the same placement rules and refuses to restructure a system-generated location.
 // A warehouse's Stock, Input or Output location may be renamed and given a storage category, but
 // re-parenting it or changing its purpose would break the flow that created it.
