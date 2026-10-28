@@ -31,7 +31,7 @@ func RoleUserAssignmentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		}).
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Extend(basemodel.AuditableReadonlyModelSchemaBuilder()).
-		Extend(basemodel.TraceableReadonlyModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		Field(
 			basemodel.DefineFieldId(RoleUserAssignFieldRoleId).
 				RequiredForCreate(),

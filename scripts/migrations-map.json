@@ -10,5 +10,6 @@
 	"accounting": "1003001_accounting_schema",
 	"manufacture": "1004001_manufacture_schema",
 	"commerce": "1007001_commerce_schema",
-	"notification": "1008001_notification_schema"
+	"notification": "1008001_notification_schema",
+	"auditlog": "1009001_auditlog_schema"
 }

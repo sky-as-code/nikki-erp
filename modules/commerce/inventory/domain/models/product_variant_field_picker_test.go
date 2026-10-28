@@ -19,7 +19,6 @@ func finalizedVariantSchema(t *testing.T) *dmodel.ModelSchema {
 	t.Helper()
 	registry := dmodel.GetSchemaRegistry()
 	_ = basemodel.RegisterJsonBaseSchemas()
-	_ = basemodel.RegisterIamUserStub()
 	// Skipped when a sibling test already registered these: the registry is a process-wide
 	// singleton. Finalize still runs either way, since registering leaves foreign keys unresolved.
 	if registry.Get(ProductVariantSchemaName) == nil {

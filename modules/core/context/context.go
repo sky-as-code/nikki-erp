@@ -116,8 +116,8 @@ func newRequestContext(inner context.Context, moduleName string) *RequestContext
 // constructors above build an empty one, for code with no caller behind it.
 //
 // It copies every field the copy might be used with, the caller's identity above all: basemodel
-// stamps created_by/updated_by from GetPermissions().UserId, so a clone that dropped permissions
-// would write those columns null and report nothing. Domain constraints live in the inner
+// stamps created_by, and the audit log its actor, from GetPermissions().UserId, so a clone that
+// dropped permissions would write them null and report nothing. Domain constraints live in the inner
 // context's values, so copying Context carries them along.
 //
 // A field added to RequestContext must be added here too.

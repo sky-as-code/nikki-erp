@@ -73,7 +73,7 @@ func assertOnlyStatusIfDeleted(
 // user set.
 func isBookkeepingField(key string) bool {
 	switch key {
-	case basemodel.FieldId, basemodel.FieldEtag, basemodel.FieldUpdatedAt, basemodel.FieldUpdatedBy:
+	case basemodel.FieldId, basemodel.FieldEtag, basemodel.FieldUpdatedAt:
 		return true
 	}
 	return false
@@ -135,20 +135,34 @@ func (this *OrgCrudDomainServiceImpl) MarkDeleted(
 	if err != nil || cErrs != nil {
 		return &itOrg.DeleteOrgResult{ClientErrors: util.ValueOrZeroOf(cErrs)}, err
 	}
-	result, err := corecrud.UpdateRegardless(ctx, corecrud.UpdateRegardlessParam{
-		Action:       "mark organization deleted",
-		DbRepoGetter: this.Repository(),
-		Data: dmodel.DynamicFields{
-			basemodel.FieldId:                found[basemodel.FieldId],
-			basemodel.FieldEtag:              found[basemodel.FieldEtag],
-			basemodel.FieldIsArchived:        true,
-			domain.OrgFieldStatus:            string(domain.OrgStatusDeleted),
-			domain.OrgFieldStatusMessage:     nil,
-			domain.OrgFieldStatusMessageVars: nil,
-		},
+	data := dmodel.DynamicFields{
+		basemodel.FieldId:                found[basemodel.FieldId],
+		basemodel.FieldEtag:              found[basemodel.FieldEtag],
+		basemodel.FieldIsArchived:        true,
+		domain.OrgFieldStatus:            string(domain.OrgStatusDeleted),
+		domain.OrgFieldStatusMessage:     nil,
+		domain.OrgFieldStatusMessageVars: nil,
+	}
+	var result *itOrg.DeleteOrgResult
+	// UpdateRegardless writes past the default domain service, so the entry is recorded here, in
+	// the same transaction.
+	err = composable.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
+		var err error
+		result, err = corecrud.UpdateRegardless(tranxCtx, corecrud.UpdateRegardlessParam{
+			Action:       "mark organization deleted",
+			DbRepoGetter: this.Repository(),
+			Data:         data,
+		})
+		if err != nil || result == nil || result.ClientErrors.Count() > 0 || !result.HasData {
+			return err
+		}
+		return composable.RecordAudit(tranxCtx, this.Schema(), ActionMarkOrgDeleted, found, data)
 	})
 	return result, errors.Wrap(err, "mark organization deleted")
 }
+
+// ActionMarkOrgDeleted is the audit action of starting an org's deletion.
+const ActionMarkOrgDeleted = "mark_deleted"
 
 // SetLifecycleStatus records what the org lifecycle concluded. message and vars are cleared when
 // nil.

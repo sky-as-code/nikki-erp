@@ -3,8 +3,8 @@ package composable
 import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
@@ -52,6 +52,10 @@ type NewRepositoryParam struct {
 	Logger        logging.LoggerService
 	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
 	Schema        *dmodel.ModelSchema
+
+	// AuditSink records the direct Insert, Update and DeleteOne a custom domain method makes.
+	// Nil for a resource that opted out (IsAudited false).
+	AuditSink AuditRecorder
 }
 
 func NewDefaultCrudRepository(param NewRepositoryParam) CrudRepository {
@@ -64,7 +68,9 @@ func NewDefaultCrudRepository(param NewRepositoryParam) CrudRepository {
 			Schema:       param.Schema,
 		},
 	)
-	return &DefaultCrudRepositoryImpl{dynamicRepo: dynamicRepo}
+	repo := &DefaultCrudRepositoryImpl{dynamicRepo: dynamicRepo}
+	repo.audit = newAuditTrail(param.Schema, repo, param.AuditSink)
+	return repo
 }
 
 // DefaultCrudRepositoryImpl is the schema-agnostic counterpart of the hand-written
@@ -72,6 +78,10 @@ func NewDefaultCrudRepository(param NewRepositoryParam) CrudRepository {
 // but speaks DynamicFields instead of a typed domain model.
 type DefaultCrudRepositoryImpl struct {
 	dynamicRepo dyn.BaseDynamicRepository
+
+	// audit covers the writes that skip the default domain service, which itself writes through
+	// GetBaseRepo and records its own, richer entry. Nil when the resource is not audited.
+	audit *auditTrail
 }
 
 func (this *DefaultCrudRepositoryImpl) GetBaseRepo() dyn.BaseDynamicRepository {
@@ -89,18 +99,43 @@ func (this *DefaultCrudRepositoryImpl) BeginTransaction(ctx corectx.Context) (da
 func (this *DefaultCrudRepositoryImpl) Insert(
 	ctx corectx.Context, data dmodel.DynamicFields,
 ) (*dyn.OpResult[int], error) {
+	if this.audit.active() {
+		return this.audit.insert(ctx, data, this.insert)
+	}
+	return this.insert(ctx, data)
+}
+
+func (this *DefaultCrudRepositoryImpl) insert(
+	ctx corectx.Context, data dmodel.DynamicFields,
+) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, NewDynamicEntityFrom(data))
 }
 
 func (this *DefaultCrudRepositoryImpl) Update(
 	ctx corectx.Context, data dmodel.DynamicFields,
 ) (*MutateResult, error) {
+	if this.audit.active() {
+		return this.audit.updateRow(ctx, data, this.update)
+	}
+	return this.update(ctx, data)
+}
+
+func (this *DefaultCrudRepositoryImpl) update(ctx corectx.Context, data dmodel.DynamicFields) (*MutateResult, error) {
 	return baserepo.Update(ctx, this.dynamicRepo, data)
 }
 
 func (this *DefaultCrudRepositoryImpl) DeleteOne(
 	ctx corectx.Context, keys dmodel.DynamicFields,
 ) (*MutateResult, error) {
+	if this.audit.active() {
+		return this.audit.delete(ctx, keys, func(ctx corectx.Context) (*MutateResult, error) {
+			return this.deleteOne(ctx, keys)
+		})
+	}
+	return this.deleteOne(ctx, keys)
+}
+
+func (this *DefaultCrudRepositoryImpl) deleteOne(ctx corectx.Context, keys dmodel.DynamicFields) (*MutateResult, error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys)
 }
 

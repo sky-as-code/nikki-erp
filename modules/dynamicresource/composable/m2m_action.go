@@ -105,7 +105,13 @@ func manageM2mWith(
 		if result.ClientErrors.Count() > 0 {
 			return &result.ClientErrors, nil
 		}
-		if !result.HasData || param.AfterChange == nil {
+		if !result.HasData {
+			return nil, nil
+		}
+		if err := recordM2mChange(tranxCtx, repo, param.DestSchemaName, *change); err != nil {
+			return nil, err
+		}
+		if param.AfterChange == nil {
 			return nil, nil
 		}
 		return nil, param.AfterChange(tranxCtx, *change)

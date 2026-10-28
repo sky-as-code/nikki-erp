@@ -30,6 +30,11 @@ const MetaDomainConstraints = "domain_constraints"
 const MetaRequestTopic = "request_topic"
 const MetaReplyTopic = "reply_topic"
 const MetaNoReply = "no_reply"
+
+// MetaRequestId and MetaRequestSource carry the sender's request meta across the bus, so the
+// entries a handler writes share the id of the request that sent the command.
+const MetaRequestId = "request_id"
+const MetaRequestSource = "request_source"
 const DefaultQueryTimeoutSecs = "50"
 
 // Metadata keys a scheduled job attaches to the command it triggers, so a handler can make its
@@ -50,6 +55,8 @@ var reservedMetaKeys = map[string]bool{
 	MetaRequestTopic:      true,
 	MetaReplyTopic:        true,
 	MetaNoReply:           true,
+	MetaRequestId:         true,
+	MetaRequestSource:     true,
 }
 
 type cqrsMetadataKey struct{}
@@ -243,6 +250,7 @@ func (this *WatermillCqrsBus) createIncomingContext(ctx context.Context, msg *me
 	}
 
 	reqCtx := corectx.NewRequestContext(ctx)
+	corectx.SetRequestMeta(reqCtx, incomingRequestMeta(msg))
 	domConstrStr := msg.Metadata.Get(MetaDomainConstraints)
 	if domConstrStr != "" {
 		domConstr := dmodel.DynamicFields{}
@@ -251,6 +259,18 @@ func (this *WatermillCqrsBus) createIncomingContext(ctx context.Context, msg *me
 		reqCtx.SetDomainConstraints(domConstr)
 	}
 	return reqCtx
+}
+
+// incomingRequestMeta keeps the sender's request id, or mints one for a command that came with
+// none: a scheduler run when the envelope names its execution, a message otherwise.
+func incomingRequestMeta(msg *message.Message) corectx.RequestMeta {
+	if id := msg.Metadata.Get(MetaRequestId); id != "" {
+		return corectx.RequestMeta{Id: id, Source: corectx.RequestSource(msg.Metadata.Get(MetaRequestSource))}
+	}
+	if msg.Metadata.Get(MetaSchedulerExecutionId) != "" {
+		return corectx.NewRequestMeta(corectx.RequestSourceJob)
+	}
+	return corectx.NewRequestMeta(corectx.RequestSourceEvent)
 }
 
 func (this *WatermillCqrsBus) handleRequest(
@@ -446,6 +466,10 @@ func newOutgoingRequestPacket(cancellableCtx context.Context, request Request, m
 		msg.Metadata.Set(MetaDomainConstraints, string(domConstrJson))
 	}
 
+	if meta, ok := corectx.RequestMetaOf(cancellableCtx); ok {
+		msg.Metadata.Set(MetaRequestId, meta.Id)
+		msg.Metadata.Set(MetaRequestSource, string(meta.Source))
+	}
 	msg.Metadata.Set(MetaCorrelationId, packet.correlationId)
 	msg.Metadata.Set(MetaRequestTopic, packet.requestTopic)
 	msg.Metadata.Set(MetaReplyTopic, packet.replyTopic)

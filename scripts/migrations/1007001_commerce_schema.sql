@@ -1,24 +1,3 @@
--- Create "inventory_brands" table
-CREATE TABLE "inventory_brands" (
-  "id" character varying NOT NULL,
-  "code" character varying NULL,
-  "name" jsonb NULL,
-  "logo_id" character varying NULL,
-  "country_id" character varying NULL,
-  "website" character varying NULL,
-  "description" jsonb NULL,
-  "org_id" character varying NULL,
-  "is_archived" boolean NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  "updated_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_brands_code_org_id_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "inventory_brands_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_brands_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
-);
 -- Create "inventory_integration_outbox" table
 CREATE TABLE "inventory_integration_outbox" (
   "id" character varying NOT NULL,
@@ -35,12 +14,9 @@ CREATE TABLE "inventory_integration_outbox" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "invty_outbox_eventid_ukey" UNIQUE ("event_id"),
-  CONSTRAINT "inventory_integration_outbox_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_integration_outbox_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "invty_outbox_eventid_ukey" UNIQUE ("event_id")
 );
 -- Create index "invty_outbox_aggregate_idx" to table: "inventory_integration_outbox"
 CREATE INDEX "invty_outbox_aggregate_idx" ON "inventory_integration_outbox" ("aggregate_id");
@@ -63,13 +39,194 @@ CREATE TABLE "inventory_storage_categories" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "invty_stor_cats_tid_code_org_id_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "inventory_storage_categories_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_storage_categories_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "invty_stor_cats_tid_code_org_id_ukey" UNIQUE ("code", "org_id")
 );
+-- Create "purchase_audit_events" table
+CREATE TABLE "purchase_audit_events" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "entity_type" character varying NULL,
+  "entity_id" character varying NULL,
+  "action" character varying NULL,
+  "actor_id" character varying NULL,
+  "from_status" character varying NULL,
+  "to_status" character varying NULL,
+  "reason" character varying NULL,
+  "metadata" jsonb NULL,
+  "created_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "purch_audit_evts_tid_entity_idx" to table: "purchase_audit_events"
+CREATE INDEX "purch_audit_evts_tid_entity_idx" ON "purchase_audit_events" ("entity_type", "entity_id");
+-- Create index "purch_audit_evts_tid_org_id_idx" to table: "purchase_audit_events"
+CREATE INDEX "purch_audit_evts_tid_org_id_idx" ON "purchase_audit_events" ("org_id");
+-- Create "purchase_configurations" table
+CREATE TABLE "purchase_configurations" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "approval_mode" character varying NULL,
+  "approval_threshold" numeric NULL,
+  "po_modification_policy" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  "etag" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "purch_configs_tid_org_id_ukey" UNIQUE ("org_id")
+);
+-- Create "purchase_sourcing_groups" table
+CREATE TABLE "purchase_sourcing_groups" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  "etag" character varying NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "purch_srcgroups_tid_org_id_idx" to table: "purchase_sourcing_groups"
+CREATE INDEX "purch_srcgroups_tid_org_id_idx" ON "purchase_sourcing_groups" ("org_id");
+-- Create "sales_billing_instructions" table
+CREATE TABLE "sales_billing_instructions" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "sales_order_id" character varying NULL,
+  "bill_to_party_id" character varying NULL,
+  "tax_id" character varying NULL,
+  "legal_name" character varying NULL,
+  "billing_address" character varying NULL,
+  "billing_email" character varying NULL,
+  "status" character varying NULL,
+  "source" character varying NULL,
+  "fetch_latest_party_details" boolean NULL,
+  "snapshot_at" timestamptz NULL,
+  "locked_at" timestamptz NULL,
+  "submitted_at" timestamptz NULL,
+  "issued_at" timestamptz NULL,
+  "einvoice_reference" character varying NULL,
+  "last_error_code" character varying NULL,
+  "last_error_message" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  "etag" character varying NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "sales_billing_instrs_tid_billto_idx" to table: "sales_billing_instructions"
+CREATE INDEX "sales_billing_instrs_tid_billto_idx" ON "sales_billing_instructions" ("bill_to_party_id");
+-- Create index "sales_billing_instrs_tid_einvref_idx" to table: "sales_billing_instructions"
+CREATE INDEX "sales_billing_instrs_tid_einvref_idx" ON "sales_billing_instructions" ("einvoice_reference");
+-- Create index "sales_billing_instrs_tid_order_idx" to table: "sales_billing_instructions"
+CREATE INDEX "sales_billing_instrs_tid_order_idx" ON "sales_billing_instructions" ("sales_order_id");
+-- Create index "sales_billing_instrs_tid_status_idx" to table: "sales_billing_instructions"
+CREATE INDEX "sales_billing_instrs_tid_status_idx" ON "sales_billing_instructions" ("status");
+-- Create "sales_billing_issuance_attempts" table
+CREATE TABLE "sales_billing_issuance_attempts" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "billing_instruction_id" character varying NULL,
+  "attempt_no" integer NULL,
+  "status" character varying NULL,
+  "started_at" timestamptz NULL,
+  "completed_at" timestamptz NULL,
+  "provider_request_id" character varying NULL,
+  "provider_invoice_reference" character varying NULL,
+  "error_code" character varying NULL,
+  "error_message" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  "etag" character varying NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "sales_billing_attempts_tid_instr_idx" to table: "sales_billing_issuance_attempts"
+CREATE INDEX "sales_billing_attempts_tid_instr_idx" ON "sales_billing_issuance_attempts" ("billing_instruction_id");
+-- Create index "sales_billing_attempts_tid_provreq_idx" to table: "sales_billing_issuance_attempts"
+CREATE INDEX "sales_billing_attempts_tid_provreq_idx" ON "sales_billing_issuance_attempts" ("provider_request_id");
+-- Create index "sales_billing_attempts_tid_status_idx" to table: "sales_billing_issuance_attempts"
+CREATE INDEX "sales_billing_attempts_tid_status_idx" ON "sales_billing_issuance_attempts" ("status");
+-- Create "sales_channel_payment_rel" table
+CREATE TABLE "sales_channel_payment_rel" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "sales_channel_id" character varying NULL,
+  "payment_method_id" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_channel_payment_rel_tid_chan_method_ukey" UNIQUE ("sales_channel_id", "payment_method_id")
+);
+-- Create "sales_integration_outbox" table
+CREATE TABLE "sales_integration_outbox" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "event_id" character varying NULL,
+  "aggregate_id" character varying NULL,
+  "event_type" character varying NULL,
+  "schema_version" character varying NULL,
+  "payload" jsonb NULL,
+  "occurred_at" timestamptz NULL,
+  "published_at" timestamptz NULL,
+  "attempt_count" integer NULL,
+  "last_error" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  "etag" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_outbox_tid_eventid_ukey" UNIQUE ("event_id")
+);
+-- Create index "sales_outbox_tid_aggregate_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_aggregate_idx" ON "sales_integration_outbox" ("aggregate_id");
+-- Create index "sales_outbox_tid_occurred_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_occurred_idx" ON "sales_integration_outbox" ("occurred_at");
+-- Create index "sales_outbox_tid_published_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_published_idx" ON "sales_integration_outbox" ("published_at");
+-- Create index "sales_outbox_tid_type_idx" to table: "sales_integration_outbox"
+CREATE INDEX "sales_outbox_tid_type_idx" ON "sales_integration_outbox" ("event_type");
+-- Create "sales_order_events" table
+CREATE TABLE "sales_order_events" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "sales_order_id" character varying NULL,
+  "entity_type" character varying NULL,
+  "entity_id" character varying NULL,
+  "action" character varying NULL,
+  "actor_id" character varying NULL,
+  "from_status" character varying NULL,
+  "to_status" character varying NULL,
+  "reason" character varying NULL,
+  "metadata" jsonb NULL,
+  "created_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "sales_order_evts_tid_actor_idx" to table: "sales_order_events"
+CREATE INDEX "sales_order_evts_tid_actor_idx" ON "sales_order_events" ("actor_id");
+-- Create index "sales_order_evts_tid_entity_idx" to table: "sales_order_events"
+CREATE INDEX "sales_order_evts_tid_entity_idx" ON "sales_order_events" ("entity_type", "entity_id");
+-- Create index "sales_order_evts_tid_order_idx" to table: "sales_order_events"
+CREATE INDEX "sales_order_evts_tid_order_idx" ON "sales_order_events" ("sales_order_id");
+-- Create "sales_promotion_compatibilities" table
+CREATE TABLE "sales_promotion_compatibilities" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "program_a_id" character varying NULL,
+  "program_b_id" character varying NULL,
+  "compatibility" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  "etag" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "sales_promo_compat_tid_pair_ukey" UNIQUE ("program_a_id", "program_b_id")
+);
+-- Create index "sales_promo_compat_tid_b_idx" to table: "sales_promotion_compatibilities"
+CREATE INDEX "sales_promo_compat_tid_b_idx" ON "sales_promotion_compatibilities" ("program_b_id");
 -- Create "inventory_warehouses" table
 CREATE TABLE "inventory_warehouses" (
   "id" character varying NOT NULL,
@@ -88,13 +245,10 @@ CREATE TABLE "inventory_warehouses" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_whs_tid_code_org_id_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "inventory_warehouses_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_warehouses_parent_warehouse_id_fkey" FOREIGN KEY ("parent_warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_warehouses_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_warehouses_parent_warehouse_id_fkey" FOREIGN KEY ("parent_warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_whs_parent_warehouse_id_idx" to table: "inventory_warehouses"
 CREATE INDEX "invty_whs_parent_warehouse_id_idx" ON "inventory_warehouses" ("parent_warehouse_id");
@@ -121,13 +275,10 @@ CREATE TABLE "inventory_locations" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_locations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_locations_parent_location_id_fkey" FOREIGN KEY ("parent_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_locations_storage_category_id_fkey" FOREIGN KEY ("storage_category_id") REFERENCES "inventory_storage_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_locations_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_locations_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_locs_barcode_idx" to table: "inventory_locations"
@@ -154,12 +305,9 @@ CREATE TABLE "inventory_product_attributes" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "invty_prod_attrs_tid_code_org_id_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "inventory_product_attributes_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_product_attributes_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "invty_prod_attrs_tid_code_org_id_ukey" UNIQUE ("code", "org_id")
 );
 -- Create "inventory_product_attribute_values" table
 CREATE TABLE "inventory_product_attribute_values" (
@@ -175,13 +323,28 @@ CREATE TABLE "inventory_product_attribute_values" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_prod_attr_vals_tid_attr_id_code_ukey" UNIQUE ("attribute_id", "code"),
-  CONSTRAINT "inventory_product_attribute_values_attribute_id_fkey" FOREIGN KEY ("attribute_id") REFERENCES "inventory_product_attributes" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_product_attribute_values_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_product_attribute_values_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_product_attribute_values_attribute_id_fkey" FOREIGN KEY ("attribute_id") REFERENCES "inventory_product_attributes" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+-- Create "inventory_brands" table
+CREATE TABLE "inventory_brands" (
+  "id" character varying NOT NULL,
+  "code" character varying NULL,
+  "name" jsonb NULL,
+  "logo_id" character varying NULL,
+  "country_id" character varying NULL,
+  "website" character varying NULL,
+  "description" jsonb NULL,
+  "org_id" character varying NULL,
+  "is_archived" boolean NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  "etag" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "inventory_brands_code_org_id_ukey" UNIQUE ("code", "org_id")
 );
 -- Create "inventory_product_categories" table
 CREATE TABLE "inventory_product_categories" (
@@ -199,12 +362,9 @@ CREATE TABLE "inventory_product_categories" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_product_categories_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_product_categories_parent_category_id_fkey" FOREIGN KEY ("parent_category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_product_categories_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_product_categories_parent_category_id_fkey" FOREIGN KEY ("parent_category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_prod_cats_tid_org_root_ukey" to table: "inventory_product_categories"
 CREATE UNIQUE INDEX "invty_prod_cats_tid_org_root_ukey" ON "inventory_product_categories" ("org_id", "is_root") WHERE (is_root IS NOT NULL);
@@ -239,14 +399,11 @@ CREATE TABLE "inventory_product_templates" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "inventory_product_templates_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "inventory_brands" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_product_templates_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "inventory_product_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_product_templates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_product_templates_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_product_templates_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_product_templates_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_prod_tpls_tid_src_sys_ext_id_ukey" to table: "inventory_product_templates"
 CREATE UNIQUE INDEX "invty_prod_tpls_tid_src_sys_ext_id_ukey" ON "inventory_product_templates" ("source_system", "external_id") WHERE (external_id IS NOT NULL);
@@ -263,14 +420,11 @@ CREATE TABLE "inventory_product_template_attributes" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_prod_tpl_attrs_tid_ptpl_id_attr_id_rev_ukey" UNIQUE ("product_template_id", "attribute_id", "application_revision"),
   CONSTRAINT "inventory_product_template_attributes_attribute_id_fkey" FOREIGN KEY ("attribute_id") REFERENCES "inventory_product_attributes" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_product_template_attributes_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_product_template_attributes_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "inventory_product_template_attributes_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_product_template_attributes_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "inventory_product_template_attribute_values" table
 CREATE TABLE "inventory_product_template_attribute_values" (
@@ -284,14 +438,11 @@ CREATE TABLE "inventory_product_template_attribute_values" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_prod_tpl_attr_vals_tid_tattr_id_aval_id_ukey" UNIQUE ("template_attribute_id", "attribute_value_id"),
   CONSTRAINT "inventory_product_template_attribute_values_attribute_value_id_" FOREIGN KEY ("attribute_value_id") REFERENCES "inventory_product_attribute_values" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_product_template_attribute_values_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_product_template_attribute_values_template_attribute_" FOREIGN KEY ("template_attribute_id") REFERENCES "inventory_product_template_attributes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "inventory_product_template_attribute_values_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_product_template_attribute_values_template_attribute_" FOREIGN KEY ("template_attribute_id") REFERENCES "inventory_product_template_attributes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "inventory_product_template_combination_exclusions" table
 CREATE TABLE "inventory_product_template_combination_exclusions" (
@@ -304,15 +455,12 @@ CREATE TABLE "inventory_product_template_combination_exclusions" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_prod_tpl_comb_excls_tid_ptpl_id_left_right_ukey" UNIQUE ("product_template_id", "left_template_attribute_value_id", "right_template_attribute_value_id"),
-  CONSTRAINT "inventory_product_template_combination_exclusions_created_by_fk" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_product_template_combination_exclusions_left_template" FOREIGN KEY ("left_template_attribute_value_id") REFERENCES "inventory_product_template_attribute_values" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_product_template_combination_exclusions_product_templ" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "inventory_product_template_combination_exclusions_right_templat" FOREIGN KEY ("right_template_attribute_value_id") REFERENCES "inventory_product_template_attribute_values" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_product_template_combination_exclusions_updated_by_fk" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_product_template_combination_exclusions_right_templat" FOREIGN KEY ("right_template_attribute_value_id") REFERENCES "inventory_product_template_attribute_values" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "inventory_product_variants" table
 CREATE TABLE "inventory_product_variants" (
@@ -338,14 +486,11 @@ CREATE TABLE "inventory_product_variants" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_prod_variants_tid_ptpl_id_kind_comb_key_ukey" UNIQUE ("product_template_id", "variant_kind", "combination_key"),
   CONSTRAINT "inventory_product_variants_base_variant_id_fkey" FOREIGN KEY ("base_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
-  CONSTRAINT "inventory_product_variants_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_product_variants_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_product_variants_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_product_variants_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_prod_variants_tid_org_barcode_ukey" to table: "inventory_product_variants"
 CREATE UNIQUE INDEX "invty_prod_variants_tid_org_barcode_ukey" ON "inventory_product_variants" ("org_id", "primary_barcode") WHERE (primary_barcode IS NOT NULL);
@@ -363,14 +508,11 @@ CREATE TABLE "inventory_product_variant_attribute_values" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_prod_var_attr_vals_tid_pvar_id_tav_id_ukey" UNIQUE ("product_variant_id", "template_attribute_value_id"),
-  CONSTRAINT "inventory_product_variant_attribute_values_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_product_variant_attribute_values_product_variant_id_f" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "inventory_product_variant_attribute_values_template_attribute_v" FOREIGN KEY ("template_attribute_value_id") REFERENCES "inventory_product_template_attribute_values" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_product_variant_attribute_values_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_product_variant_attribute_values_template_attribute_v" FOREIGN KEY ("template_attribute_value_id") REFERENCES "inventory_product_template_attribute_values" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "inventory_putaway_rules" table
 CREATE TABLE "inventory_putaway_rules" (
@@ -390,15 +532,12 @@ CREATE TABLE "inventory_putaway_rules" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_putaway_tid_code_org_id_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "inventory_putaway_rules_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_putaway_rules_destination_location_id_fkey" FOREIGN KEY ("destination_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_putaway_rules_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_putaway_rules_storage_category_id_fkey" FOREIGN KEY ("storage_category_id") REFERENCES "inventory_storage_categories" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_putaway_rules_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_putaway_rules_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_putaway_wh_src_priority_idx" to table: "inventory_putaway_rules"
@@ -420,14 +559,11 @@ CREATE TABLE "inventory_stock_operation_types" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_stock_op_types_tid_code_org_id_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "inventory_stock_operation_types_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_operation_types_default_destination_location_id" FOREIGN KEY ("default_destination_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_operation_types_default_source_location_id_fkey" FOREIGN KEY ("default_source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_operation_types_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_stock_operation_types_default_source_location_id_fkey" FOREIGN KEY ("default_source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "inventory_stock_transfers" table
 CREATE TABLE "inventory_stock_transfers" (
@@ -458,16 +594,13 @@ CREATE TABLE "inventory_stock_transfers" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_stock_trfs_tid_number_org_id_ukey" UNIQUE ("transfer_number", "org_id"),
   CONSTRAINT "inventory_stock_transfers_backorder_of_id_fkey" FOREIGN KEY ("backorder_of_id") REFERENCES "inventory_stock_transfers" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_transfers_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_transfers_destination_location_id_fkey" FOREIGN KEY ("destination_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_transfers_operation_type_id_fkey" FOREIGN KEY ("operation_type_id") REFERENCES "inventory_stock_operation_types" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_transfers_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_transfers_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_stock_transfers_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_stock_trfs_backorder_of_id_idx" to table: "inventory_stock_transfers"
 CREATE INDEX "invty_stock_trfs_backorder_of_id_idx" ON "inventory_stock_transfers" ("backorder_of_id");
@@ -513,16 +646,13 @@ CREATE TABLE "inventory_stock_moves" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_stock_moves_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_moves_destination_location_id_fkey" FOREIGN KEY ("destination_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_moves_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_moves_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_moves_transfer_id_fkey" FOREIGN KEY ("transfer_id") REFERENCES "inventory_stock_transfers" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_moves_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_stock_moves_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_stock_moves_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "invty_stock_moves_origin_move_id_idx" to table: "inventory_stock_moves"
 CREATE INDEX "invty_stock_moves_origin_move_id_idx" ON "inventory_stock_moves" ("origin_move_id");
@@ -541,14 +671,11 @@ CREATE TABLE "inventory_stock_move_dependencies" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_stock_mvdeps_tid_pred_succ_ukey" UNIQUE ("predecessor_move_id", "successor_move_id"),
-  CONSTRAINT "inventory_stock_move_dependencies_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_move_dependencies_predecessor_move_id_fkey" FOREIGN KEY ("predecessor_move_id") REFERENCES "inventory_stock_moves" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_move_dependencies_successor_move_id_fkey" FOREIGN KEY ("successor_move_id") REFERENCES "inventory_stock_moves" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_move_dependencies_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_stock_move_dependencies_successor_move_id_fkey" FOREIGN KEY ("successor_move_id") REFERENCES "inventory_stock_moves" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_stock_mvdeps_succ_move_id_idx" to table: "inventory_stock_move_dependencies"
 CREATE INDEX "invty_stock_mvdeps_succ_move_id_idx" ON "inventory_stock_move_dependencies" ("successor_move_id");
@@ -573,17 +700,14 @@ CREATE TABLE "inventory_stock_move_lines" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_stock_move_lines_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_move_lines_destination_location_id_fkey" FOREIGN KEY ("destination_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_move_lines_move_id_fkey" FOREIGN KEY ("move_id") REFERENCES "inventory_stock_moves" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_move_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_move_lines_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_move_lines_transfer_id_fkey" FOREIGN KEY ("transfer_id") REFERENCES "inventory_stock_transfers" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_move_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_stock_move_lines_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_stock_move_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "invty_stock_mvlines_move_id_idx" to table: "inventory_stock_move_lines"
 CREATE INDEX "invty_stock_mvlines_move_id_idx" ON "inventory_stock_move_lines" ("move_id");
@@ -600,14 +724,11 @@ CREATE TABLE "inventory_stock_product_configs" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_stk_prod_cfgs_tid_ptpl_id_ukey" UNIQUE ("product_template_id", "org_id"),
-  CONSTRAINT "inventory_stock_product_configs_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_product_configs_inventory_uom_id_fkey" FOREIGN KEY ("inventory_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_stock_product_configs_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_product_configs_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_stock_product_configs_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "inventory_stock_quants" table
 CREATE TABLE "inventory_stock_quants" (
@@ -633,15 +754,12 @@ CREATE TABLE "inventory_stock_quants" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_stock_quants_tid_pvar_loc_lot_pkg_own_ukey" UNIQUE ("product_variant_id", "location_id", "lot_ref", "package_ref", "owner_ref", "org_id"),
   CONSTRAINT "inventory_stock_quants_base_uom_id_fkey" FOREIGN KEY ("base_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_stock_quants_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_quants_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_quants_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_quants_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_stock_quants_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_stock_quants_loc_id_pvar_id_idx" to table: "inventory_stock_quants"
 CREATE INDEX "invty_stock_quants_loc_id_pvar_id_idx" ON "inventory_stock_quants" ("location_id", "product_variant_id");
@@ -674,14 +792,11 @@ CREATE TABLE "inventory_stock_reservations" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_stock_rsv_source_line_rev_org_ukey" UNIQUE ("source_module", "source_type", "source_id", "source_line_id", "source_revision", "org_id"),
   CONSTRAINT "inventory_stock_reservations_base_uom_id_fkey" FOREIGN KEY ("base_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
-  CONSTRAINT "inventory_stock_reservations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_reservations_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
-  CONSTRAINT "inventory_stock_reservations_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_reservations_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT
 );
 -- Create index "invty_stock_rsv_org_idem_key_idx" to table: "inventory_stock_reservations"
@@ -716,17 +831,14 @@ CREATE TABLE "inventory_stock_scraps" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_stock_scraps_number_org_id_ukey" UNIQUE ("scrap_number", "org_id"),
   CONSTRAINT "inventory_stock_scraps_base_uom_id_fkey" FOREIGN KEY ("base_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "inventory_stock_scraps_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_stock_scraps_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_scraps_scrap_location_id_fkey" FOREIGN KEY ("scrap_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "inventory_stock_scraps_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_scraps_transfer_id_fkey" FOREIGN KEY ("transfer_id") REFERENCES "inventory_stock_transfers" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_stock_scraps_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_stock_scraps_transfer_id_fkey" FOREIGN KEY ("transfer_id") REFERENCES "inventory_stock_transfers" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_stock_scraps_pvar_id_idx" to table: "inventory_stock_scraps"
 CREATE INDEX "invty_stock_scraps_pvar_id_idx" ON "inventory_stock_scraps" ("product_variant_id");
@@ -743,12 +855,9 @@ CREATE TABLE "inventory_warehouse_product_guards" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_wh_prod_guards_wh_pvar_org_ukey" UNIQUE ("warehouse_id", "product_variant_id", "org_id"),
-  CONSTRAINT "inventory_warehouse_product_guards_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_warehouse_product_guards_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "inventory_warehouse_product_guards_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_warehouse_product_guards_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "inventory_warehouse_supply_relations" table
@@ -763,14 +872,11 @@ CREATE TABLE "inventory_warehouse_supply_relations" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "invty_wh_supply_tid_src_dest_ukey" UNIQUE ("source_warehouse_id", "destination_warehouse_id"),
-  CONSTRAINT "inventory_warehouse_supply_relations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_warehouse_supply_relations_destination_warehouse_id_f" FOREIGN KEY ("destination_warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_warehouse_supply_relations_source_warehouse_id_fkey" FOREIGN KEY ("source_warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "inventory_warehouse_supply_relations_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "inventory_warehouse_supply_relations_source_warehouse_id_fkey" FOREIGN KEY ("source_warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "invty_wh_supply_dest_priority_idx" to table: "inventory_warehouse_supply_relations"
 CREATE INDEX "invty_wh_supply_dest_priority_idx" ON "inventory_warehouse_supply_relations" ("destination_warehouse_id", "priority");
@@ -792,12 +898,9 @@ CREATE TABLE "purchase_agreements" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "purch_agreements_tid_code_org_id_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "purchase_agreements_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "purchase_agreements_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "purch_agreements_tid_code_org_id_ukey" UNIQUE ("code", "org_id")
 );
 -- Create index "purch_agreements_tid_org_id_idx" to table: "purchase_agreements"
 CREATE INDEX "purch_agreements_tid_org_id_idx" ON "purchase_agreements" ("org_id");
@@ -819,57 +922,16 @@ CREATE TABLE "purchase_agreement_lines" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "purchase_agreement_lines_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "purchase_agreement_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
   CONSTRAINT "purchase_agreement_lines_purchase_agreement_id_fkey" FOREIGN KEY ("purchase_agreement_id") REFERENCES "purchase_agreements" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "purchase_agreement_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "purchase_agreement_lines_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "purchase_agreement_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "purch_agr_lines_tid_agr_id_seq_idx" to table: "purchase_agreement_lines"
 CREATE INDEX "purch_agr_lines_tid_agr_id_seq_idx" ON "purchase_agreement_lines" ("purchase_agreement_id", "sequence");
 -- Create index "purch_agr_lines_tid_pvar_id_idx" to table: "purchase_agreement_lines"
 CREATE INDEX "purch_agr_lines_tid_pvar_id_idx" ON "purchase_agreement_lines" ("product_variant_id");
--- Create "purchase_audit_events" table
-CREATE TABLE "purchase_audit_events" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NULL,
-  "entity_type" character varying NULL,
-  "entity_id" character varying NULL,
-  "action" character varying NULL,
-  "actor_id" character varying NULL,
-  "from_status" character varying NULL,
-  "to_status" character varying NULL,
-  "reason" character varying NULL,
-  "metadata" jsonb NULL,
-  "created_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "purchase_audit_events_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
-);
--- Create index "purch_audit_evts_tid_entity_idx" to table: "purchase_audit_events"
-CREATE INDEX "purch_audit_evts_tid_entity_idx" ON "purchase_audit_events" ("entity_type", "entity_id");
--- Create index "purch_audit_evts_tid_org_id_idx" to table: "purchase_audit_events"
-CREATE INDEX "purch_audit_evts_tid_org_id_idx" ON "purchase_audit_events" ("org_id");
--- Create "purchase_configurations" table
-CREATE TABLE "purchase_configurations" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NULL,
-  "approval_mode" character varying NULL,
-  "approval_threshold" numeric NULL,
-  "po_modification_policy" character varying NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  "updated_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "purch_configs_tid_org_id_ukey" UNIQUE ("org_id"),
-  CONSTRAINT "purchase_configurations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "purchase_configurations_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
-);
 -- Create "purchase_orders" table
 CREATE TABLE "purchase_orders" (
   "id" character varying NOT NULL,
@@ -899,12 +961,9 @@ CREATE TABLE "purchase_orders" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "purch_orders_tid_code_org_id_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "purchase_orders_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "purchase_orders_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "purch_orders_tid_code_org_id_ukey" UNIQUE ("code", "org_id")
 );
 -- Create index "purch_orders_tid_agreement_id_idx" to table: "purchase_orders"
 CREATE INDEX "purch_orders_tid_agreement_id_idx" ON "purchase_orders" ("agreement_id");
@@ -939,14 +998,11 @@ CREATE TABLE "purchase_order_lines" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "purchase_order_lines_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "purchase_order_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
   CONSTRAINT "purchase_order_lines_purchase_order_id_fkey" FOREIGN KEY ("purchase_order_id") REFERENCES "purchase_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "purchase_order_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "purchase_order_lines_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "purchase_order_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "purch_ord_lines_tid_ord_id_seq_idx" to table: "purchase_order_lines"
 CREATE INDEX "purch_ord_lines_tid_ord_id_seq_idx" ON "purchase_order_lines" ("purchase_order_id", "sequence");
@@ -954,21 +1010,6 @@ CREATE INDEX "purch_ord_lines_tid_ord_id_seq_idx" ON "purchase_order_lines" ("pu
 CREATE INDEX "purch_ord_lines_tid_pvar_id_idx" ON "purchase_order_lines" ("product_variant_id");
 -- Create index "purch_ord_lines_tid_vpp_id_idx" to table: "purchase_order_lines"
 CREATE INDEX "purch_ord_lines_tid_vpp_id_idx" ON "purchase_order_lines" ("vendor_product_price_id");
--- Create "purchase_sourcing_groups" table
-CREATE TABLE "purchase_sourcing_groups" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  "updated_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "purchase_sourcing_groups_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "purchase_sourcing_groups_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
-);
--- Create index "purch_srcgroups_tid_org_id_idx" to table: "purchase_sourcing_groups"
-CREATE INDEX "purch_srcgroups_tid_org_id_idx" ON "purchase_sourcing_groups" ("org_id");
 -- Create "purchase_vendor_product_prices" table
 CREATE TABLE "purchase_vendor_product_prices" (
   "id" character varying NOT NULL,
@@ -990,13 +1031,10 @@ CREATE TABLE "purchase_vendor_product_prices" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "purchase_vendor_product_prices_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "purchase_vendor_product_prices_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
-  CONSTRAINT "purchase_vendor_product_prices_purchase_uom_id_fkey" FOREIGN KEY ("purchase_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "purchase_vendor_product_prices_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "purchase_vendor_product_prices_purchase_uom_id_fkey" FOREIGN KEY ("purchase_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "purch_vpp_tid_validity_idx" to table: "purchase_vendor_product_prices"
 CREATE INDEX "purch_vpp_tid_validity_idx" ON "purchase_vendor_product_prices" ("valid_from", "valid_to");
@@ -1021,12 +1059,9 @@ CREATE TABLE "sales_channels" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_channels_code_org_id_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "sales_channels_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_channels_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_channels_code_org_id_ukey" UNIQUE ("code", "org_id")
 );
 -- Create "sales_points" table
 CREATE TABLE "sales_points" (
@@ -1045,12 +1080,9 @@ CREATE TABLE "sales_points" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_points_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_points_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_points_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_points_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "sales_points_tid_channel_code_ukey" to table: "sales_points"
 CREATE UNIQUE INDEX "sales_points_tid_channel_code_ukey" ON "sales_points" ("sales_channel_id", "code") WHERE (code IS NOT NULL);
@@ -1105,14 +1137,11 @@ CREATE TABLE "sales_orders" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_orders_order_number_ukey" UNIQUE ("order_number"),
-  CONSTRAINT "sales_orders_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_orders_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_orders_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_orders_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_orders_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "sales_orders_tid_billto_idx" to table: "sales_orders"
 CREATE INDEX "sales_orders_tid_billto_idx" ON "sales_orders" ("bill_to_party_id");
@@ -1145,13 +1174,10 @@ CREATE TABLE "sales_bills" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_bills_bill_number_ukey" UNIQUE ("bill_number"),
-  CONSTRAINT "sales_bills_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_bills_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_bills_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_bills_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_bills_tid_order_idx" to table: "sales_bills"
 CREATE INDEX "sales_bills_tid_order_idx" ON "sales_bills" ("sales_order_id");
@@ -1188,15 +1214,12 @@ CREATE TABLE "sales_order_lines" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_order_lines_tid_order_lineno_ukey" UNIQUE ("sales_order_id", "line_number"),
-  CONSTRAINT "sales_order_lines_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_order_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
   CONSTRAINT "sales_order_lines_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_order_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_order_lines_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_order_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_order_lines_tid_uom_idx" to table: "sales_order_lines"
 CREATE INDEX "sales_order_lines_tid_uom_idx" ON "sales_order_lines" ("uom_id");
@@ -1215,14 +1238,11 @@ CREATE TABLE "sales_bill_lines" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_bill_lines_tid_bill_ordline_ukey" UNIQUE ("sales_bill_id", "sales_order_line_id"),
-  CONSTRAINT "sales_bill_lines_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_bill_lines_sales_bill_id_fkey" FOREIGN KEY ("sales_bill_id") REFERENCES "sales_bills" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_bill_lines_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_bill_lines_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_bill_lines_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_bill_lines_tid_bill_idx" to table: "sales_bill_lines"
 CREATE INDEX "sales_bill_lines_tid_bill_idx" ON "sales_bill_lines" ("sales_bill_id");
@@ -1239,7 +1259,6 @@ CREATE TABLE "sales_bill_relations" (
   "created_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_bill_rels_tid_pair_type_ukey" UNIQUE ("source_bill_id", "target_bill_id", "relation_type"),
-  CONSTRAINT "sales_bill_relations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_bill_relations_source_bill_id_fkey" FOREIGN KEY ("source_bill_id") REFERENCES "sales_bills" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "sales_bill_relations_target_bill_id_fkey" FOREIGN KEY ("target_bill_id") REFERENCES "sales_bills" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
@@ -1247,71 +1266,6 @@ CREATE TABLE "sales_bill_relations" (
 CREATE INDEX "sales_bill_rels_tid_source_idx" ON "sales_bill_relations" ("source_bill_id");
 -- Create index "sales_bill_rels_tid_target_idx" to table: "sales_bill_relations"
 CREATE INDEX "sales_bill_rels_tid_target_idx" ON "sales_bill_relations" ("target_bill_id");
--- Create "sales_billing_instructions" table
-CREATE TABLE "sales_billing_instructions" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NULL,
-  "sales_order_id" character varying NULL,
-  "bill_to_party_id" character varying NULL,
-  "tax_id" character varying NULL,
-  "legal_name" character varying NULL,
-  "billing_address" character varying NULL,
-  "billing_email" character varying NULL,
-  "status" character varying NULL,
-  "source" character varying NULL,
-  "fetch_latest_party_details" boolean NULL,
-  "snapshot_at" timestamptz NULL,
-  "locked_at" timestamptz NULL,
-  "submitted_at" timestamptz NULL,
-  "issued_at" timestamptz NULL,
-  "einvoice_reference" character varying NULL,
-  "last_error_code" character varying NULL,
-  "last_error_message" character varying NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  "updated_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_billing_instructions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_billing_instructions_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
-);
--- Create index "sales_billing_instrs_tid_billto_idx" to table: "sales_billing_instructions"
-CREATE INDEX "sales_billing_instrs_tid_billto_idx" ON "sales_billing_instructions" ("bill_to_party_id");
--- Create index "sales_billing_instrs_tid_einvref_idx" to table: "sales_billing_instructions"
-CREATE INDEX "sales_billing_instrs_tid_einvref_idx" ON "sales_billing_instructions" ("einvoice_reference");
--- Create index "sales_billing_instrs_tid_order_idx" to table: "sales_billing_instructions"
-CREATE INDEX "sales_billing_instrs_tid_order_idx" ON "sales_billing_instructions" ("sales_order_id");
--- Create index "sales_billing_instrs_tid_status_idx" to table: "sales_billing_instructions"
-CREATE INDEX "sales_billing_instrs_tid_status_idx" ON "sales_billing_instructions" ("status");
--- Create "sales_billing_issuance_attempts" table
-CREATE TABLE "sales_billing_issuance_attempts" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NULL,
-  "billing_instruction_id" character varying NULL,
-  "attempt_no" integer NULL,
-  "status" character varying NULL,
-  "started_at" timestamptz NULL,
-  "completed_at" timestamptz NULL,
-  "provider_request_id" character varying NULL,
-  "provider_invoice_reference" character varying NULL,
-  "error_code" character varying NULL,
-  "error_message" character varying NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  "updated_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_billing_issuance_attempts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_billing_issuance_attempts_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
-);
--- Create index "sales_billing_attempts_tid_instr_idx" to table: "sales_billing_issuance_attempts"
-CREATE INDEX "sales_billing_attempts_tid_instr_idx" ON "sales_billing_issuance_attempts" ("billing_instruction_id");
--- Create index "sales_billing_attempts_tid_provreq_idx" to table: "sales_billing_issuance_attempts"
-CREATE INDEX "sales_billing_attempts_tid_provreq_idx" ON "sales_billing_issuance_attempts" ("provider_request_id");
--- Create index "sales_billing_attempts_tid_status_idx" to table: "sales_billing_issuance_attempts"
-CREATE INDEX "sales_billing_attempts_tid_status_idx" ON "sales_billing_issuance_attempts" ("status");
 -- Create "sales_fulfillment_methods" table
 CREATE TABLE "sales_fulfillment_methods" (
   "id" character varying NOT NULL,
@@ -1331,12 +1285,9 @@ CREATE TABLE "sales_fulfillment_methods" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_fulfillment_methods_code_org_id_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "sales_fulfillment_methods_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_fulfillment_methods_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_fulfillment_methods_code_org_id_ukey" UNIQUE ("code", "org_id")
 );
 -- Create index "sales_fulfil_methods_tid_type_arch_idx" to table: "sales_fulfillment_methods"
 CREATE INDEX "sales_fulfil_methods_tid_type_arch_idx" ON "sales_fulfillment_methods" ("fulfillment_type", "is_archived");
@@ -1349,28 +1300,10 @@ CREATE TABLE "sales_channel_fulfillment_methods" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_chan_fulfil_methods_tid_ch_me_ukey" UNIQUE ("sales_channel_id", "fulfillment_method_id"),
-  CONSTRAINT "sales_channel_fulfillment_methods_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_channel_fulfillment_methods_fulfillment_method_id_fkey" FOREIGN KEY ("fulfillment_method_id") REFERENCES "sales_fulfillment_methods" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_channel_fulfillment_methods_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_channel_fulfillment_methods_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
-);
--- Create "sales_channel_payment_rel" table
-CREATE TABLE "sales_channel_payment_rel" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NULL,
-  "sales_channel_id" character varying NULL,
-  "payment_method_id" character varying NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  "updated_by" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_channel_payment_rel_tid_chan_method_ukey" UNIQUE ("sales_channel_id", "payment_method_id"),
-  CONSTRAINT "sales_channel_payment_rel_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_channel_payment_rel_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_channel_fulfillment_methods_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create "sales_combos" table
 CREATE TABLE "sales_combos" (
@@ -1387,12 +1320,9 @@ CREATE TABLE "sales_combos" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_combos_code_ukey" UNIQUE ("code"),
-  CONSTRAINT "sales_combos_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_combos_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_combos_code_ukey" UNIQUE ("code")
 );
 -- Create index "sales_combos_tid_validity_idx" to table: "sales_combos"
 CREATE INDEX "sales_combos_tid_validity_idx" ON "sales_combos" ("valid_from", "valid_until");
@@ -1410,15 +1340,12 @@ CREATE TABLE "sales_combo_components" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_combo_comps_tid_combo_variant_ukey" UNIQUE ("sales_combo_id", "product_variant_id"),
-  CONSTRAINT "sales_combo_components_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_combo_components_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
   CONSTRAINT "sales_combo_components_sales_combo_id_fkey" FOREIGN KEY ("sales_combo_id") REFERENCES "sales_combos" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_combo_components_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_combo_components_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_combo_components_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_combo_comps_tid_uom_idx" to table: "sales_combo_components"
 CREATE INDEX "sales_combo_comps_tid_uom_idx" ON "sales_combo_components" ("uom_id");
@@ -1442,13 +1369,10 @@ CREATE TABLE "sales_fiscal_requests" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_fiscal_reqs_tid_idemkey_ukey" UNIQUE ("idempotency_key"),
-  CONSTRAINT "sales_fiscal_requests_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_fiscal_requests_sales_bill_id_fkey" FOREIGN KEY ("sales_bill_id") REFERENCES "sales_bills" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_fiscal_requests_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_fiscal_requests_sales_bill_id_fkey" FOREIGN KEY ("sales_bill_id") REFERENCES "sales_bills" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_fiscal_reqs_tid_bill_idx" to table: "sales_fiscal_requests"
 CREATE INDEX "sales_fiscal_reqs_tid_bill_idx" ON "sales_fiscal_requests" ("sales_bill_id");
@@ -1476,14 +1400,11 @@ CREATE TABLE "sales_order_fulfillments" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_order_fulfillments_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_order_fulfillments_fulfillment_method_id_fkey" FOREIGN KEY ("fulfillment_method_id") REFERENCES "sales_fulfillment_methods" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "sales_order_fulfillments_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_order_fulfillments_target_outlet_id_fkey" FOREIGN KEY ("target_outlet_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_order_fulfillments_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_order_fulfillments_target_outlet_id_fkey" FOREIGN KEY ("target_outlet_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "sales_order_fulfil_tid_order_idx" to table: "sales_order_fulfillments"
 CREATE INDEX "sales_order_fulfil_tid_order_idx" ON "sales_order_fulfillments" ("sales_order_id");
@@ -1508,14 +1429,11 @@ CREATE TABLE "sales_fulfillment_attempts" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_fulfil_attempts_tid_fulfil_no_ukey" UNIQUE ("fulfillment_id", "attempt_no"),
-  CONSTRAINT "sales_fulfillment_attempts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_fulfillment_attempts_executor_outlet_id_fkey" FOREIGN KEY ("executor_outlet_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_fulfillment_attempts_fulfillment_id_fkey" FOREIGN KEY ("fulfillment_id") REFERENCES "sales_order_fulfillments" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_fulfillment_attempts_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_fulfillment_attempts_fulfillment_id_fkey" FOREIGN KEY ("fulfillment_id") REFERENCES "sales_order_fulfillments" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "sales_fulfil_attempts_tid_event_ukey" to table: "sales_fulfillment_attempts"
 CREATE UNIQUE INDEX "sales_fulfil_attempts_tid_event_ukey" ON "sales_fulfillment_attempts" ("org_id", "result_event_id") WHERE (result_event_id IS NOT NULL);
@@ -1540,15 +1458,12 @@ CREATE TABLE "sales_order_fulfillment_items" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_order_fulfillment_items_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_order_fulfillment_items_fulfillment_id_fkey" FOREIGN KEY ("fulfillment_id") REFERENCES "sales_order_fulfillments" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "sales_order_fulfillment_items_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
   CONSTRAINT "sales_order_fulfillment_items_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_order_fulfillment_items_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_order_fulfillment_items_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_order_fulfillment_items_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_fulfil_items_tid_fulfil_idx" to table: "sales_order_fulfillment_items"
 CREATE INDEX "sales_fulfil_items_tid_fulfil_idx" ON "sales_order_fulfillment_items" ("fulfillment_id");
@@ -1569,14 +1484,11 @@ CREATE TABLE "sales_fulfillment_attempt_items" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_attempt_items_tid_att_item_ukey" UNIQUE ("attempt_id", "fulfillment_item_id"),
   CONSTRAINT "sales_fulfillment_attempt_items_attempt_id_fkey" FOREIGN KEY ("attempt_id") REFERENCES "sales_fulfillment_attempts" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_fulfillment_attempt_items_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_fulfillment_attempt_items_fulfillment_item_id_fkey" FOREIGN KEY ("fulfillment_item_id") REFERENCES "sales_order_fulfillment_items" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_fulfillment_attempt_items_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_fulfillment_attempt_items_fulfillment_item_id_fkey" FOREIGN KEY ("fulfillment_item_id") REFERENCES "sales_order_fulfillment_items" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "sales_attempt_items_tid_attempt_idx" to table: "sales_fulfillment_attempt_items"
 CREATE INDEX "sales_attempt_items_tid_attempt_idx" ON "sales_fulfillment_attempt_items" ("attempt_id");
@@ -1596,12 +1508,9 @@ CREATE TABLE "sales_fulfillment_requests" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_fulfillment_requests_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_fulfillment_requests_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_fulfillment_requests_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_fulfillment_requests_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_fulfil_reqs_tid_invref_idx" to table: "sales_fulfillment_requests"
 CREATE INDEX "sales_fulfil_reqs_tid_invref_idx" ON "sales_fulfillment_requests" ("inventory_reference");
@@ -1619,14 +1528,11 @@ CREATE TABLE "sales_fulfillment_request_lines" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_fulfil_lines_tid_req_ordline_ukey" UNIQUE ("sales_fulfillment_request_id", "sales_order_line_id"),
-  CONSTRAINT "sales_fulfillment_request_lines_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_fulfillment_request_lines_sales_fulfillment_request_id_fk" FOREIGN KEY ("sales_fulfillment_request_id") REFERENCES "sales_fulfillment_requests" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_fulfillment_request_lines_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_fulfillment_request_lines_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_fulfillment_request_lines_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_fulfil_lines_tid_ordline_idx" to table: "sales_fulfillment_request_lines"
 CREATE INDEX "sales_fulfil_lines_tid_ordline_idx" ON "sales_fulfillment_request_lines" ("sales_order_line_id");
@@ -1647,48 +1553,14 @@ CREATE TABLE "sales_fulfillment_target_changes" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_fulfillment_target_changes_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_fulfillment_target_changes_from_outlet_id_fkey" FOREIGN KEY ("from_outlet_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT "sales_fulfillment_target_changes_fulfillment_id_fkey" FOREIGN KEY ("fulfillment_id") REFERENCES "sales_order_fulfillments" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_fulfillment_target_changes_to_outlet_id_fkey" FOREIGN KEY ("to_outlet_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_fulfillment_target_changes_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_fulfillment_target_changes_to_outlet_id_fkey" FOREIGN KEY ("to_outlet_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "sales_target_changes_tid_fulfil_idx" to table: "sales_fulfillment_target_changes"
 CREATE INDEX "sales_target_changes_tid_fulfil_idx" ON "sales_fulfillment_target_changes" ("fulfillment_id", "changed_at");
--- Create "sales_integration_outbox" table
-CREATE TABLE "sales_integration_outbox" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NULL,
-  "event_id" character varying NULL,
-  "aggregate_id" character varying NULL,
-  "event_type" character varying NULL,
-  "schema_version" character varying NULL,
-  "payload" jsonb NULL,
-  "occurred_at" timestamptz NULL,
-  "published_at" timestamptz NULL,
-  "attempt_count" integer NULL,
-  "last_error" character varying NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  "updated_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_outbox_tid_eventid_ukey" UNIQUE ("event_id"),
-  CONSTRAINT "sales_integration_outbox_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_integration_outbox_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
-);
--- Create index "sales_outbox_tid_aggregate_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_aggregate_idx" ON "sales_integration_outbox" ("aggregate_id");
--- Create index "sales_outbox_tid_occurred_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_occurred_idx" ON "sales_integration_outbox" ("occurred_at");
--- Create index "sales_outbox_tid_published_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_published_idx" ON "sales_integration_outbox" ("published_at");
--- Create index "sales_outbox_tid_type_idx" to table: "sales_integration_outbox"
-CREATE INDEX "sales_outbox_tid_type_idx" ON "sales_integration_outbox" ("event_type");
 -- Create "sales_manual_discounts" table
 CREATE TABLE "sales_manual_discounts" (
   "id" character varying NOT NULL,
@@ -1702,12 +1574,9 @@ CREATE TABLE "sales_manual_discounts" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_manual_discounts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_manual_discounts_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_manual_discounts_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_manual_discounts_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_manual_discs_tid_actor_idx" to table: "sales_manual_discounts"
 CREATE INDEX "sales_manual_discs_tid_actor_idx" ON "sales_manual_discounts" ("granted_by");
@@ -1732,13 +1601,10 @@ CREATE TABLE "sales_order_adjustments" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_order_adjs_tid_order_seq_ukey" UNIQUE ("sales_order_id", "sequence"),
-  CONSTRAINT "sales_order_adjustments_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_order_adjustments_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_order_adjustments_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_order_adjustments_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_order_adjs_tid_line_idx" to table: "sales_order_adjustments"
 CREATE INDEX "sales_order_adjs_tid_line_idx" ON "sales_order_adjustments" ("sales_order_line_id");
@@ -1746,30 +1612,6 @@ CREATE INDEX "sales_order_adjs_tid_line_idx" ON "sales_order_adjustments" ("sale
 CREATE INDEX "sales_order_adjs_tid_return_idx" ON "sales_order_adjustments" ("sales_return_id");
 -- Create index "sales_order_adjs_tid_source_idx" to table: "sales_order_adjustments"
 CREATE INDEX "sales_order_adjs_tid_source_idx" ON "sales_order_adjustments" ("source_type", "source_id");
--- Create "sales_order_events" table
-CREATE TABLE "sales_order_events" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NULL,
-  "sales_order_id" character varying NULL,
-  "entity_type" character varying NULL,
-  "entity_id" character varying NULL,
-  "action" character varying NULL,
-  "actor_id" character varying NULL,
-  "from_status" character varying NULL,
-  "to_status" character varying NULL,
-  "reason" character varying NULL,
-  "metadata" jsonb NULL,
-  "created_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_order_events_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
-);
--- Create index "sales_order_evts_tid_actor_idx" to table: "sales_order_events"
-CREATE INDEX "sales_order_evts_tid_actor_idx" ON "sales_order_events" ("actor_id");
--- Create index "sales_order_evts_tid_entity_idx" to table: "sales_order_events"
-CREATE INDEX "sales_order_evts_tid_entity_idx" ON "sales_order_events" ("entity_type", "entity_id");
--- Create index "sales_order_evts_tid_order_idx" to table: "sales_order_events"
-CREATE INDEX "sales_order_evts_tid_order_idx" ON "sales_order_events" ("sales_order_id");
 -- Create "sales_order_line_allocations" table
 CREATE TABLE "sales_order_line_allocations" (
   "id" character varying NOT NULL,
@@ -1781,13 +1623,10 @@ CREATE TABLE "sales_order_line_allocations" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_ol_alloc_tid_line_location_ukey" UNIQUE ("sales_order_line_id", "source_location_id"),
-  CONSTRAINT "sales_order_line_allocations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_order_line_allocations_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_order_line_allocations_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_order_line_allocations_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_ol_alloc_tid_location_idx" to table: "sales_order_line_allocations"
 CREATE INDEX "sales_ol_alloc_tid_location_idx" ON "sales_order_line_allocations" ("source_location_id");
@@ -1808,15 +1647,12 @@ CREATE TABLE "sales_order_line_components" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_ol_components_tid_line_seq_ukey" UNIQUE ("sales_order_line_id", "sequence"),
-  CONSTRAINT "sales_order_line_components_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_order_line_components_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
   CONSTRAINT "sales_order_line_components_sales_order_line_id_fkey" FOREIGN KEY ("sales_order_line_id") REFERENCES "sales_order_lines" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_order_line_components_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_order_line_components_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_order_line_components_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_ol_components_tid_uom_idx" to table: "sales_order_line_components"
 CREATE INDEX "sales_ol_components_tid_uom_idx" ON "sales_order_line_components" ("uom_id");
@@ -1842,12 +1678,9 @@ CREATE TABLE "sales_payments" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_payments_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_payments_sales_bill_id_fkey" FOREIGN KEY ("sales_bill_id") REFERENCES "sales_bills" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_payments_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_payments_sales_bill_id_fkey" FOREIGN KEY ("sales_bill_id") REFERENCES "sales_bills" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_payments_tid_bill_extxn_ukey" to table: "sales_payments"
 CREATE UNIQUE INDEX "sales_payments_tid_bill_extxn_ukey" ON "sales_payments" ("sales_bill_id", "external_transaction_id") WHERE (external_transaction_id IS NOT NULL);
@@ -1871,12 +1704,9 @@ CREATE TABLE "sales_point_payment_rel" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_point_payment_rel_tid_point_method_ukey" UNIQUE ("sales_point_id", "payment_method_id"),
-  CONSTRAINT "sales_point_payment_rel_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_point_payment_rel_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_point_payment_rel_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_point_payment_rel_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "sales_pricelists" table
 CREATE TABLE "sales_pricelists" (
@@ -1896,14 +1726,11 @@ CREATE TABLE "sales_pricelists" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_pricelists_code_org_id_ukey" UNIQUE ("code", "org_id"),
-  CONSTRAINT "sales_pricelists_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_pricelists_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_pricelists_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_pricelists_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_pricelists_sales_point_id_fkey" FOREIGN KEY ("sales_point_id") REFERENCES "sales_points" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "sales_pricelists_tid_channel_idx" to table: "sales_pricelists"
 CREATE INDEX "sales_pricelists_tid_channel_idx" ON "sales_pricelists" ("sales_channel_id");
@@ -1938,14 +1765,11 @@ CREATE TABLE "sales_pricelist_items" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_pricelist_items_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_pricelist_items_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
   CONSTRAINT "sales_pricelist_items_sales_pricelist_id_fkey" FOREIGN KEY ("sales_pricelist_id") REFERENCES "sales_pricelists" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_pricelist_items_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_pricelist_items_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_pricelist_items_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_pl_items_tid_cat_idx" to table: "sales_pricelist_items"
 CREATE INDEX "sales_pl_items_tid_cat_idx" ON "sales_pricelist_items" ("product_category_id");
@@ -1957,25 +1781,6 @@ CREATE INDEX "sales_pl_items_tid_uom_idx" ON "sales_pricelist_items" ("uom_id");
 CREATE INDEX "sales_pl_items_tid_validity_idx" ON "sales_pricelist_items" ("valid_from", "valid_to");
 -- Create index "sales_pl_items_tid_variant_idx" to table: "sales_pricelist_items"
 CREATE INDEX "sales_pl_items_tid_variant_idx" ON "sales_pricelist_items" ("product_variant_id");
--- Create "sales_promotion_compatibilities" table
-CREATE TABLE "sales_promotion_compatibilities" (
-  "id" character varying NOT NULL,
-  "org_id" character varying NULL,
-  "program_a_id" character varying NULL,
-  "program_b_id" character varying NULL,
-  "compatibility" character varying NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  "updated_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "sales_promo_compat_tid_pair_ukey" UNIQUE ("program_a_id", "program_b_id"),
-  CONSTRAINT "sales_promotion_compatibilities_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_promotion_compatibilities_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
-);
--- Create index "sales_promo_compat_tid_b_idx" to table: "sales_promotion_compatibilities"
-CREATE INDEX "sales_promo_compat_tid_b_idx" ON "sales_promotion_compatibilities" ("program_b_id");
 -- Create "sales_promotion_programs" table
 CREATE TABLE "sales_promotion_programs" (
   "id" character varying NOT NULL,
@@ -1997,12 +1802,9 @@ CREATE TABLE "sales_promotion_programs" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_promotion_programs_code_ukey" UNIQUE ("code"),
-  CONSTRAINT "sales_promotion_programs_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_promotion_programs_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_promotion_programs_code_ukey" UNIQUE ("code")
 );
 -- Create index "sales_promo_progs_tid_activation_idx" to table: "sales_promotion_programs"
 CREATE INDEX "sales_promo_progs_tid_activation_idx" ON "sales_promotion_programs" ("activation_type");
@@ -2021,13 +1823,10 @@ CREATE TABLE "sales_promotion_condition_groups" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_promo_cgroups_tid_prog_seq_ukey" UNIQUE ("sales_promotion_program_id", "sequence"),
-  CONSTRAINT "sales_promotion_condition_groups_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_promotion_condition_groups_sales_promotion_program_id_fke" FOREIGN KEY ("sales_promotion_program_id") REFERENCES "sales_promotion_programs" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_promotion_condition_groups_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_promotion_condition_groups_sales_promotion_program_id_fke" FOREIGN KEY ("sales_promotion_program_id") REFERENCES "sales_promotion_programs" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "sales_promotion_conditions" table
 CREATE TABLE "sales_promotion_conditions" (
@@ -2043,12 +1842,9 @@ CREATE TABLE "sales_promotion_conditions" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_promotion_conditions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_promotion_conditions_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "sales_promotion_condition_groups" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_promotion_conditions_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_promotion_conditions_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "sales_promotion_condition_groups" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_promo_conds_tid_group_idx" to table: "sales_promotion_conditions"
 CREATE INDEX "sales_promo_conds_tid_group_idx" ON "sales_promotion_conditions" ("group_id");
@@ -2064,13 +1860,10 @@ CREATE TABLE "sales_promotion_condition_targets" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_promo_ctargets_tid_cond_target_ukey" UNIQUE ("condition_id", "target_type", "target_id"),
-  CONSTRAINT "sales_promotion_condition_targets_condition_id_fkey" FOREIGN KEY ("condition_id") REFERENCES "sales_promotion_conditions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_promotion_condition_targets_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_promotion_condition_targets_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_promotion_condition_targets_condition_id_fkey" FOREIGN KEY ("condition_id") REFERENCES "sales_promotion_conditions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_promo_ctargets_tid_target_idx" to table: "sales_promotion_condition_targets"
 CREATE INDEX "sales_promo_ctargets_tid_target_idx" ON "sales_promotion_condition_targets" ("target_type", "target_id");
@@ -2086,13 +1879,10 @@ CREATE TABLE "sales_promotion_rewards" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_promo_rewards_tid_prog_seq_ukey" UNIQUE ("sales_promotion_program_id", "sequence"),
-  CONSTRAINT "sales_promotion_rewards_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_promotion_rewards_sales_promotion_program_id_fkey" FOREIGN KEY ("sales_promotion_program_id") REFERENCES "sales_promotion_programs" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_promotion_rewards_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_promotion_rewards_sales_promotion_program_id_fkey" FOREIGN KEY ("sales_promotion_program_id") REFERENCES "sales_promotion_programs" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "sales_quotations" table
 CREATE TABLE "sales_quotations" (
@@ -2116,13 +1906,10 @@ CREATE TABLE "sales_quotations" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_quotations_tid_number_ukey" UNIQUE ("quotation_number"),
-  CONSTRAINT "sales_quotations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_quotations_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "sales_quotations_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_quotations_sales_channel_id_fkey" FOREIGN KEY ("sales_channel_id") REFERENCES "sales_channels" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "sales_quotations_tid_channel_idx" to table: "sales_quotations"
 CREATE INDEX "sales_quotations_tid_channel_idx" ON "sales_quotations" ("sales_channel_id");
@@ -2151,15 +1938,12 @@ CREATE TABLE "sales_quotation_lines" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_quotation_lines_tid_quot_lineno_ukey" UNIQUE ("sales_quotation_id", "line_number"),
-  CONSTRAINT "sales_quotation_lines_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_quotation_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
   CONSTRAINT "sales_quotation_lines_sales_quotation_id_fkey" FOREIGN KEY ("sales_quotation_id") REFERENCES "sales_quotations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_quotation_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_quotation_lines_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_quotation_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
 );
 -- Create index "sales_quotation_lines_tid_variant_idx" to table: "sales_quotation_lines"
 CREATE INDEX "sales_quotation_lines_tid_variant_idx" ON "sales_quotation_lines" ("product_variant_id");
@@ -2259,13 +2043,10 @@ CREATE TABLE "sales_voucher_codes" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_voucher_codes_code_ukey" UNIQUE ("code"),
-  CONSTRAINT "sales_voucher_codes_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "sales_voucher_codes_sales_promotion_program_id_fkey" FOREIGN KEY ("sales_promotion_program_id") REFERENCES "sales_promotion_programs" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_voucher_codes_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "sales_voucher_codes_sales_promotion_program_id_fkey" FOREIGN KEY ("sales_promotion_program_id") REFERENCES "sales_promotion_programs" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_vouchers_tid_program_idx" to table: "sales_voucher_codes"
 CREATE INDEX "sales_vouchers_tid_program_idx" ON "sales_voucher_codes" ("sales_promotion_program_id");
@@ -2287,13 +2068,10 @@ CREATE TABLE "sales_voucher_redemptions" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "sales_vouch_redms_tid_voucher_order_ukey" UNIQUE ("voucher_code_id", "sales_order_id"),
-  CONSTRAINT "sales_voucher_redemptions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_voucher_redemptions_sales_order_id_fkey" FOREIGN KEY ("sales_order_id") REFERENCES "sales_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "sales_voucher_redemptions_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "sales_voucher_redemptions_voucher_code_id_fkey" FOREIGN KEY ("voucher_code_id") REFERENCES "sales_voucher_codes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "sales_vouch_redms_tid_order_idx" to table: "sales_voucher_redemptions"

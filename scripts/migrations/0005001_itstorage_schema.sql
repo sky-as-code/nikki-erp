@@ -8,7 +8,6 @@ CREATE TABLE "itstorage_consumptions" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "itstorage_consumptions_owner_ukey" UNIQUE ("owner_type", "owner_id")
@@ -27,7 +26,6 @@ CREATE TABLE "itstorage_spaces" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "itstorage_spaces_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "itstorage_spaces" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT
@@ -53,7 +51,6 @@ CREATE TABLE "itstorage_files" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "itstorage_files_space_id_fkey" FOREIGN KEY ("space_id") REFERENCES "itstorage_spaces" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT

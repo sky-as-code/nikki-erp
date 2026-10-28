@@ -7,9 +7,8 @@ type TagCreatedEvent struct {
 }
 
 type TagUpdatedEvent struct {
-	Id        string `json:"id"`
-	UpdatedBy string `json:"updated_by,omitempty"`
-	EventID   string `json:"event_id"`
+	Id      string `json:"id"`
+	EventID string `json:"event_id"`
 }
 
 type TagDeletedEvent struct {

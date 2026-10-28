@@ -6,6 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/inventory/repository"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
@@ -56,6 +57,9 @@ func registerInventoryIntegrationOutboxEngine() error {
 			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.InventoryIntegrationOutboxSchemaName,
 				CrudActions: readOnlyCrudActions(),
+				// Not audited: the outbox is delivery plumbing, and every event it carries describes a
+				// write the audit log already recorded.
+				IsAudited: util.ToPtr(false),
 				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
 					return repo.NewInventoryIntegrationOutboxRepository(base)
 				},

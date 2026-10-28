@@ -28,11 +28,6 @@ func TestJsonBaseSchemasMatchGoBuilders(t *testing.T) {
 			AuditableReadonlyModelSchemaBuilderJson,
 		},
 		{"traceable_model", TraceableModelSchemaBuilder, TraceableModelSchemaBuilderJson},
-		{
-			"traceable_readonly_model",
-			TraceableReadonlyModelSchemaBuilder,
-			TraceableReadonlyModelSchemaBuilderJson,
-		},
 		{"versioned_model", VersionedModelSchemaBuilder, VersionedModelSchemaBuilderJson},
 	}
 
@@ -56,7 +51,7 @@ func TestRegisterJsonBaseSchemas(t *testing.T) {
 	names := []string{
 		BaseModelSchemaName, OrgBaseModelSchemaName, ArchivableModelSchemaName,
 		AuditableModelSchemaName, AuditableReadonlyModelSchemaName, TraceableModelSchemaName,
-		TraceableReadonlyModelSchemaName, VersionedModelSchemaName,
+		VersionedModelSchemaName,
 	}
 	for _, name := range names {
 		assert.NotNil(t, dmodel.GetSchemaBuilder(name), "builder '%s' must be registered", name)
@@ -82,12 +77,12 @@ func registerBaseSchemasOnceForTest(t *testing.T) error {
 func TestTraceableJsonKeepsServiceInjection(t *testing.T) {
 	schema := TraceableModelSchemaBuilderJson().Build()
 
-	for _, fieldName := range []string{FieldCreatedBy, FieldUpdatedBy} {
-		field, ok := schema.Field(fieldName)
-		require.True(t, ok)
-		assert.True(t, field.IsServiceInjected(), "%s must stay service-injected", fieldName)
-		assert.NotNil(t, field.InjectFn())
-	}
+	field, ok := schema.Field(FieldCreatedBy)
+	require.True(t, ok)
+	assert.True(t, field.IsServiceInjected(), "created_by must stay service-injected")
+	assert.NotNil(t, field.InjectFn())
+	assert.Equal(t, []string{FieldCreatedBy}, schema.FieldNames())
+	assert.Empty(t, schema.ToRelations(), "created_by is a bare id, with no edge to iam_user")
 }
 
 func assertSchemasEqual(t *testing.T, expected *dmodel.ModelSchema, actual *dmodel.ModelSchema) {

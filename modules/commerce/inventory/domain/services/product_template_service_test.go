@@ -207,8 +207,8 @@ func TestSetArchivedCascadesToVariantsNeedingIt(t *testing.T) {
 		"a cascaded archive stamps its source, so a later unarchive can recognise it")
 }
 
-// The write path stamps updated_by from the context, so the scoped transaction context must carry
-// the caller across; losing it writes a null audit column and reports nothing.
+// The write path stamps the audit actor from the context, so the scoped transaction context must
+// carry the caller across; losing it logs the change as nobody's and reports nothing.
 func TestCascadeWritesCarryTheCallerIdentity(t *testing.T) {
 	repo := &stubVariantRepository{variants: []dmodel.DynamicFields{
 		archivedVariant("01VARIANTACTIVE00000000000", false, nil),

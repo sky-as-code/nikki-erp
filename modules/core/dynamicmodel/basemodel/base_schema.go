@@ -16,14 +16,11 @@ const (
 	ArchivableModelSchemaName        = "core.basemodel.archivable_model"
 	AuditableModelSchemaName         = "core.basemodel.auditable_model"
 	AuditableReadonlyModelSchemaName = "core.basemodel.auditable_readonly_model"
-	TraceableModelSchemaName         = "core.basemodel.traceable_model"
-	TraceableReadonlyModelSchemaName = "core.basemodel.traceable_readonly_model"
-	// The loose variants carry the same edges to iam_user without a FOREIGN KEY, for a module whose
-	// tables are created before IAM's (migration digits below 1001).
-	TraceableLooseModelSchemaName         = "core.basemodel.traceable_loose_model"
-	TraceableLooseReadonlyModelSchemaName = "core.basemodel.traceable_loose_readonly_model"
-	VersionedModelSchemaName              = "core.basemodel.versioned_model"
-	ManagedModelSchemaName                = "core.basemodel.managed_model"
+	// created_by alone, a bare id with no edge or FK: who changed what is the audit log's
+	// (auditlog_action), so the mixin no longer needs a relation to iam_user.
+	TraceableModelSchemaName = "core.basemodel.traceable_model"
+	VersionedModelSchemaName = "core.basemodel.versioned_model"
+	ManagedModelSchemaName   = "core.basemodel.managed_model"
 )
 
 const (
@@ -41,13 +38,9 @@ const (
 	FieldUpdatedAt    = "updated_at"
 	FieldEtag         = "etag"
 	FieldCreatedBy    = "created_by"
-	FieldUpdatedBy    = "updated_by"
 
 	FieldManagedByType = "managed_by_type"
 	FieldManagedById   = "managed_by_id"
-
-	EdgeCreatedByUser = "created_by_user"
-	EdgeUpdatedByUser = "updated_by_user"
 
 	// FieldIncludeArchived is the search query parameter, not a model column.
 	// It is deliberately distinct from FieldIsArchived: ModelSchema.Validate keys off the
@@ -151,34 +144,9 @@ func injectCreatedBy(ctx context.Context, forEdit bool) any {
 	return userId
 }
 
-func injectUpdatedBy(ctx context.Context, _ bool) any {
-	reqCtx, ok := ctx.(coreCtx.Context)
-	if !ok {
-		return nil
-	}
-	userId := reqCtx.GetPermissions().UserId
-	if userId == "" {
-		return nil
-	}
-	return userId
-}
-
-// The traceable builders return the JSON twins: the edges to iam_user are declared once, there.
-
+// The traceable builder returns the JSON twin, so the field is declared once, there.
 func TraceableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return TraceableModelSchemaBuilderJson()
-}
-
-func TraceableReadonlyModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return TraceableReadonlyModelSchemaBuilderJson()
-}
-
-func TraceableLooseModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return TraceableLooseModelSchemaBuilderJson()
-}
-
-func TraceableLooseReadonlyModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return TraceableLooseReadonlyModelSchemaBuilderJson()
 }
 
 func BaseModelSchemaBuilder() *dmodel.ModelSchemaBuilder {

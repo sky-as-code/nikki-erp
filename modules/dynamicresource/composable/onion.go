@@ -6,6 +6,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/audit"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -80,6 +81,14 @@ type DynamicResourceEngineOnionImpl struct {
 	// ComputedFunctions implements the schema's "function"-kind computed fields, by name.
 	ComputedFunctions map[string]ComputedFieldFn
 
+	// IsAudited is nil-means-true: every mutation of the resource is recorded through the
+	// core/audit port. false opts a resource out, which only the audit log itself should need.
+	IsAudited *bool
+
+	// AuditReads is nil-means-false: GetById and Search are recorded too, for a resource whose
+	// reads are themselves sensitive.
+	AuditReads *bool
+
 	schema     *dmodel.ModelSchema
 	repository CrudRepository
 	domSvc     CrudDomainService
@@ -126,6 +135,7 @@ func (this *DynamicResourceEngineOnionImpl) buildRepository(param BuildParam) Cr
 		Logger:        param.Logger,
 		NewBaseRepoFn: param.NewBaseRepoFn,
 		Schema:        this.schema,
+		AuditSink:     this.auditSink(),
 	})
 	if this.NewRepositoryFn != nil {
 		repository = this.NewRepositoryFn(repository)
@@ -145,6 +155,7 @@ func (this *DynamicResourceEngineOnionImpl) buildDomainService() CrudDomainServi
 		CrudActions:      this.CrudActions,
 		ComputedFunction: this.ComputedFieldFunction,
 		StorageConsumer:  NewLazyStorageConsumer(),
+		AuditSink:        this.auditSink(),
 	})
 	// Every resource gets computed-field evaluation; a schema without computed fields passes
 	// through untouched. The module's derived service embeds this wrapped one, so its overrides
@@ -168,11 +179,29 @@ func (this *DynamicResourceEngineOnionImpl) buildApplicationService(param BuildP
 		Storage:         param.Storage,
 		ImportLimits:    readImportLimits(param.ConfigSvc),
 		Logger:          param.Logger,
+		AuditSink:       this.readAuditSink(),
 	})
 	if this.NewAppServiceFn != nil {
 		appSvc = this.NewAppServiceFn(appSvc)
 	}
 	return appSvc
+}
+
+// auditSink is nil for a resource that opted out, which the default services read as "record
+// nothing". The m2m actions find the same answer through IsAuditedSchema.
+func (this *DynamicResourceEngineOnionImpl) auditSink() AuditRecorder {
+	if this.IsAudited != nil && !*this.IsAudited {
+		markUnaudited(this.SchemaName)
+		return nil
+	}
+	return audit.NewLazyAuditSink()
+}
+
+func (this *DynamicResourceEngineOnionImpl) readAuditSink() AuditRecorder {
+	if this.AuditReads == nil || !*this.AuditReads {
+		return nil
+	}
+	return this.auditSink()
 }
 
 func (this *DynamicResourceEngineOnionImpl) invokeComputedFunction(

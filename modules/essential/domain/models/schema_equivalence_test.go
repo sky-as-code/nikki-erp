@@ -133,7 +133,7 @@ func languageSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
-		Extend(basemodel.TraceableLooseModelSchemaBuilder())
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 func enumSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
@@ -164,7 +164,7 @@ func enumSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
-		Extend(basemodel.TraceableLooseModelSchemaBuilder())
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 func tagSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
@@ -189,7 +189,7 @@ func tagSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
-		Extend(basemodel.TraceableLooseModelSchemaBuilder())
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 func fieldMetadataSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
@@ -247,7 +247,7 @@ func fieldMetadataSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
-		Extend(basemodel.TraceableLooseModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(FieldMetadataEdgeModelMetadata).
 				ManyToOne(ModelMetadataSchemaName, dmodel.DynamicFields{
@@ -305,7 +305,7 @@ func modelMetadataSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
-		Extend(basemodel.TraceableLooseModelSchemaBuilder()).
+		Extend(basemodel.TraceableModelSchemaBuilder()).
 		EdgeFrom(
 			dmodel.Edge(ModelMetadataEdgeFieldMetadataList).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Field metadata list"}).
@@ -415,7 +415,7 @@ func moduleMetadataSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
-		Extend(basemodel.TraceableLooseModelSchemaBuilder())
+		Extend(basemodel.TraceableModelSchemaBuilder())
 }
 
 // ---------------------------------------------------------------------------

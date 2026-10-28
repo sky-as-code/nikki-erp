@@ -67,7 +67,6 @@ func (this *AuditableBase) SetUpdatedAt(updatedAt time.Time) {
 
 type TraceableBase struct {
 	CreatedBy *Id `json:"created_by,omitempty"`
-	UpdatedBy *Id `json:"updated_by,omitempty"`
 }
 
 func (this *TraceableBase) ValidateRules(forEdit bool) []*val.FieldRules {
@@ -79,12 +78,6 @@ func (this *TraceableBase) GetCreatedBy() *Id {
 }
 func (this *TraceableBase) SetCreatedBy(createdBy Id) {
 	this.CreatedBy = &createdBy
-}
-func (this *TraceableBase) GetUpdatedBy() *Id {
-	return this.UpdatedBy
-}
-func (this *TraceableBase) SetUpdatedBy(updatedBy Id) {
-	this.UpdatedBy = &updatedBy
 }
 
 type OrgBase struct {

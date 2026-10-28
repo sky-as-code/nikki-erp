@@ -16,8 +16,7 @@ CREATE TABLE "notification_notifications" (
   "expires_at" timestamptz NULL,
   "created_at" timestamptz NULL,
   "created_by" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "notification_notifications_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  PRIMARY KEY ("id")
 );
 -- Create index "notif_notifs_org_created_idx" to table: "notification_notifications"
 CREATE INDEX "notif_notifs_org_created_idx" ON "notification_notifications" ("org_id", "created_at");
@@ -35,7 +34,6 @@ CREATE TABLE "notification_recipients" (
   "created_by" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "notif_recips_notif_user_ukey" UNIQUE ("notification_id", "recipient_user_id"),
-  CONSTRAINT "notification_recipients_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "notification_recipients_notification_id_fkey" FOREIGN KEY ("notification_id") REFERENCES "notification_notifications" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "notif_recips_inbox_idx" to table: "notification_recipients"
@@ -56,11 +54,8 @@ CREATE TABLE "notification_deliveries" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "notification_deliveries_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
-  CONSTRAINT "notification_deliveries_notification_recipient_id_fkey" FOREIGN KEY ("notification_recipient_id") REFERENCES "notification_recipients" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT "notification_deliveries_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL
+  CONSTRAINT "notification_deliveries_notification_recipient_id_fkey" FOREIGN KEY ("notification_recipient_id") REFERENCES "notification_recipients" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create index "notif_delivs_recip_channel_idx" to table: "notification_deliveries"
 CREATE INDEX "notif_delivs_recip_channel_idx" ON "notification_deliveries" ("notification_recipient_id", "channel_name");

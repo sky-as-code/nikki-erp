@@ -10,7 +10,6 @@ type AttributeCreatedEvent struct {
 type AttributeUpdatedEvent struct {
 	Id        string `json:"id"`
 	ProductId string `json:"product_id,omitempty"`
-	UpdatedBy string `json:"updated_by,omitempty"`
 	EventID   string `json:"event_id"`
 }
 

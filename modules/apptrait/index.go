@@ -67,6 +67,7 @@ func (*AppTraitModule) Init() error {
 		requestguard.NewStaticRequestGuardServiceImpl,
 		external.NewSettingsServiceImpl,
 		external.NewStorageConsumerImpl,
+		external.NewAuditSinkImpl,
 		func() dyn.NewBaseDynamicRepositoryFn {
 			return baserepo.NewBaseDynamicRepository
 		},

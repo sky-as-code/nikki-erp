@@ -64,6 +64,10 @@ type NewDomainServiceParam struct {
 	// StorageConsumer drives the lifecycle of the schema's file fields (metadata.file_field).
 	// Nil when the binary has no storage module; file fields are then stored unchecked.
 	StorageConsumer storage.StorageConsumer
+
+	// AuditSink records every create, update, delete and set_archived in the write's transaction.
+	// Nil for a resource that opted out (IsAudited false).
+	AuditSink AuditRecorder
 }
 
 func NewDefaultDomainService(param NewDomainServiceParam) CrudDomainService {
@@ -82,6 +86,7 @@ func NewDefaultDomainService(param NewDomainServiceParam) CrudDomainService {
 		crudActions:      crudActions,
 		computedFunction: param.ComputedFunction,
 		files:            newFileLifecycle(param.Schema, param.Repository, param.StorageConsumer),
+		audit:            newAuditTrail(param.Schema, param.Repository, param.AuditSink),
 	}
 }
 
@@ -98,6 +103,9 @@ type DefaultDomainServiceImpl struct {
 
 	// files is nil for a schema without file fields.
 	files *fileLifecycle
+
+	// audit is nil for a resource that opted out of auditing.
+	audit *auditTrail
 }
 
 func (this *DefaultDomainServiceImpl) Schema() *dmodel.ModelSchema {
@@ -114,13 +122,18 @@ func (this *DefaultDomainServiceImpl) Create(
 	if cErrs := this.assertActionSupported(CrudActionCreate); cErrs != nil {
 		return &CreateResult{ClientErrors: *cErrs}, nil
 	}
-	opts := firstOrZero(options)
-	if this.files != nil && this.files.sendsFiles(cmd, true) {
-		return this.files.create(ctx, opts, func(ctx corectx.Context, opts CreateOptions) (*CreateResult, error) {
-			return this.create(ctx, cmd, opts)
-		})
+	write := func(ctx corectx.Context, opts CreateOptions) (*CreateResult, error) {
+		if this.files != nil && this.files.sendsFiles(cmd, true) {
+			return this.files.create(ctx, opts, func(ctx corectx.Context, opts CreateOptions) (*CreateResult, error) {
+				return this.create(ctx, cmd, opts)
+			})
+		}
+		return this.create(ctx, cmd, opts)
 	}
-	return this.create(ctx, cmd, opts)
+	if this.audit.active() {
+		return this.audit.create(ctx, firstOrZero(options), write)
+	}
+	return write(ctx, firstOrZero(options))
 }
 
 func (this *DefaultDomainServiceImpl) create(
@@ -157,13 +170,18 @@ func (this *DefaultDomainServiceImpl) Update(
 	if cErrs := this.assertActionSupported(CrudActionUpdate); cErrs != nil {
 		return &MutateResult{ClientErrors: *cErrs}, nil
 	}
-	opts := firstOrZero(options)
-	if this.files != nil && this.files.sendsFiles(cmd, false) {
-		return this.files.update(ctx, opts, func(ctx corectx.Context, opts UpdateOptions) (*MutateResult, error) {
-			return this.update(ctx, cmd, opts)
-		})
+	write := func(ctx corectx.Context, opts UpdateOptions) (*MutateResult, error) {
+		if this.files != nil && this.files.sendsFiles(cmd, false) {
+			return this.files.update(ctx, opts, func(ctx corectx.Context, opts UpdateOptions) (*MutateResult, error) {
+				return this.update(ctx, cmd, opts)
+			})
+		}
+		return this.update(ctx, cmd, opts)
 	}
-	return this.update(ctx, cmd, opts)
+	if this.audit.active() {
+		return this.audit.update(ctx, firstOrZero(options), write)
+	}
+	return write(ctx, firstOrZero(options))
 }
 
 func (this *DefaultDomainServiceImpl) update(
@@ -189,12 +207,18 @@ func (this *DefaultDomainServiceImpl) Delete(
 		return &MutateResult{ClientErrors: *cErrs}, nil
 	}
 	opts := firstOrZero(options)
-	if this.files != nil {
-		return this.files.delete(ctx, cmd, func(ctx corectx.Context) (*MutateResult, error) {
-			return this.delete(ctx, cmd, opts)
-		})
+	write := func(ctx corectx.Context) (*MutateResult, error) {
+		if this.files != nil {
+			return this.files.delete(ctx, cmd, func(ctx corectx.Context) (*MutateResult, error) {
+				return this.delete(ctx, cmd, opts)
+			})
+		}
+		return this.delete(ctx, cmd, opts)
 	}
-	return this.delete(ctx, cmd, opts)
+	if this.audit.active() {
+		return this.audit.delete(ctx, cmd, write)
+	}
+	return write(ctx)
 }
 
 func (this *DefaultDomainServiceImpl) delete(
@@ -238,10 +262,17 @@ func (this *DefaultDomainServiceImpl) SetArchived(
 	}
 	// corecrud.SetIsArchived takes its arguments positionally and accepts no hooks. A derived
 	// service that needs a rule here overrides SetArchived itself and checks before delegating.
-	result, err := corecrud.SetIsArchived(ctx, this.repository, paramsToSetArchivedCommand(cmd))
-	return result, errors.Wrap(err, "CrudDomainService.SetArchived")
+	write := func(ctx corectx.Context) (*MutateResult, error) {
+		result, err := corecrud.SetIsArchived(ctx, this.repository, paramsToSetArchivedCommand(cmd))
+		return result, errors.Wrap(err, "CrudDomainService.SetArchived")
+	}
+	if this.audit.active() {
+		return this.audit.setArchived(ctx, cmd, write)
+	}
+	return write(ctx)
 }
 
+// DeleteByOrg is not audited: it is the org's teardown, and the org's entries go with it.
 func (this *DefaultDomainServiceImpl) DeleteByOrg(ctx corectx.Context, orgId model.Id) (int, error) {
 	count, err := this.repository.DeleteByOrg(ctx, orgId)
 	return count, errors.Wrap(err, "CrudDomainService.DeleteByOrg")

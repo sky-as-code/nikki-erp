@@ -14,7 +14,6 @@ CREATE TABLE "paymentinvoice_payment_methods" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "payinv_pay_methods_code_ukey" UNIQUE ("code")
@@ -35,7 +34,6 @@ CREATE TABLE "paymentinvoice_payment_profiles" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "payinv_pay_profiles_org_code_ukey" UNIQUE ("org_id", "code")
@@ -65,7 +63,6 @@ CREATE TABLE "paymentinvoice_orders" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "payinv_orders_order_code_ukey" UNIQUE ("order_code"),
@@ -100,7 +97,6 @@ CREATE TABLE "paymentinvoice_invoices" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "paymentinvoice_invoices_number_ukey" UNIQUE ("number"),
@@ -127,7 +123,6 @@ CREATE TABLE "paymentinvoice_invoice_lines" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "paymentinvoice_invoice_lines_invoice_id_fkey" FOREIGN KEY ("invoice_id") REFERENCES "paymentinvoice_invoices" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
@@ -151,7 +146,6 @@ CREATE TABLE "paymentinvoice_transactions" (
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
-  "updated_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "paymentinvoice_transactions_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "paymentinvoice_orders" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
