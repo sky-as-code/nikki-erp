@@ -74,16 +74,17 @@ func assertLegsConnect(t *testing.T, legs []FlowLeg, flow string) {
 	}
 }
 
-// Every stop a flow names resolves to a purpose, which is how the stop is found under the root.
-func TestStopPurpose(t *testing.T) {
-	assert.Equal(t, models.InventoryLocationPurposeReceiving, stopPurpose("Input"))
-	assert.Equal(t, models.InventoryLocationPurposeQuality, stopPurpose("Quality Control"))
-	assert.Equal(t, models.InventoryLocationPurposePacking, stopPurpose("Packing"))
-	assert.Equal(t, models.InventoryLocationPurposeOutput, stopPurpose("Output"))
-	assert.Empty(t, stopPurpose("Stock"), "Stock is the root, not a flow stop")
+// Every stop a flow names resolves to the warehouse FK that holds it.
+func TestStopField(t *testing.T) {
+	assert.Equal(t, models.WarehouseFieldReceivingLocationId, stopField("Input"))
+	assert.Equal(t, models.WarehouseFieldQualityLocationId, stopField("Quality Control"))
+	assert.Equal(t, models.WarehouseFieldPackingLocationId, stopField("Packing"))
+	assert.Equal(t, models.WarehouseFieldOutputLocationId, stopField("Output"))
+	assert.Equal(t, models.WarehouseFieldStockLocationId, stopField("Stock"))
+	assert.Empty(t, stopField("vendor"), "an endpoint outside the warehouse has no FK")
 }
 
-// Reducing a flow leaves locations behind. They are reported so the caller can suspend them; the
+// Reducing a flow leaves locations behind. They are reported so the caller can archive them; the
 // history that passed through them has to keep resolving, so they are never deleted.
 func TestObsoleteSystemLocations(t *testing.T) {
 	dropped := obsoleteSystemLocations(

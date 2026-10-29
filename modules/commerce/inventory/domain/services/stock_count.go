@@ -259,7 +259,7 @@ func generateAdjustmentMovement(
 	ctx corectx.Context, quant models.StockQuant, locked LockedQuant, variance decimal.Decimal,
 ) (*ft.ClientErrors, error) {
 	orgId := derefString(quant.GetOrgId())
-	lossLocation, err := FindLocationByType(ctx, orgId, models.InventoryLocationUsageInventoryLoss)
+	lossLocation, err := FindLocationByType(ctx, orgId, models.InventoryLocationTypeInventoryLoss)
 	if err != nil {
 		return nil, err
 	}

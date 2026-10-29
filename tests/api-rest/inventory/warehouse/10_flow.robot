@@ -37,10 +37,10 @@ Widening The Outgoing Flow Creates The Stops It Needs
         Should Not Be Empty    ${found}    msg=Three-step delivery needs a '${expected}' location
     END
 
-Narrowing A Flow Suspends The Unused Stop Rather Than Deleting It
+Narrowing A Flow Archives The Unused Stop And Keeps Its FK
     [Documentation]    Goods that once passed through Quality Control are recorded as having
-    ...    done so. Deleting the location would break those records, so it is suspended: still
-    ...    there, still resolvable, no longer offered for new work.
+    ...    done so. Deleting the location would break those records, so it is archived: still
+    ...    there, still referenced by quality_location_id, no longer offered for new work.
     ${quality}=    Find Warehouse Location    ${WAREHOUSE_ID}    Quality Control
     Should Not Be Empty    ${quality}
 
@@ -48,22 +48,22 @@ Narrowing A Flow Suspends The Unused Stop Rather Than Deleting It
     ...    json=${{ {'org_id': $INV_ORG_ID, 'flow': 'two_step'} }}
     Response Status Should Be    ${resp}    200
 
-    ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${quality}
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
-    Should Be Equal    ${item}[status]    suspended
-    ...    msg=A stop a flow no longer uses is suspended, never deleted
+    ${warehouse}=    Get Warehouse Under Test
+    Should Be Equal    ${warehouse}[quality_location_id]    ${quality}
+    ...    msg=The warehouse keeps its FK to a stop the flow no longer uses
+    ${item}=    Get Location By Id    ${quality}
+    Should Be True    ${item}[is_archived]
+    ...    msg=A stop a flow no longer uses is archived, never deleted
 
     ${input}=    Find Warehouse Location    ${WAREHOUSE_ID}    Input
-    ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${input}
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
-    Should Be Equal    ${item}[status]    active
+    ${item}=    Get Location By Id    ${input}
+    Should Not Be True    ${item}[is_archived]
     ...    msg=Input is still needed at two steps, so it stays in service
 
-Widening Again Reuses The Suspended Stop
+Widening Again Unarchives The Archived Stop
     [Documentation]    Switching a flow back and forth must not accumulate duplicate locations.
-    ...    The suspended stop is resumed rather than a second one created.
+    ...    The archived stop the warehouse still references is unarchived rather than a second
+    ...    one created.
     ${before}=    Find Warehouse Location    ${WAREHOUSE_ID}    Quality Control
 
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/configure_incoming_flow
@@ -74,9 +74,8 @@ Widening Again Reuses The Suspended Stop
     Should Be Equal    ${before}    ${after}
     ...    msg=The same location comes back, rather than a duplicate being created
 
-    ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${after}
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
+    ${item}=    Get Location By Id    ${after}
+    Should Not Be True    ${item}[is_archived]
     Should Be Equal    ${item}[status]    active
 
 Reconfiguring A Flow Creates No Stock Movement

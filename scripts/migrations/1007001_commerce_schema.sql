@@ -49,8 +49,7 @@ CREATE TABLE "inventory_locations" (
   "id" character varying NOT NULL,
   "name" character varying NULL,
   "canonical_name" character varying NULL,
-  "location_usage" character varying NULL,
-  "purpose" character varying NULL,
+  "location_type" character varying NULL,
   "warehouse_id" character varying NULL,
   "parent_location_id" character varying NULL,
   "hierarchy_depth" integer NULL,
@@ -620,6 +619,11 @@ CREATE TABLE "inventory_warehouses" (
   "name" character varying NULL,
   "warehouse_role" character varying NULL,
   "root_location_id" character varying NULL,
+  "stock_location_id" character varying NULL,
+  "receiving_location_id" character varying NULL,
+  "quality_location_id" character varying NULL,
+  "packing_location_id" character varying NULL,
+  "output_location_id" character varying NULL,
   "address" character varying NULL,
   "manager_user_id" character varying NULL,
   "incoming_flow" character varying NULL,
@@ -1994,7 +1998,7 @@ ALTER TABLE "inventory_warehouse_product_guards" ADD CONSTRAINT "inventory_wareh
 -- Modify "inventory_warehouse_supply_relations" table
 ALTER TABLE "inventory_warehouse_supply_relations" ADD CONSTRAINT "inventory_warehouse_supply_relations_destination_warehouse_id_f" FOREIGN KEY ("destination_warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "inventory_warehouse_supply_relations_source_warehouse_id_fkey" FOREIGN KEY ("source_warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
 -- Modify "inventory_warehouses" table
-ALTER TABLE "inventory_warehouses" ADD CONSTRAINT "inventory_warehouses_manager_user_id_fkey" FOREIGN KEY ("manager_user_id") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL, ADD CONSTRAINT "inventory_warehouses_root_location_id_fkey" FOREIGN KEY ("root_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT;
+ALTER TABLE "inventory_warehouses" ADD CONSTRAINT "inventory_warehouses_manager_user_id_fkey" FOREIGN KEY ("manager_user_id") REFERENCES "iam_users" ("id") ON UPDATE NO ACTION ON DELETE SET NULL, ADD CONSTRAINT "inventory_warehouses_output_location_id_fkey" FOREIGN KEY ("output_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "inventory_warehouses_packing_location_id_fkey" FOREIGN KEY ("packing_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "inventory_warehouses_quality_location_id_fkey" FOREIGN KEY ("quality_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "inventory_warehouses_receiving_location_id_fkey" FOREIGN KEY ("receiving_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "inventory_warehouses_root_location_id_fkey" FOREIGN KEY ("root_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "inventory_warehouses_stock_location_id_fkey" FOREIGN KEY ("stock_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT;
 -- Modify "purchase_agreement_lines" table
 ALTER TABLE "purchase_agreement_lines" ADD CONSTRAINT "purchase_agreement_lines_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT, ADD CONSTRAINT "purchase_agreement_lines_purchase_agreement_id_fkey" FOREIGN KEY ("purchase_agreement_id") REFERENCES "purchase_agreements" ("id") ON UPDATE NO ACTION ON DELETE CASCADE, ADD CONSTRAINT "purchase_agreement_lines_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL;
 -- Modify "purchase_order_lines" table

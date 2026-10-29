@@ -242,7 +242,7 @@ func resolveConsumeDestination(
 	if request.DestinationLocationId != "" {
 		return string(request.DestinationLocationId), nil
 	}
-	customer, err := FindLocationByType(ctx, string(request.OrgId), models.InventoryLocationUsageCustomer)
+	customer, err := FindLocationByType(ctx, string(request.OrgId), models.InventoryLocationTypeCustomer)
 	if err != nil {
 		return "", err
 	}

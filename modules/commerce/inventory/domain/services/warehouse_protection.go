@@ -146,7 +146,7 @@ func assertLocationNotBackingReservations(
 ) (*ft.ClientErrors, error) {
 	vErrs := ft.NewClientErrors()
 	warehouseId := derefId(location.GetWarehouseId())
-	if warehouseId == "" || derefString(location.GetLocationUsage()) != models.InventoryLocationUsageInternal {
+	if warehouseId == "" || derefString(location.GetLocationType()) != models.InventoryLocationTypeInternal {
 		return vErrs, nil
 	}
 

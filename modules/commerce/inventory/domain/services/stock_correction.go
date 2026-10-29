@@ -402,7 +402,7 @@ func FindLocationByType(
 	graph.And(
 		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldOrgId, dmodel.Equals, orgId),
 		*dmodel.NewSearchNode().NewCondition(
-			models.InventoryLocationFieldLocationUsage, dmodel.Equals, locationType),
+			models.InventoryLocationFieldLocationType, dmodel.Equals, locationType),
 		*dmodel.NewSearchNode().NewCondition(
 			basemodel.FieldManagedByType, dmodel.Equals, basemodel.ManagedByTypeSystem),
 		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldWarehouseId, dmodel.IsNotSet),

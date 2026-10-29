@@ -44,7 +44,7 @@ Plain User Is Refused Inventory Location Create
     ${name}=    Unique Display Name    Robot Forbidden Location
     ${code}=    Unique Code    forbidloc
     ${resp}=    POST On Session    plain_user    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'name': $name, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Be Equal As Integers    ${resp.status_code}    403
     ...    msg=Permission must be refused before the payload is ever validated

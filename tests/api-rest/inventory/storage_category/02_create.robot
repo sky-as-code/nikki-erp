@@ -45,7 +45,7 @@ Archiving A Category A Location Uses Is Refused
     ${name}=    Unique Display Name    Robot Categorised Location
     ${code}=    Unique Code    catloc
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'name': $name, 'location_usage': 'internal', 'storage_category_id': $STORAGE_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_type': 'internal', 'storage_category_id': $STORAGE_CATEGORY_ID, 'org_id': $INV_ORG_ID} }}
     ${location_id}    ${location_etag}=    Response Should Be Create Success    ${resp}
 
     ${resp}=    GET On Session    api    ${STORAGE_CATEGORY_API}/${STORAGE_CATEGORY_ID}

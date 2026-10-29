@@ -5,7 +5,6 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -13,69 +12,93 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
-// A warehouse and its root location live and go together. The root is a location the warehouse
-// manages (managed_by_type commerce/inventory_warehouse, managed_by_id the warehouse), referenced by
-// warehouse.root_location_id with an ON DELETE RESTRICT FK. It is where the warehouse's stock lives
-// and the parent of the flow stops (Input, Quality Control, Packing, Output) and of every location a
-// user adds to the warehouse.
+// A warehouse and the locations it manages live and go together. Each is managed by the warehouse
+// (managed_by_type commerce/inventory_warehouse, managed_by_id the warehouse) and referenced from it
+// by an ON DELETE RESTRICT FK:
+//   - root_location_id: a group location named after the warehouse code, the top of its tree. It
+//     holds no stock.
+//   - stock_location_id: the internal "Stock" child of the root, where the warehouse's goods live.
+//   - receiving, quality, packing and output_location_id: the flow stops, children of the root,
+//     created when a flow first needs one and archived (FK kept) when a flow stops using it.
 
-// provisionLocations creates the root and the flow stops of a new warehouse, then points the
-// warehouse at its root. Every location created here is marked system-generated, which protects
-// it from being restructured while the warehouse needs it.
+// warehouseLocationFields lists every FK a warehouse holds to a location it manages, in the order
+// they are archived and deleted: the flow stops, then Stock, then the root everything hangs under.
+var warehouseLocationFields = []string{
+	models.WarehouseFieldReceivingLocationId,
+	models.WarehouseFieldQualityLocationId,
+	models.WarehouseFieldPackingLocationId,
+	models.WarehouseFieldOutputLocationId,
+	models.WarehouseFieldStockLocationId,
+	models.WarehouseFieldRootLocationId,
+}
+
+// provisionLocations creates the root, Stock and the flow stops of a new warehouse and points the
+// warehouse at them. It returns the location FKs written, for the caller's create result. Every
+// location created here is marked system-generated, which protects it from being restructured.
 func (this *WarehouseDomainServiceImpl) provisionLocations(
 	ctx corectx.Context, warehouse models.Warehouse,
-) (string, error) {
-	warehouseId := derefString(warehouse.GetId())
-	code := derefString(warehouse.GetCode())
-	rootId, err := this.createSystemLocation(ctx, dmodel.DynamicFields{
-		models.InventoryLocationFieldName:          code,
-		models.InventoryLocationFieldLocationUsage: models.InventoryLocationUsageInternal,
-		models.InventoryLocationFieldPurpose:       models.InventoryLocationPurposeStorage,
-		models.InventoryLocationFieldOrgId:         derefId(warehouse.GetOrgId()),
-		models.InventoryLocationFieldStatus:        models.InventoryLocationStatusActive,
-		basemodel.FieldManagedByType:               models.InventoryLocationManagedByWarehouse,
-		basemodel.FieldManagedById:                 warehouseId,
-	}, true)
+) (dmodel.DynamicFields, error) {
+	rootId, err := this.createManagedLocation(ctx, warehouse,
+		derefString(warehouse.GetCode()), models.InventoryLocationTypeGroup, "")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	if err := writeWarehouseFields(ctx, warehouseId, dmodel.DynamicFields{
-		models.WarehouseFieldRootLocationId: rootId,
+	stockId, err := this.createManagedLocation(ctx, warehouse,
+		warehouseStockLocationCode, models.InventoryLocationTypeInternal, rootId)
+	if err != nil {
+		return nil, err
+	}
+	if err := this.pointWarehouseAt(ctx, &warehouse, dmodel.DynamicFields{
+		models.WarehouseFieldRootLocationId:  rootId,
+		models.WarehouseFieldStockLocationId: stockId,
 	}); err != nil {
-		return "", err
+		return nil, err
 	}
-	rootLocationId := model.Id(rootId)
-	warehouse.SetRootLocationId(&rootLocationId)
 
 	specs := append(incomingFlowLocations(derefString(warehouse.GetIncomingFlow())),
 		outgoingFlowLocations(derefString(warehouse.GetOutgoingFlow()))...)
-	for _, spec := range specs {
-		if _, err := this.CreateFlowLocation(ctx, warehouse, SystemLocationSpec(spec)); err != nil {
-			return "", err
+	if err := this.ensureFlowLocations(ctx, &warehouse, specs); err != nil {
+		return nil, err
+	}
+	written := dmodel.DynamicFields{}
+	for _, field := range warehouseLocationFields {
+		if id := warehouse.GetFlowLocationId(field); id != nil {
+			written[field] = string(*id)
 		}
 	}
-	return rootId, nil
+	return written, nil
 }
 
-// CreateFlowLocation creates one stop of a warehouse flow under the warehouse's root.
-func (this *WarehouseDomainServiceImpl) CreateFlowLocation(
-	ctx corectx.Context, warehouse models.Warehouse, spec SystemLocationSpec,
+// createManagedLocation creates one location the warehouse manages: the root when parentId is
+// empty, otherwise a child of the root.
+func (this *WarehouseDomainServiceImpl) createManagedLocation(
+	ctx corectx.Context, warehouse models.Warehouse, name string, locationType string, parentId string,
 ) (string, error) {
-	rootId := derefId(warehouse.GetRootLocationId())
-	if rootId == "" {
-		vErrs := ft.NewClientErrors()
-		appendWarehouseViolation(vErrs, "", "warehouse.root_location_missing",
-			"the warehouse has no root location to create its flow locations under")
-		return "", composable.ClientErrorSignal{Errors: *vErrs}
+	fields := dmodel.DynamicFields{
+		models.InventoryLocationFieldName:         name,
+		models.InventoryLocationFieldLocationType: locationType,
+		models.InventoryLocationFieldOrgId:        derefId(warehouse.GetOrgId()),
+		models.InventoryLocationFieldStatus:       models.InventoryLocationStatusActive,
+		basemodel.FieldManagedByType:              models.InventoryLocationManagedByWarehouse,
+		basemodel.FieldManagedById:                derefString(warehouse.GetId()),
 	}
-	return this.createSystemLocation(ctx, dmodel.DynamicFields{
-		models.InventoryLocationFieldName:             spec.Name,
-		models.InventoryLocationFieldLocationUsage:    models.InventoryLocationUsageInternal,
-		models.InventoryLocationFieldPurpose:          spec.Purpose,
-		models.InventoryLocationFieldParentLocationId: rootId,
-		models.InventoryLocationFieldOrgId:            derefId(warehouse.GetOrgId()),
-		models.InventoryLocationFieldStatus:           models.InventoryLocationStatusActive,
-	}, false)
+	if parentId != "" {
+		fields[models.InventoryLocationFieldParentLocationId] = parentId
+	}
+	return this.createSystemLocation(ctx, fields, true)
+}
+
+// pointWarehouseAt writes location FKs onto the warehouse, and onto the caller's copy of it.
+func (this *WarehouseDomainServiceImpl) pointWarehouseAt(
+	ctx corectx.Context, warehouse *models.Warehouse, fks dmodel.DynamicFields,
+) error {
+	if err := writeWarehouseFields(ctx, derefString(warehouse.GetId()), fks); err != nil {
+		return err
+	}
+	for field, value := range fks {
+		warehouse.GetFieldData()[field] = value
+	}
+	return nil
 }
 
 // createSystemLocation writes one location the warehouse owns through the location service, so the
@@ -101,47 +124,28 @@ func (this *WarehouseDomainServiceImpl) createSystemLocation(
 	return locationId, MarkLocationSystemGenerated(ctx, locationId)
 }
 
-// setRootArchived archives or unarchives the root with its warehouse, in the caller's transaction.
-// A warehouse created before root locations existed has none, and nothing to cascade to.
-func (this *WarehouseDomainServiceImpl) setRootArchived(
-	ctx corectx.Context, warehouse models.Warehouse, isArchived bool,
-) error {
-	rootId := derefId(warehouse.GetRootLocationId())
-	if rootId == "" {
-		return nil
-	}
-	result, err := this.locations.SetArchivedManaged(ctx, rootId, isArchived)
-	if err != nil {
-		return err
-	}
-	if result != nil && result.ClientErrors.Count() > 0 {
-		return composable.ClientErrorSignal{Errors: result.ClientErrors}
-	}
-	return nil
-}
-
-// Delete deletes the warehouse and then its root location, in one transaction. Deleting the
-// warehouse first releases the RESTRICT FK on root_location_id and sets warehouse_id NULL on its
-// locations; deleting the root then fails, rolling everything back, while any location still hangs
-// under it.
+// Delete deletes the warehouse and then every location it manages, in one transaction. Deleting the
+// warehouse first releases its RESTRICT FKs and sets warehouse_id NULL on its locations; deleting a
+// managed location then fails, rolling everything back, while a user's location still hangs under it
+// or a move still names it.
 func (this *WarehouseDomainServiceImpl) Delete(
 	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
 ) (*composable.MutateResult, error) {
-	return this.deleteWithRoot(ctx, cmd, options, this.CrudDomainService.Delete)
+	return this.deleteWithLocations(ctx, cmd, options, this.CrudDomainService.Delete)
 }
 
 // DeleteManaged is the manager's delete of a managed warehouse, with the same cascade as Delete.
 func (this *WarehouseDomainServiceImpl) DeleteManaged(
 	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
 ) (*composable.MutateResult, error) {
-	return this.deleteWithRoot(ctx, cmd, options, this.CrudDomainService.DeleteManaged)
+	return this.deleteWithLocations(ctx, cmd, options, this.CrudDomainService.DeleteManaged)
 }
 
 type deleteFn = func(
 	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
 ) (*composable.MutateResult, error)
 
-func (this *WarehouseDomainServiceImpl) deleteWithRoot(
+func (this *WarehouseDomainServiceImpl) deleteWithLocations(
 	ctx corectx.Context, cmd composable.DeleteCommand, options []composable.DeleteOptions, del deleteFn,
 ) (*composable.MutateResult, error) {
 	warehouse, vErrs, err := this.loadWarehouse(ctx, readStringParam(cmd, models.WarehouseFieldId))
@@ -156,13 +160,15 @@ func (this *WarehouseDomainServiceImpl) deleteWithRoot(
 		if err != nil || result == nil || result.ClientErrors.Count() > 0 {
 			return result, err
 		}
-		rootId := derefId(warehouse.GetRootLocationId())
-		if rootId == "" {
-			return result, nil
-		}
-		rootResult, err := this.locations.DeleteManaged(tranxCtx, dmodel.DynamicFields{basemodel.FieldId: rootId})
-		if err != nil || rootResult == nil || rootResult.ClientErrors.Count() > 0 {
-			return rootResult, err
+		for _, field := range warehouseLocationFields {
+			locationId := derefId(warehouse.GetFlowLocationId(field))
+			if locationId == "" {
+				continue
+			}
+			deleted, err := this.locations.DeleteManaged(tranxCtx, dmodel.DynamicFields{basemodel.FieldId: locationId})
+			if err != nil || deleted == nil || deleted.ClientErrors.Count() > 0 {
+				return deleted, err
+			}
 		}
 		return result, nil
 	})

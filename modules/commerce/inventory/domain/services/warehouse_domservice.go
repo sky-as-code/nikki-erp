@@ -12,7 +12,7 @@ import (
 )
 
 // NewWarehouseDomainService derives the warehouse service from the engine's default one. locations
-// is the location service a warehouse provisions, archives and deletes its root location through.
+// is the location service a warehouse provisions, archives and deletes its managed locations through.
 func NewWarehouseDomainService(
 	base composable.CrudDomainService, locations *InventoryLocationDomainServiceImpl,
 ) *WarehouseDomainServiceImpl {
@@ -20,8 +20,8 @@ func NewWarehouseDomainService(
 }
 
 // WarehouseDomainServiceImpl holds the rules about a warehouse: its code, its operational state, and
-// its root location, which it creates, archives, unarchives and deletes together with itself, in
-// one transaction.
+// the locations it manages (root, Stock, flow stops), which it creates, archives, unarchives and
+// deletes together with itself, in one transaction.
 type WarehouseDomainServiceImpl struct {
 	composable.CrudDomainService
 
@@ -49,9 +49,9 @@ func (this *WarehouseDomainServiceImpl) CreateManaged(
 	return this.create(ctx, copyFields(cmd))
 }
 
-// create writes the warehouse, its root location and the stops its flows need, in one transaction
+// create writes the warehouse, its root, its Stock and the stops its flows need, in one transaction
 // (the caller's, when ctx carries one): a warehouse whose locations failed is not created either.
-// root_location_id is written last, once the root exists.
+// The location FKs are written last, once the locations exist.
 func (this *WarehouseDomainServiceImpl) create(
 	ctx corectx.Context, cmd dmodel.DynamicFields, options ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
@@ -70,11 +70,13 @@ func (this *WarehouseDomainServiceImpl) create(
 			return composable.ClientErrorSignal{Errors: clientErrorsOfFields(created)}
 		}
 		result = created
-		rootId, err := this.provisionLocations(tranxCtx, *models.NewWarehouseFrom(created.Data))
+		locationFks, err := this.provisionLocations(tranxCtx, *models.NewWarehouseFrom(created.Data))
 		if err != nil {
 			return err
 		}
-		created.Data[models.WarehouseFieldRootLocationId] = rootId
+		for field, value := range locationFks {
+			created.Data[field] = value
+		}
 		return nil
 	})
 	if signal, ok := composable.AsClientErrorSignal(err); ok {
@@ -112,10 +114,10 @@ func (this *WarehouseDomainServiceImpl) Update(
 	return this.CrudDomainService.Update(ctx, prepared, options...)
 }
 
-// SetArchived archives or unarchives the warehouse and its root location together. One with live
-// supply routes or reservations cannot be archived, and the root's own guard applies on top: a
-// warehouse whose root still holds stock, open work or unarchived sub-locations stays as it is. An
-// unarchived warehouse lands on suspended rather than active.
+// SetArchived archives or unarchives the warehouse and the locations it manages together. One with
+// live supply routes or reservations cannot be archived, and each location's own guard applies on
+// top: a warehouse whose Stock or stops still hold stock, open work or a user's unarchived
+// sub-location stays as it is. An unarchived warehouse lands on suspended rather than active.
 func (this *WarehouseDomainServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -141,7 +143,7 @@ func (this *WarehouseDomainServiceImpl) SetArchived(
 		if err != nil || result == nil || result.ClientErrors.Count() > 0 {
 			return result, err
 		}
-		if err := this.setRootArchived(tranxCtx, *warehouse, archiving); err != nil {
+		if err := this.setManagedLocationsArchived(tranxCtx, *warehouse, archiving); err != nil {
 			return nil, err
 		}
 		if archiving {

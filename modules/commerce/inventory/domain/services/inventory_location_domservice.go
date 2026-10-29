@@ -133,8 +133,8 @@ var errLocationBulkRefused = errors.New("inventory location bulk create refused;
 
 // Update applies the placement rules, refuses to restructure a system-generated location, and
 // rewrites what the subtree inherits when the name or parent changes, in one transaction. A
-// warehouse's root, Input or Output location may be renamed and given a storage category, but
-// re-parenting it or changing its usage or purpose would break the warehouse that created it.
+// warehouse's root, Stock, Input or Output location may be renamed and given a storage category,
+// but re-parenting it or changing its type would break the warehouse that created it.
 func (this *InventoryLocationDomainServiceImpl) Update(
 	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -222,7 +222,8 @@ func (this *InventoryLocationDomainServiceImpl) updateAndCascade(
 // SetArchived guards archiving: the location must be empty of stock and work in flight, have no
 // unarchived children, and not be a system location its warehouse still needs. Unarchiving always
 // lands on suspended rather than active, because the topology may have changed while it was away.
-// A warehouse's root is archived and unarchived with its warehouse only (SetArchivedManaged).
+// A location its warehouse manages is archived and unarchived by the warehouse only
+// (SetArchivedManaged).
 func (this *InventoryLocationDomainServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -233,17 +234,18 @@ func (this *InventoryLocationDomainServiceImpl) SetArchived(
 	if vErrs.Count() > 0 {
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
-	if location.IsWarehouseRoot() {
+	if location.IsManagedByWarehouse() {
 		return locationViolationResult("", "inventory_location.archive_with_warehouse",
-			"a warehouse's root location is archived and unarchived with its warehouse"), nil
+			"a location its warehouse manages is archived and unarchived by the warehouse"), nil
 	}
-	return this.setArchived(ctx, params, *location, true)
+	return this.setArchived(ctx, params, *location, false)
 }
 
 // SetArchivedManaged is the manager's archive of a location it manages, in the manager's own
-// transaction. The archive guard still applies, so a warehouse whose root still holds stock or
-// active sub-locations cannot be archived. Unarchiving keeps the stored status: the manager decides
-// when its records return to service. No REST route reaches it.
+// transaction. The archive guard still applies, so a warehouse whose Stock still holds stock or
+// active sub-locations cannot be archived; only the system-location check is the manager's to
+// make. A location already in the requested state is left alone. Unarchiving keeps the stored
+// status: the manager decides when its records return to service. No REST route reaches it.
 func (this *InventoryLocationDomainServiceImpl) SetArchivedManaged(
 	ctx corectx.Context, locationId string, isArchived bool,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -258,19 +260,24 @@ func (this *InventoryLocationDomainServiceImpl) SetArchivedManaged(
 		return locationViolationResult("", "inventory_location.not_managed",
 			"only a managed location is archived this way"), nil
 	}
+	if location.GetIsArchived() != nil && *location.GetIsArchived() == isArchived {
+		return locationMutateOk(), nil
+	}
 	params := dmodel.DynamicFields{
 		models.InventoryLocationFieldId: locationId,
 		basemodel.FieldEtag:             location.GetFieldData()[basemodel.FieldEtag],
 		paramIsArchived:                 isArchived,
 	}
-	return this.setArchived(ctx, params, *location, false)
+	return this.setArchived(ctx, params, *location, true)
 }
 
+// setArchived is the archive shared by the client's and the manager's path. byManager skips the
+// system-location check, which only guards against a client, and keeps the stored status on return.
 func (this *InventoryLocationDomainServiceImpl) setArchived(
-	ctx corectx.Context, params dmodel.DynamicFields, location models.InventoryLocation, suspendOnReturn bool,
+	ctx corectx.Context, params dmodel.DynamicFields, location models.InventoryLocation, byManager bool,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	if readBoolParam(params, paramIsArchived) {
-		if vErrs, err := this.assertArchivable(ctx, location); err != nil {
+		if vErrs, err := this.assertArchivable(ctx, location, byManager); err != nil {
 			return nil, err
 		} else if vErrs.Count() > 0 {
 			return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
@@ -279,7 +286,7 @@ func (this *InventoryLocationDomainServiceImpl) setArchived(
 	}
 
 	result, err := this.CrudDomainService.SetArchived(ctx, params)
-	if err != nil || result == nil || result.ClientErrors.Count() > 0 || !suspendOnReturn {
+	if err != nil || result == nil || result.ClientErrors.Count() > 0 || byManager {
 		return result, err
 	}
 	return result, this.writeStatus(ctx, derefString(location.GetId()), models.InventoryLocationStatusSuspended)
@@ -331,9 +338,10 @@ func (this *InventoryLocationDomainServiceImpl) Move(
 
 // assertArchivable is the full archive guard: stock, work in flight, children and system status.
 // Historical movements are deliberately not consulted — a location referenced only by completed
-// moves archives cleanly, since those records keep resolving it.
+// moves archives cleanly, since those records keep resolving it. The manager of a location decides
+// itself when its system location is no longer needed (byManager).
 func (this *InventoryLocationDomainServiceImpl) assertArchivable(
-	ctx corectx.Context, location models.InventoryLocation,
+	ctx corectx.Context, location models.InventoryLocation, byManager bool,
 ) (*ft.ClientErrors, error) {
 	vErrs := ft.NewClientErrors()
 	locationId := derefString(location.GetId())
@@ -374,7 +382,7 @@ func (this *InventoryLocationDomainServiceImpl) assertArchivable(
 	}
 	vErrs.ConcatPtr(backing)
 
-	if isSystemGenerated(location) {
+	if isSystemGenerated(location) && !byManager {
 		warehouseUsable, err := this.isOwningWarehouseUsable(ctx, location)
 		if err != nil {
 			return vErrs, err
@@ -409,8 +417,7 @@ func assertSystemLocationUnchanged(
 	vErrs := ft.NewClientErrors()
 	protected := []string{
 		models.InventoryLocationFieldParentLocationId,
-		models.InventoryLocationFieldLocationUsage,
-		models.InventoryLocationFieldPurpose,
+		models.InventoryLocationFieldLocationType,
 	}
 
 	for _, field := range protected {
@@ -427,17 +434,17 @@ func assertSystemLocationUnchanged(
 	return vErrs
 }
 
-// assertWarehouseRootUnchanged refuses a change of usage on a warehouse's root: the root is where
-// the warehouse's stock lives, which only an internal location can hold. Its name stays editable.
+// assertWarehouseRootUnchanged refuses a change of type on a warehouse's root: the root is the
+// group every location of the warehouse hangs under, and holds no stock. Its name stays editable.
 func assertWarehouseRootUnchanged(
 	params dmodel.DynamicFields, current models.InventoryLocation,
 ) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	incoming, present := params[models.InventoryLocationFieldLocationUsage]
-	if present && toComparableString(incoming) != derefString(current.GetLocationUsage()) {
-		vErrs.Append(*ft.NewBusinessViolation(models.InventoryLocationFieldLocationUsage,
-			ft.ErrorKey("inventory_location.root_usage_immutable", "inventory"),
-			"the usage of a warehouse's root location cannot be changed"))
+	incoming, present := params[models.InventoryLocationFieldLocationType]
+	if present && toComparableString(incoming) != derefString(current.GetLocationType()) {
+		vErrs.Append(*ft.NewBusinessViolation(models.InventoryLocationFieldLocationType,
+			ft.ErrorKey("inventory_location.root_type_immutable", "inventory"),
+			"the type of a warehouse's root location cannot be changed"))
 	}
 	return vErrs
 }

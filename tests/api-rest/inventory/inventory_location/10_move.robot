@@ -32,7 +32,7 @@ The Canonical Name Cannot Be Set By A Client
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Canonical
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'name': $name, 'canonical_name': 'Forged / Path', 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'canonical_name': 'Forged / Path', 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Should Be True    ${resp.status_code} >= 400
     Should Contain    ${resp.text}    inventory_location.canonical_name_server_managed
@@ -43,7 +43,7 @@ The Warehouse Is Not The Client's To Choose
     Ensure Warehouse Under Test
     ${name}=    Unique Display Name    Robot No Warehouse
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'name': $name, 'warehouse_id': $WAREHOUSE_ID, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'warehouse_id': $WAREHOUSE_ID, 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${item}=    Get Location    ${id}
     Should Be Equal    ${item.get('warehouse_id')}    ${None}
@@ -171,7 +171,7 @@ Ensure Move Fixture
 Create Move Location
     [Arguments]    ${prefix}    ${parent_id}
     ${name}=    Unique Display Name    Robot ${prefix}
-    ${payload}=    Create Dictionary    name=${name}    location_usage=internal    org_id=${INV_ORG_ID}
+    ${payload}=    Create Dictionary    name=${name}    location_type=internal    org_id=${INV_ORG_ID}
     IF    $parent_id    Set To Dictionary    ${payload}    parent_location_id    ${parent_id}
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}    json=${payload}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}

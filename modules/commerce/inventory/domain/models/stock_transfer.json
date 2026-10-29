@@ -24,7 +24,6 @@
 			"name": "operation_type_id",
 			"label": "fields.operation_type_id",
 			"data_type": "ulid",
-			"required_for_create": true,
 			"no_update": true,
 			"description": "field_desc.inventory_stock_transfer.operation_type_id"
 		},
@@ -241,6 +240,13 @@
 			"dest_schema": "inventory_stock_transfer",
 			"key_map": { "backorder_of_id": "id" },
 			"on_delete": "NO ACTION"
+		}
+	],
+	"edges_from": [
+		{
+			"edge": "moves",
+			"label": { "en-US": "Moves" },
+			"existing": { "src_schema": "inventory_stock_move", "src_edge": "transfer" }
 		}
 	]
 }

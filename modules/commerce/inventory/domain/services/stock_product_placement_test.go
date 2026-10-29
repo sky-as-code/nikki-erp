@@ -19,7 +19,7 @@ const testExternalLocationId = "01LOCATIONEXT0000000000000"
 func locationRow(id, status, warehouseId, canonicalName string) dmodel.DynamicFields {
 	row := dmodel.DynamicFields{
 		models.InventoryLocationFieldId:            id,
-		models.InventoryLocationFieldLocationUsage: models.InventoryLocationUsageInternal,
+		models.InventoryLocationFieldLocationType: models.InventoryLocationTypeInternal,
 		models.InventoryLocationFieldStatus:        status,
 		models.InventoryLocationFieldCanonicalName: canonicalName,
 	}

@@ -89,17 +89,17 @@ func TestRejectDerivedLocationFields(t *testing.T) {
 	assert.Equal(t, 1, vErrs.Count())
 }
 
-// The usage of a warehouse's root is fixed; its name is not.
+// The type of a warehouse's root is fixed; its name is not.
 func TestAssertWarehouseRootUnchanged(t *testing.T) {
 	root := models.NewInventoryLocationFrom(dmodel.DynamicFields{
-		models.InventoryLocationFieldLocationUsage: models.InventoryLocationUsageInternal,
+		models.InventoryLocationFieldLocationType: models.InventoryLocationTypeGroup,
 	})
 	assert.Zero(t, assertWarehouseRootUnchanged(dmodel.DynamicFields{
-		models.InventoryLocationFieldName:          "Renamed",
-		models.InventoryLocationFieldLocationUsage: models.InventoryLocationUsageInternal,
+		models.InventoryLocationFieldName:         "Renamed",
+		models.InventoryLocationFieldLocationType: models.InventoryLocationTypeGroup,
 	}, *root).Count())
 	assert.Equal(t, 1, assertWarehouseRootUnchanged(dmodel.DynamicFields{
-		models.InventoryLocationFieldLocationUsage: models.InventoryLocationUsageVirtual,
+		models.InventoryLocationFieldLocationType: models.InventoryLocationTypeInternal,
 	}, *root).Count())
 }
 
@@ -117,8 +117,7 @@ func TestIsSystemGenerated(t *testing.T) {
 func TestAssertSystemLocationUnchanged(t *testing.T) {
 	current := models.NewInventoryLocationFrom(dmodel.DynamicFields{
 		models.InventoryLocationFieldParentLocationId: "01ROOT",
-		models.InventoryLocationFieldLocationUsage:    models.InventoryLocationUsageInternal,
-		models.InventoryLocationFieldPurpose:          models.InventoryLocationPurposeStorage,
+		models.InventoryLocationFieldLocationType:     models.InventoryLocationTypeInternal,
 	})
 
 	unchanged := assertSystemLocationUnchanged(dmodel.DynamicFields{
@@ -141,10 +140,10 @@ func TestAssertSystemLocationUnchanged(t *testing.T) {
 	}, *current)
 	assert.Equal(t, 1, moved.Count(), "the parent is part of the flow that created it")
 
-	repurposed := assertSystemLocationUnchanged(dmodel.DynamicFields{
-		models.InventoryLocationFieldPurpose: models.InventoryLocationPurposePacking,
+	retyped := assertSystemLocationUnchanged(dmodel.DynamicFields{
+		models.InventoryLocationFieldLocationType: models.InventoryLocationTypeGroup,
 	}, *current)
-	assert.Equal(t, 1, repurposed.Count())
+	assert.Equal(t, 1, retyped.Count())
 }
 
 // Create strips the system flag rather than trusting it, so a client cannot mint a location that

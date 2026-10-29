@@ -61,8 +61,15 @@ func newVariantComputedFunctions(
 		if err != nil {
 			return nil, err
 		}
+		nameSources, err := fetchMissingNameSources(ctx, lookupOnion, req.Models)
+		if err != nil {
+			return nil, err
+		}
 		out := make([]any, len(req.Models))
 		for i, row := range req.Models {
+			if source, ok := nameSources[readVariantId(row)]; ok {
+				row = source
+			}
 			out[i] = buildDisplayName(row, byVariant[readVariantId(row)])
 		}
 		return out, nil
@@ -105,6 +112,46 @@ func buildDisplayName(row dmodel.DynamicFields, attributes []variantAttributes) 
 		values = append(values, attribute.value)
 	}
 	return models.FormatVariantDisplayName(name, values)
+}
+
+// fetchMissingNameSources reads the template name and SKU of the rows that were fetched without
+// them: the engine hands the function only the projected fields, so a select asking for
+// `id,display_name` alone would otherwise render every variant nameless.
+func fetchMissingNameSources(
+	ctx corectx.Context,
+	lookupOnion func(schemaName string) (composable.DynamicResourceEngineOnion, bool),
+	rows []dmodel.DynamicFields,
+) (map[string]dmodel.DynamicFields, error) {
+	missing := make([]dmodel.DynamicFields, 0, len(rows))
+	for _, row := range rows {
+		_, hasName := row[models.ProductVariantFieldTemplateName]
+		_, hasSku := row[models.ProductVariantFieldSku]
+		if !hasName && !hasSku {
+			missing = append(missing, row)
+		}
+	}
+	// The repository does not resolve related fields, so the template name is read off the template.
+	variants, err := searchByIds(ctx, lookupOnion, models.ProductVariantSchemaName, basemodel.FieldId,
+		distinctVariantIds(missing), []string{
+			basemodel.FieldId, models.ProductVariantFieldSku, models.ProductVariantFieldProductTemplateId,
+		}, len(missing))
+	if err != nil {
+		return nil, err
+	}
+	templateIds := distinctStrings(variants, models.ProductVariantFieldProductTemplateId)
+	templates, err := searchByIds(ctx, lookupOnion, models.ProductTemplateSchemaName, basemodel.FieldId,
+		templateIds, []string{basemodel.FieldId, models.ProductTemplateFieldName}, len(templateIds))
+	if err != nil {
+		return nil, err
+	}
+	templateById := indexById(templates)
+	for _, variant := range variants {
+		templateId := readString(variant[models.ProductVariantFieldProductTemplateId])
+		if template, ok := templateById[templateId]; ok {
+			variant[models.ProductVariantFieldTemplateName] = template[models.ProductTemplateFieldName]
+		}
+	}
+	return indexById(variants), nil
 }
 
 // fetchVariantAttributes reads every attribute value of the whole page in one search, grouped by

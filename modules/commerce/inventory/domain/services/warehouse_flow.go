@@ -9,14 +9,14 @@ import (
 // flow change provisions locations while leaving every existing quant and transfer alone.
 
 // systemLocationSpec describes one stop of a warehouse flow, a location the warehouse creates for
-// itself under its root. Purpose identifies it among the root's children; Name is its initial name.
+// itself under its root. Field is the warehouse FK that names it; Name is its initial name.
 type systemLocationSpec struct {
-	Name    string
-	Purpose string
+	Name  string
+	Field string
 }
 
-// The stops' names, which the flow legs also use to name them. "Stock" is the warehouse's root
-// location, where goods live.
+// The stops' names, which the flow legs also use to name them. "Stock" is the managed child of the
+// root where goods live; it exists whatever the flows.
 const (
 	warehouseStockLocationCode   = "Stock"
 	warehouseInputLocationCode   = "Input"
@@ -25,18 +25,20 @@ const (
 	warehouseOutputLocationCode  = "Output"
 )
 
+var (
+	inputStop   = systemLocationSpec{Name: warehouseInputLocationCode, Field: models.WarehouseFieldReceivingLocationId}
+	qualityStop = systemLocationSpec{Name: warehouseQualityLocationCode, Field: models.WarehouseFieldQualityLocationId}
+	packingStop = systemLocationSpec{Name: warehousePackingLocationCode, Field: models.WarehouseFieldPackingLocationId}
+	outputStop  = systemLocationSpec{Name: warehouseOutputLocationCode, Field: models.WarehouseFieldOutputLocationId}
+)
+
 // incomingFlowLocations lists the stops goods make on the way in, beyond Stock itself.
 func incomingFlowLocations(flow string) []systemLocationSpec {
 	switch flow {
 	case models.WarehouseFlowTwoStep:
-		return []systemLocationSpec{
-			{Name: warehouseInputLocationCode, Purpose: models.InventoryLocationPurposeReceiving},
-		}
+		return []systemLocationSpec{inputStop}
 	case models.WarehouseFlowThreeStep:
-		return []systemLocationSpec{
-			{Name: warehouseInputLocationCode, Purpose: models.InventoryLocationPurposeReceiving},
-			{Name: warehouseQualityLocationCode, Purpose: models.InventoryLocationPurposeQuality},
-		}
+		return []systemLocationSpec{inputStop, qualityStop}
 	default:
 		return nil
 	}
@@ -46,17 +48,26 @@ func incomingFlowLocations(flow string) []systemLocationSpec {
 func outgoingFlowLocations(flow string) []systemLocationSpec {
 	switch flow {
 	case models.WarehouseFlowTwoStep:
-		return []systemLocationSpec{
-			{Name: warehouseOutputLocationCode, Purpose: models.InventoryLocationPurposeOutput},
-		}
+		return []systemLocationSpec{outputStop}
 	case models.WarehouseFlowThreeStep:
-		return []systemLocationSpec{
-			{Name: warehousePackingLocationCode, Purpose: models.InventoryLocationPurposePacking},
-			{Name: warehouseOutputLocationCode, Purpose: models.InventoryLocationPurposeOutput},
-		}
+		return []systemLocationSpec{packingStop, outputStop}
 	default:
 		return nil
 	}
+}
+
+// stopField names the warehouse FK holding a stop named in a flow leg: "Stock" is the stock
+// location, any other stop is looked up in the three-step flows, which name every stop there is.
+func stopField(stopName string) string {
+	if stopName == warehouseStockLocationCode {
+		return models.WarehouseFieldStockLocationId
+	}
+	for _, spec := range []systemLocationSpec{inputStop, qualityStop, packingStop, outputStop} {
+		if spec.Name == stopName {
+			return spec.Field
+		}
+	}
+	return ""
 }
 
 // FlowLeg is one hop of a movement plan. Endpoints outside the warehouse are named rather than
@@ -101,7 +112,7 @@ func ResolveOutgoingFlow(flow string) []FlowLeg {
 	return append(legs, FlowLeg{FromCode: from, ToCode: FlowEndpointCustomer})
 }
 
-// obsoleteSystemLocations lists the stops a flow change leaves unused, so the caller can suspend
+// obsoleteSystemLocations lists the stops a flow change leaves unused, so the caller can archive
 // them. Never delete them: the moves that passed through still name them, and removing one would
 // break the history explaining where stock went.
 func obsoleteSystemLocations(previousFlow string, nextFlow string, outgoing bool) []systemLocationSpec {

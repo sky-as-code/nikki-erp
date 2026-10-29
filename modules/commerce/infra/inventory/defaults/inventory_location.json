@@ -3,7 +3,7 @@
 		"$alias": "location_virt_vendor",
 		"name": "Vendors",
 		"managed_by_type": "system",
-		"location_usage": "vendor",
+		"location_type": "vendor",
 		"is_replenishment_destination": false,
 		"status": "active",
 		"description": "Goods originate here on a receipt"
@@ -12,7 +12,7 @@
 		"$alias": "location_virt_customer",
 		"name": "Customers",
 		"managed_by_type": "system",
-		"location_usage": "customer",
+		"location_type": "customer",
 		"is_replenishment_destination": false,
 		"status": "active",
 		"description": "Goods end here on a delivery"
@@ -21,7 +21,7 @@
 		"$alias": "location_virt_transit",
 		"name": "Inter-warehouse Transit",
 		"managed_by_type": "system",
-		"location_usage": "transit",
+		"location_type": "transit",
 		"is_replenishment_destination": false,
 		"status": "active",
 		"description": "Holds stock that has left one warehouse but not yet arrived at the next"
@@ -30,26 +30,27 @@
 		"$alias": "location_virt_scrap",
 		"name": "Scrapped Goods",
 		"managed_by_type": "system",
-		"location_usage": "scrap",
+		"location_type": "scrap",
 		"is_replenishment_destination": false,
 		"status": "active",
 		"description": "Destination of every scrap document"
 	},
 	{
 		"$alias": "location_virt_loss",
-		"name": "Inventory Adjustment",
+		"name": "Inventory Loss",
 		"managed_by_type": "system",
-		"location_usage": "inventory_loss",
+		"location_type": "inventory_loss",
 		"is_replenishment_destination": false,
 		"status": "active",
-		"description": "Counterparty for count adjustments; absorbs both gains and losses"
+		"description": "Counterparty for stock found missing, damaged or in excess during counts"
 	},
 	{
 		"$alias": "location_virt_production",
-		"name": "Virtual Production",
+		"name": "Production",
 		"managed_by_type": "system",
-		"location_usage": "virtual",
+		"location_type": "production",
 		"is_replenishment_destination": false,
-		"status": "active"
+		"status": "active",
+		"description": "Components are consumed here and finished goods come from here"
 	}
 ]

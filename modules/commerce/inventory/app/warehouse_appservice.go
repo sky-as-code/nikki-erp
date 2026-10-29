@@ -31,7 +31,7 @@ type WarehouseAppServiceImpl struct {
 
 var _ itWarehouse.WarehouseAppService = (*WarehouseAppServiceImpl)(nil)
 
-// CreateWarehouse creates a warehouse together with its root location and the stops its flows
+// CreateWarehouse creates a warehouse together with its root, its Stock and the stops its flows
 // need. The warehouse domain service does both in one transaction: if any location fails, the
 // warehouse goes with it.
 func (this *WarehouseAppServiceImpl) CreateWarehouse(
@@ -62,7 +62,7 @@ func (this *WarehouseAppServiceImpl) CreateWarehouse(
 	}, nil
 }
 
-// DeleteManagedWarehouse deletes a warehouse its manager created, with its root location. No
+// DeleteManagedWarehouse deletes a warehouse its manager created, with the locations it manages. No
 // permission check: the port is the manager's own, called inside its delete.
 func (this *WarehouseAppServiceImpl) DeleteManagedWarehouse(
 	ctx corectx.Context, cmd itWarehouse.DeleteManagedWarehouseCommand,
@@ -119,10 +119,7 @@ func (this *WarehouseAppServiceImpl) configureFlow(
 		if err := services.WriteWarehouseFlow(tranxCtx, cmd.WarehouseId, field, cmd.Flow); err != nil {
 			return err
 		}
-		if err := this.ensureFlowLocations(tranxCtx, *warehouse, cmd.Flow, outgoing); err != nil {
-			return err
-		}
-		return this.suspendObsoleteLocations(tranxCtx, *warehouse, previous, cmd.Flow, outgoing)
+		return this.warehouseSvc.ReconfigureFlowLocations(tranxCtx, *warehouse, previous, cmd.Flow, outgoing)
 	})
 	if signal, isRefusal := composable.AsClientErrorSignal(err); isRefusal {
 		return &itWarehouse.ConfigureFlowResult{ClientErrors: signal.Errors}, nil

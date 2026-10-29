@@ -20,25 +20,53 @@ Create With Required Fields Succeeds
     Set Global Variable    ${WAREHOUSE_ETAG}    ${etag}
     Set Global Variable    ${WAREHOUSE_CODE}    ${code}
 
-Creating A Warehouse Creates Its Root And Stock Locations
-    [Documentation]    TS-03 / INV-009. A warehouse with nowhere to hold stock could hold
-    ...    nothing, so its root location is created with it, in one transaction: named after the
-    ...    warehouse code, internal, managed by the warehouse, and where its stock lives.
+The Root Location Is A Group Named After The Warehouse Code
+    [Documentation]    TS-03 / INV-009. The root is created with the warehouse, in one
+    ...    transaction: named after the warehouse code, managed by the warehouse, and of type
+    ...    group, so it organises the warehouse's locations and holds no stock itself.
     ${root}=    Get Warehouse Root Location Id    ${WAREHOUSE_ID}
     Should Not Be Empty    ${root}    msg=A warehouse must have a root location
 
-    ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${root}
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}
-    ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
+    ${item}=    Get Location By Id    ${root}
     Should Be Equal    ${item}[name]    ${WAREHOUSE_CODE}
     Should Be Equal    ${item}[canonical_name]    ${WAREHOUSE_CODE}
     Should Be Equal    ${item}[warehouse_id]    ${WAREHOUSE_ID}
-    Should Be Equal    ${item}[location_usage]    internal
-    Should Be Equal    ${item}[purpose]    storage
+    Should Be Equal    ${item}[location_type]    group
+    Dictionary Should Not Contain Key    ${item}    purpose
     Should Be Equal    ${item}[managed_by_type]    commerce/inventory_warehouse
     Should Be Equal    ${item}[managed_by_id]    ${WAREHOUSE_ID}
     Should Be True    ${item}[is_system_generated]
     ...    msg=Locations the warehouse created for itself must be marked as such
+
+Creating A Warehouse Creates Its Stock Location
+    [Documentation]    A warehouse with nowhere to hold stock could hold nothing, so an internal
+    ...    Stock location is created under the root with it and referenced by stock_location_id.
+    ${root}=    Get Warehouse Root Location Id    ${WAREHOUSE_ID}
+    ${stock}=    Get Warehouse Stock Location Id    ${WAREHOUSE_ID}
+    Should Not Be Empty    ${stock}    msg=A warehouse must have a Stock location
+
+    ${item}=    Get Location By Id    ${stock}
+    Should Be Equal    ${item}[name]    Stock
+    Should Be Equal    ${item}[canonical_name]    ${WAREHOUSE_CODE} / Stock
+    Should Be Equal    ${item}[parent_location_id]    ${root}
+    Should Be Equal    ${item}[warehouse_id]    ${WAREHOUSE_ID}
+    Should Be Equal    ${item}[location_type]    internal
+    Should Be Equal    ${item}[managed_by_type]    commerce/inventory_warehouse
+    Should Be Equal    ${item}[managed_by_id]    ${WAREHOUSE_ID}
+    Should Be True    ${item}[is_system_generated]
+
+A Move Into The Group Root Is Refused
+    [Documentation]    A group location holds no stock: a transfer naming the warehouse's root as
+    ...    its destination is refused, and goods go to Stock (or a location inside it) instead.
+    [Tags]    negative
+    Ensure Supplier Location Under Test
+    Ensure Receipt Operation Type Under Test
+    ${root}=    Get Warehouse Root Location Id    ${WAREHOUSE_ID}
+    ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
+    ...    json=${{ {'operation_type_id': $RECEIPT_OPERATION_TYPE_ID, 'source_location_id': $SUPPLIER_LOCATION_ID, 'destination_location_id': $root, 'org_id': $INV_ORG_ID} }}
+    ...    expected_status=any
+    Should Be True    ${resp.status_code} >= 400
+    Should Contain    ${resp.text}    inventory_location.group_holds_no_stock
 
 The Root Location Id Cannot Be Changed By An Update
     [Documentation]    root_location_id is auto-generated: an update carrying another id is
@@ -73,9 +101,13 @@ Create Three Step Warehouse Creates Every Stop
     ...    json=${{ {'code': $code, 'name': $name, 'warehouse_role': 'central', 'incoming_flow': 'three_step', 'outgoing_flow': 'three_step', 'status': 'active', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
 
+    ${root}=    Get Warehouse Root Location Id    ${id}
     FOR    ${expected}    IN    Stock    Input    Quality Control    Packing    Output
         ${found}=    Find Warehouse Location    ${id}    ${expected}
         Should Not Be Empty    ${found}    msg=A three-step warehouse needs a '${expected}' location
+        ${item}=    Get Location By Id    ${found}
+        Should Be Equal    ${item}[parent_location_id]    ${root}
+        Should Be Equal    ${item}[managed_by_id]    ${id}
     END
     Archive Warehouse Fixture By Id    ${id}
 

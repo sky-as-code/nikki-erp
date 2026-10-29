@@ -355,7 +355,7 @@ Ensure Inventory Location Under Test
     ${name}=    Unique Display Name    Robot Inventory Location
     ${code}=    Unique Code    stkloc
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'name': $name, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${INVENTORY_LOCATION_ID}    ${id}
     Set Global Variable    ${INVENTORY_LOCATION_ETAG}    ${etag}
@@ -385,7 +385,7 @@ Ensure Stock Destination Location Under Test
     ${name}=    Unique Display Name    Robot Stock Destination
     ${code}=    Unique Code    stkdst
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'name': $name, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${STOCK_DEST_LOCATION_ID}    ${id}
 
@@ -484,27 +484,41 @@ Ensure Storage Category Under Test
     Set Global Variable    ${STORAGE_CATEGORY_ETAG}    ${etag}
 
 Get Warehouse Root Location Id
-    [Documentation]    The location the warehouse created for itself on creation and manages.
+    [Documentation]    The group location the warehouse created for itself on creation and
+    ...    manages: the top of its location tree, holding no stock.
     [Arguments]    ${warehouse_id}
     ${resp}=    GET On Session    api    ${WAREHOUSE_API}/${warehouse_id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     RETURN    ${resp.json()}[item][root_location_id]
 
+Get Warehouse Stock Location Id
+    [Documentation]    The internal Stock location under the root, where the warehouse's goods live.
+    [Arguments]    ${warehouse_id}
+    ${stock}=    Find Warehouse Location    ${warehouse_id}    Stock
+    RETURN    ${stock}
+
 Find Warehouse Location
-    [Documentation]    Resolves one stop of a warehouse's flow topology. 'Stock' is the warehouse's
-    ...    root, where goods live; any other stop ('Input', 'Quality Control', 'Packing',
-    ...    'Output') is the system-generated child of the root carrying that name.
+    [Documentation]    Resolves one stop of a warehouse's flow topology through the warehouse FK
+    ...    that names it: 'Stock' is stock_location_id, 'Input' receiving_location_id,
+    ...    'Quality Control' quality_location_id, 'Packing' packing_location_id and 'Output'
+    ...    output_location_id. Empty when the warehouse has none. A stop a flow change archived
+    ...    keeps its FK, so it is still found.
     [Arguments]    ${warehouse_id}    ${stop}
-    ${root}=    Get Warehouse Root Location Id    ${warehouse_id}
-    IF    $stop == 'Stock'    RETURN    ${root}
-    ${graph}=    Set Variable    {"and":[{"if":["parent_location_id","=","${root}"]},{"if":["is_system_generated","=",true]},{"if":["name","=","${stop}"]}]}
-    ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'graph': $graph} }}
+    ${fields}=    Create Dictionary    Stock=stock_location_id    Input=receiving_location_id
+    ...    Quality Control=quality_location_id    Packing=packing_location_id    Output=output_location_id
+    ${resp}=    GET On Session    api    ${WAREHOUSE_API}/${warehouse_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${items}=    Set Variable    ${resp.json()}[items]
-    IF    len($items) == 0    RETURN    ${EMPTY}
-    RETURN    ${items}[0][id]
+    ${id}=    Evaluate    $resp.json()['item'].get($fields[$stop]) or ''
+    RETURN    ${id}
+
+Get Location By Id
+    [Arguments]    ${id}
+    ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
+    RETURN    ${item}
 
 Unique Warehouse Code
     [Documentation]    A warehouse code is at most five characters, and names the warehouse's
@@ -517,7 +531,7 @@ Unique Warehouse Code
 
 Ensure Supplier Location Under Test
     [Documentation]    The 'vendor' virtual location a receipt draws from. A receipt has to have
-    ...    a source, and it is not a place the company holds stock — which is why location_usage
+    ...    a source, and it is not a place the company holds stock — which is why location_type
     ...    exists and why only 'internal' counts as company-owned (BR §4.2.2).
     ${id}=    Get Variable Value    ${SUPPLIER_LOCATION_ID}    ${EMPTY}
     IF    $id    RETURN
@@ -525,7 +539,7 @@ Ensure Supplier Location Under Test
     ${name}=    Unique Display Name    Robot Supplier
     ${code}=    Unique Code    stksup
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'name': $name, 'location_usage': 'vendor', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_type': 'vendor', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${SUPPLIER_LOCATION_ID}    ${id}
 
@@ -552,7 +566,7 @@ Ensure Inventory Loss Location Under Test
     ${name}=    Unique Display Name    Robot Inventory Loss
     ${code}=    Unique Code    stkloss
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'name': $name, 'location_usage': 'inventory_loss', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_type': 'inventory_loss', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${INVENTORY_LOSS_LOCATION_ID}    ${id}
 
@@ -566,7 +580,7 @@ Ensure Scrap Location Under Test
     ${name}=    Unique Display Name    Robot Scrap Location
     ${code}=    Unique Code    stkscrp
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'name': $name, 'location_usage': 'scrap', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_type': 'scrap', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${SCRAP_LOCATION_ID}    ${id}
 

@@ -20,15 +20,25 @@ type StockMoveDomainServiceImpl struct {
 	composable.CrudDomainService
 }
 
-// Create refuses a new move for a variant that cannot start new business. Only creation is
-// checked: a move already on a document keeps progressing after its variant is archived, so the
+// Create refuses a new move for a variant that cannot start new business, or naming a group location
+// as its source or destination. Only creation checks the variant: a move already on a document keeps progressing after its variant is archived, so the
 // document can still be completed or cancelled.
 func (this *StockMoveDomainServiceImpl) Create(
 	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, validateMoveVariantTransactable)
+	opts.ValidateExtra = composable.ChainValidateExtra(
+		opts.ValidateExtra, validateMoveVariantTransactable, validateMovementLocationsHoldStock)
 	return this.CrudDomainService.Create(ctx, params, opts)
+}
+
+// Update refuses to re-point a move at a group location, which holds no stock.
+func (this *StockMoveDomainServiceImpl) Update(
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	opts := safe.GetOptional(options, composable.UpdateOptions{})
+	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, validateMovementLocationsHoldStock)
+	return this.CrudDomainService.Update(ctx, params, opts)
 }
 
 func validateMoveVariantTransactable(

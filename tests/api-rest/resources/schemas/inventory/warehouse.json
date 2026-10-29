@@ -109,6 +109,36 @@
                 "null"
             ]
         },
+        "stock_location_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "receiving_location_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "quality_location_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "packing_location_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "output_location_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
         "managed_by_type": {
             "type": [
                 "string",

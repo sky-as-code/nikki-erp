@@ -25,7 +25,7 @@ const maxLocationScanPages = 20
 func (this *StockQuantDomainServiceImpl) internalLocationIds(
 	ctx corectx.Context,
 ) (map[string]bool, error) {
-	return this.locationIdsWithUsage(ctx, models.InventoryLocationUsageInternal)
+	return this.locationIdsWithUsage(ctx, models.InventoryLocationTypeInternal)
 }
 
 // transitLocationIds returns the locations representing stock that has left somewhere and not yet
@@ -34,7 +34,7 @@ func (this *StockQuantDomainServiceImpl) internalLocationIds(
 func (this *StockQuantDomainServiceImpl) transitLocationIds(
 	ctx corectx.Context,
 ) (map[string]bool, error) {
-	return this.locationIdsWithUsage(ctx, models.InventoryLocationUsageTransit)
+	return this.locationIdsWithUsage(ctx, models.InventoryLocationTypeTransit)
 }
 
 func (this *StockQuantDomainServiceImpl) locationIdsWithUsage(
@@ -48,7 +48,7 @@ func (this *StockQuantDomainServiceImpl) locationIdsWithUsage(
 	graph := &dmodel.SearchGraph{}
 	graph.And(
 		*dmodel.NewSearchNode().NewCondition(
-			models.InventoryLocationFieldLocationUsage, dmodel.Equals, usage),
+			models.InventoryLocationFieldLocationType, dmodel.Equals, usage),
 	)
 
 	found := map[string]bool{}
@@ -67,7 +67,7 @@ func (this *StockQuantDomainServiceImpl) locationIdsWithUsage(
 
 		for _, row := range result.Data.Items {
 			location := models.NewInventoryLocationFrom(row)
-			if derefString(location.GetLocationUsage()) != usage {
+			if derefString(location.GetLocationType()) != usage {
 				continue
 			}
 			if id := derefId(location.GetId()); id != "" {

@@ -70,49 +70,87 @@ Unarchive Leaves The Warehouse Suspended
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${id}/resume    json=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
 
-Archive And Unarchive Carry The Root Location
-    [Documentation]    INV-009. The root location lives and goes with its warehouse: archiving
-    ...    the warehouse archives the root in the same transaction, and unarchiving brings it back.
+Archive And Unarchive Carry The Root And Stock Locations
+    [Documentation]    INV-009. The locations a warehouse manages live and go with it: archiving
+    ...    the warehouse archives its Stock and root in the same transaction, and unarchiving
+    ...    brings them back.
     ${id}    ${root}=    Create Lifecycle Warehouse    A
+    ${stock}=    Get Warehouse Stock Location Id    ${id}
     Set Warehouse Archived    ${id}    ${True}
-    ${location}=    Get Location    ${root}
-    Should Be True    ${location}[is_archived]    msg=The root is archived with its warehouse
+    FOR    ${location_id}    IN    ${root}    ${stock}
+        ${location}=    Get Location    ${location_id}
+        Should Be True    ${location}[is_archived]    msg=${location}[name] is archived with its warehouse
+    END
     Set Warehouse Archived    ${id}    ${False}
-    ${location}=    Get Location    ${root}
-    Should Not Be True    ${location}[is_archived]    msg=The root is unarchived with its warehouse
+    FOR    ${location_id}    IN    ${root}    ${stock}
+        ${location}=    Get Location    ${location_id}
+        Should Not Be True    ${location}[is_archived]    msg=${location}[name] is unarchived with its warehouse
+    END
 
-Archiving A Warehouse Whose Root Has A Live Child Is Refused
-    [Documentation]    The root's own archive guard applies: a sub-location still in use keeps
-    ...    the root, and so the warehouse, in service. Nothing is archived.
+Archiving A Warehouse Archives Every Location It Manages
+    [Documentation]    The flow stops are archived with the warehouse too (stops, then Stock, then
+    ...    the root), so only a user's own sub-location can keep a warehouse from being archived.
+    ...    Unarchiving brings back the stops the current flows use.
+    ${id}    ${root}=    Create Lifecycle Warehouse    S    three_step    three_step
+    Set Warehouse Archived    ${id}    ${True}
+    FOR    ${stop}    IN    Stock    Input    Quality Control    Packing    Output
+        ${location_id}=    Find Warehouse Location    ${id}    ${stop}
+        ${location}=    Get Location    ${location_id}
+        Should Be True    ${location}[is_archived]    msg=${stop} is archived with its warehouse
+    END
+    ${location}=    Get Location    ${root}
+    Should Be True    ${location}[is_archived]
+    Set Warehouse Archived    ${id}    ${False}
+    FOR    ${stop}    IN    Stock    Input    Quality Control    Packing    Output
+        ${location_id}=    Find Warehouse Location    ${id}    ${stop}
+        ${location}=    Get Location    ${location_id}
+        Should Not Be True    ${location}[is_archived]    msg=${stop} is unarchived with its warehouse
+    END
+    DELETE On Session    api    ${WAREHOUSE_API}/${id}    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+
+Archiving A Warehouse Whose Stock Has A Live Child Is Refused
+    [Documentation]    Each managed location's own archive guard applies: a sub-location still in
+    ...    use keeps Stock, and so the warehouse, in service. Nothing is archived.
     [Tags]    negative
     ${id}    ${root}=    Create Lifecycle Warehouse    C
-    ${child}=    Create Location Under    ${root}
+    ${stock}=    Get Warehouse Stock Location Id    ${id}
+    ${child}=    Create Location Under    ${stock}
     ${item}=    Get Warehouse By Id    ${id}
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${id}/archived
     ...    json=${{ {'org_id': $INV_ORG_ID, 'is_archived': True, 'etag': $item['etag']} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
     ${item}=    Get Warehouse By Id    ${id}
-    Should Not Be True    ${item}[is_archived]    msg=A refused root archive rolls the warehouse back
+    Should Not Be True    ${item}[is_archived]    msg=A refused Stock archive rolls the warehouse back
+    ${location}=    Get Location    ${root}
+    Should Not Be True    ${location}[is_archived]    msg=The root is rolled back with it
     DELETE On Session    api    ${INVENTORY_LOCATION_API}/${child}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     DELETE On Session    api    ${WAREHOUSE_API}/${id}    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
 
-Deleting A Warehouse Deletes Its Root Location
-    [Documentation]    INV-009. Deleting the warehouse releases the RESTRICT FK on its root,
-    ...    which is then deleted through DeleteManaged in the same transaction.
-    ${id}    ${root}=    Create Lifecycle Warehouse    D
+Deleting A Warehouse Deletes Every Location It Manages
+    [Documentation]    INV-009. Deleting the warehouse releases its RESTRICT FKs; its stops,
+    ...    Stock and root are then deleted through DeleteManaged in the same transaction.
+    ${id}    ${root}=    Create Lifecycle Warehouse    D    three_step    three_step
+    ${managed}=    Create List    ${root}
+    FOR    ${stop}    IN    Stock    Input    Quality Control    Packing    Output
+        ${location_id}=    Find Warehouse Location    ${id}    ${stop}
+        ${managed}=    Evaluate    $managed + [$location_id]
+    END
     ${resp}=    DELETE On Session    api    ${WAREHOUSE_API}/${id}    params=${{ {'org_id': $INV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${root}
-    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
-    Response Should Be Not Found Error    ${resp}
+    FOR    ${location_id}    IN    @{managed}
+        ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${location_id}
+        ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+        Response Should Be Not Found Error    ${resp}
+    END
 
-Deleting A Warehouse Whose Root Has A Child Is Refused
-    [Documentation]    The root cannot go while a location still hangs under it, and the
-    ...    warehouse does not go without its root: the whole delete rolls back.
+Deleting A Warehouse Whose Stock Has A Child Is Refused
+    [Documentation]    Stock cannot go while a location still hangs under it, and the
+    ...    warehouse does not go without it: the whole delete rolls back.
     [Tags]    negative
     ${id}    ${root}=    Create Lifecycle Warehouse    E
-    ${child}=    Create Location Under    ${root}
+    ${stock}=    Get Warehouse Stock Location Id    ${id}
+    ${child}=    Create Location Under    ${stock}
     ${resp}=    DELETE On Session    api    ${WAREHOUSE_API}/${id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
@@ -140,15 +178,15 @@ The Root Location Cannot Be Archived On Its Own
     Should Be True    ${resp.status_code} >= 400
     Should Contain    ${resp.text}    inventory_location.archive_with_warehouse
 
-The Root Location Usage Is Fixed But Its Name Is Not
-    [Documentation]    INV-009/010. The root is where the warehouse's stock lives, which only an
-    ...    internal location can hold; renaming it is fine.
+The Root Location Type Is Fixed But Its Name Is Not
+    [Documentation]    INV-009/010. The root is the group every location of the warehouse hangs
+    ...    under and holds no stock, so its type cannot change; renaming it is fine.
     ${root}=    Get Warehouse Root Location Id    ${WAREHOUSE_ID}
     ${location}=    Get Location    ${root}
     ${resp}=    PATCH On Session    api    ${INVENTORY_LOCATION_API}/${root}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'location_usage': 'virtual', 'etag': $location['etag']} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'location_type': 'internal', 'etag': $location['etag']} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
-    Should Contain    ${resp.text}    inventory_location.root_usage_immutable
+    Should Contain    ${resp.text}    inventory_location.root_type_immutable
     ${resp}=    PATCH On Session    api    ${INVENTORY_LOCATION_API}/${root}
     ...    json=${{ {'org_id': $INV_ORG_ID, 'name': 'Robot Root', 'etag': $location['etag']} }}
     Response Should Be Update Success    ${resp}
@@ -191,14 +229,14 @@ Get Location
     RETURN    ${item}
 
 Create Lifecycle Warehouse
-    [Documentation]    A one-step warehouse of the test's own, so its root has no stops and the
-    ...    archive and delete cascades are not blocked by what other suites hung under the
+    [Documentation]    A warehouse of the test's own (one-step by default, so it has no stops),
+    ...    so the archive and delete cascades are not blocked by what other suites hung under the
     ...    warehouse under test. Returns the warehouse and root ids.
-    [Arguments]    ${prefix}
+    [Arguments]    ${prefix}    ${incoming}=one_step    ${outgoing}=one_step
     ${name}=    Unique Display Name    Robot Lifecycle Warehouse
     ${code}=    Unique Warehouse Code    ${prefix}
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}
-    ...    json=${{ {'code': $code, 'name': $name, 'warehouse_role': 'other', 'incoming_flow': 'one_step', 'outgoing_flow': 'one_step', 'status': 'active', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'code': $code, 'name': $name, 'warehouse_role': 'other', 'incoming_flow': $incoming, 'outgoing_flow': $outgoing, 'status': 'active', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${root}=    Get Warehouse Root Location Id    ${id}
     RETURN    ${id}    ${root}
@@ -214,6 +252,6 @@ Create Location Under
     [Arguments]    ${parent_id}
     ${name}=    Unique Display Name    Robot Child
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'name': $name, 'location_usage': 'internal', 'parent_location_id': $parent_id, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_type': 'internal', 'parent_location_id': $parent_id, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}

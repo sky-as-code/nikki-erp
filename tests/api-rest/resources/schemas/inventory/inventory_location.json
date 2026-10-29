@@ -4,7 +4,7 @@
         "id",
         "created_at",
         "name",
-        "location_usage",
+        "location_type",
         "status",
         "etag",
         "is_archived",
@@ -34,32 +34,17 @@
             "minLength": 1,
             "maxLength": 200
         },
-        "location_usage": {
+        "location_type": {
             "type": "string",
             "enum": [
                 "internal",
+                "group",
                 "customer",
                 "vendor",
                 "inventory_loss",
+                "production",
                 "scrap",
-                "transit",
-                "virtual"
-            ]
-        },
-        "purpose": {
-            "type": [
-                "string",
-                "null"
-            ],
-            "enum": [
-                "storage",
-                "receiving",
-                "quality",
-                "picking",
-                "packing",
-                "output",
-                "other",
-                null
+                "transit"
             ]
         },
         "warehouse_id": {

@@ -37,21 +37,31 @@ const (
 const (
 	WarehouseSchemaName = "inventory_warehouse"
 
-	WarehouseFieldId                = basemodel.FieldId
-	WarehouseFieldCode              = "code"
-	WarehouseFieldName              = "name"
-	WarehouseFieldWarehouseRole     = "warehouse_role"
-	WarehouseFieldRootLocationId    = "root_location_id"
-	WarehouseFieldAddress           = "address"
-	WarehouseFieldManagerUserId     = "manager_user_id"
-	WarehouseFieldIncomingFlow      = "incoming_flow"
-	WarehouseFieldOutgoingFlow      = "outgoing_flow"
-	WarehouseFieldStatus            = "status"
-	WarehouseFieldNotes             = "notes"
-	WarehouseFieldOrgId             = "org_id"
+	WarehouseFieldId                  = basemodel.FieldId
+	WarehouseFieldCode                = "code"
+	WarehouseFieldName                = "name"
+	WarehouseFieldWarehouseRole       = "warehouse_role"
+	WarehouseFieldRootLocationId      = "root_location_id"
+	WarehouseFieldStockLocationId     = "stock_location_id"
+	WarehouseFieldReceivingLocationId = "receiving_location_id"
+	WarehouseFieldQualityLocationId   = "quality_location_id"
+	WarehouseFieldPackingLocationId   = "packing_location_id"
+	WarehouseFieldOutputLocationId    = "output_location_id"
+	WarehouseFieldAddress             = "address"
+	WarehouseFieldManagerUserId       = "manager_user_id"
+	WarehouseFieldIncomingFlow        = "incoming_flow"
+	WarehouseFieldOutgoingFlow        = "outgoing_flow"
+	WarehouseFieldStatus              = "status"
+	WarehouseFieldNotes               = "notes"
+	WarehouseFieldOrgId               = "org_id"
 
-	WarehouseEdgeRootLocation = "root_location"
-	WarehouseEdgeManagerUser  = "manager_user"
+	WarehouseEdgeRootLocation      = "root_location"
+	WarehouseEdgeStockLocation     = "stock_location"
+	WarehouseEdgeReceivingLocation = "receiving_location"
+	WarehouseEdgeQualityLocation   = "quality_location"
+	WarehouseEdgePackingLocation   = "packing_location"
+	WarehouseEdgeOutputLocation    = "output_location"
+	WarehouseEdgeManagerUser       = "manager_user"
 )
 
 //go:embed warehouse.json
@@ -97,14 +107,26 @@ func (this *Warehouse) SetWarehouseRole(v *string) {
 	this.GetFieldData().SetString(WarehouseFieldWarehouseRole, v)
 }
 
-// GetRootLocationId is the location the warehouse created for itself on creation and manages: the
-// top of its location tree and where its stock lives. Nil only while the create is still running.
+// GetRootLocationId is the group location the warehouse created for itself on creation and
+// manages: the top of its location tree, holding no stock. Nil only while the create is running.
 func (this Warehouse) GetRootLocationId() *model.Id {
 	return this.GetFieldData().GetModelId(WarehouseFieldRootLocationId)
 }
 
 func (this *Warehouse) SetRootLocationId(v *model.Id) {
 	this.GetFieldData().SetModelId(WarehouseFieldRootLocationId, v)
+}
+
+// GetStockLocationId is the managed internal child of the root where the warehouse's stock lives.
+// Created and deleted with the warehouse.
+func (this Warehouse) GetStockLocationId() *model.Id {
+	return this.GetFieldData().GetModelId(WarehouseFieldStockLocationId)
+}
+
+// GetFlowLocationId reads one of the warehouse's location FKs by field name: the stock location or a
+// flow stop (receiving, quality, packing, output). Nil when the warehouse has none.
+func (this Warehouse) GetFlowLocationId(field string) *model.Id {
+	return this.GetFieldData().GetModelId(field)
 }
 
 func (this Warehouse) GetIncomingFlow() *string {

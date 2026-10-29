@@ -247,13 +247,13 @@ func loadScrapDestination(
 		}
 		if found != nil && found.HasData {
 			location := models.NewInventoryLocationFrom(found.Data)
-			if derefString(location.GetLocationUsage()) == models.InventoryLocationUsageScrap {
+			if derefString(location.GetLocationType()) == models.InventoryLocationTypeScrap {
 				return named, nil
 			}
 		}
 	}
 
-	fallback, err := FindLocationByType(ctx, orgId, models.InventoryLocationUsageScrap)
+	fallback, err := FindLocationByType(ctx, orgId, models.InventoryLocationTypeScrap)
 	if err != nil || fallback == nil {
 		return "", err
 	}

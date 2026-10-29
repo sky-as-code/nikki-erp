@@ -18,9 +18,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
-// aliasWarehouseRootLoc names the main warehouse's root location, where its stock lives, for the
-// operation type defaults.
-const aliasWarehouseRootLoc = "location_main"
+// aliasWarehouseStockLoc names the main warehouse's stock location, where its goods live, for the
+// operation types' default source and destination.
+const aliasWarehouseStockLoc = "location_main"
 
 // cleanUpOrder lists every org-scoped resource children first. Attribute links without an
 // org_id go with the templates and variants they cascade from. Warehouses go before locations:
@@ -99,8 +99,8 @@ func (this *OrgLifecycleAppServiceImpl) createRootCategory(
 	})
 }
 
-// createWarehouse goes through the warehouse's own orchestration, which provisions the root and
-// flow locations; the root's id is remembered for the operation types.
+// createWarehouse goes through the warehouse's own orchestration, which provisions the root, Stock
+// and flow locations; the Stock's id is remembered for the operation types.
 func (this *OrgLifecycleAppServiceImpl) createWarehouse(
 	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id,
 ) error {
@@ -117,10 +117,10 @@ func (this *OrgLifecycleAppServiceImpl) createWarehouse(
 			return "", result.ClientErrors.ToError()
 		}
 		warehouse := models.NewWarehouseFrom(result.Data.Warehouse)
-		if warehouse.GetRootLocationId() == nil {
-			return "", errors.Errorf("warehouse %s has no root location", derefString(warehouse.GetCode()))
+		if warehouse.GetStockLocationId() == nil {
+			return "", errors.Errorf("warehouse %s has no stock location", derefString(warehouse.GetCode()))
 		}
-		aliases.Remember(aliasWarehouseRootLoc, *warehouse.GetRootLocationId())
+		aliases.Remember(aliasWarehouseStockLoc, *warehouse.GetStockLocationId())
 		return composable.ParamId(result.Data.Warehouse), nil
 	})
 }

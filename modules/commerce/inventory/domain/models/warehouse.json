@@ -40,6 +40,41 @@
 			"description": "field_desc.inventory_warehouse.root_location_id"
 		},
 		{
+			"name": "stock_location_id",
+			"label": "fields.stock_location_id",
+			"data_type": "ulid",
+			"auto_generated": true,
+			"description": "field_desc.inventory_warehouse.stock_location_id"
+		},
+		{
+			"name": "receiving_location_id",
+			"label": "fields.receiving_location_id",
+			"data_type": "ulid",
+			"auto_generated": true,
+			"description": "field_desc.inventory_warehouse.receiving_location_id"
+		},
+		{
+			"name": "quality_location_id",
+			"label": "fields.quality_location_id",
+			"data_type": "ulid",
+			"auto_generated": true,
+			"description": "field_desc.inventory_warehouse.quality_location_id"
+		},
+		{
+			"name": "packing_location_id",
+			"label": "fields.packing_location_id",
+			"data_type": "ulid",
+			"auto_generated": true,
+			"description": "field_desc.inventory_warehouse.packing_location_id"
+		},
+		{
+			"name": "output_location_id",
+			"label": "fields.output_location_id",
+			"data_type": "ulid",
+			"auto_generated": true,
+			"description": "field_desc.inventory_warehouse.output_location_id"
+		},
+		{
 			"name": "address",
 			"label": "fields.address",
 			"data_type": { "type": "string", "min": 0, "max": 500 },
@@ -111,6 +146,46 @@
 			"type": "many:one",
 			"dest_schema": "inventory_location",
 			"key_map": { "root_location_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "stock_location",
+			"label": { "en-US": "Stock location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "stock_location_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "receiving_location",
+			"label": { "en-US": "Receiving location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "receiving_location_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "quality_location",
+			"label": { "en-US": "Quality control location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "quality_location_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "packing_location",
+			"label": { "en-US": "Packing location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "packing_location_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "output_location",
+			"label": { "en-US": "Output location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "output_location_id": "id" },
 			"on_delete": "RESTRICT"
 		},
 		{

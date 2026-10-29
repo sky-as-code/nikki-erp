@@ -19,15 +19,15 @@ Update Location Type Succeeds
     [Documentation]    Reclassifying a location is allowed while it is configuration. It is
     ...    changed back so the later suites still see an internal location.
     ${resp}=    PATCH On Session    api    ${INVENTORY_LOCATION_API}/${INVENTORY_LOCATION_ID}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'location_usage': 'transit', 'etag': $INVENTORY_LOCATION_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'location_type': 'transit', 'etag': $INVENTORY_LOCATION_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${INVENTORY_LOCATION_ETAG}
     IF    $etag is not None    Set Global Variable    ${INVENTORY_LOCATION_ETAG}    ${etag}
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${INVENTORY_LOCATION_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
-    Should Be Equal    ${item}[location_usage]    transit
+    Should Be Equal    ${item}[location_type]    transit
     ${resp}=    PATCH On Session    api    ${INVENTORY_LOCATION_API}/${INVENTORY_LOCATION_ID}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'location_usage': 'internal', 'etag': $item['etag']} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'location_type': 'internal', 'etag': $item['etag']} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1
     IF    $etag is not None    Set Global Variable    ${INVENTORY_LOCATION_ETAG}    ${etag}
 

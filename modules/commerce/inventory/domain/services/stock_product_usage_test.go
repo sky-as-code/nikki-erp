@@ -133,7 +133,7 @@ func TestProductUsageRejectsAnEmptyVariantId(t *testing.T) {
 func TestProductUsageCountsOnlyOwnedLocations(t *testing.T) {
 	vendor := dmodel.DynamicFields{
 		models.InventoryLocationFieldId:            testLocationBId,
-		models.InventoryLocationFieldLocationUsage: models.InventoryLocationUsageVendor,
+		models.InventoryLocationFieldLocationType: models.InventoryLocationTypeVendor,
 	}
 	useSchemaEngines(t, map[string][]dmodel.DynamicFields{
 		models.StockQuantSchemaName: {

@@ -112,3 +112,49 @@ Create With Missing Required Fields Fails
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}    json=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
     ...    msg=A transfer needs an operation type, both locations and an org
+
+Create By Operation Code Resolves The Org's Single Active Type
+    [Documentation]    "New receipt" sends operation_code without operation_type_id: the org's one
+    ...    active type of that code is chosen. Skipped when the shared org holds no code with
+    ...    exactly one active type, which another suite's leftovers can cause.
+    ${code}    ${type_id}=    Operation Code With A Single Active Type
+    IF    not $code    Skip    No operation_code has exactly one active type in org ${INV_ORG_ID}
+    ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
+    ...    json=${{ {'operation_code': $code, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    ${check}=    GET On Session    api    ${STOCK_TRANSFER_API}/${id}    params=${{ {'org_id': $INV_ORG_ID} }}
+    Should Be Equal    ${check.json()}[item][operation_type_id]    ${type_id}
+    Should Be Equal    ${check.json()}[item][operation_code]    ${code}
+    [Teardown]    DELETE On Session    api    ${STOCK_TRANSFER_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+
+Create By An Ambiguous Operation Code Is Refused
+    [Documentation]    With several active types of the code, guessing would copy the wrong
+    ...    policies and default locations onto the transfer, so the client must choose.
+    [Tags]    negative
+    ${name}=    Unique Display Name    Robot Second Internal Type
+    ${type_code}=    Unique Code    stkint
+    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
+    ...    json=${{ {'code': $type_code, 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
+    ${type_id}    ${type_etag}=    Response Should Be Create Success    ${resp}
+    ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
+    ...    json=${{ {'operation_code': 'internal', 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
+    ...    expected_status=any
+    Response Should Contain Business Error    ${resp}    inventory:stock_transfer.operation_type_unresolved
+    ...    field=operation_type_id
+    [Teardown]    DELETE On Session    api    ${STOCK_OPERATION_TYPE_API}/${type_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+
+
+*** Keywords ***
+Operation Code With A Single Active Type
+    [Documentation]    Returns (operation_code, type id) for the first code with exactly one active
+    ...    operation type in the org, or two empty values.
+    FOR    ${code}    IN    incoming    outgoing    internal
+        ${resp}=    GET On Session    api    ${STOCK_OPERATION_TYPE_API}
+        ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 10, 'graph': '{"and": [{"if": ["operation_code", "=", "%s"]}, {"if": ["is_archived", "=", false]}]}' % $code} }}
+        Response Status Should Be    ${resp}    200
+        ${items}=    Set Variable    ${resp.json()}[items]
+        IF    len($items) == 1    RETURN    ${code}    ${items}[0][id]
+    END
+    RETURN    ${EMPTY}    ${EMPTY}

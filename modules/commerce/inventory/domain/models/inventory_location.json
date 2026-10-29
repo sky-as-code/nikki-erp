@@ -4,7 +4,7 @@
 	"table_name": "inventory_locations",
 	"should_build_db": true,
 	"record_label_field": "canonical_name",
-	"default_search_fields": ["name", "canonical_name", "location_usage", "purpose", "status"],
+	"default_search_fields": ["name", "canonical_name", "location_type", "status"],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
@@ -22,24 +22,15 @@
 			"description": "field_desc.inventory_location.canonical_name"
 		},
 		{
-			"name": "location_usage",
-			"label": "fields.location_usage",
+			"name": "location_type",
+			"label": "fields.location_type",
 			"data_type": {
 				"type": "enum_string",
-				"values": ["internal", "customer", "vendor", "inventory_loss", "scrap", "transit", "virtual"]
+				"values": ["internal", "group", "customer", "vendor", "inventory_loss", "production", "scrap", "transit"]
 			},
 			"required_for_create": true,
 			"default_value": "internal",
-			"description": "field_desc.inventory_location.location_usage"
-		},
-		{
-			"name": "purpose",
-			"label": "fields.purpose",
-			"data_type": {
-				"type": "enum_string",
-				"values": ["storage", "receiving", "quality", "picking", "packing", "output", "other"]
-			},
-			"description": "field_desc.inventory_location.purpose"
+			"description": "field_desc.inventory_location.location_type"
 		},
 		{
 			"name": "warehouse_id",
