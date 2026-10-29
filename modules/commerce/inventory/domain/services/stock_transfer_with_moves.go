@@ -131,14 +131,14 @@ func assertMovesWellFormed(moves []itStock.TransferMoveRequest) *dyn.OpResult[dm
 
 		if move.ProductVariantId == "" {
 			vErrs.Append(*ft.NewBusinessViolation(
-				models.StockMoveSchemaName,
+				models.StockMoveFieldProductVariantId,
 				ft.ErrorKey("stock_move.product_variant_required", "inventory"),
 				"move "+position+" names no product variant",
 			))
 		}
 		if move.Quantity.LessThanOrEqual(decimal.Zero) {
 			vErrs.Append(*ft.NewBusinessViolation(
-				models.StockMoveSchemaName,
+				models.StockMoveFieldDemandQuantity,
 				ft.ErrorKey("stock_move.quantity_must_be_positive", "inventory"),
 				"move "+position+" must ask for a quantity greater than zero",
 			))
@@ -173,6 +173,6 @@ func assertMovesTransactable(
 // transferViolation is a refusal carrying no data.
 func transferViolation(key, message string) *dyn.OpResult[dmodel.DynamicFields] {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, ft.ErrorKey(key, "inventory"), message))
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(ft.ErrorKey(key, "inventory"), message))
 	return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}
 }

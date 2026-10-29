@@ -70,7 +70,7 @@ func loadUsableOperationType(
 	}
 	if found == nil || !found.HasData {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockTransferSchemaName,
+			models.StockTransferFieldOperationTypeId,
 			ft.ErrorKey("stock_transfer.operation_type_not_found", "inventory"),
 			"no stock operation type with id '"+operationTypeId+"'",
 		))
@@ -80,7 +80,7 @@ func loadUsableOperationType(
 	operationType := models.NewStockOperationTypeFrom(found.Data)
 	if isArchived(found.Data) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockTransferSchemaName,
+			models.StockTransferFieldOperationTypeId,
 			ft.ErrorKey("stock_transfer.operation_type_archived", "inventory"),
 			"an archived stock operation type cannot start a new transfer",
 		))
@@ -139,7 +139,7 @@ func assertCreatableTransfer(params dmodel.DynamicFields) *ft.ClientErrors {
 		// A transfer from a location to itself moves nothing, but would still generate moves and
 		// consume reservations against the balance it is about to put back.
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockTransferSchemaName,
+			models.StockTransferFieldDestinationLocationId,
 			ft.ErrorKey("stock_transfer.same_source_and_destination", "inventory"),
 			"a transfer's source and destination locations must differ",
 		))

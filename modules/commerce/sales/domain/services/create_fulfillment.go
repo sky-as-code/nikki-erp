@@ -86,7 +86,7 @@ func CreateKioskFulfillment(
 	}
 	if len(lines) == 0 {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName,
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey(ReasonFulfillmentNothingToDeliver, "sales"),
 			"this order owes no goods, so there is nothing for a kiosk to dispense"))
 		return nil, vErrs, nil
@@ -439,7 +439,7 @@ func reservationRefusal(
 		message = response.FailureReason
 	}
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName, ft.ErrorKey(reason, "sales"), message))
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(ft.ErrorKey(reason, "sales"), message))
 	return vErrs
 }
 

@@ -15,7 +15,7 @@
 		{
 			"name": "code",
 			"label": "fields.code",
-			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"data_type": { "type": "resource_code", "min": 1, "max": 50 },
 			"required_for_create": true,
 			"description": {
 				"en-US": "What a product is, for tax purposes. Determination goes Product -> Classification -> Rule -> Tax, never Product -> rate, so that a legal change is a new rule rather than an edit to every product."

@@ -1,7 +1,7 @@
 [
 	{
 		"$alias": "pricelist_retail_vnd",
-		"code": "RETAIL_VND",
+		"code": "RETAIL-VND",
 		"name": "Retail price list",
 		"description": "The organization default: what an order falls back to when it names no list",
 		"currency_id": "@currency_vnd",

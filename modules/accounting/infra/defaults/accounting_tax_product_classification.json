@@ -1,7 +1,7 @@
 [
 	{
 		"$alias": "tax_product_classification_vn_standard",
-		"code": "VN_STANDARD",
+		"code": "VN-STANDARD",
 		"name": {
 			"en-US": "Standard rated",
 			"vi-VN": "Thue suat pho thong"
@@ -11,7 +11,7 @@
 	},
 	{
 		"$alias": "tax_product_classification_vn_vat_reduction_eligible",
-		"code": "VN_VAT_REDUCTION_ELIGIBLE",
+		"code": "VN-VAT-REDUCTION-ELIGIBLE",
 		"name": {
 			"en-US": "Eligible for VAT reduction",
 			"vi-VN": "Duoc giam thue GTGT"
@@ -21,7 +21,7 @@
 	},
 	{
 		"$alias": "tax_product_classification_vn_essential",
-		"code": "VN_ESSENTIAL",
+		"code": "VN-ESSENTIAL",
 		"name": {
 			"en-US": "Essential goods",
 			"vi-VN": "Hang hoa thiet yeu"
@@ -31,7 +31,7 @@
 	},
 	{
 		"$alias": "tax_product_classification_vn_export",
-		"code": "VN_EXPORT",
+		"code": "VN-EXPORT",
 		"name": {
 			"en-US": "Export",
 			"vi-VN": "Xuat khau"
@@ -41,7 +41,7 @@
 	},
 	{
 		"$alias": "tax_product_classification_vn_exempt",
-		"code": "VN_EXEMPT",
+		"code": "VN-EXEMPT",
 		"name": {
 			"en-US": "Exempt",
 			"vi-VN": "Khong chiu thue"

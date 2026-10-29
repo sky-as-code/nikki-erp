@@ -106,7 +106,7 @@ func (this *WarehouseDomainServiceImpl) Update(
 
 	if code := readStringParam(prepared, models.WarehouseFieldCode); code != "" &&
 		code != derefString(current.GetCode()) {
-		return warehouseViolationResult("warehouse.code_immutable",
+		return warehouseViolationResult(models.WarehouseFieldCode, "warehouse.code_immutable",
 			"the code named this warehouse's root location; it cannot be changed by an update"), nil
 	}
 	return this.CrudDomainService.Update(ctx, prepared, options...)
@@ -170,7 +170,7 @@ func (this *WarehouseDomainServiceImpl) Suspend(
 
 	if derefString(warehouse.GetStatus()) == models.WarehouseStatusSuspended {
 		return warehouseViolationResult(
-			"warehouse.already_suspended", "the warehouse is already suspended"), nil
+			"", "warehouse.already_suspended", "the warehouse is already suspended"), nil
 	}
 	// A suspended warehouse's stock is no longer eligible, so a reservation in force on it would
 	// lose its backing silently.
@@ -201,11 +201,11 @@ func (this *WarehouseDomainServiceImpl) Resume(
 
 	if derefString(warehouse.GetStatus()) == models.WarehouseStatusActive {
 		return warehouseViolationResult(
-			"warehouse.already_active", "the warehouse is already active"), nil
+			"", "warehouse.already_active", "the warehouse is already active"), nil
 	}
 	if warehouse.GetIsArchived() != nil && *warehouse.GetIsArchived() {
 		return warehouseViolationResult(
-			"warehouse.archived", "unarchive the warehouse before resuming it"), nil
+			"", "warehouse.archived", "unarchive the warehouse before resuming it"), nil
 	}
 
 	if err := this.WriteStatus(ctx, warehouseId, models.WarehouseStatusActive); err != nil {
@@ -229,7 +229,7 @@ func (this *WarehouseDomainServiceImpl) assertArchivable(
 		return vErrs, err
 	}
 	if relations > 0 {
-		appendWarehouseViolation(vErrs, "warehouse.has_supply_relations",
+		appendWarehouseViolation(vErrs, "", "warehouse.has_supply_relations",
 			"archive the supply relations that name this warehouse first")
 	}
 	return vErrs, nil

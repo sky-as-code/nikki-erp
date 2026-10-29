@@ -5,7 +5,6 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
@@ -30,6 +29,7 @@ const (
 	paramPayerPartyId     = "payer_party_id"
 	paramPaymentMethodId  = "payment_method_id"
 	paramPaymentProfileId = "payment_profile_id"
+	paramSalesChannelCode = "sales_channel_code"
 
 	// Read by the fulfillment and availability actions.
 	paramItems            = "items"
@@ -191,6 +191,6 @@ func readDecimalValue(value any) (decimal.Decimal, bool) {
 
 func itemsViolation(key, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName, ft.ErrorKey(key, "sales"), message))
+	vErrs.Append(*ft.NewBusinessViolation(paramItems, ft.ErrorKey(key, "sales"), message))
 	return vErrs
 }

@@ -30,7 +30,8 @@ func TestAMethodIsLookedUpByCodeWhenThatIsAllThereIs(t *testing.T) {
 	key, named := methodLookupKey(CreatePaymentCommand{PaymentMethodCode: "momo"})
 
 	assert.True(t, named)
-	assert.Equal(t, dmodel.DynamicFields{models.PaymentMethodFieldCode: "momo"}, key)
+	assert.Equal(t, dmodel.DynamicFields{models.PaymentMethodFieldCode: "MOMO"}, key,
+		"a legacy lowercase code is normalized to the stored resource-code form")
 }
 
 func TestAMethodNamedNoWayIsRefused(t *testing.T) {

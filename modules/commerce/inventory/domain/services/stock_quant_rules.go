@@ -4,8 +4,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-
-	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // AvailableQuantity is the stock a new demand may still claim. Derived rather than stored, so it
@@ -28,8 +26,7 @@ func orZero(value *decimal.Decimal) decimal.Decimal {
 // It appends a client error rather than returning one, because the engine renders a returned error
 // as a server fault and a failed validation as a 400.
 func AssertQuantNotClientWritable(vErrs *ft.ClientErrors) {
-	vErrs.Append(*ft.NewBusinessViolation(
-		models.StockQuantSchemaName,
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(
 		ft.ErrorKey("stock_quant.not_client_writable", "inventory"),
 		"stock balances cannot be changed directly; record an inventory adjustment, transfer or scrap instead",
 	))

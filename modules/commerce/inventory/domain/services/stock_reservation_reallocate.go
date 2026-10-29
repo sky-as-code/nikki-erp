@@ -243,8 +243,7 @@ func originLocationsOf(
 // location so a client can offer the customer a different one rather than merely reporting failure.
 func reallocationShortage(locationId string) ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(
-		models.StockTransferSchemaName,
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(
 		ft.ErrorKey("stock_transfer.reallocation_insufficient_stock", "inventory"),
 		"location '"+locationId+"' cannot hold all of the requested quantity; the existing "+
 			"reservation is unchanged",
@@ -258,24 +257,24 @@ func assertReallocationWellFormed(
 	request itStock.ReservationReallocationRequest,
 ) *itStock.SourceReservationResult {
 	vErrs := ft.NewClientErrors()
-	refuse := func(key, message string) {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, ft.ErrorKey(key, "inventory"), message))
+	refuse := func(field, key, message string) {
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "inventory"), message))
 	}
 
 	if request.SourceType == "" || request.SourceId == "" {
-		refuse("stock_transfer.source_required",
+		refuse("", "stock_transfer.source_required",
 			"a reallocation must name the demand whose reservation is moving")
 	}
 	if request.ToLocationId == "" {
-		refuse("stock_transfer.destination_location_required",
+		refuse("to_location_id", "stock_transfer.destination_location_required",
 			"a reallocation must name the location the stock should be held at instead")
 	}
 	if request.OperationTypeId == "" {
-		refuse("stock_transfer.operation_type_required",
+		refuse("operation_type_id", "stock_transfer.operation_type_required",
 			"a reallocation must name the operation type the new hold is raised under")
 	}
 	if len(request.Items) == 0 {
-		refuse("stock_transfer.no_moves",
+		refuse("items", "stock_transfer.no_moves",
 			"a reallocation must name at least one item to move")
 	}
 

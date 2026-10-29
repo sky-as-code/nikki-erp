@@ -1,6 +1,8 @@
 package services
 
 import (
+	"fmt"
+
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
@@ -12,6 +14,14 @@ import (
 // runs under the warehouse guard. Those operations write through the repository directly rather
 // than through this service so that the no_update fields the schema declares stay closed to
 // clients while remaining writable to the engine.
+// requestItemPath names one entry of a request list, or a field of it, as a client error's field.
+func requestItemPath(list string, index int, field string) string {
+	if field == "" {
+		return fmt.Sprintf("%s[%d]", list, index)
+	}
+	return fmt.Sprintf("%s[%d].%s", list, index, field)
+}
+
 func NewStockReservationDomainService(
 	base composable.CrudDomainService, uom itExt.UomConversionExtService,
 ) *StockReservationDomainServiceImpl {

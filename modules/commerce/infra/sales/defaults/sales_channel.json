@@ -1,7 +1,7 @@
 [
 	{
 		"$alias": "channel_vdmc",
-		"code": "vdmc",
+		"code": "VDMC",
 		"name": "Vending Machine",
 		"description": "Unattended kiosks selling directly to walk-up customers",
 		"managed_by_type": "vendingmachine/vdmc_kiosks",
@@ -12,7 +12,7 @@
 	},
 	{
 		"$alias": "channel_bo",
-		"code": "bo",
+		"code": "BO",
 		"name": "Back Office",
 		"description": "Sales recorded by staff on behalf of a customer",
 		"status": "active",

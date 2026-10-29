@@ -28,7 +28,7 @@ func (this *InventoryLocationDomainServiceImpl) Suspend(
 
 	if derefString(location.GetStatus()) == models.InventoryLocationStatusSuspended {
 		return locationViolationResult(
-			"inventory_location.already_suspended", "the location is already suspended"), nil
+			"", "inventory_location.already_suspended", "the location is already suspended"), nil
 	}
 
 	usage, err := this.readUsage(ctx, locationId)
@@ -37,7 +37,7 @@ func (this *InventoryLocationDomainServiceImpl) Suspend(
 	}
 	if usage.OpenMoveCount > 0 || usage.OpenTransferCount > 0 {
 		return locationViolationResult(
-			"inventory_location.has_open_operations",
+			"", "inventory_location.has_open_operations",
 			"the location is part of an operation still in progress; finish or cancel it first",
 		), nil
 	}
@@ -69,7 +69,7 @@ func (this *InventoryLocationDomainServiceImpl) Resume(
 
 	if derefString(location.GetStatus()) == models.InventoryLocationStatusActive {
 		return locationViolationResult(
-			"inventory_location.already_active", "the location is already active"), nil
+			"", "inventory_location.already_active", "the location is already active"), nil
 	}
 	if vErrs, err := this.assertResumable(ctx, *location); err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func (this *InventoryLocationDomainServiceImpl) assertResumable(
 			return vErrs, err
 		}
 		if !usable {
-			appendLocationViolation(vErrs, "inventory_location.warehouse_not_usable",
+			appendLocationViolation(vErrs, "", "inventory_location.warehouse_not_usable",
 				"the warehouse is suspended or archived; resume it first")
 		}
 	}
@@ -111,11 +111,11 @@ func (this *InventoryLocationDomainServiceImpl) assertResumable(
 		return vErrs, err
 	}
 	if parent.GetIsArchived() != nil && *parent.GetIsArchived() {
-		appendLocationViolation(vErrs, "inventory_location.parent_archived",
+		appendLocationViolation(vErrs, "", "inventory_location.parent_archived",
 			"the parent location is archived")
 	}
 	if derefString(parent.GetStatus()) == models.InventoryLocationStatusSuspended {
-		appendLocationViolation(vErrs, "inventory_location.parent_suspended",
+		appendLocationViolation(vErrs, "", "inventory_location.parent_suspended",
 			"the parent location is suspended; resume it first")
 	}
 	return vErrs, nil

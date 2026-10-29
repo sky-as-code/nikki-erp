@@ -16,6 +16,17 @@ ${POLL_INTERVAL}        2s
 
 
 *** Test Cases ***
+An Org Slug Must Be Lowercase Words Joined By Hyphens
+    [Documentation]    UPLUI-015: the slug type lowercases and turns spaces into hyphens, then
+    ...    enforces `^[a-z0-9]+(?:-[a-z0-9]+)*$`; anything else is refused on `slug`.
+    [Tags]    org    negative
+    ${name}=    Unique Display Name    Bad Slug Org
+    FOR    ${slug}    IN    bad_slug    bad.slug    -bad-slug    bad--slug
+        ${resp}=    POST On Session    api    ${ORG_API}
+        ...    json=${{ {'display_name': {'en-US': $name}, 'slug': $slug} }}    expected_status=any
+        Response Should Be Invalid Format Error    ${resp}    slug
+    END
+
 A New Org Starts Provisioning Whatever The Client Sends
     [Documentation]    status is the org lifecycle's to write: a client asking for ready is ignored.
     [Tags]    org    lifecycle

@@ -1825,7 +1825,7 @@ func resolveGenericToPgType(genericType string) (string, error) {
 	case dmodel.FieldDataTypeNameEmail, dmodel.FieldDataTypeNamePhone, dmodel.FieldDataTypeNameString,
 		dmodel.FieldDataTypeNameSecret, dmodel.FieldDataTypeNameUrl, dmodel.FieldDataTypeNameEnumString,
 		dmodel.FieldDataTypeNameUlid, dmodel.FieldDataTypeNameEtag, dmodel.FieldDataTypeNameLangCode,
-		"nikkiModelId", dmodel.FieldDataTypeNameSlug:
+		"nikkiModelId", dmodel.FieldDataTypeNameSlug, dmodel.FieldDataTypeNameResourceCode:
 		return "character varying", nil
 	case dmodel.FieldDataTypeNameUuid:
 		return "uuid", nil

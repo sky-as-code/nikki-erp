@@ -19,7 +19,7 @@ import (
 
 func refusalWith(reason string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesOrderFulfillmentSchemaName, ft.ErrorKey(reason, "sales"), "because"))
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(ft.ErrorKey(reason, "sales"), "because"))
 	return vErrs
 }
 
@@ -79,8 +79,8 @@ func TestATargetRefusalStopsTheConfirmEvenWhenNoMethodWasNamed(t *testing.T) {
 // presence is the whole signal.
 func TestASurvivableRefusalIsRecognisedAmongOthers(t *testing.T) {
 	vErrs := refusalWith(ReasonMethodUnresolved)
-	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesOrderFulfillmentSchemaName, "sales_fulfillment.something_else", "and"))
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(
+		"sales_fulfillment.something_else", "and"))
 
 	if refusalStopsConfirm(false, vErrs) {
 		t.Error("the unresolved reason identifies an ordinary sale even alongside others")

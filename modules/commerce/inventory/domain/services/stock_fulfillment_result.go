@@ -205,29 +205,29 @@ func assertFulfillmentResultWellFormed(
 	request itStock.FulfillmentResultRequest,
 ) *itStock.FulfillmentResultResponse {
 	vErrs := ft.NewClientErrors()
-	refuse := func(key, message string) {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, ft.ErrorKey(key, "inventory"), message))
+	refuse := func(field, key, message string) {
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "inventory"), message))
 	}
 
 	if request.EventId == "" {
-		refuse("stock_transfer.event_id_required",
+		refuse("event_id", "stock_transfer.event_id_required",
 			"a fulfillment result must carry the id of the event reporting it, which is what makes "+
 				"a redelivered event consume stock only once")
 	}
 	if request.SourceType == "" || request.SourceId == "" {
-		refuse("stock_transfer.source_required",
+		refuse("", "stock_transfer.source_required",
 			"a fulfillment result must name the demand it reports on")
 	}
 	for index, item := range request.SuccessfulItems {
 		if item.Quantity.LessThan(decimal.Zero) {
-			refuse("stock_transfer.quantity_must_not_be_negative",
+			refuse(requestItemPath("successful_items", index, "quantity"), "stock_transfer.quantity_must_not_be_negative",
 				"successful item "+decimal.NewFromInt(int64(index+1)).String()+
 					" reports a negative quantity")
 		}
 	}
 	for index, item := range request.FailedItems {
 		if item.Quantity.LessThan(decimal.Zero) {
-			refuse("stock_transfer.quantity_must_not_be_negative",
+			refuse(requestItemPath("failed_items", index, "quantity"), "stock_transfer.quantity_must_not_be_negative",
 				"failed item "+decimal.NewFromInt(int64(index+1)).String()+
 					" reports a negative quantity")
 		}

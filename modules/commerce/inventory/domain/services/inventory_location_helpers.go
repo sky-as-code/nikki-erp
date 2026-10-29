@@ -24,7 +24,7 @@ func (this *InventoryLocationDomainServiceImpl) loadLocation(
 ) (*models.InventoryLocation, *ft.ClientErrors, error) {
 	vErrs := ft.NewClientErrors()
 	if locationId == "" {
-		appendLocationViolation(vErrs, "inventory_location.not_found", "no location id was given")
+		appendLocationViolation(vErrs, models.InventoryLocationFieldId, "inventory_location.not_found", "no location id was given")
 		return nil, vErrs, nil
 	}
 
@@ -39,7 +39,7 @@ func (this *InventoryLocationDomainServiceImpl) loadLocation(
 		return nil, vErrs, errors.Wrap(err, "loadLocation")
 	}
 	if found == nil || !found.HasData {
-		appendLocationViolation(vErrs, "inventory_location.not_found",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldId, "inventory_location.not_found",
 			"no location with id '"+locationId+"'")
 		return nil, vErrs, nil
 	}
@@ -114,13 +114,22 @@ func withLocationTransaction(ctx corectx.Context, body func(tranxCtx corectx.Con
 	return errors.Wrap(tranx.Commit(), "withLocationTransaction")
 }
 
-func appendLocationViolation(vErrs *ft.ClientErrors, key string, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(models.InventoryLocationSchemaName, ft.ErrorKey(key, "inventory"), message))
+func inventoryViolation(field string, key string, message string) *ft.ClientErrorItem {
+	if field == "" {
+		return ft.NewAnonymousBusinessViolation(ft.ErrorKey(key, "inventory"), message)
+	}
+	return ft.NewBusinessViolation(field, ft.ErrorKey(key, "inventory"), message)
 }
 
-func locationViolationResult(key string, message string) *dyn.OpResult[dyn.MutateResultData] {
+// appendLocationViolation names the input that caused the refusal in field; an empty field makes it a record-level
+// (anonymous) violation.
+func appendLocationViolation(vErrs *ft.ClientErrors, field string, key string, message string) {
+	vErrs.Append(*inventoryViolation(field, key, message))
+}
+
+func locationViolationResult(field string, key string, message string) *dyn.OpResult[dyn.MutateResultData] {
 	vErrs := ft.NewClientErrors()
-	appendLocationViolation(vErrs, key, message)
+	appendLocationViolation(vErrs, field, key, message)
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
 }
 

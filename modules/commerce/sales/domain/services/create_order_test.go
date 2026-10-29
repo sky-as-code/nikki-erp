@@ -14,7 +14,7 @@ import (
 func sellableChannel() dmodel.DynamicFields {
 	return dmodel.DynamicFields{
 		models.SalesChannelFieldId:     "CH1",
-		models.SalesChannelFieldCode:   "vdmc",
+		models.SalesChannelFieldCode:   "VDMC",
 		models.SalesChannelFieldStatus: string(models.SalesChannelStatusActive),
 		basemodel.FieldIsArchived:      false,
 	}

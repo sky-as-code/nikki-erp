@@ -47,7 +47,7 @@ func (this *SalesOrderDomainServiceImpl) AssertEditable(
 
 	order := models.NewSalesOrderFrom(record)
 	if !order.IsEditable() {
-		return violationResult(models.SalesOrderSchemaName, "sales_order.not_editable",
+		return violationResult("", "sales_order.not_editable",
 			"only a draft sales order may be changed; this one is '"+
 				stringOf(record, models.SalesOrderFieldStatus)+"'"), nil
 	}

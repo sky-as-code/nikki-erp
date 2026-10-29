@@ -78,7 +78,7 @@ func (this *SalesPointDomainServiceImpl) setStatus(
 			return nil
 		}
 		if boolOf(point, basemodel.FieldIsArchived) {
-			result = violationResult(models.SalesPointSchemaName,
+			result = violationResult("",
 				"sales_point.archived",
 				"an archived sales point cannot change status; unarchive it first")
 			return nil
@@ -144,7 +144,7 @@ func (this *SalesPointDomainServiceImpl) setArchived(
 				return err
 			}
 			if channel != nil && boolOf(channel, basemodel.FieldIsArchived) {
-				result = violationResult(models.SalesPointSchemaName,
+				result = violationResult("",
 					"sales_point.channel_archived",
 					"this sales point belongs to an archived sales channel; unarchive the channel first")
 				return nil
@@ -170,7 +170,7 @@ func (this *SalesPointDomainServiceImpl) AssertCreatable(
 	ctx corectx.Context, channelId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	if channelId == "" {
-		return violationResult(models.SalesPointSchemaName,
+		return violationResult(models.SalesPointFieldSalesChannelId,
 			"sales_point.channel_required",
 			"a sales point must name the sales channel it belongs to"), nil
 	}
@@ -181,17 +181,17 @@ func (this *SalesPointDomainServiceImpl) AssertCreatable(
 		return nil, err
 	}
 	if channel == nil {
-		return violationResult(models.SalesPointSchemaName,
+		return violationResult(models.SalesPointFieldSalesChannelId,
 			"sales_channel.not_found",
 			"no sales channel with id '"+channelId+"'"), nil
 	}
 	if boolOf(channel, basemodel.FieldIsArchived) {
-		return violationResult(models.SalesPointSchemaName,
+		return violationResult("",
 			"sales_channel.archived",
 			"an archived sales channel cannot take new sales points"), nil
 	}
 	if stringOf(channel, models.SalesChannelFieldStatus) != string(models.SalesChannelStatusActive) {
-		return violationResult(models.SalesPointSchemaName,
+		return violationResult("",
 			"sales_channel.suspended",
 			"a suspended sales channel cannot take new sales points"), nil
 	}

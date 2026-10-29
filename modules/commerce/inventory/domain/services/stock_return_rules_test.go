@@ -44,21 +44,21 @@ func TestReturnableNeverGoesNegative(t *testing.T) {
 func TestReturnIsRefusedBeyondTheReturnable(t *testing.T) {
 	line := returnable(t, "80", "30")
 
-	assert.Equal(t, 0, AssertReturnable(line, dec(t, "50")).Count())
-	assert.Equal(t, 1, AssertReturnable(line, dec(t, "51")).Count())
+	assert.Equal(t, 0, AssertReturnable(line, dec(t, "50"), "quantity").Count())
+	assert.Equal(t, 1, AssertReturnable(line, dec(t, "51"), "quantity").Count())
 }
 
 func TestReturnIsRefusedForANonPositiveQuantity(t *testing.T) {
 	line := returnable(t, "80", "0")
 
-	assert.Equal(t, 1, AssertReturnable(line, dec(t, "0")).Count())
-	assert.Equal(t, 1, AssertReturnable(line, dec(t, "-5")).Count())
+	assert.Equal(t, 1, AssertReturnable(line, dec(t, "0"), "quantity").Count())
+	assert.Equal(t, 1, AssertReturnable(line, dec(t, "-5"), "quantity").Count())
 }
 
 func TestFullyReturnedMoveAcceptsNothingFurther(t *testing.T) {
 	line := returnable(t, "80", "80")
 
-	assert.Equal(t, 1, AssertReturnable(line, dec(t, "1")).Count())
+	assert.Equal(t, 1, AssertReturnable(line, dec(t, "1"), "quantity").Count())
 }
 
 func TestTotalReturnableSumsEveryLine(t *testing.T) {

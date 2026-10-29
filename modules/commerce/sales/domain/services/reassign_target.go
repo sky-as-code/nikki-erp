@@ -93,7 +93,7 @@ func ReassignTarget(
 		return nil, nil, err
 	}
 	if fulfillment == nil {
-		return nil, targetChangeRefusal(ReasonFulfillmentNotFound,
+		return nil, targetChangeRefusal(basemodel.FieldId, ReasonFulfillmentNotFound,
 			"no fulfillment with id "+params.FulfillmentId), nil
 	}
 
@@ -105,7 +105,7 @@ func ReassignTarget(
 		return nil, nil, errors.Wrapf(err, "acquiring the lock of order '%s'", orderId)
 	}
 	if !acquired {
-		return nil, targetChangeRefusal(ReasonLockUnavailable,
+		return nil, targetChangeRefusal("", ReasonLockUnavailable,
 			"this order is being changed by another request; try again"), nil
 	}
 	defer func() { _ = dLock.Release(ctx, key) }()
@@ -118,7 +118,7 @@ func ReassignTarget(
 		return nil, nil, err
 	}
 	if fulfillment == nil {
-		return nil, targetChangeRefusal(ReasonFulfillmentNotFound,
+		return nil, targetChangeRefusal(basemodel.FieldId, ReasonFulfillmentNotFound,
 			"no fulfillment with id "+params.FulfillmentId), nil
 	}
 	return reassignUnderLock(ctx, params, fulfillment, reservations)
@@ -159,7 +159,7 @@ func reassignUnderLock(
 		// Nothing is owed, so there is nothing to move. Refused rather than treated as a no-op: a
 		// caller asking to move a finished delivery has misunderstood something, and silently
 		// succeeding would hide it.
-		return nil, targetChangeRefusal(ReasonTargetChangeNothingOwed,
+		return nil, targetChangeRefusal("", ReasonTargetChangeNothingOwed,
 			"this fulfillment owes no goods, so there is nothing to move"), nil
 	}
 
@@ -245,13 +245,13 @@ func assertReassignable(
 	record := models.NewSalesOrderFulfillmentFrom(fulfillment)
 
 	if params.ToOutletId == "" {
-		return targetChangeRefusal(ReasonTargetRequired,
+		return targetChangeRefusal(models.SalesFulfillmentTargetChangeFieldToOutletId, ReasonTargetRequired,
 			"name the sales point to move this fulfillment to")
 	}
 	if params.ToOutletId == fromOutletId {
 		// Refused rather than treated as a no-op: moving stock to where it already is would take a
 		// real reservation apart and rebuild it for no reason.
-		return targetChangeRefusal(ReasonTargetChangeSameOutlet,
+		return targetChangeRefusal(models.SalesFulfillmentTargetChangeFieldToOutletId, ReasonTargetChangeSameOutlet,
 			"this fulfillment already delivers from that sales point")
 	}
 
@@ -259,11 +259,11 @@ func assertReassignable(
 	// the machine the customer was standing at promised no second machine, and an operator editing
 	// the method afterwards must not be able to grant one.
 	if !boolOf(fulfillment, models.SalesOrderFulfillmentFieldAllowTargetChange) {
-		return targetChangeRefusal(ReasonTargetChangeNotAllowed,
+		return targetChangeRefusal("", ReasonTargetChangeNotAllowed,
 			"the method this order was sold under does not allow its target to change")
 	}
 	if record.IsTerminal() {
-		return targetChangeRefusal(ReasonTargetChangeTerminal,
+		return targetChangeRefusal("", ReasonTargetChangeTerminal,
 			"a completed or cancelled fulfillment cannot be moved")
 	}
 	return nil
@@ -285,7 +285,7 @@ func assertNoActiveAttempt(
 	}
 	for _, attempt := range attempts {
 		if models.NewSalesFulfillmentAttemptFrom(attempt).IsOutstanding() {
-			return targetChangeRefusal(ReasonTargetChangeActiveAttempt,
+			return targetChangeRefusal("", ReasonTargetChangeActiveAttempt,
 				"an attempt on this fulfillment is still awaiting its result; the goods cannot "+
 					"move while a machine may still be dispensing them"), nil
 		}
@@ -340,7 +340,7 @@ func moveReservation(
 	if reservations == nil {
 		// No port bound. Refused rather than proceeding: moving the target while the stock stayed put
 		// would promise goods from a machine that is not holding any.
-		return nil, targetChangeRefusal(ReasonFulfillmentReserveFailed,
+		return nil, targetChangeRefusal("", ReasonFulfillmentReserveFailed,
 			"no inventory port is bound, so the stock cannot be moved with the target"), nil
 	}
 
@@ -500,9 +500,9 @@ func TargetChangesOfFulfillment(
 		models.SalesFulfillmentTargetChangeFieldFulfillmentId, fulfillmentId)
 }
 
-func targetChangeRefusal(reason, message string) *ft.ClientErrors {
+func targetChangeRefusal(field, reason, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesOrderFulfillmentSchemaName, ft.ErrorKey(reason, "sales"), message))
+		field, ft.ErrorKey(reason, "sales"), message))
 	return vErrs
 }

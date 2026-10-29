@@ -14,6 +14,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
 func NewWarehouseAppService(
@@ -123,6 +124,9 @@ func (this *WarehouseAppServiceImpl) configureFlow(
 		}
 		return this.suspendObsoleteLocations(tranxCtx, *warehouse, previous, cmd.Flow, outgoing)
 	})
+	if signal, isRefusal := composable.AsClientErrorSignal(err); isRefusal {
+		return &itWarehouse.ConfigureFlowResult{ClientErrors: signal.Errors}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +179,7 @@ func (this *WarehouseAppServiceImpl) resolveFlow(
 
 func flowViolation(key string, message string) *itWarehouse.ConfigureFlowResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.WarehouseSchemaName, ft.ErrorKey(key, "inventory"), message))
+	vErrs.Append(*ft.NewBusinessViolation("flow", ft.ErrorKey(key, "inventory"), message))
 	return &itWarehouse.ConfigureFlowResult{ClientErrors: *vErrs}
 }
 

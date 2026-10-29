@@ -48,7 +48,7 @@ func (this *PurchaseOrderDomainServiceImpl) Unlock(
 	ctx corectx.Context, orderId string, reason string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	if reason == "" {
-		return orderViolationResult("purchase_order.unlock_reason_required",
+		return orderViolationResult("reason", "purchase_order.unlock_reason_required",
 			"unlocking a purchase order requires a reason"), nil
 	}
 	return this.setLocked(ctx, orderId, false, reason, AuditActionUnlock)
@@ -74,7 +74,7 @@ func (this *PurchaseOrderDomainServiceImpl) Acknowledge(
 
 		status := stringOf(order, models.PurchaseOrderFieldStatus)
 		if !IsOrderCommitted(status) {
-			result = orderViolationResult("purchase_order.not_acknowledgeable",
+			result = orderViolationResult("", "purchase_order.not_acknowledgeable",
 				"only a confirmed purchase order can be acknowledged; this one is '"+status+"'")
 			return nil
 		}
@@ -248,7 +248,7 @@ func (this *PurchaseOrderDomainServiceImpl) setLocked(
 
 		status := stringOf(order, models.PurchaseOrderFieldStatus)
 		if !IsOrderCommitted(status) {
-			result = orderViolationResult("purchase_order.not_lockable",
+			result = orderViolationResult("", "purchase_order.not_lockable",
 				"only a confirmed purchase order can be locked or unlocked; this one is '"+status+"'")
 			return nil
 		}
@@ -316,7 +316,7 @@ func (this *PurchaseOrderDomainServiceImpl) transition(
 			return nil
 		}
 		if !request.AllowedFrom[status] {
-			result = orderViolationResult(request.RefusalKey,
+			result = orderViolationResult("", request.RefusalKey,
 				formatStatus(request.RefusalMessage, status))
 			return nil
 		}

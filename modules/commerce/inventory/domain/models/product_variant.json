@@ -51,7 +51,7 @@
 		{
 			"name": "sku",
 			"label": "fields.sku",
-			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"data_type": { "type": "resource_code", "min": 0, "max": 100 },
 			"description": "field_desc.inventory_product_variant.sku"
 		},
 		{

@@ -53,7 +53,7 @@
 		{
 			"name": "attribute_value_code",
 			"label": "fields.attribute_value_code",
-			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"data_type": { "type": "resource_code", "min": 0, "max": 50 },
 			"computed": { "kind": "related", "is_stored": false, "field": "attribute_value.code" },
 			"description": "field_desc.inventory_product_template_attribute_value.attribute_value_code"
 		},

@@ -45,7 +45,8 @@ func createRecord(
 //
 // The method may be named by id or by code, and the two are looked up the same way because both
 // columns are unique. The code exists for callers migrating off the standalone service, which was
-// only ever told "momo", "vietqr" or "mpos"; the id is what a picker on the REST surface holds.
+// only ever told "momo", "vietqr" or "mpos" (normalized to MOMO, VIETQR, MPOS); the id is what a
+// picker on the REST surface holds.
 //
 // Every failure here is the caller's: they named no method, one that does not exist, or one that
 // is no longer taking payments. None of them is a reason to answer 500.
@@ -94,7 +95,8 @@ func methodLookupKey(cmd CreatePaymentCommand) (dmodel.DynamicFields, bool) {
 		return dmodel.DynamicFields{models.PaymentMethodFieldId: cmd.PaymentMethodId}, true
 	}
 	if cmd.PaymentMethodCode != "" {
-		return dmodel.DynamicFields{models.PaymentMethodFieldCode: cmd.PaymentMethodCode}, true
+		code := dmodel.NormalizeResourceCode(cmd.PaymentMethodCode)
+		return dmodel.DynamicFields{models.PaymentMethodFieldCode: code}, true
 	}
 	return nil, false
 }

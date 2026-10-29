@@ -179,8 +179,8 @@ Template Values Of One Line List Their Value Name And Code
     ${items}=    Set Variable    ${resp.json()}[items]
     Length Should Be    ${items}    2
     ${codes}=    Evaluate    sorted(row['attribute_value_code'] for row in $items)
-    Should Be Equal    ${codes}    ${{ ['big', 'small'] }}
-    ${big}=    Evaluate    next(row for row in $items if row['attribute_value_code'] == 'big')
+    Should Be Equal    ${codes}    ${{ ['BIG', 'SMALL'] }}
+    ${big}=    Evaluate    next(row for row in $items if row['attribute_value_code'] == 'BIG')
     Should Be Equal    ${big}[attribute_value_name][en-US]    BIG
     Dictionary Should Contain Key    ${big}    sales_price_extra
     Dictionary Should Contain Key    ${big}    is_selected
@@ -189,9 +189,9 @@ Template Values Of One Line List Their Value Name And Code
     ${row}=    Read Record    ${TEMPLATE_ATTRIBUTE_VALUE_API}    ${big}[id]
     ...    id,sales_price_extra,attribute_value_code,attribute_name
     Should Be Equal As Numbers    ${row}[sales_price_extra]    3000
-    Should Be Equal    ${row}[attribute_value_code]    big
+    Should Be Equal    ${row}[attribute_value_code]    BIG
     Should Start With    ${row}[attribute_name][en-US]    Robot Price List
-    ${resp}=    Patch Record    ${TEMPLATE_ATTRIBUTE_VALUE_API}    ${big}[id]    ${{ {'attribute_value_code': 'x'} }}
+    ${resp}=    Patch Record    ${TEMPLATE_ATTRIBUTE_VALUE_API}    ${big}[id]    ${{ {'attribute_value_code': 'X'} }}
     Should Be Equal As Integers    ${resp.status_code}    400
 
 

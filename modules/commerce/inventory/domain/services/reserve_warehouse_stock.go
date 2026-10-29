@@ -125,7 +125,7 @@ func (this *StockReservationDomainServiceImpl) reserveUnderGuard(
 
 	if request.ReservedUntil != nil && !request.ReservedUntil.After(now) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonDeadlineNotInFuture, "inventory"),
+			"reserved_until", ft.ErrorKey(ReasonDeadlineNotInFuture, "inventory"),
 			"reserved_until must lie in the future"))
 		return &itStock.ReserveWarehouseStockResult{ClientErrors: *vErrs}, nil
 	}
@@ -154,35 +154,35 @@ type normalisedLine struct {
 
 func assertReserveRequestWellFormed(request itStock.ReserveWarehouseStockRequest) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	refuse := func(message string) {
+	refuse := func(field string, message string) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"), message))
+			field, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"), message))
 	}
 	if request.OrgId == "" {
-		refuse("org_id is required")
+		refuse("org_id", "org_id is required")
 	}
 	if request.WarehouseId == "" {
-		refuse("warehouse_id is required")
+		refuse("warehouse_id", "warehouse_id is required")
 	}
 	if request.SourceModule == "" || request.SourceType == "" || request.SourceId == "" {
-		refuse("source_module, source_type and source_id are required")
+		refuse("", "source_module, source_type and source_id are required")
 	}
 	if request.IdempotencyKey == "" {
-		refuse("idempotency_key is required")
+		refuse("idempotency_key", "idempotency_key is required")
 	}
 	if len(request.Lines) == 0 {
-		refuse("at least one line is required")
+		refuse("lines", "at least one line is required")
 	}
 	seenLines := map[string]bool{}
 	for index, line := range request.Lines {
 		if line.ProductVariantId == "" {
-			refuse("line " + strconv.Itoa(index+1) + ": product_variant_id is required")
+			refuse(requestItemPath("lines", index, "product_variant_id"), "product_variant_id is required")
 		}
 		if !line.Quantity.IsPositive() {
-			refuse("line " + strconv.Itoa(index+1) + ": quantity must be greater than zero")
+			refuse(requestItemPath("lines", index, "quantity"), "quantity must be greater than zero")
 		}
 		if seenLines[line.SourceLineId] {
-			refuse("line " + strconv.Itoa(index+1) + ": source_line_id '" + line.SourceLineId + "' appears twice")
+			refuse(requestItemPath("lines", index, "source_line_id"), "source_line_id '"+line.SourceLineId+"' appears twice")
 		}
 		seenLines[line.SourceLineId] = true
 	}
@@ -202,20 +202,20 @@ func assertWarehouseReservable(ctx corectx.Context, warehouseId model.Id, vErrs 
 	}
 	if found == nil || !found.HasData {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonWarehouseNotFound, "inventory"),
+			"warehouse_id", ft.ErrorKey(ReasonWarehouseNotFound, "inventory"),
 			"warehouse '"+string(warehouseId)+"' does not exist"))
 		return nil
 	}
 	warehouse := models.NewWarehouseFrom(found.Data)
 	if derefBool(warehouse.GetIsArchived()) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonResourceArchived, "inventory"),
+			"warehouse_id", ft.ErrorKey(ReasonResourceArchived, "inventory"),
 			"warehouse '"+string(warehouseId)+"' is archived"))
 		return nil
 	}
 	if derefString(warehouse.GetStatus()) != models.WarehouseStatusActive {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonWarehouseSuspended, "inventory"),
+			"warehouse_id", ft.ErrorKey(ReasonWarehouseSuspended, "inventory"),
 			"warehouse '"+string(warehouseId)+"' is suspended"))
 	}
 	return nil
@@ -227,8 +227,8 @@ func (this *StockReservationDomainServiceImpl) normaliseReservationLines(
 	ctx corectx.Context, request itStock.ReserveWarehouseStockRequest, vErrs *ft.ClientErrors,
 ) ([]normalisedLine, error) {
 	lines := make([]normalisedLine, 0, len(request.Lines))
-	for _, line := range request.Lines {
-		baseUomId, err := this.resolveReservableVariant(ctx, request.OrgId, line.ProductVariantId, vErrs)
+	for index, line := range request.Lines {
+		baseUomId, err := this.resolveReservableVariant(ctx, request.OrgId, line.ProductVariantId, index, vErrs)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +246,7 @@ func (this *StockReservationDomainServiceImpl) normaliseReservationLines(
 			}
 			if converted == nil || converted.ClientErrors.Count() > 0 || !converted.HasData {
 				vErrs.Append(*ft.NewBusinessViolation(
-					models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
+					requestItemPath("lines", index, "uom_id"), ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
 					"line '"+line.SourceLineId+"': quantity cannot be converted from unit '"+string(line.UomId)+"' to the base unit"))
 				continue
 			}
@@ -266,7 +266,7 @@ func (this *StockReservationDomainServiceImpl) normaliseReservationLines(
 // be reserved: a service holds no stock, combo or not, so no reservation can be made for it.
 // The base unit is the template's stock configuration when one exists, else the template's own unit.
 func (this *StockReservationDomainServiceImpl) resolveReservableVariant(
-	ctx corectx.Context, orgId, variantId model.Id, vErrs *ft.ClientErrors,
+	ctx corectx.Context, orgId, variantId model.Id, lineIndex int, vErrs *ft.ClientErrors,
 ) (model.Id, error) {
 	variant, err := findRecord(ctx, models.ProductVariantSchemaName, models.ProductVariantFieldId, string(variantId))
 	if err != nil {
@@ -274,7 +274,7 @@ func (this *StockReservationDomainServiceImpl) resolveReservableVariant(
 	}
 	if variant == nil {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonVariantNotFound, "inventory"),
+			requestItemPath("lines", lineIndex, "product_variant_id"), ft.ErrorKey(ReasonVariantNotFound, "inventory"),
 			"product variant '"+string(variantId)+"' does not exist"))
 		return "", nil
 	}
@@ -284,21 +284,21 @@ func (this *StockReservationDomainServiceImpl) resolveReservableVariant(
 		return "", err
 	}
 	if template == nil {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonVariantNotFound, "inventory"),
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey(ReasonVariantNotFound, "inventory"),
 			"product variant '"+string(variantId)+"' has no template"))
 		return "", nil
 	}
 	// A reservation is new business, so it needs a variant selectable today.
 	reason := VariantIneligibility(models.NewProductVariantFrom(variant), models.NewProductTemplateFrom(template), true)
 	if reason != "" {
-		appendIneligibility(models.StockReservationSchemaName, string(variantId), reason, vErrs)
+		appendIneligibility(requestItemPath("lines", lineIndex, "product_variant_id"), string(variantId), reason, vErrs)
 		return "", nil
 	}
 
 	if !models.NewProductTemplateFrom(template).IsStockTracked() {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonVariantNotStockable, "inventory"),
+			requestItemPath("lines", lineIndex, "product_variant_id"), ft.ErrorKey(ReasonVariantNotStockable, "inventory"),
 			"product variant '"+string(variantId)+"' is not a stockable product"))
 		return "", nil
 	}
@@ -317,8 +317,8 @@ func (this *StockReservationDomainServiceImpl) resolveReservableVariant(
 	}
 	uomId := stringOf(template, models.ProductTemplateFieldUomId)
 	if uomId == "" {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonVariantNotStockable, "inventory"),
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey(ReasonVariantNotStockable, "inventory"),
 			"product variant '"+string(variantId)+"' has no unit of measure"))
 		return "", nil
 	}
@@ -349,8 +349,8 @@ func assertScopesCanCover(
 			return err
 		}
 		if shortage := availability.Shortage(totals[variantId]); shortage.IsPositive() {
-			vErrs.Append(*ft.NewBusinessViolation(
-				models.StockReservationSchemaName, ft.ErrorKey(ReasonInsufficientWarehouseStock, "inventory"),
+			vErrs.Append(*ft.NewAnonymousBusinessViolation(
+				ft.ErrorKey(ReasonInsufficientWarehouseStock, "inventory"),
 				"product variant '"+string(variantId)+"' is short by "+shortage.String()+
 					" (requested "+totals[variantId].String()+", available "+availability.Available.String()+")",
 				map[string]any{
@@ -457,8 +457,8 @@ func replayReservation(
 		if derefString(reservation.GetIdempotencyKey()) != request.IdempotencyKey ||
 			derefString(reservation.GetRequestFingerprint()) != fingerprint {
 			vErrs := ft.NewClientErrors()
-			vErrs.Append(*ft.NewBusinessViolation(
-				models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationIdempotencyConflict, "inventory"),
+			vErrs.Append(*ft.NewAnonymousBusinessViolation(
+				ft.ErrorKey(ReasonReservationIdempotencyConflict, "inventory"),
 				"this demand was already reserved under a different request; use a new source revision"))
 			return &itStock.ReserveWarehouseStockResult{ClientErrors: *vErrs}
 		}

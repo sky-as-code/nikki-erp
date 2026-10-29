@@ -170,8 +170,8 @@ func (this *StockQuantDomainServiceImpl) updateCountMetadata(
 	}
 	if found == nil || !found.HasData {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockQuantSchemaName, ft.ErrorKey("stock_quant.not_found", "inventory"),
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey("stock_quant.not_found", "inventory"),
 			"no stock balance with id '"+quantId+"'"))
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
@@ -192,7 +192,7 @@ func parseOptionalDate(value string) (*time.Time, *ft.ClientErrors) {
 	parsed, err := time.Parse(time.DateOnly, value)
 	if err != nil {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockQuantSchemaName, ft.ErrorKey("stock_quant.next_count_date_malformed", "inventory"),
+			"next_count_date", ft.ErrorKey("stock_quant.next_count_date_malformed", "inventory"),
 			"'next_count_date' must be a date in yyyy-mm-dd form"))
 		return nil, vErrs
 	}
@@ -265,8 +265,7 @@ func generateAdjustmentMovement(
 	}
 	if lossLocation == nil {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.InventoryLocationSchemaName,
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey("stock_quant.no_inventory_loss_location", "inventory"),
 			"this organisation has no inventory-loss location for an adjustment to balance against"))
 		return vErrs, nil
@@ -314,8 +313,8 @@ func lockQuantById(
 		return nil, nil, vErrs, errors.Wrap(err, "lockQuantById")
 	}
 	if found == nil || !found.HasData {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockQuantSchemaName, ft.ErrorKey("stock_quant.not_found", "inventory"),
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey("stock_quant.not_found", "inventory"),
 			"no stock balance with id '"+quantId+"'"))
 		return nil, nil, vErrs, nil
 	}
@@ -326,8 +325,8 @@ func lockQuantById(
 		return nil, nil, vErrs, err
 	}
 	if locked == nil {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockQuantSchemaName, ft.ErrorKey("stock_quant.not_found", "inventory"),
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey("stock_quant.not_found", "inventory"),
 			"stock balance '"+quantId+"' disappeared while being locked"))
 		return nil, nil, vErrs, nil
 	}

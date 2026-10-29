@@ -35,12 +35,12 @@ func (this *InventoryLocationDomainServiceImpl) assertPlacementValid(
 		return vErrs, err
 	}
 	if parentErrs.Count() > 0 {
-		appendLocationViolation(vErrs, "inventory_location.parent_not_found",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.parent_not_found",
 			"no location with id '"+parentId+"'")
 		return vErrs, nil
 	}
 	if parent.GetIsArchived() != nil && *parent.GetIsArchived() {
-		appendLocationViolation(vErrs, "inventory_location.parent_archived",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.parent_archived",
 			"the parent location is archived")
 	}
 	return vErrs, nil
@@ -60,7 +60,7 @@ func (this *InventoryLocationDomainServiceImpl) assertMoveTargetValid(
 		return vErrs, nil
 	}
 	if newParentId == locationId {
-		appendLocationViolation(vErrs, "inventory_location.hierarchy_cycle",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.hierarchy_cycle",
 			"a location cannot be its own parent")
 		return vErrs, nil
 	}
@@ -70,12 +70,12 @@ func (this *InventoryLocationDomainServiceImpl) assertMoveTargetValid(
 		return vErrs, err
 	}
 	if parentErrs.Count() > 0 {
-		appendLocationViolation(vErrs, "inventory_location.parent_not_found",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.parent_not_found",
 			"no location with id '"+newParentId+"'")
 		return vErrs, nil
 	}
 	if parent.GetIsArchived() != nil && *parent.GetIsArchived() {
-		appendLocationViolation(vErrs, "inventory_location.parent_archived",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.parent_archived",
 			"the parent location is archived")
 		return vErrs, nil
 	}
@@ -85,7 +85,7 @@ func (this *InventoryLocationDomainServiceImpl) assertMoveTargetValid(
 		return vErrs, err
 	}
 	if inside {
-		appendLocationViolation(vErrs, "inventory_location.hierarchy_cycle",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.hierarchy_cycle",
 			"the new parent sits underneath the location being moved")
 	}
 	return vErrs, nil

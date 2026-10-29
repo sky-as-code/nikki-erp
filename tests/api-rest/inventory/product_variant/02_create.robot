@@ -130,6 +130,18 @@ Create With Inherited Field Fails
     ...    expected_status=any
     Response Should Be Nonexist Fields Error    ${resp}    name
 
+Create With Non Resource Code Sku Fails
+    [Documentation]    UPLUI-013: a SKU is a resource code, uppercase letters, digits and hyphens
+    ...    only. Nothing converts the case, so a lowercase or underscored SKU is refused on `sku`.
+    [Tags]    negative
+    ${key}=    Unique Code    badsku
+    FOR    ${sku}    IN    lower-sku    SKU_1    SKU.1    SKU 1
+        ${resp}=    POST On Session    api    ${PRODUCT_VARIANT_API}
+        ...    json=${{ {'product_template_id': $PRODUCT_TEMPLATE_ID, 'combination_key': $key, 'sku': $sku, 'status': 'active', 'org_id': $INV_ORG_ID} }}
+        ...    expected_status=any
+        Response Should Be Invalid Resource Code Error    ${resp}    sku
+    END
+
 Create With Malformed Payload Fails
     [Tags]    negative
     ${headers}=    Create Dictionary    Content-Type=application/json

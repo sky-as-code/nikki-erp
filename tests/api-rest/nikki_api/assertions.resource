@@ -106,6 +106,12 @@ Response Should Be Invalid Format Error
     ...    common:err_invalid_data_type    invalid data type, must be a {{typeName}}
     Response Should Match Schema    ${resp}    ${schema}    400
 
+Response Should Be Invalid Resource Code Error
+    [Arguments]    ${resp}    @{fields}
+    ${schema}=    Same Error Schema    ${fields}
+    ...    common:err_invalid_resource_code    Only uppercase letters, digits and hyphens are allowed
+    Response Should Match Schema    ${resp}    ${schema}    400
+
 Response Should Be Invalid String Length Error
     [Arguments]    ${resp}    @{fields}
     ${schema}=    Same Error Schema    ${fields}

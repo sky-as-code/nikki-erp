@@ -234,7 +234,7 @@ func (this *InventoryLocationDomainServiceImpl) SetArchived(
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
 	if location.IsWarehouseRoot() {
-		return locationViolationResult("inventory_location.archive_with_warehouse",
+		return locationViolationResult("", "inventory_location.archive_with_warehouse",
 			"a warehouse's root location is archived and unarchived with its warehouse"), nil
 	}
 	return this.setArchived(ctx, params, *location, true)
@@ -255,7 +255,7 @@ func (this *InventoryLocationDomainServiceImpl) SetArchivedManaged(
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
 	if !basemodel.IsManaged(location.GetFieldData()) {
-		return locationViolationResult("inventory_location.not_managed",
+		return locationViolationResult("", "inventory_location.not_managed",
 			"only a managed location is archived this way"), nil
 	}
 	params := dmodel.DynamicFields{
@@ -301,6 +301,7 @@ func (this *InventoryLocationDomainServiceImpl) Move(
 
 	if isSystemGenerated(*location) {
 		return locationViolationResult(
+			models.InventoryLocationFieldParentLocationId,
 			"inventory_location.system_protected",
 			"a location the warehouse created for itself cannot be moved",
 		), nil
@@ -342,19 +343,19 @@ func (this *InventoryLocationDomainServiceImpl) assertArchivable(
 		return vErrs, err
 	}
 	if !usage.OnHandQuantity.IsZero() {
-		appendLocationViolation(vErrs, "inventory_location.has_on_hand_stock",
+		appendLocationViolation(vErrs, "", "inventory_location.has_on_hand_stock",
 			"the location still holds stock; move it out before archiving")
 	}
 	if !usage.ReservedQuantity.IsZero() {
-		appendLocationViolation(vErrs, "inventory_location.has_reserved_stock",
+		appendLocationViolation(vErrs, "", "inventory_location.has_reserved_stock",
 			"the location has stock reserved against it")
 	}
 	if usage.OpenMoveCount > 0 {
-		appendLocationViolation(vErrs, "inventory_location.has_open_moves",
+		appendLocationViolation(vErrs, "", "inventory_location.has_open_moves",
 			"the location is part of a move that has not finished")
 	}
 	if usage.OpenTransferCount > 0 {
-		appendLocationViolation(vErrs, "inventory_location.has_open_transfers",
+		appendLocationViolation(vErrs, "", "inventory_location.has_open_transfers",
 			"the location is part of a transfer that has not finished")
 	}
 
@@ -363,7 +364,7 @@ func (this *InventoryLocationDomainServiceImpl) assertArchivable(
 		return vErrs, err
 	}
 	if children > 0 {
-		appendLocationViolation(vErrs, "inventory_location.has_children",
+		appendLocationViolation(vErrs, "", "inventory_location.has_children",
 			"archive or move the locations underneath this one first")
 	}
 
@@ -379,7 +380,7 @@ func (this *InventoryLocationDomainServiceImpl) assertArchivable(
 			return vErrs, err
 		}
 		if warehouseUsable {
-			appendLocationViolation(vErrs, "inventory_location.system_protected",
+			appendLocationViolation(vErrs, "", "inventory_location.system_protected",
 				"the warehouse still needs this location; archive the warehouse instead")
 		}
 	}
@@ -389,7 +390,7 @@ func (this *InventoryLocationDomainServiceImpl) assertArchivable(
 		return vErrs, err
 	}
 	if operationTypes > 0 {
-		appendLocationViolation(vErrs, "inventory_location.used_by_operation_type",
+		appendLocationViolation(vErrs, "", "inventory_location.used_by_operation_type",
 			"an operation type still uses this location as a default; change it first")
 	}
 	return vErrs, nil
@@ -418,7 +419,7 @@ func assertSystemLocationUnchanged(
 			continue
 		}
 		if !strings.EqualFold(toComparableString(incoming), currentFieldString(current, field)) {
-			appendLocationViolation(vErrs, "inventory_location.system_protected",
+			appendLocationViolation(vErrs, field, "inventory_location.system_protected",
 				"'"+field+"' belongs to the warehouse flow that created this location")
 			return vErrs
 		}

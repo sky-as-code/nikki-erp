@@ -23,12 +23,13 @@ ${VARIANT_ATTRIBUTE_VALUE_API}      /v1/inventory/inventory_product_variant_attr
 Create Attribute With Values
     [Documentation]    Creates an `option` attribute in the given mode together with its values in
     ...    ONE request (the nested `values.add` delta), and returns (attribute id, {code: value id}).
-    ...    Value codes are scoped to the attribute, so short fixed codes are safe.
+    ...    Value codes are scoped to the attribute, so short fixed codes are safe. They are sent in the
+    ...    resource_code form (uppercased) and keyed back in lowercase, so callers keep `${values}[red]`.
     [Arguments]    ${mode}    @{codes}    ${words}=Robot Config Attribute    ${display_type}=${None}
     Ensure Inventory Org
     ${name}=    Unique Display Name    ${words}
     ${code}=    Unique Code    cfg
-    ${rows}=    Evaluate    [{'code': c, 'name': {'en-US': c.upper()}, 'sequence': i} for i, c in enumerate($codes)]
+    ${rows}=    Evaluate    [{'code': c.upper(), 'name': {'en-US': c.upper()}, 'sequence': i} for i, c in enumerate($codes)]
     ${body}=    Create Dictionary    code=${code}    name=${{ {'en-US': $name} }}    data_type=option
     ...    variant_creation_mode=${mode}    org_id=${INV_ORG_ID}    values=${{ {'add': $rows} }}
     IF    $display_type is not None    Set To Dictionary    ${body}    display_type=${display_type}
@@ -38,12 +39,13 @@ Create Attribute With Values
     RETURN    ${id}    ${values}
 
 Read Attribute Values
-    [Documentation]    Returns {code: id} of every value of an attribute, archived ones included.
+    [Documentation]    Returns {code: id} of every value of an attribute, archived ones included,
+    ...    keyed by the lowercased code.
     [Arguments]    ${attribute_id}
     ${resp}=    GET On Session    api    ${ATTRIBUTE_VALUE_API}
     ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 200, 'include_archived': 'true', 'fields': 'id,code', 'graph': '{"if":["attribute_id","=","' + $attribute_id + '"]}'} }}
     Response Status Should Be    ${resp}    200
-    ${values}=    Evaluate    {item['code']: item['id'] for item in $resp.json()['items']}
+    ${values}=    Evaluate    {item['code'].lower(): item['id'] for item in $resp.json()['items']}
     RETURN    ${values}
 
 Read Record

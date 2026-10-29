@@ -86,15 +86,15 @@ func (this *PurchaseOrderDomainServiceImpl) Reprice(
 // the ordinary no-editing rule, from which repricing is not exempt.
 func repriceRefusal(order dmodel.DynamicFields, status string) *ft.ClientErrors {
 	if IsOrderCommitted(status) {
-		return orderViolationErrors("purchase_order.not_repriceable",
+		return orderViolationErrors("", "purchase_order.not_repriceable",
 			formatStatus("only a draft purchase order can be repriced; this one is '%s'", status))
 	}
 	if status == string(models.PurchaseOrderStatusCancelled) {
-		return orderViolationErrors("purchase_order.cancelled_is_final",
+		return orderViolationErrors("", "purchase_order.cancelled_is_final",
 			"a cancelled purchase order cannot be repriced; duplicate it to start a new request for quotation")
 	}
 	if boolOf(order, models.PurchaseOrderFieldIsLocked) {
-		return orderViolationErrors("purchase_order.locked",
+		return orderViolationErrors("", "purchase_order.locked",
 			"this purchase order is locked; unlock it before repricing")
 	}
 	return nil

@@ -76,7 +76,7 @@ func TestResponseEmitsAmountsAsStrings(t *testing.T) {
 			TotalTax:      decimal.RequireFromString("10.05"),
 			Components: []it.ComponentResult{{
 				TaxId:     "vat10",
-				TaxCode:   "VN_VAT_10",
+				TaxCode:   "VN-VAT-10",
 				Rate:      decimal.RequireFromString("10"),
 				TaxAmount: decimal.RequireFromString("10.05"),
 			}},
@@ -105,7 +105,7 @@ func TestResponseEmitsAmountsAsStrings(t *testing.T) {
 func TestComponentResponseCarriesTheAuditTrail(t *testing.T) {
 	component := it.ComponentResult{
 		TaxId:                  "vat10",
-		TaxCode:                "VN_VAT_10",
+		TaxCode:                "VN-VAT-10",
 		TaxName:                "VAT 10%",
 		TaxDefinitionVersionId: "dv-1",
 		TaxDefinitionVersionNo: 2,

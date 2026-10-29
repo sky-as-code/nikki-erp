@@ -63,7 +63,10 @@ func (this *WarehouseDomainServiceImpl) CreateFlowLocation(
 ) (string, error) {
 	rootId := derefId(warehouse.GetRootLocationId())
 	if rootId == "" {
-		return "", errors.Errorf("warehouse '%s' has no root location", derefString(warehouse.GetId()))
+		vErrs := ft.NewClientErrors()
+		appendWarehouseViolation(vErrs, "", "warehouse.root_location_missing",
+			"the warehouse has no root location to create its flow locations under")
+		return "", composable.ClientErrorSignal{Errors: *vErrs}
 	}
 	return this.createSystemLocation(ctx, dmodel.DynamicFields{
 		models.InventoryLocationFieldName:             spec.Name,
@@ -199,7 +202,7 @@ func AssertWarehouseFlowsKnown(fields dmodel.DynamicFields) *ft.ClientErrors {
 	for _, field := range []string{models.WarehouseFieldIncomingFlow, models.WarehouseFieldOutgoingFlow} {
 		flow := readStringParam(fields, field)
 		if flow != "" && !isKnownFlow(flow) {
-			appendWarehouseViolation(vErrs, "warehouse.flow_invalid", "'"+flow+"' is not a known flow")
+			appendWarehouseViolation(vErrs, field, "warehouse.flow_invalid", "'"+flow+"' is not a known flow")
 		}
 	}
 	return vErrs

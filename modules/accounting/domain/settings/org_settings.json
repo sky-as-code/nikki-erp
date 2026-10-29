@@ -13,7 +13,7 @@
 			"name": "default_rounding_policy_code",
 			"label": "accounting.settings.defaultRoundingPolicyCode",
 			"description": "settings_desc.default_rounding_policy_code",
-			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"data_type": { "type": "resource_code", "min": 0, "max": 50 },
 			"metadata": { "allow_override": true }
 		},
 		{

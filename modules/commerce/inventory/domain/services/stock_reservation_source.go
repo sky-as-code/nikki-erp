@@ -272,28 +272,28 @@ func assertSourceReservationWellFormed(
 	request itStock.SourceReservationRequest,
 ) *itStock.SourceReservationResult {
 	vErrs := ft.NewClientErrors()
-	refuse := func(key, message string) {
-		vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, ft.ErrorKey(key, "inventory"), message))
+	refuse := func(field, key, message string) {
+		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "inventory"), message))
 	}
 
 	if request.SourceType == "" {
-		refuse("stock_transfer.source_type_required",
+		refuse("source_type", "stock_transfer.source_type_required",
 			"a reservation held for another module must name what kind of demand it serves")
 	}
 	if request.SourceId == "" {
-		refuse("stock_transfer.source_id_required",
+		refuse("source_id", "stock_transfer.source_id_required",
 			"a reservation held for another module must name the demand it serves")
 	}
 	if request.LocationId == "" {
-		refuse("stock_transfer.source_location_required",
+		refuse("location_id", "stock_transfer.source_location_required",
 			"a reservation must name the location the stock is held at")
 	}
 	if request.OperationTypeId == "" {
-		refuse("stock_transfer.operation_type_required",
+		refuse("operation_type_id", "stock_transfer.operation_type_required",
 			"a reservation must name the operation type it is raised under")
 	}
 	if len(request.Items) == 0 {
-		refuse("stock_transfer.no_moves",
+		refuse("items", "stock_transfer.no_moves",
 			"a reservation must ask for at least one item")
 	}
 

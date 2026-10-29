@@ -83,7 +83,7 @@
 			"name": "default_sales_tax_code",
 			"label": "sales.settings.defaultSalesTaxCode",
 			"description": "settings_desc.default_sales_tax_code",
-			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"data_type": { "type": "resource_code", "min": 0, "max": 50 },
 			"metadata": { "allow_override": false }
 		},
 		{

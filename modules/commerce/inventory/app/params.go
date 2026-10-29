@@ -52,16 +52,24 @@ func readStringSliceField(params dmodel.DynamicFields, field string) []string {
 // reaches a balance, but a JSON client may still send a bare number; both are parsed through
 // decimal, the only representation the rest of the module works in.
 func readDecimalField(params dmodel.DynamicFields, schemaName string, field string) (decimal.Decimal, *ft.ClientErrors) {
+	return readDecimalAt(params, schemaName, field, field)
+}
+
+// readDecimalAt reads a quantity nested in a request list; path names it in the request (e.g.
+// "lines[2].quantity") while the error key stays per field.
+func readDecimalAt(
+	params dmodel.DynamicFields, schemaName string, field string, path string,
+) (decimal.Decimal, *ft.ClientErrors) {
 	vErrs := ft.NewClientErrors()
 	value, ok := params[field]
 	if !ok || value == nil {
-		vErrs.Append(*ft.NewBusinessViolation(schemaName, ft.ErrorKey(schemaName+"."+field+"_required", "inventory"),
+		vErrs.Append(*ft.NewBusinessViolation(path, ft.ErrorKey(schemaName+"."+field+"_required", "inventory"),
 			"'"+field+"' is required"))
 		return decimal.Zero, vErrs
 	}
 	parsed, ok := toDecimal(value)
 	if !ok {
-		vErrs.Append(*ft.NewBusinessViolation(schemaName, ft.ErrorKey(schemaName+"."+field+"_malformed", "inventory"),
+		vErrs.Append(*ft.NewBusinessViolation(path, ft.ErrorKey(schemaName+"."+field+"_malformed", "inventory"),
 			"'"+field+"' must be a decimal number"))
 		return decimal.Zero, vErrs
 	}

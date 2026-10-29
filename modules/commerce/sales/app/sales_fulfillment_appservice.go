@@ -314,7 +314,7 @@ func readItemObjects(params dmodel.DynamicFields) ([]map[string]any, *ft.ClientE
 func attemptItemsViolation(message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesFulfillmentAttemptSchemaName, ft.ErrorKey(reasonAttemptItemsMalformed, "sales"), message))
+		paramItems, ft.ErrorKey(reasonAttemptItemsMalformed, "sales"), message))
 	return vErrs
 }
 

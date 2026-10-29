@@ -975,6 +975,7 @@
 	"warehouse.flow_invalid": "This is not a known flow",
 	"warehouse.has_active_reservations": "The warehouse still holds stock for reservations in force; release or consume them first",
 	"warehouse.has_supply_relations": "Archive the supply relations that name this warehouse first",
+	"warehouse.root_location_missing": "The warehouse has no root location to create its flow locations under; contact support to restore it",
 	"warehouse.not_found": "This warehouse does not exist",
 	"warehouse_role.central": "Central",
 	"warehouse_role.other": "Other",

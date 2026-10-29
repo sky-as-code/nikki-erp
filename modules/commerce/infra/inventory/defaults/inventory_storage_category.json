@@ -1,7 +1,7 @@
 [
 	{
 		"$alias": "storage_category_ambient",
-		"code": "ambient",
+		"code": "AMBIENT",
 		"name": {
 			"en-US": "Ambient shelving",
 			"vi-VN": "Kệ thường"

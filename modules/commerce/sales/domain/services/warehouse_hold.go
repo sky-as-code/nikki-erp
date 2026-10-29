@@ -72,8 +72,8 @@ func reserveAtWarehouse(
 	}
 	if warehouseId == "" {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.SalesOrderFulfillmentSchemaName, ft.ErrorKey(ReasonSalesPointNoWarehouse, "sales"),
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey(ReasonSalesPointNoWarehouse, "sales"),
 			"the sales point's location belongs to no warehouse, so nothing can be held for it"))
 		return vErrs, nil
 	}

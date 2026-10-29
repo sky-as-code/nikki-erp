@@ -6,7 +6,6 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 
-	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 )
 
@@ -18,14 +17,14 @@ func (this *StockReservationDomainServiceImpl) CheckWarehouseAvailability(
 ) (*itStock.WarehouseAvailabilityReport, error) {
 	vErrs := ft.NewClientErrors()
 	if query.OrgId == "" || query.WarehouseId == "" || query.ProductVariantId == "" {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
 			"org_id, warehouse_id and product_variant_id are required"))
 		return &itStock.WarehouseAvailabilityReport{ClientErrors: *vErrs}, nil
 	}
 	if query.Requested.IsNegative() {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
+			"requested", ft.ErrorKey(ReasonReservationRequestMalformed, "inventory"),
 			"requested must not be negative"))
 		return &itStock.WarehouseAvailabilityReport{ClientErrors: *vErrs}, nil
 	}

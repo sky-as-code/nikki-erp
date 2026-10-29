@@ -3,7 +3,6 @@ package services
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/safe"
-	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 	itAgreement "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/agreement"
 	itAudit "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/audit"
 	itConfiguration "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/configuration"
@@ -72,8 +71,7 @@ func (this *AuditEventCrudDomainServiceImpl) Delete(
 func rejectAuditEventWrite(
 	_ corectx.Context, _ *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
-	vErrs.Append(*ft.NewBusinessViolation(
-		models.AuditEventSchemaName,
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(
 		ft.ErrorKey("purchase_audit_event.not_client_writable", "purchase"),
 		"audit events are written by the system when a purchase order or agreement changes state; "+
 			"they cannot be created, edited or removed",
@@ -112,8 +110,7 @@ func (this *SourcingGroupCrudDomainServiceImpl) Delete(
 func rejectSourcingGroupWrite(
 	_ corectx.Context, _ *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
-	vErrs.Append(*ft.NewBusinessViolation(
-		models.SourcingGroupSchemaName,
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(
 		ft.ErrorKey("purchase_sourcing_group.not_client_writable", "purchase"),
 		"sourcing groups are created by adding an alternative to a purchase order and removed when "+
 			"fewer than two alternatives remain",

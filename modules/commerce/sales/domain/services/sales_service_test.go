@@ -14,11 +14,12 @@ func TestNormalizeChannelCode(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"already canonical", "vdmc", "vdmc"},
-		{"uppercase is lowered before create", "VDMC", "vdmc"},
-		{"mixed case", "VdMc", "vdmc"},
-		{"surrounding space is trimmed", "  vdmc  ", "vdmc"},
-		{"tab and newline are trimmed", "\tvdmc\n", "vdmc"},
+		{"already canonical", "VDMC", "VDMC"},
+		{"legacy lowercase is raised before create", "vdmc", "VDMC"},
+		{"mixed case", "VdMc", "VDMC"},
+		{"underscore becomes a hyphen", "pos_01", "POS-01"},
+		{"surrounding space is trimmed", "  vdmc  ", "VDMC"},
+		{"tab and newline are trimmed", "\tvdmc\n", "VDMC"},
 		{"empty stays empty", "", ""},
 		{"only space becomes empty", "   ", ""},
 	}
@@ -33,7 +34,7 @@ func TestNormalizeChannelCode(t *testing.T) {
 }
 
 func TestIsValidChannelCode(t *testing.T) {
-	valid := []string{"vdmc", "bo", "pos01", "ecom", "a", "0", "abc123"}
+	valid := []string{"VDMC", "BO", "POS01", "ECOM", "A", "0", "ABC123", "POS-01"}
 	for _, code := range valid {
 		if !IsValidChannelCode(code) {
 			t.Errorf("IsValidChannelCode(%q) = false, want true", code)
@@ -44,15 +45,14 @@ func TestIsValidChannelCode(t *testing.T) {
 	// where it would need escaping nobody would remember to apply.
 	invalid := map[string]string{
 		"":       "empty",
-		"VDMC":   "uppercase — normalize before validating, never after",
-		"vd mc":  "whitespace",
-		"vd_mc":  "underscore",
-		"vd-mc":  "hyphen",
-		"vd/mc":  "slash",
-		"vd.mc":  "dot",
-		"vdmc!":  "punctuation",
-		"vdmc\n": "newline",
-		"kênh":   "non-ascii",
+		"vdmc":   "lowercase — normalize before validating, never after",
+		"VD MC":  "whitespace",
+		"VD_MC":  "underscore",
+		"VD/MC":  "slash",
+		"VD.MC":  "dot",
+		"VDMC!":  "punctuation",
+		"VDMC\n": "newline",
+		"KÊNH":   "non-ascii",
 	}
 	for code, reason := range invalid {
 		if IsValidChannelCode(code) {
@@ -62,7 +62,7 @@ func TestIsValidChannelCode(t *testing.T) {
 }
 
 // Normalising then validating is the order the create path uses, and the pair must agree: a code
-// typed in uppercase is valid, because it is lowered first.
+// typed in any case is valid, because it is raised first, and the legacy underscore becomes a hyphen.
 func TestNormalizeThenValidate(t *testing.T) {
 	cases := []struct {
 		input string
@@ -71,7 +71,8 @@ func TestNormalizeThenValidate(t *testing.T) {
 		{"VDMC", true},
 		{"  Bo  ", true},
 		{"POS01", true},
-		{"VD_MC", false},
+		{"VD_MC", true},
+		{"VD MC", false},
 		{"", false},
 	}
 	for _, testCase := range cases {

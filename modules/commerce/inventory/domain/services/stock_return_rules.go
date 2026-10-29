@@ -4,8 +4,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-
-	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
 
 // The arithmetic behind a return, with no repository so it tests without a database.
@@ -39,13 +37,14 @@ func (this ReturnableLine) Returnable() decimal.Decimal {
 }
 
 // AssertReturnable refuses a requested quantity exceeding what is still returnable. It names both
-// numbers, since the caller's next step depends on the size of the gap.
-func AssertReturnable(line ReturnableLine, requested decimal.Decimal) *ft.ClientErrors {
+// numbers, since the caller's next step depends on the size of the gap. field names the request
+// entry that asked for the quantity.
+func AssertReturnable(line ReturnableLine, requested decimal.Decimal, field string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 
 	if requested.LessThanOrEqual(decimal.Zero) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockMoveSchemaName, ft.ErrorKey("stock_return.quantity_not_positive", "inventory"),
+			field, ft.ErrorKey("stock_return.quantity_not_positive", "inventory"),
 			"a return must send back a quantity greater than zero"))
 		return vErrs
 	}
@@ -53,7 +52,7 @@ func AssertReturnable(line ReturnableLine, requested decimal.Decimal) *ft.Client
 	returnable := line.Returnable()
 	if requested.GreaterThan(returnable) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockMoveSchemaName, ft.ErrorKey("stock_return.exceeds_returnable", "inventory"),
+			field, ft.ErrorKey("stock_return.exceeds_returnable", "inventory"),
 			"only "+returnable.String()+" of move '"+line.MoveId+
 				"' is still returnable, which is less than the "+requested.String()+" requested"))
 	}

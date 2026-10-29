@@ -39,7 +39,8 @@ func (t Type) IsTexty() bool {
 	switch t {
 	case TypeString, TypeEnumString,
 		Type(dmodel.FieldDataTypeNameEmail), Type(dmodel.FieldDataTypeNamePhone),
-		Type(dmodel.FieldDataTypeNameUrl), Type(dmodel.FieldDataTypeNameSlug):
+		Type(dmodel.FieldDataTypeNameUrl), Type(dmodel.FieldDataTypeNameSlug),
+		Type(dmodel.FieldDataTypeNameResourceCode):
 		return true
 	}
 	return false

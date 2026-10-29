@@ -975,6 +975,7 @@
 	"warehouse.flow_invalid": "Đây không phải là một quy trình hợp lệ",
 	"warehouse.has_active_reservations": "Kho vẫn đang giữ hàng cho các phiếu giữ hàng còn hiệu lực; hãy bỏ giữ hoặc xuất dùng chúng trước",
 	"warehouse.has_supply_relations": "Hãy lưu trữ các tuyến cung ứng có liên quan đến kho này trước",
+	"warehouse.root_location_missing": "Kho không có vị trí gốc để tạo các vị trí theo quy trình; vui lòng liên hệ hỗ trợ để khôi phục",
 	"warehouse.not_found": "Kho này không tồn tại",
 	"warehouse_role.central": "Kho tổng",
 	"warehouse_role.other": "Khác",

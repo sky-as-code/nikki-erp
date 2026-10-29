@@ -14,11 +14,11 @@
 		{
 			"name": "code",
 			"label": "fields.code",
-			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"data_type": { "type": "resource_code", "min": 1, "max": 50 },
 			"required_for_create": true,
 			"no_update": true,
 			"description": {
-				"en-US": "How this method is referred to everywhere else: momo, vietqr, mpos. Immutable, because orders already taken record it and a rename would detach them from the method they were paid by."
+				"en-US": "How this method is referred to everywhere else: MOMO, VIETQR, MPOS. Immutable, because orders already taken record it and a rename would detach them from the method they were paid by."
 			}
 		},
 		{

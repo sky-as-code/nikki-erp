@@ -101,13 +101,13 @@ func ResolveFulfillmentMethod(
 		return nil, nil, err
 	}
 	if method == nil {
-		return nil, violationResult(models.SalesFulfillmentMethodSchemaName,
+		return nil, violationResult("",
 			ReasonMethodNotFound, "no fulfillment method with id "+methodId), nil
 	}
 	if orgId := stringOf(method, basemodel.FieldOrgId); !sameOrg(orgId, request.OrgId) {
 		// Answered as "no such method" rather than "not yours": telling a caller that an id they
 		// guessed exists in another organization is the leak this refusal exists to prevent.
-		return nil, violationResult(models.SalesFulfillmentMethodSchemaName,
+		return nil, violationResult("",
 			ReasonMethodNotFound, "no fulfillment method with id "+methodId), nil
 	}
 
@@ -116,7 +116,7 @@ func ResolveFulfillmentMethod(
 	// different principal must not requalify a sale that was made anonymously.
 	if boolOf(method, models.SalesFulfillmentMethodFieldRequiresAuthenticatedCustomer) &&
 		request.CustomerIdentityMode != models.CustomerIdentityModeAuthenticated {
-		return nil, violationResult(models.SalesFulfillmentMethodSchemaName,
+		return nil, violationResult("",
 			ReasonMethodRequiresAuth,
 			"this fulfillment method may only be used by an identified customer, and this order "+
 				"was raised anonymously"), nil
@@ -176,7 +176,7 @@ func resolveMethodId(
 		}
 	}
 
-	return "", violationResult(models.SalesFulfillmentMethodSchemaName,
+	return "", violationResult("",
 		ReasonMethodUnresolved,
 		"no fulfillment method was named on the order, and neither the sales point nor the "+
 			"sales channel declares a default"), nil
@@ -199,7 +199,7 @@ func resolveTargetOutletId(
 	switch selection {
 	case models.InitialTargetSelectionCurrentSalesOutlet:
 		if request.SalesPointId == "" {
-			return "", violationResult(models.SalesOrderFulfillmentSchemaName,
+			return "", violationResult("",
 				ReasonTargetRequired,
 				"this fulfillment method delivers from the sales point the order was raised at, "+
 					"and the order names none"), nil
@@ -207,13 +207,13 @@ func resolveTargetOutletId(
 		return request.SalesPointId, nil, nil
 
 	case models.InitialTargetSelectionCustomerSelectedOutlet:
-		return "", violationResult(models.SalesOrderFulfillmentSchemaName,
+		return "", violationResult("",
 			ReasonTargetRequired,
 			"this fulfillment method requires the customer to choose where to collect; name a "+
 				"target sales point before confirming the order"), nil
 	}
 
-	return "", violationResult(models.SalesOrderFulfillmentSchemaName,
+	return "", violationResult("",
 		ReasonTargetRequired,
 		"the fulfillment method declares no target selection strategy"), nil
 }
@@ -229,7 +229,7 @@ func assertTargetUsable(
 	ctx corectx.Context, targetId string, orgId string,
 ) (string, *dyn.OpResult[dyn.MutateResultData], error) {
 	if targetId == "" {
-		return "", violationResult(models.SalesOrderFulfillmentSchemaName,
+		return "", violationResult("",
 			ReasonTargetRequired, "no fulfillment target was resolved"), nil
 	}
 
@@ -240,18 +240,18 @@ func assertTargetUsable(
 	// Cross-org and non-existent answer identically. A caller must not be able to discover that an
 	// id is real by the wording of its refusal.
 	if point == nil || !sameOrg(stringOf(point, basemodel.FieldOrgId), orgId) {
-		return "", violationResult(models.SalesPointSchemaName,
+		return "", violationResult("",
 			ReasonTargetNotFound, "no sales point with id "+targetId), nil
 	}
 	if !boolOf(point, models.SalesPointFieldFulfillmentEnabled) {
-		return "", violationResult(models.SalesPointSchemaName,
+		return "", violationResult("",
 			ReasonTargetNotFulfilling,
 			"sales point "+targetId+" is not enabled for fulfillment"), nil
 	}
 
 	locationId := stringOf(point, models.SalesPointFieldInventoryLocationId)
 	if locationId == "" {
-		return "", violationResult(models.SalesPointSchemaName,
+		return "", violationResult("",
 			ReasonTargetHasNoLocation,
 			"sales point "+targetId+" is enabled for fulfillment but names no inventory "+
 				"location, so there is nowhere to hold its stock"), nil

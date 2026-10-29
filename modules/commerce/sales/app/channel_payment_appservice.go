@@ -129,7 +129,7 @@ func (this *ChannelPaymentApplicationServiceImpl) EnableChannelPaymentMethod(
 	ctx corectx.Context, command it.ChannelPaymentMethodCommand,
 ) (*it.ChannelPaymentMutationResult, error) {
 	if command.PaymentMethodId == "" {
-		return paymentRejection("sales_channel.payment_method_required",
+		return paymentRejection(paramPaymentMethodId, "sales_channel.payment_method_required",
 			"enabling a payment method requires its id"), nil
 	}
 
@@ -147,7 +147,7 @@ func (this *ChannelPaymentApplicationServiceImpl) EnableChannelPaymentMethod(
 	// A retired channel is not configured: the change has no effect now and becomes a surprise if
 	// the channel is ever brought back.
 	if !models.NewSalesChannelFrom(channel).IsActive() {
-		return paymentRejection("sales_channel.not_usable",
+		return paymentRejection("", "sales_channel.not_usable",
 			"a suspended or archived sales channel cannot have its payment methods changed"), nil
 	}
 
@@ -183,7 +183,7 @@ func (this *ChannelPaymentApplicationServiceImpl) DisableChannelPaymentMethod(
 	ctx corectx.Context, command it.ChannelPaymentMethodCommand,
 ) (*it.ChannelPaymentMutationResult, error) {
 	if command.PaymentMethodId == "" {
-		return paymentRejection("sales_channel.payment_method_required",
+		return paymentRejection(paramPaymentMethodId, "sales_channel.payment_method_required",
 			"disabling a payment method requires its id"), nil
 	}
 
@@ -256,37 +256,38 @@ func (this *ChannelPaymentApplicationServiceImpl) resolveChannel(
 			return nil, nil, err
 		}
 		if found == nil || !found.HasData {
-			return nil, channelNotFound("no sales channel with id '" + channelId + "'"), nil
+			return nil, channelNotFound(paramRecordId, "no sales channel with id '"+channelId+"'"), nil
 		}
 		return found.Data, nil, nil
 	}
 
 	code := services.NormalizeChannelCode(channelCode)
 	if code == "" {
-		return nil, channelNotFound("a sales channel id or code is required"), nil
+		return nil, channelNotFound(paramRecordId, "a sales channel id or code is required"), nil
 	}
 	found, err := models.FindSalesChannelByCode(ctx, engineRepo, code, orgId)
 	if err != nil {
 		return nil, nil, err
 	}
 	if len(found) == 0 {
-		return nil, channelNotFound("no sales channel with code '" + code + "'"), nil
+		return nil, channelNotFound(paramSalesChannelCode, "no sales channel with code '"+code+"'"), nil
 	}
 	if len(found) > 1 {
-		return nil, channelNotFound("sales channel code '" + code + "' exists in several orgs; an org_id is required"), nil
+		return nil, channelNotFound(paramSalesChannelCode,
+			"sales channel code '"+code+"' exists in several orgs; an org_id is required"), nil
 	}
 	return found[0], nil, nil
 }
 
-func channelNotFound(message string) *ft.ClientErrors {
+func channelNotFound(field, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesChannelSchemaName, ft.ErrorKey("sales_channel.not_found", "sales"), message))
+		field, ft.ErrorKey("sales_channel.not_found", "sales"), message))
 	return vErrs
 }
 
-func paymentRejection(key, message string) *it.ChannelPaymentMutationResult {
+func paymentRejection(field, key, message string) *it.ChannelPaymentMutationResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName, ft.ErrorKey(key, "sales"), message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "sales"), message))
 	return &it.ChannelPaymentMutationResult{ClientErrors: *vErrs}
 }

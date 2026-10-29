@@ -23,7 +23,7 @@ import (
 const (
 	defaultCurrencyCode = "VND"
 	// kioskOperationTypeCode is the operation type Inventory's defaults create for kiosk sales.
-	kioskOperationTypeCode = "VDMC_DISPENSE"
+	kioskOperationTypeCode = "VDMC-DISPENSE"
 	paymentMethodAlias     = "payment_method_"
 )
 
@@ -199,7 +199,8 @@ func (this *OrgLifecycleAppServiceImpl) externalAliases(ctx corectx.Context) (*d
 		return nil, errors.Wrap(methods.ClientErrors.ToError(), "list payment methods")
 	}
 	for _, method := range methods.Data {
-		aliases.Remember(paymentMethodAlias+method.Code, model.Id(method.Id))
+		// The defaults name methods in alias case (@payment_method_momo); the codes are uppercase.
+		aliases.Remember(paymentMethodAlias+strings.ToLower(method.Code), model.Id(method.Id))
 	}
 	return aliases, nil
 }

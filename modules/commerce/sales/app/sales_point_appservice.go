@@ -30,7 +30,7 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 	ctx corectx.Context, command it.CreateSalesPointCommand,
 ) (*it.CreateSalesPointResult, error) {
 	if command.OrgId == "" {
-		return pointRejection("sales_point.org_required",
+		return pointRejection(models.SalesPointFieldOrgId, "sales_point.org_required",
 			"a sales point always belongs to one org"), nil
 	}
 	if cErrs := assertPermissionInOrg(ctx, composable.PermissionCreate,
@@ -42,11 +42,11 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 	// use, and this is the one that creates them. Without it a kiosk would register successfully and
 	// then fail every order at confirm, with nowhere to reserve from.
 	if command.FulfillmentEnabled && command.InventoryLocationId == "" {
-		return pointRejection("sales_point.inventory_location_required",
+		return pointRejection(models.SalesPointFieldInventoryLocationId, "sales_point.inventory_location_required",
 			"a sales point that fulfills orders must name the inventory location holding its stock"), nil
 	}
 	if command.Name == "" {
-		return pointRejection("sales_point.name_required",
+		return pointRejection(models.SalesPointFieldName, "sales_point.name_required",
 			"a sales point requires a name"), nil
 	}
 
@@ -55,7 +55,7 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 		return nil, err
 	}
 	if channel == nil {
-		return pointRejection("sales_channel.not_found",
+		return pointRejection(paramSalesChannelCode, "sales_channel.not_found",
 			"no sales channel with code '"+
 				services.NormalizeChannelCode(command.SalesChannelCode)+"'"), nil
 	}
@@ -323,9 +323,9 @@ func loadSalesPoint(ctx corectx.Context, salesPointId string) (dmodel.DynamicFie
 	return found.Data, nil
 }
 
-func pointRejection(key, message string) *it.CreateSalesPointResult {
+func pointRejection(field, key, message string) *it.CreateSalesPointResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesPointSchemaName, ft.ErrorKey(key, "sales"), message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "sales"), message))
 	return &it.CreateSalesPointResult{ClientErrors: *vErrs}
 }
 

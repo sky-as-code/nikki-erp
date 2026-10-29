@@ -17,7 +17,7 @@ import (
 
 func salesChannelOrgRequired() *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName,
+	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelFieldOrgId,
 		ft.ErrorKey("sales_channel.org_required", "sales"), "a sales channel always belongs to one org"))
 	return vErrs
 }
@@ -44,11 +44,11 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 
 	code := services.NormalizeChannelCode(command.Code)
 	if !services.IsValidChannelCode(code) {
-		return channelRejection("sales_channel.code_invalid",
-			"a sales channel code must be lowercase alphanumeric with no separators"), nil
+		return channelRejection(models.SalesChannelFieldCode, "sales_channel.code_invalid",
+			"a sales channel code may hold only uppercase letters, digits and hyphens"), nil
 	}
 	if command.ManagedByType == "" {
-		return channelRejection("sales_channel.managed_by_type_required",
+		return channelRejection(basemodel.FieldManagedByType, "sales_channel.managed_by_type_required",
 			"registering a sales channel requires the managed_by_type of the module that owns it"), nil
 	}
 
@@ -64,7 +64,7 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 	if len(existing) > 0 {
 		owner := stringOf(existing[0], basemodel.FieldManagedByType)
 		if owner != command.ManagedByType {
-			return channelRejection("sales_channel.code_already_owned",
+			return channelRejection(models.SalesChannelFieldCode, "sales_channel.code_already_owned",
 				"the sales channel code '"+code+"' is registered by module '"+owner+"'"), nil
 		}
 		// Same owner, same code: the retry path must look exactly like success.
@@ -124,7 +124,7 @@ func (this *SalesChannelApplicationServiceImpl) ResolveSalesChannelByCode(
 	code := services.NormalizeChannelCode(query.Code)
 	if code == "" {
 		return &it.ResolveSalesChannelResult{
-			ClientErrors: *resolveRejection("sales_channel.code_required",
+			ClientErrors: *resolveRejection(models.SalesChannelFieldCode, "sales_channel.code_required",
 				"resolving a sales channel requires a code"),
 		}, nil
 	}
@@ -139,7 +139,7 @@ func (this *SalesChannelApplicationServiceImpl) ResolveSalesChannelByCode(
 	}
 	if len(found) == 0 {
 		return &it.ResolveSalesChannelResult{
-			ClientErrors: *resolveRejection("sales_channel.not_found",
+			ClientErrors: *resolveRejection(models.SalesChannelFieldCode, "sales_channel.not_found",
 				"no sales channel with code '"+code+"'"),
 		}, nil
 	}
@@ -158,15 +158,15 @@ func (this *SalesChannelApplicationServiceImpl) ResolveSalesChannelByCode(
 	}, nil
 }
 
-func channelRejection(key, message string) *it.RegisterSalesChannelResult {
+func channelRejection(field, key, message string) *it.RegisterSalesChannelResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName, ft.ErrorKey(key, "sales"), message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "sales"), message))
 	return &it.RegisterSalesChannelResult{ClientErrors: *vErrs}
 }
 
-func resolveRejection(key, message string) *ft.ClientErrors {
+func resolveRejection(field, key, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesChannelSchemaName, ft.ErrorKey(key, "sales"), message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "sales"), message))
 	return vErrs
 }
 

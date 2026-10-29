@@ -25,7 +25,7 @@ func loadWarehouseById(
 ) (*models.Warehouse, *ft.ClientErrors, error) {
 	vErrs := ft.NewClientErrors()
 	if warehouseId == "" {
-		appendWarehouseViolation(vErrs, "warehouse.not_found", "no warehouse id was given")
+		appendWarehouseViolation(vErrs, models.WarehouseFieldId, "warehouse.not_found", "no warehouse id was given")
 		return nil, vErrs, nil
 	}
 
@@ -40,7 +40,7 @@ func loadWarehouseById(
 		return nil, vErrs, errors.Wrap(err, "loadWarehouseById")
 	}
 	if found == nil || !found.HasData {
-		appendWarehouseViolation(vErrs, "warehouse.not_found",
+		appendWarehouseViolation(vErrs, models.WarehouseFieldId, "warehouse.not_found",
 			"no warehouse with id '"+warehouseId+"'")
 		return nil, vErrs, nil
 	}
@@ -98,12 +98,14 @@ func (this *WarehouseDomainServiceImpl) countUnarchivedSupplyRelations(
 	return total, errors.Wrap(err, "countUnarchivedSupplyRelations")
 }
 
-func appendWarehouseViolation(vErrs *ft.ClientErrors, key string, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(models.WarehouseSchemaName, ft.ErrorKey(key, "inventory"), message))
+// appendWarehouseViolation names the input that caused the refusal in field; an empty field makes it a record-level
+// (anonymous) violation.
+func appendWarehouseViolation(vErrs *ft.ClientErrors, field string, key string, message string) {
+	vErrs.Append(*inventoryViolation(field, key, message))
 }
 
-func warehouseViolationResult(key string, message string) *dyn.OpResult[dyn.MutateResultData] {
+func warehouseViolationResult(field string, key string, message string) *dyn.OpResult[dyn.MutateResultData] {
 	vErrs := ft.NewClientErrors()
-	appendWarehouseViolation(vErrs, key, message)
+	appendWarehouseViolation(vErrs, field, key, message)
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
 }

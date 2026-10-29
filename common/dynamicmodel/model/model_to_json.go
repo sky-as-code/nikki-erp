@@ -133,7 +133,7 @@ func dataTypeToModelJson(dataType FieldDataType) (any, error) {
 		}
 		object["values"] = values
 
-	case "string", "secret", "langjson":
+	case "string", "secret", "langjson", "resource_code":
 		// The parser requires min and max for these, so a missing length is an error rather than
 		// an omission: the rebuilt field would silently accept values the original rejected.
 		length, err := intPair(options[FieldDataTypeOptLength], jsonName, "length")
@@ -240,6 +240,7 @@ var jsonDataTypeNames = map[string]string{
 	FieldDataTypeNameEtag:          "etag",
 	FieldDataTypeNameLangCode:      "langcode",
 	FieldDataTypeNameSlug:          "slug",
+	FieldDataTypeNameResourceCode:  "resource_code",
 	FieldDataTypeNamePhone:         "phone",
 	FieldDataTypeNameUlid:          "ulid",
 	FieldDataTypeNameUuid:          "uuid",

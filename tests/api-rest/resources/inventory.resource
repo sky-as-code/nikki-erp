@@ -58,10 +58,11 @@ Ensure Inventory Org
 
 Unique Code
     [Documentation]    `code` is unique (per org on most of these models), so it carries the
-    ...    same {words}+{hash} treatment as every other unique column.
+    ...    same {words}+{hash} treatment as every other unique column, in the strict
+    ...    resource_code form (uppercase, digits, hyphens).
     [Arguments]    ${words}=inv
     ${suffix}=    Unique Suffix
-    RETURN    ${words}_${suffix}
+    RETURN    ${{ ($words + '-' + $suffix).upper().replace('_', '-') }}
 
 # --- Master data ----------------------------------------------------------------------
 
@@ -511,7 +512,7 @@ Unique Warehouse Code
     ...    longer values, so warehouses get their own.
     [Arguments]    ${prefix}
     ${suffix}=    Unique Suffix
-    ${code}=    Set Variable    ${prefix}${suffix}
+    ${code}=    Set Variable    ${{ ($prefix + $suffix).upper().replace('_', '-') }}
     RETURN    ${code[:5]}
 
 Ensure Supplier Location Under Test
@@ -573,7 +574,7 @@ Ensure Correction Operation Type Under Test
     [Documentation]    The internal operation type adjustments and scraps generate their movements
     ...    through (decision F3).
     ...
-    ...    Its code is the fixed 'INV_CORRECTION', not a Unique Code like the other fixtures: the
+    ...    Its code is the fixed 'INV-CORRECTION', not a Unique Code like the other fixtures: the
     ...    correction helper resolves it by that exact string, and the constant it matches is
     ...    models.StockCorrectionOperationTypeCode. A randomised code here would make every
     ...    adjustment and scrap fail with "no internal operation type", which reads as a data
@@ -588,12 +589,12 @@ Ensure Correction Operation Type Under Test
     Ensure Inventory Loss Location Under Test
     ${name}=    Unique Display Name    Robot Correction Type
     ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'code': 'INV_CORRECTION', 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'code': 'INV-CORRECTION', 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     IF    ${resp.status_code} == 200 or ${resp.status_code} == 201
         ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ELSE
-        ${id}=    Find Operation Type By Code    INV_CORRECTION
+        ${id}=    Find Operation Type By Code    INV-CORRECTION
     END
     Set Global Variable    ${CORRECTION_OPERATION_TYPE_ID}    ${id}
 

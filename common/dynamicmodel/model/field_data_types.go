@@ -36,6 +36,7 @@ const (
 	FieldDataTypeNameEtag          = "nikkiEtag"
 	FieldDataTypeNameLangCode      = "nikkiLangCode"
 	FieldDataTypeNameLangJson      = "nikkiLangJson"
+	FieldDataTypeNameResourceCode  = "nikkiResourceCode"
 	FieldDataTypeNameSlug          = "nikkiSlug"
 	FieldDataTypeNameModelTime     = "nikkiTime"
 	FieldDataTypeNamePhone         = "phone"

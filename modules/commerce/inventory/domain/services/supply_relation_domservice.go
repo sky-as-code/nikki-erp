@@ -62,7 +62,7 @@ func (this *SupplyRelationDomainServiceImpl) Update(
 	}
 	if current == nil {
 		vErrs := ft.NewClientErrors()
-		appendSupplyViolation(vErrs, "warehouse_supply_relation.not_found",
+		appendSupplyViolation(vErrs, "", "warehouse_supply_relation.not_found",
 			"no supply relation with id '"+relationId+"'")
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
@@ -75,7 +75,8 @@ func (this *SupplyRelationDomainServiceImpl) Update(
 		}
 		if conflict {
 			vErrs := ft.NewClientErrors()
-			appendSupplyViolation(vErrs, "warehouse_supply_relation.default_exists",
+			appendSupplyViolation(vErrs, models.WarehouseSupplyRelationFieldIsDefault,
+				"warehouse_supply_relation.default_exists",
 				"another relation is already the default source for this warehouse")
 			return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 		}
@@ -92,12 +93,13 @@ func (this *SupplyRelationDomainServiceImpl) assertRelationValid(
 	destinationId := readStringParam(params, models.WarehouseSupplyRelationFieldDestinationWarehouseId)
 
 	if sourceId == "" || destinationId == "" {
-		appendSupplyViolation(vErrs, "warehouse_supply_relation.endpoints_required",
+		appendSupplyViolation(vErrs, "", "warehouse_supply_relation.endpoints_required",
 			"a supply relation needs both a source and a destination warehouse")
 		return vErrs, nil
 	}
 	if sourceId == destinationId {
-		appendSupplyViolation(vErrs, "warehouse_supply_relation.same_warehouse",
+		appendSupplyViolation(vErrs, models.WarehouseSupplyRelationFieldDestinationWarehouseId,
+			"warehouse_supply_relation.same_warehouse",
 			"a warehouse cannot supply itself")
 		return vErrs, nil
 	}
@@ -113,7 +115,7 @@ func (this *SupplyRelationDomainServiceImpl) assertRelationValid(
 		return vErrs, err
 	}
 	if duplicate {
-		appendSupplyViolation(vErrs, "warehouse_supply_relation.duplicate",
+		appendSupplyViolation(vErrs, "", "warehouse_supply_relation.duplicate",
 			"this supply route already exists")
 		return vErrs, nil
 	}
@@ -124,7 +126,8 @@ func (this *SupplyRelationDomainServiceImpl) assertRelationValid(
 			return vErrs, err
 		}
 		if conflict {
-			appendSupplyViolation(vErrs, "warehouse_supply_relation.default_exists",
+			appendSupplyViolation(vErrs, models.WarehouseSupplyRelationFieldIsDefault,
+				"warehouse_supply_relation.default_exists",
 				"another relation is already the default source for this warehouse")
 			return vErrs, nil
 		}
@@ -137,7 +140,7 @@ func (this *SupplyRelationDomainServiceImpl) assertRelationValid(
 		return vErrs, err
 	}
 	if cyclic {
-		appendSupplyViolation(vErrs, "warehouse_supply_relation.cycle",
+		appendSupplyViolation(vErrs, "", "warehouse_supply_relation.cycle",
 			"this route would make the resupply topology circular")
 	}
 	return vErrs, nil
@@ -152,7 +155,8 @@ func (this *SupplyRelationDomainServiceImpl) assertEndpointsUsable(
 		return vErrs, err
 	}
 	if sourceErrs.Count() > 0 {
-		appendSupplyViolation(vErrs, "warehouse_supply_relation.source_not_found",
+		appendSupplyViolation(vErrs, models.WarehouseSupplyRelationFieldSourceWarehouseId,
+			"warehouse_supply_relation.source_not_found",
 			"no warehouse with id '"+sourceId+"'")
 		return vErrs, nil
 	}
@@ -161,17 +165,18 @@ func (this *SupplyRelationDomainServiceImpl) assertEndpointsUsable(
 		return vErrs, err
 	}
 	if destErrs.Count() > 0 {
-		appendSupplyViolation(vErrs, "warehouse_supply_relation.destination_not_found",
+		appendSupplyViolation(vErrs, models.WarehouseSupplyRelationFieldDestinationWarehouseId,
+			"warehouse_supply_relation.destination_not_found",
 			"no warehouse with id '"+destinationId+"'")
 		return vErrs, nil
 	}
 
 	if isArchivedWarehouse(*source) || isArchivedWarehouse(*destination) {
-		appendSupplyViolation(vErrs, "warehouse_supply_relation.warehouse_archived",
+		appendSupplyViolation(vErrs, "", "warehouse_supply_relation.warehouse_archived",
 			"an archived warehouse cannot take part in a supply route")
 	}
 	if derefId(source.GetOrgId()) != derefId(destination.GetOrgId()) {
-		appendSupplyViolation(vErrs, "warehouse_supply_relation.org_mismatch",
+		appendSupplyViolation(vErrs, "", "warehouse_supply_relation.org_mismatch",
 			"both warehouses must belong to the same organisation")
 	}
 	return vErrs, nil
@@ -217,6 +222,6 @@ func isArchivedWarehouse(warehouse models.Warehouse) bool {
 	return archived != nil && *archived
 }
 
-func appendSupplyViolation(vErrs *ft.ClientErrors, key string, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(models.WarehouseSupplyRelationSchemaName, ft.ErrorKey(key, "inventory"), message))
+func appendSupplyViolation(vErrs *ft.ClientErrors, field string, key string, message string) {
+	vErrs.Append(*inventoryViolation(field, key, message))
 }

@@ -29,7 +29,7 @@
 	},
 	{
 		"$alias": "stock_operation_type_vdmc_dispense",
-		"code": "VDMC_DISPENSE",
+		"code": "VDMC-DISPENSE",
 		"name": {
 			"en-US": "Kiosk Dispense",
 			"vi-VN": "Xuất hàng cho khách tại kiosk"
@@ -42,7 +42,7 @@
 	},
 	{
 		"$alias": "stock_operation_type_vdmc_fill",
-		"code": "VDMC_FILL",
+		"code": "VDMC-FILL",
 		"name": {
 			"en-US": "Kiosk Replenishment",
 			"vi-VN": "Bổ sung hàng cho kiosk"
@@ -54,7 +54,7 @@
 	},
 	{
 		"$alias": "stock_operation_type_vdmc_return",
-		"code": "VDMC_RETURN",
+		"code": "VDMC-RETURN",
 		"name": {
 			"en-US": "Kiosk Stock Return",
 			"vi-VN": "Thu hồi hàng từ kiosk"

@@ -1020,7 +1020,7 @@ func readRefundLines(
 func refundViolation(message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesReturnSchemaName, ft.ErrorKey(reasonRefundMalformed, "sales"), message))
+		paramRefundLines, ft.ErrorKey(reasonRefundMalformed, "sales"), message))
 	return vErrs
 }
 
