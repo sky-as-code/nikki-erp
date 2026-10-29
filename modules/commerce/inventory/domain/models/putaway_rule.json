@@ -18,57 +18,46 @@
 			"name": "warehouse_id",
 			"label": "fields.warehouse_id",
 			"data_type": "ulid",
-			"required_for_create": true
+			"required_for_create": true,
+			"description": "field_desc.inventory_putaway_rule.warehouse_id"
 		},
 		{
 			"name": "source_location_id",
 			"label": "fields.source_location_id",
 			"data_type": "ulid",
 			"required_for_create": true,
-			"description": {
-				"en-US": "Where goods arrive for this rule to apply. The rule answers 'something landed here, where should it go next' and returns a suggestion only — it never moves anything."
-			}
+			"description": "field_desc.inventory_putaway_rule.source_location_id"
 		},
 		{
 			"name": "destination_location_id",
 			"label": "fields.destination_location_id",
 			"data_type": "ulid",
 			"required_for_create": true,
-			"description": {
-				"en-US": "Where the goods should be put. Must be able to hold stock and belong to the same warehouse as the source: a putaway rule is not a way to move goods between warehouses, which needs a transfer."
-			}
+			"description": "field_desc.inventory_putaway_rule.destination_location_id"
 		},
 		{
 			"name": "storage_category_id",
 			"label": "fields.storage_category_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "Narrows the rule to destinations in a given storage category. Optional."
-			}
+			"description": "field_desc.inventory_putaway_rule.storage_category_id"
 		},
 		{
 			"name": "product_id",
 			"label": "fields.product_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "Optional external reference. Warehouse does not own the Product lifecycle and holds no foreign key to it."
-			}
+			"description": "field_desc.inventory_putaway_rule.product_id"
 		},
 		{
 			"name": "product_category_id",
 			"label": "fields.product_category_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "Optional external reference, matched when the rule applies to a whole product category rather than one product."
-			}
+			"description": "field_desc.inventory_putaway_rule.product_category_id"
 		},
 		{
 			"name": "package_type_id",
 			"label": "fields.package_type_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "Optional external reference. No Package master data exists yet, so this is carried for forward compatibility and matched only when supplied."
-			}
+			"description": "field_desc.inventory_putaway_rule.package_type_id"
 		},
 		{
 			"name": "priority",
@@ -76,9 +65,7 @@
 			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
 			"required_for_create": true,
 			"default_value": 1,
-			"description": {
-				"en-US": "Order in which matching rules are considered. Lower is considered first, and the first valid candidate wins."
-			}
+			"description": "field_desc.inventory_putaway_rule.priority"
 		},
 		{
 			"name": "sublocation_strategy",
@@ -89,9 +76,7 @@
 			},
 			"required_for_create": true,
 			"default_value": "fixed",
-			"description": {
-				"en-US": "How a sublocation under the destination is chosen: always the destination itself, the one used most recently, or any matching the storage category."
-			}
+			"description": "field_desc.inventory_putaway_rule.sublocation_strategy"
 		},
 		{
 			"name": "org_id",

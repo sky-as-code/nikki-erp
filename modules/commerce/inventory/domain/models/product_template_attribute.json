@@ -12,24 +12,21 @@
 			"name": "product_template_id",
 			"label": "fields.product_template_id",
 			"data_type": "ulid",
-			"required_for_create": true
+			"required_for_create": true,
+			"description": "field_desc.inventory_product_template_attribute.product_template_id"
 		},
 		{
 			"name": "attribute_id",
 			"label": "fields.attribute_id",
 			"data_type": "ulid",
 			"required_for_create": true,
-			"description": {
-				"en-US": "Which global attribute applies to this template. The subset of its values the template allows lives in inventory_product_template_attribute_value."
-			}
+			"description": "field_desc.inventory_product_template_attribute.attribute_id"
 		},
 		{
 			"name": "sequence",
 			"label": "fields.sequence",
 			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
-			"description": {
-				"en-US": "Per-template display order, which may differ from the attribute's own global sequence."
-			}
+			"description": "field_desc.inventory_product_template_attribute.sequence"
 		},
 		{
 			"name": "is_enabled",
@@ -37,9 +34,7 @@
 			"data_type": "boolean",
 			"required_for_create": true,
 			"default_value": true,
-			"description": {
-				"en-US": "False once the attribute was removed from the template. The line is kept rather than deleted, because variants built from it still reference its values. At most one enabled line per template and attribute; the database cannot express that (a partial unique keys only on IS NOT NULL), so the configuration service enforces it under the template's etag."
-			}
+			"description": "field_desc.inventory_product_template_attribute.is_enabled"
 		},
 		{
 			"name": "application_revision",
@@ -47,9 +42,7 @@
 			"data_type": { "type": "int32", "min": 1, "max": 2147483647 },
 			"required_for_create": true,
 			"default_value": 1,
-			"description": {
-				"en-US": "Which application of the attribute to this template the line records. Re-adding a removed attribute starts revision + 1 with a fresh variant_creation_snapshot instead of reviving the old line."
-			}
+			"description": "field_desc.inventory_product_template_attribute.application_revision"
 		},
 		{
 			"name": "variant_creation_snapshot",
@@ -58,9 +51,7 @@
 				"type": "enum_string",
 				"values": ["instant", "dynamic", "never"]
 			},
-			"description": {
-				"en-US": "The attribute's variant_creation_mode at the moment this line was applied. System-set and kept after the line is disabled, so the variants it produced stay explainable."
-			}
+			"description": "field_desc.inventory_product_template_attribute.variant_creation_snapshot"
 		},
 		{
 			"name": "org_id",

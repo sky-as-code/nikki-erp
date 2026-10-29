@@ -86,11 +86,11 @@ func (this *StockQuantDomainServiceImpl) locationIdsWithUsage(
 // carried because a suspended location keeps its stock and keeps being shown, and the UI needs it
 // to badge the row.
 type locationDetail struct {
-	Id          string
-	Code        string
-	Name        string
-	Status      string
-	WarehouseId string
+	Id            string
+	CanonicalName string
+	Name          string
+	Status        string
+	WarehouseId   string
 }
 
 // loadLocationDetails reads the given locations in one batched search.
@@ -133,11 +133,11 @@ func (this *StockQuantDomainServiceImpl) loadLocationDetails(
 				continue
 			}
 			details[id] = locationDetail{
-				Id:          id,
-				Code:        derefString(location.GetCode()),
-				Name:        langJsonToString(location.GetName()),
-				Status:      derefString(location.GetStatus()),
-				WarehouseId: derefId(location.GetWarehouseId()),
+				Id:            id,
+				CanonicalName: derefString(location.GetCanonicalName()),
+				Name:          derefString(location.GetName()),
+				Status:        derefString(location.GetStatus()),
+				WarehouseId:   derefId(location.GetWarehouseId()),
 			}
 		}
 
@@ -213,7 +213,7 @@ func (this *StockQuantDomainServiceImpl) loadWarehouseDetails(
 		}
 		details[id] = warehouseDetail{
 			Code:   derefString(warehouse.GetCode()),
-			Name:   langJsonToString(warehouse.GetName()),
+			Name:   derefString(warehouse.GetName()),
 			Status: derefString(warehouse.GetStatus()),
 		}
 	}

@@ -21,11 +21,11 @@ CREATE TABLE "itstorage_spaces" (
   "size_bytes" bigint NULL,
   "owner_type" character varying NULL,
   "owner_id" character varying NULL,
-  "managed_by_type" character varying NULL,
-  "managed_by_id" character varying NULL,
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
+  "managed_by_type" character varying NULL,
+  "managed_by_id" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "itstorage_spaces_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "itstorage_spaces" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT

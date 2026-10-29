@@ -58,6 +58,8 @@ func (*CommerceModule) Deps() []string {
 	return []string{
 		"dynamicresource",
 		"essential",
+		// A warehouse's manager_user edge holds a foreign key to iam_user, so IAM's tables come first.
+		"iam",
 		// Purchase reads the vendor party, Sales the customer.
 		"contacts",
 		// Sales registers and reads its settings.

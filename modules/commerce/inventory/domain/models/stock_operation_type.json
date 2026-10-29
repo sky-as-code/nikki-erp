@@ -30,9 +30,7 @@
 			},
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "Immutable: transfers snapshot this value, and changing it would reinterpret the direction of movements already recorded against the type."
-			}
+			"description": "field_desc.inventory_stock_operation_type.operation_code"
 		},
 		{
 			"name": "reservation_method",
@@ -42,15 +40,14 @@
 				"values": ["at_confirmation", "manual", "before_scheduled_date"]
 			},
 			"required_for_create": true,
-			"default_value": "at_confirmation"
+			"default_value": "at_confirmation",
+			"description": "field_desc.inventory_stock_operation_type.reservation_method"
 		},
 		{
 			"name": "reserve_before_days",
 			"label": "fields.reserve_before_days",
 			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
-			"description": {
-				"en-US": "How many days before the scheduled date reservation starts. Only meaningful when reservation_method is 'before_scheduled_date'."
-			}
+			"description": "field_desc.inventory_stock_operation_type.reserve_before_days"
 		},
 		{
 			"name": "backorder_policy",
@@ -60,7 +57,8 @@
 				"values": ["ask", "always", "never"]
 			},
 			"required_for_create": true,
-			"default_value": "ask"
+			"default_value": "ask",
+			"description": "field_desc.inventory_stock_operation_type.backorder_policy"
 		},
 		{
 			"name": "shipping_policy",
@@ -69,17 +67,20 @@
 				"type": "enum_string",
 				"values": ["partial", "all_at_once"]
 			},
-			"default_value": "partial"
+			"default_value": "partial",
+			"description": "field_desc.inventory_stock_operation_type.shipping_policy"
 		},
 		{
 			"name": "default_source_location_id",
 			"label": "fields.default_source_location_id",
-			"data_type": "ulid"
+			"data_type": "ulid",
+			"description": "field_desc.inventory_stock_operation_type.default_source_location_id"
 		},
 		{
 			"name": "default_destination_location_id",
 			"label": "fields.default_destination_location_id",
-			"data_type": "ulid"
+			"data_type": "ulid",
+			"description": "field_desc.inventory_stock_operation_type.default_destination_location_id"
 		},
 		{
 			"name": "org_id",

@@ -8,13 +8,15 @@ import (
 // through them. Pure functions over the flow setting; nothing here reads or writes stock, and a
 // flow change provisions locations while leaving every existing quant and transfer alone.
 
-// systemLocationSpec describes one location a warehouse creates for itself.
+// systemLocationSpec describes one stop of a warehouse flow, a location the warehouse creates for
+// itself under its root. Purpose identifies it among the root's children; Name is its initial name.
 type systemLocationSpec struct {
-	Code    string
+	Name    string
 	Purpose string
 }
 
-// The codes are the segment names that appear in a location path, e.g. 'MAIN/Quality Control'.
+// The stops' names, which the flow legs also use to name them. "Stock" is the warehouse's root
+// location, where goods live.
 const (
 	warehouseStockLocationCode   = "Stock"
 	warehouseInputLocationCode   = "Input"
@@ -23,28 +25,17 @@ const (
 	warehouseOutputLocationCode  = "Output"
 )
 
-// requiredSystemLocations lists what a warehouse must have for its two flows. Stock is always
-// present, being where goods live; the rest depend on how many stops the flows declare.
-func requiredSystemLocations(incomingFlow string, outgoingFlow string) []systemLocationSpec {
-	specs := []systemLocationSpec{
-		{Code: warehouseStockLocationCode, Purpose: models.InventoryLocationPurposeStorage},
-	}
-	specs = append(specs, incomingFlowLocations(incomingFlow)...)
-	specs = append(specs, outgoingFlowLocations(outgoingFlow)...)
-	return specs
-}
-
 // incomingFlowLocations lists the stops goods make on the way in, beyond Stock itself.
 func incomingFlowLocations(flow string) []systemLocationSpec {
 	switch flow {
 	case models.WarehouseFlowTwoStep:
 		return []systemLocationSpec{
-			{Code: warehouseInputLocationCode, Purpose: models.InventoryLocationPurposeReceiving},
+			{Name: warehouseInputLocationCode, Purpose: models.InventoryLocationPurposeReceiving},
 		}
 	case models.WarehouseFlowThreeStep:
 		return []systemLocationSpec{
-			{Code: warehouseInputLocationCode, Purpose: models.InventoryLocationPurposeReceiving},
-			{Code: warehouseQualityLocationCode, Purpose: models.InventoryLocationPurposeQuality},
+			{Name: warehouseInputLocationCode, Purpose: models.InventoryLocationPurposeReceiving},
+			{Name: warehouseQualityLocationCode, Purpose: models.InventoryLocationPurposeQuality},
 		}
 	default:
 		return nil
@@ -56,12 +47,12 @@ func outgoingFlowLocations(flow string) []systemLocationSpec {
 	switch flow {
 	case models.WarehouseFlowTwoStep:
 		return []systemLocationSpec{
-			{Code: warehouseOutputLocationCode, Purpose: models.InventoryLocationPurposeOutput},
+			{Name: warehouseOutputLocationCode, Purpose: models.InventoryLocationPurposeOutput},
 		}
 	case models.WarehouseFlowThreeStep:
 		return []systemLocationSpec{
-			{Code: warehousePackingLocationCode, Purpose: models.InventoryLocationPurposePacking},
-			{Code: warehouseOutputLocationCode, Purpose: models.InventoryLocationPurposeOutput},
+			{Name: warehousePackingLocationCode, Purpose: models.InventoryLocationPurposePacking},
+			{Name: warehouseOutputLocationCode, Purpose: models.InventoryLocationPurposeOutput},
 		}
 	default:
 		return nil
@@ -91,8 +82,8 @@ func ResolveIncomingFlow(flow string) []FlowLeg {
 	from := FlowEndpointVendor
 	legs := make([]FlowLeg, 0, len(stops)+1)
 	for _, stop := range stops {
-		legs = append(legs, FlowLeg{FromCode: from, ToCode: stop.Code})
-		from = stop.Code
+		legs = append(legs, FlowLeg{FromCode: from, ToCode: stop.Name})
+		from = stop.Name
 	}
 	return append(legs, FlowLeg{FromCode: from, ToCode: warehouseStockLocationCode})
 }
@@ -104,8 +95,8 @@ func ResolveOutgoingFlow(flow string) []FlowLeg {
 	from := warehouseStockLocationCode
 	legs := make([]FlowLeg, 0, len(stops)+1)
 	for _, stop := range stops {
-		legs = append(legs, FlowLeg{FromCode: from, ToCode: stop.Code})
-		from = stop.Code
+		legs = append(legs, FlowLeg{FromCode: from, ToCode: stop.Name})
+		from = stop.Name
 	}
 	return append(legs, FlowLeg{FromCode: from, ToCode: FlowEndpointCustomer})
 }
@@ -121,12 +112,12 @@ func obsoleteSystemLocations(previousFlow string, nextFlow string, outgoing bool
 
 	stillNeeded := map[string]bool{}
 	for _, spec := range lister(nextFlow) {
-		stillNeeded[spec.Code] = true
+		stillNeeded[spec.Name] = true
 	}
 
 	obsolete := make([]systemLocationSpec, 0)
 	for _, spec := range lister(previousFlow) {
-		if !stillNeeded[spec.Code] {
+		if !stillNeeded[spec.Name] {
 			obsolete = append(obsolete, spec)
 		}
 	}

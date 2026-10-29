@@ -23,39 +23,31 @@
 			"label": "fields.parent_category_id",
 			"data_type": "ulid",
 			"required_for_create": true,
-			"description": {
-				"en-US": "Parent in the category tree. The org's root category points to itself; a create without a parent goes under the root. The tree must stay acyclic, which the engine enforces because the schema cannot."
-			}
+			"description": "field_desc.inventory_product_category.parent_category_id"
 		},
 		{
 			"name": "is_root",
 			"label": "fields.is_root",
 			"data_type": "boolean",
 			"no_update": true,
-			"description": {
-				"en-US": "True only on the org's root category \"Default\", NULL on every other category. Never false: the partial unique index on (org_id, is_root) would count a false row as a second root."
-			}
+			"description": "field_desc.inventory_product_category.is_root"
 		},
 		{
 			"name": "canonical_name",
 			"label": "fields.canonical_name",
 			"data_type": { "type": "langjson", "min": 1, "max": 8000 },
-			"description": {
-				"en-US": "The names from the root down to this category, joined by ' / ', e.g. 'Default / Beverages / Soft drinks'. Maintained by the server, never written by a client."
-			}
+			"description": "field_desc.inventory_product_category.canonical_name"
 		},
 		{
 			"name": "display_order",
 			"label": "fields.display_order",
 			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
-			"description": {
-				"en-US": "Display order among siblings."
-			}
+			"description": "field_desc.inventory_product_category.display_order"
 		},
 		{
 			"name": "description",
 			"label": "fields.description",
-			"data_type": { "type": "langjson", "min": 0, "max": 2000 }
+			"data_type": { "type": "string", "min": 0, "max": 2000 }
 		},
 		{
 			"name": "source_system",
@@ -63,17 +55,13 @@
 			"data_type": { "type": "string", "min": 1, "max": 50 },
 			"required_for_create": true,
 			"default_value": "manual",
-			"description": {
-				"en-US": "Which system the record originates from: 'manual' for records entered through the UI, 'import' for rows loaded from a file, or an external system's own code. Together with external_id it is the key an import uses to recognise a record it has written before."
-			}
+			"description": "field_desc.inventory_product_category.source_system"
 		},
 		{
 			"name": "external_id",
 			"label": "fields.external_id",
 			"data_type": { "type": "string", "min": 1, "max": 200 },
-			"description": {
-				"en-US": "The record's identifier in its source system. Optional; unique per tenant together with source_system when present, which is the database's last defence against importing one record twice."
-			}
+			"description": "field_desc.inventory_product_category.external_id"
 		},
 		{
 			"name": "org_id",

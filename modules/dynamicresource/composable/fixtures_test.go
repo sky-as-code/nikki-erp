@@ -216,6 +216,12 @@ func (this *fakeDomainService) Delete(_ corectx.Context, cmd DeleteCommand, opti
 	return &MutateResult{HasData: true}, nil
 }
 
+func (this *fakeDomainService) DeleteManaged(
+	ctx corectx.Context, cmd DeleteCommand, options ...DeleteOptions,
+) (*MutateResult, error) {
+	return this.Delete(ctx, cmd, options...)
+}
+
 func (this *fakeDomainService) SetArchived(_ corectx.Context, cmd SetArchivedCommand) (*MutateResult, error) {
 	this.record(cmd)
 	return &MutateResult{HasData: true}, nil

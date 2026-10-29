@@ -18,7 +18,9 @@ Schema Declares The Core Fields
     Dictionary Should Contain Key    ${fields}    code
     Dictionary Should Contain Key    ${fields}    name
     Dictionary Should Contain Key    ${fields}    warehouse_role
-    Dictionary Should Contain Key    ${fields}    parent_warehouse_id
+    Dictionary Should Contain Key    ${fields}    root_location_id
+    Dictionary Should Contain Key    ${fields}    manager_user_id
+    Dictionary Should Not Contain Key    ${fields}    parent_warehouse_id
     Dictionary Should Contain Key    ${fields}    incoming_flow
     Dictionary Should Contain Key    ${fields}    outgoing_flow
     Dictionary Should Contain Key    ${fields}    status

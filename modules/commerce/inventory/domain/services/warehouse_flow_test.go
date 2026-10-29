@@ -74,19 +74,13 @@ func assertLegsConnect(t *testing.T, legs []FlowLeg, flow string) {
 	}
 }
 
-// A warehouse always has Stock; the rest follow from the flows.
-func TestRequiredSystemLocations(t *testing.T) {
-	oneStep := requiredSystemLocations(models.WarehouseFlowOneStep, models.WarehouseFlowOneStep)
-	assert.Equal(t, []systemLocationSpec{
-		{Code: "Stock", Purpose: models.InventoryLocationPurposeStorage},
-	}, oneStep, "a one-step warehouse needs nowhere to stop")
-
-	full := requiredSystemLocations(models.WarehouseFlowThreeStep, models.WarehouseFlowThreeStep)
-	codes := make([]string, 0, len(full))
-	for _, spec := range full {
-		codes = append(codes, spec.Code)
-	}
-	assert.Equal(t, []string{"Stock", "Input", "Quality Control", "Packing", "Output"}, codes)
+// Every stop a flow names resolves to a purpose, which is how the stop is found under the root.
+func TestStopPurpose(t *testing.T) {
+	assert.Equal(t, models.InventoryLocationPurposeReceiving, stopPurpose("Input"))
+	assert.Equal(t, models.InventoryLocationPurposeQuality, stopPurpose("Quality Control"))
+	assert.Equal(t, models.InventoryLocationPurposePacking, stopPurpose("Packing"))
+	assert.Equal(t, models.InventoryLocationPurposeOutput, stopPurpose("Output"))
+	assert.Empty(t, stopPurpose("Stock"), "Stock is the root, not a flow stop")
 }
 
 // Reducing a flow leaves locations behind. They are reported so the caller can suspend them; the
@@ -113,7 +107,7 @@ func TestObsoleteSystemLocations(t *testing.T) {
 func specCodes(specs []systemLocationSpec) []string {
 	codes := make([]string, 0, len(specs))
 	for _, spec := range specs {
-		codes = append(codes, spec.Code)
+		codes = append(codes, spec.Name)
 	}
 	return codes
 }

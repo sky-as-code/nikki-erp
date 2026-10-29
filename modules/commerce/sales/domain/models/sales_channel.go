@@ -17,7 +17,6 @@ const (
 	SalesChannelFieldCode                       = "code"
 	SalesChannelFieldName                       = "name"
 	SalesChannelFieldDescription                = "description"
-	SalesChannelFieldManagedByModule            = "managed_by_module"
 	SalesChannelFieldStatus                     = "status"
 	SalesChannelFieldIsSystem                   = "is_system"
 	SalesChannelFieldDefaultFulfillmentMethodId = "default_fulfillment_method_id"
@@ -86,14 +85,6 @@ func (this SalesChannel) GetDescription() *string {
 
 func (this *SalesChannel) SetDescription(description *string) {
 	this.GetFieldData().SetString(SalesChannelFieldDescription, description)
-}
-
-func (this SalesChannel) GetManagedByModule() *string {
-	return this.GetFieldData().GetString(SalesChannelFieldManagedByModule)
-}
-
-func (this *SalesChannel) SetManagedByModule(moduleName *string) {
-	this.GetFieldData().SetString(SalesChannelFieldManagedByModule, moduleName)
 }
 
 func (this SalesChannel) GetStatus() *string {

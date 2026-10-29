@@ -70,7 +70,7 @@ type WarehouseStockRow struct {
 // LocationStockRow is one location's holding of a variant.
 type LocationStockRow struct {
 	LocationId   model.Id
-	LocationCode string
+	LocationCanonicalName string
 	LocationName string
 
 	// LocationStatus lets the UI badge a suspended location, which keeps its stock and keeps being

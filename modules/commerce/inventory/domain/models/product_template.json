@@ -15,15 +15,13 @@
 			"name": "name",
 			"label": "fields.name",
 			"data_type": { "type": "langjson", "min": 1, "max": 200 },
-			"required_for_create": true,
-			"description": {
-				"en-US": "Template-owned. Variants inherit this rather than storing their own copy; a variant's display name is computed as template name + attribute values."
-			}
+			"required_for_create": true
 		},
 		{
 			"name": "short_name",
 			"label": "fields.short_name",
-			"data_type": { "type": "langjson", "min": 0, "max": 100 }
+			"data_type": { "type": "langjson", "min": 0, "max": 100 },
+			"description": "field_desc.inventory_product_template.short_name"
 		},
 		{
 			"name": "product_type",
@@ -34,105 +32,102 @@
 			},
 			"required_for_create": true,
 			"default_value": "goods",
-			"description": {
-				"en-US": "How the system processes the product. Only goods are tracked in stock; a service never is, combo or not."
-			}
+			"description": "field_desc.inventory_product_template.product_type"
 		},
 		{
 			"name": "is_combo",
 			"label": "fields.is_combo",
 			"data_type": "boolean",
 			"default_value": false,
-			"description": {
-				"en-US": "Marks a bundle sold as one product. Stock tracking still follows product_type: a goods combo is tracked, a service combo is not."
-			}
+			"description": "field_desc.inventory_product_template.is_combo"
 		},
 		{
 			"name": "category_id",
 			"label": "fields.category_id",
 			"data_type": "ulid",
-			"required_for_create": true
+			"required_for_create": true,
+			"description": "field_desc.inventory_product_template.category_id"
 		},
 		{
 			"name": "brand_id",
 			"label": "fields.brand_id",
-			"data_type": "ulid"
+			"data_type": "ulid",
+			"description": "field_desc.inventory_product_template.brand_id"
 		},
 		{
 			"name": "uom_id",
 			"label": "fields.uom_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "Unit the product is counted and sold in. Nullable: templates predating this field carry none, and the variant flattens whatever is here for its listings."
-			}
+			"description": "field_desc.inventory_product_template.uom_id"
 		},
 		{
 			"name": "sale_ok",
 			"label": "fields.sale_ok",
 			"data_type": "boolean",
-			"default_value": true
+			"default_value": true,
+			"description": "field_desc.inventory_product_template.sale_ok"
 		},
 		{
 			"name": "purchase_ok",
 			"label": "fields.purchase_ok",
 			"data_type": "boolean",
-			"default_value": true
+			"default_value": true,
+			"description": "field_desc.inventory_product_template.purchase_ok"
 		},
 		{
 			"name": "description",
 			"label": "fields.description",
-			"data_type": { "type": "langjson", "min": 0, "max": 4000 }
+			"data_type": { "type": "string", "min": 0, "max": 4000 }
 		},
 		{
 			"name": "sales_description",
 			"label": "fields.sales_description",
-			"data_type": { "type": "langjson", "min": 0, "max": 4000 }
+			"data_type": { "type": "string", "min": 0, "max": 4000 },
+			"description": "field_desc.inventory_product_template.sales_description"
 		},
 		{
 			"name": "purchase_description",
 			"label": "fields.purchase_description",
-			"data_type": { "type": "langjson", "min": 0, "max": 4000 }
+			"data_type": { "type": "string", "min": 0, "max": 4000 },
+			"description": "field_desc.inventory_product_template.purchase_description"
 		},
 		{
 			"name": "preview_image_file_id",
 			"label": "fields.preview_image_file_id",
 			"data_type": "ulid",
 			"metadata": { "file_field": true },
-			"description": {
-				"en-US": "IT Storage file id of the template's header image, also the shared fallback: a variant with no image of its own renders this one. No foreign key by design; the file lifecycle is the resource engine's."
-			}
+			"description": "field_desc.inventory_product_template.preview_image_file_id"
 		},
 		{
 			"name": "base_sales_price",
 			"label": "fields.base_sales_price",
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
 			"default_value": "0",
-			"description": {
-				"en-US": "The product's public or reference selling price, before any commercial policy is applied. It is the basis Sales prices from, not the price anyone necessarily pays: a pricelist rule may discount it, mark it up, or replace it outright, and the price on an order is the snapshot taken when the line was added. Excludes tax, customer discount, promotion and quantity break, each of which belongs to the module that owns it.\n\nOn the template rather than the variant, and unlike cost. A variant does not store its own copy — it derives effective_base_sales_price from this plus the price extras of its attribute values, so raising this raises every variant's price at once with nothing to re-run (BR-PRICE-VARIANT-004).\n\nCarries no currency of its own. The amount is denominated in the organization's default currency, which Accounting owns as a setting (BR-PRICE-CUR-003); a currency column here would be a second answer to that question, free to disagree with it."
-			}
+			"description": "field_desc.inventory_product_template.base_sales_price"
 		},
 		{
 			"name": "default_weight",
 			"label": "fields.default_weight",
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
-			"description": {
-				"en-US": "Fallback for variants that do not carry their own weight."
-			}
+			"description": "field_desc.inventory_product_template.default_weight"
 		},
 		{
 			"name": "default_length",
 			"label": "fields.default_length",
-			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": "field_desc.inventory_product_template.default_length"
 		},
 		{
 			"name": "default_width",
 			"label": "fields.default_width",
-			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": "field_desc.inventory_product_template.default_width"
 		},
 		{
 			"name": "default_height",
 			"label": "fields.default_height",
-			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": "field_desc.inventory_product_template.default_height"
 		},
 		{
 			"name": "status",
@@ -142,10 +137,7 @@
 				"values": ["draft", "active", "discontinued"]
 			},
 			"required_for_create": true,
-			"default_value": "draft",
-			"description": {
-				"en-US": "Business lifecycle of the product line. Distinct from is_archived, which is system visibility: a discontinued product may deliberately stay unarchived so it still appears in discontinued-product listings."
-			}
+			"default_value": "draft"
 		},
 		{
 			"name": "source_system",
@@ -153,17 +145,13 @@
 			"data_type": { "type": "string", "min": 1, "max": 50 },
 			"required_for_create": true,
 			"default_value": "manual",
-			"description": {
-				"en-US": "Which system the record originates from: 'manual' for records entered through the UI, 'import' for rows loaded from a file, or an external system's own code. Together with external_id it is the key an import uses to recognise a record it has written before."
-			}
+			"description": "field_desc.inventory_product_template.source_system"
 		},
 		{
 			"name": "external_id",
 			"label": "fields.external_id",
 			"data_type": { "type": "string", "min": 1, "max": 200 },
-			"description": {
-				"en-US": "The record's identifier in its source system. Optional; unique per tenant together with source_system when present, which is the database's last defence against importing one record twice."
-			}
+			"description": "field_desc.inventory_product_template.external_id"
 		},
 		{
 			"name": "org_id",
@@ -176,18 +164,14 @@
 			"label": "fields.category_name",
 			"data_type": { "type": "langjson", "min": 0, "max": 200 },
 			"computed": { "kind": "related", "is_stored": false, "field": "category.name" },
-			"description": {
-				"en-US": "The category's name, read through the edge for listings."
-			}
+			"description": "field_desc.inventory_product_template.category_name"
 		},
 		{
 			"name": "uom_name",
 			"label": "fields.uom_name",
 			"data_type": { "type": "langjson", "min": 0, "max": 200 },
 			"computed": { "kind": "related", "is_stored": false, "field": "uom.name" },
-			"description": {
-				"en-US": "The unit's name, read through the edge. A variant listing reaches the same value through its own related field (product_template.uom.name) or through this one; both resolve to the unit's name column."
-			}
+			"description": "field_desc.inventory_product_template.uom_name"
 		},
 		{
 			"name": "variant_count",
@@ -199,9 +183,7 @@
 				"source": "variants",
 				"function": "count"
 			},
-			"description": {
-				"en-US": "Number of active (unarchived) variants, computed as a correlated COUNT subquery when the field is explicitly requested. Archived variants are excluded by the framework's archive scoping; COUNT itself reads 0 for a variant-less template, so no default is needed."
-			}
+			"description": "field_desc.inventory_product_template.variant_count"
 		},
 		{
 			"name": "min_variant_cost",
@@ -214,9 +196,7 @@
 				"function": "min",
 				"field": "cost"
 			},
-			"description": {
-				"en-US": "The lowest cost among this template's variants. Read model only, for a product list that wants to show a range; never a cost anything is valued at (BR-PRICE-VARIANT-014).\n\nNo default: a template with no variants reads NULL rather than 0, and the distinction matters. Zero is a cost somebody set; NULL is the absence of one, and showing 0 for a product nobody has costed would be a number a reader would believe."
-			}
+			"description": "field_desc.inventory_product_template.min_variant_cost"
 		},
 		{
 			"name": "max_variant_cost",
@@ -229,18 +209,14 @@
 				"function": "max",
 				"field": "cost"
 			},
-			"description": {
-				"en-US": "The highest cost among this template's variants — the other end of the range min_variant_cost opens. Equal to it exactly when every variant costs the same, which is what makes the pair a usable answer to \"does this product have one cost or several?\" without a second query.\n\nA template has NO authoritative cost of its own (BR-PRICE-VARIANT-006, PRICE-VARIANT-INV-006). Averaging these two, or taking either as the product's cost, is explicitly forbidden (BR-PRICE-VARIANT-014): cost is owned by the concrete variant, and a template with several variants genuinely has several costs. When the two differ, a reader should be shown that fact — not a number that hides it."
-			}
+			"description": "field_desc.inventory_product_template.max_variant_cost"
 		},
 		{
 			"name": "attribute_configuration",
 			"label": "fields.attribute_configuration",
 			"data_type": "jsonmap",
 			"computed": { "kind": "function", "is_stored": false, "function": "inventory.template_attribute_configuration" },
-			"description": {
-				"en-US": "The current attribute configuration in the shape a save sends: {attribute_lines: [{id, attribute_id, value_ids, sequence, variant_creation_snapshot, application_revision}], exclusions: [{left_value_id, right_value_id}]}, catalogue ids, enabled lines and selected values only. Written through attribute_lines / exclusions on the template's own create and update."
-			}
+			"description": "field_desc.inventory_product_template.attribute_configuration"
 		}
 	],
 

@@ -10,9 +10,10 @@ Test Tags         inventory    inventory_location    update
 Update Succeeds
     ${name}=    Unique Display Name    Robot Updated Location
     ${resp}=    PATCH On Session    api    ${INVENTORY_LOCATION_API}/${INVENTORY_LOCATION_ID}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'name': {'en-US': $name}, 'etag': $INVENTORY_LOCATION_ETAG} }}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'name': $name, 'etag': $INVENTORY_LOCATION_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${INVENTORY_LOCATION_ETAG}
     IF    $etag is not None    Set Global Variable    ${INVENTORY_LOCATION_ETAG}    ${etag}
+    Set Global Variable    ${INVENTORY_LOCATION_NAME}    ${name}
 
 Update Location Type Succeeds
     [Documentation]    Reclassifying a location is allowed while it is configuration. It is
@@ -40,7 +41,7 @@ Update With Unmatched Etag Fails
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Stale Location
     ${resp}=    PATCH On Session    api    ${INVENTORY_LOCATION_API}/${INVENTORY_LOCATION_ID}
-    ...    json=${{ {'org_id': $INV_ORG_ID, 'name': {'en-US': $name}, 'etag': '___________________'} }}    expected_status=any
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'name': $name, 'etag': '___________________'} }}    expected_status=any
     Response Should Be Etag Unmatched Error    ${resp}
 
 Update With Invalid Id Format Fails

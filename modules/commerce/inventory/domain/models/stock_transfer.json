@@ -18,16 +18,15 @@
 			"data_type": { "type": "string", "min": 1, "max": 50 },
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "Human-readable document number, generated at create time from the operation type's sequence, never supplied by the client. Immutable: it is the reference quoted on paperwork and in other documents, so renumbering a transfer would orphan every mention of it."
-			}
+			"description": "field_desc.inventory_stock_transfer.transfer_number"
 		},
 		{
 			"name": "operation_type_id",
 			"label": "fields.operation_type_id",
 			"data_type": "ulid",
 			"required_for_create": true,
-			"no_update": true
+			"no_update": true,
+			"description": "field_desc.inventory_stock_transfer.operation_type_id"
 		},
 		{
 			"name": "operation_code",
@@ -38,29 +37,27 @@
 			},
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "Snapshot of the operation type's direction, taken at create time (BR 4.2.3.4). Held on the transfer rather than read through the edge so that reconfiguring an operation type cannot reinterpret the direction of a movement already recorded."
-			}
+			"description": "field_desc.inventory_stock_transfer.operation_code"
 		},
 		{
 			"name": "origin_reference",
 			"label": "fields.origin_reference",
 			"data_type": { "type": "string", "min": 0, "max": 100 },
-			"description": {
-				"en-US": "The upstream document that caused this transfer, e.g. a purchase or sales order number. A plain string because the originating modules are outside Inventory and may not exist."
-			}
+			"description": "field_desc.inventory_stock_transfer.origin_reference"
 		},
 		{
 			"name": "source_location_id",
 			"label": "fields.source_location_id",
 			"data_type": "ulid",
-			"required_for_create": true
+			"required_for_create": true,
+			"description": "field_desc.inventory_stock_transfer.source_location_id"
 		},
 		{
 			"name": "destination_location_id",
 			"label": "fields.destination_location_id",
 			"data_type": "ulid",
-			"required_for_create": true
+			"required_for_create": true,
+			"description": "field_desc.inventory_stock_transfer.destination_location_id"
 		},
 		{
 			"name": "status",
@@ -71,19 +68,14 @@
 			},
 			"required_for_create": true,
 			"default_value": "draft",
-			"no_update": true,
-			"description": {
-				"en-US": "System-managed lifecycle state. Immutable to clients: it is advanced only by confirm, reserve, validate and cancel, because a status set by hand would claim an outcome no movement produced (BR 6.1)."
-			}
+			"no_update": true
 		},
 		{
 			"name": "priority",
 			"label": "fields.priority",
 			"data_type": { "type": "int32", "min": 0, "max": 100 },
 			"default_value": 0,
-			"description": {
-				"en-US": "Higher values are handled first when stock is scarce. Ordering only; it grants no claim on stock, which is what reservation is for."
-			}
+			"description": "field_desc.inventory_stock_transfer.priority"
 		},
 		{
 			"name": "reservation_method",
@@ -95,9 +87,7 @@
 			"required_for_create": true,
 			"default_value": "at_confirmation",
 			"no_update": true,
-			"description": {
-				"en-US": "Snapshot of the operation type's setting at create time (BR 4.2.1.4). See operation_code for why it is copied rather than referenced."
-			}
+			"description": "field_desc.inventory_stock_transfer.reservation_method"
 		},
 		{
 			"name": "backorder_policy",
@@ -109,9 +99,7 @@
 			"required_for_create": true,
 			"default_value": "ask",
 			"no_update": true,
-			"description": {
-				"en-US": "Snapshot taken at create time. What happens to the unprocessed remainder when a transfer is validated partially (BR 4.2.3.11)."
-			}
+			"description": "field_desc.inventory_stock_transfer.backorder_policy"
 		},
 		{
 			"name": "shipping_policy",
@@ -123,66 +111,53 @@
 			"required_for_create": true,
 			"default_value": "partial",
 			"no_update": true,
-			"description": {
-				"en-US": "Snapshot taken at create time. 'all_at_once' refuses to become ready until every move is fully allocated."
-			}
+			"description": "field_desc.inventory_stock_transfer.shipping_policy"
 		},
 		{
 			"name": "scheduled_at",
 			"label": "fields.scheduled_at",
 			"data_type": "datetime",
-			"description": {
-				"en-US": "When the transfer is planned to happen. Drives 'before_scheduled_date' reservation."
-			}
+			"description": "field_desc.inventory_stock_transfer.scheduled_at"
 		},
 		{
 			"name": "deadline_at",
 			"label": "fields.deadline_at",
-			"data_type": "datetime"
+			"data_type": "datetime",
+			"description": "field_desc.inventory_stock_transfer.deadline_at"
 		},
 		{
 			"name": "completed_at",
 			"label": "fields.completed_at",
 			"data_type": "datetime",
 			"no_update": true,
-			"description": {
-				"en-US": "Stamped by validate, and by nothing else. Its presence is what makes a transfer historical."
-			}
+			"description": "field_desc.inventory_stock_transfer.completed_at"
 		},
 		{
 			"name": "backorder_of_id",
 			"label": "fields.backorder_of_id",
 			"data_type": "ulid",
 			"no_update": true,
-			"description": {
-				"en-US": "The transfer this one carries the remainder of. Set when a partial validate creates a backorder; the original is left Done with its demand intact (STOCK-INV-010, STOCK-INV-020)."
-			}
+			"description": "field_desc.inventory_stock_transfer.backorder_of_id"
 		},
 		{
 			"name": "return_of_id",
 			"label": "fields.return_of_id",
 			"data_type": "ulid",
 			"no_update": true,
-			"description": {
-				"en-US": "The transfer this one reverses. Declared now and written by the reverse-transfer phase; a Done transfer is corrected by a reverse, never by an edit."
-			}
+			"description": "field_desc.inventory_stock_transfer.return_of_id"
 		},
 		{
 			"name": "chain_group_id",
 			"label": "fields.chain_group_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "Groups the steps of a multi-step flow, e.g. pick then pack then ship. Shared by every transfer in the chain (BR 7.7)."
-			}
+			"description": "field_desc.inventory_stock_transfer.chain_group_id"
 		},
 		{
 			"name": "idempotency_key",
 			"label": "fields.idempotency_key",
 			"data_type": { "type": "string", "min": 0, "max": 100 },
 			"no_update": true,
-			"description": {
-				"en-US": "The key of the validate that completed this transfer. A retried validate carrying the same key returns the prior result instead of moving stock again (BR 8.7). Null until the transfer is validated. Deliberately NOT a partial unique: the DSL's partial unique also emits an index over the rows where the field IS NULL, which would permit only one un-validated transfer per org. Replay is detected by the service reading this key back, and the row lock taken during validate is what serialises two concurrent retries."
-			}
+			"description": "field_desc.inventory_stock_transfer.idempotency_key"
 		},
 		{
 			"name": "note",
@@ -194,26 +169,20 @@
 			"label": "fields.source_type",
 			"data_type": { "type": "string", "min": 0, "max": 50 },
 			"no_update": true,
-			"description": {
-				"en-US": "What kind of demand this transfer serves, as a '{module}_{concept}' string such as 'sales_fulfillment'. Together with source_id and a move's source_item_id it is the structured counterpart of origin_reference, which is free text naming an upstream document for a human to read. This triple is machine-resolvable instead: it is what lets a caller release or reallocate exactly the hold it created without having remembered the transfer id. Immutable, since repointing it would strand the reservation it names. Null for transfers raised inside Inventory, which serve no external demand."
-			}
+			"description": "field_desc.inventory_stock_transfer.source_type"
 		},
 		{
 			"name": "source_id",
 			"label": "fields.source_id",
 			"data_type": { "type": "string", "min": 1, "max": 255 },
 			"no_update": true,
-			"description": {
-				"en-US": "The opaque key of the demand named by source_type. Sales uses a fulfillment id for a single target, or fulfillmentId:locationId for a slot-specific hold. It is not necessarily a ULID and must be preserved exactly for reservation retries and releases. No cross-module foreign key. Immutable alongside the type that qualifies it."
-			}
+			"description": "field_desc.inventory_stock_transfer.source_id"
 		},
 		{
 			"name": "expires_at",
 			"label": "fields.expires_at",
 			"data_type": "datetime",
-			"description": {
-				"en-US": "When this reservation stops holding its stock, in UTC. Null means it does not lapse on a timer, which is the ordinary case: a transfer that is about to be validated needs no expiry. A value is what a customer-controlled hold needs, because otherwise one unclaimed order keeps a kiosk slot out of the sellable pool forever. The sweep that acts on this releases the stock and nothing more — expiring a hold is not cancelling the demand behind it, and never refunds anybody."
-			}
+			"description": "field_desc.inventory_stock_transfer.expires_at"
 		},
 		{
 			"name": "org_id",

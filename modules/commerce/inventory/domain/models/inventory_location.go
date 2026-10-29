@@ -6,8 +6,13 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 
+	"github.com/sky-as-code/nikki-erp/modules/commerce/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
+
+// InventoryLocationManagedByWarehouse is the managed_by_type of a warehouse's root location: the
+// location the warehouse creates for itself, archives, unarchives and deletes together with itself.
+var InventoryLocationManagedByWarehouse = basemodel.ManagedByType(constants.CommerceModuleName, WarehouseSchemaName)
 
 // InventoryLocationUsage is a location's logistics behaviour and decides whether stock in it is
 // company-owned. Only Internal holds real inventory; the rest are counterparties and virtual
@@ -57,13 +62,12 @@ const (
 	InventoryLocationSchemaName = "inventory_location"
 
 	InventoryLocationFieldId                        = basemodel.FieldId
-	InventoryLocationFieldCode                      = "code"
 	InventoryLocationFieldName                      = "name"
+	InventoryLocationFieldCanonicalName             = "canonical_name"
 	InventoryLocationFieldLocationUsage             = "location_usage"
 	InventoryLocationFieldPurpose                   = "purpose"
 	InventoryLocationFieldWarehouseId               = "warehouse_id"
 	InventoryLocationFieldParentLocationId          = "parent_location_id"
-	InventoryLocationFieldCompletePath              = "complete_path"
 	InventoryLocationFieldHierarchyDepth            = "hierarchy_depth"
 	InventoryLocationFieldBarcode                   = "barcode"
 	InventoryLocationFieldStorageCategoryId         = "storage_category_id"
@@ -98,20 +102,23 @@ func NewInventoryLocationFrom(src dmodel.DynamicFields) *InventoryLocation {
 	return &InventoryLocation{basemodel.NewDynamicModel(src)}
 }
 
-func (this InventoryLocation) GetCode() *string {
-	return this.GetFieldData().GetString(InventoryLocationFieldCode)
+func (this InventoryLocation) GetName() *string {
+	return this.GetFieldData().GetString(InventoryLocationFieldName)
 }
 
-func (this *InventoryLocation) SetCode(v *string) {
-	this.GetFieldData().SetString(InventoryLocationFieldCode, v)
+func (this *InventoryLocation) SetName(v *string) {
+	this.GetFieldData().SetString(InventoryLocationFieldName, v)
 }
 
-func (this InventoryLocation) GetName() *model.LangJson {
-	return this.GetFieldData().GetLangJson(InventoryLocationFieldName)
+// GetCanonicalName is the name of every ancestor and then this location's own, joined by
+// ProductCategoryCanonicalSeparator: 'CMR / Zone A / Rack 01'. Derived from the tree by the domain
+// service, which rewrites it for the whole subtree on a rename or re-parent.
+func (this InventoryLocation) GetCanonicalName() *string {
+	return this.GetFieldData().GetString(InventoryLocationFieldCanonicalName)
 }
 
-func (this *InventoryLocation) SetName(v *model.LangJson) {
-	this.GetFieldData().SetLangJson(InventoryLocationFieldName, v)
+func (this *InventoryLocation) SetCanonicalName(v *string) {
+	this.GetFieldData().SetString(InventoryLocationFieldCanonicalName, v)
 }
 
 func (this InventoryLocation) GetLocationUsage() *string {
@@ -131,21 +138,14 @@ func (this *InventoryLocation) SetPurpose(v *string) {
 }
 
 // GetWarehouseId returns nil when the location belongs to no warehouse, normal for vendor,
-// customer, inventory-loss and shared transit locations.
+// customer, inventory-loss and shared transit locations. Derived, never client input: a warehouse's
+// root carries its warehouse, every other location inherits its parent's.
 func (this InventoryLocation) GetWarehouseId() *model.Id {
 	return this.GetFieldData().GetModelId(InventoryLocationFieldWarehouseId)
 }
 
 func (this *InventoryLocation) SetWarehouseId(v *model.Id) {
 	this.GetFieldData().SetModelId(InventoryLocationFieldWarehouseId, v)
-}
-
-func (this InventoryLocation) GetCompletePath() *string {
-	return this.GetFieldData().GetString(InventoryLocationFieldCompletePath)
-}
-
-func (this *InventoryLocation) SetCompletePath(v *string) {
-	this.GetFieldData().SetString(InventoryLocationFieldCompletePath, v)
 }
 
 func (this InventoryLocation) GetStorageCategoryId() *model.Id {
@@ -181,7 +181,7 @@ func (this *InventoryLocation) SetParentLocationId(v *model.Id) {
 	this.GetFieldData().SetModelId(InventoryLocationFieldParentLocationId, v)
 }
 
-// GetHierarchyDepth is 0 for a root. Derived alongside complete_path; the tree is the source of
+// GetHierarchyDepth is 0 for a root. Derived alongside canonical_name; the tree is the source of
 // truth.
 func (this InventoryLocation) GetHierarchyDepth() *int32 {
 	return this.GetFieldData().GetInt32(InventoryLocationFieldHierarchyDepth)
@@ -211,4 +211,19 @@ func (this InventoryLocation) GetOrgId() *model.Id {
 
 func (this *InventoryLocation) SetOrgId(v *model.Id) {
 	this.GetFieldData().SetModelId(InventoryLocationFieldOrgId, v)
+}
+
+func (this InventoryLocation) GetManagedByType() *string {
+	return this.GetFieldData().GetString(basemodel.FieldManagedByType)
+}
+
+func (this InventoryLocation) GetManagedById() *model.Id {
+	return this.GetFieldData().GetModelId(basemodel.FieldManagedById)
+}
+
+// IsWarehouseRoot reports a warehouse's root location: managed by the warehouse whose id is
+// managed_by_id. Its usage is fixed, and it lives and goes with its warehouse.
+func (this InventoryLocation) IsWarehouseRoot() bool {
+	managedBy := this.GetManagedByType()
+	return managedBy != nil && *managedBy == InventoryLocationManagedByWarehouse
 }

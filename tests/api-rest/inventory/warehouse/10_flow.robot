@@ -21,7 +21,7 @@ Widening The Incoming Flow Creates The Stops It Needs
     Should Be Equal    ${item}[incoming_flow]    three_step
 
     FOR    ${expected}    IN    Input    Quality Control
-        ${found}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    ${expected}
+        ${found}=    Find Warehouse Location    ${WAREHOUSE_ID}    ${expected}
         Should Not Be Empty    ${found}    msg=Three-step receipt needs a '${expected}' location
     END
 
@@ -33,7 +33,7 @@ Widening The Outgoing Flow Creates The Stops It Needs
     Response Status Should Be    ${resp}    200
 
     FOR    ${expected}    IN    Packing    Output
-        ${found}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    ${expected}
+        ${found}=    Find Warehouse Location    ${WAREHOUSE_ID}    ${expected}
         Should Not Be Empty    ${found}    msg=Three-step delivery needs a '${expected}' location
     END
 
@@ -41,7 +41,7 @@ Narrowing A Flow Suspends The Unused Stop Rather Than Deleting It
     [Documentation]    Goods that once passed through Quality Control are recorded as having
     ...    done so. Deleting the location would break those records, so it is suspended: still
     ...    there, still resolvable, no longer offered for new work.
-    ${quality}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    Quality Control
+    ${quality}=    Find Warehouse Location    ${WAREHOUSE_ID}    Quality Control
     Should Not Be Empty    ${quality}
 
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/configure_incoming_flow
@@ -54,7 +54,7 @@ Narrowing A Flow Suspends The Unused Stop Rather Than Deleting It
     Should Be Equal    ${item}[status]    suspended
     ...    msg=A stop a flow no longer uses is suspended, never deleted
 
-    ${input}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    Input
+    ${input}=    Find Warehouse Location    ${WAREHOUSE_ID}    Input
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${input}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}
     ${item}=    Item Should Match Schema    ${resp}    ${INVENTORY_SCHEMA_DIR}/inventory_location.json    200
@@ -64,13 +64,13 @@ Narrowing A Flow Suspends The Unused Stop Rather Than Deleting It
 Widening Again Reuses The Suspended Stop
     [Documentation]    Switching a flow back and forth must not accumulate duplicate locations.
     ...    The suspended stop is resumed rather than a second one created.
-    ${before}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    Quality Control
+    ${before}=    Find Warehouse Location    ${WAREHOUSE_ID}    Quality Control
 
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}/${WAREHOUSE_ID}/configure_incoming_flow
     ...    json=${{ {'org_id': $INV_ORG_ID, 'flow': 'three_step'} }}
     Response Status Should Be    ${resp}    200
 
-    ${after}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    Quality Control
+    ${after}=    Find Warehouse Location    ${WAREHOUSE_ID}    Quality Control
     Should Be Equal    ${before}    ${after}
     ...    msg=The same location comes back, rather than a duplicate being created
 

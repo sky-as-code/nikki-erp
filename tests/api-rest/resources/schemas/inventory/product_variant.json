@@ -87,13 +87,13 @@
             "type": ["object", "null"]
         },
         "product_template_description": {
-            "type": ["object", "null"]
+            "type": ["string", "null"]
         },
         "product_template_sales_description": {
-            "type": ["object", "null"]
+            "type": ["string", "null"]
         },
         "product_template_purchase_description": {
-            "type": ["object", "null"]
+            "type": ["string", "null"]
         },
         "product_template_category_id": {
             "type": ["string", "null"]

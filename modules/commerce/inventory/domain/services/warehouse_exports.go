@@ -13,17 +13,12 @@ import (
 // What the application layer needs from the warehouse domain, exported narrowly: the app package
 // orchestrates two domain services across one transaction, and the rules stay in this package.
 
-// RequiredSystemLocations lists the locations a warehouse must have for its two flows.
-func RequiredSystemLocations(incomingFlow string, outgoingFlow string) []SystemLocationSpec {
-	return toExportedSpecs(requiredSystemLocations(incomingFlow, outgoingFlow))
-}
-
-// IncomingFlowLocations lists the stops goods make on the way in, beyond Stock itself.
+// IncomingFlowLocations lists the stops goods make on the way in, beyond the root itself.
 func IncomingFlowLocations(flow string) []SystemLocationSpec {
 	return toExportedSpecs(incomingFlowLocations(flow))
 }
 
-// OutgoingFlowLocations lists the stops goods make on the way out, beyond Stock itself.
+// OutgoingFlowLocations lists the stops goods make on the way out, beyond the root itself.
 func OutgoingFlowLocations(flow string) []SystemLocationSpec {
 	return toExportedSpecs(outgoingFlowLocations(flow))
 }
@@ -34,16 +29,17 @@ func ObsoleteSystemLocations(previousFlow string, nextFlow string, outgoing bool
 	return toExportedSpecs(obsoleteSystemLocations(previousFlow, nextFlow, outgoing))
 }
 
-// SystemLocationSpec describes one location a warehouse creates for itself.
+// SystemLocationSpec describes one stop of a warehouse flow: a location the warehouse creates for
+// itself under its root, told apart from the root's other children by its purpose.
 type SystemLocationSpec struct {
-	Code    string
+	Name    string
 	Purpose string
 }
 
 func toExportedSpecs(specs []systemLocationSpec) []SystemLocationSpec {
 	exported := make([]SystemLocationSpec, 0, len(specs))
 	for _, spec := range specs {
-		exported = append(exported, SystemLocationSpec{Code: spec.Code, Purpose: spec.Purpose})
+		exported = append(exported, SystemLocationSpec(spec))
 	}
 	return exported
 }
@@ -85,11 +81,15 @@ func MarkLocationSystemGenerated(ctx corectx.Context, locationId string) error {
 	})
 }
 
-// FindWarehouseLocationByCode resolves one of a warehouse's own locations by its code. Codes are
-// unique within an org and system locations carry the codes the flow topology names.
-func FindWarehouseLocationByCode(
-	ctx corectx.Context, warehouseId string, code string,
+// FindWarehouseFlowLocation resolves one stop of a warehouse flow: the system-generated child of
+// the warehouse's root with the stop's purpose. Nil when the warehouse has no such stop.
+func FindWarehouseFlowLocation(
+	ctx corectx.Context, warehouse models.Warehouse, purpose string,
 ) (*models.InventoryLocation, error) {
+	rootId := derefId(warehouse.GetRootLocationId())
+	if rootId == "" {
+		return nil, nil
+	}
 	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return nil, err
@@ -97,24 +97,47 @@ func FindWarehouseLocationByCode(
 
 	graph := &dmodel.SearchGraph{}
 	graph.And(
-		*dmodel.NewSearchNode().NewCondition(
-			models.InventoryLocationFieldWarehouseId, dmodel.Equals, warehouseId),
-		*dmodel.NewSearchNode().NewCondition(
-			models.InventoryLocationFieldCode, dmodel.Equals, code),
+		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldParentLocationId, dmodel.Equals, rootId),
+		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldIsSystemGenerated, dmodel.Equals, true),
+		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldPurpose, dmodel.Equals, purpose),
 	)
-
-	found, err := engine.Search(ctx, dyn.RepoSearchParam{
-		Graph: graph,
-		Page:  0,
-		Size:  1,
-	})
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{Graph: graph, Page: 0, Size: 1})
 	if err != nil {
-		return nil, errors.Wrap(err, "FindWarehouseLocationByCode")
+		return nil, errors.Wrap(err, "FindWarehouseFlowLocation")
 	}
 	if found == nil || !found.HasData || len(found.Data.Items) == 0 {
 		return nil, nil
 	}
 	return models.NewInventoryLocationFrom(found.Data.Items[0]), nil
+}
+
+// ResolveWarehouseStop turns a stop named in a flow leg into its location id: "Stock" is the
+// warehouse's root, any other stop its flow location. Empty when the warehouse lacks the stop.
+func ResolveWarehouseStop(ctx corectx.Context, warehouse models.Warehouse, stopName string) (string, error) {
+	if stopName == warehouseStockLocationCode {
+		return derefId(warehouse.GetRootLocationId()), nil
+	}
+	purpose := stopPurpose(stopName)
+	if purpose == "" {
+		return "", nil
+	}
+	found, err := FindWarehouseFlowLocation(ctx, warehouse, purpose)
+	if err != nil || found == nil {
+		return "", err
+	}
+	return derefString(found.GetId()), nil
+}
+
+// stopPurpose looks a stop up in the three-step flows, which name every stop there is.
+func stopPurpose(stopName string) string {
+	allStops := append(incomingFlowLocations(models.WarehouseFlowThreeStep),
+		outgoingFlowLocations(models.WarehouseFlowThreeStep)...)
+	for _, spec := range allStops {
+		if spec.Name == stopName {
+			return spec.Purpose
+		}
+	}
+	return ""
 }
 
 // WithWarehouseTransaction runs body inside one transaction on a cloned context. Warehouse creation

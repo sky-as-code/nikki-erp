@@ -41,7 +41,7 @@ const (
 	WarehouseFieldCode              = "code"
 	WarehouseFieldName              = "name"
 	WarehouseFieldWarehouseRole     = "warehouse_role"
-	WarehouseFieldParentWarehouseId = "parent_warehouse_id"
+	WarehouseFieldRootLocationId    = "root_location_id"
 	WarehouseFieldAddress           = "address"
 	WarehouseFieldManagerUserId     = "manager_user_id"
 	WarehouseFieldIncomingFlow      = "incoming_flow"
@@ -50,7 +50,8 @@ const (
 	WarehouseFieldNotes             = "notes"
 	WarehouseFieldOrgId             = "org_id"
 
-	WarehouseEdgeParentWarehouse = "parent_warehouse"
+	WarehouseEdgeRootLocation = "root_location"
+	WarehouseEdgeManagerUser  = "manager_user"
 )
 
 //go:embed warehouse.json
@@ -80,12 +81,12 @@ func (this *Warehouse) SetCode(v *string) {
 	this.GetFieldData().SetString(WarehouseFieldCode, v)
 }
 
-func (this Warehouse) GetName() *model.LangJson {
-	return this.GetFieldData().GetLangJson(WarehouseFieldName)
+func (this Warehouse) GetName() *string {
+	return this.GetFieldData().GetString(WarehouseFieldName)
 }
 
-func (this *Warehouse) SetName(v *model.LangJson) {
-	this.GetFieldData().SetLangJson(WarehouseFieldName, v)
+func (this *Warehouse) SetName(v *string) {
+	this.GetFieldData().SetString(WarehouseFieldName, v)
 }
 
 func (this Warehouse) GetWarehouseRole() *string {
@@ -96,14 +97,14 @@ func (this *Warehouse) SetWarehouseRole(v *string) {
 	this.GetFieldData().SetString(WarehouseFieldWarehouseRole, v)
 }
 
-// GetParentWarehouseId is nil for a root warehouse. The relationship is organisational only: stock
-// at the parent is not stock at the child.
-func (this Warehouse) GetParentWarehouseId() *model.Id {
-	return this.GetFieldData().GetModelId(WarehouseFieldParentWarehouseId)
+// GetRootLocationId is the location the warehouse created for itself on creation and manages: the
+// top of its location tree and where its stock lives. Nil only while the create is still running.
+func (this Warehouse) GetRootLocationId() *model.Id {
+	return this.GetFieldData().GetModelId(WarehouseFieldRootLocationId)
 }
 
-func (this *Warehouse) SetParentWarehouseId(v *model.Id) {
-	this.GetFieldData().SetModelId(WarehouseFieldParentWarehouseId, v)
+func (this *Warehouse) SetRootLocationId(v *model.Id) {
+	this.GetFieldData().SetModelId(WarehouseFieldRootLocationId, v)
 }
 
 func (this Warehouse) GetIncomingFlow() *string {

@@ -39,7 +39,7 @@
 		{
 			"name": "description",
 			"label": "fields.description",
-			"data_type": { "type": "langjson", "min": 0, "max": 2000 }
+			"data_type": { "type": "string", "min": 0, "max": 2000 }
 		},
 		{
 			"name": "currency_id",

@@ -77,7 +77,7 @@ A System Generated Location Cannot Be Archived While Its Warehouse Lives
     ...    with nothing saying why, so the warehouse is archived instead.
     [Tags]    negative
     Ensure Warehouse Under Test
-    ${stock}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    Stock
+    ${stock}=    Find Warehouse Location    ${WAREHOUSE_ID}    Stock
     Should Not Be Empty    ${stock}
 
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${stock}
@@ -90,7 +90,7 @@ A System Generated Location Cannot Be Archived While Its Warehouse Lives
 A System Generated Location Cannot Be Moved
     [Documentation]    Its place in the tree is what the warehouse flow created it for.
     [Tags]    negative
-    ${stock}=    Find Warehouse Location By Code    ${WAREHOUSE_ID}    Stock
+    ${stock}=    Find Warehouse Location    ${WAREHOUSE_ID}    Stock
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}/${stock}/move
     ...    json=${{ {'org_id': $INV_ORG_ID, 'parent_location_id': $LIFECYCLE_LOCATION_ID} }}    expected_status=any
     Should Be True    ${resp.status_code} >= 400
@@ -102,7 +102,7 @@ A Client Cannot Mint A System Generated Location
     ${name}=    Unique Display Name    Robot Pretender
     ${code}=    Unique Code    pretend
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'internal', 'is_system_generated': True, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_usage': 'internal', 'is_system_generated': True, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
 
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${id}
@@ -132,7 +132,7 @@ Ensure Lifecycle Location
     ${name}=    Unique Display Name    Robot Lifecycle Location
     ${code}=    Unique Code    lifeloc
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${LIFECYCLE_LOCATION_ID}    ${id}
 
@@ -146,6 +146,6 @@ Create Child Of Lifecycle Location
     ${name}=    Unique Display Name    Robot Lifecycle Child
     ${code}=    Unique Code    lifekid
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'internal', 'parent_location_id': $LIFECYCLE_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_usage': 'internal', 'parent_location_id': $LIFECYCLE_LOCATION_ID, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}

@@ -8,7 +8,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
 // loadWarehouse fetches one warehouse, reporting a missing id as a client error: the id came from
@@ -73,26 +72,6 @@ func writeWarehouseFields(
 	}
 	_, err = engine.Update(ctx, update)
 	return errors.Wrap(err, "writeWarehouseFields")
-}
-
-// countUnarchivedChildren reports how many live warehouses sit directly under one.
-func (this *WarehouseDomainServiceImpl) countUnarchivedChildren(
-	ctx corectx.Context, warehouseId string,
-) (int, error) {
-	engine, err := repoFor(models.WarehouseSchemaName)
-	if err != nil {
-		return 0, err
-	}
-
-	graph := &dmodel.SearchGraph{}
-	graph.And(
-		*dmodel.NewSearchNode().NewCondition(
-			models.WarehouseFieldParentWarehouseId, dmodel.Equals, warehouseId),
-		*dmodel.NewSearchNode().NewCondition(basemodel.FieldIsArchived, dmodel.Equals, false),
-	)
-
-	total, err := countMatching(ctx, engine, graph)
-	return total, errors.Wrap(err, "countUnarchivedChildren")
 }
 
 // countUnarchivedSupplyRelations reports how many live resupply routes name this warehouse, in

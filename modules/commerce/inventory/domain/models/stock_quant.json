@@ -17,16 +17,15 @@
 			"data_type": "ulid",
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "The concrete variant this balance is held for. A stock transaction must reference a variant, never a template, because a template alone does not identify a physical article (BR 3.1)."
-			}
+			"description": "field_desc.inventory_stock_quant.product_variant_id"
 		},
 		{
 			"name": "location_id",
 			"label": "fields.location_id",
 			"data_type": "ulid",
 			"required_for_create": true,
-			"no_update": true
+			"no_update": true,
+			"description": "field_desc.inventory_stock_quant.location_id"
 		},
 		{
 			"name": "lot_ref",
@@ -35,9 +34,7 @@
 			"required_for_create": true,
 			"default_value": "",
 			"no_update": true,
-			"description": {
-				"en-US": "Lot or serial identifier. A plain string rather than a reference because no Lot master data exists yet. Empty string for 'not tracked', never null: it is part of the quant's unique key, and SQL uniqueness does not constrain null rows against each other. Required for create so the composite unique can include it; the default supplies the empty value."
-			}
+			"description": "field_desc.inventory_stock_quant.lot_ref"
 		},
 		{
 			"name": "package_ref",
@@ -46,9 +43,7 @@
 			"required_for_create": true,
 			"default_value": "",
 			"no_update": true,
-			"description": {
-				"en-US": "Physical package identifier. Empty string, never null, for the same reason as lot_ref."
-			}
+			"description": "field_desc.inventory_stock_quant.package_ref"
 		},
 		{
 			"name": "owner_ref",
@@ -57,17 +52,13 @@
 			"required_for_create": true,
 			"default_value": "",
 			"no_update": true,
-			"description": {
-				"en-US": "Owner of the goods when they are not the company's, e.g. consignment stock. Empty string, never null, for the same reason as lot_ref."
-			}
+			"description": "field_desc.inventory_stock_quant.owner_ref"
 		},
 		{
 			"name": "base_uom_id",
 			"label": "fields.base_uom_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "The unit the stored quantities are expressed in. Quantities are always kept in the variant's base unit so that balances from different transactions can be added."
-			}
+			"description": "field_desc.inventory_stock_quant.base_uom_id"
 		},
 		{
 			"name": "on_hand_quantity",
@@ -75,9 +66,7 @@
 			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
 			"default_value": "0",
 			"no_update": true,
-			"description": {
-				"en-US": "Physical quantity present. System-managed: it is changed only by a completed stock move, never by a client write, so that every change traces back to a movement (BR 3.3, AC-STOCK-002). Negative values are representable so that an oversell can be recorded and then corrected rather than silently clamped."
-			}
+			"description": "field_desc.inventory_stock_quant.on_hand_quantity"
 		},
 		{
 			"name": "reserved_quantity",
@@ -85,9 +74,7 @@
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
 			"default_value": "0",
 			"no_update": true,
-			"description": {
-				"en-US": "Quantity promised to an outgoing move but not yet moved. System-managed by the reservation engine, and never negative (STOCK-INV-002)."
-			}
+			"description": "field_desc.inventory_stock_quant.reserved_quantity"
 		},
 		{
 			"name": "available_quantity",
@@ -104,70 +91,62 @@
 					]
 				}
 			},
-			"description": {
-				"en-US": "on_hand_quantity minus reserved_quantity, computed on read. Not stored: a column would be a third number that can disagree with the two it derives from (BR 4.2.2.3). The coalesce keeps BR 4.2.2.3's rule that an unwritten operand reads as zero, not as unknown."
-			}
+			"description": "field_desc.inventory_stock_quant.available_quantity"
 		},
 		{
 			"name": "incoming_date",
 			"label": "fields.incoming_date",
 			"data_type": "datetime",
-			"description": {
-				"en-US": "When this balance entered the location. Used by removal strategies such as FIFO."
-			}
+			"description": "field_desc.inventory_stock_quant.incoming_date"
 		},
 		{
 			"name": "counted_quantity",
 			"label": "fields.counted_quantity",
 			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
-			"description": {
-				"en-US": "Quantity a physical count found. Recording it does not change on_hand_quantity; only applying the adjustment does (BR 4.2.7.3)."
-			}
+			"description": "field_desc.inventory_stock_quant.counted_quantity"
 		},
 		{
 			"name": "count_quantity_set",
 			"label": "fields.count_quantity_set",
 			"data_type": "boolean",
 			"default_value": false,
-			"description": {
-				"en-US": "Whether a count has been entered and is awaiting apply. Distinct from counted_quantity being zero, which is a legitimate count result."
-			}
+			"description": "field_desc.inventory_stock_quant.count_quantity_set"
 		},
 		{
 			"name": "count_snapshot_quantity",
 			"label": "fields.count_snapshot_quantity",
 			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
-			"description": {
-				"en-US": "on_hand_quantity as it stood when the count was entered. Apply must reject a count whose snapshot no longer matches, because the variance would otherwise be computed against a balance that has since moved (STOCK-INV-008)."
-			}
+			"description": "field_desc.inventory_stock_quant.count_snapshot_quantity"
 		},
 		{
 			"name": "count_reason_code",
 			"label": "fields.count_reason_code",
-			"data_type": { "type": "string", "min": 0, "max": 50 }
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"description": "field_desc.inventory_stock_quant.count_reason_code"
 		},
 		{
 			"name": "count_reason_text",
 			"label": "fields.count_reason_text",
-			"data_type": { "type": "string", "min": 0, "max": 500 }
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": "field_desc.inventory_stock_quant.count_reason_text"
 		},
 		{
 			"name": "next_count_date",
 			"label": "fields.next_count_date",
 			"data_type": "date",
-			"description": {
-				"en-US": "When this balance is next due to be counted. Filtering on it is what produces a cycle-count worklist."
-			}
+			"description": "field_desc.inventory_stock_quant.next_count_date"
 		},
 		{
 			"name": "last_count_date",
 			"label": "fields.last_count_date",
-			"data_type": "date"
+			"data_type": "date",
+			"description": "field_desc.inventory_stock_quant.last_count_date"
 		},
 		{
 			"name": "count_assigned_user_id",
 			"label": "fields.count_assigned_user_id",
-			"data_type": "ulid"
+			"data_type": "ulid",
+			"description": "field_desc.inventory_stock_quant.count_assigned_user_id"
 		},
 		{
 			"name": "org_id",

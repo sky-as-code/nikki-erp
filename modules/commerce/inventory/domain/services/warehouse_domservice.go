@@ -1,39 +1,93 @@
 package services
 
 import (
-	"fmt"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
-
-	"go.bryk.io/pkg/errors"
-
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
-// warehouseHierarchyScanLimit bounds the walk up the parent chain, guarding against a cycle that
-// somehow got persisted rather than expressing a real depth limit.
-const warehouseHierarchyScanLimit = 50
-
-// NewWarehouseDomainService derives the warehouse service from the engine's default one.
-func NewWarehouseDomainService(base composable.CrudDomainService) *WarehouseDomainServiceImpl {
-	return &WarehouseDomainServiceImpl{CrudDomainService: base}
+// NewWarehouseDomainService derives the warehouse service from the engine's default one. locations
+// is the location service a warehouse provisions, archives and deletes its root location through.
+func NewWarehouseDomainService(
+	base composable.CrudDomainService, locations *InventoryLocationDomainServiceImpl,
+) *WarehouseDomainServiceImpl {
+	return &WarehouseDomainServiceImpl{CrudDomainService: base, locations: locations}
 }
 
-// WarehouseDomainServiceImpl holds the rules about a warehouse on its own: its hierarchy, code and
-// operational state. Operations that also touch locations live on the application service, because
-// they span two resources and must be atomic across both.
+// WarehouseDomainServiceImpl holds the rules about a warehouse: its code, its operational state, and
+// its root location, which it creates, archives, unarchives and deletes together with itself, in
+// one transaction.
 type WarehouseDomainServiceImpl struct {
 	composable.CrudDomainService
+
+	locations *InventoryLocationDomainServiceImpl
 }
 
 var _ composable.CrudDomainService = (*WarehouseDomainServiceImpl)(nil)
 
-// Update keeps the hierarchy acyclic and protects the code once the warehouse is in use: the code
-// is the first segment of every system location's path, so changing it would leave those paths
-// naming a warehouse that no longer exists. Renaming needs its own operation.
+// Create is the client's create. The managed fields are stripped: a client able to set them could
+// mint a warehouse that then refuses to be deleted, as if a kiosk owned it.
+func (this *WarehouseDomainServiceImpl) Create(
+	ctx corectx.Context, cmd dmodel.DynamicFields, options ...composable.CreateOptions,
+) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	prepared := copyFields(cmd)
+	delete(prepared, basemodel.FieldManagedByType)
+	delete(prepared, basemodel.FieldManagedById)
+	return this.create(ctx, prepared, options...)
+}
+
+// CreateManaged is the create of a warehouse something manages - a kiosk's - and keeps the
+// managed_by_type and managed_by_id the caller set. No REST route reaches it.
+func (this *WarehouseDomainServiceImpl) CreateManaged(
+	ctx corectx.Context, cmd dmodel.DynamicFields,
+) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	return this.create(ctx, copyFields(cmd))
+}
+
+// create writes the warehouse, its root location and the stops its flows need, in one transaction
+// (the caller's, when ctx carries one): a warehouse whose locations failed is not created either.
+// root_location_id is written last, once the root exists.
+func (this *WarehouseDomainServiceImpl) create(
+	ctx corectx.Context, cmd dmodel.DynamicFields, options ...composable.CreateOptions,
+) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	if vErrs := AssertWarehouseFlowsKnown(cmd); vErrs.Count() > 0 {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
+	}
+	opts := safe.GetOptional(options, composable.CreateOptions{})
+
+	var result *dyn.OpResult[dmodel.DynamicFields]
+	err := runInTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
+		created, err := this.CrudDomainService.Create(tranxCtx, cmd, opts)
+		if err != nil {
+			return err
+		}
+		if created == nil || created.ClientErrors.Count() > 0 {
+			return composable.ClientErrorSignal{Errors: clientErrorsOfFields(created)}
+		}
+		result = created
+		rootId, err := this.provisionLocations(tranxCtx, *models.NewWarehouseFrom(created.Data))
+		if err != nil {
+			return err
+		}
+		created.Data[models.WarehouseFieldRootLocationId] = rootId
+		return nil
+	})
+	if signal, ok := composable.AsClientErrorSignal(err); ok {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: signal.Errors}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// Update protects the code once the warehouse exists: the code named its root location, and
+// renaming needs its own operation. A name change leaves the root location's name alone.
 func (this *WarehouseDomainServiceImpl) Update(
 	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -53,46 +107,50 @@ func (this *WarehouseDomainServiceImpl) Update(
 	if code := readStringParam(prepared, models.WarehouseFieldCode); code != "" &&
 		code != derefString(current.GetCode()) {
 		return warehouseViolationResult("warehouse.code_immutable",
-			"the code names this warehouse's locations; it cannot be changed by an update"), nil
+			"the code named this warehouse's root location; it cannot be changed by an update"), nil
 	}
-	if vErrs, err := this.assertParentValid(ctx, prepared, warehouseId); err != nil {
-		return nil, err
-	} else if vErrs.Count() > 0 {
-		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
-	}
-
-	return this.CrudDomainService.Update(ctx, prepared)
+	return this.CrudDomainService.Update(ctx, prepared, options...)
 }
 
-// SetArchived guards archiving and leaves an unarchived warehouse suspended rather than active. One
-// with live children or live supply routes cannot be archived, or those would point at something
-// withdrawn from use.
+// SetArchived archives or unarchives the warehouse and its root location together. One with live
+// supply routes or reservations cannot be archived, and the root's own guard applies on top: a
+// warehouse whose root still holds stock, open work or unarchived sub-locations stays as it is. An
+// unarchived warehouse lands on suspended rather than active.
 func (this *WarehouseDomainServiceImpl) SetArchived(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	warehouseId := readStringParam(params, models.WarehouseFieldId)
-	if _, vErrs, err := this.loadWarehouse(ctx, warehouseId); err != nil {
+	warehouse, vErrs, err := this.loadWarehouse(ctx, warehouseId)
+	if err != nil {
 		return nil, err
-	} else if vErrs.Count() > 0 {
+	}
+	if vErrs.Count() > 0 {
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
 
-	if readBoolParam(params, paramIsArchived) {
-		if vErrs, err := this.assertArchivable(ctx, warehouseId); err != nil {
+	archiving := readBoolParam(params, paramIsArchived)
+	if archiving {
+		if vErrs, err := this.assertArchivable(ctx, *warehouse); err != nil {
 			return nil, err
 		} else if vErrs.Count() > 0 {
 			return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 		}
-		return this.CrudDomainService.SetArchived(ctx, params)
 	}
-
-	result, err := this.CrudDomainService.SetArchived(ctx, params)
-	if err != nil || result == nil || result.ClientErrors.Count() > 0 {
-		return result, err
-	}
-	// Unarchiving never returns a warehouse straight to service: the configuration may have changed
-	// while it was away, so someone confirms it through Resume.
-	return result, this.WriteStatus(ctx, warehouseId, models.WarehouseStatusSuspended)
+	return this.inRefusableTransaction(ctx, func(tranxCtx corectx.Context) (*dyn.OpResult[dyn.MutateResultData], error) {
+		result, err := this.CrudDomainService.SetArchived(tranxCtx, params)
+		if err != nil || result == nil || result.ClientErrors.Count() > 0 {
+			return result, err
+		}
+		if err := this.setRootArchived(tranxCtx, *warehouse, archiving); err != nil {
+			return nil, err
+		}
+		if archiving {
+			return result, nil
+		}
+		// Unarchiving never returns a warehouse straight to service: the configuration may have
+		// changed while it was away, so someone confirms it through Resume.
+		return result, this.WriteStatus(tranxCtx, warehouseId, models.WarehouseStatusSuspended)
+	})
 }
 
 // Suspend closes a warehouse temporarily, leaving its locations untouched. Child locations are
@@ -116,7 +174,8 @@ func (this *WarehouseDomainServiceImpl) Suspend(
 	}
 	// A suspended warehouse's stock is no longer eligible, so a reservation in force on it would
 	// lose its backing silently.
-	if vErrs, err := assertWarehouseHasNoEffectiveReservations(ctx, derefId(warehouse.GetOrgId()), warehouseId); err != nil {
+	orgId := derefId(warehouse.GetOrgId())
+	if vErrs, err := assertWarehouseHasNoEffectiveReservations(ctx, orgId, warehouseId); err != nil {
 		return nil, err
 	} else if vErrs.Count() > 0 {
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
@@ -128,7 +187,7 @@ func (this *WarehouseDomainServiceImpl) Suspend(
 	return locationMutateOk(), nil
 }
 
-// Resume puts a suspended warehouse back into service, once its configuration still holds.
+// Resume puts a suspended warehouse back into service.
 func (this *WarehouseDomainServiceImpl) Resume(
 	ctx corectx.Context, warehouseId string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
@@ -148,11 +207,6 @@ func (this *WarehouseDomainServiceImpl) Resume(
 		return warehouseViolationResult(
 			"warehouse.archived", "unarchive the warehouse before resuming it"), nil
 	}
-	if vErrs, err := this.assertResumable(ctx, *warehouse); err != nil {
-		return nil, err
-	} else if vErrs.Count() > 0 {
-		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
-	}
 
 	if err := this.WriteStatus(ctx, warehouseId, models.WarehouseStatusActive); err != nil {
 		return nil, err
@@ -160,100 +214,14 @@ func (this *WarehouseDomainServiceImpl) Resume(
 	return locationMutateOk(), nil
 }
 
-// assertParentValid checks a parent warehouse: it exists, is usable, is in the same org, and does
-// not sit underneath the warehouse being edited.
-func (this *WarehouseDomainServiceImpl) assertParentValid(
-	ctx corectx.Context, params dmodel.DynamicFields, selfId string,
-) (*ft.ClientErrors, error) {
-	vErrs := ft.NewClientErrors()
-	parentId := readStringParam(params, models.WarehouseFieldParentWarehouseId)
-	if parentId == "" {
-		return vErrs, nil
-	}
-	if parentId == selfId {
-		appendWarehouseViolation(vErrs, "warehouse.hierarchy_cycle",
-			"a warehouse cannot be its own parent")
-		return vErrs, nil
-	}
-
-	parent, parentErrs, err := this.loadWarehouse(ctx, parentId)
-	if err != nil {
-		return vErrs, err
-	}
-	if parentErrs.Count() > 0 {
-		appendWarehouseViolation(vErrs, "warehouse.parent_not_found",
-			"no warehouse with id '"+parentId+"'")
-		return vErrs, nil
-	}
-	if parent.GetIsArchived() != nil && *parent.GetIsArchived() {
-		appendWarehouseViolation(vErrs, "warehouse.parent_archived",
-			"the parent warehouse is archived")
-		return vErrs, nil
-	}
-
-	if selfId != "" {
-		inside, err := this.isDescendantOf(ctx, parentId, selfId)
-		if err != nil {
-			return vErrs, err
-		}
-		if inside {
-			appendWarehouseViolation(vErrs, "warehouse.hierarchy_cycle",
-				"the parent sits underneath this warehouse")
-		}
-	}
-	return vErrs, nil
-}
-
-// assertResumable checks that the parent chain above a warehouse is itself in service.
-func (this *WarehouseDomainServiceImpl) assertResumable(
-	ctx corectx.Context, warehouse models.Warehouse,
-) (*ft.ClientErrors, error) {
-	vErrs := ft.NewClientErrors()
-
-	parentId := derefId(warehouse.GetParentWarehouseId())
-	if parentId == "" {
-		return vErrs, nil
-	}
-	parent, parentErrs, err := this.loadWarehouse(ctx, parentId)
-	if err != nil || parentErrs.Count() > 0 {
-		return vErrs, err
-	}
-	if parent.GetIsArchived() != nil && *parent.GetIsArchived() {
-		appendWarehouseViolation(vErrs, "warehouse.parent_archived",
-			"the parent warehouse is archived")
-	}
-	if derefString(parent.GetStatus()) == models.WarehouseStatusSuspended {
-		appendWarehouseViolation(vErrs, "warehouse.parent_suspended",
-			"the parent warehouse is suspended; resume it first")
-	}
-	return vErrs, nil
-}
-
 // assertArchivable refuses to archive a warehouse other live configuration still depends on.
 func (this *WarehouseDomainServiceImpl) assertArchivable(
-	ctx corectx.Context, warehouseId string,
+	ctx corectx.Context, warehouse models.Warehouse,
 ) (*ft.ClientErrors, error) {
-	vErrs := ft.NewClientErrors()
-
-	children, err := this.countUnarchivedChildren(ctx, warehouseId)
+	warehouseId := derefString(warehouse.GetId())
+	vErrs, err := assertWarehouseHasNoEffectiveReservations(ctx, derefId(warehouse.GetOrgId()), warehouseId)
 	if err != nil {
 		return vErrs, err
-	}
-	if children > 0 {
-		appendWarehouseViolation(vErrs, "warehouse.has_children",
-			"archive the warehouses underneath this one first")
-	}
-
-	warehouse, warehouseErrs, err := this.loadWarehouse(ctx, warehouseId)
-	if err != nil {
-		return vErrs, err
-	}
-	if warehouseErrs.Count() == 0 {
-		reserved, err := assertWarehouseHasNoEffectiveReservations(ctx, derefId(warehouse.GetOrgId()), warehouseId)
-		if err != nil {
-			return vErrs, err
-		}
-		vErrs.ConcatPtr(reserved)
 	}
 
 	relations, err := this.countUnarchivedSupplyRelations(ctx, warehouseId)
@@ -267,24 +235,10 @@ func (this *WarehouseDomainServiceImpl) assertArchivable(
 	return vErrs, nil
 }
 
-// isDescendantOf walks up from candidateId to see whether ancestorId is above it.
-func (this *WarehouseDomainServiceImpl) isDescendantOf(
-	ctx corectx.Context, candidateId string, ancestorId string,
-) (bool, error) {
-	currentId := candidateId
-	for hops := 0; hops < warehouseHierarchyScanLimit; hops++ {
-		if currentId == "" {
-			return false, nil
-		}
-		if currentId == ancestorId {
-			return true, nil
-		}
-		current, vErrs, err := this.loadWarehouse(ctx, currentId)
-		if err != nil || vErrs.Count() > 0 {
-			return false, err
-		}
-		currentId = derefId(current.GetParentWarehouseId())
+// clientErrorsOfFields reads the violations off a create result, tolerating a nil one.
+func clientErrorsOfFields(result *dyn.OpResult[dmodel.DynamicFields]) ft.ClientErrors {
+	if result == nil {
+		return *ft.NewClientErrors()
 	}
-	return false, errors.New("the warehouse hierarchy is deeper than " +
-		fmt.Sprint(warehouseHierarchyScanLimit) + " levels, or contains a cycle")
+	return result.ClientErrors
 }

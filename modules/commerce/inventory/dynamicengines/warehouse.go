@@ -31,7 +31,7 @@ func registerWarehouseEngine() error {
 					return repo.NewWarehouseRepository(base)
 				},
 				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewWarehouseDomainService(base)
+					return services.NewWarehouseDomainService(base, locationSvc)
 				},
 				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
 					return app.NewWarehouseApplicationService(base, locationSvc)

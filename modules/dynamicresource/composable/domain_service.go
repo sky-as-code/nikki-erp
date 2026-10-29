@@ -22,7 +22,11 @@ import (
 type CrudDomainService interface {
 	Create(ctx corectx.Context, cmd CreateCommand, options ...CreateOptions) (*CreateResult, error)
 	Update(ctx corectx.Context, cmd UpdateCommand, options ...UpdateOptions) (*MutateResult, error)
+	// Delete refuses a managed record (non-null managed_by_type): its manager removes it.
 	Delete(ctx corectx.Context, cmd DeleteCommand, options ...DeleteOptions) (*MutateResult, error)
+	// DeleteManaged is the manager's delete: the same path as Delete, but it accepts only a
+	// managed record. It has no REST route; the managing module calls it.
+	DeleteManaged(ctx corectx.Context, cmd DeleteCommand, options ...DeleteOptions) (*MutateResult, error)
 	SetArchived(ctx corectx.Context, cmd SetArchivedCommand) (*MutateResult, error)
 	// DeleteByOrg removes every record of the org, for org cleanup. It runs no delete rule:
 	// the whole org is going, so there is nothing left for a rule to protect.
@@ -203,10 +207,22 @@ func (this *DefaultDomainServiceImpl) update(
 func (this *DefaultDomainServiceImpl) Delete(
 	ctx corectx.Context, cmd DeleteCommand, options ...DeleteOptions,
 ) (*MutateResult, error) {
+	return this.deleteGuarded(ctx, cmd, firstOrZero(options), managedDeleteRefuse)
+}
+
+func (this *DefaultDomainServiceImpl) DeleteManaged(
+	ctx corectx.Context, cmd DeleteCommand, options ...DeleteOptions,
+) (*MutateResult, error) {
+	return this.deleteGuarded(ctx, cmd, firstOrZero(options), managedDeleteRequire)
+}
+
+func (this *DefaultDomainServiceImpl) deleteGuarded(
+	ctx corectx.Context, cmd DeleteCommand, opts DeleteOptions, mode managedDeleteMode,
+) (*MutateResult, error) {
 	if cErrs := this.assertActionSupported(CrudActionDelete); cErrs != nil {
 		return &MutateResult{ClientErrors: *cErrs}, nil
 	}
-	opts := firstOrZero(options)
+	opts.ValidateExtra = this.withManagedDeleteRule(mode, opts.ValidateExtra)
 	write := func(ctx corectx.Context) (*MutateResult, error) {
 		if this.files != nil {
 			return this.files.delete(ctx, cmd, func(ctx corectx.Context) (*MutateResult, error) {

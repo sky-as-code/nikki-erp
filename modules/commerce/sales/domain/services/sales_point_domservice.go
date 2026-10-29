@@ -22,6 +22,28 @@ func NewSalesPointDomainService(base composable.CrudDomainService) *SalesPointDo
 	return &SalesPointDomainServiceImpl{CrudDomainService: base}
 }
 
+// Create is the client's create. The managed fields are stripped: a client able to set them could
+// mint a point that then refuses to be deleted, as if a kiosk owned it.
+func (this *SalesPointDomainServiceImpl) Create(
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	prepared := dmodel.DynamicFields{}
+	for key, value := range params {
+		prepared[key] = value
+	}
+	delete(prepared, basemodel.FieldManagedByType)
+	delete(prepared, basemodel.FieldManagedById)
+	return this.CrudDomainService.Create(ctx, prepared, options...)
+}
+
+// CreateManaged creates a point something manages - a kiosk's - keeping the managed_by_type and
+// managed_by_id the caller set. No REST route reaches it.
+func (this *SalesPointDomainServiceImpl) CreateManaged(
+	ctx corectx.Context, params dmodel.DynamicFields,
+) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	return this.CrudDomainService.Create(ctx, params)
+}
+
 // Suspend stops a sales point taking new orders. Returns, refunds and history keep working, which
 // is what a temporarily offline kiosk needs: money already taken through it stays refundable.
 func (this *SalesPointDomainServiceImpl) Suspend(

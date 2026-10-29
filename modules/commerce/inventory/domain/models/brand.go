@@ -81,12 +81,12 @@ func (this *Brand) SetWebsite(v *string) {
 	this.GetFieldData().SetString(BrandFieldWebsite, v)
 }
 
-func (this Brand) GetDescription() *model.LangJson {
-	return this.GetFieldData().GetLangJson(BrandFieldDescription)
+func (this Brand) GetDescription() *string {
+	return this.GetFieldData().GetString(BrandFieldDescription)
 }
 
-func (this *Brand) SetDescription(v *model.LangJson) {
-	this.GetFieldData().SetLangJson(BrandFieldDescription, v)
+func (this *Brand) SetDescription(v *string) {
+	this.GetFieldData().SetString(BrandFieldDescription, v)
 }
 
 func (this Brand) GetOrgId() *model.Id {

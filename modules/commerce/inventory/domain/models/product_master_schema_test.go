@@ -78,7 +78,18 @@ func requireEssentialSchemasRegistered(t *testing.T) {
 	t.Helper()
 	_ = dmodel.RegisterSchemaB(essentialmodels.UomCatSchemaBuilder())
 	_ = dmodel.RegisterSchemaB(essentialmodels.UomSchemaBuilder())
+	// The warehouse's manager_user edge points at IAM's user. A stand-in with the same name and key
+	// is enough to finalize the edge without registering the whole IAM graph behind the real one.
+	_ = dmodel.RegisterSchemaB(dmodel.ParseModelJson(iamUserStandInJson))
 }
+
+const iamUserStandInJson = `{
+	"name": "iam_user",
+	"table_name": "iam_users",
+	"should_build_db": true,
+	"extend_before": ["core.basemodel.base_model"],
+	"fields": []
+}`
 
 func requireField(t *testing.T, schema *dmodel.ModelSchema, fieldName string) *dmodel.ModelField {
 	t.Helper()

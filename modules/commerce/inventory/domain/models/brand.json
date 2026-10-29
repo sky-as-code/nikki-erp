@@ -24,22 +24,25 @@
 		{
 			"name": "logo_id",
 			"label": "fields.logo_id",
-			"data_type": "ulid"
+			"data_type": "ulid",
+			"description": "field_desc.inventory_brand.logo_id"
 		},
 		{
 			"name": "country_id",
 			"label": "fields.country_id",
-			"data_type": "ulid"
+			"data_type": "ulid",
+			"description": "field_desc.inventory_brand.country_id"
 		},
 		{
 			"name": "website",
 			"label": "fields.website",
-			"data_type": "url"
+			"data_type": "url",
+			"description": "field_desc.inventory_brand.website"
 		},
 		{
 			"name": "description",
 			"label": "fields.description",
-			"data_type": { "type": "langjson", "min": 0, "max": 2000 }
+			"data_type": { "type": "string", "min": 0, "max": 2000 }
 		},
 		{
 			"name": "org_id",

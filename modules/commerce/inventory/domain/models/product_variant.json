@@ -20,9 +20,7 @@
 			"data_type": "ulid",
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "Owning template. Required and immutable: re-parenting a variant would silently reinterpret every transaction that already references it."
-			}
+			"description": "field_desc.inventory_product_variant.product_template_id"
 		},
 		{
 			"name": "variant_kind",
@@ -34,81 +32,71 @@
 			"required_for_create": true,
 			"default_value": "complete",
 			"no_update": true,
-			"description": {
-				"en-US": "complete: a sellable, stockable variant built from every variant-creating attribute. base: the instant-only part of a mixed (instant + dynamic) template, the anchor complete variants are resolved under; it never takes part in a transaction. Part of the identity, so it never changes."
-			}
+			"description": "field_desc.inventory_product_variant.variant_kind"
 		},
 		{
 			"name": "base_variant_id",
 			"label": "fields.base_variant_id",
 			"data_type": "ulid",
 			"no_update": true,
-			"description": {
-				"en-US": "For a complete variant of a mixed template, the base variant its instant values came from. Null for a base variant and for templates that are not mixed."
-			}
+			"description": "field_desc.inventory_product_variant.base_variant_id"
 		},
 		{
 			"name": "combination_key",
 			"label": "fields.combination_key",
 			"data_type": { "type": "string", "min": 0, "max": 1000 },
 			"required_for_create": true,
-			"description": {
-				"en-US": "Normalized identity of the attribute-value combination, built by sorting attribute:value id pairs. Empty string for a template with no variant-generating attributes, which is the normal single-variant case."
-			}
+			"description": "field_desc.inventory_product_variant.combination_key"
 		},
 		{
 			"name": "sku",
 			"label": "fields.sku",
 			"data_type": { "type": "string", "min": 0, "max": 100 },
-			"description": {
-				"en-US": "Variant-owned internal reference. The template has no SKU of its own: with several variants there would be nothing for it to mean. Unique within the organization when present, archived variants included; a blank value is stored as null and never collides."
-			}
+			"description": "field_desc.inventory_product_variant.sku"
 		},
 		{
 			"name": "primary_barcode",
 			"label": "fields.primary_barcode",
 			"data_type": { "type": "string", "min": 0, "max": 100 },
-			"description": {
-				"en-US": "Variant-owned. Scanning it must resolve to this variant, so it is unique within the organization when present, archived variants included; a blank value is stored as null."
-			}
+			"description": "field_desc.inventory_product_variant.primary_barcode"
 		},
 		{
 			"name": "preview_image_file_id",
 			"label": "fields.preview_image_file_id",
 			"data_type": "ulid",
 			"metadata": { "file_field": true },
-			"description": {
-				"en-US": "IT Storage file id of the variant's own image, overriding the template's. Null means fall back to product_template_preview_image_file_id rather than 'no image'."
-			}
+			"description": "field_desc.inventory_product_variant.preview_image_file_id"
 		},
 		{
 			"name": "cost",
 			"label": "fields.cost",
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
 			"default_value": "0",
-			"description": {
-				"en-US": "What this variant currently costs the business per inventory unit: the value used for margin, profitability and valuation. Not what a vendor charges — that is a Vendor Product Price, and the two are routinely different, since cost reflects what has actually been received and valued rather than what is on offer today.\n\nOn the VARIANT, not the template, because cost genuinely differs between variants of the same product and does not derive from anything shared: a larger size costs more to make, and no rule relates the two (BR-PRICE-VARIANT-006). It has nothing to do with sales_price_extra, which is a pricing decision and must never be added to a cost (BR-PRICE-VARIANT-008). The template exposes cost only as a read-only proxy, and only when it has exactly one variant.\n\nUser input for now. Once an Inventory costing engine exists it becomes system-calculated, and only that engine may write it: neither a purchase order price nor a vendor price may be copied here (PRICE-INV-009, BR-PRICE-VARIANT-009/010). A received purchase price is an INPUT to costing, never the answer.\n\nDenominated in the organization's default currency, like base_sales_price, and for the same reason."
-			}
+			"description": "field_desc.inventory_product_variant.cost"
 		},
 		{
 			"name": "weight",
 			"label": "fields.weight",
-			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": "field_desc.inventory_product_variant.weight"
 		},
 		{
 			"name": "length",
 			"label": "fields.length",
-			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": "field_desc.inventory_product_variant.length"
 		},
 		{
 			"name": "width",
 			"label": "fields.width",
-			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": "field_desc.inventory_product_variant.width"
 		},
 		{
 			"name": "height",
 			"label": "fields.height",
-			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 }
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"description": "field_desc.inventory_product_variant.height"
 		},
 		{
 			"name": "status",
@@ -118,10 +106,7 @@
 				"values": ["active", "discontinued"]
 			},
 			"required_for_create": true,
-			"default_value": "active",
-			"description": {
-				"en-US": "Lets a single variant be discontinued while its siblings stay on sale. Independent of is_archived."
-			}
+			"default_value": "active"
 		},
 		{
 			"name": "archive_source",
@@ -130,9 +115,7 @@
 				"type": "enum_string",
 				"values": ["user", "template_cascade", "system_sync"]
 			},
-			"description": {
-				"en-US": "Why this variant was archived. Unarchiving a template restores only the variants it cascaded to, leaving ones a user archived deliberately still archived."
-			}
+			"description": "field_desc.inventory_product_variant.archive_source"
 		},
 		{
 			"name": "source_system",
@@ -140,17 +123,13 @@
 			"data_type": { "type": "string", "min": 1, "max": 50 },
 			"required_for_create": true,
 			"default_value": "manual",
-			"description": {
-				"en-US": "Which system the record originates from: 'manual' for records entered through the UI, 'import' for rows loaded from a file, or an external system's own code. Together with external_id it is the key an import uses to recognise a record it has written before."
-			}
+			"description": "field_desc.inventory_product_variant.source_system"
 		},
 		{
 			"name": "external_id",
 			"label": "fields.external_id",
 			"data_type": { "type": "string", "min": 1, "max": 200 },
-			"description": {
-				"en-US": "The record's identifier in its source system. Optional; unique per tenant together with source_system when present, which is the database's last defence against importing one record twice."
-			}
+			"description": "field_desc.inventory_product_variant.external_id"
 		},
 		{
 			"name": "org_id",
@@ -164,60 +143,63 @@
 			"label": "fields.product_name",
 			"data_type": { "type": "langjson", "min": 1, "max": 200 },
 			"computed": { "kind": "related", "is_stored": false, "field": "product_template.name" },
-			"description": {
-				"en-US": "Copied from the owning template when the variant is read. Computed rather than stored: the name lives on the template, so a second copy here would go stale the moment the template is renamed."
-			}
+			"description": "field_desc.inventory_product_variant.product_template_name"
 		},
 		{
 			"name": "product_template_is_archived",
 			"label": "fields.product_template_is_archived",
 			"data_type": "boolean",
-			"computed": { "kind": "related", "is_stored": false, "field": "product_template.is_archived" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.is_archived" },
+			"description": "field_desc.inventory_product_variant.product_template_is_archived"
 		},
 		{
 			"name": "product_template_short_name",
 			"label": "fields.product_template_short_name",
 			"data_type": { "type": "langjson", "min": 0, "max": 100 },
-			"computed": { "kind": "related", "is_stored": false, "field": "product_template.short_name" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.short_name" },
+			"description": "field_desc.inventory_product_variant.product_template_short_name"
 		},
 		{
 			"name": "product_template_description",
 			"label": "fields.product_template_description",
-			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"computed": { "kind": "related", "is_stored": false, "field": "product_template.description" }
+			"data_type": { "type": "string", "min": 0, "max": 4000 },
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.description" },
+			"description": "field_desc.inventory_product_variant.product_template_description"
 		},
 		{
 			"name": "product_template_sales_description",
 			"label": "fields.product_template_sales_description",
-			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"computed": { "kind": "related", "is_stored": false, "field": "product_template.sales_description" }
+			"data_type": { "type": "string", "min": 0, "max": 4000 },
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.sales_description" },
+			"description": "field_desc.inventory_product_variant.product_template_sales_description"
 		},
 		{
 			"name": "product_template_purchase_description",
 			"label": "fields.product_template_purchase_description",
-			"data_type": { "type": "langjson", "min": 0, "max": 4000 },
-			"computed": { "kind": "related", "is_stored": false, "field": "product_template.purchase_description" }
+			"data_type": { "type": "string", "min": 0, "max": 4000 },
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.purchase_description" },
+			"description": "field_desc.inventory_product_variant.product_template_purchase_description"
 		},
 		{
 			"name": "product_template_category_id",
 			"label": "fields.product_template_category_id",
 			"data_type": "ulid",
-			"computed": { "kind": "related", "is_stored": false, "field": "product_template.category_id" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.category_id" },
+			"description": "field_desc.inventory_product_variant.product_template_category_id"
 		},
 		{
 			"name": "product_template_brand_id",
 			"label": "fields.product_template_brand_id",
 			"data_type": "ulid",
-			"computed": { "kind": "related", "is_stored": false, "field": "product_template.brand_id" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.brand_id" },
+			"description": "field_desc.inventory_product_variant.product_template_brand_id"
 		},
 		{
 			"name": "product_template_preview_image_file_id",
 			"label": "fields.product_template_preview_image_file_id",
 			"data_type": "ulid",
 			"computed": { "kind": "related", "is_stored": false, "field": "product_template.preview_image_file_id" },
-			"description": {
-				"en-US": "The owning template's preview image, which a variant without its own preview_image_file_id renders."
-			}
+			"description": "field_desc.inventory_product_variant.product_template_preview_image_file_id"
 		},
 		{
 			"name": "product_template_product_type",
@@ -226,13 +208,15 @@
 				"type": "enum_string",
 				"values": ["goods", "service"]
 			},
-			"computed": { "kind": "related", "is_stored": false, "field": "product_template.product_type" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.product_type" },
+			"description": "field_desc.inventory_product_variant.product_template_product_type"
 		},
 		{
 			"name": "product_template_is_combo",
 			"label": "fields.product_template_is_combo",
 			"data_type": "boolean",
-			"computed": { "kind": "related", "is_stored": false, "field": "product_template.is_combo" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.is_combo" },
+			"description": "field_desc.inventory_product_variant.product_template_is_combo"
 		},
 		{
 			"name": "product_template_status",
@@ -242,69 +226,56 @@
 				"values": ["draft", "active", "discontinued"]
 			},
 			"computed": { "kind": "related", "is_stored": false, "field": "product_template.status" },
-			"description": {
-				"en-US": "The template's lifecycle, distinct from this variant's own status: an active variant of a discontinued template is a real and meaningful state."
-			}
+			"description": "field_desc.inventory_product_variant.product_template_status"
 		},
 		{
 			"name": "product_template_sale_ok",
 			"label": "fields.product_template_sale_ok",
 			"data_type": "boolean",
-			"computed": { "kind": "related", "is_stored": false, "field": "product_template.sale_ok" }
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.sale_ok" },
+			"description": "field_desc.inventory_product_variant.product_template_sale_ok"
 		},
 		{
 			"name": "product_template_purchase_ok",
 			"label": "fields.product_template_purchase_ok",
 			"data_type": "boolean",
 			"computed": { "kind": "related", "is_stored": false, "field": "product_template.purchase_ok" },
-			"description": {
-				"en-US": "Whether this product line may be bought, copied from the template. It sits on the template because 'we buy this product' is a decision about the product line rather than about one colour of it. Purchase reads it here so that validating a line costs one read instead of two (D4)."
-			}
+			"description": "field_desc.inventory_product_variant.product_template_purchase_ok"
 		},
 		{
 			"name": "product_template_base_sales_price",
 			"label": "fields.product_template_base_sales_price",
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
 			"computed": { "kind": "related", "is_stored": false, "field": "product_template.base_sales_price" },
-			"description": {
-				"en-US": "The owning template's base sales price, read through the edge rather than copied — the same treatment as product_template_name and for the same reason. Exposed as its own field because effective_base_sales_price below is built from it, and because a caller comparing the two wants to see what the variant added."
-			}
+			"description": "field_desc.inventory_product_variant.product_template_base_sales_price"
 		},
 		{
 			"name": "product_template_uom_id",
 			"label": "fields.product_template_uom_id",
 			"data_type": "ulid",
 			"computed": { "kind": "related", "is_stored": false, "field": "product_template.uom_id" },
-			"description": {
-				"en-US": "The owning template's unit id, read through the edge rather than copied. Listings show product_template_uom_name, which reads the unit's name through product_template.uom."
-			}
+			"description": "field_desc.inventory_product_variant.product_template_uom_id"
 		},
 		{
 			"name": "product_template_uom_name",
 			"label": "fields.product_template_uom_name",
 			"data_type": { "type": "langjson", "min": 0, "max": 200 },
 			"computed": { "kind": "related", "is_stored": false, "field": "product_template.uom.name" },
-			"description": {
-				"en-US": "The owning template's unit name, read two edges away: the template, then its unit. A related path may chain to-one edges; the first hop is batched per page and the remainder is projected on that read."
-			}
+			"description": "field_desc.inventory_product_variant.product_template_uom_name"
 		},
 		{
 			"name": "display_name",
 			"label": "fields.display_name",
 			"data_type": { "type": "string", "min": 0, "max": 400 },
 			"computed": { "kind": "function", "is_stored": false, "function": "inventory.variant_display_name" },
-			"description": {
-				"en-US": "How a variant is named to a person: the template name followed by its attribute values, as \"Coca Cola (No sugar, Big)\".\n\nA function field rather than a declarative one because the values are three edges away (attribute_values, template_attribute_value, attribute_value) and no declarative kind crosses more than one. The implementation fetches the whole page in one query."
-			}
+			"description": "field_desc.inventory_product_variant.display_name"
 		},
 		{
 			"name": "attribute_summary",
 			"label": "fields.attributes",
 			"data_type": { "type": "string", "array": true, "min": 0, "max": 400 },
 			"computed": { "kind": "function", "is_stored": false, "function": "inventory.variant_attribute_summary" },
-			"description": {
-				"en-US": "The variant's attributes as name/value pairs, for a listing that shows each as its own pill. Same three-edge walk as display_name and filled by the same batched read."
-			}
+			"description": "field_desc.inventory_product_variant.attribute_summary"
 		},
 		{
 			"name": "sales_price_extra_total",
@@ -318,9 +289,7 @@
 				"field": "sales_price_extra",
 				"default": 0.0
 			},
-			"description": {
-				"en-US": "What this variant's chosen attribute values add to the template's base price, summed. SUM over zero rows is NULL, so a variant with no attribute values reads 0 rather than nothing — a product with no variants axis is priced at the template price, not at no price."
-			}
+			"description": "field_desc.inventory_product_variant.sales_price_extra_total"
 		},
 		{
 			"name": "effective_base_sales_price",
@@ -337,9 +306,7 @@
 					]
 				}
 			},
-			"description": {
-				"en-US": "This variant's base selling price: the template's base price plus the price extras of the values it is built from (BR-PRICE-VARIANT-001). This — not the template's raw base_sales_price — is what a Sales pricing rule means by BASE_SALES_PRICE (BR-PRICE-VARIANT-003), and what pricing falls back to when no rule matches.\n\nComputed on read and never stored, which is what makes BR-PRICE-VARIANT-004 true by construction: raising the template's price moves every variant at once, with no batch to run and no window in which the two disagree. A stored copy would be a number that is right until someone edits the template.\n\nThe coalesces keep an unpriced operand reading as zero rather than making the whole sum NULL: a template with no base price set and a variant with no extras should read 0, not unknown."
-			}
+			"description": "field_desc.inventory_product_variant.effective_base_sales_price"
 		},
 		{
 			"name": "on_hand_quantity",
@@ -353,9 +320,7 @@
 				"field": "on_hand_quantity",
 				"default": 0.0
 			},
-			"description": {
-				"en-US": "Total stock on hand across every location, summed from the variant's quants when the field is explicitly requested. Product stores no quantity of its own (CR 4.4): this is a read of Stock's balances, not a copy of them. SUM over zero rows is NULL, so a variant with no quants defaults to 0 — the CR's rule that a product with no stock answers zero rather than nothing (AC-PROD-INT-004)."
-			}
+			"description": "field_desc.inventory_product_variant.on_hand_quantity"
 		},
 		{
 			"name": "reserved_quantity",
@@ -369,9 +334,7 @@
 				"field": "reserved_quantity",
 				"default": 0.0
 			},
-			"description": {
-				"en-US": "Total reserved across every location, summed from the variant's quants. Defaults to 0 for the same reason as on_hand_quantity."
-			}
+			"description": "field_desc.inventory_product_variant.reserved_quantity"
 		},
 		{
 			"name": "available_quantity",
@@ -388,9 +351,7 @@
 					]
 				}
 			},
-			"description": {
-				"en-US": "on_hand_quantity minus reserved_quantity, derived from the two aggregates above rather than summed separately. Deriving it here keeps the identity available = on_hand - reserved true by construction at the variant level, exactly as inventory_stock_quant.available_quantity does per location (BR 4.2.2.3). A computed field may depend on another computed field; the dependency graph stays acyclic."
-			}
+			"description": "field_desc.inventory_product_variant.available_quantity"
 		},
 		{
 			"name": "is_transaction_eligible",
@@ -425,9 +386,7 @@
 					]
 				}
 			},
-			"description": {
-				"en-US": "Whether a sale, purchase, reservation or stock movement may name this variant: a complete variant, active, not archived, of a template that is neither archived nor discontinued (the rule of EffectiveProduct.IsSelectable). A base variant is never eligible."
-			}
+			"description": "field_desc.inventory_product_variant.is_transaction_eligible"
 		}
 	],
 

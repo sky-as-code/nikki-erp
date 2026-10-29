@@ -6,10 +6,7 @@
 			"vi-VN": "Mặc định"
 		},
 		"display_order": 0,
-		"description": {
-			"en-US": "Root of the category tree",
-			"vi-VN": "Gốc của cây danh mục"
-		},
+		"description": "Root of the category tree",
 		"source_system": "manual"
 	}
 ]

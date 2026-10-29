@@ -34,7 +34,7 @@
             "type": ["integer", "null"]
         },
         "description": {
-            "type": ["object", "null"]
+            "type": ["string", "null"]
         },
         "source_system": {
             "type": "string",

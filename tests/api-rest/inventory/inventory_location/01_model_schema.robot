@@ -15,7 +15,6 @@ Schema Declares The Core Fields
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    Dictionary Should Contain Key    ${fields}    code
     Dictionary Should Contain Key    ${fields}    name
     Dictionary Should Contain Key    ${fields}    location_usage
     Dictionary Should Contain Key    ${fields}    parent_location_id
@@ -29,7 +28,9 @@ Schema Declares The Warehouse Fields
     ${fields}=    Set Variable    ${resp.json()}[fields]
     Dictionary Should Contain Key    ${fields}    warehouse_id
     Dictionary Should Contain Key    ${fields}    purpose
-    Dictionary Should Contain Key    ${fields}    complete_path
+    Dictionary Should Contain Key    ${fields}    canonical_name
+    Dictionary Should Not Contain Key    ${fields}    complete_path
+    Dictionary Should Not Contain Key    ${fields}    code
     Dictionary Should Contain Key    ${fields}    storage_category_id
     Dictionary Should Contain Key    ${fields}    removal_strategy
     Dictionary Should Contain Key    ${fields}    is_system_generated
@@ -78,4 +79,4 @@ Schema Declares A Record Label Field
     ...    the raw ULID, so a location shows as an opaque id when chosen on a balance.
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/meta/schema
     Response Status Should Be    ${resp}    200
-    Should Be Equal    ${resp.json()}[record_label_field]    name
+    Should Be Equal    ${resp.json()}[record_label_field]    canonical_name

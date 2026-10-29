@@ -4,7 +4,7 @@
 		"code": "vdmc",
 		"name": "Vending Machine",
 		"description": "Unattended kiosks selling directly to walk-up customers",
-		"managed_by_module": "vending_machine_new",
+		"managed_by_type": "vendingmachine/vdmc_kiosks",
 		"status": "active",
 		"is_system": true,
 		"auto_confirm_order": true,

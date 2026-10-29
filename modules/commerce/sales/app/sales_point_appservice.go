@@ -98,28 +98,14 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 	if err != nil {
 		return nil, errors.Wrap(err, "CreateSalesPoint")
 	}
-	fields := dmodel.DynamicFields{
-		models.SalesPointFieldId:             string(*id),
-		models.SalesPointFieldOrgId:          command.OrgId,
-		models.SalesPointFieldSalesChannelId: channelId,
-		models.SalesPointFieldName:           command.Name,
-		models.SalesPointFieldStatus:         string(models.SalesPointStatusActive),
-	}
-	if command.Code != "" {
-		fields[models.SalesPointFieldCode] = command.Code
-	}
-	if command.ExternalReferenceId != "" {
-		fields[models.SalesPointFieldExternalReferenceId] = command.ExternalReferenceId
-		fields[models.SalesPointFieldExternalReferenceType] = command.ExternalReferenceType
-	}
-	if command.FulfillmentEnabled {
-		fields[models.SalesPointFieldFulfillmentEnabled] = true
-	}
-	if command.InventoryLocationId != "" {
-		fields[models.SalesPointFieldInventoryLocationId] = command.InventoryLocationId
-	}
+	fields := salesPointFields(command, string(*id), channelId)
 
-	created, err := service.Create(ctx, fields)
+	var created *dyn.OpResult[dmodel.DynamicFields]
+	if command.ManagedByType != "" {
+		created, err = service.CreateManaged(ctx, fields)
+	} else {
+		created, err = service.Create(ctx, fields)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -129,11 +115,61 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 	return &it.CreateSalesPointResult{
 		HasData: true,
 		Data: it.SalesPointData{
-			Id:               string(*id),
+			Id:               stringOf(created.Data, models.SalesPointFieldId),
 			SalesChannelId:   channelId,
 			SalesChannelCode: stringOf(channel, models.SalesChannelFieldCode),
 		},
 	}, nil
+}
+
+func salesPointFields(command it.CreateSalesPointCommand, id string, channelId string) dmodel.DynamicFields {
+	fields := dmodel.DynamicFields{
+		models.SalesPointFieldId:             id,
+		models.SalesPointFieldOrgId:          command.OrgId,
+		models.SalesPointFieldSalesChannelId: channelId,
+		models.SalesPointFieldName:           command.Name,
+		models.SalesPointFieldStatus:         string(models.SalesPointStatusActive),
+	}
+	optional := map[string]string{
+		models.SalesPointFieldCode:                command.Code,
+		models.SalesPointFieldInventoryLocationId: command.InventoryLocationId,
+		basemodel.FieldManagedByType:              command.ManagedByType,
+		basemodel.FieldManagedById:                command.ManagedById,
+	}
+	if command.ExternalReferenceId != "" {
+		optional[models.SalesPointFieldExternalReferenceId] = command.ExternalReferenceId
+		optional[models.SalesPointFieldExternalReferenceType] = command.ExternalReferenceType
+	}
+	for field, value := range optional {
+		if value != "" {
+			fields[field] = value
+		}
+	}
+	if command.FulfillmentEnabled {
+		fields[models.SalesPointFieldFulfillmentEnabled] = true
+	}
+	return fields
+}
+
+// DeleteManagedSalesPoint deletes a point its manager created. No permission check: the port is
+// the manager's own, called inside its delete, and DeleteManaged refuses any unmanaged point.
+func (this *SalesPointApplicationServiceImpl) DeleteManagedSalesPoint(
+	ctx corectx.Context, command it.SalesPointCommand,
+) (*it.SalesPointMutationResult, error) {
+	service, err := salesPointService()
+	if err != nil {
+		return nil, err
+	}
+	result, err := service.DeleteManaged(ctx, dmodel.DynamicFields{
+		models.SalesPointFieldId: command.SalesPointId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if result.ClientErrors.Count() > 0 {
+		return &it.SalesPointMutationResult{ClientErrors: result.ClientErrors}, nil
+	}
+	return &it.SalesPointMutationResult{HasData: true}, nil
 }
 
 func (this *SalesPointApplicationServiceImpl) ArchiveSalesPoint(

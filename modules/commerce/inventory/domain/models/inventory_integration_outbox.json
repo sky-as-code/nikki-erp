@@ -25,9 +25,7 @@
 			"data_type": { "type": "string", "min": 1, "max": 100 },
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "The identity of the EVENT, distinct from the id of this row. It is what a consumer deduplicates on, which is the whole mechanism by which redelivery is safe: at-least-once delivery means a consumer will see the same event twice, and the CR requires that this be harmless (CR-INV-SALES-WH-RESERVATION §10.2). Unique and immutable, because an event that could change its identity could be processed twice under two names."
-			}
+			"description": "field_desc.inventory_integration_outbox.event_id"
 		},
 		{
 			"name": "aggregate_id",
@@ -35,9 +33,7 @@
 			"data_type": "ulid",
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "What the event is about - the reservation. Indexed because the common question of an operator investigating one sale is what was published about it, and because a consumer replaying a single aggregate needs its events without scanning the table."
-			}
+			"description": "field_desc.inventory_integration_outbox.aggregate_id"
 		},
 		{
 			"name": "event_type",
@@ -45,9 +41,7 @@
 			"data_type": { "type": "string", "min": 1, "max": 100 },
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "What happened, as a name a consumer routes on - InventoryReservationCreated, InventoryReservationConsumed. A plain string rather than an enum, deliberately: the set grows as Inventory gains capabilities, and an enum would make every new event type a schema migration coordinated with every consumer. Immutable, because a published event cannot be retrospectively said to have been about something else."
-			}
+			"description": "field_desc.inventory_integration_outbox.event_type"
 		},
 		{
 			"name": "schema_version",
@@ -55,9 +49,7 @@
 			"data_type": { "type": "string", "min": 1, "max": 20 },
 			"required_for_create": true,
 			"default_value": "1.0",
-			"description": {
-				"en-US": "Which shape the payload is in. A STRING like '1.0', matching the Sales outbox rather than an integer, so a compatible addition and a breaking change can be told apart - a consumer can accept 1.x and refuse 2.0, which a single counter cannot express. Present from the first version rather than added when the first breaking change arrives, and that is the point: a consumer can refuse a payload it does not understand only if the envelope told it the version, so adding this later makes the first change the one nobody can detect."
-			}
+			"description": "field_desc.inventory_integration_outbox.schema_version"
 		},
 		{
 			"name": "payload",
@@ -65,9 +57,7 @@
 			"data_type": "jsonmap",
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "The facts of the event, frozen at the moment it occurred. Immutable and self-contained: a consumer must not have to read back into Inventory to interpret it, both because that would couple the two modules at read time and because the answer would be today's state rather than the state the event described."
-			}
+			"description": "field_desc.inventory_integration_outbox.payload"
 		},
 		{
 			"name": "occurred_at",
@@ -75,34 +65,26 @@
 			"data_type": "datetime",
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "When the business event happened, which is NOT when it was published. The two differ by however long the row waited, and consumers ordering by publication time would reorder events the business produced in sequence - which is exactly what an outbox exists to prevent."
-			}
+			"description": "field_desc.inventory_integration_outbox.occurred_at"
 		},
 		{
 			"name": "published_at",
 			"label": "fields.published_at",
 			"data_type": "datetime",
-			"description": {
-				"en-US": "When the event reached the broker, and NULL is the meaningful value: an unpublished row is the queue. Indexed for that reason - the publisher's query is 'where published_at IS NULL order by occurred_at', and without the index it degrades as the table grows, which is precisely when it must not."
-			}
+			"description": "field_desc.inventory_integration_outbox.published_at"
 		},
 		{
 			"name": "attempt_count",
 			"label": "fields.attempt_count",
 			"data_type": { "type": "int32", "min": 0, "max": 1000 },
 			"default_value": 0,
-			"description": {
-				"en-US": "How many times publication has been tried. Exists because a broker being briefly unreachable is normal operation rather than a fault, and because a row failing forever must become visible instead of being retried silently until somebody notices the consumer is behind."
-			}
+			"description": "field_desc.inventory_integration_outbox.attempt_count"
 		},
 		{
 			"name": "last_error",
 			"label": "fields.last_error",
 			"data_type": { "type": "string", "min": 0, "max": 1000 },
-			"description": {
-				"en-US": "Why the last publication attempt failed. Kept for the same reason the fiscal request keeps one: a stuck event is the case an operator must act on, and a bare attempt count tells them nothing about whether to wait or intervene."
-			}
+			"description": "field_desc.inventory_integration_outbox.last_error"
 		}
 	],
 

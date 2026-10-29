@@ -354,11 +354,11 @@ Ensure Inventory Location Under Test
     ${name}=    Unique Display Name    Robot Inventory Location
     ${code}=    Unique Code    stkloc
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${INVENTORY_LOCATION_ID}    ${id}
     Set Global Variable    ${INVENTORY_LOCATION_ETAG}    ${etag}
-    Set Global Variable    ${INVENTORY_LOCATION_CODE}    ${code}
+    Set Global Variable    ${INVENTORY_LOCATION_NAME}    ${name}
 
 Ensure Stock Operation Type Under Test
     [Documentation]    The receipt operation type the stock_operation_type suite exercises.
@@ -384,7 +384,7 @@ Ensure Stock Destination Location Under Test
     ${name}=    Unique Display Name    Robot Stock Destination
     ${code}=    Unique Code    stkdst
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_usage': 'internal', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${STOCK_DEST_LOCATION_ID}    ${id}
 
@@ -440,16 +440,16 @@ Add Stock Move
     RETURN    ${id}
 
 Ensure Warehouse Under Test
-    [Documentation]    A warehouse and, with it, the locations it creates for itself: a root
-    ...    named after its code, and a Stock location beneath. One-step flows both ways, so
-    ...    those two are the whole tree until a test reconfigures a flow.
+    [Documentation]    A warehouse and, with it, the root location it creates and manages:
+    ...    named after its code, and where its stock lives. One-step flows both ways, so the root
+    ...    is the whole tree until a test reconfigures a flow.
     ${id}=    Get Variable Value    ${WAREHOUSE_ID}    ${EMPTY}
     IF    $id    RETURN
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Warehouse
     ${code}=    Unique Warehouse Code    W
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'warehouse_role': 'central', 'incoming_flow': 'one_step', 'outgoing_flow': 'one_step', 'status': 'active', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'code': $code, 'name': $name, 'warehouse_role': 'central', 'incoming_flow': 'one_step', 'outgoing_flow': 'one_step', 'status': 'active', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${WAREHOUSE_ID}    ${id}
     Set Global Variable    ${WAREHOUSE_ETAG}    ${etag}
@@ -464,7 +464,7 @@ Ensure Secondary Warehouse Under Test
     ${name}=    Unique Display Name    Robot Second Warehouse
     ${code}=    Unique Warehouse Code    S
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'warehouse_role': 'pos', 'incoming_flow': 'one_step', 'outgoing_flow': 'one_step', 'status': 'active', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'code': $code, 'name': $name, 'warehouse_role': 'pos', 'incoming_flow': 'one_step', 'outgoing_flow': 'one_step', 'status': 'active', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${SECONDARY_WAREHOUSE_ID}    ${id}
     Set Global Variable    ${SECONDARY_WAREHOUSE_ETAG}    ${etag}
@@ -482,11 +482,22 @@ Ensure Storage Category Under Test
     Set Global Variable    ${STORAGE_CATEGORY_ID}    ${id}
     Set Global Variable    ${STORAGE_CATEGORY_ETAG}    ${etag}
 
-Find Warehouse Location By Code
-    [Documentation]    Resolves one of a warehouse's own locations. The system-generated ones
-    ...    carry the codes the flow topology names, so 'Stock' finds the place goods live.
-    [Arguments]    ${warehouse_id}    ${code}
-    ${graph}=    Set Variable    {"and":[{"if":["warehouse_id","=","${warehouse_id}"]},{"if":["code","=","${code}"]}]}
+Get Warehouse Root Location Id
+    [Documentation]    The location the warehouse created for itself on creation and manages.
+    [Arguments]    ${warehouse_id}
+    ${resp}=    GET On Session    api    ${WAREHOUSE_API}/${warehouse_id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    Response Status Should Be    ${resp}    200
+    RETURN    ${resp.json()}[item][root_location_id]
+
+Find Warehouse Location
+    [Documentation]    Resolves one stop of a warehouse's flow topology. 'Stock' is the warehouse's
+    ...    root, where goods live; any other stop ('Input', 'Quality Control', 'Packing',
+    ...    'Output') is the system-generated child of the root carrying that name.
+    [Arguments]    ${warehouse_id}    ${stop}
+    ${root}=    Get Warehouse Root Location Id    ${warehouse_id}
+    IF    $stop == 'Stock'    RETURN    ${root}
+    ${graph}=    Set Variable    {"and":[{"if":["parent_location_id","=","${root}"]},{"if":["is_system_generated","=",true]},{"if":["name","=","${stop}"]}]}
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}
     ...    params=${{ {'org_id': $INV_ORG_ID, 'graph': $graph} }}
     Response Status Should Be    ${resp}    200
@@ -495,8 +506,8 @@ Find Warehouse Location By Code
     RETURN    ${items}[0][id]
 
 Unique Warehouse Code
-    [Documentation]    A warehouse code is at most five characters, because it is the first
-    ...    segment of every location path beneath it. The shared Unique Code keyword produces
+    [Documentation]    A warehouse code is at most five characters, and names the warehouse's
+    ...    root location. The shared Unique Code keyword produces
     ...    longer values, so warehouses get their own.
     [Arguments]    ${prefix}
     ${suffix}=    Unique Suffix
@@ -513,7 +524,7 @@ Ensure Supplier Location Under Test
     ${name}=    Unique Display Name    Robot Supplier
     ${code}=    Unique Code    stksup
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'vendor', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_usage': 'vendor', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${SUPPLIER_LOCATION_ID}    ${id}
 
@@ -540,7 +551,7 @@ Ensure Inventory Loss Location Under Test
     ${name}=    Unique Display Name    Robot Inventory Loss
     ${code}=    Unique Code    stkloss
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'inventory_loss', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_usage': 'inventory_loss', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${INVENTORY_LOSS_LOCATION_ID}    ${id}
 
@@ -554,7 +565,7 @@ Ensure Scrap Location Under Test
     ${name}=    Unique Display Name    Robot Scrap Location
     ${code}=    Unique Code    stkscrp
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': 'scrap', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_usage': 'scrap', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${SCRAP_LOCATION_ID}    ${id}
 

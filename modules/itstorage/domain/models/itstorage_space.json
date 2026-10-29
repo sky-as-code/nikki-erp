@@ -68,29 +68,13 @@
 			"description": {
 				"en-US": "The id of the owning tenant, organization or user. Not a foreign key: iam sorts after itstorage in the migration order, so the constraint would point upwards."
 			}
-		},
-		{
-			"name": "managed_by_type",
-			"label": "fields.managed_by_type",
-			"data_type": { "type": "enum_string", "values": ["system", "module", "user"] },
-			"required_for_create": true,
-			"description": {
-				"en-US": "Who manages the space. A 'system' space is created and removed by the platform, such as an organization's space during the org lifecycle."
-			}
-		},
-		{
-			"name": "managed_by_id",
-			"label": "fields.managed_by_id",
-			"data_type": { "type": "string", "min": 1, "max": 100 },
-			"description": {
-				"en-US": "The id or name of the manager when managed_by_type is not 'system'."
-			}
 		}
 	],
 
 	"extend_after": [
 		"core.basemodel.auditable_model",
 		"core.basemodel.traceable_model",
+		"core.basemodel.managed_model",
 		"core.basemodel.versioned_model"
 	],
 

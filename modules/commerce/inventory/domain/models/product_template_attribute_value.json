@@ -12,30 +12,28 @@
 			"name": "template_attribute_id",
 			"label": "fields.template_attribute_id",
 			"data_type": "ulid",
-			"required_for_create": true
+			"required_for_create": true,
+			"description": "field_desc.inventory_product_template_attribute_value.template_attribute_id"
 		},
 		{
 			"name": "attribute_value_id",
 			"label": "fields.attribute_value_id",
 			"data_type": "ulid",
 			"required_for_create": true,
-			"description": {
-				"en-US": "One allowed value. A template narrows a global attribute to a subset: Color may be Black and White here while another template allows Red and Blue."
-			}
+			"description": "field_desc.inventory_product_template_attribute_value.attribute_value_id"
 		},
 		{
 			"name": "sales_price_extra",
 			"label": "fields.sales_price_extra",
 			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
 			"default_value": "0",
-			"description": {
-				"en-US": "What choosing this value adds to the template's base sales price. Signed: XL may add 20,000 while a plain colour subtracts. Summed across a variant's chosen values to give its effective_base_sales_price (BR-PRICE-VARIANT-001).\n\nIt lives HERE, on Template × Attribute × Value, and not on the attribute value itself — which is why inventory_product_attribute_value.price_extra is no longer authoritative. The same value surcharges differently on different products: XL on a t-shirt is not XL on a tent. A single global number cannot express that, and BR-PRICE-VARIANT-002 forbids treating it as though it could.\n\nSales pricing only. It must never reach a cost calculation (BR-PRICE-VARIANT-008): a colour that sells for more does not thereby cost more, and adding it to cost would silently inflate every margin computed from it."
-			}
+			"description": "field_desc.inventory_product_template_attribute_value.sales_price_extra"
 		},
 		{
 			"name": "sequence",
 			"label": "fields.sequence",
-			"data_type": { "type": "int32", "min": 0, "max": 2147483647 }
+			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
+			"description": "field_desc.inventory_product_template_attribute_value.sequence"
 		},
 		{
 			"name": "is_selected",
@@ -43,33 +41,28 @@
 			"data_type": "boolean",
 			"required_for_create": true,
 			"default_value": true,
-			"description": {
-				"en-US": "False once the value was unselected on the template. The row is kept rather than deleted, because variants built from it still reference it."
-			}
+			"description": "field_desc.inventory_product_template_attribute_value.is_selected"
 		},
 		{
 			"name": "attribute_value_name",
 			"label": "fields.attribute_value_name",
 			"data_type": { "type": "langjson", "min": 0, "max": 200 },
 			"computed": { "kind": "related", "is_stored": false, "field": "attribute_value.name" },
-			"description": {
-				"en-US": "The value's name, read through the edge so a price list can show it without a second request."
-			}
+			"description": "field_desc.inventory_product_template_attribute_value.attribute_value_name"
 		},
 		{
 			"name": "attribute_value_code",
 			"label": "fields.attribute_value_code",
 			"data_type": { "type": "string", "min": 0, "max": 50 },
-			"computed": { "kind": "related", "is_stored": false, "field": "attribute_value.code" }
+			"computed": { "kind": "related", "is_stored": false, "field": "attribute_value.code" },
+			"description": "field_desc.inventory_product_template_attribute_value.attribute_value_code"
 		},
 		{
 			"name": "attribute_name",
 			"label": "fields.attribute_name",
 			"data_type": { "type": "langjson", "min": 0, "max": 200 },
 			"computed": { "kind": "related", "is_stored": false, "field": "template_attribute.attribute.name" },
-			"description": {
-				"en-US": "The global attribute's name, read through the template line."
-			}
+			"description": "field_desc.inventory_product_template_attribute_value.attribute_name"
 		},
 		{
 			"name": "org_id",

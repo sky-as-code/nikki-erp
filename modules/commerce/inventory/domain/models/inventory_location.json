@@ -3,25 +3,23 @@
 	"label": "inventory_location.label",
 	"table_name": "inventory_locations",
 	"should_build_db": true,
-	"record_label_field": "name",
-	"default_search_fields": ["code", "name", "location_usage", "purpose", "complete_path", "status"],
-	"partial_uniques_loose": [
-		{ "index_name": "invty_locs_tid_code_org_wh_id", "not_null_fields": ["code", "org_id"], "nullable_field": "warehouse_id" }
-	],
+	"record_label_field": "canonical_name",
+	"default_search_fields": ["name", "canonical_name", "location_usage", "purpose", "status"],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
 		{
-			"name": "code",
-			"label": "fields.code",
-			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "string", "min": 1, "max": 200 },
 			"required_for_create": true
 		},
 		{
-			"name": "name",
-			"label": "fields.name",
-			"data_type": { "type": "langjson", "min": 1, "max": 200 },
-			"required_for_create": true
+			"name": "canonical_name",
+			"label": "fields.canonical_name",
+			"data_type": { "type": "string", "min": 1, "max": 2000 },
+			"auto_generated": true,
+			"description": "field_desc.inventory_location.canonical_name"
 		},
 		{
 			"name": "location_usage",
@@ -32,9 +30,7 @@
 			},
 			"required_for_create": true,
 			"default_value": "internal",
-			"description": {
-				"en-US": "The general logistics behaviour of the location. Only 'internal' holds company-owned stock. The others are the counterparties and virtual locations every movement needs an opposite side for: a receipt comes from 'vendor', a delivery goes to 'customer', an inventory adjustment balances against 'inventory_loss', a scrap moves to 'scrap', a multi-step or inter-warehouse flow parks stock in 'transit', and 'virtual' is an organisational node holding nothing. Distinct from 'purpose', which says what a location is used for inside a warehouse."
-			}
+			"description": "field_desc.inventory_location.location_usage"
 		},
 		{
 			"name": "purpose",
@@ -43,55 +39,39 @@
 				"type": "enum_string",
 				"values": ["storage", "receiving", "quality", "picking", "packing", "output", "other"]
 			},
-			"description": {
-				"en-US": "What the location is for inside its warehouse. Null is normal for a location outside any warehouse: a vendor location has no warehouse purpose. This is why Zone, Receiving Area, Dock and Picking Area are not separate resources — they are locations differing by purpose and by where they sit in the tree."
-			}
+			"description": "field_desc.inventory_location.purpose"
 		},
 		{
 			"name": "warehouse_id",
 			"label": "fields.warehouse_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "The warehouse this location belongs to, or null. Nullable on purpose: vendor, customer, inventory-loss and shared transit locations belong to no warehouse, and a shared transit location between two warehouses must not belong to either."
-			}
+			"auto_generated": true,
+			"description": "field_desc.inventory_location.warehouse_id"
 		},
 		{
 			"name": "parent_location_id",
 			"label": "fields.parent_location_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "Parent in the location tree. Null for a root location. The tree must stay acyclic, which the engine enforces because the schema cannot. When both a location and its parent belong to a warehouse, it must be the same warehouse."
-			}
-		},
-		{
-			"name": "complete_path",
-			"label": "fields.complete_path",
-			"data_type": { "type": "string", "min": 0, "max": 1000 },
-			"description": {
-				"en-US": "Cached human-readable path, such as 'MAIN/Stock/Zone A/Rack A01'. Derived from the tree and maintained by the domain service, which rewrites it for every descendant when a location moves. parent_location_id remains the source of truth."
-			}
+			"description": "field_desc.inventory_location.parent_location_id"
 		},
 		{
 			"name": "hierarchy_depth",
 			"label": "fields.hierarchy_depth",
 			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
 			"default_value": 0,
-			"description": {
-				"en-US": "How deep the location sits in its tree; 0 for a root. Derived alongside complete_path."
-			}
+			"description": "field_desc.inventory_location.hierarchy_depth"
 		},
 		{
 			"name": "barcode",
 			"label": "fields.barcode",
-			"data_type": { "type": "string", "min": 0, "max": 100 }
+			"data_type": { "type": "string", "min": 0, "max": 100 },
+			"description": "field_desc.inventory_location.barcode"
 		},
 		{
 			"name": "storage_category_id",
 			"label": "fields.storage_category_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "Capacity and mixing policy for this location, if any. Only meaningful for a location that can actually hold goods."
-			}
+			"description": "field_desc.inventory_location.storage_category_id"
 		},
 		{
 			"name": "removal_strategy",
@@ -100,16 +80,15 @@
 				"type": "enum_string",
 				"values": ["fifo", "lifo", "fefo", "closest", "least_packages"]
 			},
-			"description": {
-				"en-US": "The order in which goods should be taken from this location's subtree. Configuration only: Warehouse states the preference and the Stock reservation engine is what applies it when choosing quants."
-			}
+			"description": "field_desc.inventory_location.removal_strategy"
 		},
 		{
 			"name": "is_replenishment_destination",
 			"label": "fields.is_replenishment_destination",
 			"data_type": "boolean",
 			"required_for_create": true,
-			"default_value": false
+			"default_value": false,
+			"description": "field_desc.inventory_location.is_replenishment_destination"
 		},
 		{
 			"name": "is_system_generated",
@@ -118,9 +97,7 @@
 			"required_for_create": true,
 			"default_value": false,
 			"no_update": true,
-			"description": {
-				"en-US": "True for the locations a warehouse creates for itself — its root, Stock, and the Input, Quality Control, Packing and Output stops its flows require. Clients may never set this: only the warehouse domain service creates such locations, and they are protected from being restructured or archived while the warehouse still needs them."
-			}
+			"description": "field_desc.inventory_location.is_system_generated"
 		},
 		{
 			"name": "status",
@@ -130,15 +107,12 @@
 				"values": ["active", "suspended"]
 			},
 			"required_for_create": true,
-			"default_value": "active",
-			"description": {
-				"en-US": "Operational state, separate from is_archived. 'suspended' means temporarily out of use — a damaged rack, an area under repair, a zone being investigated — and, unlike archiving, is allowed while the location still holds stock: locking a location that holds goods is exactly what it is for. A location is usable only when it is active, unarchived, and its warehouse (if any) is likewise."
-			}
+			"default_value": "active"
 		},
 		{
 			"name": "description",
 			"label": "fields.description",
-			"data_type": { "type": "langjson", "min": 0, "max": 2000 }
+			"data_type": { "type": "string", "min": 0, "max": 2000 }
 		},
 		{
 			"name": "org_id",
@@ -158,6 +132,7 @@
 		"core.basemodel.archivable_model",
 		"core.basemodel.auditable_model",
 		"core.basemodel.traceable_model",
+		"core.basemodel.managed_model",
 		"core.basemodel.versioned_model"
 	],
 
@@ -176,7 +151,7 @@
 			"type": "many:one",
 			"dest_schema": "inventory_warehouse",
 			"key_map": { "warehouse_id": "id" },
-			"on_delete": "NO ACTION"
+			"on_delete": "SET NULL"
 		},
 		{
 			"edge": "storage_category",

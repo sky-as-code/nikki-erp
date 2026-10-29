@@ -87,12 +87,12 @@ func (this *PaymentMethod) SetName(v *model.LangJson) {
 	this.GetFieldData().SetLangJson(PaymentMethodFieldName, v)
 }
 
-func (this PaymentMethod) GetDescription() *model.LangJson {
-	return this.GetFieldData().GetLangJson(PaymentMethodFieldDescription)
+func (this PaymentMethod) GetDescription() *string {
+	return this.GetFieldData().GetString(PaymentMethodFieldDescription)
 }
 
-func (this *PaymentMethod) SetDescription(v *model.LangJson) {
-	this.GetFieldData().SetLangJson(PaymentMethodFieldDescription, v)
+func (this *PaymentMethod) SetDescription(v *string) {
+	this.GetFieldData().SetString(PaymentMethodFieldDescription, v)
 }
 
 func (this PaymentMethod) GetCurrencyId() *model.Id {

@@ -25,8 +25,8 @@ Search With No Result Succeeds
     ...    params=${{ {'org_id': $INV_ORG_ID, 'page': 99} }}
     Response Should Be Search Success    ${resp}    ${INVENTORY_LOCATION_SCHEMA}    size=50    page=99    item_count=0
 
-Search By Code Succeeds
-    ${graph}=    Set Variable    {"if":["code", "=", "${INVENTORY_LOCATION_CODE}"]}
+Search By Name Succeeds
+    ${graph}=    Set Variable    {"if":["name", "=", "${INVENTORY_LOCATION_NAME}"]}
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}
     ...    params=${{ {'org_id': $INV_ORG_ID, 'graph': $graph} }}
     Response Should Be Search Success    ${resp}    ${INVENTORY_LOCATION_SCHEMA}    size=50    page=0    item_count=1

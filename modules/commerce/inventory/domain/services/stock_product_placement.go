@@ -128,7 +128,7 @@ func (this *StockQuantDomainServiceImpl) GetStockByLocation(
 
 		row := itStock.LocationStockRow{
 			LocationId:     model.Id(locationId),
-			LocationCode:   detail.Code,
+			LocationCanonicalName: detail.CanonicalName,
 			LocationName:   detail.Name,
 			LocationStatus: detail.Status,
 			OnHand:         placement.OnHand,
@@ -225,6 +225,6 @@ func sortLocationRows(rows []itStock.LocationStockRow) {
 		if cmp := rows[j].OnHand.Cmp(rows[i].OnHand); cmp != 0 {
 			return cmp < 0
 		}
-		return rows[i].LocationCode < rows[j].LocationCode
+		return rows[i].LocationCanonicalName < rows[j].LocationCanonicalName
 	})
 }

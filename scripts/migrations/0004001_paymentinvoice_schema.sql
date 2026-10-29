@@ -4,7 +4,7 @@ CREATE TABLE "paymentinvoice_payment_methods" (
   "code" character varying NULL,
   "adapter_code" character varying NULL,
   "name" jsonb NULL,
-  "description" jsonb NULL,
+  "description" character varying NULL,
   "currency_id" character varying NULL,
   "min_amount" numeric NULL,
   "max_amount" numeric NULL,

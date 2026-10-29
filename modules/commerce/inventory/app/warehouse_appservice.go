@@ -1,7 +1,6 @@
-// Package app holds the Inventory operations that span more than one domain service. Most
-// resources need no application layer because the dynamic resource engine handles them. Warehouse
-// creation and flow reconfiguration each write a warehouse and its locations, and must leave
-// neither half applied, so they are orchestrated here above the two domain services.
+// Package app holds the Inventory application services: authorization, and the operations that
+// span more than one domain service. Flow reconfiguration writes a warehouse and its locations, and
+// must leave neither half applied, so it is orchestrated here above the two domain services.
 package app
 
 import (
@@ -14,6 +13,7 @@ import (
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
 func NewWarehouseAppService(
@@ -30,40 +30,43 @@ type WarehouseAppServiceImpl struct {
 
 var _ itWarehouse.WarehouseAppService = (*WarehouseAppServiceImpl)(nil)
 
-// CreateWarehouse creates a warehouse together with the locations it needs to function. Both
-// happen in one transaction: if any required location fails, the warehouse goes with it.
+// CreateWarehouse creates a warehouse together with its root location and the stops its flows
+// need. The warehouse domain service does both in one transaction: if any location fails, the
+// warehouse goes with it.
 func (this *WarehouseAppServiceImpl) CreateWarehouse(
 	ctx corectx.Context, cmd itWarehouse.CreateWarehouseCommand,
 ) (*itWarehouse.CreateWarehouseResult, error) {
-	if vErrs := assertFlowsKnown(cmd.Fields); vErrs.Count() > 0 {
-		return &itWarehouse.CreateWarehouseResult{ClientErrors: *vErrs}, nil
-	}
-
-	var created dmodel.DynamicFields
-	err := services.WithWarehouseTransaction(ctx, func(tranxCtx corectx.Context) error {
-		result, err := this.warehouseSvc.Create(tranxCtx, cmd.Fields)
-		if err != nil {
-			return err
+	var result *dyn.OpResult[dmodel.DynamicFields]
+	var err error
+	if cmd.ManagedByType == "" {
+		result, err = this.warehouseSvc.Create(ctx, cmd.Fields)
+	} else {
+		fields := dmodel.DynamicFields{}
+		for key, value := range cmd.Fields {
+			fields[key] = value
 		}
-		if result == nil || result.ClientErrors.Count() > 0 {
-			return newClientErrorSignal(result)
-		}
-		created = result.Data
-
-		warehouse := models.NewWarehouseFrom(created)
-		return this.provisionSystemLocations(tranxCtx, *warehouse)
-	})
-
-	if signal, ok := asClientErrorSignal(err); ok {
-		return &itWarehouse.CreateWarehouseResult{ClientErrors: signal.errors}, nil
+		fields[basemodel.FieldManagedByType] = cmd.ManagedByType
+		fields[basemodel.FieldManagedById] = cmd.ManagedById
+		result, err = this.warehouseSvc.CreateManaged(ctx, fields)
 	}
 	if err != nil {
 		return nil, err
 	}
+	if result.ClientErrors.Count() > 0 {
+		return &itWarehouse.CreateWarehouseResult{ClientErrors: result.ClientErrors}, nil
+	}
 	return &itWarehouse.CreateWarehouseResult{
-		Data:    itWarehouse.CreateWarehouseResultData{Warehouse: created},
+		Data:    itWarehouse.CreateWarehouseResultData{Warehouse: result.Data},
 		HasData: true,
 	}, nil
+}
+
+// DeleteManagedWarehouse deletes a warehouse its manager created, with its root location. No
+// permission check: the port is the manager's own, called inside its delete.
+func (this *WarehouseAppServiceImpl) DeleteManagedWarehouse(
+	ctx corectx.Context, cmd itWarehouse.DeleteManagedWarehouseCommand,
+) (*itWarehouse.DeleteManagedWarehouseResult, error) {
+	return this.warehouseSvc.DeleteManaged(ctx, dmodel.DynamicFields{models.WarehouseFieldId: cmd.WarehouseId})
 }
 
 // ConfigureIncomingFlow changes how many stops goods make on the way in. It creates no stock move:
@@ -168,21 +171,6 @@ func (this *WarehouseAppServiceImpl) resolveFlow(
 		Data:    itWarehouse.ResolveFlowResultData{Legs: resolved},
 		HasData: true,
 	}, nil
-}
-
-func assertFlowsKnown(fields dmodel.DynamicFields) *ft.ClientErrors {
-	vErrs := ft.NewClientErrors()
-	for _, field := range []string{
-		models.WarehouseFieldIncomingFlow,
-		models.WarehouseFieldOutgoingFlow,
-	} {
-		flow := readStringField(fields, field)
-		if flow != "" && !services.IsKnownFlow(flow) {
-			vErrs.Append(*ft.NewBusinessViolation(models.WarehouseSchemaName,
-				ft.ErrorKey("warehouse.flow_invalid", "inventory"), "'"+flow+"' is not a known flow"))
-		}
-	}
-	return vErrs
 }
 
 func flowViolation(key string, message string) *itWarehouse.ConfigureFlowResult {

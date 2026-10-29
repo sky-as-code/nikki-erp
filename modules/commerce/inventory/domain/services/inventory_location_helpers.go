@@ -70,16 +70,6 @@ func (this *InventoryLocationDomainServiceImpl) writeParent(
 	})
 }
 
-// writeDerivedPath stores the cached path and depth computed from the tree.
-func (this *InventoryLocationDomainServiceImpl) writeDerivedPath(
-	ctx corectx.Context, locationId string, path string, depth int,
-) error {
-	return this.writeLocationFields(ctx, locationId, dmodel.DynamicFields{
-		models.InventoryLocationFieldCompletePath:   path,
-		models.InventoryLocationFieldHierarchyDepth: int32(depth),
-	})
-}
-
 func (this *InventoryLocationDomainServiceImpl) writeLocationFields(
 	ctx corectx.Context, locationId string, fields dmodel.DynamicFields,
 ) error {
@@ -98,8 +88,12 @@ func (this *InventoryLocationDomainServiceImpl) writeLocationFields(
 
 // withLocationTransaction runs body inside one transaction on a cloned context. The transaction
 // must go on the clone, never ctx itself, or a committed transaction stays visible to whatever runs
-// next.
+// next. When ctx already carries a transaction - another module provisioning locations inside its
+// own create - body joins it, so a later failure there rolls these writes back too.
 func withLocationTransaction(ctx corectx.Context, body func(tranxCtx corectx.Context) error) error {
+	if ctx.GetDbTranx() != nil {
+		return body(ctx)
+	}
 	engine, err := repoFor(models.InventoryLocationSchemaName)
 	if err != nil {
 		return err

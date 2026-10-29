@@ -96,7 +96,7 @@ Ensure Seed Group
     Ensure Seed User
     ${gname}=    Unique Display Name    Seed Group
     ${resp}=    POST On Session    api    ${GROUP_API}
-    ...    json=${{ {'name': {'en-US': $gname}, 'description': {'en-US': 'Seed group for API REST tests'}, 'owner_id': $SEED_USER_ID} }}
+    ...    json=${{ {'name': {'en-US': $gname}, 'description': 'Seed group for API REST tests', 'owner_id': $SEED_USER_ID} }}
     ${gid}    ${getag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${SEED_GROUP_ID}    ${gid}
     Set Global Variable    ${SEED_GROUP_CREATED}    ${True}

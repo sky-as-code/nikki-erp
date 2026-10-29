@@ -177,3 +177,13 @@ func firstOrZero[T any](options []T) T {
 	}
 	return zero
 }
+
+// KeepId restores an id the caller generated before Create, because schema validation regenerates
+// an auto-generated primary key. Only for an internal caller that must stamp the id on other
+// records first (a managing record's managed_by_id, a slot's location); a REST create never uses it.
+func KeepId(id string) ValidateExtraFn {
+	return func(_ corectx.Context, input, _ *DynamicEntity, _ *ft.ClientErrors) error {
+		input.GetFieldData()[basemodel.FieldId] = id
+		return nil
+	}
+}

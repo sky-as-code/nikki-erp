@@ -18,25 +18,22 @@
 			"label": "fields.product_template_id",
 			"data_type": "ulid",
 			"required_for_create": true,
-			"no_update": true
+			"no_update": true,
+			"description": "field_desc.inventory_product_template_combination_exclusion.product_template_id"
 		},
 		{
 			"name": "left_template_attribute_value_id",
 			"label": "fields.left_template_attribute_value_id",
 			"data_type": "ulid",
 			"required_for_create": true,
-			"description": {
-				"en-US": "One side of a pair of template values that may not appear together in a variant. The pair is stored normalized, left id < right id, so the same pair cannot be recorded twice in opposite order."
-			}
+			"description": "field_desc.inventory_product_template_combination_exclusion.left_template_attribute_value_id"
 		},
 		{
 			"name": "right_template_attribute_value_id",
 			"label": "fields.right_template_attribute_value_id",
 			"data_type": "ulid",
 			"required_for_create": true,
-			"description": {
-				"en-US": "The other side of the excluded pair; always the greater id of the two."
-			}
+			"description": "field_desc.inventory_product_template_combination_exclusion.right_template_attribute_value_id"
 		},
 		{
 			"name": "org_id",

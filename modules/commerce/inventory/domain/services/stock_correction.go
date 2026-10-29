@@ -8,6 +8,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
@@ -399,11 +400,15 @@ func FindLocationByType(
 		return nil, err
 	}
 
+	// The org's virtual locations: platform-managed, outside any warehouse, one per usage.
 	graph := &dmodel.SearchGraph{}
 	graph.And(
 		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldOrgId, dmodel.Equals, orgId),
 		*dmodel.NewSearchNode().NewCondition(
 			models.InventoryLocationFieldLocationUsage, dmodel.Equals, locationType),
+		*dmodel.NewSearchNode().NewCondition(
+			basemodel.FieldManagedByType, dmodel.Equals, basemodel.ManagedByTypeSystem),
+		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldWarehouseId, dmodel.IsNotSet),
 	)
 
 	found, err := engine.Search(ctx, dyn.RepoSearchParam{

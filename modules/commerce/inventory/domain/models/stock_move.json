@@ -12,18 +12,14 @@
 			"label": "fields.transfer_id",
 			"data_type": "ulid",
 			"no_update": true,
-			"description": {
-				"en-US": "The transfer this move belongs to. Optional, because a system move — an inventory adjustment or a scrap — has no transfer header (BR 4.2.4.2)."
-			}
+			"description": "field_desc.inventory_stock_move.transfer_id"
 		},
 		{
 			"name": "sequence",
 			"label": "fields.sequence",
 			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
 			"default_value": 0,
-			"description": {
-				"en-US": "Display order within the transfer. Presentation only; it does not affect processing order."
-			}
+			"description": "field_desc.inventory_stock_move.sequence"
 		},
 		{
 			"name": "product_variant_id",
@@ -31,55 +27,47 @@
 			"data_type": "ulid",
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "A move is always for a concrete variant, never a template: a template alone does not identify a physical article (BR 3.1)."
-			}
+			"description": "field_desc.inventory_stock_move.product_variant_id"
 		},
 		{
 			"name": "uom_id",
 			"label": "fields.uom_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "The unit demand_quantity is expressed in, which may differ from the variant's base unit."
-			}
+			"description": "field_desc.inventory_stock_move.uom_id"
 		},
 		{
 			"name": "demand_quantity",
 			"label": "fields.demand_quantity",
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
 			"required_for_create": true,
-			"description": {
-				"en-US": "How much the move asks for, in uom_id. This is the business demand and is never rewritten to what was actually processed: a partial validate leaves it intact and puts the remainder on a backorder (STOCK-INV-020, AC-STOCK-008)."
-			}
+			"description": "field_desc.inventory_stock_move.demand_quantity"
 		},
 		{
 			"name": "base_demand_quantity",
 			"label": "fields.base_demand_quantity",
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
 			"required_for_create": true,
-			"description": {
-				"en-US": "demand_quantity converted to the variant's base unit. Stored rather than recomputed so that a later change to the conversion factor cannot restate a movement already recorded."
-			}
+			"description": "field_desc.inventory_stock_move.base_demand_quantity"
 		},
 		{
 			"name": "source_location_id",
 			"label": "fields.source_location_id",
 			"data_type": "ulid",
-			"required_for_create": true
+			"required_for_create": true,
+			"description": "field_desc.inventory_stock_move.source_location_id"
 		},
 		{
 			"name": "destination_location_id",
 			"label": "fields.destination_location_id",
 			"data_type": "ulid",
-			"required_for_create": true
+			"required_for_create": true,
+			"description": "field_desc.inventory_stock_move.destination_location_id"
 		},
 		{
 			"name": "final_location_id",
 			"label": "fields.final_location_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "Where the goods end up at the end of a multi-step chain, when destination_location_id is only this step's handover point (BR 7.7)."
-			}
+			"description": "field_desc.inventory_stock_move.final_location_id"
 		},
 		{
 			"name": "status",
@@ -90,109 +78,89 @@
 			},
 			"required_for_create": true,
 			"default_value": "draft",
-			"no_update": true,
-			"description": {
-				"en-US": "System-managed, and derived from allocation rather than set: 'assigned' when reserved equals demand, 'partially_available' when some but not all is reserved, 'confirmed' when none is (BR 4.2.3.8)."
-			}
+			"no_update": true
 		},
 		{
 			"name": "priority",
 			"label": "fields.priority",
 			"data_type": { "type": "int32", "min": 0, "max": 100 },
-			"default_value": 0
+			"default_value": 0,
+			"description": "field_desc.inventory_stock_move.priority"
 		},
 		{
 			"name": "scheduled_at",
 			"label": "fields.scheduled_at",
-			"data_type": "datetime"
+			"data_type": "datetime",
+			"description": "field_desc.inventory_stock_move.scheduled_at"
 		},
 		{
 			"name": "deadline_at",
 			"label": "fields.deadline_at",
-			"data_type": "datetime"
+			"data_type": "datetime",
+			"description": "field_desc.inventory_stock_move.deadline_at"
 		},
 		{
 			"name": "reservation_date",
 			"label": "fields.reservation_date",
 			"data_type": "datetime",
-			"description": {
-				"en-US": "When this move becomes eligible for automatic reservation under the 'before_scheduled_date' method."
-			}
+			"description": "field_desc.inventory_stock_move.reservation_date"
 		},
 		{
 			"name": "picked",
 			"label": "fields.picked",
 			"data_type": "boolean",
 			"default_value": false,
-			"description": {
-				"en-US": "Whether the goods have been physically gathered. Distinct from being reserved, which is only a claim on stock, and from being done, which is the recorded movement."
-			}
+			"description": "field_desc.inventory_stock_move.picked"
 		},
 		{
 			"name": "origin_move_id",
 			"label": "fields.origin_move_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "The move this one was split from, or the preceding step in a chain."
-			}
+			"description": "field_desc.inventory_stock_move.origin_move_id"
 		},
 		{
 			"name": "is_inventory_adjustment",
 			"label": "fields.is_inventory_adjustment",
 			"data_type": "boolean",
 			"default_value": false,
-			"description": {
-				"en-US": "Marks a move generated by a physical count rather than a transfer, so that adjustments can be reported apart from trade movements."
-			}
+			"description": "field_desc.inventory_stock_move.is_inventory_adjustment"
 		},
 		{
 			"name": "scrap_id",
 			"label": "fields.scrap_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "The scrap document that generated this move. Declared now and written by the scrap phase."
-			}
+			"description": "field_desc.inventory_stock_move.scrap_id"
 		},
 		{
 			"name": "valuation_value",
 			"label": "fields.valuation_value",
 			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
-			"description": {
-				"en-US": "Monetary value of the movement. Declared now and left unwritten until the valuation phase: adding these columns later would be a migration on a table already holding movement history."
-			}
+			"description": "field_desc.inventory_stock_move.valuation_value"
 		},
 		{
 			"name": "remaining_quantity",
 			"label": "fields.remaining_quantity",
 			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
-			"description": {
-				"en-US": "Quantity of this incoming move not yet consumed by an outgoing one, for FIFO valuation. Unwritten until the valuation phase."
-			}
+			"description": "field_desc.inventory_stock_move.remaining_quantity"
 		},
 		{
 			"name": "remaining_value",
 			"label": "fields.remaining_value",
 			"data_type": { "type": "decimal", "min": "-1000000000000", "max": "1000000000000", "scale": 6 },
-			"description": {
-				"en-US": "Monetary value of remaining_quantity. Unwritten until the valuation phase."
-			}
+			"description": "field_desc.inventory_stock_move.remaining_value"
 		},
 		{
 			"name": "currency_id",
 			"label": "fields.currency_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "Currency the valuation columns are expressed in. Unwritten until the valuation phase."
-			}
+			"description": "field_desc.inventory_stock_move.currency_id"
 		},
 		{
 			"name": "source_item_id",
 			"label": "fields.source_item_id",
 			"data_type": "ulid",
 			"no_update": true,
-			"description": {
-				"en-US": "The line of the demand this move serves — for a sales fulfillment, the fulfillment item id. It exists because the transfer's source_id names the whole demand and a partial dispense has to be attributed line by line: without it, releasing the hold on one product would mean guessing which move belonged to it. A plain identifier with no edge, for the same cross-module reason as the transfer's source_id."
-			}
+			"description": "field_desc.inventory_stock_move.source_item_id"
 		},
 		{
 			"name": "org_id",

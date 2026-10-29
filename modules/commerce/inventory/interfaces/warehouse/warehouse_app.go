@@ -11,7 +11,19 @@ import (
 
 type CreateWarehouseCommand struct {
 	Fields dmodel.DynamicFields
+	// ManagedByType and ManagedById mark the warehouse as managed by the caller's record, as
+	// "{module}/{managing_schema}" + that record's id; managed_by_* inside Fields are ignored. A
+	// managed warehouse refuses the client's delete; its manager removes it through
+	// DeleteManagedWarehouse. Both empty creates a plain warehouse.
+	ManagedByType string
+	ManagedById   string
 }
+
+type DeleteManagedWarehouseCommand struct {
+	WarehouseId string
+}
+
+type DeleteManagedWarehouseResult = dyn.OpResult[dyn.MutateResultData]
 
 type CreateWarehouseResultData struct {
 	Warehouse dmodel.DynamicFields
@@ -55,6 +67,13 @@ type ResolveFlowResult = dyn.OpResult[ResolveFlowResultData]
 // under way — a flow change applies only to later transactions.
 type WarehouseAppService interface {
 	CreateWarehouse(ctx corectx.Context, cmd CreateWarehouseCommand) (*CreateWarehouseResult, error)
+
+	// DeleteManagedWarehouse is the managing module's delete of a warehouse it created managed. It
+	// asserts no permission, refuses a warehouse nothing manages, deletes the root location with it
+	// and joins the caller's transaction.
+	DeleteManagedWarehouse(
+		ctx corectx.Context, cmd DeleteManagedWarehouseCommand,
+	) (*DeleteManagedWarehouseResult, error)
 
 	ConfigureIncomingFlow(ctx corectx.Context, cmd ConfigureFlowCommand) (*ConfigureFlowResult, error)
 	ConfigureOutgoingFlow(ctx corectx.Context, cmd ConfigureFlowCommand) (*ConfigureFlowResult, error)

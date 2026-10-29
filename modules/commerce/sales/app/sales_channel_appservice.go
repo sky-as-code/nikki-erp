@@ -11,6 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
 	it "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
@@ -46,9 +47,9 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 		return channelRejection("sales_channel.code_invalid",
 			"a sales channel code must be lowercase alphanumeric with no separators"), nil
 	}
-	if command.ManagedByModule == "" {
-		return channelRejection("sales_channel.managed_by_module_required",
-			"registering a sales channel requires the name of the module that owns it"), nil
+	if command.ManagedByType == "" {
+		return channelRejection("sales_channel.managed_by_type_required",
+			"registering a sales channel requires the managed_by_type of the module that owns it"), nil
 	}
 
 	engineRepo, err := services.RepositoryFor(models.SalesChannelSchemaName)
@@ -61,8 +62,8 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 		return nil, err
 	}
 	if len(existing) > 0 {
-		owner := stringOf(existing[0], models.SalesChannelFieldManagedByModule)
-		if owner != command.ManagedByModule {
+		owner := stringOf(existing[0], basemodel.FieldManagedByType)
+		if owner != command.ManagedByType {
 			return channelRejection("sales_channel.code_already_owned",
 				"the sales channel code '"+code+"' is registered by module '"+owner+"'"), nil
 		}
@@ -87,14 +88,14 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 		return nil, err
 	}
 	created, err := channelSvc.Create(ctx, dmodel.DynamicFields{
-		models.SalesChannelFieldId:              string(*id),
-		models.SalesChannelFieldOrgId:           command.OrgId,
-		models.SalesChannelFieldCode:            code,
-		models.SalesChannelFieldName:            command.Name,
-		models.SalesChannelFieldDescription:     command.Description,
-		models.SalesChannelFieldManagedByModule: command.ManagedByModule,
-		models.SalesChannelFieldStatus:          string(models.SalesChannelStatusActive),
-		models.SalesChannelFieldIsSystem:        false,
+		models.SalesChannelFieldId:          string(*id),
+		models.SalesChannelFieldOrgId:       command.OrgId,
+		models.SalesChannelFieldCode:        code,
+		models.SalesChannelFieldName:        command.Name,
+		models.SalesChannelFieldDescription: command.Description,
+		basemodel.FieldManagedByType:        command.ManagedByType,
+		models.SalesChannelFieldStatus:      string(models.SalesChannelStatusActive),
+		models.SalesChannelFieldIsSystem:    false,
 	})
 	if err != nil {
 		return nil, err
@@ -104,7 +105,8 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 	}
 	return &it.RegisterSalesChannelResult{
 		HasData: true,
-		Data:    it.SalesChannelData{Id: string(*id), Code: code},
+		// Not the id generated above: schema validation regenerates an auto-generated primary key.
+		Data:    it.SalesChannelData{Id: stringOf(created.Data, models.SalesChannelFieldId), Code: code},
 	}, nil
 }
 
@@ -146,12 +148,12 @@ func (this *SalesChannelApplicationServiceImpl) ResolveSalesChannelByCode(
 	return &it.ResolveSalesChannelResult{
 		HasData: true,
 		Data: it.ResolvedSalesChannel{
-			Id:              stringOf(found[0], models.SalesChannelFieldId),
-			Code:            code,
-			Name:            stringOf(found[0], models.SalesChannelFieldName),
-			ManagedByModule: stringOf(found[0], models.SalesChannelFieldManagedByModule),
-			Status:          stringOf(found[0], models.SalesChannelFieldStatus),
-			IsUsable:        channel.IsActive(),
+			Id:            stringOf(found[0], models.SalesChannelFieldId),
+			Code:          code,
+			Name:          stringOf(found[0], models.SalesChannelFieldName),
+			ManagedByType: stringOf(found[0], basemodel.FieldManagedByType),
+			Status:        stringOf(found[0], models.SalesChannelFieldStatus),
+			IsUsable:      channel.IsActive(),
 		},
 	}, nil
 }
