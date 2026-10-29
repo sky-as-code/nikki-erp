@@ -9,35 +9,24 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// The location tree: the rules that keep it acyclic and coherent, and the path maintenance a change
-// to it implies.
-
-// locationPathSeparator is what complete_path joins codes with, giving 'MAIN/Stock/Zone A'.
-const locationPathSeparator = "/"
+// The location tree: the rules that keep it acyclic and coherent. Deriving canonical_name,
+// warehouse_id and hierarchy_depth from it is inventory_location_derive.go's.
 
 // locationTreeScanLimit caps how far a tree walk goes. It guards against a persisted cycle rather
 // than being a real depth limit: looping forever inside a transaction is worse than refusing.
 const locationTreeScanLimit = 100
 
-// assertPlacementValid checks where a location is being put: the warehouse, the parent, and that
-// the two agree. selfId is empty on create and the location's own id on update, which is what lets
-// the cycle check know whether "the parent is me" is possible.
+// assertPlacementValid checks the parent a new location is put under: it exists and is usable.
+// The warehouse is not the client's to choose; it follows the parent (inventory_location_derive.go).
 func (this *InventoryLocationDomainServiceImpl) assertPlacementValid(
-	ctx corectx.Context, params dmodel.DynamicFields, selfId string,
+	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*ft.ClientErrors, error) {
 	vErrs := ft.NewClientErrors()
 	parentId := readStringParam(params, models.InventoryLocationFieldParentLocationId)
 	if parentId == "" {
-		return vErrs, nil
-	}
-
-	if parentId == selfId {
-		appendLocationViolation(vErrs, "inventory_location.hierarchy_cycle",
-			"a location cannot be its own parent")
 		return vErrs, nil
 	}
 
@@ -46,30 +35,21 @@ func (this *InventoryLocationDomainServiceImpl) assertPlacementValid(
 		return vErrs, err
 	}
 	if parentErrs.Count() > 0 {
-		appendLocationViolation(vErrs, "inventory_location.parent_not_found",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.parent_not_found",
 			"no location with id '"+parentId+"'")
 		return vErrs, nil
 	}
 	if parent.GetIsArchived() != nil && *parent.GetIsArchived() {
-		appendLocationViolation(vErrs, "inventory_location.parent_archived",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.parent_archived",
 			"the parent location is archived")
-		return vErrs, nil
-	}
-
-	// A location and its parent must sit in the same warehouse when both are in one, or a path would
-	// claim something the warehouses do not.
-	warehouseId := readStringParam(params, models.InventoryLocationFieldWarehouseId)
-	parentWarehouseId := derefId(parent.GetWarehouseId())
-	if warehouseId != "" && parentWarehouseId != "" && warehouseId != parentWarehouseId {
-		appendLocationViolation(vErrs, "inventory_location.warehouse_mismatch",
-			"a location and its parent must belong to the same warehouse")
 	}
 	return vErrs, nil
 }
 
-// assertMoveTargetValid checks a re-parent: the new parent exists, is usable, is in the same
-// warehouse, and is not inside the subtree being moved — the last stops a branch being grafted onto
-// itself, detaching it from the tree in a circle.
+// assertMoveTargetValid checks a re-parent: the new parent exists, is usable, and is not inside the
+// subtree being moved — the last stops a branch being grafted onto itself, detaching it from the
+// tree in a circle. The parent may sit in another warehouse, or none: the subtree's warehouse_id
+// follows it, and assertMoveKeepsReservationsBacked refuses a move that would strand a reservation.
 func (this *InventoryLocationDomainServiceImpl) assertMoveTargetValid(
 	ctx corectx.Context, location models.InventoryLocation, newParentId string,
 ) (*ft.ClientErrors, error) {
@@ -80,7 +60,7 @@ func (this *InventoryLocationDomainServiceImpl) assertMoveTargetValid(
 		return vErrs, nil
 	}
 	if newParentId == locationId {
-		appendLocationViolation(vErrs, "inventory_location.hierarchy_cycle",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.hierarchy_cycle",
 			"a location cannot be its own parent")
 		return vErrs, nil
 	}
@@ -90,19 +70,13 @@ func (this *InventoryLocationDomainServiceImpl) assertMoveTargetValid(
 		return vErrs, err
 	}
 	if parentErrs.Count() > 0 {
-		appendLocationViolation(vErrs, "inventory_location.parent_not_found",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.parent_not_found",
 			"no location with id '"+newParentId+"'")
 		return vErrs, nil
 	}
 	if parent.GetIsArchived() != nil && *parent.GetIsArchived() {
-		appendLocationViolation(vErrs, "inventory_location.parent_archived",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.parent_archived",
 			"the parent location is archived")
-		return vErrs, nil
-	}
-
-	if derefId(location.GetWarehouseId()) != derefId(parent.GetWarehouseId()) {
-		appendLocationViolation(vErrs, "inventory_location.warehouse_mismatch",
-			"a location can only move within its own warehouse")
 		return vErrs, nil
 	}
 
@@ -111,7 +85,7 @@ func (this *InventoryLocationDomainServiceImpl) assertMoveTargetValid(
 		return vErrs, err
 	}
 	if inside {
-		appendLocationViolation(vErrs, "inventory_location.hierarchy_cycle",
+		appendLocationViolation(vErrs, models.InventoryLocationFieldParentLocationId, "inventory_location.hierarchy_cycle",
 			"the new parent sits underneath the location being moved")
 	}
 	return vErrs, nil
@@ -138,97 +112,6 @@ func (this *InventoryLocationDomainServiceImpl) isDescendantOf(
 	}
 	return false, errors.New("the location hierarchy is deeper than " +
 		fmt.Sprint(locationTreeScanLimit) + " levels, or contains a cycle")
-}
-
-// rewriteSubtreePaths recomputes complete_path and hierarchy_depth for a location and everything
-// beneath it. It must run in the same transaction as the re-parent, because the cached paths and
-// the tree they describe have to change together.
-func (this *InventoryLocationDomainServiceImpl) rewriteSubtreePaths(
-	ctx corectx.Context, rootId string,
-) error {
-	root, vErrs, err := this.loadLocation(ctx, rootId)
-	if err != nil || vErrs.Count() > 0 {
-		return err
-	}
-
-	parentPath, parentDepth := "", -1
-	if parentId := derefId(root.GetParentLocationId()); parentId != "" {
-		parent, parentErrs, err := this.loadLocation(ctx, parentId)
-		if err != nil || parentErrs.Count() > 0 {
-			return err
-		}
-		parentPath = derefString(parent.GetCompletePath())
-		parentDepth = derefInt(parent.GetHierarchyDepth())
-	}
-
-	return this.rewritePathsFrom(ctx, *root, parentPath, parentDepth+1, 0)
-}
-
-// rewritePathsFrom writes one location's derived fields, then recurses into its children.
-func (this *InventoryLocationDomainServiceImpl) rewritePathsFrom(
-	ctx corectx.Context, location models.InventoryLocation, parentPath string, depth int, hops int,
-) error {
-	if hops >= locationTreeScanLimit {
-		return errors.New("the location hierarchy is deeper than " +
-			fmt.Sprint(locationTreeScanLimit) + " levels, or contains a cycle")
-	}
-
-	locationId := derefString(location.GetId())
-	path := joinPath(parentPath, derefString(location.GetCode()))
-
-	if err := this.writeDerivedPath(ctx, locationId, path, depth); err != nil {
-		return err
-	}
-
-	children, err := this.listChildren(ctx, locationId)
-	if err != nil {
-		return err
-	}
-	for _, child := range children {
-		if err := this.rewritePathsFrom(ctx, child, path, depth+1, hops+1); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// listChildren returns the unarchived locations directly under one location. Archived children keep
-// whatever path they had, being out of the working set.
-func (this *InventoryLocationDomainServiceImpl) listChildren(
-	ctx corectx.Context, parentId string,
-) ([]models.InventoryLocation, error) {
-	engine, err := repoFor(models.InventoryLocationSchemaName)
-	if err != nil {
-		return nil, err
-	}
-
-	graph := &dmodel.SearchGraph{}
-	graph.And(
-		*dmodel.NewSearchNode().NewCondition(
-			models.InventoryLocationFieldParentLocationId, dmodel.Equals, parentId),
-	)
-
-	children := make([]models.InventoryLocation, 0)
-	for page := 0; ; page++ {
-		found, err := engine.Search(ctx, dyn.RepoSearchParam{
-			Graph: graph,
-			Page:  page,
-			Size:  usageScanPageSize,
-		})
-		if err != nil {
-			return nil, errors.Wrap(err, "listChildren")
-		}
-		if found == nil || !found.HasData || len(found.Data.Items) == 0 {
-			break
-		}
-		for _, row := range found.Data.Items {
-			children = append(children, *models.NewInventoryLocationFrom(row))
-		}
-		if len(found.Data.Items) < usageScanPageSize {
-			break
-		}
-	}
-	return children, nil
 }
 
 // countUnarchivedChildren reports how many live locations sit directly under one.

@@ -1,4 +1,4 @@
-package app
+package services
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
@@ -35,46 +34,34 @@ func (this *warehouseTestRepo) BeginTransaction(corectx.Context) (database.DbTra
 	return this.tranx, nil
 }
 
-type warehouseTestDomain struct {
-	composable.CrudDomainService
-	repo *warehouseTestRepo
-}
-
-func (this *warehouseTestDomain) Repository() composable.CrudRepository { return this.repo }
-
-// warehouseTestBase stands in for the composable default: it records whether it ran inside a
-// transaction and answers with the refusal it was given.
+// warehouseTestBase stands in for the composable default domain service: it records whether it
+// ran inside a transaction and answers with the refusal it was given.
 type warehouseTestBase struct {
-	composable.CrudApplicationService
+	composable.CrudDomainService
+	repo           *warehouseTestRepo
 	refusal        *ft.ClientErrors
 	calls          int
 	sawTransaction bool
 }
 
+func (this *warehouseTestBase) Repository() composable.CrudRepository { return this.repo }
+
 func (this *warehouseTestBase) Create(
-	ctx corectx.Context, _ composable.CreateCommand,
+	ctx corectx.Context, _ composable.CreateCommand, _ ...composable.CreateOptions,
 ) (*composable.CreateResult, error) {
 	this.calls++
 	this.sawTransaction = ctx.GetDbTranx() != nil
 	return &composable.CreateResult{ClientErrors: *this.refusal}, nil
 }
 
-func newWarehouseCreateFixture() (*WarehouseApplicationServiceImpl, *warehouseTestBase, *warehouseTestTransaction) {
+func newWarehouseCreateFixture() (*WarehouseDomainServiceImpl, *warehouseTestBase, *warehouseTestTransaction) {
 	tranx := &warehouseTestTransaction{}
-	domain := &warehouseTestDomain{repo: &warehouseTestRepo{tranx: tranx}}
-	warehouseSvc := &services.WarehouseDomainServiceImpl{CrudDomainService: domain}
-	base := &warehouseTestBase{refusal: ft.NewClientErrors()}
-	orchestrator := &WarehouseAppServiceImpl{warehouseSvc: warehouseSvc}
-	return &WarehouseApplicationServiceImpl{
-		CrudApplicationService: base,
-		WarehouseAppService:    orchestrator,
-		orchestrator:           orchestrator,
-		warehouseSvc:           warehouseSvc,
-	}, base, tranx
+	base := &warehouseTestBase{repo: &warehouseTestRepo{tranx: tranx}, refusal: ft.NewClientErrors()}
+	return NewWarehouseDomainService(base, nil), base, tranx
 }
 
-// The REST create reaches the onion's Create, so that is where a warehouse must get its system
-// locations; the default create runs inside the transaction they are provisioned in.
+// A warehouse and its root location are created in one transaction: the default create runs inside
+// it, and a refused create provisions and commits nothing.
 func TestWarehouseCreateRunsTheDefaultInsideOneTransaction(t *testing.T) {
 	service, base, tranx := newWarehouseCreateFixture()
 	base.refusal.Append(*ft.NewBusinessViolation("code", "common:err_missing_required_field", "missing"))

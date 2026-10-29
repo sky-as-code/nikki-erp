@@ -18,24 +18,24 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
-// The locations a warehouse provisions for itself, which the operation type defaults name.
-const (
-	stockLocationCode     = "Stock"
-	aliasWarehouseRootLoc = "location_main"
-	aliasWarehouseStock   = "location_main_stock"
-)
+// aliasWarehouseStockLoc names the main warehouse's stock location, where its goods live, for the
+// operation types' default source and destination.
+const aliasWarehouseStockLoc = "location_main"
 
 // cleanUpOrder lists every org-scoped resource children first. Attribute links without an
-// org_id go with the templates and variants they cascade from.
+// org_id go with the templates and variants they cascade from. Warehouses go before locations:
+// warehouse.root_location_id holds a RESTRICT FK to its root, while location.warehouse_id is SET
+// NULL when its warehouse goes.
 var cleanUpOrder = []string{
 	models.StockMoveDependencySchemaName, models.StockMoveLineSchemaName, models.StockMoveSchemaName,
 	models.StockQuantSchemaName, models.StockReservationSchemaName, models.StockScrapSchemaName,
 	models.ProductVariantSchemaName, models.StockProductConfigSchemaName, models.ProductTemplateSchemaName,
 	models.BrandSchemaName, models.InventoryIntegrationOutboxSchemaName, models.PutawayRuleSchemaName,
-	models.StockTransferSchemaName, models.StockOperationTypeSchemaName, models.InventoryLocationSchemaName,
+	models.StockTransferSchemaName, models.StockOperationTypeSchemaName,
+	models.WarehouseProductGuardSchemaName, models.WarehouseSupplyRelationSchemaName, models.WarehouseSchemaName,
+	models.InventoryLocationSchemaName,
 	models.ProductAttributeValueSchemaName, models.ProductAttributeSchemaName,
 	models.ProductCategorySchemaName, models.StorageCategorySchemaName,
-	models.WarehouseProductGuardSchemaName, models.WarehouseSupplyRelationSchemaName, models.WarehouseSchemaName,
 }
 
 type OrgLifecycleParam struct {
@@ -99,8 +99,8 @@ func (this *OrgLifecycleAppServiceImpl) createRootCategory(
 	})
 }
 
-// createWarehouse goes through the warehouse's own orchestration, which provisions the root and
-// flow locations; their ids are remembered for the operation types.
+// createWarehouse goes through the warehouse's own orchestration, which provisions the root, Stock
+// and flow locations; the Stock's id is remembered for the operation types.
 func (this *OrgLifecycleAppServiceImpl) createWarehouse(
 	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id,
 ) error {
@@ -116,28 +116,18 @@ func (this *OrgLifecycleAppServiceImpl) createWarehouse(
 		if result.ClientErrors.Count() > 0 {
 			return "", result.ClientErrors.ToError()
 		}
-		warehouseId := composable.ParamId(result.Data.Warehouse)
-		code, _ := row[models.WarehouseFieldCode].(string)
-		return warehouseId, rememberWarehouseLocations(ctx, aliases, string(warehouseId), code)
+		warehouse := models.NewWarehouseFrom(result.Data.Warehouse)
+		if warehouse.GetStockLocationId() == nil {
+			return "", errors.Errorf("warehouse %s has no stock location", derefString(warehouse.GetCode()))
+		}
+		aliases.Remember(aliasWarehouseStockLoc, *warehouse.GetStockLocationId())
+		return composable.ParamId(result.Data.Warehouse), nil
 	})
 }
 
-func rememberWarehouseLocations(ctx corectx.Context, aliases *defaults.Aliases, warehouseId string, code string) error {
-	for alias, locationCode := range map[string]string{aliasWarehouseRootLoc: code, aliasWarehouseStock: stockLocationCode} {
-		found, err := services.FindWarehouseLocationByCode(ctx, warehouseId, locationCode)
-		if err != nil {
-			return err
-		}
-		if found == nil || found.GetId() == nil {
-			return errors.Errorf("warehouse %s has no %s location", code, locationCode)
-		}
-		aliases.Remember(alias, *found.GetId())
-	}
-	return nil
-}
-
-// createVirtualLocations writes the org-wide locations outside any warehouse. Like the ones a
-// warehouse provisions, they are system-generated, a flag the location service strips from input.
+// createVirtualLocations writes the org-wide locations outside any warehouse. They are managed by
+// the system (their defaults say so) and system-generated, a flag the location service strips
+// from input.
 func (this *OrgLifecycleAppServiceImpl) createVirtualLocations(
 	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id,
 ) error {
@@ -146,10 +136,14 @@ func (this *OrgLifecycleAppServiceImpl) createVirtualLocations(
 		return err
 	}
 	return aliases.CreateAll(rows, orgId, func(row dmodel.DynamicFields) (model.Id, error) {
-		id, err := composable.CreateOne(ctx, this.param.Location, row)
+		result, err := this.param.Location.CreateManaged(ctx, row)
 		if err != nil {
 			return "", err
 		}
+		if result.ClientErrors.Count() > 0 {
+			return "", result.ClientErrors.ToError()
+		}
+		id := composable.ParamId(result.Data)
 		return id, services.MarkLocationSystemGenerated(ctx, string(id))
 	})
 }

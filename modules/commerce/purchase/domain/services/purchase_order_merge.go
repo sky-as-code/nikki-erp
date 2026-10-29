@@ -28,7 +28,7 @@ func (this *PurchaseOrderDomainServiceImpl) MergeOrders(
 	ctx corectx.Context, orderIds []string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	if len(orderIds) < 2 {
-		return orderViolationResult("purchase_order.merge_needs_two",
+		return orderViolationResult("order_ids", "purchase_order.merge_needs_two",
 			"merging needs at least two purchase orders"), nil
 	}
 
@@ -106,7 +106,7 @@ func loadMergeableOrders(
 		status := stringOf(order, models.PurchaseOrderFieldStatus)
 		if status != string(models.PurchaseOrderStatusRfq) &&
 			status != string(models.PurchaseOrderStatusRfqSent) {
-			return nil, orderViolationResult("purchase_order.not_mergeable",
+			return nil, orderViolationResult("", "purchase_order.not_mergeable",
 				"only a draft or sent request for quotation can be merged; '"+
 					stringOf(order, models.PurchaseOrderFieldCode)+"' is '"+status+"'"), nil
 		}
@@ -114,7 +114,7 @@ func loadMergeableOrders(
 	}
 
 	if len(orders) < 2 {
-		return nil, orderViolationResult("purchase_order.merge_needs_two",
+		return nil, orderViolationResult("order_ids", "purchase_order.merge_needs_two",
 			"merging needs at least two distinct purchase orders"), nil
 	}
 	if refusal := assertCompatibleOrders(orders); refusal != nil {
@@ -140,7 +140,7 @@ func assertCompatibleOrders(orders []dmodel.DynamicFields) *dyn.OpResult[dyn.Mut
 		want := stringOf(first, field.key)
 		for _, order := range orders[1:] {
 			if stringOf(order, field.key) != want {
-				return orderViolationResult(
+				return orderViolationResult("",
 					"purchase_order.merge_"+field.name+"_mismatch", field.message)
 			}
 		}

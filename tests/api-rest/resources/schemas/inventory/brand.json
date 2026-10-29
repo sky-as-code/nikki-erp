@@ -34,7 +34,7 @@
             "type": ["string", "null"]
         },
         "description": {
-            "type": ["object", "null"]
+            "type": ["string", "null"]
         },
         "org_id": {
             "type": "string",

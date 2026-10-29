@@ -143,7 +143,7 @@ Set Up Field Fixtures
 
     ${group_name}=    Unique Display Name    Perm Field Group
     ${resp}=    POST On Session    api    ${GROUP_API}
-    ...    json=${{ {'name': {'en-US': $group_name}, 'description': {'en-US': 'only the admin reads this'}, 'owner_id': $user_id} }}
+    ...    json=${{ {'name': {'en-US': $group_name}, 'description': 'only the admin reads this', 'owner_id': $user_id} }}
     ${group_id}    ${etag}=    Response Should Be Create Success    ${resp}
     Track Permission Fixture    groups    ${group_id}
     Set Suite Variable    ${FIELD_GROUP_ID}    ${group_id}

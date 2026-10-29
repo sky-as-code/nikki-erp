@@ -237,15 +237,16 @@ func resolveRequestedReturns(
 	}
 
 	resolved := make([]ReturnLineRequest, 0, len(request.Lines))
-	for _, requested := range request.Lines {
+	for index, requested := range request.Lines {
 		line, ok := byMoveId[requested.MoveId]
 		if !ok {
 			vErrs.Append(*ft.NewBusinessViolation(
-				models.StockMoveSchemaName, ft.ErrorKey("stock_return.unknown_move", "inventory"),
+				requestItemPath("lines", index, "move_id"), ft.ErrorKey("stock_return.unknown_move", "inventory"),
 				"move '"+requested.MoveId+"' is not part of the transfer being returned"))
 			continue
 		}
-		if lineErrs := AssertReturnable(line, requested.Quantity); lineErrs.Count() > 0 {
+		quantityField := requestItemPath("lines", index, "quantity")
+		if lineErrs := AssertReturnable(line, requested.Quantity, quantityField); lineErrs.Count() > 0 {
 			vErrs.ConcatPtr(lineErrs)
 			continue
 		}

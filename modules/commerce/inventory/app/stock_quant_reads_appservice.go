@@ -70,7 +70,7 @@ type warehouseStockRowJson struct {
 
 type locationStockRowJson struct {
 	LocationId     string `json:"locationId"`
-	LocationCode   string `json:"locationCode,omitempty"`
+	LocationCanonicalName string `json:"locationCanonicalName,omitempty"`
 	LocationName   string `json:"locationName,omitempty"`
 	LocationStatus string `json:"locationStatus,omitempty"`
 	WarehouseId    string `json:"warehouseId,omitempty"`
@@ -200,7 +200,7 @@ func (this *StockQuantApplicationServiceImpl) StockByLocation(
 	for _, row := range result.Data.Rows {
 		rows = append(rows, locationStockRowJson{
 			LocationId:     string(row.LocationId),
-			LocationCode:   row.LocationCode,
+			LocationCanonicalName: row.LocationCanonicalName,
 			LocationName:   row.LocationName,
 			LocationStatus: row.LocationStatus,
 			WarehouseId:    idOrEmpty(row.WarehouseId),

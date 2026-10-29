@@ -4,6 +4,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/common/safe"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -11,6 +13,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 )
 
 // Create, Confirm and Cancel move a transfer through its lifecycle without touching a balance.
@@ -21,14 +24,62 @@ import (
 // type's three policies are copied as snapshots, so reconfiguring the type later cannot
 // reinterpret an existing transfer; and the status is forced to draft, since a transfer created
 // `done` would be a completed movement with nothing behind it. It creates no stock and reserves
-// nothing.
+// nothing. A `moves.add` list creates the draft moves with the header, in one transaction.
 func (this *StockTransferDomainServiceImpl) Create(
 	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	delta, cErrs := liftMovesOrRefuse(params)
+	if cErrs.Count() == 0 && delta != nil && (len(delta.Update) > 0 || len(delta.Remove) > 0) {
+		cErrs = ft.ClientErrors{*ft.NewValidationError(itStock.TransferFieldMoves,
+			ft.ErrorKey("stock_transfer.moves_create_add_only", "inventory"),
+			"a new transfer has no moves to update or remove; send only moves.add")}
+	}
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: cErrs}, nil
+	}
+	if delta == nil {
+		return this.createHeader(ctx, params)
+	}
+	var result *dyn.OpResult[dmodel.DynamicFields]
+	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
+			var err error
+			if result, err = this.createHeader(tranxCtx, params); err != nil {
+				return nil, err
+			}
+			if result.ClientErrors.Count() > 0 || !result.HasData {
+				return &result.ClientErrors, nil
+			}
+			transferId := derefString(models.NewStockTransferFrom(result.Data).GetId())
+			cErrs, err := applyMovesDelta(tranxCtx, transferId, *delta)
+			return &cErrs, err
+		})
+	if err != nil {
+		return nil, errors.Wrap(err, "create stock transfer")
+	}
+	if refused != nil {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *refused}, nil
+	}
+	return result, nil
+}
+
+// createHeader writes the transfer row alone. An empty operation_type_id is resolved from the
+// org's operation_code, so a client may open "a new receipt" without knowing the type's id.
+func (this *StockTransferDomainServiceImpl) createHeader(
+	ctx corectx.Context, params dmodel.DynamicFields,
+) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	operationTypeId := readStringParam(params, models.StockTransferFieldOperationTypeId)
-	if operationTypeId == "" {
-		// The field is required by the schema, so the base call reports the omission.
+	if operationTypeId == "" && readStringParam(params, models.StockTransferFieldOperationCode) == "" {
+		// operation_code is required by the schema, so the base call reports the omission.
 		return this.CrudDomainService.Create(ctx, params)
+	}
+	if operationTypeId == "" {
+		resolved, vErrs, err := resolveOperationTypeByCode(ctx, params)
+		if err != nil || vErrs.Count() > 0 {
+			return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: vErrs}, err
+		}
+		operationTypeId = resolved
+		params[models.StockTransferFieldOperationTypeId] = resolved
 	}
 
 	operationType, vErrs, err := loadUsableOperationType(ctx, operationTypeId)
@@ -43,11 +94,86 @@ func (this *StockTransferDomainServiceImpl) Create(
 	if err != nil {
 		return nil, err
 	}
-	if clientErrs := assertCreatableTransfer(prepared); clientErrs.Count() > 0 {
+	clientErrs := assertCreatableTransfer(prepared)
+	if err := assertLocationsHoldStock(ctx, prepared, clientErrs); err != nil {
+		return nil, err
+	}
+	if clientErrs.Count() > 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *clientErrs}, nil
 	}
 
 	return this.CrudDomainService.Create(ctx, prepared)
+}
+
+// Update refuses to re-point a transfer at a group location, which holds no stock. A `moves` delta
+// is applied after the transfer row, in one transaction, so the transfer's etag guards the moves
+// and a refused move rolls the whole update back.
+func (this *StockTransferDomainServiceImpl) Update(
+	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	opts := safe.GetOptional(options, composable.UpdateOptions{})
+	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, validateMovementLocationsHoldStock)
+	delta, cErrs := liftMovesOrRefuse(params)
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, nil
+	}
+	if delta == nil {
+		return this.CrudDomainService.Update(ctx, params, opts)
+	}
+	var result *dyn.OpResult[dyn.MutateResultData]
+	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
+			var err error
+			if result, err = this.CrudDomainService.Update(tranxCtx, params, opts); err != nil {
+				return nil, err
+			}
+			if result.ClientErrors.Count() > 0 || !result.HasData {
+				return &result.ClientErrors, nil
+			}
+			cErrs, err := applyMovesDelta(tranxCtx, string(composable.ParamId(params)), *delta)
+			return &cErrs, err
+		})
+	if err != nil {
+		return nil, errors.Wrap(err, "update stock transfer")
+	}
+	if refused != nil {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *refused}, nil
+	}
+	return result, nil
+}
+
+// resolveOperationTypeByCode picks the org's one active operation type of the requested
+// operation_code. None or several is the client's to settle by naming the type: guessing among
+// several would copy the wrong policies and default locations onto the transfer.
+func resolveOperationTypeByCode(
+	ctx corectx.Context, params dmodel.DynamicFields,
+) (string, ft.ClientErrors, error) {
+	operationCode := readStringParam(params, models.StockTransferFieldOperationCode)
+	engine, err := repoFor(models.StockOperationTypeSchemaName)
+	if err != nil {
+		return "", nil, err
+	}
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(models.StockOperationTypeFieldOrgId, dmodel.Equals,
+			readStringParam(params, models.StockTransferFieldOrgId)),
+		*dmodel.NewSearchNode().NewCondition(models.StockOperationTypeFieldOperationCode, dmodel.Equals, operationCode),
+		*dmodel.NewSearchNode().NewCondition(basemodel.FieldIsArchived, dmodel.Equals, false),
+	)
+	found, err := engine.Search(ctx, dyn.RepoSearchParam{Graph: graph, Page: 0, Size: 2})
+	if err != nil {
+		return "", nil, errors.Wrap(err, "resolveOperationTypeByCode")
+	}
+	if found.ClientErrors.Count() > 0 {
+		return "", nil, errors.Wrap(found.ClientErrors.ToError(), "resolveOperationTypeByCode")
+	}
+	if !found.HasData || len(found.Data.Items) != 1 {
+		return "", ft.ClientErrors{*ft.NewBusinessViolation(models.StockTransferFieldOperationTypeId,
+			ft.ErrorKey("stock_transfer.operation_type_unresolved", "inventory"),
+			"choose an operation type: the organization has no single active one for '{{operation_code}}'",
+			map[string]any{"operation_code": operationCode})}, nil
+	}
+	return derefString(models.NewStockOperationTypeFrom(found.Data.Items[0]).GetId()), nil, nil
 }
 
 // loadUsableOperationType reads the operation type and refuses an archived one. The check must stay
@@ -70,7 +196,7 @@ func loadUsableOperationType(
 	}
 	if found == nil || !found.HasData {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockTransferSchemaName,
+			models.StockTransferFieldOperationTypeId,
 			ft.ErrorKey("stock_transfer.operation_type_not_found", "inventory"),
 			"no stock operation type with id '"+operationTypeId+"'",
 		))
@@ -80,7 +206,7 @@ func loadUsableOperationType(
 	operationType := models.NewStockOperationTypeFrom(found.Data)
 	if isArchived(found.Data) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockTransferSchemaName,
+			models.StockTransferFieldOperationTypeId,
 			ft.ErrorKey("stock_transfer.operation_type_archived", "inventory"),
 			"an archived stock operation type cannot start a new transfer",
 		))
@@ -139,7 +265,7 @@ func assertCreatableTransfer(params dmodel.DynamicFields) *ft.ClientErrors {
 		// A transfer from a location to itself moves nothing, but would still generate moves and
 		// consume reservations against the balance it is about to put back.
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockTransferSchemaName,
+			models.StockTransferFieldDestinationLocationId,
 			ft.ErrorKey("stock_transfer.same_source_and_destination", "inventory"),
 			"a transfer's source and destination locations must differ",
 		))

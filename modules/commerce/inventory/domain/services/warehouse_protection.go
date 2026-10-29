@@ -102,8 +102,8 @@ func assertNoBackingShortfall(ctx corectx.Context, key GuardKey, now time.Time) 
 	}
 	vErrs := ft.NewClientErrors()
 	if availability.Available.IsNegative() {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockReservationSchemaName, ft.ErrorKey(ReasonProtectionViolation, "inventory"),
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey(ReasonProtectionViolation, "inventory"),
 			"warehouse '"+string(key.WarehouseId)+"' would hold "+availability.EligibleOnHand.String()+
 				" of product variant '"+string(key.ProductVariantId)+"' against "+availability.EffectiveReserved.String()+
 				" committed; the operation is refused",
@@ -146,7 +146,7 @@ func assertLocationNotBackingReservations(
 ) (*ft.ClientErrors, error) {
 	vErrs := ft.NewClientErrors()
 	warehouseId := derefId(location.GetWarehouseId())
-	if warehouseId == "" || derefString(location.GetLocationUsage()) != models.InventoryLocationUsageInternal {
+	if warehouseId == "" || derefString(location.GetLocationType()) != models.InventoryLocationTypeInternal {
 		return vErrs, nil
 	}
 
@@ -183,7 +183,7 @@ func assertLocationNotBackingReservations(
 			return vErrs, err
 		}
 		if availability.Available.Sub(here).IsNegative() {
-			vErrs.Append(*ft.NewBusinessViolation(models.InventoryLocationSchemaName,
+			vErrs.Append(*ft.NewAnonymousBusinessViolation(
 				ft.ErrorKey("inventory_location.backs_reservations", "inventory"),
 				"the location holds stock of product variant '"+variantId+"' that warehouse '"+warehouseId+
 					"' needs to cover its reservations; release or consume them first"))
@@ -219,8 +219,8 @@ func assertWarehouseHasNoEffectiveReservations(
 		return vErrs, errors.Wrap(err, "assertWarehouseHasNoEffectiveReservations")
 	}
 	if inForce > 0 {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.WarehouseSchemaName, ft.ErrorKey("warehouse.has_active_reservations", "inventory"),
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey("warehouse.has_active_reservations", "inventory"),
 			"the warehouse still holds stock for reservations in force; release or consume them first"))
 	}
 	return vErrs, nil

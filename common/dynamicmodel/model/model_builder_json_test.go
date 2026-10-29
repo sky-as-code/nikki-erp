@@ -86,6 +86,7 @@ func TestParseModelJson_DataTypes(t *testing.T) {
 		{"enumInt32", `{"type":"enum_int32","values":[1,2]}`, FieldDataTypeEnumInt32([]int32{1, 2})},
 		{"ulidArray", `{"type":"ulid","array":true}`, FieldDataTypeUlid().ArrayType()},
 		{"secret", `{"type":"secret","min":1,"max":50}`, FieldDataTypeSecret(1, 50)},
+		{"resourceCode", `{"type":"resource_code","min":1,"max":20}`, FieldDataTypeResourceCode(1, 20)},
 	}
 
 	for _, testCase := range testCases {

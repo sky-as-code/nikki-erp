@@ -1,88 +1,56 @@
 [
 	{
 		"$alias": "location_virt_vendor",
-		"code": "VIRT/VENDOR",
-		"name": {
-			"en-US": "Vendors",
-			"vi-VN": "Nhà cung cấp"
-		},
-		"location_usage": "vendor",
+		"name": "Vendors",
+		"managed_by_type": "system",
+		"location_type": "vendor",
 		"is_replenishment_destination": false,
 		"status": "active",
-		"description": {
-			"en-US": "Goods originate here on a receipt",
-			"vi-VN": "Hàng xuất phát từ đây khi nhập kho"
-		}
+		"description": "Goods originate here on a receipt"
 	},
 	{
 		"$alias": "location_virt_customer",
-		"code": "VIRT/CUSTOMER",
-		"name": {
-			"en-US": "Customers",
-			"vi-VN": "Khách hàng"
-		},
-		"location_usage": "customer",
+		"name": "Customers",
+		"managed_by_type": "system",
+		"location_type": "customer",
 		"is_replenishment_destination": false,
 		"status": "active",
-		"description": {
-			"en-US": "Goods end here on a delivery",
-			"vi-VN": "Hàng kết thúc tại đây khi xuất kho"
-		}
+		"description": "Goods end here on a delivery"
 	},
 	{
 		"$alias": "location_virt_transit",
-		"code": "VIRT/TRANSIT",
-		"name": {
-			"en-US": "Inter-warehouse Transit",
-			"vi-VN": "Hàng đang chuyển kho"
-		},
-		"location_usage": "transit",
+		"name": "Inter-warehouse Transit",
+		"managed_by_type": "system",
+		"location_type": "transit",
 		"is_replenishment_destination": false,
 		"status": "active",
-		"description": {
-			"en-US": "Holds stock that has left one warehouse but not yet arrived at the next",
-			"vi-VN": "Giữ hàng đã rời kho nhưng chưa tới kho đích"
-		}
+		"description": "Holds stock that has left one warehouse but not yet arrived at the next"
 	},
 	{
 		"$alias": "location_virt_scrap",
-		"code": "VIRT/SCRAP",
-		"name": {
-			"en-US": "Scrapped Goods",
-			"vi-VN": "Hàng huỷ"
-		},
-		"location_usage": "scrap",
+		"name": "Scrapped Goods",
+		"managed_by_type": "system",
+		"location_type": "scrap",
 		"is_replenishment_destination": false,
 		"status": "active",
-		"description": {
-			"en-US": "Destination of every scrap document",
-			"vi-VN": "Đích đến của mọi phiếu huỷ hàng"
-		}
+		"description": "Destination of every scrap document"
 	},
 	{
 		"$alias": "location_virt_loss",
-		"code": "VIRT/LOSS",
-		"name": {
-			"en-US": "Inventory Adjustment",
-			"vi-VN": "Điều chỉnh tồn kho"
-		},
-		"location_usage": "inventory_loss",
+		"name": "Inventory Loss",
+		"managed_by_type": "system",
+		"location_type": "inventory_loss",
 		"is_replenishment_destination": false,
 		"status": "active",
-		"description": {
-			"en-US": "Counterparty for count adjustments; absorbs both gains and losses",
-			"vi-VN": "Đối ứng cho điều chỉnh kiểm kê, nhận cả thừa và thiếu"
-		}
+		"description": "Counterparty for stock found missing, damaged or in excess during counts"
 	},
 	{
 		"$alias": "location_virt_production",
-		"code": "VIRT/PRODUCTION",
-		"name": {
-			"en-US": "Virtual Production",
-			"vi-VN": "Sản xuất ảo"
-		},
-		"location_usage": "virtual",
+		"name": "Production",
+		"managed_by_type": "system",
+		"location_type": "production",
 		"is_replenishment_destination": false,
-		"status": "active"
+		"status": "active",
+		"description": "Components are consumed here and finished goods come from here"
 	}
 ]

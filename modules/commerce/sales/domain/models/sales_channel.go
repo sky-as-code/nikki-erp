@@ -17,7 +17,6 @@ const (
 	SalesChannelFieldCode                       = "code"
 	SalesChannelFieldName                       = "name"
 	SalesChannelFieldDescription                = "description"
-	SalesChannelFieldManagedByModule            = "managed_by_module"
 	SalesChannelFieldStatus                     = "status"
 	SalesChannelFieldIsSystem                   = "is_system"
 	SalesChannelFieldDefaultFulfillmentMethodId = "default_fulfillment_method_id"
@@ -28,14 +27,14 @@ const (
 )
 
 // VendingChannelCode is the published integration code of the vending machine channel. It is a
-// contract, frozen against renaming, case changes and reuse: vending code names the channel by this
-// string so no database id appears in a kiosk's configuration.
-const VendingChannelCode = "vdmc"
+// contract, frozen against reuse: vending code names the channel by this string so no database id
+// appears in a kiosk's configuration. A legacy "vdmc" still resolves through NormalizeChannelCode.
+const VendingChannelCode = "VDMC"
 
 // BackOfficeChannelCode is the channel back-office sales are recorded against, so that every order
 // has a real sales point. A null sales point would leak "unknown origin" into every downstream
 // query; a seeded logical point keeps the invariant true instead.
-const BackOfficeChannelCode = "bo"
+const BackOfficeChannelCode = "BO"
 
 //go:embed sales_channel.json
 var salesChannelSchemaJson string
@@ -86,14 +85,6 @@ func (this SalesChannel) GetDescription() *string {
 
 func (this *SalesChannel) SetDescription(description *string) {
 	this.GetFieldData().SetString(SalesChannelFieldDescription, description)
-}
-
-func (this SalesChannel) GetManagedByModule() *string {
-	return this.GetFieldData().GetString(SalesChannelFieldManagedByModule)
-}
-
-func (this *SalesChannel) SetManagedByModule(moduleName *string) {
-	this.GetFieldData().SetString(SalesChannelFieldManagedByModule, moduleName)
 }
 
 func (this SalesChannel) GetStatus() *string {

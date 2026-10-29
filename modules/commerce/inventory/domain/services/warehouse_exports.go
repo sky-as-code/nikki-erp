@@ -7,46 +7,10 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 // What the application layer needs from the warehouse domain, exported narrowly: the app package
 // orchestrates two domain services across one transaction, and the rules stay in this package.
-
-// RequiredSystemLocations lists the locations a warehouse must have for its two flows.
-func RequiredSystemLocations(incomingFlow string, outgoingFlow string) []SystemLocationSpec {
-	return toExportedSpecs(requiredSystemLocations(incomingFlow, outgoingFlow))
-}
-
-// IncomingFlowLocations lists the stops goods make on the way in, beyond Stock itself.
-func IncomingFlowLocations(flow string) []SystemLocationSpec {
-	return toExportedSpecs(incomingFlowLocations(flow))
-}
-
-// OutgoingFlowLocations lists the stops goods make on the way out, beyond Stock itself.
-func OutgoingFlowLocations(flow string) []SystemLocationSpec {
-	return toExportedSpecs(outgoingFlowLocations(flow))
-}
-
-// ObsoleteSystemLocations lists the stops a flow change leaves unused, so the caller can suspend
-// them. Never deleted: the movement history that passed through them still names them.
-func ObsoleteSystemLocations(previousFlow string, nextFlow string, outgoing bool) []SystemLocationSpec {
-	return toExportedSpecs(obsoleteSystemLocations(previousFlow, nextFlow, outgoing))
-}
-
-// SystemLocationSpec describes one location a warehouse creates for itself.
-type SystemLocationSpec struct {
-	Code    string
-	Purpose string
-}
-
-func toExportedSpecs(specs []systemLocationSpec) []SystemLocationSpec {
-	exported := make([]SystemLocationSpec, 0, len(specs))
-	for _, spec := range specs {
-		exported = append(exported, SystemLocationSpec{Code: spec.Code, Purpose: spec.Purpose})
-	}
-	return exported
-}
 
 // IsKnownFlow reports whether a value is one of the three flow settings.
 func IsKnownFlow(flow string) bool {
@@ -68,14 +32,6 @@ func WriteWarehouseFlow(
 	return writeWarehouseFields(ctx, warehouseId, dmodel.DynamicFields{field: flow})
 }
 
-// WriteLocationStatus sets a location's operational state without re-running the lifecycle rules
-// the caller has already applied.
-func WriteLocationStatus(ctx corectx.Context, locationId string, status string) error {
-	return writeLocationFieldsDirect(ctx, locationId, dmodel.DynamicFields{
-		models.InventoryLocationFieldStatus: status,
-	})
-}
-
 // MarkLocationSystemGenerated flags a location as one the warehouse created for itself. Written
 // here rather than through Create, which strips the flag from anything a caller supplies to stop a
 // client minting a location that then refuses to be archived.
@@ -85,36 +41,15 @@ func MarkLocationSystemGenerated(ctx corectx.Context, locationId string) error {
 	})
 }
 
-// FindWarehouseLocationByCode resolves one of a warehouse's own locations by its code. Codes are
-// unique within an org and system locations carry the codes the flow topology names.
-func FindWarehouseLocationByCode(
-	ctx corectx.Context, warehouseId string, code string,
-) (*models.InventoryLocation, error) {
-	engine, err := repoFor(models.InventoryLocationSchemaName)
-	if err != nil {
-		return nil, err
+// ResolveWarehouseStop turns a stop named in a flow leg into its location id, read off the
+// warehouse FK that holds it: "Stock" is the stock location, any other stop its flow location.
+// Empty when the warehouse lacks the stop.
+func ResolveWarehouseStop(warehouse models.Warehouse, stopName string) string {
+	field := stopField(stopName)
+	if field == "" {
+		return ""
 	}
-
-	graph := &dmodel.SearchGraph{}
-	graph.And(
-		*dmodel.NewSearchNode().NewCondition(
-			models.InventoryLocationFieldWarehouseId, dmodel.Equals, warehouseId),
-		*dmodel.NewSearchNode().NewCondition(
-			models.InventoryLocationFieldCode, dmodel.Equals, code),
-	)
-
-	found, err := engine.Search(ctx, dyn.RepoSearchParam{
-		Graph: graph,
-		Page:  0,
-		Size:  1,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "FindWarehouseLocationByCode")
-	}
-	if found == nil || !found.HasData || len(found.Data.Items) == 0 {
-		return nil, nil
-	}
-	return models.NewInventoryLocationFrom(found.Data.Items[0]), nil
+	return derefId(warehouse.GetFlowLocationId(field))
 }
 
 // WithWarehouseTransaction runs body inside one transaction on a cloned context. Warehouse creation

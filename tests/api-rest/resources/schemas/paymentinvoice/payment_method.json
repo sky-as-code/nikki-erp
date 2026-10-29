@@ -29,7 +29,7 @@
             "type": "object"
         },
         "description": {
-            "type": ["object", "null"]
+            "type": ["string", "null"]
         },
         "currency_id": {
             "type": ["string", "null"]

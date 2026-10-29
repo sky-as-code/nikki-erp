@@ -133,7 +133,7 @@ func (this *PointPaymentApplicationServiceImpl) EnablePointPaymentMethod(
 	ctx corectx.Context, command it.PointPaymentMethodCommand,
 ) (*it.PointPaymentMutationResult, error) {
 	if command.PaymentMethodId == "" {
-		return pointPaymentRejection("sales_point.payment_method_required",
+		return pointPaymentRejection(paramPaymentMethodId, "sales_point.payment_method_required",
 			"enabling a payment method requires its id"), nil
 	}
 
@@ -149,7 +149,7 @@ func (this *PointPaymentApplicationServiceImpl) EnablePointPaymentMethod(
 	}
 
 	if !models.NewSalesPointFrom(point).IsActive() {
-		return pointPaymentRejection("sales_point.not_usable",
+		return pointPaymentRejection("", "sales_point.not_usable",
 			"a suspended or archived sales point cannot have its payment methods changed"), nil
 	}
 
@@ -159,7 +159,7 @@ func (this *PointPaymentApplicationServiceImpl) EnablePointPaymentMethod(
 		return nil, err
 	}
 	if !permitted {
-		return pointPaymentRejection("sales_point.payment_method_not_on_channel",
+		return pointPaymentRejection(paramPaymentMethodId, "sales_point.payment_method_not_on_channel",
 			"the sales channel of this point does not accept that payment method"), nil
 	}
 
@@ -189,7 +189,7 @@ func (this *PointPaymentApplicationServiceImpl) DisablePointPaymentMethod(
 	ctx corectx.Context, command it.PointPaymentMethodCommand,
 ) (*it.PointPaymentMutationResult, error) {
 	if command.PaymentMethodId == "" {
-		return pointPaymentRejection("sales_point.payment_method_required",
+		return pointPaymentRejection(paramPaymentMethodId, "sales_point.payment_method_required",
 			"disabling a payment method requires its id"), nil
 	}
 
@@ -242,12 +242,12 @@ func (this *PointPaymentApplicationServiceImpl) resolvePoint(
 func pointNotFound(message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesPointSchemaName, ft.ErrorKey("sales_point.not_found", "sales"), message))
+		paramRecordId, ft.ErrorKey("sales_point.not_found", "sales"), message))
 	return vErrs
 }
 
-func pointPaymentRejection(key, message string) *it.PointPaymentMutationResult {
+func pointPaymentRejection(field, key, message string) *it.PointPaymentMutationResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.SalesPointSchemaName, ft.ErrorKey(key, "sales"), message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "sales"), message))
 	return &it.PointPaymentMutationResult{ClientErrors: *vErrs}
 }

@@ -12,7 +12,7 @@
 		{
 			"name": "code",
 			"label": "fields.code",
-			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"data_type": { "type": "resource_code", "min": 1, "max": 50 },
 			"required_for_create": true
 		},
 		{
@@ -30,9 +30,7 @@
 			},
 			"required_for_create": true,
 			"default_value": "option",
-			"description": {
-				"en-US": "Shape of the attribute's values. Only `option` attributes can take part in a variant combination, because a combination is built from discrete Attribute Value records."
-			}
+			"description": "field_desc.inventory_product_attribute.data_type"
 		},
 		{
 			"name": "variant_creation_mode",
@@ -43,9 +41,7 @@
 			},
 			"required_for_create": true,
 			"default_value": "dynamic",
-			"description": {
-				"en-US": "Defaults to dynamic, so a new attribute never multiplies a template's variants until a combination is actually used. instant: every valid combination is generated as soon as values are assigned to a template. dynamic: a variant is materialized only when a combination is actually used. never: the attribute carries information but does not take part in the combination key at all."
-			}
+			"description": "field_desc.inventory_product_attribute.variant_creation_mode"
 		},
 		{
 			"name": "display_type",
@@ -54,17 +50,13 @@
 				"type": "enum_string",
 				"values": ["pills", "radio", "select", "color", "multi_checkbox"]
 			},
-			"description": {
-				"en-US": "UI rendering hint. Presentation only; it never affects variant identity. color pairs with each value's color_hex. multi_checkbox lets a buyer pick several values at once, which no single variant can represent, so it is accepted only on a never attribute."
-			}
+			"description": "field_desc.inventory_product_attribute.display_type"
 		},
 		{
 			"name": "sequence",
 			"label": "fields.sequence",
 			"data_type": { "type": "int32", "min": 0, "max": 2147483647 },
-			"description": {
-				"en-US": "Display order. The combination key sorts by attribute id rather than by this, so reordering never changes variant identity."
-			}
+			"description": "field_desc.inventory_product_attribute.sequence"
 		},
 		{
 			"name": "org_id",
@@ -84,9 +76,7 @@
 				"field": "product_template_id",
 				"filter": { "if": ["is_enabled", "=", true] }
 			},
-			"description": {
-				"en-US": "Number of templates, archived ones included, that currently apply this attribute through an enabled line. While it is above zero variant_creation_mode is locked: changing it would reinterpret variants those templates already hold. Template lines carry no is_archived, so an archived template still counts."
-			}
+			"description": "field_desc.inventory_product_attribute.current_template_usage_count"
 		},
 		{
 			"name": "historical_template_usage_count",
@@ -100,9 +90,7 @@
 				"field": "product_template_id",
 				"filter": { "if": ["is_enabled", "=", false] }
 			},
-			"description": {
-				"en-US": "Number of templates that applied this attribute once and removed it. The disabled line is kept as history, which is why such an attribute cannot be hard-deleted."
-			}
+			"description": "field_desc.inventory_product_attribute.historical_template_usage_count"
 		},
 		{
 			"name": "can_change_variant_creation",
@@ -119,9 +107,7 @@
 					]
 				}
 			},
-			"description": {
-				"en-US": "Whether variant_creation_mode may still be edited: the attribute is not archived and no template applies it. Says nothing about the caller's permission, which the UI checks separately."
-			}
+			"description": "field_desc.inventory_product_attribute.can_change_variant_creation"
 		}
 	],
 

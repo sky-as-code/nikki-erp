@@ -19,6 +19,18 @@ type InventoryLocationDomainService interface {
 	CreateBulk(
 		ctx corectx.Context, cmds []CreateInventoryLocationCommand,
 	) (*CreateInventoryLocationsResult, error)
+
+	// CreateManagedBulk is CreateBulk keeping each command's managed_by_type and managed_by_id,
+	// for a module provisioning the locations its records manage. No REST route reaches it.
+	CreateManagedBulk(
+		ctx corectx.Context, cmds []CreateInventoryLocationCommand,
+	) (*CreateInventoryLocationsResult, error)
+
+	// CreateManaged creates a location something manages, keeping the managed_by_type and
+	// managed_by_id the command carries; Create strips them. No REST route reaches it.
+	CreateManaged(
+		ctx corectx.Context, cmd CreateInventoryLocationCommand,
+	) (*CreateInventoryLocationResult, error)
 }
 
 // InventoryLocationApplicationService is the authorized surface the REST handler serves.

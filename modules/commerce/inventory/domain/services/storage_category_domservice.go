@@ -40,7 +40,7 @@ func (this *StorageCategoryDomainServiceImpl) SetArchived(
 	}
 	if inUse > 0 {
 		vErrs := ft.NewClientErrors()
-		vErrs.Append(*ft.NewBusinessViolation(models.StorageCategorySchemaName,
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey("storage_category.in_use", "inventory"),
 			"locations still use this storage category; reassign them first"))
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil

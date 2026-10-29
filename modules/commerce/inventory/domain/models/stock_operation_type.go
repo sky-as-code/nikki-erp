@@ -40,7 +40,7 @@ const (
 // generate their movements through. Seeded once per org; corrections resolve it by this code rather
 // than take one from the caller. The seed and this constant must agree exactly, or every correction
 // fails with "no internal operation type", which reads as a data problem rather than a typo.
-const StockCorrectionOperationTypeCode = "INV_CORRECTION"
+const StockCorrectionOperationTypeCode = "INV-CORRECTION"
 
 const (
 	StockOperationTypeSchemaName = "inventory_stock_operation_type"

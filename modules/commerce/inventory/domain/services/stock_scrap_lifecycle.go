@@ -136,8 +136,8 @@ func assertScrappableStock(
 			return vErrs, err
 		}
 		if warehouseAvailable.LessThan(quantity) {
-			vErrs.Append(*ft.NewBusinessViolation(
-				models.StockScrapSchemaName, ft.ErrorKey(ReasonProtectionViolation, "inventory"),
+			vErrs.Append(*ft.NewAnonymousBusinessViolation(
+				ft.ErrorKey(ReasonProtectionViolation, "inventory"),
 				"the warehouse can spare only "+warehouseAvailable.String()+" beyond its reservations, which is less than the "+
 					quantity.String()+" requested"))
 			return vErrs, nil
@@ -162,8 +162,8 @@ func assertScrappableStock(
 	}
 
 	if available.LessThan(quantity) {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockScrapSchemaName, ft.ErrorKey("stock_scrap.insufficient_stock", "inventory"),
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey("stock_scrap.insufficient_stock", "inventory"),
 			"only "+available.String()+" is available to scrap, which is less than the "+
 				quantity.String()+" requested"))
 	}
@@ -247,13 +247,13 @@ func loadScrapDestination(
 		}
 		if found != nil && found.HasData {
 			location := models.NewInventoryLocationFrom(found.Data)
-			if derefString(location.GetLocationUsage()) == models.InventoryLocationUsageScrap {
+			if derefString(location.GetLocationType()) == models.InventoryLocationTypeScrap {
 				return named, nil
 			}
 		}
 	}
 
-	fallback, err := FindLocationByType(ctx, orgId, models.InventoryLocationUsageScrap)
+	fallback, err := FindLocationByType(ctx, orgId, models.InventoryLocationTypeScrap)
 	if err != nil || fallback == nil {
 		return "", err
 	}

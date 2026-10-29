@@ -109,11 +109,13 @@ Ensure Putaway Locations
     Set Global Variable    ${PUTAWAY_DEST_ID}    ${dest}
 
 Create Putaway Location
+    [Documentation]    A location in the warehouse under test: its warehouse follows the parent,
+    ...    so it hangs under the warehouse's Stock.
     [Arguments]    ${prefix}    ${usage}
     ${name}=    Unique Display Name    Robot ${prefix}
-    ${code}=    Unique Code    ${prefix}
+    ${stock}=    Get Warehouse Stock Location Id    ${WAREHOUSE_ID}
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'location_usage': $usage, 'warehouse_id': $WAREHOUSE_ID, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': $name, 'location_type': $usage, 'parent_location_id': $stock, 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 

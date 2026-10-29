@@ -15,7 +15,7 @@ ${GROUP_SCHEMA}    ${IAM_SCHEMA_DIR}/group.json
 Create Group With Both Languages Succeeds
     ${suffix}=    Unique Suffix
     ${resp}=    POST On Session    api    ${GROUP_API}
-    ...    json=${{ {'name': {'en-US': 'Robot Group ' + $suffix, 'vi-VN': 'Nhom Robot ' + $suffix}, 'description': {'en-US': 'Created by the API test suite'}, 'owner_id': $SEED_USER_ID} }}
+    ...    json=${{ {'name': {'en-US': 'Robot Group ' + $suffix, 'vi-VN': 'Nhom Robot ' + $suffix}, 'description': 'Created by the API test suite', 'owner_id': $SEED_USER_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Suite Variable    ${CREATED_GROUP_ID}    ${id}
 

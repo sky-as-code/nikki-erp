@@ -128,7 +128,7 @@ func resolveCodeByString(
 		return nil, nil, err
 	}
 	found, err := engineRepo.FindByKeys(ctx, dmodel.DynamicFields{
-		models.SalesVoucherCodeFieldCode: code,
+		models.SalesVoucherCodeFieldCode: dmodel.NormalizeResourceCode(code),
 	})
 	if err != nil {
 		return nil, nil, err

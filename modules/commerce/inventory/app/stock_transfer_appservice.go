@@ -3,6 +3,9 @@ package app
 import (
 	"go.bryk.io/pkg/errors"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/constants"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
@@ -43,6 +46,54 @@ func NewStockTransferApplicationService(base composable.CrudApplicationService) 
 type StockTransferApplicationServiceImpl struct {
 	composable.CrudApplicationService
 	transferSvc *services.StockTransferDomainServiceImpl
+}
+
+// Create needs create on inventory_stock_move on top of create when the body carries moves: a
+// transfer's moves are stock-move records, whichever route writes them.
+func (this *StockTransferApplicationServiceImpl) Create(
+	ctx corectx.Context, cmd itStock.CreateStockTransferCommand,
+) (*itStock.CreateStockTransferResult, error) {
+	if cErrs := this.assertMovesDelta(ctx, cmd); cErrs != nil {
+		return &itStock.CreateStockTransferResult{ClientErrors: *cErrs}, nil
+	}
+	return this.CrudApplicationService.Create(ctx, cmd)
+}
+
+// Update needs create, update or delete on inventory_stock_move for each list of the moves delta it
+// carries, on top of update.
+func (this *StockTransferApplicationServiceImpl) Update(
+	ctx corectx.Context, cmd itStock.UpdateStockTransferCommand,
+) (*itStock.UpdateStockTransferResult, error) {
+	if cErrs := this.assertMovesDelta(ctx, cmd); cErrs != nil {
+		return mutateFailure(cErrs, nil)
+	}
+	return this.CrudApplicationService.Update(ctx, cmd)
+}
+
+func (this *StockTransferApplicationServiceImpl) assertMovesDelta(
+	ctx corectx.Context, cmd dmodel.DynamicFields,
+) *ft.ClientErrors {
+	parts := itStock.ReadTransferMovesDeltaParts(cmd)
+	required := []struct {
+		present bool
+		action  string
+	}{
+		{parts.Add, composable.PermissionCreate},
+		{parts.Update, composable.PermissionUpdate},
+		{parts.Remove, composable.PermissionDelete},
+	}
+	for _, part := range required {
+		if !part.present {
+			continue
+		}
+		_, cErrs := composable.AssertActionPermission(ctx, this, cmd, composable.ActionPermission{
+			ActionCode: part.action, ResourceCode: constants.ResourceStockMove,
+		})
+		if cErrs != nil {
+			return cErrs
+		}
+	}
+	return nil
 }
 
 func (this *StockTransferApplicationServiceImpl) Confirm(

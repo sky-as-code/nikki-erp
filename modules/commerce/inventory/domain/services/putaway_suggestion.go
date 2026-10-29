@@ -166,5 +166,5 @@ func isLocationUsableForPutaway(ctx corectx.Context, locationId string) (bool, e
 		return false, nil
 	}
 	// A purely organisational node holds nothing, so routing goods there routes them nowhere.
-	return derefString(location.GetLocationUsage()) == models.InventoryLocationUsageInternal, nil
+	return derefString(location.GetLocationType()) == models.InventoryLocationTypeInternal, nil
 }

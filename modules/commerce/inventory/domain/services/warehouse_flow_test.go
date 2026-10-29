@@ -74,22 +74,17 @@ func assertLegsConnect(t *testing.T, legs []FlowLeg, flow string) {
 	}
 }
 
-// A warehouse always has Stock; the rest follow from the flows.
-func TestRequiredSystemLocations(t *testing.T) {
-	oneStep := requiredSystemLocations(models.WarehouseFlowOneStep, models.WarehouseFlowOneStep)
-	assert.Equal(t, []systemLocationSpec{
-		{Code: "Stock", Purpose: models.InventoryLocationPurposeStorage},
-	}, oneStep, "a one-step warehouse needs nowhere to stop")
-
-	full := requiredSystemLocations(models.WarehouseFlowThreeStep, models.WarehouseFlowThreeStep)
-	codes := make([]string, 0, len(full))
-	for _, spec := range full {
-		codes = append(codes, spec.Code)
-	}
-	assert.Equal(t, []string{"Stock", "Input", "Quality Control", "Packing", "Output"}, codes)
+// Every stop a flow names resolves to the warehouse FK that holds it.
+func TestStopField(t *testing.T) {
+	assert.Equal(t, models.WarehouseFieldReceivingLocationId, stopField("Input"))
+	assert.Equal(t, models.WarehouseFieldQualityLocationId, stopField("Quality Control"))
+	assert.Equal(t, models.WarehouseFieldPackingLocationId, stopField("Packing"))
+	assert.Equal(t, models.WarehouseFieldOutputLocationId, stopField("Output"))
+	assert.Equal(t, models.WarehouseFieldStockLocationId, stopField("Stock"))
+	assert.Empty(t, stopField("vendor"), "an endpoint outside the warehouse has no FK")
 }
 
-// Reducing a flow leaves locations behind. They are reported so the caller can suspend them; the
+// Reducing a flow leaves locations behind. They are reported so the caller can archive them; the
 // history that passed through them has to keep resolving, so they are never deleted.
 func TestObsoleteSystemLocations(t *testing.T) {
 	dropped := obsoleteSystemLocations(
@@ -113,7 +108,7 @@ func TestObsoleteSystemLocations(t *testing.T) {
 func specCodes(specs []systemLocationSpec) []string {
 	codes := make([]string, 0, len(specs))
 	for _, spec := range specs {
-		codes = append(codes, spec.Code)
+		codes = append(codes, spec.Name)
 	}
 	return codes
 }

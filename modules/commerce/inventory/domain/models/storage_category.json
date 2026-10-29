@@ -12,7 +12,7 @@
 		{
 			"name": "code",
 			"label": "fields.code",
-			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"data_type": { "type": "resource_code", "min": 1, "max": 50 },
 			"required_for_create": true
 		},
 		{
@@ -25,9 +25,7 @@
 			"name": "max_weight",
 			"label": "fields.max_weight",
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
-			"description": {
-				"en-US": "Weight a location in this category may hold, if the limit applies. Null means unlimited. What is currently stored is NOT held here: used and available capacity depend on actual inventory and are computed from Stock, because a number cached on master data goes stale the moment a move commits."
-			}
+			"description": "field_desc.inventory_storage_category.max_weight"
 		},
 		{
 			"name": "allow_new_item_policy",
@@ -38,14 +36,12 @@
 			},
 			"required_for_create": true,
 			"default_value": "allow",
-			"description": {
-				"en-US": "Whether goods arriving may be mixed into a location that already holds something: freely, only alongside the same product, or only when the location is empty."
-			}
+			"description": "field_desc.inventory_storage_category.allow_new_item_policy"
 		},
 		{
 			"name": "description",
 			"label": "fields.description",
-			"data_type": { "type": "langjson", "min": 0, "max": 2000 }
+			"data_type": { "type": "string", "min": 0, "max": 2000 }
 		},
 		{
 			"name": "org_id",

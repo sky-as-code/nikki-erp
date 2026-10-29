@@ -15,9 +15,8 @@ Schema Declares The Core Fields
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    Dictionary Should Contain Key    ${fields}    code
     Dictionary Should Contain Key    ${fields}    name
-    Dictionary Should Contain Key    ${fields}    location_usage
+    Dictionary Should Contain Key    ${fields}    location_type
     Dictionary Should Contain Key    ${fields}    parent_location_id
     Dictionary Should Contain Key    ${fields}    org_id
 
@@ -28,8 +27,11 @@ Schema Declares The Warehouse Fields
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
     Dictionary Should Contain Key    ${fields}    warehouse_id
-    Dictionary Should Contain Key    ${fields}    purpose
-    Dictionary Should Contain Key    ${fields}    complete_path
+    Dictionary Should Not Contain Key    ${fields}    purpose
+    ...    msg=purpose was removed: a warehouse names its stops through its own location FKs
+    Dictionary Should Contain Key    ${fields}    canonical_name
+    Dictionary Should Not Contain Key    ${fields}    complete_path
+    Dictionary Should Not Contain Key    ${fields}    code
     Dictionary Should Contain Key    ${fields}    storage_category_id
     Dictionary Should Contain Key    ${fields}    removal_strategy
     Dictionary Should Contain Key    ${fields}    is_system_generated
@@ -43,20 +45,24 @@ Warehouse Is Optional On A Location
     ${field}=    Set Variable    ${resp.json()}[fields][warehouse_id]
     Should Not Be True    ${field}[is_required_for_create]
 
-Schema Declares Every Location Usage
-    [Documentation]    BR §4.2: a movement always has two endpoints, so the counterparty and
-    ...    virtual locations must exist alongside `internal`. Without `inventory_loss` an
+Schema Declares Every Location Type
+    [Documentation]    BR §4.2: a movement always has two endpoints, so the counterparty
+    ...    locations must exist alongside `internal`. Without `inventory_loss` an
     ...    adjustment has nowhere to balance against, and without `scrap` a scrap cannot move.
-    ...    `scrap` stays distinct from `inventory_loss` for that reason.
+    ...    `scrap` stays distinct from `inventory_loss` for that reason. `group` (formerly
+    ...    `virtual`) only organises other locations and holds no stock.
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/meta/schema
     Response Status Should Be    ${resp}    200
-    ${values}=    Set Variable    ${resp.json()}[fields][location_usage][data_type][options][enumValues]
+    ${values}=    Set Variable    ${resp.json()}[fields][location_type][data_type][options][enumValues]
     Should Contain    ${values}    internal
     Should Contain    ${values}    customer
     Should Contain    ${values}    vendor
     Should Contain    ${values}    inventory_loss
     Should Contain    ${values}    scrap
     Should Contain    ${values}    transit
+    Should Contain    ${values}    group
+    Should Contain    ${values}    production
+    Should Not Contain    ${values}    virtual
     Should Not Contain    ${values}    supplier
 
 Status Is Active Or Suspended Only
@@ -78,4 +84,4 @@ Schema Declares A Record Label Field
     ...    the raw ULID, so a location shows as an opaque id when chosen on a balance.
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/meta/schema
     Response Status Should Be    ${resp}    200
-    Should Be Equal    ${resp.json()}[record_label_field]    name
+    Should Be Equal    ${resp.json()}[record_label_field]    canonical_name

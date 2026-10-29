@@ -134,7 +134,7 @@ Unique Payment Code
     ...    {words}+{hash} treatment as every other unique column.
     [Arguments]    ${words}=pay
     ${suffix}=    Unique Suffix
-    RETURN    ${words}_${suffix}
+    RETURN    ${{ ($words + '-' + $suffix).upper().replace('_', '-') }}
 
 Delete Payment Invoice Fixture
     [Documentation]    Best-effort delete of one record, clearing the global that held it so a

@@ -129,7 +129,7 @@ CREATE TABLE "iam_users" (
 CREATE TABLE "iam_groups" (
   "id" character varying NOT NULL,
   "name" jsonb NULL,
-  "description" jsonb NULL,
+  "description" character varying NULL,
   "owner_id" character varying NULL,
   "is_archived" boolean NULL,
   "etag" character varying NULL,

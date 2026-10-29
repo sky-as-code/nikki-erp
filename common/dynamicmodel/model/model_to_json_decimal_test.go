@@ -134,6 +134,7 @@ func TestEveryParsedDataTypeIsRenderable(t *testing.T) {
 		`{"type":"decimal","min":"0","max":"99.9","scale":2}`,
 		`{"type":"string","min":1,"max":50}`,
 		`{"type":"secret","min":1,"max":50}`,
+		`{"type":"resource_code","min":1,"max":20}`,
 		`{"type":"langjson","min":1,"max":200}`,
 		`{"type":"enum_string","values":["a","b"]}`,
 		`{"type":"enum_int32","values":[1,2]}`,

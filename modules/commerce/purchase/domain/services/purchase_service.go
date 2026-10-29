@@ -12,6 +12,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
@@ -33,22 +34,23 @@ func orderNotFoundResult(orderId string) *dyn.OpResult[dyn.MutateResultData] {
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *orderNotFoundErrors(orderId)}
 }
 
-func orderViolationResult(key, message string) *dyn.OpResult[dyn.MutateResultData] {
-	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *orderViolationErrors(key, message)}
+func orderViolationResult(field, key, message string) *dyn.OpResult[dyn.MutateResultData] {
+	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *orderViolationErrors(field, key, message)}
 }
 
 // The builders above wrap these, which return the errors alone. Split because not every order
 // operation returns a MutateResultData: reprice needs the same refusals in a different envelope.
 func orderNotFoundErrors(orderId string) *ft.ClientErrors {
 	return orderViolationErrors(
+		basemodel.FieldId,
 		"purchase_order.not_found",
 		"no purchase order with id '"+orderId+"'",
 	)
 }
 
-func orderViolationErrors(key, message string) *ft.ClientErrors {
+func orderViolationErrors(field, key, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.PurchaseOrderSchemaName, ft.ErrorKey(key, "purchase"), message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "purchase"), message))
 	return vErrs
 }
 

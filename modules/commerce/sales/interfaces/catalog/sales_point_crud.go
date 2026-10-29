@@ -19,6 +19,10 @@ type SalesPointRepository interface {
 type SalesPointDomainService interface {
 	composable.CrudDomainService
 
+	// CreateManaged creates a point something manages, keeping the managed_by_type and
+	// managed_by_id the command carries; Create strips them. No REST route reaches it.
+	CreateManaged(ctx corectx.Context, cmd dmodel.DynamicFields) (*dyn.OpResult[dmodel.DynamicFields], error)
+
 	Suspend(ctx corectx.Context, salesPointId string) (*dyn.OpResult[dyn.MutateResultData], error)
 	Activate(ctx corectx.Context, salesPointId string) (*dyn.OpResult[dyn.MutateResultData], error)
 	Archive(ctx corectx.Context, salesPointId string) (*dyn.OpResult[dyn.MutateResultData], error)

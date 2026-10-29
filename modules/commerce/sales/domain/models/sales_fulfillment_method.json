@@ -18,11 +18,11 @@
 		{
 			"name": "code",
 			"label": "fields.code",
-			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"data_type": { "type": "resource_code", "min": 1, "max": 50 },
 			"required_for_create": true,
 			"no_update": true,
 			"description": {
-				"en-US": "The method's stable identity, such as 'KIOSK_DIRECT_AUTO_REFUND'. Immutable and unique within its organization (each org owns its own KIOSK_* methods), because seeds, channel configuration and integration callers name a method by this string rather than by a database id, and a renamed code would repoint every one of them at nothing. Unique on (code, org_id), both required, rather than a partial unique: the partial builder scopes a required field by a nullable one, and a single-column partial would also cap the table at one NULL-code row (the same reasoning recorded for sales_channel.code)."
+				"en-US": "The method's stable identity, such as 'KIOSK-DIRECT-AUTO-REFUND'. Immutable and unique within its organization (each org owns its own KIOSK_* methods), because seeds, channel configuration and integration callers name a method by this string rather than by a database id, and a renamed code would repoint every one of them at nothing. Unique on (code, org_id), both required, rather than a partial unique: the partial builder scopes a required field by a nullable one, and a single-column partial would also cap the table at one NULL-code row (the same reasoning recorded for sales_channel.code)."
 			}
 		},
 		{

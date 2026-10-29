@@ -77,12 +77,12 @@ func TestConditionValueFlattensScalars(t *testing.T) {
 // an object or an array. That element must come back as the scalar too, or an "eq" condition
 // reading the same column compares against nothing.
 func TestSingleElementArrayIsAlsoAScalar(t *testing.T) {
-	scalar, list := conditionValue([]any{"VN_EXPORT"})
+	scalar, list := conditionValue([]any{"VN-EXPORT"})
 
-	if scalar != "VN_EXPORT" {
+	if scalar != "VN-EXPORT" {
 		t.Errorf("expected the lone element as the scalar, got %q", scalar)
 	}
-	if len(list) != 1 || list[0] != "VN_EXPORT" {
+	if len(list) != 1 || list[0] != "VN-EXPORT" {
 		t.Errorf("expected it to stay available as a list too, got %v", list)
 	}
 }

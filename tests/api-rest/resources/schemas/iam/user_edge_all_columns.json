@@ -41,7 +41,7 @@
                         "type": "object"
                     },
                     "description": {
-                        "type": "object"
+                        "type": ["string", "null"]
                     },
                     "etag": {
                         "type": "string",

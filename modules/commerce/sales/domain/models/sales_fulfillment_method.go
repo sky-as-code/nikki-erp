@@ -34,15 +34,15 @@ const (
 const (
 	// KioskDirectAutoRefundCode is the anonymous walk-up sale: one attempt, and whatever the
 	// machine failed to dispense is refunded without asking, because there is nobody to ask.
-	KioskDirectAutoRefundCode = "KIOSK_DIRECT_AUTO_REFUND"
+	KioskDirectAutoRefundCode = "KIOSK-DIRECT-AUTO-REFUND"
 
 	// KioskDirectAuthenticatedCode is the same sale made by an identified customer, who keeps the
 	// entitlement to what was not dispensed instead of having it refunded out from under them.
-	KioskDirectAuthenticatedCode = "KIOSK_DIRECT_AUTHENTICATED"
+	KioskDirectAuthenticatedCode = "KIOSK-DIRECT-AUTHENTICATED"
 
 	// KioskPickupSelectedCode is an order raised elsewhere and collected at a kiosk the customer
 	// chose, which is why its target cannot be inferred from where the order was created.
-	KioskPickupSelectedCode = "KIOSK_PICKUP_SELECTED"
+	KioskPickupSelectedCode = "KIOSK-PICKUP-SELECTED"
 )
 
 //go:embed sales_fulfillment_method.json

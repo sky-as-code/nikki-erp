@@ -1,7 +1,7 @@
 [
 	{
 		"$alias": "tax_vn_vat_10",
-		"code": "VN_VAT_10",
+		"code": "VN-VAT-10",
 		"name": {
 			"en-US": "VAT 10%",
 			"vi-VN": "GTGT 10%"
@@ -15,7 +15,7 @@
 	},
 	{
 		"$alias": "tax_vn_vat_8",
-		"code": "VN_VAT_8",
+		"code": "VN-VAT-8",
 		"name": {
 			"en-US": "VAT 8%",
 			"vi-VN": "GTGT 8%"
@@ -29,7 +29,7 @@
 	},
 	{
 		"$alias": "tax_vn_vat_5",
-		"code": "VN_VAT_5",
+		"code": "VN-VAT-5",
 		"name": {
 			"en-US": "VAT 5%",
 			"vi-VN": "GTGT 5%"
@@ -43,7 +43,7 @@
 	},
 	{
 		"$alias": "tax_vn_vat_0",
-		"code": "VN_VAT_0",
+		"code": "VN-VAT-0",
 		"name": {
 			"en-US": "VAT 0%",
 			"vi-VN": "GTGT 0%"
@@ -57,7 +57,7 @@
 	},
 	{
 		"$alias": "tax_vn_vat_exempt",
-		"code": "VN_VAT_EXEMPT",
+		"code": "VN-VAT-EXEMPT",
 		"name": {
 			"en-US": "VAT exempt",
 			"vi-VN": "Khong chiu thue GTGT"

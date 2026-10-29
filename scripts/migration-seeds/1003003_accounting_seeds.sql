@@ -70,11 +70,11 @@ BEGIN
 		INSERT INTO "accounting_tax_product_classifications" (
 			"id", "org_id", "code", "name", "jurisdiction_id", "external_code", "description", "is_archived", "created_at", "updated_at", "etag"
 		) VALUES
-		('01M4ACCTVN0000000000000010', '01JWNY20G23KD4RV5VWYABQYHD', 'VN_STANDARD', '{"en-US": "Standard rated", "vi-VN": "Thue suat pho thong"}', '01M4ACCTVN0000000000000001', NULL, 'Goods and services at the standard VAT rate', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M4ACCTVN0000000000000011', '01JWNY20G23KD4RV5VWYABQYHD', 'VN_VAT_REDUCTION_ELIGIBLE', '{"en-US": "Eligible for VAT reduction", "vi-VN": "Duoc giam thue GTGT"}', '01M4ACCTVN0000000000000001', NULL, 'Goods and services the 2% reduction applies to, per Resolution 204/2025/QH15', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M4ACCTVN0000000000000012', '01JWNY20G23KD4RV5VWYABQYHD', 'VN_ESSENTIAL', '{"en-US": "Essential goods", "vi-VN": "Hang hoa thiet yeu"}', '01M4ACCTVN0000000000000001', NULL, 'Goods and services taxed at the reduced statutory rate', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M4ACCTVN0000000000000013', '01JWNY20G23KD4RV5VWYABQYHD', 'VN_EXPORT', '{"en-US": "Export", "vi-VN": "Xuat khau"}', '01M4ACCTVN0000000000000001', NULL, 'Exported goods and services, zero rated', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M4ACCTVN0000000000000014', '01JWNY20G23KD4RV5VWYABQYHD', 'VN_EXEMPT', '{"en-US": "Exempt", "vi-VN": "Khong chiu thue"}', '01M4ACCTVN0000000000000001', NULL, 'Supplies outside the scope of VAT', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M4ACCTVN0000000000000010', '01JWNY20G23KD4RV5VWYABQYHD', 'VN-STANDARD', '{"en-US": "Standard rated", "vi-VN": "Thue suat pho thong"}', '01M4ACCTVN0000000000000001', NULL, 'Goods and services at the standard VAT rate', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M4ACCTVN0000000000000011', '01JWNY20G23KD4RV5VWYABQYHD', 'VN-VAT-REDUCTION-ELIGIBLE', '{"en-US": "Eligible for VAT reduction", "vi-VN": "Duoc giam thue GTGT"}', '01M4ACCTVN0000000000000001', NULL, 'Goods and services the 2% reduction applies to, per Resolution 204/2025/QH15', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M4ACCTVN0000000000000012', '01JWNY20G23KD4RV5VWYABQYHD', 'VN-ESSENTIAL', '{"en-US": "Essential goods", "vi-VN": "Hang hoa thiet yeu"}', '01M4ACCTVN0000000000000001', NULL, 'Goods and services taxed at the reduced statutory rate', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M4ACCTVN0000000000000013', '01JWNY20G23KD4RV5VWYABQYHD', 'VN-EXPORT', '{"en-US": "Export", "vi-VN": "Xuat khau"}', '01M4ACCTVN0000000000000001', NULL, 'Exported goods and services, zero rated', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M4ACCTVN0000000000000014', '01JWNY20G23KD4RV5VWYABQYHD', 'VN-EXEMPT', '{"en-US": "Exempt", "vi-VN": "Khong chiu thue"}', '01M4ACCTVN0000000000000001', NULL, 'Supplies outside the scope of VAT', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -85,11 +85,11 @@ BEGIN
 		INSERT INTO "accounting_taxes" (
 			"id", "org_id", "code", "name", "tax_kind", "invoice_label", "description", "is_archived", "created_at", "updated_at", "etag"
 		) VALUES
-		('01M4ACCTVN0000000000000020', '01JWNY20G23KD4RV5VWYABQYHD', 'VN_VAT_10', '{"en-US": "VAT 10%", "vi-VN": "GTGT 10%"}', 'vat', '{"en-US": "VAT 10%", "vi-VN": "GTGT 10%"}', 'Standard Vietnamese VAT rate', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M4ACCTVN0000000000000021', '01JWNY20G23KD4RV5VWYABQYHD', 'VN_VAT_8', '{"en-US": "VAT 8%", "vi-VN": "GTGT 8%"}', 'vat', '{"en-US": "VAT 8%", "vi-VN": "GTGT 8%"}', 'Temporarily reduced VAT rate under Resolution 204/2025/QH15', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M4ACCTVN0000000000000022', '01JWNY20G23KD4RV5VWYABQYHD', 'VN_VAT_5', '{"en-US": "VAT 5%", "vi-VN": "GTGT 5%"}', 'vat', '{"en-US": "VAT 5%", "vi-VN": "GTGT 5%"}', 'Reduced statutory VAT rate', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M4ACCTVN0000000000000023', '01JWNY20G23KD4RV5VWYABQYHD', 'VN_VAT_0', '{"en-US": "VAT 0%", "vi-VN": "GTGT 0%"}', 'vat', '{"en-US": "VAT 0%", "vi-VN": "GTGT 0%"}', 'Zero rated: taxed at 0%, which is not the same as exempt', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M4ACCTVN0000000000000024', '01JWNY20G23KD4RV5VWYABQYHD', 'VN_VAT_EXEMPT', '{"en-US": "VAT exempt", "vi-VN": "Khong chiu thue GTGT"}', 'vat', '{"en-US": "VAT exempt", "vi-VN": "Khong chiu thue GTGT"}', 'Exempt supplies: no VAT and no input tax recovery', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M4ACCTVN0000000000000020', '01JWNY20G23KD4RV5VWYABQYHD', 'VN-VAT-10', '{"en-US": "VAT 10%", "vi-VN": "GTGT 10%"}', 'vat', '{"en-US": "VAT 10%", "vi-VN": "GTGT 10%"}', 'Standard Vietnamese VAT rate', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M4ACCTVN0000000000000021', '01JWNY20G23KD4RV5VWYABQYHD', 'VN-VAT-8', '{"en-US": "VAT 8%", "vi-VN": "GTGT 8%"}', 'vat', '{"en-US": "VAT 8%", "vi-VN": "GTGT 8%"}', 'Temporarily reduced VAT rate under Resolution 204/2025/QH15', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M4ACCTVN0000000000000022', '01JWNY20G23KD4RV5VWYABQYHD', 'VN-VAT-5', '{"en-US": "VAT 5%", "vi-VN": "GTGT 5%"}', 'vat', '{"en-US": "VAT 5%", "vi-VN": "GTGT 5%"}', 'Reduced statutory VAT rate', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M4ACCTVN0000000000000023', '01JWNY20G23KD4RV5VWYABQYHD', 'VN-VAT-0', '{"en-US": "VAT 0%", "vi-VN": "GTGT 0%"}', 'vat', '{"en-US": "VAT 0%", "vi-VN": "GTGT 0%"}', 'Zero rated: taxed at 0%, which is not the same as exempt', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M4ACCTVN0000000000000024', '01JWNY20G23KD4RV5VWYABQYHD', 'VN-VAT-EXEMPT', '{"en-US": "VAT exempt", "vi-VN": "Khong chiu thue GTGT"}', 'vat', '{"en-US": "VAT exempt", "vi-VN": "Khong chiu thue GTGT"}', 'Exempt supplies: no VAT and no input tax recovery', false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -142,9 +142,9 @@ BEGIN
 		INSERT INTO "accounting_tax_rule_conditions" (
 			"id", "org_id", "tax_rule_id", "field_key", "operator", "value", "value_currency_code", "sequence", "is_archived", "created_at", "updated_at", "etag"
 		) VALUES
-		('01M4ACCTVN0000000000000060', '01JWNY20G23KD4RV5VWYABQYHD', '01M4ACCTVN0000000000000051', 'product_tax_classification', 'eq', '["VN_EXPORT"]', NULL, 1, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M4ACCTVN0000000000000061', '01JWNY20G23KD4RV5VWYABQYHD', '01M4ACCTVN0000000000000052', 'product_tax_classification', 'eq', '["VN_EXEMPT"]', NULL, 1, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M4ACCTVN0000000000000062', '01JWNY20G23KD4RV5VWYABQYHD', '01M4ACCTVN0000000000000050', 'product_tax_classification', 'eq', '["VN_VAT_REDUCTION_ELIGIBLE"]', NULL, 1, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M4ACCTVN0000000000000060', '01JWNY20G23KD4RV5VWYABQYHD', '01M4ACCTVN0000000000000051', 'product_tax_classification', 'eq', '["VN-EXPORT"]', NULL, 1, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M4ACCTVN0000000000000061', '01JWNY20G23KD4RV5VWYABQYHD', '01M4ACCTVN0000000000000052', 'product_tax_classification', 'eq', '["VN-EXEMPT"]', NULL, 1, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M4ACCTVN0000000000000062', '01JWNY20G23KD4RV5VWYABQYHD', '01M4ACCTVN0000000000000050', 'product_tax_classification', 'eq', '["VN-VAT-REDUCTION-ELIGIBLE"]', NULL, 1, false, NOW(), NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

@@ -31,7 +31,7 @@ func (this *SalesChannelDomainServiceImpl) ResolveByCode(
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	normalized := NormalizeChannelCode(code)
 	if normalized == "" {
-		return violationResult(models.SalesChannelSchemaName,
+		return violationResult(models.SalesChannelFieldCode,
 			"sales_channel.code_required",
 			"resolving a sales channel requires a code"), nil
 	}
@@ -45,7 +45,7 @@ func (this *SalesChannelDomainServiceImpl) ResolveByCode(
 		return nil, err
 	}
 	if len(found) == 0 {
-		return violationResult(models.SalesChannelSchemaName,
+		return violationResult(models.SalesChannelFieldCode,
 			"sales_channel.not_found",
 			"no sales channel with code '"+normalized+"'"), nil
 	}
@@ -86,7 +86,7 @@ func (this *SalesChannelDomainServiceImpl) setStatus(
 			return nil
 		}
 		if boolOf(channel, basemodel.FieldIsArchived) {
-			result = violationResult(models.SalesChannelSchemaName,
+			result = violationResult("",
 				"sales_channel.archived",
 				"an archived sales channel cannot change status; unarchive it first")
 			return nil
@@ -131,7 +131,7 @@ func (this *SalesChannelDomainServiceImpl) Archive(
 			return nil
 		}
 		if boolOf(channel, models.SalesChannelFieldIsSystem) {
-			result = violationResult(models.SalesChannelSchemaName,
+			result = violationResult("",
 				"sales_channel.is_system",
 				"a system sales channel cannot be archived; it is seeded and depended on by the "+
 					"module that registered it")
@@ -147,7 +147,7 @@ func (this *SalesChannelDomainServiceImpl) Archive(
 			return err
 		}
 		if len(blocking) > 0 {
-			result = violationResult(models.SalesChannelSchemaName,
+			result = violationResult("",
 				"sales_channel.has_active_sales_points",
 				"this sales channel still has unarchived sales points; archive them first")
 			return nil
@@ -191,7 +191,7 @@ func (this *SalesChannelDomainServiceImpl) AssertMutable(
 		return notFoundResult(models.SalesChannelSchemaName, channelId), nil
 	}
 	if boolOf(channel, models.SalesChannelFieldIsSystem) {
-		return violationResult(models.SalesChannelSchemaName,
+		return violationResult("",
 			"sales_channel.is_system",
 			"a system sales channel cannot be modified or deleted through the API"), nil
 	}

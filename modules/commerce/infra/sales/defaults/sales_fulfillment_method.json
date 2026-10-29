@@ -1,7 +1,7 @@
 [
 	{
 		"$alias": "fulfillment_method_kiosk_direct_auto_refund",
-		"code": "KIOSK_DIRECT_AUTO_REFUND",
+		"code": "KIOSK-DIRECT-AUTO-REFUND",
 		"name": "Kiosk Direct - Auto Refund",
 		"description": "A walk-up sale at the machine itself. The machine may retry a jammed dispense as often as it can; whatever never comes out is refunded without asking, because there is no identified customer to ask.",
 		"fulfillment_type": "kiosk_dispense",
@@ -14,7 +14,7 @@
 	},
 	{
 		"$alias": "fulfillment_method_kiosk_direct_authenticated",
-		"code": "KIOSK_DIRECT_AUTHENTICATED",
+		"code": "KIOSK-DIRECT-AUTHENTICATED",
 		"name": "Kiosk Direct - Customer Controlled",
 		"description": "A sale at the machine by an identified customer. Nothing is refunded automatically: the entitlement is kept so the customer may try another machine or ask for their money back.",
 		"fulfillment_type": "kiosk_dispense",
@@ -27,7 +27,7 @@
 	},
 	{
 		"$alias": "fulfillment_method_kiosk_pickup_selected",
-		"code": "KIOSK_PICKUP_SELECTED",
+		"code": "KIOSK-PICKUP-SELECTED",
 		"name": "Kiosk Pickup - Customer Selected",
 		"description": "An order raised away from the machine and collected at a kiosk the customer chose. The target cannot be inferred from where the order was created, so one must be named before it is confirmed.",
 		"fulfillment_type": "kiosk_dispense",

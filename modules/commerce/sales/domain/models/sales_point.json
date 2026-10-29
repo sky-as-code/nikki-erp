@@ -42,7 +42,7 @@
 		{
 			"name": "code",
 			"label": "fields.code",
-			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"data_type": { "type": "resource_code", "min": 0, "max": 50 },
 			"description": {
 				"en-US": "A human-facing local code such as 'VM000123'. Optional, mutable, and unique within its channel when present (D-21). Deliberately not an integration identity: nothing resolves a sales point by this, so unlike a channel code it can be corrected after the fact (CR 13). Declared as partial_uniques_strict, which emits only the IS NOT NULL index; the loose variant would also cap a channel at one un-coded point."
 			}
@@ -111,6 +111,7 @@
 		"core.basemodel.archivable_model",
 		"core.basemodel.auditable_model",
 		"core.basemodel.traceable_model",
+		"core.basemodel.managed_model",
 		"core.basemodel.versioned_model"
 	],
 

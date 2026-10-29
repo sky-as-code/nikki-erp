@@ -5,7 +5,7 @@
 		"field_key": "product_tax_classification",
 		"operator": "eq",
 		"value": [
-			"VN_EXPORT"
+			"VN-EXPORT"
 		],
 		"sequence": 1
 	},
@@ -15,7 +15,7 @@
 		"field_key": "product_tax_classification",
 		"operator": "eq",
 		"value": [
-			"VN_EXEMPT"
+			"VN-EXEMPT"
 		],
 		"sequence": 1
 	},
@@ -25,7 +25,7 @@
 		"field_key": "product_tax_classification",
 		"operator": "eq",
 		"value": [
-			"VN_VAT_REDUCTION_ELIGIBLE"
+			"VN-VAT-REDUCTION-ELIGIBLE"
 		],
 		"sequence": 1
 	}

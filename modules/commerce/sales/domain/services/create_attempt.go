@@ -39,6 +39,8 @@ const (
 	ReasonFulfillmentNotFound       = "sales.fulfillment.not_found"
 )
 
+const attemptInputItems = "items"
+
 // CreateAttemptParams is what a caller asks for. The executor is named explicitly rather than read
 // from the fulfillment so that a request aimed at the wrong machine is REFUSED rather than silently
 // redirected to the right one — a kiosk asking to dispense somebody else's order is a bug worth
@@ -84,7 +86,7 @@ func CreateAttempt(
 		return nil, nil, err
 	}
 	if fulfillment == nil {
-		return nil, attemptRefusal(ReasonFulfillmentNotFound,
+		return nil, attemptRefusal(basemodel.FieldId, ReasonFulfillmentNotFound,
 			"no fulfillment with id "+params.FulfillmentId), nil
 	}
 
@@ -96,7 +98,7 @@ func CreateAttempt(
 		return nil, nil, errors.Wrapf(err, "acquiring the lock of order '%s'", orderId)
 	}
 	if !acquired {
-		return nil, attemptRefusal(ReasonLockUnavailable,
+		return nil, attemptRefusal("", ReasonLockUnavailable,
 			"this order is being changed by another request; try again"), nil
 	}
 	defer func() { _ = dLock.Release(ctx, key) }()
@@ -109,7 +111,7 @@ func CreateAttempt(
 		return nil, nil, err
 	}
 	if fulfillment == nil {
-		return nil, attemptRefusal(ReasonFulfillmentNotFound,
+		return nil, attemptRefusal(basemodel.FieldId, ReasonFulfillmentNotFound,
 			"no fulfillment with id "+params.FulfillmentId), nil
 	}
 	return createAttemptUnderLock(ctx, params, fulfillment)
@@ -130,7 +132,7 @@ func createAttemptUnderLock(
 		return nil, vErrs, nil
 	}
 	if len(params.Items) == 0 {
-		return nil, attemptRefusal(ReasonAttemptNoItems,
+		return nil, attemptRefusal(attemptInputItems, ReasonAttemptNoItems,
 			"name at least one item to attempt"), nil
 	}
 
@@ -188,11 +190,11 @@ func assertAttemptable(
 	record := models.NewSalesOrderFulfillmentFrom(fulfillment)
 
 	if !record.ExecutesKioskDispense() {
-		return attemptRefusal(ReasonMethodTypeUnsupported,
+		return attemptRefusal("", ReasonMethodTypeUnsupported,
 			"only a kiosk-dispense fulfillment can be attempted")
 	}
 	if !record.IsAttemptable() {
-		return attemptRefusal(ReasonAttemptNotAttemptable,
+		return attemptRefusal("", ReasonAttemptNotAttemptable,
 			"a fulfillment in status '"+
 				stringOf(fulfillment, models.SalesOrderFulfillmentFieldFulfillmentStatus)+
 				"' cannot be attempted")
@@ -202,14 +204,14 @@ func assertAttemptable(
 	// stale command; letting it dispense would hand over goods reserved somewhere else entirely.
 	target := stringOf(fulfillment, models.SalesOrderFulfillmentFieldTargetOutletId)
 	if params.ExecutorOutletId == "" || params.ExecutorOutletId != target {
-		return attemptRefusal(ReasonAttemptWrongExecutor,
+		return attemptRefusal(models.SalesFulfillmentAttemptFieldExecutorOutletId, ReasonAttemptWrongExecutor,
 			"this fulfillment is targeted at another sales point")
 	}
 
 	// An expired reservation holds no stock. Dispensing against it would hand over goods that were
 	// returned to the sellable pool and may already have been sold to somebody else.
 	if record.HasLapsed(now) {
-		return attemptRefusal(ReasonAttemptReservationLapsed,
+		return attemptRefusal("", ReasonAttemptReservationLapsed,
 			"this fulfillment's stock reservation has expired; reserve again before attempting")
 	}
 	return nil
@@ -246,7 +248,7 @@ func replayOutstandingAttempt(
 func assertNoOutstandingAttempt(attempts []dmodel.DynamicFields) *ft.ClientErrors {
 	for _, record := range attempts {
 		if models.NewSalesFulfillmentAttemptFrom(record).IsOutstanding() {
-			return attemptRefusal(ReasonAttemptAlreadyOutstanding,
+			return attemptRefusal("", ReasonAttemptAlreadyOutstanding,
 				"an attempt on this fulfillment is still awaiting its result")
 		}
 	}
@@ -261,7 +263,7 @@ func assertAttemptsRemain(fulfillment dmodel.DynamicFields, attemptNo int32) *ft
 		return nil
 	}
 	if attemptNo > *maxAttempts {
-		return attemptRefusal(ReasonAttemptExhausted,
+		return attemptRefusal("", ReasonAttemptExhausted,
 			"this fulfillment has used all the attempts its method allows")
 	}
 	return nil
@@ -278,24 +280,24 @@ func assertRequestedWithinFulfillable(
 	seen := make(map[string]struct{}, len(requested))
 	for _, item := range requested {
 		if _, known := itemsById[item.FulfillmentItemId]; !known {
-			return attemptRefusal(ReasonAttemptItemNotFound,
+			return attemptRefusal(attemptInputItems, ReasonAttemptItemNotFound,
 				"item "+item.FulfillmentItemId+" does not belong to this fulfillment")
 		}
 		if _, repeated := seen[item.FulfillmentItemId]; repeated {
-			return attemptRefusal(ReasonAttemptItemNotFound,
+			return attemptRefusal(attemptInputItems, ReasonAttemptItemNotFound,
 				"item "+item.FulfillmentItemId+" is named twice in one attempt")
 		}
 		seen[item.FulfillmentItemId] = struct{}{}
 
 		if !item.Quantity.IsPositive() {
-			return attemptRefusal(ReasonQuantityNotPositive,
+			return attemptRefusal(attemptInputItems, ReasonQuantityNotPositive,
 				"item "+item.FulfillmentItemId+" must be attempted with a positive quantity")
 		}
 		if item.Quantity.GreaterThan(fulfillable[item.FulfillmentItemId]) {
 			// Deliberately not "more than it still owes": a quantity with a refund in flight is owed
 			// and NOT attemptable, and a message about what is owed would send a caller to look at a
 			// number that says the attempt should have worked.
-			return attemptRefusal(ReasonAttemptQuantityExceeded,
+			return attemptRefusal(attemptInputItems, ReasonAttemptQuantityExceeded,
 				"item "+item.FulfillmentItemId+" cannot be attempted for more than may be "+
 					"fulfilled now; a refund in flight blocks the quantity it covers")
 		}
@@ -398,9 +400,9 @@ func itemsOfAttempt(ctx corectx.Context, attemptId string) ([]dmodel.DynamicFiel
 		models.SalesFulfillmentAttemptItemFieldAttemptId, attemptId)
 }
 
-func attemptRefusal(reason, message string) *ft.ClientErrors {
+func attemptRefusal(field, reason, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesFulfillmentAttemptSchemaName, ft.ErrorKey(reason, "sales"), message))
+		field, ft.ErrorKey(reason, "sales"), message))
 	return vErrs
 }

@@ -17,16 +17,15 @@
 			"data_type": "ulid",
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "One half of the scope this row serialises. A guard row exists for exactly one (warehouse, variant) pair per org and carries nothing else: it is a lock target, not a balance. Every operation that changes or commits that scope's stock takes this row FOR UPDATE first, so two requests that would pick different quants still queue behind one another."
-			}
+			"description": "field_desc.inventory_warehouse_product_guard.warehouse_id"
 		},
 		{
 			"name": "product_variant_id",
 			"label": "fields.product_variant_id",
 			"data_type": "ulid",
 			"required_for_create": true,
-			"no_update": true
+			"no_update": true,
+			"description": "field_desc.inventory_warehouse_product_guard.product_variant_id"
 		},
 		{
 			"name": "org_id",

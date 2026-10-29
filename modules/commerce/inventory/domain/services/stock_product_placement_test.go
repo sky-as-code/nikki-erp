@@ -16,12 +16,12 @@ import (
 
 const testExternalLocationId = "01LOCATIONEXT0000000000000"
 
-func locationRow(id, status, warehouseId, code string) dmodel.DynamicFields {
+func locationRow(id, status, warehouseId, canonicalName string) dmodel.DynamicFields {
 	row := dmodel.DynamicFields{
 		models.InventoryLocationFieldId:            id,
-		models.InventoryLocationFieldLocationUsage: models.InventoryLocationUsageInternal,
+		models.InventoryLocationFieldLocationType: models.InventoryLocationTypeInternal,
 		models.InventoryLocationFieldStatus:        status,
-		models.InventoryLocationFieldCode:          code,
+		models.InventoryLocationFieldCanonicalName: canonicalName,
 	}
 	if warehouseId != "" {
 		row[models.InventoryLocationFieldWarehouseId] = warehouseId
@@ -136,7 +136,7 @@ func TestStockByLocationNarrowsToOneWarehouse(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, result.Data.Rows, 1)
-	assert.Equal(t, "A01", result.Data.Rows[0].LocationCode)
+	assert.Equal(t, "A01", result.Data.Rows[0].LocationCanonicalName)
 }
 
 // A place holding nothing is not somewhere the product is. Listing it would pad the page with
@@ -160,7 +160,7 @@ func TestStockByLocationOmitsEmptiedLocations(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, result.Data.Rows, 1)
-	assert.Equal(t, "A01", result.Data.Rows[0].LocationCode)
+	assert.Equal(t, "A01", result.Data.Rows[0].LocationCanonicalName)
 }
 
 func TestPlacementReadsRejectAnEmptyVariantId(t *testing.T) {

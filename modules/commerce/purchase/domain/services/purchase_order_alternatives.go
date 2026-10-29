@@ -57,7 +57,7 @@ func (this *PurchaseOrderDomainServiceImpl) CreateAlternative(
 		status := stringOf(source, models.PurchaseOrderFieldStatus)
 		if !isQuotableStatus(status) {
 			vErrs := ft.NewClientErrors()
-			vErrs.Append(*ft.NewBusinessViolation(models.PurchaseOrderSchemaName,
+			vErrs.Append(*ft.NewAnonymousBusinessViolation(
 				ft.ErrorKey("purchase_order.not_alternatable", "purchase"),
 				"alternatives can only be raised while the order is still a request for "+
 					"quotation; this one is '"+status+"'"))

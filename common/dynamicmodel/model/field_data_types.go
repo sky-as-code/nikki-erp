@@ -36,6 +36,7 @@ const (
 	FieldDataTypeNameEtag          = "nikkiEtag"
 	FieldDataTypeNameLangCode      = "nikkiLangCode"
 	FieldDataTypeNameLangJson      = "nikkiLangJson"
+	FieldDataTypeNameResourceCode  = "nikkiResourceCode"
 	FieldDataTypeNameSlug          = "nikkiSlug"
 	FieldDataTypeNameModelTime     = "nikkiTime"
 	FieldDataTypeNamePhone         = "phone"
@@ -1592,6 +1593,12 @@ func toString(value any) (string, error) {
 	case fmt.Stringer:
 		return v.String(), nil
 	default:
+		// A composite (e.g. a LangJSON map sent to a plain string field) would be stored as Go's
+		// "map[...]" rendering, so it is a type error rather than a value to stringify.
+		switch reflect.ValueOf(value).Kind() {
+		case reflect.Map, reflect.Slice, reflect.Array, reflect.Struct:
+			return "", errors.Errorf("toString: %T is not a scalar", value)
+		}
 		return fmt.Sprint(value), nil
 	}
 }

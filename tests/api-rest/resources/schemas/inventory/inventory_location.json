@@ -1,6 +1,15 @@
 {
     "type": "object",
-    "required": ["id", "created_at", "code", "name", "location_usage", "status", "etag", "is_archived", "org_id"],
+    "required": [
+        "id",
+        "created_at",
+        "name",
+        "location_type",
+        "status",
+        "etag",
+        "is_archived",
+        "org_id"
+    ],
     "properties": {
         "id": {
             "type": "string",
@@ -11,48 +20,76 @@
             "minLength": 20
         },
         "created_by": {
-            "type": ["string", "null"]
+            "type": [
+                "string",
+                "null"
+            ]
         },
         "updated_at": {
             "type": "string",
             "minLength": 20
         },
-        "code": {
-            "type": "string",
-            "minLength": 1
-        },
         "name": {
-            "type": "object"
-        },
-        "location_usage": {
             "type": "string",
-            "enum": ["internal", "customer", "vendor", "inventory_loss", "scrap", "transit", "virtual"]
+            "minLength": 1,
+            "maxLength": 200
         },
-        "purpose": {
-            "type": ["string", "null"],
-            "enum": ["storage", "receiving", "quality", "picking", "packing", "output", "other", null]
+        "location_type": {
+            "type": "string",
+            "enum": [
+                "internal",
+                "group",
+                "customer",
+                "vendor",
+                "inventory_loss",
+                "production",
+                "scrap",
+                "transit"
+            ]
         },
         "warehouse_id": {
-            "type": ["string", "null"]
+            "type": [
+                "string",
+                "null"
+            ]
         },
         "parent_location_id": {
-            "type": ["string", "null"]
-        },
-        "complete_path": {
-            "type": ["string", "null"]
+            "type": [
+                "string",
+                "null"
+            ]
         },
         "hierarchy_depth": {
-            "type": ["integer", "null"]
+            "type": [
+                "integer",
+                "null"
+            ]
         },
         "barcode": {
-            "type": ["string", "null"]
+            "type": [
+                "string",
+                "null"
+            ]
         },
         "storage_category_id": {
-            "type": ["string", "null"]
+            "type": [
+                "string",
+                "null"
+            ]
         },
         "removal_strategy": {
-            "type": ["string", "null"],
-            "enum": ["fifo", "lifo", "fefo", "closest", "least_packages", null]
+            "type": [
+                "string",
+                "null"
+            ],
+            "enum": [
+                "fifo",
+                "lifo",
+                "fefo",
+                "closest",
+                "least_packages",
+                null
+            ]
         },
         "is_replenishment_destination": {
             "type": "boolean"
@@ -62,10 +99,16 @@
         },
         "status": {
             "type": "string",
-            "enum": ["active", "suspended"]
+            "enum": [
+                "active",
+                "suspended"
+            ]
         },
         "description": {
-            "type": ["object", "null"]
+            "type": [
+                "string",
+                "null"
+            ]
         },
         "org_id": {
             "type": "string",
@@ -77,6 +120,24 @@
         },
         "is_archived": {
             "type": "boolean"
+        },
+        "canonical_name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "managed_by_type": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "managed_by_id": {
+            "type": [
+                "string",
+                "null"
+            ]
         }
     },
     "additionalProperties": false

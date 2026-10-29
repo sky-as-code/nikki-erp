@@ -3,7 +3,6 @@ package app
 import (
 	"go.bryk.io/pkg/errors"
 
-	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -37,35 +36,6 @@ type WarehouseApplicationServiceImpl struct {
 	itWarehouse.WarehouseAppService
 	orchestrator *WarehouseAppServiceImpl
 	warehouseSvc *services.WarehouseDomainServiceImpl
-}
-
-// Create is the authorized default create plus the system locations a warehouse cannot work
-// without, in one transaction: a warehouse whose locations failed is not created either.
-func (this *WarehouseApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
-	if vErrs := assertFlowsKnown(cmd); vErrs.Count() > 0 {
-		return &composable.CreateResult{ClientErrors: *vErrs}, nil
-	}
-	var result *composable.CreateResult
-	err := composable.InTransaction(ctx, this.warehouseSvc.Repository(), func(tranxCtx corectx.Context) error {
-		created, err := this.CrudApplicationService.Create(tranxCtx, cmd)
-		if err != nil {
-			return err
-		}
-		if created == nil || created.ClientErrors.Count() > 0 {
-			return newClientErrorSignal(created)
-		}
-		result = created
-		return this.orchestrator.provisionSystemLocations(tranxCtx, *models.NewWarehouseFrom(created.Data))
-	})
-	if signal, ok := asClientErrorSignal(err); ok {
-		return &composable.CreateResult{ClientErrors: signal.errors}, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
 }
 
 func (this *WarehouseApplicationServiceImpl) Suspend(

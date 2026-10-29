@@ -29,8 +29,9 @@ type CreatePaymentCommand struct {
 
 	// PaymentMethodId and PaymentMethodCode are two ways of naming the same row, and exactly one
 	// is needed. The id is what the REST surface uses, because that is what a picker holds; the
-	// code is "momo", "vietqr", "mpos" — what the service this module supersedes was called with,
-	// and what a caller migrating off it already has. The id wins when both are given.
+	// code is "MOMO", "VIETQR", "MPOS" (the legacy lowercase still resolves) — what the service this
+	// module supersedes was called with, and what a caller migrating off it already has. The id
+	// wins when both are given.
 	PaymentMethodId   string `json:"payment_method_id,omitempty"`
 	PaymentMethodCode string `json:"payment_method_code,omitempty"`
 

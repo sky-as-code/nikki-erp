@@ -8,6 +8,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
@@ -109,14 +110,12 @@ func ApplyCorrectionMovement(
 func assertCorrectable(request CorrectionRequest) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	if request.Quantity.LessThanOrEqual(decimal.Zero) {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockMoveSchemaName,
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey("stock_correction.quantity_not_positive", "inventory"),
 			"a correction must move a quantity greater than zero"))
 	}
 	if request.SourceLocationId == request.DestinationLocationId {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockMoveSchemaName,
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey("stock_correction.same_location", "inventory"),
 			"a correction must move between two different locations"))
 	}
@@ -136,8 +135,7 @@ func prepareCorrectionTransfer(
 		return nil, vErrs, err
 	}
 	if operationType == nil {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockOperationTypeSchemaName,
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey("stock_correction.no_operation_type", "inventory"),
 			"this organisation has no internal operation type with code '"+
 				models.StockCorrectionOperationTypeCode+"'; the correction seeds must be applied"))
@@ -399,11 +397,15 @@ func FindLocationByType(
 		return nil, err
 	}
 
+	// The org's virtual locations: platform-managed, outside any warehouse, one per usage.
 	graph := &dmodel.SearchGraph{}
 	graph.And(
 		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldOrgId, dmodel.Equals, orgId),
 		*dmodel.NewSearchNode().NewCondition(
-			models.InventoryLocationFieldLocationUsage, dmodel.Equals, locationType),
+			models.InventoryLocationFieldLocationType, dmodel.Equals, locationType),
+		*dmodel.NewSearchNode().NewCondition(
+			basemodel.FieldManagedByType, dmodel.Equals, basemodel.ManagedByTypeSystem),
+		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldWarehouseId, dmodel.IsNotSet),
 	)
 
 	found, err := engine.Search(ctx, dyn.RepoSearchParam{

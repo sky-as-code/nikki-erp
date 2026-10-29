@@ -17,9 +17,7 @@
 			"data_type": "ulid",
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "The move that must complete first. In a pick-then-ship chain this is the pick (BR 7.7)."
-			}
+			"description": "field_desc.inventory_stock_move_dependency.predecessor_move_id"
 		},
 		{
 			"name": "successor_move_id",
@@ -27,9 +25,7 @@
 			"data_type": "ulid",
 			"required_for_create": true,
 			"no_update": true,
-			"description": {
-				"en-US": "The move that waits on the predecessor. It stays 'waiting' until the predecessor is done, which is how a multi-step flow keeps its order."
-			}
+			"description": "field_desc.inventory_stock_move_dependency.successor_move_id"
 		},
 		{
 			"name": "org_id",

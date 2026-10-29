@@ -56,19 +56,28 @@ const (
 	FieldLanguage = "language"
 )
 
-// ManagedByType says who manages a record of a model extending core.basemodel.managed_model.
-type ManagedByType string
+// ManagedByTypeSystem marks a record of a model extending core.basemodel.managed_model as
+// maintained by the platform (seeds, org lifecycle). Any other non-null managed_by_type is
+// "{module}/{managing_schema}", built by ManagedByType.
+const ManagedByTypeSystem = "system"
 
-const (
-	ManagedByTypeSystem = ManagedByType("system")
-	ManagedByTypeModule = ManagedByType("module")
-	ManagedByTypeUser   = ManagedByType("user")
-)
+// ManagedByType builds the managed_by_type of a record managed by a record of managingSchema,
+// owned by the module whose code name (Name()) is module, e.g. "commerce/inventory_warehouse".
+func ManagedByType(module string, managingSchema string) string {
+	return module + "/" + managingSchema
+}
 
 // IsSystemManaged reports whether the record's managed_by_type is "system".
 func IsSystemManaged(fields dmodel.DynamicFields) bool {
 	managedBy := fields.GetString(FieldManagedByType)
-	return managedBy != nil && ManagedByType(*managedBy) == ManagedByTypeSystem
+	return managedBy != nil && *managedBy == ManagedByTypeSystem
+}
+
+// IsManaged reports whether something manages the record: a non-null managed_by_type. A managed
+// record refuses the default Delete and is removed through DeleteManaged by its manager.
+func IsManaged(fields dmodel.DynamicFields) bool {
+	managedBy := fields.GetString(FieldManagedByType)
+	return managedBy != nil && *managedBy != ""
 }
 
 func DefineFieldId(fieldName string) *dmodel.FieldBuilder {

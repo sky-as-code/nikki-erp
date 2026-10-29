@@ -11,9 +11,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 )
 
-// appendOrderViolation records a rule the caller broke, against the order resource.
+// appendOrderViolation records a refusal of the order as a whole, which no single input field caused.
 func appendOrderViolation(vErrs *ft.ClientErrors, key string, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(models.OrderSchemaName, ft.ErrorKey(key, "paymentinvoice"), message))
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(ft.ErrorKey(key, "paymentinvoice"), message))
 }
 
 // appendFieldViolation records a rule broken by one named input, so the caller is told which of

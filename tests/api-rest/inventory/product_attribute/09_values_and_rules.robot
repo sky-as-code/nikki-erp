@@ -27,7 +27,7 @@ Create With One Bad Value Row Saves Nothing And Names The Row
     [Tags]    negative
     ${code}=    Unique Code    badrow
     ${resp}=    POST On Session    api    ${PRODUCT_ATTRIBUTE_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $code}, 'data_type': 'option', 'variant_creation_mode': 'instant', 'org_id': $INV_ORG_ID, 'values': {'add': [{'code': 'a', 'name': {'en-US': 'A'}}, {'code': 'b', 'name': {'en-US': 'B'}, 'color_hex': '#12345G'}]}} }}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $code}, 'data_type': 'option', 'variant_creation_mode': 'instant', 'org_id': $INV_ORG_ID, 'values': {'add': [{'code': 'A', 'name': {'en-US': 'A'}}, {'code': 'B', 'name': {'en-US': 'B'}, 'color_hex': '#12345G'}]}} }}
     ...    expected_status=any
     Response Should Contain Business Error    ${resp}    common:err_invalid_string_pattern    values.add[1].color_hex
     ${resp}=    GET On Session    api    ${PRODUCT_ATTRIBUTE_API}
@@ -48,7 +48,7 @@ Patch Applies A Values Delta Atomically
     ...    column. ADD08: renaming and recolouring keeps the value id.
     ${attr}    ${values}=    Create Attribute With Values    never    red    green
     ${value_etag}=    Read Etag    ${ATTRIBUTE_VALUE_API}    ${values}[red]
-    ${delta}=    Evaluate    {'add': [{'code': 'blue', 'name': {'en-US': 'Blue'}, 'color_hex': '#0000FF'}], 'update': [{'id': $values['red'], 'etag': $value_etag, 'name': {'en-US': 'Crimson'}, 'color_hex': '#DC143C'}], 'remove': [$values['green']]}
+    ${delta}=    Evaluate    {'add': [{'code': 'BLUE', 'name': {'en-US': 'Blue'}, 'color_hex': '#0000FF'}], 'update': [{'id': $values['red'], 'etag': $value_etag, 'name': {'en-US': 'Crimson'}, 'color_hex': '#DC143C'}], 'remove': [$values['green']]}
     ${resp}=    Patch Record    ${PRODUCT_ATTRIBUTE_API}    ${attr}    ${{ {'sequence': 7, 'values': $delta} }}
     Response Status Should Be    ${resp}    200
     ${after}=    Read Attribute Values    ${attr}
@@ -66,7 +66,7 @@ Patch With A Bad Row Rolls Back The Attribute Change
     ...    untouched; the error names the row.
     [Tags]    negative
     ${attr}    ${values}=    Create Attribute With Values    never    red
-    ${delta}=    Evaluate    {'add': [{'code': 'ok', 'name': {'en-US': 'Fine'}}, {'code': 'dup', 'name': {'en-US': 'RED'}}]}
+    ${delta}=    Evaluate    {'add': [{'code': 'OK', 'name': {'en-US': 'Fine'}}, {'code': 'DUP', 'name': {'en-US': 'RED'}}]}
     ${resp}=    Patch Record    ${PRODUCT_ATTRIBUTE_API}    ${attr}    ${{ {'sequence': 9, 'values': $delta} }}
     Response Should Contain Business Error    ${resp}    inventory:product_attribute_value.name_duplicate    values.add[1].name
     ${after}=    Read Attribute Values    ${attr}
@@ -82,7 +82,7 @@ Value Names Are Unique After Normalization Including Archived Values
     ${resp}=    Set Record Archived    ${ATTRIBUTE_VALUE_API}    ${values}[red]
     Response Status Should Be    ${resp}    200
     ${resp}=    POST On Session    api    ${ATTRIBUTE_VALUE_API}
-    ...    json=${{ {'attribute_id': $attr, 'code': 'red2', 'name': {'en-US': ' RED '}, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'attribute_id': $attr, 'code': 'RED2', 'name': {'en-US': ' RED '}, 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Response Should Contain Business Error    ${resp}    inventory:product_attribute_value.name_duplicate    name
 
@@ -91,11 +91,11 @@ Colour Hex Must Be Six Hex Digits
     [Tags]    negative
     ${attr}    ${values}=    Create Attribute With Values    never    red
     ${resp}=    POST On Session    api    ${ATTRIBUTE_VALUE_API}
-    ...    json=${{ {'attribute_id': $attr, 'code': 'bad', 'name': {'en-US': 'Bad'}, 'color_hex': 'red', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'attribute_id': $attr, 'code': 'BAD', 'name': {'en-US': 'Bad'}, 'color_hex': 'red', 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Response Should Contain Business Error    ${resp}    common:err_invalid_string_length    color_hex
     ${resp}=    POST On Session    api    ${ATTRIBUTE_VALUE_API}
-    ...    json=${{ {'attribute_id': $attr, 'code': 'good', 'name': {'en-US': 'Good'}, 'color_hex': '#a1B2c3', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'attribute_id': $attr, 'code': 'GOOD', 'name': {'en-US': 'Good'}, 'color_hex': '#a1B2c3', 'org_id': $INV_ORG_ID} }}
     Response Should Be Create Success    ${resp}
 
 Multi Checkbox Requires Mode Never
@@ -219,11 +219,11 @@ A Value Name Must Not Be Blank In Every Language
     ...    the nested delta and on the value resource alike.
     [Tags]    negative
     ${attr}    ${values}=    Create Attribute With Values    never    red
-    ${delta}=    Evaluate    {'add': [{'code': 'blank', 'name': {'en-US': ''}}]}
+    ${delta}=    Evaluate    {'add': [{'code': 'BLANK', 'name': {'en-US': ''}}]}
     ${resp}=    Patch Record    ${PRODUCT_ATTRIBUTE_API}    ${attr}    ${{ {'values': $delta} }}
     Response Should Contain Business Error    ${resp}    inventory:product_attribute_value.name_blank    values.add[0].name
     ${resp}=    POST On Session    api    ${ATTRIBUTE_VALUE_API}
-    ...    json=${{ {'attribute_id': $attr, 'code': 'blank', 'name': {'en-US': ' ' * 2, 'vi-VN': ''}, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'attribute_id': $attr, 'code': 'BLANK', 'name': {'en-US': ' ' * 2, 'vi-VN': ''}, 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Response Should Contain Business Error    ${resp}    inventory:product_attribute_value.name_blank    name
     ${resp}=    Patch Record    ${ATTRIBUTE_VALUE_API}    ${values}[red]    ${{ {'name': {'en-US': ' '}} }}
@@ -238,7 +238,7 @@ A Value Of An Archived Attribute Cannot Be Created Or Updated
     ${resp}=    Set Record Archived    ${PRODUCT_ATTRIBUTE_API}    ${attr}
     Response Status Should Be    ${resp}    200
     ${resp}=    POST On Session    api    ${ATTRIBUTE_VALUE_API}
-    ...    json=${{ {'attribute_id': $attr, 'code': 'late', 'name': {'en-US': 'Late'}, 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'attribute_id': $attr, 'code': 'LATE', 'name': {'en-US': 'Late'}, 'org_id': $INV_ORG_ID} }}
     ...    expected_status=any
     Response Should Contain Business Error    ${resp}    inventory:product_attribute_value.parent_archived    attribute_id
     ${resp}=    Patch Record    ${ATTRIBUTE_VALUE_API}    ${values}[red]    ${{ {'name': {'en-US': 'Crimson'}} }}

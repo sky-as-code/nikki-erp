@@ -12,11 +12,11 @@
 		{
 			"name": "code",
 			"label": "fields.code",
-			"data_type": { "type": "string", "min": 1, "max": 50 },
+			"data_type": { "type": "resource_code", "min": 1, "max": 50 },
 			"required_for_create": true,
 			"no_update": true,
 			"description": {
-				"en-US": "The stable integration identifier an external module names this channel by, so nothing outside Sales has to know a database id (CR 7.1, 42). Lowercase alphanumeric only, and immutable: 'vdmc' is a published contract, so renaming it or changing its case breaks every kiosk already configured against it. Required and unique within its organization (DEC-001; widened from tenant-wide so every org can own its own system channels such as vdmc and bo) — the earlier nullable form could not be expressed as a constraint, and a channel without a code could never gain one because this field cannot be updated."
+				"en-US": "The stable integration identifier an external module names this channel by, so nothing outside Sales has to know a database id (CR 7.1, 42). Uppercase letters, digits and hyphens only, and immutable: 'VDMC' is a published contract (a legacy 'vdmc' still resolves, because lookups normalize the spelling). Required and unique within its organization (DEC-001; widened from tenant-wide so every org can own its own system channels such as vdmc and bo) — the earlier nullable form could not be expressed as a constraint, and a channel without a code could never gain one because this field cannot be updated."
 			}
 		},
 		{
@@ -32,15 +32,6 @@
 			"name": "description",
 			"label": "fields.description",
 			"data_type": { "type": "string", "min": 0, "max": 2000 }
-		},
-		{
-			"name": "managed_by_module",
-			"label": "fields.managed_by_module",
-			"data_type": { "type": "string", "min": 0, "max": 100 },
-			"no_update": true,
-			"description": {
-				"en-US": "The module that registered this channel, for example 'vendingmachine'. Plain metadata with no foreign key into any module registry (CR 8): it exists so that one module cannot take over another module's channel, and so the UI can warn that a channel's real lifecycle is owned elsewhere. NULL for a channel a human created."
-			}
 		},
 		{
 			"name": "status",
@@ -101,6 +92,7 @@
 		"core.basemodel.archivable_model",
 		"core.basemodel.auditable_model",
 		"core.basemodel.traceable_model",
+		"core.basemodel.managed_model",
 		"core.basemodel.versioned_model"
 	],
 

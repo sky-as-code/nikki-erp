@@ -130,7 +130,7 @@ func (this *StockScrapDomainServiceImpl) loadScrap(
 	vErrs := ft.NewClientErrors()
 	if scrapId == "" {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockScrapSchemaName, ft.ErrorKey("stock_scrap.id_required", "inventory"), "a scrap must be identified"))
+			models.StockScrapFieldId, ft.ErrorKey("stock_scrap.id_required", "inventory"), "a scrap must be identified"))
 		return nil, vErrs, nil
 	}
 
@@ -145,8 +145,8 @@ func (this *StockScrapDomainServiceImpl) loadScrap(
 		return nil, vErrs, errors.Wrap(err, "loadScrap")
 	}
 	if found == nil || !found.HasData {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockScrapSchemaName, ft.ErrorKey("stock_scrap.not_found", "inventory"),
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey("stock_scrap.not_found", "inventory"),
 			"no stock scrap with id '"+scrapId+"'"))
 		return nil, vErrs, nil
 	}
@@ -165,13 +165,13 @@ func assertScrapQuantityPositive(params dmodel.DynamicFields) *ft.ClientErrors {
 	quantity, err := decimalFromAny(raw)
 	if err != nil {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockScrapSchemaName, ft.ErrorKey("stock_scrap.quantity_malformed", "inventory"),
+			models.StockScrapFieldQuantity, ft.ErrorKey("stock_scrap.quantity_malformed", "inventory"),
 			"'quantity' must be a decimal number"))
 		return vErrs
 	}
 	if quantity.LessThanOrEqual(decimal.Zero) {
 		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockScrapSchemaName, ft.ErrorKey("stock_scrap.quantity_not_positive", "inventory"),
+			models.StockScrapFieldQuantity, ft.ErrorKey("stock_scrap.quantity_not_positive", "inventory"),
 			"a scrap must remove a quantity greater than zero"))
 	}
 	return vErrs
@@ -210,7 +210,7 @@ func applyEmptyStringDefault(params dmodel.DynamicFields, field string) {
 
 func scrapViolation(key, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.StockScrapSchemaName, ft.ErrorKey(key, "inventory"), message))
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(ft.ErrorKey(key, "inventory"), message))
 	return vErrs
 }
 

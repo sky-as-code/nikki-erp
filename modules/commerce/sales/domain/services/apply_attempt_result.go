@@ -100,13 +100,13 @@ func ApplyAttemptResult(
 			"the distributed lock is not available; an attempt result cannot be applied without it")
 	}
 	if strings.TrimSpace(params.ResultEventId) == "" {
-		return nil, resultRefusal(ReasonResultEventRequired,
+		return nil, resultRefusal(models.SalesFulfillmentAttemptFieldResultEventId, ReasonResultEventRequired,
 			"a result must carry an event id, which is what makes a redelivery safe"), nil
 	}
 	if strings.TrimSpace(params.InventoryResultRef) == "" {
 		// Inventory owns the physical consequence. Recording a dispense it has not applied would
 		// report goods gone while the stock ledger still holds them.
-		return nil, resultRefusal(ReasonResultInventoryRef,
+		return nil, resultRefusal(models.SalesFulfillmentAttemptFieldInventoryResultRef, ReasonResultInventoryRef,
 			"apply the result in Inventory first and pass its reference"), nil
 	}
 
@@ -116,7 +116,7 @@ func ApplyAttemptResult(
 		return nil, nil, err
 	}
 	if attempt == nil {
-		return nil, resultRefusal(ReasonAttemptNotFound,
+		return nil, resultRefusal(models.SalesFulfillmentAttemptItemFieldAttemptId, ReasonAttemptNotFound,
 			"no fulfillment attempt with id "+params.AttemptId), nil
 	}
 
@@ -127,7 +127,7 @@ func ApplyAttemptResult(
 		return nil, nil, err
 	}
 	if fulfillment == nil {
-		return nil, resultRefusal(ReasonFulfillmentNotFound,
+		return nil, resultRefusal("", ReasonFulfillmentNotFound,
 			"the attempt names a fulfillment that no longer exists"), nil
 	}
 
@@ -139,7 +139,7 @@ func ApplyAttemptResult(
 		return nil, nil, errors.Wrapf(err, "acquiring the lock of order '%s'", orderId)
 	}
 	if !acquired {
-		return nil, resultRefusal(ReasonLockUnavailable,
+		return nil, resultRefusal("", ReasonLockUnavailable,
 			"this order is being changed by another request; try again"), nil
 	}
 	defer func() { _ = dLock.Release(ctx, key) }()
@@ -152,7 +152,7 @@ func ApplyAttemptResult(
 		return nil, nil, err
 	}
 	if attempt == nil {
-		return nil, resultRefusal(ReasonAttemptNotFound,
+		return nil, resultRefusal(models.SalesFulfillmentAttemptItemFieldAttemptId, ReasonAttemptNotFound,
 			"no fulfillment attempt with id "+params.AttemptId), nil
 	}
 	return applyResultUnderLock(ctx, params, attempt, orderId, policy)
@@ -222,7 +222,7 @@ func assertResultIsNew(
 	if storedEventId == "" {
 		if !models.NewSalesFulfillmentAttemptFrom(attempt).IsOutstanding() {
 			// Settled without an event id: a cancelled attempt, which cannot then be reported on.
-			return false, resultRefusal(ReasonResultAlreadyReported,
+			return false, resultRefusal("", ReasonResultAlreadyReported,
 				"this attempt is no longer awaiting a result")
 		}
 		return false, nil
@@ -231,11 +231,11 @@ func assertResultIsNew(
 	if storedEventId != eventId {
 		// A different event against an attempt that already reported. The first result is the one
 		// that happened; a second would double-count the goods.
-		return false, resultRefusal(ReasonResultAlreadyReported,
+		return false, resultRefusal("", ReasonResultAlreadyReported,
 			"this attempt has already reported its result")
 	}
 	if stringOf(attempt, models.SalesFulfillmentAttemptFieldResultPayloadHash) != payloadHash {
-		return false, resultRefusal(ReasonResultEventConflict,
+		return false, resultRefusal("", ReasonResultEventConflict,
 			"this event id was already applied with different content; one physical event cannot "+
 				"have two outcomes")
 	}
@@ -250,13 +250,13 @@ func assertCorrelationMatches(
 	expected := stringOf(attempt, models.SalesFulfillmentAttemptFieldExternalCorrelationId)
 	if params.ExternalCorrelationId != "" && expected != "" &&
 		params.ExternalCorrelationId != expected {
-		return resultRefusal(ReasonResultCorrelation,
+		return resultRefusal(models.SalesFulfillmentAttemptFieldExternalCorrelationId, ReasonResultCorrelation,
 			"this result does not carry the correlation id of the attempt it names")
 	}
 
 	executor := stringOf(attempt, models.SalesFulfillmentAttemptFieldExecutorOutletId)
 	if params.ExecutorOutletId != "" && executor != "" && params.ExecutorOutletId != executor {
-		return resultRefusal(ReasonAttemptWrongExecutor,
+		return resultRefusal(models.SalesFulfillmentAttemptFieldExecutorOutletId, ReasonAttemptWrongExecutor,
 			"this result comes from a sales point other than the one that was asked")
 	}
 	return nil
@@ -285,18 +285,18 @@ func matchReportedItems(
 	for _, item := range reported {
 		record, known := byFulfillmentItem[item.FulfillmentItemId]
 		if !known {
-			return nil, resultRefusal(ReasonResultItemUnknown,
+			return nil, resultRefusal(attemptInputItems, ReasonResultItemUnknown,
 				"item "+item.FulfillmentItemId+" was not part of this attempt")
 		}
 		if _, repeated := seen[item.FulfillmentItemId]; repeated {
 			// Two entries for one item could disagree, and nothing here could say which was right.
-			return nil, resultRefusal(ReasonResultItemUnknown,
+			return nil, resultRefusal(attemptInputItems, ReasonResultItemUnknown,
 				"item "+item.FulfillmentItemId+" is reported twice in one result")
 		}
 		seen[item.FulfillmentItemId] = struct{}{}
 
 		if item.DispensedQty.IsNegative() || item.FailedQty.IsNegative() {
-			return nil, resultRefusal(ReasonResultQuantityMismatch,
+			return nil, resultRefusal(attemptInputItems, ReasonResultQuantityMismatch,
 				"item "+item.FulfillmentItemId+" reports a negative quantity")
 		}
 
@@ -304,7 +304,7 @@ func matchReportedItems(
 		if !item.DispensedQty.Add(item.FailedQty).Equal(attempted) {
 			// Quantity that vanished, or appeared from nowhere. Refused rather than reconciled:
 			// nothing here can say which of the three numbers is the wrong one.
-			return nil, resultRefusal(ReasonResultQuantityMismatch,
+			return nil, resultRefusal(attemptInputItems, ReasonResultQuantityMismatch,
 				"item "+item.FulfillmentItemId+" must report dispensed plus failed equal to what "+
 					"was attempted")
 		}
@@ -312,7 +312,7 @@ func matchReportedItems(
 	}
 
 	if len(matched) != len(attemptItems) {
-		return nil, resultRefusal(ReasonResultQuantityMismatch,
+		return nil, resultRefusal(attemptInputItems, ReasonResultQuantityMismatch,
 			"a result must report every item the attempt asked for")
 	}
 	return matched, nil
@@ -560,9 +560,9 @@ func hashResultPayload(params ApplyAttemptResultParams) string {
 	return hex.EncodeToString(digest[:])
 }
 
-func resultRefusal(reason, message string) *ft.ClientErrors {
+func resultRefusal(field, reason, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewBusinessViolation(
-		models.SalesFulfillmentAttemptSchemaName, ft.ErrorKey(reason, "sales"), message))
+		field, ft.ErrorKey(reason, "sales"), message))
 	return vErrs
 }

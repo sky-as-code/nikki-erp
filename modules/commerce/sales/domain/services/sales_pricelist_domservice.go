@@ -48,7 +48,7 @@ func (this *SalesPricelistDomainServiceImpl) SetDefault(
 		// An archived list may not become the default: the default is what a new order falls back to,
 		// and an archived list may not price new business. Unarchive it first.
 		if boolOf(target, basemodel.FieldIsArchived) {
-			result = violationResult(models.SalesPricelistSchemaName,
+			result = violationResult("",
 				"sales_pricelist.archived",
 				"an archived pricelist cannot be made the default; unarchive it first")
 			return nil
@@ -56,7 +56,7 @@ func (this *SalesPricelistDomainServiceImpl) SetDefault(
 
 		orgId := stringOf(target, models.SalesPricelistFieldOrgId)
 		if orgId == "" {
-			result = violationResult(models.SalesPricelistSchemaName,
+			result = violationResult("",
 				"sales_pricelist.org_required",
 				"a pricelist must belong to an organization to be its default")
 			return nil
@@ -134,7 +134,7 @@ func (this *SalesPricelistDomainServiceImpl) Update(
 		return nil, err
 	}
 	if len(items) > 0 {
-		return violationResult(models.SalesPricelistSchemaName,
+		return violationResult(models.SalesPricelistFieldCurrencyId,
 			"sales_pricelist.currency_in_use",
 			"this pricelist already has prices quoted in its current currency; "+
 				"create a new pricelist for a different currency"), nil

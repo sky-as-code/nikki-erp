@@ -170,8 +170,7 @@ func withTransferTransaction(
 // error, not a server one: the id came from the caller.
 func notFoundResult(transferId string) *dyn.OpResult[dyn.MutateResultData] {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(
-		models.StockTransferSchemaName,
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(
 		ft.ErrorKey("stock_transfer.not_found", "inventory"),
 		"no stock transfer with id '"+transferId+"'",
 	))
@@ -180,7 +179,7 @@ func notFoundResult(transferId string) *dyn.OpResult[dyn.MutateResultData] {
 
 func violationResult(key, message string) *dyn.OpResult[dyn.MutateResultData] {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, ft.ErrorKey(key, "inventory"), message))
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(ft.ErrorKey(key, "inventory"), message))
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
 }
 

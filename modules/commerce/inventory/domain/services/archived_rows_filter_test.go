@@ -57,12 +57,7 @@ func TestCandidatePutawayRulesExcludeArchivedOnes(t *testing.T) {
 // archiving the parent; counting it made a cleaned-up tree impossible to retire.
 func TestChildCountsIgnoreArchivedChildren(t *testing.T) {
 	repo := useGraphCapturingRepository(t)
-	_, err := (&WarehouseDomainServiceImpl{}).countUnarchivedChildren(callerContext(), "01PARENT")
-	require.NoError(t, err)
-	assertSearchedUnarchivedOnly(t, repo)
-
-	repo = useGraphCapturingRepository(t)
-	_, err = (&InventoryLocationDomainServiceImpl{}).countUnarchivedChildren(callerContext(), "01PARENT")
+	_, err := (&InventoryLocationDomainServiceImpl{}).countUnarchivedChildren(callerContext(), "01PARENT")
 	require.NoError(t, err)
 	assertSearchedUnarchivedOnly(t, repo)
 }

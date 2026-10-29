@@ -389,7 +389,7 @@
 				"int32", "int64", "decimal", "boolean",
 				"date", "time", "datetime",
 				"enum_string", "enum_int32",
-				"etag", "langjson", "langcode", "slug", "jsonmap", "model"
+				"etag", "langjson", "langcode", "slug", "resource_code", "jsonmap", "model"
 			]
 		},
 
@@ -401,7 +401,7 @@
 				"type": { "$ref": "#/$defs/dataTypeName" },
 				"array": { "type": "boolean" },
 				"min": {
-					"description": "Number for string/secret/langjson/int32/int64; string for decimal.",
+					"description": "Number for string/secret/langjson/resource_code/int32/int64; string for decimal.",
 					"type": ["integer", "string"]
 				},
 				"max": { "type": ["integer", "string"] },
@@ -428,7 +428,7 @@
 				},
 				{
 					"if": {
-						"properties": { "type": { "enum": ["string", "secret", "langjson"] } },
+						"properties": { "type": { "enum": ["string", "secret", "langjson", "resource_code"] } },
 						"required": ["type"]
 					},
 					"then": {

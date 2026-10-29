@@ -88,7 +88,7 @@ func TestRateIsConvertedFromPercentageToFraction(t *testing.T) {
 		Status:        itExt.DeterminationResolved,
 		TotalTax:      dec("10000"),
 		Components: []itExt.TaxComponentResult{
-			{TaxCode: "VN_VAT_10", Rate: dec("10"), TaxAmount: dec("10000")},
+			{TaxCode: "VN-VAT-10", Rate: dec("10"), TaxAmount: dec("10000")},
 		},
 	})}
 
@@ -114,7 +114,7 @@ func TestEightPercentConvertsToEightHundredths(t *testing.T) {
 		Status:        itExt.DeterminationResolved,
 		TotalTax:      dec("7407"),
 		Components: []itExt.TaxComponentResult{
-			{TaxCode: "VN_VAT_8", Rate: dec("8"), TaxAmount: dec("7407")},
+			{TaxCode: "VN-VAT-8", Rate: dec("8"), TaxAmount: dec("7407")},
 		},
 	})}
 

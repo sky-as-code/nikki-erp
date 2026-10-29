@@ -86,38 +86,55 @@ func (this *StockTransferDomainServiceImpl) writeTransferMoves(
 	}
 
 	for index, move := range moves {
-		quantity := move.Quantity.String()
-
-		fields := dmodel.DynamicFields{
-			models.StockMoveFieldTransferId:       transferId,
-			models.StockMoveFieldSequence:         index + 1,
-			models.StockMoveFieldProductVariantId: move.ProductVariantId,
-			models.StockMoveFieldDemandQuantity:   quantity,
-
-			// Base equals demand: no UoM conversion exists here yet. It must be written explicitly,
-			// because reservation and validation both read the BASE quantity and a move without one
-			// would reserve nothing and appear fully satisfied.
-			models.StockMoveFieldBaseDemandQuantity: quantity,
-
-			// Copied from the transfer, which took them from the operation type's defaults.
-			models.StockMoveFieldSourceLocationId:      derefString(transfer.GetSourceLocationId()),
-			models.StockMoveFieldDestinationLocationId: derefString(transfer.GetDestinationLocationId()),
-
-			models.StockMoveFieldStatus: models.StockMoveStatusDraft,
-			models.StockMoveFieldOrgId:  derefString(transfer.GetOrgId()),
-		}
-		if move.UomId != "" {
-			fields[models.StockMoveFieldUomId] = move.UomId
-		}
-		if move.SourceItemId != "" {
-			fields[models.StockMoveFieldSourceItemId] = move.SourceItemId
-		}
-
+		fields := newTransferMoveFields(transfer, transferId, index+1, transferMoveLine{
+			variantId: move.ProductVariantId, uomId: move.UomId, quantity: move.Quantity,
+			sourceItemId: move.SourceItemId,
+		})
 		if _, err := engine.Create(ctx, fields); err != nil {
 			return errors.Wrapf(err, "creating move %d of transfer '%s'", index+1, transferId)
 		}
 	}
 	return nil
+}
+
+// transferMoveLine is what a caller names of a move; newTransferMoveFields derives the rest.
+type transferMoveLine struct {
+	variantId    string
+	uomId        string
+	quantity     decimal.Decimal
+	sourceItemId string
+}
+
+// newTransferMoveFields builds one move of a transfer, deriving what the caller may not set.
+func newTransferMoveFields(
+	transfer models.StockTransfer, transferId string, sequence int, line transferMoveLine,
+) dmodel.DynamicFields {
+	quantity := line.quantity.String()
+	fields := dmodel.DynamicFields{
+		models.StockMoveFieldTransferId:       transferId,
+		models.StockMoveFieldSequence:         sequence,
+		models.StockMoveFieldProductVariantId: line.variantId,
+		models.StockMoveFieldDemandQuantity:   quantity,
+
+		// Base equals demand: no UoM conversion exists here yet. It must be written explicitly,
+		// because reservation and validation both read the BASE quantity and a move without one
+		// would reserve nothing and appear fully satisfied.
+		models.StockMoveFieldBaseDemandQuantity: quantity,
+
+		// Copied from the transfer, which took them from the operation type's defaults.
+		models.StockMoveFieldSourceLocationId:      derefString(transfer.GetSourceLocationId()),
+		models.StockMoveFieldDestinationLocationId: derefString(transfer.GetDestinationLocationId()),
+
+		models.StockMoveFieldStatus: models.StockMoveStatusDraft,
+		models.StockMoveFieldOrgId:  derefString(transfer.GetOrgId()),
+	}
+	if line.uomId != "" {
+		fields[models.StockMoveFieldUomId] = line.uomId
+	}
+	if line.sourceItemId != "" {
+		fields[models.StockMoveFieldSourceItemId] = line.sourceItemId
+	}
+	return fields
 }
 
 // assertMovesWellFormed refuses a line that could not move anything, before the transfer is created
@@ -131,14 +148,14 @@ func assertMovesWellFormed(moves []itStock.TransferMoveRequest) *dyn.OpResult[dm
 
 		if move.ProductVariantId == "" {
 			vErrs.Append(*ft.NewBusinessViolation(
-				models.StockMoveSchemaName,
+				models.StockMoveFieldProductVariantId,
 				ft.ErrorKey("stock_move.product_variant_required", "inventory"),
 				"move "+position+" names no product variant",
 			))
 		}
 		if move.Quantity.LessThanOrEqual(decimal.Zero) {
 			vErrs.Append(*ft.NewBusinessViolation(
-				models.StockMoveSchemaName,
+				models.StockMoveFieldDemandQuantity,
 				ft.ErrorKey("stock_move.quantity_must_be_positive", "inventory"),
 				"move "+position+" must ask for a quantity greater than zero",
 			))
@@ -173,6 +190,6 @@ func assertMovesTransactable(
 // transferViolation is a refusal carrying no data.
 func transferViolation(key, message string) *dyn.OpResult[dmodel.DynamicFields] {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.StockTransferSchemaName, ft.ErrorKey(key, "inventory"), message))
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(ft.ErrorKey(key, "inventory"), message))
 	return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}
 }

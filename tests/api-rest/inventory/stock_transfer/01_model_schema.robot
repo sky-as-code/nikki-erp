@@ -54,3 +54,11 @@ Status Is Not Client Updatable
     ${status}=    Set Variable    ${fields}[status]
     Should Be True    ${status}[no_update]
     ...    msg=status must be no_update: it is derived from the transfer's moves, never assigned
+
+Operation Type Is Optional On Create
+    [Documentation]    A client may send operation_code alone: the server resolves the org's one
+    ...    active operation type of that code. The type still cannot change after create.
+    ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/meta/schema
+    ${field}=    Set Variable    ${resp.json()}[fields][operation_type_id]
+    Should Not Be True    ${{ $field.get('required_for_create', False) }}
+    Should Be True    ${field}[no_update]

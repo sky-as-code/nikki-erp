@@ -143,7 +143,7 @@ func quantRow(variantId, locationId string, onHand, reserved int64) dmodel.Dynam
 func internalLocationRow(id string) dmodel.DynamicFields {
 	return dmodel.DynamicFields{
 		models.InventoryLocationFieldId:            id,
-		models.InventoryLocationFieldLocationUsage: models.InventoryLocationUsageInternal,
+		models.InventoryLocationFieldLocationType: models.InventoryLocationTypeInternal,
 		models.InventoryLocationFieldStatus:        models.InventoryLocationStatusActive,
 		models.InventoryLocationFieldWarehouseId:   testWarehouseId,
 	}

@@ -182,28 +182,28 @@ func (this *ProductTemplate) SetPurchaseOk(v *bool) {
 	this.GetFieldData().SetBool(ProductTemplateFieldPurchaseOk, v)
 }
 
-func (this ProductTemplate) GetDescription() *model.LangJson {
-	return this.GetFieldData().GetLangJson(ProductTemplateFieldDescription)
+func (this ProductTemplate) GetDescription() *string {
+	return this.GetFieldData().GetString(ProductTemplateFieldDescription)
 }
 
-func (this *ProductTemplate) SetDescription(v *model.LangJson) {
-	this.GetFieldData().SetLangJson(ProductTemplateFieldDescription, v)
+func (this *ProductTemplate) SetDescription(v *string) {
+	this.GetFieldData().SetString(ProductTemplateFieldDescription, v)
 }
 
-func (this ProductTemplate) GetSalesDescription() *model.LangJson {
-	return this.GetFieldData().GetLangJson(ProductTemplateFieldSalesDescription)
+func (this ProductTemplate) GetSalesDescription() *string {
+	return this.GetFieldData().GetString(ProductTemplateFieldSalesDescription)
 }
 
-func (this *ProductTemplate) SetSalesDescription(v *model.LangJson) {
-	this.GetFieldData().SetLangJson(ProductTemplateFieldSalesDescription, v)
+func (this *ProductTemplate) SetSalesDescription(v *string) {
+	this.GetFieldData().SetString(ProductTemplateFieldSalesDescription, v)
 }
 
-func (this ProductTemplate) GetPurchaseDescription() *model.LangJson {
-	return this.GetFieldData().GetLangJson(ProductTemplateFieldPurchaseDescription)
+func (this ProductTemplate) GetPurchaseDescription() *string {
+	return this.GetFieldData().GetString(ProductTemplateFieldPurchaseDescription)
 }
 
-func (this *ProductTemplate) SetPurchaseDescription(v *model.LangJson) {
-	this.GetFieldData().SetLangJson(ProductTemplateFieldPurchaseDescription, v)
+func (this *ProductTemplate) SetPurchaseDescription(v *string) {
+	this.GetFieldData().SetString(ProductTemplateFieldPurchaseDescription, v)
 }
 
 func (this ProductTemplate) GetPreviewImageFileId() *string {

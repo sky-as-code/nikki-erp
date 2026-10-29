@@ -87,7 +87,7 @@ func (this *SalesFulfillmentMethodDomainServiceImpl) setArchived(
 					return err
 				}
 				if inUse {
-					result = violationResult(models.SalesFulfillmentMethodSchemaName,
+					result = violationResult("",
 						ReasonMethodInUse,
 						"this fulfillment method is still the default of a sales channel or sales "+
 							"point; point them at another method before archiving it")
@@ -162,12 +162,12 @@ func (this *SalesFulfillmentMethodDomainServiceImpl) AssertAssignable(
 		return nil, err
 	}
 	if method == nil {
-		return violationResult(models.SalesFulfillmentMethodSchemaName,
+		return violationResult("",
 			ReasonMethodNotFound,
 			"no fulfillment method with id '"+methodId+"'"), nil
 	}
 	if boolOf(method, basemodel.FieldIsArchived) {
-		return violationResult(models.SalesFulfillmentMethodSchemaName,
+		return violationResult("",
 			ReasonMethodArchived,
 			"an archived fulfillment method cannot be assigned to new business; the "+
 				"fulfillments that already snapshotted it are unaffected"), nil
@@ -175,7 +175,7 @@ func (this *SalesFulfillmentMethodDomainServiceImpl) AssertAssignable(
 
 	fulfillmentType := stringOf(method, models.SalesFulfillmentMethodFieldFulfillmentType)
 	if models.FulfillmentType(fulfillmentType) != models.FulfillmentTypeKioskDispense {
-		return violationResult(models.SalesFulfillmentMethodSchemaName,
+		return violationResult("",
 			ReasonMethodTypeUnsupported,
 			"fulfillment type '"+fulfillmentType+"' has no execution workflow yet; only "+
 				string(models.FulfillmentTypeKioskDispense)+" can be fulfilled"), nil
@@ -187,7 +187,7 @@ func (this *SalesFulfillmentMethodDomainServiceImpl) AssertAssignable(
 			return nil, err
 		}
 		if !allowed {
-			return violationResult(models.SalesFulfillmentMethodSchemaName,
+			return violationResult("",
 				ReasonMethodNotAllowed,
 				"this fulfillment method is not among those allowed on the sales channel"), nil
 		}

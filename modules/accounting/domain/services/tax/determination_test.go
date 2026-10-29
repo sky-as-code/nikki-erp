@@ -114,7 +114,7 @@ func TestStopProcessingHaltsEvaluation(t *testing.T) {
 // load-bearing; reversing it would remove the tax that was just added.
 func TestVietnamVatReductionSubstitutesRate(t *testing.T) {
 	outcome := Determine(DeterminationInput{
-		CandidateTaxIds: []string{"VN_VAT_10"},
+		CandidateTaxIds: []string{"VN-VAT-10"},
 		Context: map[string]string{
 			models.CtxProductTaxClassification: "VAT_REDUCTION_ELIGIBLE",
 		},
@@ -125,14 +125,14 @@ func TestVietnamVatReductionSubstitutesRate(t *testing.T) {
 				eq(models.CtxProductTaxClassification, "VAT_REDUCTION_ELIGIBLE"),
 			},
 			Results: []RuleResult{
-				{Action: models.ActionRemoveTax, TaxId: "VN_VAT_10", Sequence: 1},
-				{Action: models.ActionAddTax, TaxId: "VN_VAT_8", Sequence: 2},
+				{Action: models.ActionRemoveTax, TaxId: "VN-VAT-10", Sequence: 1},
+				{Action: models.ActionAddTax, TaxId: "VN-VAT-8", Sequence: 2},
 			},
 		}},
 	})
 
 	assert.Equal(t, models.DeterminationResolved, outcome.Status)
-	assert.Equal(t, []string{"VN_VAT_8"}, outcome.TaxIds)
+	assert.Equal(t, []string{"VN-VAT-8"}, outcome.TaxIds)
 }
 
 // A mapping substitutes a tax, and only when a rule result asks for it.

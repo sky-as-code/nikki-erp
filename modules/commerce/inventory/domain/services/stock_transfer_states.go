@@ -122,8 +122,7 @@ func countMoveStatuses(moveStatuses []string) (closed, cancelled, assigned, wait
 // terminal state, and answering it as a success would hide that nothing happened.
 func AssertTransferCancellable(from string, vErrs *ft.ClientErrors) {
 	if from == models.StockTransferStatusCancelled {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockTransferSchemaName,
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey("stock_transfer.already_cancelled", "inventory"),
 			"the transfer is already cancelled",
 		))
@@ -137,15 +136,13 @@ func AssertTransferTransition(from, to string, vErrs *ft.ClientErrors) {
 		return
 	}
 	if from == models.StockTransferStatusDone && to == models.StockTransferStatusCancelled {
-		vErrs.Append(*ft.NewBusinessViolation(
-			models.StockTransferSchemaName,
+		vErrs.Append(*ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey("stock_transfer.done_not_cancellable", "inventory"),
 			"a completed transfer cannot be cancelled; record a reverse transfer to undo its movements",
 		))
 		return
 	}
-	vErrs.Append(*ft.NewBusinessViolation(
-		models.StockTransferSchemaName,
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(
 		ft.ErrorKey("stock_transfer.invalid_transition", "inventory"),
 		"a transfer cannot go from '"+from+"' to '"+to+"'",
 	))

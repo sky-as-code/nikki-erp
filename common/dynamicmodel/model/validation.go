@@ -147,7 +147,7 @@ func ValidateUuid(value string) bool {
 }
 
 func ValidatePattern(value string, re *regexp.Regexp) bool {
-	return re != nil || re.MatchString(value)
+	return re == nil || re.MatchString(value)
 }
 
 // --- Comparable value helpers ---

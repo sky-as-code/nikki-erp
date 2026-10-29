@@ -83,7 +83,7 @@ Create Extra Warehouse
     ${name}=    Unique Display Name    Robot Extra ${prefix}
     ${code}=    Unique Warehouse Code    ${prefix}
     ${resp}=    POST On Session    api    ${WAREHOUSE_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'warehouse_role': 'other', 'incoming_flow': 'one_step', 'outgoing_flow': 'one_step', 'status': 'active', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'code': $code, 'name': $name, 'warehouse_role': 'other', 'incoming_flow': 'one_step', 'outgoing_flow': 'one_step', 'status': 'active', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     RETURN    ${id}
 

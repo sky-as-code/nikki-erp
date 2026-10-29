@@ -86,7 +86,7 @@ func (this *PaymentMethodApplicationServiceImpl) AssertUsable(
 	ctx corectx.Context, query it.AssertUsableQuery,
 ) (*it.AssertUsableResult, error) {
 	if query.PaymentMethodId == "" {
-		return usableRejection("paymentinvoice.payment_method_required",
+		return usableRejection(paramPaymentMethodId, "paymentinvoice.payment_method_required",
 			"a payment method id is required"), nil
 	}
 
@@ -97,7 +97,7 @@ func (this *PaymentMethodApplicationServiceImpl) AssertUsable(
 		return nil, errors.Wrap(err, "AssertUsable")
 	}
 	if found == nil || !found.HasData {
-		return usableRejection("paymentinvoice.payment_method_not_found",
+		return usableRejection(paramPaymentMethodId, "paymentinvoice.payment_method_not_found",
 			"no payment method with id "+quoted(query.PaymentMethodId)), nil
 	}
 
@@ -105,7 +105,7 @@ func (this *PaymentMethodApplicationServiceImpl) AssertUsable(
 	if !data.IsUsable {
 		// The refusal still carries the method, so the caller can name it in a message rather than
 		// only report that something was refused.
-		result := usableRejection("paymentinvoice.payment_method_"+data.UnusableReason,
+		result := usableRejection("", "paymentinvoice.payment_method_"+data.UnusableReason,
 			"payment method "+quoted(data.Code)+" is not usable: "+data.UnusableReason)
 		result.Data = data
 		return result, nil
@@ -182,9 +182,9 @@ func withinBounds(amount decimal.Decimal, method *models.PaymentMethod) bool {
 	return true
 }
 
-func usableRejection(key, message string) *it.AssertUsableResult {
+func usableRejection(field, key, message string) *it.AssertUsableResult {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(models.PaymentMethodSchemaName, ft.ErrorKey(key, "paymentinvoice"), message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "paymentinvoice"), message))
 	return &it.AssertUsableResult{ClientErrors: *vErrs}
 }
 

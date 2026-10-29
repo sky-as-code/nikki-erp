@@ -29,7 +29,7 @@ Set Up Group Lifecycle Fixtures
 
     ${gname}=    Unique Display Name    Perm Probe Group
     ${resp}=    POST On Session    api    ${GROUP_API}
-    ...    json=${{ {'name': {'en-US': $gname}, 'description': {'en-US': 'Robot permission suite group'}, 'owner_id': $user_id} }}
+    ...    json=${{ {'name': {'en-US': $gname}, 'description': 'Robot permission suite group', 'owner_id': $user_id} }}
     ${group_id}    ${getag}=    Response Should Be Create Success    ${resp}
     Track Permission Fixture    groups    ${group_id}
     Set Suite Variable    ${GRP_GROUP_ID}    ${group_id}

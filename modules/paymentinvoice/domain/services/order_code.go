@@ -11,6 +11,8 @@ import (
 	"golang.org/x/text/runes"
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
+
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
 // The identifiers an order is known by, ported from the NestJS service this module supersedes
@@ -51,26 +53,27 @@ const (
 //
 // It is keyed by the payment method's code — the row's `code`, not its adapter_code — because
 // that is what the old service keyed it by, and order_ids already issued have to keep parsing the
-// same way. A method with no entry here gets UNK, exactly as before.
+// same way. Keys are in the strict resource-code form and the lookup normalizes, so the old
+// service's spellings ("momo", "applePay") still map. A method with no entry here gets UNK.
 //
 // The map still carries the six methods the old service knew but never had an adapter for
 // (mbbank, zalopay, ...). They are kept so that a deployment adding one of those methods produces
 // the same order_id the old service would have, rather than UNK.
 var methodSimpleCodes = map[string]string{
-	"momo":      "MOM",
-	"vietqr":    "VQR",
-	"mpos":      "MPS",
-	"mbbank":    "MBB",
-	"zalopay":   "ZLP",
-	"vnpay":     "VNP",
-	"shopeepay": "SPY",
-	"applePay":  "APL",
-	"googlePay": "GGL",
+	"MOMO":      "MOM",
+	"VIETQR":    "VQR",
+	"MPOS":      "MPS",
+	"MBBANK":    "MBB",
+	"ZALOPAY":   "ZLP",
+	"VNPAY":     "VNP",
+	"SHOPEEPAY": "SPY",
+	"APPLEPAY":  "APL",
+	"GOOGLEPAY": "GGL",
 }
 
 // MethodSimpleCode returns the three-character order_id segment for a payment method code.
 func MethodSimpleCode(methodCode string) string {
-	if code, exists := methodSimpleCodes[methodCode]; exists {
+	if code, exists := methodSimpleCodes[dmodel.NormalizeResourceCode(methodCode)]; exists {
 		return code
 	}
 	return unknownMethodCode

@@ -14,7 +14,7 @@ Get Succeeds
 
 Get With Columns Succeeds
     ${resp}=    GET On Session    api    ${INVENTORY_LOCATION_API}/${INVENTORY_LOCATION_ID}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['code', 'name', 'location_usage']} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['name', 'canonical_name', 'location_type']} }}
     Response Status Should Be    ${resp}    200
 
 Get With Nonexist Column Fails

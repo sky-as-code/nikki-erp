@@ -24,7 +24,7 @@ Create With All Optional Fields Succeeds
     ${name}=    Unique Display Name    Robot Full Brand
     ${code}=    Unique Code    fullbrand
     ${resp}=    POST On Session    api    ${BRAND_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID, 'website': 'https://example.com', 'description': {'en-US': 'A robot brand'}} }}
+    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'org_id': $INV_ORG_ID, 'website': 'https://example.com', 'description': 'A robot brand'} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    GET On Session    api    ${BRAND_API}/${id}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}

@@ -114,13 +114,12 @@ func AssertAgreementTransition(from, to string, vErrs *ft.ClientErrors) {
 	if CanTransitionAgreement(from, to) {
 		return
 	}
-	vErrs.Append(*ft.NewBusinessViolation(
-		models.AgreementSchemaName,
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(
 		ft.ErrorKey("purchase_agreement.invalid_transition", "purchase"),
 		"a purchase agreement cannot go from '"+from+"' to '"+to+"'",
 	))
 }
 
 func appendOrderViolation(vErrs *ft.ClientErrors, key, message string) {
-	vErrs.Append(*ft.NewBusinessViolation(models.PurchaseOrderSchemaName, ft.ErrorKey(key, "purchase"), message))
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(ft.ErrorKey(key, "purchase"), message))
 }

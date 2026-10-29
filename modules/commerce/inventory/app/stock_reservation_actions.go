@@ -106,13 +106,14 @@ func bindConsumeRequest(cmd dmodel.DynamicFields) (itStock.ConsumeReservationReq
 	for index, raw := range rawSources {
 		fields, ok := raw.(map[string]any)
 		if !ok {
-			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName,
+			vErrs.Append(*ft.NewBusinessViolation(listItemPath(rsvParamActualSources, index),
 				ft.ErrorKey(models.StockReservationSchemaName+"."+rsvParamActualSources+"_malformed", "inventory"),
 				"actual source "+itoa(index+1)+" must be an object"))
 			continue
 		}
 		source := dmodel.DynamicFields(fields)
-		quantity, sourceErrs := readDecimalField(source, models.StockReservationSchemaName, rsvParamQuantity)
+		quantity, sourceErrs := readDecimalAt(source, models.StockReservationSchemaName, rsvParamQuantity,
+			listItemPath(rsvParamActualSources, index)+"."+rsvParamQuantity)
 		if sourceErrs.Count() > 0 {
 			vErrs.ConcatPtr(sourceErrs)
 			continue
@@ -202,7 +203,7 @@ func bindReserveRequest(cmd dmodel.DynamicFields, orgId *model.Id) (itStock.Rese
 	if revision, ok := cmd[rsvParamSourceRevision]; ok && revision != nil {
 		parsed, ok := toDecimal(revision)
 		if !ok || !parsed.IsInteger() || !parsed.IsPositive() {
-			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName,
+			vErrs.Append(*ft.NewBusinessViolation(rsvParamSourceRevision,
 				ft.ErrorKey(models.StockReservationSchemaName+"."+rsvParamSourceRevision+"_malformed", "inventory"),
 				"'"+rsvParamSourceRevision+"' must be a positive whole number"))
 		} else {
@@ -212,7 +213,7 @@ func bindReserveRequest(cmd dmodel.DynamicFields, orgId *model.Id) (itStock.Rese
 	if until := readStringField(cmd, rsvParamReservedUntil); until != "" {
 		parsed, err := model.ParseModelDateTime(until)
 		if err != nil {
-			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName,
+			vErrs.Append(*ft.NewBusinessViolation(rsvParamReservedUntil,
 				ft.ErrorKey(models.StockReservationSchemaName+"."+rsvParamReservedUntil+"_malformed", "inventory"),
 				"'"+rsvParamReservedUntil+"' must be an RFC 3339 UTC timestamp ending in Z"))
 		} else {
@@ -225,13 +226,14 @@ func bindReserveRequest(cmd dmodel.DynamicFields, orgId *model.Id) (itStock.Rese
 	for index, raw := range rawLines {
 		fields, ok := raw.(map[string]any)
 		if !ok {
-			vErrs.Append(*ft.NewBusinessViolation(models.StockReservationSchemaName,
+			vErrs.Append(*ft.NewBusinessViolation(listItemPath(rsvParamLines, index),
 				ft.ErrorKey(models.StockReservationSchemaName+"."+rsvParamLines+"_malformed", "inventory"),
 				"line "+itoa(index+1)+" must be an object"))
 			continue
 		}
 		line := dmodel.DynamicFields(fields)
-		quantity, lineErrs := readDecimalField(line, models.StockReservationSchemaName, rsvParamQuantity)
+		quantity, lineErrs := readDecimalAt(line, models.StockReservationSchemaName, rsvParamQuantity,
+			listItemPath(rsvParamLines, index)+"."+rsvParamQuantity)
 		if lineErrs.Count() > 0 {
 			vErrs.ConcatPtr(lineErrs)
 			continue
@@ -244,6 +246,10 @@ func bindReserveRequest(cmd dmodel.DynamicFields, orgId *model.Id) (itStock.Rese
 		})
 	}
 	return request, vErrs
+}
+
+func listItemPath(list string, index int) string {
+	return list + "[" + itoa(index) + "]"
 }
 
 func itoa(value int) string {

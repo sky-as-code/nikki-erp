@@ -58,7 +58,7 @@ Create Assignment User
 Create Assignment Group
     ${gname}=    Unique Display Name    Role Side Group
     ${resp}=    POST On Session    api    ${GROUP_API}
-    ...    json=${{ {'name': {'en-US': $gname}, 'description': {'en-US': 'Role-side assignment'}, 'owner_id': $USER_IDS[0]} }}
+    ...    json=${{ {'name': {'en-US': $gname}, 'description': 'Role-side assignment', 'owner_id': $USER_IDS[0]} }}
     ${group_id}    ${etag}=    Response Should Be Create Success    ${resp}
     Track Permission Fixture    groups    ${group_id}
     RETURN    ${group_id}

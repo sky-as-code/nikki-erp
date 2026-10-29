@@ -6,8 +6,6 @@
 package services
 
 import (
-	"strings"
-
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -91,19 +89,18 @@ func writeChanges(
 	return errors.Wrap(err, "writeChanges")
 }
 
-// violationResult refuses an operation with a business violation the caller can act on. The Field
-// carries the schema name rather than a payload field: an operation-level refusal has no single
-// offending input, and naming one would point a form at the wrong box.
-func violationResult(schemaName, key, message string) *dyn.OpResult[dyn.MutateResultData] {
+// violationResult refuses an operation with a business violation the caller can act on. field names
+// the offending input; an operation-level refusal passes "" so no form box is blamed for it.
+func violationResult(field, key, message string) *dyn.OpResult[dyn.MutateResultData] {
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(schemaName, ft.ErrorKey(key, "sales"), message))
+	vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey(key, "sales"), message))
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
 }
 
 // notFoundResult is the answer when an operation names a record that does not exist. A client
 // error rather than a server one: the id came from the caller.
 func notFoundResult(schemaName, id string) *dyn.OpResult[dyn.MutateResultData] {
-	return violationResult(schemaName, schemaName+".not_found",
+	return violationResult(basemodel.FieldId, schemaName+".not_found",
 		"no "+schemaName+" with id '"+id+"'")
 }
 
@@ -149,27 +146,17 @@ func boolOf(record dmodel.DynamicFields, field string) bool {
 	return false
 }
 
-// NormalizeChannelCode lowercases and trims an integration code before it is stored.
+// NormalizeChannelCode puts an integration code in the strict resource-code form before it is stored
+// or looked up, so a kiosk still configured with the legacy "vdmc" resolves the "VDMC" channel.
 //
 // Normalisation must happen BEFORE create, never after: once persisted the code is immutable, so a
 // later normalisation would silently repoint every integration that resolved the old spelling.
 func NormalizeChannelCode(code string) string {
-	return strings.ToLower(strings.TrimSpace(code))
+	return dmodel.NormalizeResourceCode(code)
 }
 
-// IsValidChannelCode reports whether a code matches the canonical [a-z0-9]+ format. Alphanumeric
-// only, because the code travels in URLs and in other modules' configuration files, so the narrow
-// alphabet keeps it from needing escaping.
+// IsValidChannelCode reports whether a code matches the resource-code format [A-Z0-9-]+. The narrow
+// alphabet keeps a code that travels in URLs and other modules' configuration free of escaping.
 func IsValidChannelCode(code string) bool {
-	if code == "" {
-		return false
-	}
-	for _, char := range code {
-		isDigit := char >= '0' && char <= '9'
-		isLower := char >= 'a' && char <= 'z'
-		if !isDigit && !isLower {
-			return false
-		}
-	}
-	return true
+	return dmodel.IsValidResourceCode(code)
 }

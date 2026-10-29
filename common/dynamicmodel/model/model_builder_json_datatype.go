@@ -89,6 +89,8 @@ func constructDataType(dto *dataTypeJsonDto, fieldName string) FieldDataType {
 		return FieldDataTypeLangCode()
 	case "slug":
 		return FieldDataTypeSlug()
+	case "resource_code":
+		return FieldDataTypeResourceCode(jsonToInt(dto.Min, fieldName), jsonToInt(dto.Max, fieldName))
 	case "jsonmap":
 		return FieldDataTypeJsonMap()
 	case "model":

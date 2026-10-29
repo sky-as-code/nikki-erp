@@ -12,7 +12,7 @@
         "name": { "type": "object" },
         "max_weight": { "type": ["string", "number", "null"] },
         "allow_new_item_policy": { "type": "string", "enum": ["allow", "same_product_only", "empty_only"] },
-        "description": { "type": ["object", "null"] },
+        "description": { "type": ["string", "null"] },
         "org_id": { "type": "string", "minLength": 1 },
         "etag": { "type": "string", "minLength": 1 },
         "is_archived": { "type": "boolean" }

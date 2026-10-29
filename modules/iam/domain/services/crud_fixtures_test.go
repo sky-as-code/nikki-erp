@@ -173,6 +173,12 @@ func (this *fakeCrudDomain) Delete(
 	return &composable.MutateResult{HasData: true}, nil
 }
 
+func (this *fakeCrudDomain) DeleteManaged(
+	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
+) (*composable.MutateResult, error) {
+	return this.Delete(ctx, cmd, options...)
+}
+
 type fakePermRepo struct {
 	itPerm.PermissionRepository
 	rebuiltUsers  []model.Id

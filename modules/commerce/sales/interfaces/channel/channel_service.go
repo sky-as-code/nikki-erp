@@ -55,16 +55,26 @@ type SalesPointAppService interface {
 	DeleteSalesPoint(
 		ctx corectx.Context, command SalesPointCommand,
 	) (*DeleteSalesPointResult, error)
+
+	// DeleteManagedSalesPoint is the managing module's delete of a point it created with
+	// ManagedByType set. It asserts no permission (the manager acts on its own authority), refuses
+	// a point nothing manages, and joins the caller's transaction. A point that sales history
+	// still references fails on its foreign keys, and the caller rolls back.
+	DeleteManagedSalesPoint(
+		ctx corectx.Context, command SalesPointCommand,
+	) (*SalesPointMutationResult, error)
 }
 
 type RegisterSalesChannelCommand struct {
 	Code string `json:"code"`
 	// OrgId is the organization the channel is registered under. Required: a channel always
 	// belongs to one org.
-	OrgId           string `json:"org_id"`
-	Name            string `json:"name"`
-	Description     string `json:"description"`
-	ManagedByModule string `json:"managed_by_module"`
+	OrgId       string `json:"org_id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	// ManagedByType names the owner as "{module}/{managing_schema}" (basemodel.ManagedByType). The
+	// channel's managed_by_id stays NULL: a module owns it, not one record of that module.
+	ManagedByType string `json:"managed_by_type"`
 }
 
 type SalesChannelData struct {
@@ -85,11 +95,11 @@ type ResolveSalesChannelQuery struct {
 }
 
 type ResolvedSalesChannel struct {
-	Id              string `json:"id"`
-	Code            string `json:"code"`
-	Name            string `json:"name"`
-	ManagedByModule string `json:"managed_by_module"`
-	Status          string `json:"status"`
+	Id            string `json:"id"`
+	Code          string `json:"code"`
+	Name          string `json:"name"`
+	ManagedByType string `json:"managed_by_type"`
+	Status        string `json:"status"`
 	// IsUsable folds status and archive state together: a caller checking only one would let a
 	// suspended channel trade.
 	IsUsable bool `json:"is_usable"`
@@ -125,6 +135,12 @@ type CreateSalesPointCommand struct {
 	// FulfillmentEnabled is set: a point that can dispense but names no location would confirm an
 	// order and then have nowhere to reserve from. An opaque cross-module id, never resolved here.
 	InventoryLocationId string `json:"inventory_location_id"`
+
+	// ManagedByType and ManagedById mark the point as managed by the caller's record, as
+	// "{module}/{managing_schema}" + that record's id. A managed point refuses the client's delete;
+	// its manager removes it through DeleteManagedSalesPoint. Both empty creates a plain point.
+	ManagedByType string `json:"managed_by_type"`
+	ManagedById   string `json:"managed_by_id"`
 }
 
 type SalesPointData struct {

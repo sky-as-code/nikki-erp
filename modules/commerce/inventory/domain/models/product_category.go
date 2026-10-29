@@ -93,12 +93,12 @@ func (this *ProductCategory) SetDisplayOrder(v *int32) {
 	this.GetFieldData().SetInt32(ProductCategoryFieldDisplayOrder, v)
 }
 
-func (this ProductCategory) GetDescription() *model.LangJson {
-	return this.GetFieldData().GetLangJson(ProductCategoryFieldDescription)
+func (this ProductCategory) GetDescription() *string {
+	return this.GetFieldData().GetString(ProductCategoryFieldDescription)
 }
 
-func (this *ProductCategory) SetDescription(v *model.LangJson) {
-	this.GetFieldData().SetLangJson(ProductCategoryFieldDescription, v)
+func (this *ProductCategory) SetDescription(v *string) {
+	this.GetFieldData().SetString(ProductCategoryFieldDescription, v)
 }
 
 func (this ProductCategory) GetOrgId() *model.Id {

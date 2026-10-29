@@ -18,16 +18,16 @@ func (this ProductVariant) GetTemplateShortName() *model.LangJson {
 	return this.GetFieldData().GetLangJson(ProductVariantFieldTemplateShortName)
 }
 
-func (this ProductVariant) GetTemplateDescription() *model.LangJson {
-	return this.GetFieldData().GetLangJson(ProductVariantFieldTemplateDescription)
+func (this ProductVariant) GetTemplateDescription() *string {
+	return this.GetFieldData().GetString(ProductVariantFieldTemplateDescription)
 }
 
-func (this ProductVariant) GetTemplateSalesDescription() *model.LangJson {
-	return this.GetFieldData().GetLangJson(ProductVariantFieldTemplateSalesDescription)
+func (this ProductVariant) GetTemplateSalesDescription() *string {
+	return this.GetFieldData().GetString(ProductVariantFieldTemplateSalesDescription)
 }
 
-func (this ProductVariant) GetTemplatePurchaseDescription() *model.LangJson {
-	return this.GetFieldData().GetLangJson(ProductVariantFieldTemplatePurchaseDescription)
+func (this ProductVariant) GetTemplatePurchaseDescription() *string {
+	return this.GetFieldData().GetString(ProductVariantFieldTemplatePurchaseDescription)
 }
 
 func (this ProductVariant) GetTemplateCategoryId() *model.Id {

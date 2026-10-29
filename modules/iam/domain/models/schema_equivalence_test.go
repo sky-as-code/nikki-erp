@@ -187,7 +187,7 @@ func groupSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 			dmodel.DefineField().
 				Name(GroupFieldDescription).
 				Label(model.NewLangJsonRefSf("fields.%s", GroupFieldDescription)).
-				DataType(dmodel.FieldDataTypeLangJson(0, model.MODEL_RULE_DESC_LENGTH)),
+				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
 			basemodel.DefineFieldId(GroupFieldOwnerId).

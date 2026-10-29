@@ -12,16 +12,13 @@
 		{
 			"name": "code",
 			"label": "fields.code",
-			"data_type": { "type": "string", "min": 1, "max": 5 },
-			"required_for_create": true,
-			"description": {
-				"en-US": "Short name, at most 5 characters, unique within the org. It is the prefix of every system-generated location path under this warehouse ('MAIN/Stock'), which is why changing it after the warehouse is in use needs a dedicated operation rather than a plain update."
-			}
+			"data_type": { "type": "resource_code", "min": 1, "max": 20 },
+			"required_for_create": true
 		},
 		{
 			"name": "name",
 			"label": "fields.name",
-			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"data_type": { "type": "string", "min": 1, "max": 200 },
 			"required_for_create": true
 		},
 		{
@@ -33,30 +30,61 @@
 			},
 			"required_for_create": true,
 			"default_value": "other",
-			"description": {
-				"en-US": "What the warehouse is for organisationally. It carries no behaviour: a POS warehouse and a central warehouse are configured and moved against identically, and only reporting and selection lists read this."
-			}
+			"description": "field_desc.inventory_warehouse.warehouse_role"
 		},
 		{
-			"name": "parent_warehouse_id",
-			"label": "fields.parent_warehouse_id",
+			"name": "root_location_id",
+			"label": "fields.root_location_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "Parent in the warehouse hierarchy, null for a root warehouse. This is an organisational relationship only. Stock at the parent is NOT stock at the child, and re-parenting never moves inventory or creates a transfer. Which warehouse may supply which is a separate concern, held by inventory_warehouse_supply_relation."
-			}
+			"auto_generated": true,
+			"description": "field_desc.inventory_warehouse.root_location_id"
+		},
+		{
+			"name": "stock_location_id",
+			"label": "fields.stock_location_id",
+			"data_type": "ulid",
+			"auto_generated": true,
+			"description": "field_desc.inventory_warehouse.stock_location_id"
+		},
+		{
+			"name": "receiving_location_id",
+			"label": "fields.receiving_location_id",
+			"data_type": "ulid",
+			"auto_generated": true,
+			"description": "field_desc.inventory_warehouse.receiving_location_id"
+		},
+		{
+			"name": "quality_location_id",
+			"label": "fields.quality_location_id",
+			"data_type": "ulid",
+			"auto_generated": true,
+			"description": "field_desc.inventory_warehouse.quality_location_id"
+		},
+		{
+			"name": "packing_location_id",
+			"label": "fields.packing_location_id",
+			"data_type": "ulid",
+			"auto_generated": true,
+			"description": "field_desc.inventory_warehouse.packing_location_id"
+		},
+		{
+			"name": "output_location_id",
+			"label": "fields.output_location_id",
+			"data_type": "ulid",
+			"auto_generated": true,
+			"description": "field_desc.inventory_warehouse.output_location_id"
 		},
 		{
 			"name": "address",
 			"label": "fields.address",
-			"data_type": { "type": "string", "min": 0, "max": 500 }
+			"data_type": { "type": "string", "min": 0, "max": 500 },
+			"description": "field_desc.inventory_warehouse.address"
 		},
 		{
 			"name": "manager_user_id",
 			"label": "fields.manager_user_id",
 			"data_type": "ulid",
-			"description": {
-				"en-US": "The person responsible for the warehouse. An external reference into IAM with no foreign key, because Inventory does not own the user lifecycle."
-			}
+			"description": "field_desc.inventory_warehouse.manager_user_id"
 		},
 		{
 			"name": "incoming_flow",
@@ -67,9 +95,7 @@
 			},
 			"required_for_create": true,
 			"default_value": "one_step",
-			"description": {
-				"en-US": "How many stops goods make on the way in: direct to Stock, via Input, or via Input then Quality Control. This is policy, not execution. Changing it provisions the locations the new flow needs and nothing else — it creates no move, and a receipt already in progress keeps the flow it was created under."
-			}
+			"description": "field_desc.inventory_warehouse.incoming_flow"
 		},
 		{
 			"name": "outgoing_flow",
@@ -80,9 +106,7 @@
 			},
 			"required_for_create": true,
 			"default_value": "one_step",
-			"description": {
-				"en-US": "How many stops goods make on the way out: straight from Stock, via Output, or via Packing then Output. Same policy-not-execution rule as incoming_flow."
-			}
+			"description": "field_desc.inventory_warehouse.outgoing_flow"
 		},
 		{
 			"name": "status",
@@ -92,10 +116,7 @@
 				"values": ["active", "suspended"]
 			},
 			"required_for_create": true,
-			"default_value": "active",
-			"description": {
-				"en-US": "Operational state, and deliberately separate from is_archived. 'suspended' means temporarily closed — for repairs, a stock count, an incident — and is reversible by Resume. Archive means withdrawn from the master data used for new work. A resource is usable only when status is 'active' AND is_archived is false; there is no 'archived' status value."
-			}
+			"default_value": "active"
 		},
 		{
 			"name": "notes",
@@ -110,25 +131,70 @@
 		}
 	],
 
-	"search_indexes": [
-		{ "index_name": "invty_whs_parent_warehouse_id", "fields": ["parent_warehouse_id"] }
-	],
-
 	"extend_after": [
 		"core.basemodel.archivable_model",
 		"core.basemodel.auditable_model",
 		"core.basemodel.traceable_model",
+		"core.basemodel.managed_model",
 		"core.basemodel.versioned_model"
 	],
 
 	"edges_to": [
 		{
-			"edge": "parent_warehouse",
-			"label": { "en-US": "Parent warehouse" },
+			"edge": "root_location",
+			"label": { "en-US": "Root location" },
 			"type": "many:one",
-			"dest_schema": "inventory_warehouse",
-			"key_map": { "parent_warehouse_id": "id" },
-			"on_delete": "NO ACTION"
+			"dest_schema": "inventory_location",
+			"key_map": { "root_location_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "stock_location",
+			"label": { "en-US": "Stock location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "stock_location_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "receiving_location",
+			"label": { "en-US": "Receiving location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "receiving_location_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "quality_location",
+			"label": { "en-US": "Quality control location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "quality_location_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "packing_location",
+			"label": { "en-US": "Packing location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "packing_location_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "output_location",
+			"label": { "en-US": "Output location" },
+			"type": "many:one",
+			"dest_schema": "inventory_location",
+			"key_map": { "output_location_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "manager_user",
+			"label": { "en-US": "Manager" },
+			"type": "many:one",
+			"dest_schema": "iam_user",
+			"key_map": { "manager_user_id": "id" },
+			"on_delete": "SET NULL"
 		}
 	]
 }

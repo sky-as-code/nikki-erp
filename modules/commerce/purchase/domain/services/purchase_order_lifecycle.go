@@ -42,7 +42,7 @@ func (this *PurchaseOrderDomainServiceImpl) Confirm(
 
 		status := stringOf(order, models.PurchaseOrderFieldStatus)
 		if IsOrderCommitted(status) {
-			result = orderViolationResult("purchase_order.already_confirmed",
+			result = orderViolationResult("", "purchase_order.already_confirmed",
 				"this purchase order is already confirmed")
 			return nil
 		}
@@ -79,7 +79,7 @@ func (this *PurchaseOrderDomainServiceImpl) Confirm(
 		}
 		if alternativeChoice != "" && alternativeChoice != AlternativeChoiceKeep &&
 			alternativeChoice != AlternativeChoiceCancel {
-			result = orderViolationResult("purchase_order.unknown_alternative_choice",
+			result = orderViolationResult("alternative_choice", "purchase_order.unknown_alternative_choice",
 				"the choice for the open alternatives must be '"+AlternativeChoiceKeep+
 					"' or '"+AlternativeChoiceCancel+"'")
 			return nil
@@ -170,7 +170,7 @@ func assertConfirmable(
 			return nil
 		}
 	}
-	return orderViolationResult("purchase_order.no_lines",
+	return orderViolationResult("", "purchase_order.no_lines",
 		"a purchase order with no product line cannot be confirmed")
 }
 
@@ -195,7 +195,7 @@ func (this *PurchaseOrderDomainServiceImpl) Approve(
 
 		status := stringOf(order, models.PurchaseOrderFieldStatus)
 		if status != string(models.PurchaseOrderStatusToApprove) {
-			result = orderViolationResult("purchase_order.not_awaiting_approval",
+			result = orderViolationResult("", "purchase_order.not_awaiting_approval",
 				"only a purchase order awaiting approval can be approved; this one is '"+status+"'")
 			return nil
 		}
@@ -308,8 +308,7 @@ func alternativesWarningResult(open []dmodel.DynamicFields) *dyn.OpResult[dyn.Mu
 	}
 
 	vErrs := ft.NewClientErrors()
-	vErrs.Append(*ft.NewBusinessViolation(
-		models.PurchaseOrderSchemaName,
+	vErrs.Append(*ft.NewAnonymousBusinessViolation(
 		ft.ErrorKey("purchase_order.open_alternatives", "purchase"),
 		"this order has open alternatives ("+strings.Join(codes, ", ")+"); "+
 			"say whether to keep or cancel them",

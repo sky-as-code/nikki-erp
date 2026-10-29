@@ -161,7 +161,7 @@ func eligibleLocationIds(ctx corectx.Context, key GuardKey) ([]string, error) {
 	graph.And(
 		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldOrgId, dmodel.Equals, string(key.OrgId)),
 		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldWarehouseId, dmodel.Equals, string(key.WarehouseId)),
-		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldLocationUsage, dmodel.Equals, models.InventoryLocationUsageInternal),
+		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldLocationType, dmodel.Equals, models.InventoryLocationTypeInternal),
 		*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldStatus, dmodel.Equals, models.InventoryLocationStatusActive),
 		*dmodel.NewSearchNode().NewCondition(basemodel.FieldIsArchived, dmodel.Equals, false),
 	)
@@ -211,7 +211,7 @@ func appendUsableDescendants(
 			*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldOrgId, dmodel.Equals, string(key.OrgId)),
 			*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldParentLocationId, dmodel.In,
 				array.Map(frontier, func(id string) any { return id })...),
-			*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldLocationUsage, dmodel.Equals, models.InventoryLocationUsageInternal),
+			*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldLocationType, dmodel.Equals, models.InventoryLocationTypeInternal),
 			*dmodel.NewSearchNode().NewCondition(models.InventoryLocationFieldStatus, dmodel.Equals, models.InventoryLocationStatusActive),
 			*dmodel.NewSearchNode().NewCondition(basemodel.FieldIsArchived, dmodel.Equals, false),
 		)

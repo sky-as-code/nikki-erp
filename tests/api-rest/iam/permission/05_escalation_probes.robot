@@ -71,7 +71,7 @@ A Plain User Cannot Assign A Role Through The Roles Read Route
 A Plain User Cannot Add Themselves To A Group
     ${gname}=    Unique Display Name    Perm Escalation Group
     ${resp}=    POST On Session    api    ${GROUP_API}
-    ...    json=${{ {'name': {'en-US': $gname}, 'description': {'en-US': 'Escalation target'}, 'owner_id': $VICTIM_ID} }}
+    ...    json=${{ {'name': {'en-US': $gname}, 'description': 'Escalation target', 'owner_id': $VICTIM_ID} }}
     ${group_id}    ${getag}=    Response Should Be Create Success    ${resp}
     Track Permission Fixture    groups    ${group_id}
 
@@ -116,7 +116,7 @@ A Plain User Cannot Strip A Holder From The Role Side
 A Plain User Cannot Assign A Group From The Role Side
     ${gname}=    Unique Display Name    Perm Escalation Role Group
     ${resp}=    POST On Session    api    ${GROUP_API}
-    ...    json=${{ {'name': {'en-US': $gname}, 'description': {'en-US': 'Escalation target'}, 'owner_id': $VICTIM_ID} }}
+    ...    json=${{ {'name': {'en-US': $gname}, 'description': 'Escalation target', 'owner_id': $VICTIM_ID} }}
     ${group_id}    ${getag}=    Response Should Be Create Success    ${resp}
     Track Permission Fixture    groups    ${group_id}
 

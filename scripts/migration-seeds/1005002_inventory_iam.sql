@@ -26,7 +26,7 @@
 -- blanket grant would silently expose every product, balance, transfer and scrap in the system.
 --
 -- Note there is no seed for the inventory-loss location, the scrap location, or the
--- INV_CORRECTION operation type that adjustments and scraps generate their movements through.
+-- INV-CORRECTION operation type that adjustments and scraps generate their movements through.
 -- Those are per-org business data — locations and operation types are created through their own
 -- APIs, as Phase 1 established by seeding none — so a global migration is the wrong place for
 -- them. The services resolve them per org and report a business violation naming what is missing

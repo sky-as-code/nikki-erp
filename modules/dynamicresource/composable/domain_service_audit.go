@@ -127,19 +127,25 @@ func (this *auditTrail) delete(
 	ctx corectx.Context, cmd DeleteCommand, run func(ctx corectx.Context) (*MutateResult, error),
 ) (*MutateResult, error) {
 	var result *MutateResult
-	err := InTransaction(ctx, this.repo, func(tranxCtx corectx.Context) error {
-		before, err := this.storedRow(tranxCtx, cmd)
-		if err != nil {
-			return err
-		}
-		result, err = run(tranxCtx)
-		if err != nil || !removedOrChanged(result) || before == nil {
-			return err
-		}
-		return this.record(tranxCtx, audit.ActionDelete, before, nil)
-	})
+	// Refusable: a delete the database refused (e.g. a foreign key, normalized into a client
+	// error) has aborted the transaction, so it must roll back rather than try to commit.
+	refused, err := InRefusableTransaction(ctx, this.repo,
+		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
+			before, err := this.storedRow(tranxCtx, cmd)
+			if err != nil {
+				return nil, err
+			}
+			result, err = run(tranxCtx)
+			if err != nil || !removedOrChanged(result) || before == nil {
+				return mutateClientErrorsOf(result), err
+			}
+			return nil, this.record(tranxCtx, audit.ActionDelete, before, nil)
+		})
 	if err != nil {
 		return nil, err
+	}
+	if refused != nil {
+		return &MutateResult{ClientErrors: *refused}, nil
 	}
 	return result, nil
 }
