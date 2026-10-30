@@ -1017,5 +1017,17 @@
 	"form.policies": "Chính sách",
 	"stock_transfer_moves_add": "Thêm dòng chuyển kho",
 	"stock_transfer_moves_empty": "Chưa có dòng chuyển kho",
-	"stock_transfer_moves_line": "Dòng {{line}}"
+	"stock_transfer_moves_line": "Dòng {{line}}",
+	"stock_transfer_moves_add_product": "Thêm sản phẩm mới",
+	"stock_transfer_moves_add_attribute": "Thêm thuộc tính",
+	"stock_transfer_moves_pick_template": "Hãy chọn sản phẩm trước",
+	"stock_transfer_moves_pick_attribute": "Chọn thuộc tính",
+	"stock_transfer_moves_pick_value": "Chọn giá trị",
+	"stock_transfer_moves_options_failed": "Không tải được danh sách lựa chọn.",
+	"menu_operationTypes": "Loại nghiệp vụ",
+	"form.defaultLocations": "Vị trí mặc định",
+	"stock_transfer.move_product_ambiguous": "Chọn sản phẩm theo biến thể hoặc theo sản phẩm kèm giá trị thuộc tính, không chọn cả hai.",
+	"stock_transfer.move_attributes_need_template": "Giá trị thuộc tính cần có sản phẩm để áp dụng.",
+	"stock_transfer.move_attribute_not_variant": "Thuộc tính này không tạo biến thể, nên dòng điều chuyển không thể mang nó.",
+	"stock_transfer.move_variant_unresolved": "Không thể tìm hoặc tạo biến thể cho các giá trị thuộc tính này."
 }

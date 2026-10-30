@@ -60,7 +60,8 @@ func (this *StockTransferApplicationServiceImpl) Create(
 }
 
 // Update needs create, update or delete on inventory_stock_move for each list of the moves delta it
-// carries, on top of update.
+// carries, on top of update. A move named by template and attributes also needs generate_variants
+// on inventory_product_template, as resolve_selection does when it may materialize.
 func (this *StockTransferApplicationServiceImpl) Update(
 	ctx corectx.Context, cmd itStock.UpdateStockTransferCommand,
 ) (*itStock.UpdateStockTransferResult, error) {
@@ -75,19 +76,21 @@ func (this *StockTransferApplicationServiceImpl) assertMovesDelta(
 ) *ft.ClientErrors {
 	parts := itStock.ReadTransferMovesDeltaParts(cmd)
 	required := []struct {
-		present bool
-		action  string
+		present  bool
+		action   string
+		resource string
 	}{
-		{parts.Add, composable.PermissionCreate},
-		{parts.Update, composable.PermissionUpdate},
-		{parts.Remove, composable.PermissionDelete},
+		{parts.Add, composable.PermissionCreate, constants.ResourceStockMove},
+		{parts.Update, composable.PermissionUpdate, constants.ResourceStockMove},
+		{parts.Remove, composable.PermissionDelete, constants.ResourceStockMove},
+		{parts.Resolve, PermissionGenerateVariants, constants.ResourceProductTemplate},
 	}
 	for _, part := range required {
 		if !part.present {
 			continue
 		}
 		_, cErrs := composable.AssertActionPermission(ctx, this, cmd, composable.ActionPermission{
-			ActionCode: part.action, ResourceCode: constants.ResourceStockMove,
+			ActionCode: part.action, ResourceCode: part.resource,
 		})
 		if cErrs != nil {
 			return cErrs

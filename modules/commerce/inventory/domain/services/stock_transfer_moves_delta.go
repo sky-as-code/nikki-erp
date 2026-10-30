@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 )
 
@@ -31,8 +32,9 @@ func liftMovesOrRefuse(params dmodel.DynamicFields) (*itStock.TransferMovesDelta
 	if malformed {
 		return nil, ft.ClientErrors{*ft.NewValidationError(
 			itStock.TransferFieldMoves, ft.ErrorKey("err_malformed_request"),
-			"moves must be {add: [{product_variant_id, uom_id, demand_quantity}], "+
-				"update: [{id, etag, product_variant_id, uom_id, demand_quantity}], remove: [ids]}",
+			"moves must be {add: [{product_variant_id | product_template_id + attributes, uom_id, demand_quantity}], "+
+				"update: [{id, etag, product_variant_id | product_template_id + attributes, uom_id, demand_quantity}], "+
+				"remove: [ids]}",
 		)}
 	}
 	if delta == nil || delta.IsEmpty() {
@@ -83,10 +85,9 @@ func validateMovesDeltaSize(delta itStock.TransferMovesDelta) ft.ClientErrors {
 }
 
 func validateMoveAdd(item itStock.TransferMoveAdd, field string) ft.ClientErrors {
-	var out ft.ClientErrors
-	if item.ProductVariantId == "" {
-		out = append(out, *dmodel.NewMissingFieldErr(field + "." + models.StockMoveFieldProductVariantId))
-	}
+	out := validateMoveProductForm(moveProductForm{
+		variantId: item.ProductVariantId, templateId: item.ProductTemplateId, attributes: item.Attributes, required: true,
+	}, field)
 	if item.DemandQuantity == nil {
 		out = append(out, *dmodel.NewMissingFieldErr(field + "." + models.StockMoveFieldDemandQuantity))
 	} else {
@@ -103,6 +104,11 @@ func validateMoveUpdate(item itStock.TransferMoveUpdate, field string) ft.Client
 	if item.ProductVariantId != nil && *item.ProductVariantId == "" {
 		out = append(out, *dmodel.NewMissingFieldErr(field + "." + models.StockMoveFieldProductVariantId))
 	}
+	form := moveProductForm{templateId: item.ProductTemplateId, attributes: item.Attributes}
+	if item.ProductVariantId != nil {
+		form.variantId = *item.ProductVariantId
+	}
+	out = append(out, validateMoveProductForm(form, field)...)
 	if item.DemandQuantity != nil {
 		out = append(out, validateMoveQuantity(*item.DemandQuantity, field)...)
 	}
@@ -148,6 +154,9 @@ func applyMovesDelta(
 	if cErrs := writer.assertOwned(delta); cErrs.Count() > 0 {
 		return cErrs, nil
 	}
+	if cErrs, err := writer.resolveTemplateForms(ctx, delta); err != nil || cErrs.Count() > 0 {
+		return cErrs, err
+	}
 	if cErrs, err := writer.remove(ctx, delta.Remove); err != nil || cErrs.Count() > 0 {
 		return cErrs, err
 	}
@@ -164,6 +173,8 @@ type transferMovesWriter struct {
 	transferId   string
 	owned        map[string]dmodel.DynamicFields
 	nextSequence int
+	// resolver is looked up on the first template form; most deltas name variants.
+	resolver itProduct.CompleteVariantResolver
 }
 
 // newTransferMovesWriter reads the transfer and its moves, and refuses a transfer past draft: its
