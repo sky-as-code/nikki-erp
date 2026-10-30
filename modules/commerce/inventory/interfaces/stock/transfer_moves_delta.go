@@ -17,22 +17,45 @@ const TransferFieldMoves = "moves"
 // the transfer's transaction.
 const TransferMovesDeltaMaxItems = 200
 
+// TransferMoveAttribute is one attribute choice of a move named by its product template: catalogue
+// ids (inventory_product_attribute, inventory_product_attribute_value), as resolve_selection takes.
+type TransferMoveAttribute struct {
+	ProductAttributeId      model.Id `json:"product_attribute_id"`
+	ProductAttributeValueId model.Id `json:"product_attribute_value_id"`
+}
+
 // TransferMoveAdd is one move to create. Locations, status and sequence come from the transfer.
-// A nil UomId means the variant's base unit.
+// A nil UomId means the variant's base unit. The product is either ProductVariantId, or
+// ProductTemplateId with Attributes, which resolves to the complete variant and materializes it
+// when the combination has none yet.
 type TransferMoveAdd struct {
-	ProductVariantId model.Id         `json:"product_variant_id"`
-	UomId            *model.Id        `json:"uom_id"`
-	DemandQuantity   *decimal.Decimal `json:"demand_quantity"`
+	ProductVariantId  model.Id                `json:"product_variant_id"`
+	ProductTemplateId *model.Id               `json:"product_template_id"`
+	Attributes        []TransferMoveAttribute `json:"attributes"`
+	UomId             *model.Id               `json:"uom_id"`
+	DemandQuantity    *decimal.Decimal        `json:"demand_quantity"`
+}
+
+// UsesTemplateForm reports a product named by template and attributes rather than by variant.
+func (this TransferMoveAdd) UsesTemplateForm() bool {
+	return this.ProductTemplateId != nil || this.Attributes != nil
 }
 
 // TransferMoveUpdate changes one move the transfer already holds. A changed variant replaces the
-// move, because a move's variant cannot be updated in place.
+// move, because a move's variant cannot be updated in place. The variant may also be named by
+// ProductTemplateId with Attributes, as on TransferMoveAdd.
 type TransferMoveUpdate struct {
-	Id               model.Id         `json:"id"`
-	Etag             model.Etag       `json:"etag"`
-	ProductVariantId *model.Id        `json:"product_variant_id"`
-	UomId            *model.Id        `json:"uom_id"`
-	DemandQuantity   *decimal.Decimal `json:"demand_quantity"`
+	Id                model.Id                `json:"id"`
+	Etag              model.Etag              `json:"etag"`
+	ProductVariantId  *model.Id               `json:"product_variant_id"`
+	ProductTemplateId *model.Id               `json:"product_template_id"`
+	Attributes        []TransferMoveAttribute `json:"attributes"`
+	UomId             *model.Id               `json:"uom_id"`
+	DemandQuantity    *decimal.Decimal        `json:"demand_quantity"`
+}
+
+func (this TransferMoveUpdate) UsesTemplateForm() bool {
+	return this.ProductTemplateId != nil || this.Attributes != nil
 }
 
 // TransferMovesDelta rides a transfer create or update as `moves: {add, update, remove}`, the same
@@ -48,11 +71,13 @@ func (this TransferMovesDelta) IsEmpty() bool {
 }
 
 // TransferMovesDeltaParts reports which lists a delta carries, so each can be authorized as the
-// matching stock-move permission.
+// matching stock-move permission. Resolve reports an item named by template and attributes: it may
+// materialize a variant of that template.
 type TransferMovesDeltaParts struct {
-	Add    bool
-	Update bool
-	Remove bool
+	Add     bool
+	Update  bool
+	Remove  bool
+	Resolve bool
 }
 
 // ReadTransferMovesDeltaParts reads the delta without changing the command. A malformed delta
@@ -64,13 +89,28 @@ func ReadTransferMovesDeltaParts(fields dmodel.DynamicFields) TransferMovesDelta
 	}
 	delta, err := decodeTransferMovesDelta(raw)
 	if err != nil {
-		return TransferMovesDeltaParts{Add: true, Update: true, Remove: true}
+		return TransferMovesDeltaParts{Add: true, Update: true, Remove: true, Resolve: true}
 	}
 	return TransferMovesDeltaParts{
-		Add:    len(delta.Add) > 0,
-		Update: len(delta.Update) > 0,
-		Remove: len(delta.Remove) > 0,
+		Add:     len(delta.Add) > 0,
+		Update:  len(delta.Update) > 0,
+		Remove:  len(delta.Remove) > 0,
+		Resolve: delta.usesTemplateForm(),
 	}
+}
+
+func (this TransferMovesDelta) usesTemplateForm() bool {
+	for _, item := range this.Add {
+		if item.UsesTemplateForm() {
+			return true
+		}
+	}
+	for _, item := range this.Update {
+		if item.UsesTemplateForm() {
+			return true
+		}
+	}
+	return false
 }
 
 // LiftMovesDelta removes `moves` from a transfer command, so the transfer schema never sees it,

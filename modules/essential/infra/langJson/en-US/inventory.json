@@ -1017,5 +1017,17 @@
 	"form.policies": "Policies",
 	"stock_transfer_moves_add": "Add a move",
 	"stock_transfer_moves_empty": "No moves yet",
-	"stock_transfer_moves_line": "Line {{line}}"
+	"stock_transfer_moves_line": "Line {{line}}",
+	"stock_transfer_moves_add_product": "Add new product",
+	"stock_transfer_moves_add_attribute": "Add attribute",
+	"stock_transfer_moves_pick_template": "Choose a product first",
+	"stock_transfer_moves_pick_attribute": "Select an attribute",
+	"stock_transfer_moves_pick_value": "Select a value",
+	"stock_transfer_moves_options_failed": "The options could not be loaded.",
+	"menu_operationTypes": "Operation types",
+	"form.defaultLocations": "Default locations",
+	"stock_transfer.move_product_ambiguous": "Choose the product either as a variant or as a product with attribute values, not both.",
+	"stock_transfer.move_attributes_need_template": "Attribute values need a product to apply to.",
+	"stock_transfer.move_attribute_not_variant": "This attribute does not create variants, so a move cannot carry it.",
+	"stock_transfer.move_variant_unresolved": "No variant could be found or created for these attribute values."
 }

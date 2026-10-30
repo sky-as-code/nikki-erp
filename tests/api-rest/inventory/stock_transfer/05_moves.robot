@@ -3,13 +3,16 @@ Documentation     A transfer's moves written with the transfer: create and updat
 ...               `moves: {add, update, remove}` delta, the same shape as the IAM role's
 ...               `entitlements`. The transfer row is written first and the moves after it, in one
 ...               transaction, so a refused move rolls the whole request back. Moves change only
-...               while the transfer is draft.
-Resource          resources/inventory.resource
+...               while the transfer is draft. A move may name its product by template and attribute
+...               values instead of by variant: the values resolve to the complete variant, which is
+...               materialized when the combination has none yet.
+Resource          resources/inventory_configuration.resource
 Suite Setup       Run Keywords    Create Authorized API Session
 ...               AND    Ensure Inventory Location Under Test
 ...               AND    Ensure Stock Destination Location Under Test
 ...               AND    Ensure Internal Operation Type Under Test
 ...               AND    Ensure Product Variant Under Test
+...               AND    Ensure Moves Template
 Test Tags         inventory    stock_transfer    moves
 
 
@@ -147,8 +150,127 @@ A Malformed Moves Delta Is Refused
     ...    expected_status=any
     Response Should Contain Business Error    ${resp}    common:err_malformed_request    field=moves
 
+A Template Form Reuses The Existing Variant
+    [Documentation]    Template and attribute values resolve to the complete variant that already
+    ...    holds the combination; nothing new is created.
+    ${resolved}=    Resolve Selection    ${MOVES_TEMPLATE_ID}    ${{ [{'attribute_id': $MOVES_COLOR, 'value_id': $MOVES_COLORS['red']}, {'attribute_id': $MOVES_SIZE, 'value_id': $MOVES_SIZES['s']}] }}
+    Response Status Should Be    ${resolved}    200
+    ${before}=    Count Template Variants    ${MOVES_TEMPLATE_ID}
+    ${attributes}=    Moves Attributes    red    s
+    ${id}    ${etag}=    Create Transfer With Moves    ${{ [{'product_template_id': $MOVES_TEMPLATE_ID, 'attributes': $attributes, 'demand_quantity': '2'}] }}
+    ${moves}=    Transfer Moves    ${id}
+    Length Should Be    ${moves}    1
+    Should Be Equal    ${moves}[0][product_variant_id]    ${resolved.json()}[variant_id]
+    ${after}=    Count Template Variants    ${MOVES_TEMPLATE_ID}
+    Should Be Equal As Integers    ${after}[complete]    ${before}[complete]
+    [Teardown]    Delete Transfer With Moves    ${id}
+
+A Template Form Materializes A Missing Variant
+    [Documentation]    A combination no variant holds yet is materialized with the move. It reads
+    ...    back as template plus attribute values: the moves search reaches the variant's template,
+    ...    the variant attribute value search the catalogue attribute and value ids.
+    ${before}=    Count Template Variants    ${MOVES_TEMPLATE_ID}
+    ${attributes}=    Moves Attributes    blue    m
+    ${id}    ${etag}=    Create Transfer With Moves    ${{ [{'product_template_id': $MOVES_TEMPLATE_ID, 'attributes': $attributes, 'demand_quantity': '3'}] }}
+    ${after}=    Count Template Variants    ${MOVES_TEMPLATE_ID}
+    Should Be Equal As Integers    ${after}[complete]    ${{ $before['complete'] + 1 }}
+    ...    msg=The missing complete variant must be created with the move
+    ${resp}=    GET On Session    api    ${STOCK_MOVE_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': 'id,product_variant_id,product_variant.product_template_id', 'graph': '{"if": ["transfer_id", "=", "%s"]}' % $id} }}
+    Response Status Should Be    ${resp}    200
+    ${move}=    Set Variable    ${resp.json()}[items][0]
+    Should Be Equal    ${move}[product_variant][product_template_id]    ${MOVES_TEMPLATE_ID}
+    ${pairs}=    Variant Attribute Pairs    ${move}[product_variant_id]
+    Should Be Equal    ${pairs}    ${{ {$MOVES_COLOR: $MOVES_COLORS['blue'], $MOVES_SIZE: $MOVES_SIZES['m']} }}
+    [Teardown]    Delete Transfer With Moves    ${id}
+
+Updating A Move By Template Form Replaces Its Variant
+    ${attributes}=    Moves Attributes    red    s
+    ${id}    ${etag}=    Create Transfer With Moves    ${{ [{'product_template_id': $MOVES_TEMPLATE_ID, 'attributes': $attributes, 'demand_quantity': '4'}] }}
+    ${moves}=    Transfer Moves    ${id}
+    ${move}=    Set Variable    ${moves}[0]
+    ${changed}=    Moves Attributes    red    m
+    ${resp}=    PATCH On Session    api    ${STOCK_TRANSFER_API}/${id}
+    ...    json=${{ {'org_id': $INV_ORG_ID, 'etag': $etag, 'moves': {'update': [{'id': $move['id'], 'etag': $move['etag'], 'product_template_id': $MOVES_TEMPLATE_ID, 'attributes': $changed}]}} }}
+    Response Should Be Update Success    ${resp}
+    ${after}=    Transfer Moves    ${id}
+    Length Should Be    ${after}    1
+    Should Not Be Equal    ${after}[0][product_variant_id]    ${move}[product_variant_id]
+    ${pairs}=    Variant Attribute Pairs    ${after}[0][product_variant_id]
+    Should Be Equal    ${pairs}[${MOVES_SIZE}]    ${MOVES_SIZES}[m]
+    Should Be Equal As Numbers    ${after}[0][demand_quantity]    4
+    [Teardown]    Delete Transfer With Moves    ${id}
+
+A Move Naming Both A Variant And A Template Is Refused
+    [Tags]    negative
+    ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
+    ...    json=${{ {'operation_type_id': $INTERNAL_OPERATION_TYPE_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID, 'moves': {'add': [{'product_variant_id': $PRODUCT_VARIANT_ID, 'product_template_id': $MOVES_TEMPLATE_ID, 'attributes': [], 'demand_quantity': '1'}]}} }}
+    ...    expected_status=any
+    Response Should Contain Business Error    ${resp}    inventory:stock_transfer.move_product_ambiguous
+    ...    field=moves.add[0].product_template_id
+
+A Template Form With A Never Attribute Is Refused And Rolled Back
+    [Documentation]    A never attribute creates no variant, so a move has nowhere to keep it; the
+    ...    refusal names the row and leaves no transfer behind.
+    [Tags]    negative
+    ${origin}=    Unique Code    never
+    ${attributes}=    Moves Attributes    red    s
+    Append To List    ${attributes}    ${{ {'product_attribute_id': $MOVES_WRAP, 'product_attribute_value_id': $MOVES_WRAPS['gift']} }}
+    ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
+    ...    json=${{ {'operation_type_id': $INTERNAL_OPERATION_TYPE_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'origin_reference': $origin, 'org_id': $INV_ORG_ID, 'moves': {'add': [{'product_template_id': $MOVES_TEMPLATE_ID, 'attributes': $attributes, 'demand_quantity': '1'}]}} }}
+    ...    expected_status=any
+    Response Should Contain Business Error    ${resp}    inventory:stock_transfer.move_attribute_not_variant
+    ...    field=moves.add[0].attributes[2]
+    ${search}=    GET On Session    api    ${STOCK_TRANSFER_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'graph': '{"if": ["origin_reference", "=", "%s"]}' % $origin} }}
+    Should Be Empty    ${search.json()}[items]
+    ...    msg=A refused move must roll the transfer header back
+
+A Template Form Missing A Dimension Is Refused
+    [Tags]    negative
+    ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
+    ...    json=${{ {'operation_type_id': $INTERNAL_OPERATION_TYPE_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID, 'moves': {'add': [{'product_template_id': $MOVES_TEMPLATE_ID, 'attributes': [{'product_attribute_id': $MOVES_COLOR, 'product_attribute_value_id': $MOVES_COLORS['red']}], 'demand_quantity': '1'}]}} }}
+    ...    expected_status=any
+    Response Should Contain Business Error    ${resp}    inventory:product_template.selection_missing_attribute
+    ...    field=moves.add[0].attributes
+
 
 *** Keywords ***
+Ensure Moves Template
+    [Documentation]    Color{Red, Blue} instant x Size{S, M} dynamic x Wrap{Gift} never: the bases
+    ...    exist, every complete is created on demand.
+    ${color}    ${colors}=    Create Attribute With Values    instant    red    blue    words=Robot Moves Color
+    ${size}    ${sizes}=    Create Attribute With Values    dynamic    s    m    words=Robot Moves Size
+    ${wrap}    ${wraps}=    Create Attribute With Values    never    gift    words=Robot Moves Wrap
+    ${lines}=    Create List
+    ...    ${{ {'attribute_id': $color, 'value_ids': [$colors['red'], $colors['blue']]} }}
+    ...    ${{ {'attribute_id': $size, 'value_ids': [$sizes['s'], $sizes['m']]} }}
+    ...    ${{ {'attribute_id': $wrap, 'value_ids': [$wraps['gift']]} }}
+    ${template_id}=    Create Configured Template    ${lines}    words=Robot Moves Template
+    Set Suite Variable    ${MOVES_TEMPLATE_ID}    ${template_id}
+    Set Suite Variable    ${MOVES_COLOR}    ${color}
+    Set Suite Variable    ${MOVES_COLORS}    ${colors}
+    Set Suite Variable    ${MOVES_SIZE}    ${size}
+    Set Suite Variable    ${MOVES_SIZES}    ${sizes}
+    Set Suite Variable    ${MOVES_WRAP}    ${wrap}
+    Set Suite Variable    ${MOVES_WRAPS}    ${wraps}
+
+Moves Attributes
+    [Documentation]    The `attributes` of a template-form move, in catalogue attribute and value ids.
+    [Arguments]    ${color}    ${size}
+    ${pairs}=    Evaluate    [{'product_attribute_id': $MOVES_COLOR, 'product_attribute_value_id': $MOVES_COLORS[$color]}, {'product_attribute_id': $MOVES_SIZE, 'product_attribute_value_id': $MOVES_SIZES[$size]}]
+    RETURN    ${pairs}
+
+Variant Attribute Pairs
+    [Documentation]    {catalogue attribute id: catalogue value id} of a variant, read the way the
+    ...    moves editor groups a move.
+    [Arguments]    ${variant_id}
+    ${resp}=    GET On Session    api    ${VARIANT_ATTRIBUTE_VALUE_API}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100, 'fields': 'product_variant_id,template_attribute_value.attribute_value', 'graph': '{"if": ["product_variant_id", "in", "%s"]}' % $variant_id} }}
+    Response Status Should Be    ${resp}    200
+    ${pairs}=    Evaluate    {row['template_attribute_value']['attribute_value']['attribute_id']: row['template_attribute_value']['attribute_value']['id'] for row in $resp.json()['items']}
+    RETURN    ${pairs}
+
 Create Transfer With Moves
     [Arguments]    ${lines}
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}

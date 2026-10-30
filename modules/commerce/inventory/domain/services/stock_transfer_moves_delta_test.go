@@ -58,7 +58,7 @@ func TestLiftMovesOrRefuseKeysErrorsByRow(t *testing.T) {
 func TestReadTransferMovesDeltaPartsCountsAMalformedDeltaAsEveryPart(t *testing.T) {
 	parts := itStock.ReadTransferMovesDeltaParts(dmodel.DynamicFields{"moves": "garbage"})
 
-	assert.Equal(t, itStock.TransferMovesDeltaParts{Add: true, Update: true, Remove: true}, parts)
+	assert.Equal(t, itStock.TransferMovesDeltaParts{Add: true, Update: true, Remove: true, Resolve: true}, parts)
 }
 
 type operationTypeRowsRepository struct {
