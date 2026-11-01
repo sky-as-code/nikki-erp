@@ -4,13 +4,16 @@ import (
 	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
 
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 
+	commconstants "github.com/sky-as-code/nikki-erp/modules/commerce/constants"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 )
 
 // Corrections (adjustments and scraps) generate a lightweight internal transfer and run it through
@@ -137,8 +140,8 @@ func prepareCorrectionTransfer(
 	if operationType == nil {
 		vErrs.Append(*ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey("stock_correction.no_operation_type", "inventory"),
-			"this organisation has no internal operation type with code '"+
-				models.StockCorrectionOperationTypeCode+"'; the correction seeds must be applied"))
+			"this organisation has no operation type set in "+
+				models.OrgSettingCorrectionOperationTypeId+"; set it in the Commerce settings"))
 		return nil, vErrs, nil
 	}
 
@@ -446,32 +449,56 @@ func resolveMovementOperationType(
 	return models.NewStockOperationTypeFrom(found.Data), nil
 }
 
-// findCorrectionOperationType resolves the seeded internal operation type corrections run through.
+// correctionSettingsFor resolves the settings port the correction type is read from. It is a
+// variable, like repoFor, so a test can substitute it: the container is filled during Init.
+var correctionSettingsFor = func() (itExt.EffectiveSettingsExtService, error) {
+	var settings itExt.EffectiveSettingsExtService
+	err := deps.Invoke(func(svc itExt.EffectiveSettingsExtService) { settings = svc })
+	return settings, err
+}
+
+// findCorrectionOperationType resolves the operation type the org's correction_operation_type_id
+// setting names. An unset setting, or one naming another org's type, finds nothing.
 func findCorrectionOperationType(
 	ctx corectx.Context, orgId string,
 ) (*models.StockOperationType, error) {
+	typeId, err := correctionOperationTypeId(ctx)
+	if err != nil || typeId == "" {
+		return nil, err
+	}
 	engine, err := repoFor(models.StockOperationTypeSchemaName)
 	if err != nil {
 		return nil, err
 	}
-
-	graph := &dmodel.SearchGraph{}
-	graph.And(
-		*dmodel.NewSearchNode().NewCondition(models.StockOperationTypeFieldOrgId, dmodel.Equals, orgId),
-		*dmodel.NewSearchNode().NewCondition(
-			models.StockOperationTypeFieldCode, dmodel.Equals, models.StockCorrectionOperationTypeCode),
-	)
-
-	found, err := engine.Search(ctx, dyn.RepoSearchParam{
-		Graph: graph,
-		Page:  0,
-		Size:  1,
-	})
+	found, err := engine.FindByKeys(ctx, dmodel.DynamicFields{models.StockOperationTypeFieldId: typeId})
 	if err != nil {
 		return nil, errors.Wrap(err, "findCorrectionOperationType")
 	}
-	if found == nil || !found.HasData || len(found.Data.Items) == 0 {
+	if found == nil || !found.HasData {
 		return nil, nil
 	}
-	return models.NewStockOperationTypeFrom(found.Data.Items[0]), nil
+	operationType := models.NewStockOperationTypeFrom(found.Data)
+	if orgOf := operationType.GetOrgId(); orgOf == nil || string(*orgOf) != orgId {
+		return nil, nil
+	}
+	return operationType, nil
+}
+
+func correctionOperationTypeId(ctx corectx.Context) (string, error) {
+	settings, err := correctionSettingsFor()
+	if err != nil {
+		return "", errors.Wrap(err, "correctionOperationTypeId")
+	}
+	result, err := settings.GetEffectiveSettings(ctx, itExt.GetEffectiveSettingsQuery{
+		ModuleKeys: []string{commconstants.CommerceModuleName},
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "correctionOperationTypeId")
+	}
+	if result == nil || !result.HasData || result.ClientErrors.Count() > 0 {
+		return "", nil
+	}
+	key := commconstants.CommerceModuleName + "." + models.OrgSettingCorrectionOperationTypeId
+	typeId, _ := result.Data.Values[key].(string)
+	return typeId, nil
 }

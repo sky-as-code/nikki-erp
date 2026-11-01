@@ -170,7 +170,7 @@ func (this *ProductTemplateDomainServiceImpl) valueLabels(
 		}
 
 		name := models.NewProductAttributeValueFrom(value.Data).GetName()
-		labels = append(labels, BuildDisplayName(name, nil))
+		labels = append(labels, langJsonToString(name))
 	}
 	return labels, nil
 }

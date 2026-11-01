@@ -20,8 +20,9 @@ type warehouseTestTransaction struct {
 	rollbacks int
 }
 
-func (this *warehouseTestTransaction) Commit() error   { this.commits++; return nil }
-func (this *warehouseTestTransaction) Rollback() error { this.rollbacks++; return nil }
+func (this *warehouseTestTransaction) Commit() error      { this.commits++; return nil }
+func (this *warehouseTestTransaction) Rollback() error    { this.rollbacks++; return nil }
+func (this *warehouseTestTransaction) OnCommitted(func()) {}
 
 type warehouseTestRepo struct {
 	dynamicresource.CrudRepository

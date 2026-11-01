@@ -43,7 +43,7 @@ func BuildEffectiveProduct(
 	}
 	effective.VariantKind = variantKindOf(variant).String()
 
-	effective.DisplayName = BuildDisplayName(template.GetName(), valueLabels)
+	effective.DisplayName = effectiveDisplayName(template, variant, valueLabels)
 
 	// A nil variant value means "inherit the template's", so these are not simply copied across.
 	effective.ImageFileId = firstNonEmpty(
@@ -56,20 +56,15 @@ func BuildEffectiveProduct(
 	return effective
 }
 
-// BuildDisplayName composes a variant's user-facing name from its template's name and its
-// attribute values, e.g. "Classic T-Shirt / Black / M". A variant with no values renders as the
-// template name alone, which is the single-variant case.
-func BuildDisplayName(templateName *model.LangJson, valueLabels []string) string {
-	parts := make([]string, 0, len(valueLabels)+1)
-	if base := langJsonToString(templateName); base != "" {
-		parts = append(parts, base)
+// effectiveDisplayName reads the variant's stored display_name. A variant row read without it (or
+// written before it was stored) is named by the same builder from its template name and labels.
+func effectiveDisplayName(
+	template *models.ProductTemplate, variant *models.ProductVariant, valueLabels []string,
+) string {
+	if stored := langJsonToString(variant.GetDisplayName()); stored != "" {
+		return stored
 	}
-	for _, label := range valueLabels {
-		if label != "" {
-			parts = append(parts, label)
-		}
-	}
-	return joinNonEmpty(parts, " / ")
+	return models.FormatVariantDisplayName(langJsonToString(template.GetName()), valueLabels)
 }
 
 // ResolveProductSelection turns a template plus the attribute values a user picked into the
@@ -120,20 +115,6 @@ func firstDecimal(values ...*decimal.Decimal) *decimal.Decimal {
 		}
 	}
 	return nil
-}
-
-func joinNonEmpty(parts []string, separator string) string {
-	result := ""
-	for _, part := range parts {
-		if part == "" {
-			continue
-		}
-		if result != "" {
-			result += separator
-		}
-		result += part
-	}
-	return result
 }
 
 // langJsonToString picks a single string out of a localized value. The caller's language is unknown

@@ -4,7 +4,7 @@
 	"table_name": "essential_currencies",
 	"should_build_db": true,
 	"record_label_field": "name",
-	"default_search_fields": ["code", "name", "symbol", "decimal_places", "is_active"],
+	"default_search_fields": ["code", "name", "symbol", "symbol_position", "is_active"],
 	"composite_uniques": [
 		{ "index_name": "essent_currencies_code", "fields": ["code"] }
 	],
@@ -44,13 +44,49 @@
 			}
 		},
 		{
+			"name": "symbol_position",
+			"label": "fields.symbol_position",
+			"data_type": { "type": "enum_string", "values": ["before", "after"] },
+			"required_for_create": true,
+			"default_value": "after",
+			"metadata": {"track_history": true},
+			"description": {
+				"en-US": "Whether the symbol is written before the amount ($15.00) or after it (15.000 ₫). It belongs to the currency rather than to the reader's locale, so an amount reads the same to everyone in the organization."
+			}
+		},
+		{
+			"name": "currency_unit_label",
+			"label": "fields.currency_unit_label",
+			"data_type": { "type": "langjson", "min": 0, "max": 50 },
+			"description": {
+				"en-US": "The name of the major unit, as an amount is spelled out in words: Dollar, Đồng."
+			}
+		},
+		{
+			"name": "currency_subunit_label",
+			"label": "fields.currency_subunit_label",
+			"data_type": { "type": "langjson", "min": 0, "max": 50 },
+			"description": {
+				"en-US": "The name of the minor unit: Cent, Xu."
+			}
+		},
+		{
+			"name": "rounding",
+			"label": "fields.rounding",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000", "scale": 6 },
+			"required_for_create": true,
+			"default_value": "0.01",
+			"metadata": {"track_history": true},
+			"description": {
+				"en-US": "The smallest amount this currency is settled in: 1 for VND, 0.01 for USD, 0.05 for a currency settled in nickels. Every amount is rounded to a multiple of it, and decimal_places is derived from it."
+			}
+		},
+		{
 			"name": "decimal_places",
 			"label": "fields.decimal_places",
 			"data_type": { "type": "int32", "min": 0, "max": 6 },
-			"required_for_create": true,
-			"default_value": 2,
 			"description": {
-				"en-US": "How many fractional digits this currency is quoted to: 0 for VND, 2 for USD, 3 for KWD. This is why money is stored as decimal rather than as an integer count of minor units — the count is a property of the currency, and holding amounts that way would push this number into every caller that reads one."
+				"en-US": "How many fractional digits this currency is quoted to: 0 for VND, 2 for USD, 3 for KWD. Maintained by the server from rounding and never written by a client, so the two cannot disagree. This is why money is stored as decimal rather than as an integer count of minor units — the count is a property of the currency, and holding amounts that way would push this number into every caller that reads one."
 			}
 		},
 		{

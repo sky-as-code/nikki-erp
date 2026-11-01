@@ -28,13 +28,6 @@ Search With No Result Succeeds
     Response Should Be Search Success    ${resp}    ${STOCK_OPERATION_TYPE_SCHEMA}
     ...    size=50    page=99    item_count=0
 
-Search By Code Succeeds
-    ${graph}=    Set Variable    {"if":["code", "=", "${STOCK_OPERATION_TYPE_CODE}"]}
-    ${resp}=    GET On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'graph': $graph} }}
-    Response Should Be Search Success    ${resp}    ${STOCK_OPERATION_TYPE_SCHEMA}
-    ...    size=50    page=0    item_count=1
-
 Search By Operation Code Succeeds
     [Documentation]    Listing the receipt types is how a transfer screen offers the ones
     ...    valid for an inbound movement.

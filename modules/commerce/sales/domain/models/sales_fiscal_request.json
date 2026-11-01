@@ -58,7 +58,8 @@
 			"default_value": "pending",
 			"description": {
 				"en-US": "How far the provider has got. A request that has not come back is 'pending', NEVER optimistically 'issued' (BR 77): the far side is a third-party network call, and reporting a document as issued before the provider confirms it would tell a customer they hold a VAT invoice that does not exist. 'failed' is normal operation rather than a fault - a provider is unreachable, rate-limited or slow - which is why attempt_count and last_error sit beside it."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "idempotency_key",

@@ -34,7 +34,6 @@ ${SETTING_TIMEZONE}         timezone
 # Essential's organization-level settings: an organization's own conventions.
 ${SETTING_SYSTEM_LANGUAGE}     system_language
 ${SETTING_SYSTEM_TIMEZONE}     system_timezone
-${SETTING_DEFAULT_CURRENCY}    default_currency
 
 # iam's tenant-level settings. They are a different module, so a tenant-level read must name iam
 # rather than essential — essential declares nothing at the tenant level.

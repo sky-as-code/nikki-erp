@@ -97,6 +97,11 @@ const (
 	ProductVariantFieldArchiveSource      = "archive_source"
 	ProductVariantFieldOrgId              = "org_id"
 
+	// ProductVariantFieldDisplayName is the stored, per-locale "Coca Cola (No sugar, Big)". The
+	// variant service writes it on create and rewrites it when the template's name or configuration
+	// changes; a client never sets it.
+	ProductVariantFieldDisplayName = "display_name"
+
 	// Computed fields copied from the owning template on read. No database column: each is declared
 	// in product_variant.json as a related computed field and filled by the engine.
 	ProductVariantFieldTemplateName                = "product_template_name"
@@ -190,6 +195,10 @@ func (this ProductVariant) GetPreviewImageFileId() *string {
 
 func (this *ProductVariant) SetPreviewImageFileId(v *string) {
 	this.GetFieldData().SetString(ProductVariantFieldPreviewImageFileId, v)
+}
+
+func (this ProductVariant) GetDisplayName() *model.LangJson {
+	return this.GetFieldData().GetLangJson(ProductVariantFieldDisplayName)
 }
 
 func (this ProductVariant) GetCost() *decimal.Decimal {

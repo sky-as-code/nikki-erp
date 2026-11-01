@@ -14,16 +14,17 @@ import (
 const (
 	OrgSettingsSchemaName = "accounting_org_settings"
 
-	// OrgSettingOrgDefaultCurrency is the currency an organization keeps its books in: the one
-	// every unqualified monetary amount it stores is denominated in.
+	// OrgSettingSystemCurrency is the currency an organization keeps its books in: the one every
+	// unqualified monetary amount it stores is denominated in, and the one money is rendered with.
+	// Empty falls back to the tenant's TenantSettingSystemCurrency.
 	//
-	// The value is an `essential_currency` id, not the three-letter code, because Essential
-	// resolves a currency by id only and storing the code would mean no validation.
+	// The value is an `essential_currency` id, not the three-letter code: an id survives a code
+	// correction and is validated against the catalogue on write (SystemCurrencyRule).
 	//
 	// This is the single place the answer exists; Product's base_sales_price and cost carry no
-	// currency of their own. Empty means unconfigured, and a caller that needs the currency must
-	// refuse rather than guess, since misreading an amount's currency fails silently.
-	OrgSettingOrgDefaultCurrency = "org_default_currency"
+	// currency of their own. Unset at both levels means unconfigured, and a caller that needs the
+	// currency must refuse rather than guess, since misreading an amount's currency fails silently.
+	OrgSettingSystemCurrency = "system_currency"
 
 	// OrgSettingDefaultRoundingPolicyCode names the rounding policy used when a calculation
 	// request does not name one. Empty means there is no default, and a request that needs a

@@ -21,12 +21,11 @@ const (
 )
 
 // Setting names Essential declares at the organization level. These describe how an organization
-// presents data to everyone working in it — which locale, which clock, which currency — so they
+// presents data to everyone working in it — which locale and which clock — so they
 // belong to the organization rather than to the person reading the screen.
 const (
-	OrgSettingSystemLanguage  = "system_language"
-	OrgSettingSystemTimezone  = "system_timezone"
-	OrgSettingDefaultCurrency = "default_currency"
+	OrgSettingSystemLanguage = "system_language"
+	OrgSettingSystemTimezone = "system_timezone"
 )
 
 // Theme modes. "auto" follows the operating system rather than pinning a choice, and it is the
@@ -94,11 +93,10 @@ func UserSettingsSchemaBuilder() *dmodel.ModelSchemaBuilder {
 // system_language is an enum where system_timezone is not, on the same reasoning as the user-level
 // schema: the supported locale set is exactly the set of translations the application ships.
 //
-// default_currency is free text rather than a reference to essential_currency: a settings schema
-// declares no edges, and the settings module stores values as scalars. Validating the code against
-// the currency table belongs to whatever spends money, not to the settings pane.
+// The organization's currency is not here: it is Accounting's system_currency, which the books are
+// kept in and which is validated against essential_currency on write.
 //
-// All three carry allow_override: true, so a tenant may standardise them across its organizations
+// Both carry allow_override: true, so a tenant may standardise them across its organizations
 // without the product forcing that choice.
 func OrgSettingsSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.ParseModelJson(orgSettingsSchemaJson)

@@ -1,7 +1,6 @@
 [
 	{
 		"$alias": "stock_operation_type_main_in",
-		"code": "MAIN-IN",
 		"name": {
 			"en-US": "Receipts",
 			"vi-VN": "Nhập kho"
@@ -15,7 +14,6 @@
 	},
 	{
 		"$alias": "stock_operation_type_main_out",
-		"code": "MAIN-OUT",
 		"name": {
 			"en-US": "Deliveries",
 			"vi-VN": "Xuất kho"
@@ -28,40 +26,14 @@
 		"default_destination_location_id": "@location_virt_customer"
 	},
 	{
-		"$alias": "stock_operation_type_vdmc_dispense",
-		"code": "VDMC-DISPENSE",
+		"$alias": "stock_operation_type_correction",
 		"name": {
-			"en-US": "Kiosk Dispense",
-			"vi-VN": "Xuất hàng cho khách tại kiosk"
-		},
-		"operation_code": "outgoing",
-		"reservation_method": "manual",
-		"backorder_policy": "never",
-		"shipping_policy": "partial",
-		"default_destination_location_id": "@location_virt_customer"
-	},
-	{
-		"$alias": "stock_operation_type_vdmc_fill",
-		"code": "VDMC-FILL",
-		"name": {
-			"en-US": "Kiosk Replenishment",
-			"vi-VN": "Bổ sung hàng cho kiosk"
+			"en-US": "Stock Corrections",
+			"vi-VN": "Điều chỉnh tồn kho"
 		},
 		"operation_code": "internal",
 		"reservation_method": "manual",
 		"backorder_policy": "never",
-		"shipping_policy": "all_at_once"
-	},
-	{
-		"$alias": "stock_operation_type_vdmc_return",
-		"code": "VDMC-RETURN",
-		"name": {
-			"en-US": "Kiosk Stock Return",
-			"vi-VN": "Thu hồi hàng từ kiosk"
-		},
-		"operation_code": "internal",
-		"reservation_method": "manual",
-		"backorder_policy": "never",
-		"shipping_policy": "all_at_once"
+		"shipping_policy": "partial"
 	}
 ]

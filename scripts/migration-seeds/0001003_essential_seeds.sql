@@ -58,8 +58,9 @@ END $$;
 -- XPT, XPD) and the test code XTS. None of them denominates a payable amount, and seeding them
 -- would put unusable options in front of every user picking a currency.
 --
--- symbol is left NULL. A currency's symbol is a presentation choice that varies by locale and by
--- house style, and a wrong symbol on money is worse than none; the UI falls back to the code.
+-- symbol is NULL in the rows themselves and filled afterwards only for the currencies in use. A
+-- currency's symbol is a house-style choice, and a wrong symbol on money is worse than none; the UI
+-- falls back to the code for the rest.
 --
 -- Ids are deterministic, derived from the alphabetic code, so this file is safe to re-run and the
 -- same currency carries the same id in every deployment. ON CONFLICT DO NOTHING makes re-running a
@@ -231,6 +232,36 @@ BEGIN
 		('01KZQC0000CURRENCY000SCP00', 'ZMW', '967', jsonb_build_object('en-US', 'Zambian Kwacha', 'vi-VN', 'Kwacha Zambia', 'zh-TW', '尚比亞克瓦查'), NULL, 2, TRUE, FALSE, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01KZQC0000CURRENCY000SP600', 'ZWG', '924', jsonb_build_object('en-US', 'Zimbabwe Gold', 'vi-VN', 'Zimbabwe Gold', 'zh-TW', '辛巴威黃金'), NULL, 2, TRUE, FALSE, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT DO NOTHING;
+
+		-- rounding and symbol_position arrived after the rows above. rounding is the settled unit that
+		-- matches the ISO digit count, so decimal_places (derived from it) stays what it was.
+		UPDATE "essential_currencies" SET
+			"rounding" = power(10::numeric, -"decimal_places"),
+			"symbol_position" = 'after'
+		WHERE "rounding" IS NULL;
+
+		-- Symbols and unit names for the currencies the product actually trades in. The long tail keeps
+		-- a NULL symbol, and the UI falls back to the code for it.
+		UPDATE "essential_currencies" AS cur SET
+			"symbol" = src.symbol,
+			"symbol_position" = src.position,
+			"currency_unit_label" = jsonb_build_object('en-US', src.unit_en, 'vi-VN', src.unit_vi),
+			"currency_subunit_label" = jsonb_build_object('en-US', src.subunit_en, 'vi-VN', src.subunit_vi)
+		FROM (VALUES
+			('VND', '₫', 'after', 'Dong', 'Đồng', 'Xu', 'Xu'),
+			('USD', '$', 'before', 'Dollar', 'Đô la', 'Cent', 'Xu'),
+			('EUR', '€', 'before', 'Euro', 'Euro', 'Cent', 'Xu'),
+			('GBP', '£', 'before', 'Pound', 'Bảng', 'Penny', 'Penny'),
+			('JPY', '¥', 'before', 'Yen', 'Yên', 'Sen', 'Sen'),
+			('CNY', '¥', 'before', 'Yuan', 'Nhân dân tệ', 'Fen', 'Phân'),
+			('KRW', '₩', 'before', 'Won', 'Won', 'Jeon', 'Jeon'),
+			('THB', '฿', 'before', 'Baht', 'Baht', 'Satang', 'Satang'),
+			('SGD', 'S$', 'before', 'Dollar', 'Đô la', 'Cent', 'Xu'),
+			('AUD', 'A$', 'before', 'Dollar', 'Đô la', 'Cent', 'Xu'),
+			('HKD', 'HK$', 'before', 'Dollar', 'Đô la', 'Cent', 'Xu'),
+			('TWD', 'NT$', 'before', 'Dollar', 'Đô la', 'Cent', 'Xu')
+		) AS src(code, symbol, position, unit_en, unit_vi, subunit_en, subunit_vi)
+		WHERE cur."code" = src.code AND cur."symbol" IS NULL;
 	END IF;
 END $$;
 
@@ -259,10 +290,10 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'essential_languages'
 	) THEN
 		INSERT INTO "essential_languages" (
-			"id", "name", "iso_code", "direction", "decimal_separator", "thousands_separator", "date_format", "time_format", "short_time_format", "first_day_of_week", "is_enabled", "created_at", "etag"
+			"id", "name", "locale_code", "direction", "decimal_separator", "thousands_separator", "grouping", "date_format", "time_format", "short_time_format", "first_day_of_week", "is_enabled", "created_at", "etag"
 		) VALUES
-		('01KZQC0000LANGUAGE0000EN00', 'English', 'en-US', 'ltr', '.', ',', 'MM/dd/yyyy', 'HH:mm:ss', 'HH:mm', 'sunday', TRUE, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KZQC0000LANGUAGE0000VI00', 'Tiếng Việt', 'vi-VN', 'ltr', ',', '.', 'dd/MM/yyyy', 'HH:mm:ss', 'HH:mm', 'monday', TRUE, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01KZQC0000LANGUAGE0000EN00', 'English (US)', 'en-US', 'ltr', '.', ',', '[3,0]', '%m/%d/%Y', '%H:%M:%S', '%H:%M', 'sunday', TRUE, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KZQC0000LANGUAGE0000VI00', 'Vietnamese / Tiếng Việt', 'vi-VN', 'ltr', ',', '.', '[3,0]', '%d/%m/%Y', '%H:%M:%S', '%H:%M', 'monday', TRUE, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT DO NOTHING;
 	END IF;
 END $$;

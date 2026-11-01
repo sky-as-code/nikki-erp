@@ -41,7 +41,8 @@
 			"default_value": "open",
 			"description": {
 				"en-US": "Whether this bill is still being settled. 'settled' means the money is in and the allocations are frozen; 'cancelled' means it was superseded by a split or a merge, and it is kept rather than deleted (BR 83) because the lineage rows point at it."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "payment_status",

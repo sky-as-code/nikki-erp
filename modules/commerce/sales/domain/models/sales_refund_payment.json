@@ -98,7 +98,8 @@
 			"default_value": "pending",
 			"description": {
 				"en-US": "Where this refund leg has reached. Only 'completed' counts as money actually returned; a 'pending' one is a promise the provider has not yet honoured, and treating it as done would report a customer repaid who is not."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "provider_reference",

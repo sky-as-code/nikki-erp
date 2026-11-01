@@ -8,10 +8,14 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
+// sharedAuditSink serves the writes made outside any onion: RecordAudit.
+var sharedAuditSink AuditRecorder = audit.NewLazyAuditSink()
+
 // RecordAudit is for a custom write that goes neither through the default domain service nor
 // through Repository().Insert/Update/DeleteOne, such as a corecrud.UpdateRegardless caller. Call
 // it inside the write's transaction with the row before and the fields written: a nil before is a
-// create, a nil after a delete. An update that changed no audited field records nothing.
+// create, a nil after a delete. Any other action is an update, recorded only when a field flagged
+// audit.MetadataTrackHistory changed, with only the tracked fields.
 func RecordAudit(
 	ctx corectx.Context, schema *dmodel.ModelSchema, action string, before, after dmodel.DynamicFields,
 ) error {

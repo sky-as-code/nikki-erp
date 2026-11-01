@@ -68,10 +68,16 @@ const (
 	ProductTemplateFieldStatus              = "status"
 	ProductTemplateFieldOrgId               = "org_id"
 
-	// Cost read model. A template has no cost of its own; these expose the range across its
-	// variants and must never be treated as the product's cost.
-	ProductTemplateFieldMinVariantCost = "min_variant_cost"
-	ProductTemplateFieldMaxVariantCost = "max_variant_cost"
+	// ProductTemplateFieldCost is the cost a variant created without one starts from. It is copied
+	// once, at the variant's creation, and never pushed onto existing variants: each variant's own
+	// cost is what stock and margins use.
+	ProductTemplateFieldCost = "cost"
+
+	// The unit symbols of the weight and dimension fields, resolved from the org's inventory settings,
+	// and of the template's own unit of measure.
+	ProductTemplateFieldWeightUomSymbol    = "weight_uom_symbol"
+	ProductTemplateFieldDimensionUomSymbol = "dimension_uom_symbol"
+	ProductTemplateFieldUomSymbol          = "uom_symbol"
 
 	ProductTemplateFieldAttributeConfiguration = "attribute_configuration"
 
@@ -220,6 +226,10 @@ func (this ProductTemplate) GetBaseSalesPrice() *decimal.Decimal {
 
 func (this *ProductTemplate) SetBaseSalesPrice(v *decimal.Decimal) {
 	this.GetFieldData().SetDecimal(ProductTemplateFieldBaseSalesPrice, v)
+}
+
+func (this ProductTemplate) GetCost() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(ProductTemplateFieldCost)
 }
 
 func (this ProductTemplate) GetDefaultWeight() *decimal.Decimal {

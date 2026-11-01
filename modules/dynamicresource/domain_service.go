@@ -21,7 +21,11 @@ import (
 // service call as well as on a REST call.
 type CrudDomainService interface {
 	Create(ctx corectx.Context, cmd CreateCommand, options ...CreateOptions) (*CreateResult, error)
+	// Update refuses a managed record (non-null managed_by_type): its manager changes it.
 	Update(ctx corectx.Context, cmd UpdateCommand, options ...UpdateOptions) (*MutateResult, error)
+	// UpdateManaged is the manager's update: the same path as Update, but it accepts only a
+	// managed record. It has no REST route; the managing module calls it.
+	UpdateManaged(ctx corectx.Context, cmd UpdateCommand, options ...UpdateOptions) (*MutateResult, error)
 	// Delete refuses a managed record (non-null managed_by_type): its manager removes it.
 	Delete(ctx corectx.Context, cmd DeleteCommand, options ...DeleteOptions) (*MutateResult, error)
 	// DeleteManaged is the manager's delete: the same path as Delete, but it accepts only a
@@ -171,9 +175,22 @@ func (this *DefaultDomainServiceImpl) create(
 func (this *DefaultDomainServiceImpl) Update(
 	ctx corectx.Context, cmd UpdateCommand, options ...UpdateOptions,
 ) (*MutateResult, error) {
+	return this.updateGuarded(ctx, cmd, firstOrZero(options), managedRefuse)
+}
+
+func (this *DefaultDomainServiceImpl) UpdateManaged(
+	ctx corectx.Context, cmd UpdateCommand, options ...UpdateOptions,
+) (*MutateResult, error) {
+	return this.updateGuarded(ctx, cmd, firstOrZero(options), managedRequire)
+}
+
+func (this *DefaultDomainServiceImpl) updateGuarded(
+	ctx corectx.Context, cmd UpdateCommand, opts UpdateOptions, mode managedMode,
+) (*MutateResult, error) {
 	if cErrs := this.assertActionSupported(CrudActionUpdate); cErrs != nil {
 		return &MutateResult{ClientErrors: *cErrs}, nil
 	}
+	opts.ValidateExtra = this.withManagedRule(mode, CrudActionUpdate, opts.ValidateExtra)
 	write := func(ctx corectx.Context, opts UpdateOptions) (*MutateResult, error) {
 		if this.files != nil && this.files.sendsFiles(cmd, false) {
 			return this.files.update(ctx, opts, func(ctx corectx.Context, opts UpdateOptions) (*MutateResult, error) {
@@ -182,10 +199,10 @@ func (this *DefaultDomainServiceImpl) Update(
 		}
 		return this.update(ctx, cmd, opts)
 	}
-	if this.audit.active() {
-		return this.audit.update(ctx, firstOrZero(options), write)
+	if this.audit.activeForUpdate() {
+		return this.audit.update(ctx, opts, write)
 	}
-	return write(ctx, firstOrZero(options))
+	return write(ctx, opts)
 }
 
 func (this *DefaultDomainServiceImpl) update(
@@ -207,22 +224,22 @@ func (this *DefaultDomainServiceImpl) update(
 func (this *DefaultDomainServiceImpl) Delete(
 	ctx corectx.Context, cmd DeleteCommand, options ...DeleteOptions,
 ) (*MutateResult, error) {
-	return this.deleteGuarded(ctx, cmd, firstOrZero(options), managedDeleteRefuse)
+	return this.deleteGuarded(ctx, cmd, firstOrZero(options), managedRefuse)
 }
 
 func (this *DefaultDomainServiceImpl) DeleteManaged(
 	ctx corectx.Context, cmd DeleteCommand, options ...DeleteOptions,
 ) (*MutateResult, error) {
-	return this.deleteGuarded(ctx, cmd, firstOrZero(options), managedDeleteRequire)
+	return this.deleteGuarded(ctx, cmd, firstOrZero(options), managedRequire)
 }
 
 func (this *DefaultDomainServiceImpl) deleteGuarded(
-	ctx corectx.Context, cmd DeleteCommand, opts DeleteOptions, mode managedDeleteMode,
+	ctx corectx.Context, cmd DeleteCommand, opts DeleteOptions, mode managedMode,
 ) (*MutateResult, error) {
 	if cErrs := this.assertActionSupported(CrudActionDelete); cErrs != nil {
 		return &MutateResult{ClientErrors: *cErrs}, nil
 	}
-	opts.ValidateExtra = this.withManagedDeleteRule(mode, opts.ValidateExtra)
+	opts.ValidateExtra = this.withManagedRule(mode, CrudActionDelete, opts.ValidateExtra)
 	write := func(ctx corectx.Context) (*MutateResult, error) {
 		if this.files != nil {
 			return this.files.delete(ctx, cmd, func(ctx corectx.Context) (*MutateResult, error) {

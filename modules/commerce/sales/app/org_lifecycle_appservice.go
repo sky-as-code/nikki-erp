@@ -9,10 +9,8 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	orgDefaults "github.com/sky-as-code/nikki-erp/modules/commerce/infra/sales/defaults"
-	c "github.com/sky-as-code/nikki-erp/modules/commerce/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
-	salessettings "github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/settings"
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
@@ -22,9 +20,7 @@ import (
 
 const (
 	defaultCurrencyCode = "VND"
-	// kioskOperationTypeCode is the operation type Inventory's defaults create for kiosk sales.
-	kioskOperationTypeCode = "VDMC-DISPENSE"
-	paymentMethodAlias     = "payment_method_"
+	paymentMethodAlias  = "payment_method_"
 )
 
 // writeOrder lists the defaulted resources parents first. The association rows between them are
@@ -63,7 +59,6 @@ type OrgLifecycleParam struct {
 
 	Lookup         itExt.OrgDefaultsLookupExtService
 	PaymentMethods itExt.PaymentMethodExtService
-	Settings       itExt.OrgSettingsSeedExtService
 	ChannelPayment *services.ChannelPaymentDomainServiceImpl
 	PointPayment   *services.PointPaymentDomainServiceImpl
 }
@@ -101,7 +96,7 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model
 		if err := this.createAssociations(tranxCtx, aliases, orgId); err != nil {
 			return err
 		}
-		return this.seedSettings(tranxCtx, orgId)
+		return nil
 	})
 }
 
@@ -220,25 +215,4 @@ func withKnownPaymentMethods(rows []dmodel.DynamicFields, aliases *defaults.Alia
 		kept = append(kept, row)
 	}
 	return kept
-}
-
-// seedSettings points kiosk sales at the operation type Inventory created for them.
-func (this *OrgLifecycleAppServiceImpl) seedSettings(ctx corectx.Context, orgId model.Id) error {
-	operationTypeId, err := this.param.Lookup.OperationTypeIdByCode(ctx, orgId, kioskOperationTypeCode)
-	if err != nil {
-		return err
-	}
-	result, err := this.param.Settings.SeedOrgSettings(ctx, itExt.SetSettingsCommand{
-		ModuleKey: c.SettingsModuleKey,
-		Items: []itExt.SetSettingItem{
-			{Name: salessettings.OrgSettingOutgoingOperationTypeId, Value: string(operationTypeId)},
-		},
-	})
-	if err != nil {
-		return err
-	}
-	if result.ClientErrors.Count() > 0 {
-		return errors.Wrap(result.ClientErrors.ToError(), "seed sales settings")
-	}
-	return nil
 }

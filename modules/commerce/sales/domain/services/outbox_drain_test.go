@@ -23,10 +23,17 @@ func withNoDrain(t *testing.T) {
 	outboxDrain = nil
 }
 
-type fakeTranx struct{}
+type fakeTranx struct{ callbacks []func() }
 
-func (this *fakeTranx) Commit() error   { return nil }
-func (this *fakeTranx) Rollback() error { return nil }
+func (this *fakeTranx) Commit() error {
+	for _, fn := range this.callbacks {
+		fn()
+	}
+	this.callbacks = nil
+	return nil
+}
+func (this *fakeTranx) Rollback() error       { this.callbacks = nil; return nil }
+func (this *fakeTranx) OnCommitted(fn func()) { this.callbacks = append(this.callbacks, fn) }
 
 var _ db.DbTransaction = (*fakeTranx)(nil)
 
@@ -56,19 +63,40 @@ func TestDrainOutboxNowCallsTheInstalledDrain(t *testing.T) {
 }
 
 // Inside a transaction the rows are not committed, so publishing them would announce a write that
-// may still roll back.
-func TestDrainOutboxNowDoesNothingInsideATransaction(t *testing.T) {
+// may still roll back: the drain waits for the commit, and reads without the finished transaction.
+func TestDrainOutboxNowWaitsForTheCommitInsideATransaction(t *testing.T) {
+	withNoDrain(t)
+
+	calls := 0
+	var got corectx.Context
+	SetOutboxDrain(func(ctx corectx.Context) { calls++; got = ctx })
+
+	tranx := &fakeTranx{}
+	ctx := corectx.NewRequestContext(context.Background())
+	ctx.SetDbTranx(tranx)
+
+	DrainOutboxNow(ctx)
+	assert.Zero(t, calls, "nothing is published before the commit")
+
+	assert.NoError(t, tranx.Commit())
+	assert.Equal(t, 1, calls)
+	assert.Nil(t, got.GetDbTranx(), "the committed transaction cannot be read through any more")
+}
+
+func TestDrainOutboxNowIsDroppedOnRollback(t *testing.T) {
 	withNoDrain(t)
 
 	calls := 0
 	SetOutboxDrain(func(corectx.Context) { calls++ })
 
+	tranx := &fakeTranx{}
 	ctx := corectx.NewRequestContext(context.Background())
-	ctx.SetDbTranx(&fakeTranx{})
+	ctx.SetDbTranx(tranx)
 
 	DrainOutboxNow(ctx)
+	assert.NoError(t, tranx.Rollback())
 
-	assert.Zero(t, calls, "those events wait for the sweep, which is the guarantee anyway")
+	assert.Zero(t, calls, "a rolled-back write has no events to announce; the sweep stays the guarantee")
 }
 
 func TestSetOutboxDrainIgnoresNil(t *testing.T) {

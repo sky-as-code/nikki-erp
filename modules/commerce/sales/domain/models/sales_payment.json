@@ -83,7 +83,8 @@
 			"default_value": "pending",
 			"description": {
 				"en-US": "Where this payment stands with the provider. Only 'captured' counts toward settling the bill: an authorization is a hold the provider may still release, and treating it as money in would settle a bill against funds that never arrived."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "qr_code_url",

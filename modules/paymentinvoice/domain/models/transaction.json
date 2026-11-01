@@ -40,7 +40,8 @@
 			"no_update": true,
 			"description": {
 				"en-US": "System-managed. Advanced only by a gateway callback or by the watchdog's verdict."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "amount",

@@ -7,6 +7,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
+	itSettings "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 
 	invEvent "github.com/sky-as-code/nikki-erp/modules/commerce/infra/inventory/external/event"
 	invMessage "github.com/sky-as-code/nikki-erp/modules/commerce/infra/inventory/external/message"
@@ -30,6 +31,18 @@ func InitExternal() error {
 		},
 		func(uomSvc itUom.UomConversionAppService) itExt.UomLookupExtService {
 			return uomSvc
+		},
+		func(uomSvc itUom.UomConversionAppService) itExt.UomDirectoryExtService {
+			return uomSvc
+		},
+		func(settings itSettings.TenantSettingsAppService) itExt.SettingsRegistrationExtService {
+			return settings
+		},
+		func(settings itSettings.EffectiveSettingsAppService) itExt.EffectiveSettingsExtService {
+			return settings
+		},
+		func(settings itSettings.OrgSettingsAppService) itExt.OrgSettingsSeedExtService {
+			return settings
 		},
 	)
 }

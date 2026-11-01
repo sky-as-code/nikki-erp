@@ -20,10 +20,19 @@ import (
 type stubTranx struct {
 	committed  bool
 	rolledBack bool
+	callbacks  []func()
 }
 
-func (this *stubTranx) Commit() error   { this.committed = true; return nil }
-func (this *stubTranx) Rollback() error { this.rolledBack = true; return nil }
+func (this *stubTranx) Commit() error {
+	this.committed = true
+	for _, fn := range this.callbacks {
+		fn()
+	}
+	this.callbacks = nil
+	return nil
+}
+func (this *stubTranx) Rollback() error       { this.rolledBack = true; this.callbacks = nil; return nil }
+func (this *stubTranx) OnCommitted(fn func()) { this.callbacks = append(this.callbacks, fn) }
 
 type stubCrudRepo struct {
 	dynamicresource.CrudRepository

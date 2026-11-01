@@ -173,7 +173,8 @@
 	"err_org_id_required": "Tài nguyên này thuộc về một tổ chức nên bắt buộc phải chọn tổ chức",
 	"err_overlapped_fields": "Các trường sau đây không được phép có giá trị giống với trường còn lại: {{fields}}",
 	"err_record_managed_delete": "Bản ghi này do một bản ghi khác hoặc hệ thống quản lý, nên chỉ bị xóa cùng với đơn vị quản lý",
-	"err_record_not_managed": "Chỉ bản ghi được quản lý mới có thể bị xóa theo cách này",
+	"err_record_managed_update": "Bản ghi này do một bản ghi khác hoặc hệ thống quản lý, nên chỉ đơn vị quản lý mới có thể thay đổi",
+	"err_record_not_managed": "Chỉ bản ghi được quản lý mới có thể được thay đổi hoặc xóa theo cách này",
 	"err_required": "Trường này là bắt buộc",
 	"err_schema_not_found": "Không tìm thấy định nghĩa dữ liệu liên quan",
 	"err_schema_registry_required": "Không thể dùng đường dẫn trường quan hệ ở đây",
@@ -314,6 +315,7 @@
 	"pagination.page": "Trang",
 	"pagination.previous": "Trước",
 	"pagination.size": "{{count}} / trang",
+	"per": "mỗi",
 	"permission.field_locked_title": "Trường bị khóa",
 	"permission.field_read_locked": "Bạn không có quyền xem trường này. Cần có quyền {{expression}} để xem. Vui lòng liên hệ quản trị viên để được cấp quyền.",
 	"permission.field_update_locked": "Bạn không có quyền cập nhật trường này. Cần có quyền {{expression}} để cập nhật. Vui lòng liên hệ quản trị viên để được cấp quyền.",
@@ -434,5 +436,7 @@
 	"unauthorized_hint": "Vui lòng liên hệ quản trị viên để được cấp quyền truy cập.",
 	"unauthorized_message": "Bạn không có quyền truy cập vào trang này.",
 	"unauthorized_message_with_module": "Bạn không có quyền truy cập vào module \"{{module}}\".",
-	"unauthorized_title": "Không có quyền truy cập"
+	"unauthorized_title": "Không có quyền truy cập",
+	"format_pattern.directives_title": "Các chỉ thị được phép",
+	"format_pattern.directives_help": "Xem các chỉ thị được phép"
 }

@@ -241,11 +241,11 @@ BEGIN
 		('01M0C3SQRTAAAAAAAAAAAAAAAH', jsonb_build_object('en-US', 'Enter Count', 'vi-VN', 'Nhập số lượng kiểm đếm'), 'enter_count', 'Record what a physical count found. Does not change the balance.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0C3SQRTAAAAAAAAAAAAAAAJ', jsonb_build_object('en-US', 'Reset Count', 'vi-VN', 'Đặt lại số kiểm đếm'), 'reset_count', 'Abandon a pending count. Does not change the balance.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M0C3SQRTAAAAAAAAAAAAAAAK', jsonb_build_object('en-US', 'Apply Adjustment', 'vi-VN', 'Áp dụng điều chỉnh'), 'apply_adjustment', 'Turn a pending count into a real balance change by generating an adjustment movement.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0C3SQRTAAAAAAAAAAAAABA', jsonb_build_object('en-US', 'Schedule Count', 'vi-VN', 'Lên lịch kiểm đếm'), 'schedule_count', 'Set when a balance is next due to be counted.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M0C3SQRTAAAAAAAAAAAAABB', jsonb_build_object('en-US', 'Assign Counter', 'vi-VN', 'Phân công người kiểm đếm'), 'assign_counter', 'Name who is responsible for counting a balance.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRT0AAAAAAAAAAAAABA', jsonb_build_object('en-US', 'Schedule Count', 'vi-VN', 'Lên lịch kiểm đếm'), 'schedule_count', 'Set when a balance is next due to be counted.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M0C3SQRT0AAAAAAAAAAAAABB', jsonb_build_object('en-US', 'Assign Counter', 'vi-VN', 'Phân công người kiểm đếm'), 'assign_counter', 'Name who is responsible for counting a balance.', '01M0B2Q5R3BQX4QWMQCNPQV5H6', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Create Reverse Transfer, on the Stock Transfer resource seeded above.
-		('01M0C3SQRTAAAAAAAAAAAAABC', jsonb_build_object('en-US', 'Create Return', 'vi-VN', 'Tạo phiếu trả hàng'), 'create_return', 'Raise a reverse transfer for goods coming back. Never alters the original transfer.', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0C3SQRT0AAAAAAAAAAAAABC', jsonb_build_object('en-US', 'Create Return', 'vi-VN', 'Tạo phiếu trả hàng'), 'create_return', 'Raise a reverse transfer for goods coming back. Never alters the original transfer.', '01M0B434KTKF2YBXPBBC2JH9XB', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

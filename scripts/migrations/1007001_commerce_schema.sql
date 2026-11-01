@@ -202,6 +202,7 @@ CREATE TABLE "inventory_product_templates" (
   "purchase_description" character varying NULL,
   "preview_image_file_id" character varying NULL,
   "base_sales_price" numeric NULL,
+  "cost" numeric NULL,
   "default_weight" numeric NULL,
   "default_length" numeric NULL,
   "default_width" numeric NULL,
@@ -253,6 +254,7 @@ CREATE TABLE "inventory_product_variants" (
   "source_system" character varying NULL,
   "external_id" character varying NULL,
   "org_id" character varying NULL,
+  "display_name" jsonb NULL,
   "is_archived" boolean NULL,
   "created_at" timestamptz NULL,
   "updated_at" timestamptz NULL,
@@ -381,7 +383,6 @@ CREATE INDEX "invty_stock_moves_trf_id_sequence_idx" ON "inventory_stock_moves" 
 -- Create "inventory_stock_operation_types" table
 CREATE TABLE "inventory_stock_operation_types" (
   "id" character varying NOT NULL,
-  "code" character varying NULL,
   "name" jsonb NULL,
   "operation_code" character varying NULL,
   "reservation_method" character varying NULL,
@@ -396,8 +397,7 @@ CREATE TABLE "inventory_stock_operation_types" (
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
   "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "invty_stock_op_types_tid_code_org_id_ukey" UNIQUE ("code", "org_id")
+  PRIMARY KEY ("id")
 );
 -- Create "inventory_stock_product_configs" table
 CREATE TABLE "inventory_stock_product_configs" (

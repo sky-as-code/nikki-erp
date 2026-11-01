@@ -48,18 +48,31 @@ func runUpdateWith(input, found dmodel.DynamicFields) func(corectx.Context, Upda
 	}
 }
 
-func newTestTrail(recorder *fakeRecorder) (*auditTrail, *stubRepository) {
-	repo := &stubRepository{schema: newOrgSchema()}
+// newTrackedSchema flags status with track_history, so its updates are recorded and its name
+// changes are not.
+func newTrackedSchema() *dmodel.ModelSchema {
+	return dmodel.DefineModel("cmp_tracked_resource").
+		Field(dmodel.DefineField().Name("id").DataType(dmodel.FieldDataTypeString(0, 50))).
+		Field(dmodel.DefineField().Name(basemodel.FieldOrgId).DataType(dmodel.FieldDataTypeString(0, 50))).
+		Field(dmodel.DefineField().Name("name").DataType(dmodel.FieldDataTypeString(0, 200))).
+		Field(dmodel.DefineField().Name("status").DataType(dmodel.FieldDataTypeString(0, 50)).
+			Metadata(map[string]any{audit.MetadataTrackHistory: true})).
+		Field(dmodel.DefineField().Name(basemodel.FieldIsArchived).DataType(dmodel.FieldDataTypeBoolean())).
+		Build()
+}
+
+func newTestTrail(recorder AuditRecorder) (*auditTrail, *stubRepository) {
+	repo := &stubRepository{schema: newTrackedSchema()}
 	return newAuditTrail(repo.schema, repo, recorder), repo
 }
 
-func TestAuditTrailUpdateRecordsOnlyTheChangedFields(t *testing.T) {
+func TestAuditTrailUpdateRecordsOnlyTheTrackedFields(t *testing.T) {
 	recorder := &fakeRecorder{enabled: true}
 	trail, repo := newTestTrail(recorder)
-	found := dmodel.DynamicFields{"id": "r1", basemodel.FieldOrgId: "org_1", "name": "old"}
+	found := dmodel.DynamicFields{"id": "r1", basemodel.FieldOrgId: "org_1", "name": "old", "status": "draft"}
 
 	_, err := trail.update(ownerContext(), UpdateOptions{},
-		runUpdateWith(dmodel.DynamicFields{"id": "r1", "name": "new"}, found))
+		runUpdateWith(dmodel.DynamicFields{"id": "r1", "name": "new", "status": "confirmed"}, found))
 
 	require.NoError(t, err)
 	require.Len(t, recorder.entries, 1)
@@ -67,21 +80,30 @@ func TestAuditTrailUpdateRecordsOnlyTheChangedFields(t *testing.T) {
 	assert.Equal(t, audit.ActionUpdate, entry.Action)
 	assert.Equal(t, "r1", *entry.ResourceId)
 	assert.Equal(t, model.Id("org_1"), *entry.OrgId)
-	assert.Equal(t, dmodel.DynamicFields{"name": "old"}, entry.Before)
-	assert.Equal(t, dmodel.DynamicFields{"name": "new"}, entry.After)
+	assert.Equal(t, dmodel.DynamicFields{"status": "draft"}, entry.Before)
+	assert.Equal(t, dmodel.DynamicFields{"status": "confirmed"}, entry.After)
 	assert.True(t, repo.tranx.committed)
 }
 
-func TestAuditTrailUpdateWithoutChangeWritesNoEntry(t *testing.T) {
+func TestAuditTrailUpdateOfAnUntrackedFieldWritesNoEntry(t *testing.T) {
 	recorder := &fakeRecorder{enabled: true}
 	trail, _ := newTestTrail(recorder)
-	found := dmodel.DynamicFields{"id": "r1", "name": "same"}
+	found := dmodel.DynamicFields{"id": "r1", "name": "old", "status": "draft"}
 
 	_, err := trail.update(ownerContext(), UpdateOptions{},
-		runUpdateWith(dmodel.DynamicFields{"id": "r1", "name": "same"}, found))
+		runUpdateWith(dmodel.DynamicFields{"id": "r1", "name": "new", "status": "draft"}, found))
 
 	require.NoError(t, err)
 	assert.Empty(t, recorder.entries)
+}
+
+func TestAuditTrailSkipsUpdatesOfASchemaWithoutTrackedFields(t *testing.T) {
+	recorder := &fakeRecorder{enabled: true}
+	trail := newAuditTrail(newOrgSchema(), &stubRepository{schema: newOrgSchema()}, recorder)
+
+	assert.True(t, trail.active(), "create, archive and delete are still recorded")
+	assert.False(t, trail.activeForUpdate())
+	assert.False(t, trail.tracksRowUpdate(dmodel.DynamicFields{"id": "r1", "name": "x"}))
 }
 
 func TestAuditTrailFailedRecordRollsTheWriteBack(t *testing.T) {
@@ -89,7 +111,7 @@ func TestAuditTrailFailedRecordRollsTheWriteBack(t *testing.T) {
 	trail, repo := newTestTrail(recorder)
 
 	_, err := trail.update(ownerContext(), UpdateOptions{},
-		runUpdateWith(dmodel.DynamicFields{"id": "r1", "name": "new"}, dmodel.DynamicFields{"id": "r1"}))
+		runUpdateWith(dmodel.DynamicFields{"id": "r1", "status": "confirmed"}, dmodel.DynamicFields{"id": "r1"}))
 
 	require.Error(t, err)
 	assert.False(t, repo.tranx.committed)
@@ -143,7 +165,7 @@ func TestOnionOptOutMarksTheSchemaUnaudited(t *testing.T) {
 	assert.Nil(t, onion.readAuditSink(), "reads are not audited unless opted in")
 }
 
-func TestManageM2mRecordsLinkAndUnlink(t *testing.T) {
+func TestManageM2mRecordsNoLinkEntry(t *testing.T) {
 	recorder := &fakeRecorder{enabled: true}
 	previous := sharedAuditSink
 	sharedAuditSink = recorder
@@ -156,50 +178,7 @@ func TestManageM2mRecordsLinkAndUnlink(t *testing.T) {
 		ManageM2mParam{Action: "test", DestSchemaName: "cmp_peer"}, writer.write)
 
 	require.NoError(t, err)
-	require.Len(t, recorder.entries, 2)
-	assert.Equal(t, audit.ActionLink, recorder.entries[0].Action)
-	assert.Equal(t, dmodel.DynamicFields{"cmp_peer": []string{"a"}}, recorder.entries[0].After)
-	assert.Equal(t, audit.ActionUnlink, recorder.entries[1].Action)
-	assert.Equal(t, dmodel.DynamicFields{"cmp_peer": []string{"b"}}, recorder.entries[1].Before)
-}
-
-func TestPeerLinkEntriesMirrorTheChangeOnEachPeer(t *testing.T) {
-	orgId := model.Id("org_1")
-	change := M2mChange{SrcId: "src_1", Added: []model.Id{"a", "b"}, Removed: []model.Id{"c"}}
-
-	entries := peerLinkEntries(newPlainSchema(), newOrgSchema(), change, &orgId)
-
-	require.Len(t, entries, 3)
-	assert.Equal(t, "cmp_org_resource", entries[0].ResourceCode)
-	assert.Equal(t, "a", *entries[0].ResourceId)
-	assert.Equal(t, &orgId, entries[0].OrgId, "a peer with an org column takes the source's org")
-	assert.Equal(t, dmodel.DynamicFields{"cmp_plain_resource": []string{"src_1"}}, entries[1].After)
-	assert.Equal(t, audit.ActionUnlink, entries[2].Action)
-	assert.Equal(t, dmodel.DynamicFields{"cmp_plain_resource": []string{"src_1"}}, entries[2].Before)
-}
-
-func TestPeerLinkEntriesSkipAnUnknownOrUnauditedPeer(t *testing.T) {
-	change := M2mChange{SrcId: "src_1", Added: []model.Id{"a"}}
-	markUnaudited("cmp_org_resource")
-	defer unauditedSchemas.Delete("cmp_org_resource")
-
-	assert.Empty(t, peerLinkEntries(newPlainSchema(), nil, change, nil))
-	assert.Empty(t, peerLinkEntries(newPlainSchema(), newOrgSchema(), change, nil))
-	assert.Nil(t, peerLinkEntries(newOrgSchema(), newPlainSchema(), change, nil)[0].OrgId,
-		"a peer without an org column gets no org")
-}
-
-func TestRecordLinkAuditWritesLinkAndUnlink(t *testing.T) {
-	recorder := &fakeRecorder{enabled: true}
-	previous := sharedAuditSink
-	sharedAuditSink = recorder
-	defer func() { sharedAuditSink = previous }()
-
-	require.NoError(t, RecordLinkAudit(ownerContext(), newPlainSchema(), "r1", nil, "entitlements", []string{"x"}, nil))
-	require.NoError(t, RecordLinkAudit(ownerContext(), newPlainSchema(), "r1", nil, "entitlements", nil, nil))
-
-	require.Len(t, recorder.entries, 1, "an empty change records nothing")
-	assert.Equal(t, dmodel.DynamicFields{"entitlements": []string{"x"}}, recorder.entries[0].After)
+	assert.Empty(t, recorder.entries)
 }
 
 func TestRepositoryTrailRecordsADirectInsert(t *testing.T) {
@@ -222,31 +201,43 @@ func TestRepositoryTrailRecordsADirectInsert(t *testing.T) {
 func TestRepositoryTrailNamesAnUpdateAfterTheCustomAction(t *testing.T) {
 	recorder := &fakeRecorder{enabled: true}
 	trail, repo := newTestTrail(recorder)
-	repo.record = dmodel.DynamicFields{"id": "w1", "name": "active"}
+	repo.record = dmodel.DynamicFields{"id": "w1", "name": "w", "status": "active"}
 	repo.found = true
 	ctx := ownerContext()
 	corectx.SetRequestAction(ctx, "suspend")
+	data := dmodel.DynamicFields{"id": "w1", "name": "w2", "status": "suspended"}
 
-	_, err := trail.updateRow(ctx, dmodel.DynamicFields{"id": "w1", "name": "suspended"},
+	require.True(t, trail.tracksRowUpdate(data))
+	_, err := trail.updateRow(ctx, data,
 		func(corectx.Context, dmodel.DynamicFields) (*MutateResult, error) { return changedOne(), nil })
 
 	require.NoError(t, err)
 	require.Len(t, recorder.entries, 1)
 	assert.Equal(t, "suspend", recorder.entries[0].Action)
-	assert.Equal(t, dmodel.DynamicFields{"name": "active"}, recorder.entries[0].Before)
+	assert.Equal(t, dmodel.DynamicFields{"status": "active"}, recorder.entries[0].Before)
+	assert.Equal(t, dmodel.DynamicFields{"status": "suspended"}, recorder.entries[0].After)
 }
 
-func TestRecordAuditSkipsAnUnchangedUpdate(t *testing.T) {
+func TestRepositoryTrailIgnoresADirectUpdateOfUntrackedFields(t *testing.T) {
+	trail, _ := newTestTrail(&fakeRecorder{enabled: true})
+
+	assert.False(t, trail.tracksRowUpdate(dmodel.DynamicFields{"id": "w1", "name": "total recalculated"}))
+}
+
+func TestRecordAuditRecordsOnlyATrackedChange(t *testing.T) {
 	recorder := &fakeRecorder{enabled: true}
 	previous := sharedAuditSink
 	sharedAuditSink = recorder
 	defer func() { sharedAuditSink = previous }()
-	row := dmodel.DynamicFields{"id": "o1", "name": "same"}
+	row := dmodel.DynamicFields{"id": "o1", "name": "same", "status": "active"}
 
-	require.NoError(t, RecordAudit(ownerContext(), newOrgSchema(), "mark_deleted", row, row))
-	require.NoError(t, RecordAudit(ownerContext(), newOrgSchema(), "mark_deleted", row,
-		dmodel.DynamicFields{"id": "o1", "name": "gone"}))
+	require.NoError(t, RecordAudit(ownerContext(), newTrackedSchema(), "mark_deleted", row, row))
+	require.NoError(t, RecordAudit(ownerContext(), newTrackedSchema(), "mark_deleted", row,
+		dmodel.DynamicFields{"id": "o1", "name": "renamed"}))
+	require.NoError(t, RecordAudit(ownerContext(), newTrackedSchema(), "mark_deleted", row,
+		dmodel.DynamicFields{"id": "o1", "name": "gone", "status": "deleted"}))
 
-	require.Len(t, recorder.entries, 1)
+	require.Len(t, recorder.entries, 1, "only the change of a tracked field is recorded")
 	assert.Equal(t, "mark_deleted", recorder.entries[0].Action)
+	assert.Equal(t, dmodel.DynamicFields{"status": "deleted"}, recorder.entries[0].After)
 }

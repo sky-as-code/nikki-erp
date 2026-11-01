@@ -59,6 +59,11 @@ const (
 	// a type, which would move real goods out of the wrong place.
 	OrgSettingOutgoingOperationTypeId = "outgoing_operation_type_id"
 	OrgSettingIncomingOperationTypeId = "incoming_operation_type_id"
+
+	// OrgSettingCorrectionOperationTypeId is the internal operation type Inventory records stock
+	// adjustments and scraps under. It lives in this schema because Commerce registers one org-level
+	// schema; Sales never reads it.
+	OrgSettingCorrectionOperationTypeId = "correction_operation_type_id"
 )
 
 // The defaults, restated in Go as a fallback when the settings read fails or the value is absent.

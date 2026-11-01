@@ -45,6 +45,8 @@ func assertEssentialSchemasMatchLegacy(t *testing.T) {
 // Legacy builders: verbatim copies of the pre-conversion Go chains.
 // ---------------------------------------------------------------------------
 
+// The language reference is no longer verbatim: it tracks the LANG-002 uplift (unique name,
+// grouping, Odoo defaults, optional thousands separator), so it still pins how the JSON parses.
 func languageSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(LanguageSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", LanguageSchemaName)).
@@ -55,12 +57,13 @@ func languageSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 			dmodel.DefineField().
 				Name(LanguageFieldName).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
-				RequiredForCreate(),
+				RequiredForCreate().
+				Unique(),
 		).
 		Field(
 			dmodel.DefineField().
-				Name(LanguageFieldIsoCode).
-				// Hyphenated BCP47, not the underscore form: every consumer of an iso code speaks
+				Name(LanguageFieldLocaleCode).
+				// Hyphenated BCP47, not the underscore form: every consumer of an locale code speaks
 				// hyphen -- the stored `language` setting, the LangJson document
 				// keys, ToBCP47LanguageCode, i18next on the frontend. An underscore code could not
 				// have been matched by any of them.
@@ -77,37 +80,49 @@ func languageSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 					string(LanguageDirectionLtr),
 					string(LanguageDirectionRtl),
 				})).
-				RequiredForCreate(),
+				RequiredForCreate().
+				Default(string(LanguageDirectionLtr)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(LanguageFieldDecimalSeparator).
 				DataType(dmodel.FieldDataTypeString(1, 5)).
-				RequiredForCreate(),
+				RequiredForCreate().
+				Default("."),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(LanguageFieldThousandsSeparator).
-				DataType(dmodel.FieldDataTypeString(1, 5)).
-				RequiredForCreate(),
+				DataType(dmodel.FieldDataTypeString(0, 5)).
+				Default(","),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(LanguageFieldGrouping).
+				DataType(dmodel.FieldDataTypeString(2, 30)).
+				RequiredForCreate().
+				Default("[3,0]"),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(LanguageFieldDateFormat).
 				DataType(dmodel.FieldDataTypeString(1, 30)).
-				RequiredForCreate(),
+				RequiredForCreate().
+				Default("%m/%d/%Y"),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(LanguageFieldTimeFormat).
 				DataType(dmodel.FieldDataTypeString(1, 30)).
-				RequiredForCreate(),
+				RequiredForCreate().
+				Default("%H:%M:%S"),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(LanguageFieldShortTimeFormat).
 				DataType(dmodel.FieldDataTypeString(1, 30)).
-				RequiredForCreate(),
+				RequiredForCreate().
+				Default("%H:%M"),
 		).
 		Field(
 			dmodel.DefineField().
@@ -121,7 +136,8 @@ func languageSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 					string(WeekDaySaturday),
 					string(WeekDaySunday),
 				})).
-				RequiredForCreate(),
+				RequiredForCreate().
+				Default(string(WeekDaySunday)),
 		).
 		Field(
 			dmodel.DefineField().

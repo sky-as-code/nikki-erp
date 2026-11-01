@@ -106,7 +106,8 @@
 				"values": ["active", "discontinued"]
 			},
 			"required_for_create": true,
-			"default_value": "active"
+			"default_value": "active",
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "archive_source",
@@ -264,10 +265,30 @@
 			"description": "field_desc.inventory_product_variant.product_template_uom_name"
 		},
 		{
+			"name": "product_template_uom_symbol",
+			"label": "fields.uom_symbol",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"computed": { "kind": "related", "is_stored": false, "field": "product_template.uom.symbol" },
+			"description": "field_desc.inventory_product_variant.product_template_uom_symbol"
+		},
+		{
+			"name": "weight_uom_symbol",
+			"label": "fields.weight_uom_symbol",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"computed": { "kind": "function", "is_stored": false, "function": "inventory.variant_weight_uom_symbol" },
+			"description": "field_desc.inventory_product_variant.weight_uom_symbol"
+		},
+		{
+			"name": "dimension_uom_symbol",
+			"label": "fields.dimension_uom_symbol",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"computed": { "kind": "function", "is_stored": false, "function": "inventory.variant_dimension_uom_symbol" },
+			"description": "field_desc.inventory_product_variant.dimension_uom_symbol"
+		},
+		{
 			"name": "display_name",
 			"label": "fields.display_name",
-			"data_type": { "type": "string", "min": 0, "max": 400 },
-			"computed": { "kind": "function", "is_stored": false, "function": "inventory.variant_display_name" },
+			"data_type": { "type": "langjson", "min": 0, "max": 400 },
 			"description": "field_desc.inventory_product_variant.display_name"
 		},
 		{

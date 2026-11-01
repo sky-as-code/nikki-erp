@@ -16,8 +16,6 @@ const (
 	ActionDelete    = "delete"
 	ActionArchive   = "archive"
 	ActionUnarchive = "unarchive"
-	ActionLink      = "link"
-	ActionUnlink    = "unlink"
 	ActionGet       = "get"
 	ActionSearch    = "search"
 )
@@ -26,8 +24,13 @@ const (
 // value that is sensitive without being typed `secret` (a token stored as a plain string).
 const MetadataAuditExcluded = "audit_excluded"
 
+// MetadataTrackHistory is the field metadata key that opts a field into the history: an update
+// is recorded only when a tracked field changed, and its entry carries only the tracked fields.
+// Create, archive, unarchive and delete are recorded whatever the schema tracks.
+const MetadataTrackHistory = "track_history"
+
 // Entry is one audited action on one record (or one search, which has no record). Before and
-// After hold only the changed fields, already filtered through Diff.
+// After hold only the changed fields, already filtered through Diff (DiffTracked for an update).
 type Entry struct {
 	Action       string
 	ResourceCode string

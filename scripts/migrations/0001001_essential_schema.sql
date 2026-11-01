@@ -5,6 +5,10 @@ CREATE TABLE "essential_currencies" (
   "numeric_code" character varying NULL,
   "name" jsonb NULL,
   "symbol" character varying NULL,
+  "symbol_position" character varying NULL,
+  "currency_unit_label" jsonb NULL,
+  "currency_subunit_label" jsonb NULL,
+  "rounding" numeric NULL,
   "decimal_places" integer NULL,
   "is_active" boolean NULL,
   "is_archived" boolean NULL,
@@ -33,10 +37,11 @@ CREATE TABLE "essential_enums" (
 CREATE TABLE "essential_languages" (
   "id" character varying NOT NULL,
   "name" character varying NULL,
-  "iso_code" character varying NULL,
+  "locale_code" character varying NULL,
   "direction" character varying NULL,
   "decimal_separator" character varying NULL,
   "thousands_separator" character varying NULL,
+  "grouping" character varying NULL,
   "date_format" character varying NULL,
   "time_format" character varying NULL,
   "short_time_format" character varying NULL,
@@ -47,7 +52,8 @@ CREATE TABLE "essential_languages" (
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "essential_languages_iso_code_ukey" UNIQUE ("iso_code")
+  CONSTRAINT "essential_languages_locale_code_ukey" UNIQUE ("locale_code"),
+  CONSTRAINT "essential_languages_name_ukey" UNIQUE ("name")
 );
 -- Create "essential_model_metadata" table
 CREATE TABLE "essential_model_metadata" (

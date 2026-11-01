@@ -62,7 +62,7 @@ func (this *PricingChangedEventPublisherImpl) Publish(
 func (this *PricingChangedEventPublisherImpl) PublishAsync(
 	ctx corectx.Context, eventType itEvent.PricingChangedType, orgId string, ids ...string,
 ) {
-	go func() {
+	publish := func() {
 		bgCtx, cancel := context.WithTimeout(
 			context.WithoutCancel(ctx.InnerContext()), publishAsyncTimeout)
 		defer cancel()
@@ -71,5 +71,7 @@ func (this *PricingChangedEventPublisherImpl) PublishAsync(
 			this.logger.Warn("pricing changed event publish failed",
 				logging.Attr{"error": err.Error(), "resource_type": eventType, "org_id": orgId, "ids": ids})
 		}
-	}()
+	}
+	// A caller inside a transaction must not announce a write that may still roll back.
+	ctx.OnCommitted(func() { go publish() })
 }

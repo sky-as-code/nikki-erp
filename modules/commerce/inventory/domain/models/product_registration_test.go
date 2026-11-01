@@ -53,32 +53,31 @@ func TestProductSchemasRegisterInOrder(t *testing.T) {
 		"every registered schema must finalize, including the variant's derived pricing fields")
 
 	assertVariantPricingFieldsResolved(t)
-	assertTemplateCostRangeResolved(t)
+	assertTemplateCostAndUnitsResolved(t)
 }
 
-// assertTemplateCostRangeResolved checks the template's cost read model. The template has no cost
-// column: cost belongs to the variant, since two variants of one product genuinely cost different
-// amounts. It exposes the range across its variants instead, and that range must never be
-// collapsed into a single number called the product's cost.
-func assertTemplateCostRangeResolved(t *testing.T) {
+// assertTemplateCostAndUnitsResolved checks the template's cost and unit fields. The template holds
+// a stored cost, the starting cost of a variant created without one; the variant-cost range it
+// used to expose is gone. The unit names are function computed fields resolved from org settings.
+func assertTemplateCostAndUnitsResolved(t *testing.T) {
 	t.Helper()
 
 	template := dmodel.GetSchemaRegistry().Get(ProductTemplateSchemaName)
 	require.NotNil(t, template)
 
-	for _, name := range []string{
-		ProductTemplateFieldMinVariantCost,
-		ProductTemplateFieldMaxVariantCost,
-	} {
+	cost, hasCost := template.Fields()[ProductTemplateFieldCost]
+	require.True(t, hasCost, "the template must hold a cost")
+	require.False(t, cost.IsComputed(), "the template cost is stored, not derived from its variants")
+
+	for _, removed := range []string{"min_variant_cost", "max_variant_cost"} {
+		_, present := template.Fields()[removed]
+		require.Falsef(t, present, "%q was removed with the template cost", removed)
+	}
+	for _, name := range []string{ProductTemplateFieldWeightUomSymbol, ProductTemplateFieldDimensionUomSymbol} {
 		field, present := template.Fields()[name]
 		require.Truef(t, present, "template must expose %q", name)
-		require.Truef(t, field.IsComputed(), "%q is a read model, never a stored value", name)
+		require.Truef(t, field.IsComputed(), "%q is resolved from settings, never stored", name)
 	}
-
-	_, hasOwnCost := template.Fields()[ProductVariantFieldCost]
-	require.False(t, hasOwnCost,
-		"the template must NOT hold a cost column: cost is the variant's, and a second stored "+
-			"value here would be an authoritative product cost that BR-PRICE-VARIANT-006 denies exists")
 }
 
 // effective_base_sales_price is an expression over a related field plus an aggregate over a

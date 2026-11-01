@@ -11,6 +11,7 @@ func InitApplicationServices() error {
 	return stdErr.Join(
 		deps.Register(
 			NewSettingsApplicationServiceImpl,
+			NewTimezoneAppServiceImpl,
 			NewUomConversionApplicationServiceImpl,
 		),
 		// The narrow port sales, purchase, inventory and accounting bind to.

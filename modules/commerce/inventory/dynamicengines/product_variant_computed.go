@@ -16,14 +16,13 @@ import (
 )
 
 const (
-	// VariantDisplayNameFn and VariantAttributeSummaryFn are the function names
-	// product_variant.json declares. A schema naming one nobody registers fails the boot check,
-	// so these constants are the single spelling shared by declaration and registration.
-	VariantDisplayNameFn      = "inventory.variant_display_name"
+	// VariantAttributeSummaryFn is the function name product_variant.json declares. A schema naming
+	// one nobody registers fails the boot check, so this constant is the single spelling shared by
+	// declaration and registration. display_name is stored, written by the variant service.
 	VariantAttributeSummaryFn = "inventory.variant_attribute_summary"
 
 	// maxAttributesPerVariant bounds the page size of the attribute reads. A variant with more
-	// attributes than this would lose the surplus from its display name; the cap is far above the
+	// attributes than this would lose the surplus from its summary; the cap is far above the
 	// handful of axes a sellable product is built from.
 	maxAttributesPerVariant = 20
 )
@@ -49,32 +48,13 @@ type variantAttributeHops struct {
 
 // newVariantComputedFunctions builds the "function"-kind computed fields of product_variant.
 //
-// Both read the same three-edge walk, so they share one batched fetch: the engine hands the whole
-// page to each function, and resolving per row would turn a listing into the N+1 this module
-// forbids by name. The values are fetched once per call rather than cached, because an attribute
-// rename must show on the next read.
+// The summary reads a three-edge walk in one batched fetch: the engine hands the whole page to the
+// function, and resolving per row would turn a listing into the N+1 this module forbids by name.
+// The values are fetched once per call rather than cached, because an attribute rename must show
+// on the next read.
 func newVariantComputedFunctions(
 	lookupOnion func(schemaName string) (dynamicresource.DynamicResourceEngineOnion, bool),
 ) map[string]dynamicresource.ComputedFieldFn {
-	displayName := func(ctx corectx.Context, req dynamicresource.ComputeFnRequest) ([]any, error) {
-		byVariant, err := fetchVariantAttributes(ctx, lookupOnion, req.Models)
-		if err != nil {
-			return nil, err
-		}
-		nameSources, err := fetchMissingNameSources(ctx, lookupOnion, req.Models)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]any, len(req.Models))
-		for i, row := range req.Models {
-			if source, ok := nameSources[readVariantId(row)]; ok {
-				row = source
-			}
-			out[i] = buildDisplayName(row, byVariant[readVariantId(row)])
-		}
-		return out, nil
-	}
-
 	attributeSummary := func(ctx corectx.Context, req dynamicresource.ComputeFnRequest) ([]any, error) {
 		byVariant, err := fetchVariantAttributes(ctx, lookupOnion, req.Models)
 		if err != nil {
@@ -93,65 +73,8 @@ func newVariantComputedFunctions(
 	}
 
 	return map[string]dynamicresource.ComputedFieldFn{
-		VariantDisplayNameFn:      displayName,
 		VariantAttributeSummaryFn: attributeSummary,
 	}
-}
-
-// buildDisplayName renders "Coca Cola (No sugar, Big)" through models.FormatVariantDisplayName,
-// the spelling the configuration preview shares.
-func buildDisplayName(row dmodel.DynamicFields, attributes []variantAttributes) string {
-	name := readLangText(row[models.ProductVariantFieldTemplateName])
-	if name == "" {
-		// The template name is what identifies the variant to a person; with none, the SKU is the
-		// only other thing on the row that does, and an empty cell would identify nothing.
-		name = readString(row[models.ProductVariantFieldSku])
-	}
-	values := make([]string, 0, len(attributes))
-	for _, attribute := range attributes {
-		values = append(values, attribute.value)
-	}
-	return models.FormatVariantDisplayName(name, values)
-}
-
-// fetchMissingNameSources reads the template name and SKU of the rows that were fetched without
-// them: the engine hands the function only the projected fields, so a select asking for
-// `id,display_name` alone would otherwise render every variant nameless.
-func fetchMissingNameSources(
-	ctx corectx.Context,
-	lookupOnion func(schemaName string) (dynamicresource.DynamicResourceEngineOnion, bool),
-	rows []dmodel.DynamicFields,
-) (map[string]dmodel.DynamicFields, error) {
-	missing := make([]dmodel.DynamicFields, 0, len(rows))
-	for _, row := range rows {
-		_, hasName := row[models.ProductVariantFieldTemplateName]
-		_, hasSku := row[models.ProductVariantFieldSku]
-		if !hasName && !hasSku {
-			missing = append(missing, row)
-		}
-	}
-	// The repository does not resolve related fields, so the template name is read off the template.
-	variants, err := searchByIds(ctx, lookupOnion, models.ProductVariantSchemaName, basemodel.FieldId,
-		distinctVariantIds(missing), []string{
-			basemodel.FieldId, models.ProductVariantFieldSku, models.ProductVariantFieldProductTemplateId,
-		}, len(missing))
-	if err != nil {
-		return nil, err
-	}
-	templateIds := distinctStrings(variants, models.ProductVariantFieldProductTemplateId)
-	templates, err := searchByIds(ctx, lookupOnion, models.ProductTemplateSchemaName, basemodel.FieldId,
-		templateIds, []string{basemodel.FieldId, models.ProductTemplateFieldName}, len(templateIds))
-	if err != nil {
-		return nil, err
-	}
-	templateById := indexById(templates)
-	for _, variant := range variants {
-		templateId := readString(variant[models.ProductVariantFieldProductTemplateId])
-		if template, ok := templateById[templateId]; ok {
-			variant[models.ProductVariantFieldTemplateName] = template[models.ProductTemplateFieldName]
-		}
-	}
-	return indexById(variants), nil
 }
 
 // fetchVariantAttributes reads every attribute value of the whole page in one search, grouped by
@@ -255,7 +178,7 @@ func fetchVariantAttributes(
 
 // assembleVariantAttributes groups the walked rows by variant, in the order the template declares
 // its lines: "Coca Cola (No sugar, Big)" keeps that order rather than whatever the join returned,
-// and the configuration preview, which names variants by the same lines, agrees with it.
+// and the stored display_name, which names variants by the same lines, agrees with it.
 func assembleVariantAttributes(hops variantAttributeHops) map[string][]variantAttributes {
 	byVariant := map[string][]variantAttributes{}
 	for _, join := range hops.joinRows {
@@ -304,7 +227,7 @@ func searchByIds(
 	}
 	onion, ok := lookupOnion(schemaName)
 	if !ok {
-		return nil, errors.Errorf("computed %q: no engine serves %q", VariantDisplayNameFn, schemaName)
+		return nil, errors.Errorf("computed field: no engine serves %q", schemaName)
 	}
 	keys := make([]any, len(ids))
 	for i, id := range ids {
@@ -320,14 +243,13 @@ func searchByIds(
 		Size:   size,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "computed %q: read %q", VariantDisplayNameFn, schemaName)
+		return nil, errors.Wrapf(err, "computed field: read %q", schemaName)
 	}
 	if result == nil {
 		return nil, nil
 	}
 	if result.ClientErrors.Count() > 0 {
-		return nil, errors.Errorf("computed %q: read %q: %v",
-			VariantDisplayNameFn, schemaName, result.ClientErrors.ToError())
+		return nil, errors.Errorf("computed field: read %q: %v", schemaName, result.ClientErrors.ToError())
 	}
 	return result.Data.Items, nil
 }

@@ -32,8 +32,9 @@ func (r *draftInsertProbe) BeginTransaction(corectx.Context) (database.DbTransac
 
 type draftInsertTransaction struct{}
 
-func (draftInsertTransaction) Commit() error   { return nil }
-func (draftInsertTransaction) Rollback() error { return nil }
+func (draftInsertTransaction) Commit() error      { return nil }
+func (draftInsertTransaction) Rollback() error    { return nil }
+func (draftInsertTransaction) OnCommitted(func()) {}
 
 // Stop at Insert so these tests inspect the actual maps without running pricing,
 // stage events or a real database transaction.

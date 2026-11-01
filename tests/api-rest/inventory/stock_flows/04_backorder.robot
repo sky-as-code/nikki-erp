@@ -96,9 +96,8 @@ Ask Policy Requires An Explicit Decision
     ...    paperwork nobody asked for.
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Ask Type
-    ${code}=    Unique Code    stkask
     ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
     ${type_id}    ${type_etag}=    Response Should Be Create Success    ${resp}
 
     ${available}=    Read Stock On Hand    ${PRODUCT_VARIANT_ID}    ${INVENTORY_LOCATION_ID}

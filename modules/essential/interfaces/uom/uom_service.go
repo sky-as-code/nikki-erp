@@ -31,6 +31,7 @@ type UomApplicationService interface {
 // able to validate a UoM reference without reaching into Essential's repositories.
 type UomLookupService interface {
 	GetUom(ctx corectx.Context, query GetUomQuery) (*GetUomResult, error)
+	FindUomBySymbol(ctx corectx.Context, query FindUomBySymbolQuery) (*GetUomResult, error)
 }
 
 // UomConversionDomainService implements the conversion rules of BR-UOM-ESS-013.

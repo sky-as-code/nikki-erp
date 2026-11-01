@@ -102,11 +102,17 @@
         "variant_count": {
             "type": ["integer", "null"]
         },
-        "min_variant_cost": {
+        "cost": {
             "type": ["string", "number", "null"]
         },
-        "max_variant_cost": {
-            "type": ["string", "number", "null"]
+        "uom_symbol": {
+            "type": ["string", "null"]
+        },
+        "weight_uom_symbol": {
+            "type": ["string", "null"]
+        },
+        "dimension_uom_symbol": {
+            "type": ["string", "null"]
         }
     },
     "additionalProperties": false

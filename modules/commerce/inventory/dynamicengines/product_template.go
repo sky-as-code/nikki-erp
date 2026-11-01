@@ -30,6 +30,7 @@ func registerProductTemplateEngine() error {
 			param dynamicresource.BuildParam,
 			usageDispatcher *usagecheck.Dispatcher,
 			catalogPublisher itEvent.CatalogChangedEventPublisher,
+			units *services.OrgUnitResolver,
 		) dynamicresource.DynamicResourceEngineOnion {
 			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.ProductTemplateSchemaName,
@@ -42,7 +43,7 @@ func registerProductTemplateEngine() error {
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewProductTemplateApplicationService(base, catalogPublisher)
 				},
-				ComputedFunctions: newTemplateComputedFunctions(),
+				ComputedFunctions: newTemplateComputedFunctions(units),
 			}, param)
 		},
 	)

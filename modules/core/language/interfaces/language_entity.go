@@ -7,10 +7,11 @@ import (
 type Language struct {
 	Id                 *model.Id           `json:"id"`
 	Name               *string             `json:"name"`
-	IsoCode            *model.LanguageCode `json:"iso_code"`
+	LocaleCode         *model.LanguageCode `json:"locale_code"`
 	Direction          *string             `json:"direction"`
 	DecimalSeparator   *string             `json:"decimal_separator"`
 	ThousandsSeparator *string             `json:"thousands_separator"`
+	Grouping           *string             `json:"grouping"`
 	DateFormat         *string             `json:"date_format"`
 	TimeFormat         *string             `json:"time_format"`
 	ShortTimeFormat    *string             `json:"short_time_format"`

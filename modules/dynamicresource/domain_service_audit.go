@@ -39,10 +39,15 @@ func IsAuditedSchema(schemaName string) bool {
 // auditTrail records the mutations of the default domain service. Each write and its entry run in
 // one transaction, joined when the caller opened one: an entry that fails to record rolls the
 // write back, and a write that rolls back leaves no entry.
+//
+// Create, archive, unarchive and delete are always recorded. An update is recorded only when a
+// field flagged audit.MetadataTrackHistory changed; m2m links are not recorded at all.
 type auditTrail struct {
 	sink   AuditRecorder
 	schema *dmodel.ModelSchema
 	repo   CrudRepository
+	// tracksUpdates is false for a schema with no tracked field, whose updates skip the trail.
+	tracksUpdates bool
 }
 
 // newAuditTrail is nil for a resource that opted out.
@@ -50,11 +55,17 @@ func newAuditTrail(schema *dmodel.ModelSchema, repo CrudRepository, sink AuditRe
 	if sink == nil || schema == nil {
 		return nil
 	}
-	return &auditTrail{sink: sink, schema: schema, repo: repo}
+	return &auditTrail{sink: sink, schema: schema, repo: repo, tracksUpdates: audit.HasTrackedField(schema)}
 }
 
 func (this *auditTrail) active() bool {
 	return this != nil && this.sink.Enabled()
+}
+
+// activeForUpdate is false when no update of the schema can produce an entry, so the write runs
+// without the trail's transaction.
+func (this *auditTrail) activeForUpdate() bool {
+	return this.active() && this.tracksUpdates
 }
 
 func (this *auditTrail) create(
@@ -209,8 +220,8 @@ func (this *auditTrail) storedRow(ctx corectx.Context, cmd dmodel.DynamicFields)
 	return found.Data, nil
 }
 
-// record writes one entry. A nil before is a create, a nil after a delete; anything else that
-// changed no audited field writes nothing.
+// record writes one entry. A nil before is a create, a nil after a delete; an update that changed
+// no tracked field writes nothing.
 func (this *auditTrail) record(
 	ctx corectx.Context, action string, before, after dmodel.DynamicFields,
 ) error {
@@ -222,9 +233,14 @@ func (this *auditTrail) record(
 	return errors.Wrapf(err, "record %s %s", action, this.schema.Name())
 }
 
-// newAuditEntry diffs the two rows and addresses the entry by the record's id and org.
+// newAuditEntry diffs the two rows and addresses the entry by the record's id and org. An update,
+// whatever action labels it, keeps only the tracked fields; archive and unarchive keep their flag.
 func newAuditEntry(schema *dmodel.ModelSchema, action string, before, after dmodel.DynamicFields) audit.Entry {
-	oldValues, newValues := audit.Diff(schema, before, after)
+	diff := audit.Diff
+	if isUpdateEntry(action, before, after) {
+		diff = audit.DiffTracked
+	}
+	oldValues, newValues := diff(schema, before, after)
 	entry := audit.Entry{
 		Action:       action,
 		ResourceCode: schema.Name(),
@@ -236,6 +252,10 @@ func newAuditEntry(schema *dmodel.ModelSchema, action string, before, after dmod
 		entry.ResourceId = &id
 	}
 	return entry
+}
+
+func isUpdateEntry(action string, before, after dmodel.DynamicFields) bool {
+	return before != nil && after != nil && action != audit.ActionArchive && action != audit.ActionUnarchive
 }
 
 func firstId(rows ...dmodel.DynamicFields) string {

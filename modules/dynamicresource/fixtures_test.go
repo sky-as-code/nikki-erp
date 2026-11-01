@@ -113,10 +113,23 @@ type stubRepository struct {
 type stubTransaction struct {
 	committed  bool
 	rolledBack bool
+	callbacks  []func()
 }
 
-func (this *stubTransaction) Commit() error   { this.committed = true; return nil }
-func (this *stubTransaction) Rollback() error { this.rolledBack = true; return nil }
+func (this *stubTransaction) Commit() error {
+	this.committed = true
+	for _, fn := range this.callbacks {
+		fn()
+	}
+	this.callbacks = nil
+	return nil
+}
+func (this *stubTransaction) Rollback() error {
+	this.rolledBack = true
+	this.callbacks = nil
+	return nil
+}
+func (this *stubTransaction) OnCommitted(fn func()) { this.callbacks = append(this.callbacks, fn) }
 
 func (this *stubRepository) Schema() *dmodel.ModelSchema { return this.schema }
 
@@ -208,6 +221,12 @@ func (this *fakeDomainService) Update(_ corectx.Context, cmd UpdateCommand, opti
 		return &MutateResult{ClientErrors: cErrs}, nil
 	}
 	return &MutateResult{HasData: true}, nil
+}
+
+func (this *fakeDomainService) UpdateManaged(
+	ctx corectx.Context, cmd UpdateCommand, options ...UpdateOptions,
+) (*MutateResult, error) {
+	return this.Update(ctx, cmd, options...)
 }
 
 func (this *fakeDomainService) Delete(_ corectx.Context, cmd DeleteCommand, options ...DeleteOptions) (*MutateResult, error) {

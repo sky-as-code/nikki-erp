@@ -48,6 +48,12 @@ func (this *UomConversionApplicationServiceImpl) GetUom(
 	return this.conversionSvc.GetUom(ctx, query)
 }
 
+func (this *UomConversionApplicationServiceImpl) FindUomBySymbol(
+	ctx corectx.Context, query itUom.FindUomBySymbolQuery,
+) (*itUom.GetUomResult, error) {
+	return this.conversionSvc.FindUomBySymbol(ctx, query)
+}
+
 func (this *UomConversionApplicationServiceImpl) ToReference(
 	ctx corectx.Context, query itUom.ToReferenceQuery,
 ) (*itUom.ToReferenceResult, error) {

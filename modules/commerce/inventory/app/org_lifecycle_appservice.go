@@ -6,9 +6,12 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	commconstants "github.com/sky-as-code/nikki-erp/modules/commerce/constants"
 	orgDefaults "github.com/sky-as-code/nikki-erp/modules/commerce/infra/inventory/defaults"
+	invconstants "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/constants"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
@@ -21,6 +24,14 @@ import (
 // aliasWarehouseStockLoc names the main warehouse's stock location, where its goods live, for the
 // operation types' default source and destination.
 const aliasWarehouseStockLoc = "location_main"
+
+// operationTypeSettings maps each Commerce setting that names an operation type to the alias of the
+// default type it points at for a new org.
+var operationTypeSettings = []struct{ setting, alias string }{
+	{models.OrgSettingOutgoingOperationTypeId, "stock_operation_type_main_out"},
+	{models.OrgSettingIncomingOperationTypeId, "stock_operation_type_main_in"},
+	{models.OrgSettingCorrectionOperationTypeId, "stock_operation_type_correction"},
+}
 
 // cleanUpOrder lists every org-scoped resource children first. Attribute links without an
 // org_id go with the templates and variants they cascade from. Warehouses go before locations:
@@ -46,6 +57,8 @@ type OrgLifecycleParam struct {
 	Warehouse       itWarehouse.WarehouseAppService
 	Location        itWarehouse.InventoryLocationDomainService
 	OperationType   itStock.StockOperationTypeDomainService
+	Settings        itExt.OrgSettingsSeedExtService
+	Units           *services.OrgUnitResolver
 }
 
 func NewOrgLifecycleAppService(param OrgLifecycleParam) orglifecycle.OrgLifecycleService {
@@ -65,7 +78,8 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model
 		aliases := defaults.NewAliases()
 		steps := []func(corectx.Context, *defaults.Aliases, model.Id) error{
 			this.createStorageCategories, this.createRootCategory, this.createWarehouse,
-			this.createVirtualLocations, this.createOperationTypes,
+			this.createVirtualLocations, this.createOperationTypes, this.seedOperationTypeSettings,
+			this.seedUnitSettings,
 		}
 		for _, step := range steps {
 			if err := step(tranxCtx, aliases, orgId); err != nil {
@@ -152,6 +166,60 @@ func (this *OrgLifecycleAppServiceImpl) createOperationTypes(
 	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id,
 ) error {
 	return createFromDefaults(ctx, this.param.OperationType, aliases, orgId)
+}
+
+// seedOperationTypeSettings points the Commerce settings at the operation types just created. A
+// module that adds its own types for the same purpose (Vending Machine's kiosk dispense) overwrites
+// its setting from its own lifecycle, which runs in a later wave.
+func (this *OrgLifecycleAppServiceImpl) seedOperationTypeSettings(
+	ctx corectx.Context, aliases *defaults.Aliases, _ model.Id,
+) error {
+	items := make([]itExt.SetSettingItem, 0, len(operationTypeSettings))
+	for _, entry := range operationTypeSettings {
+		id, found := aliases.Id(entry.alias)
+		if !found {
+			return errors.Errorf("default operation type %s was not created", entry.alias)
+		}
+		items = append(items, itExt.SetSettingItem{Name: entry.setting, Value: string(id)})
+	}
+	result, err := this.param.Settings.SeedOrgSettings(ctx, itExt.SetSettingsCommand{
+		ModuleKey: commconstants.CommerceModuleName,
+		Items:     items,
+	})
+	if err != nil {
+		return err
+	}
+	if result.ClientErrors.Count() > 0 {
+		return errors.Wrap(result.ClientErrors.ToError(), "seed operation type settings")
+	}
+	return nil
+}
+
+// seedUnitSettings points the inventory unit settings at the organization's own kg and cm, which
+// Essential's lifecycle created in an earlier wave. A UoM id differs per organization, so the
+// schema can carry no default_value and the defaults are resolved by symbol here.
+func (this *OrgLifecycleAppServiceImpl) seedUnitSettings(
+	ctx corectx.Context, _ *defaults.Aliases, orgId model.Id,
+) error {
+	ids, err := this.param.Units.DefaultUnitIds(ctx, string(orgId))
+	if err != nil || len(ids) == 0 {
+		return err
+	}
+	items := make([]itExt.SetSettingItem, 0, len(ids))
+	for name, id := range ids {
+		items = append(items, itExt.SetSettingItem{Name: name, Value: id})
+	}
+	result, err := this.param.Settings.SeedOrgSettings(ctx, itExt.SetSettingsCommand{
+		ModuleKey: invconstants.InventoryModuleName,
+		Items:     items,
+	})
+	if err != nil {
+		return err
+	}
+	if result.ClientErrors.Count() > 0 {
+		return errors.Wrap(result.ClientErrors.ToError(), "seed unit settings")
+	}
+	return nil
 }
 
 func createFromDefaults(

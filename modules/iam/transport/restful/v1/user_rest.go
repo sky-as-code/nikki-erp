@@ -84,8 +84,8 @@ func idToStringPtr(id *model.Id) *string {
 //
 // Every value is read through the Settings module's consolidated read rather than level by level:
 // one call answers "what applies to this user", already folded across tenant, org and user. This
-// handler then resolves the two references in that answer -- a language iso code and a currency
-// code -- against Essential's catalogues, so the frontend receives records rather than codes it
+// handler then resolves the two references in that answer -- a language locale code and a currency
+// id -- against Essential's catalogues, so the frontend receives records rather than codes it
 // would have to look up itself.
 //
 // It stays fail-soft throughout. The user context is what the whole application boots from, so a
@@ -101,7 +101,9 @@ func (this UserRest) accountSettings(reqCtx corectx.Context) map[string]any {
 		"density":             itExt.DefaultDensity,
 	}
 
-	result, err := this.SettingsSvc.GetEffectiveSettings(reqCtx, itExt.GetEffectiveSettingsQuery{})
+	result, err := this.SettingsSvc.GetEffectiveSettings(reqCtx, itExt.GetEffectiveSettingsQuery{
+		ModuleKeys: []string{itExt.AccountingModuleKey},
+	})
 	if err != nil || result == nil || !result.HasData {
 		return settings
 	}
@@ -112,6 +114,10 @@ func (this UserRest) accountSettings(reqCtx corectx.Context) map[string]any {
 	}
 	if density, ok := values[essentialKey(itExt.SettingDensity)].(string); ok {
 		settings["density"] = density
+	}
+	if timezone := firstNonEmptyString(values,
+		essentialKey(itExt.SettingTimezone), essentialKey(itExt.SettingSystemTimezone)); timezone != "" {
+		settings["timezone"] = timezone
 	}
 	if language := this.resolveLanguage(reqCtx, values, enabled); language != nil {
 		settings["language"] = *language
@@ -142,11 +148,11 @@ func (this UserRest) resolveLanguage(
 		essentialKey(itExt.SettingLanguage),
 		essentialKey(itExt.SettingSystemLanguage),
 	} {
-		isoCode, ok := values[key].(string)
-		if !ok || !array.Contains(enabled, isoCode) {
+		localeCode, ok := values[key].(string)
+		if !ok || !array.Contains(enabled, localeCode) {
 			continue
 		}
-		if language := this.loadLanguage(ctx, isoCode); language != nil {
+		if language := this.loadLanguage(ctx, localeCode); language != nil {
 			return language
 		}
 	}
@@ -164,16 +170,16 @@ func (this UserRest) enabledLanguageCodes(ctx corectx.Context) []string {
 	}
 	codes := make([]string, 0, len(found.Data))
 	for _, language := range found.Data {
-		if code := language.GetIsoCode(); code != nil {
+		if code := language.GetLocaleCode(); code != nil {
 			codes = append(codes, *code)
 		}
 	}
 	return codes
 }
 
-func (this UserRest) loadLanguage(ctx corectx.Context, isoCode string) *itCore.Language {
-	found, err := this.LanguageSvc.GetLanguageByIsoCode(ctx, itExt.GetLanguageByIsoCodeQuery{
-		IsoCode: isoCode,
+func (this UserRest) loadLanguage(ctx corectx.Context, localeCode string) *itCore.Language {
+	found, err := this.LanguageSvc.GetLanguageByLocaleCode(ctx, itExt.GetLanguageByLocaleCodeQuery{
+		LocaleCode: localeCode,
 	})
 	if err != nil || found == nil || !found.HasData {
 		return nil
@@ -182,10 +188,11 @@ func (this UserRest) loadLanguage(ctx corectx.Context, isoCode string) *itCore.L
 	return &itCore.Language{
 		Id:                 record.GetId(),
 		Name:               record.GetName(),
-		IsoCode:            util.ToPtr(model.LanguageCode(util.ValueOrZeroOf(record.GetIsoCode()))),
+		LocaleCode:         util.ToPtr(model.LanguageCode(util.ValueOrZeroOf(record.GetLocaleCode()))),
 		Direction:          record.GetDirection(),
 		DecimalSeparator:   record.GetDecimalSeparator(),
 		ThousandsSeparator: record.GetThousandsSeparator(),
+		Grouping:           record.GetGrouping(),
 		DateFormat:         record.GetDateFormat(),
 		TimeFormat:         record.GetTimeFormat(),
 		ShortTimeFormat:    record.GetShortTimeFormat(),
@@ -193,26 +200,42 @@ func (this UserRest) loadLanguage(ctx corectx.Context, isoCode string) *itCore.L
 	}
 }
 
-// resolveCurrency resolves the organization's default_currency, which stores an alphabetic code.
+// resolveCurrency resolves accounting's system currency: the organization's own, else the tenant's.
 //
 // An absent or unresolvable currency omits the key rather than guessing one. There is no safe
 // default currency: a guessed one silently reinterprets every amount on screen.
 func (this UserRest) resolveCurrency(ctx corectx.Context, values map[string]any) map[string]any {
-	code, ok := values[essentialKey(itExt.SettingDefaultCurrency)].(string)
-	if !ok || code == "" {
+	currencyId := firstNonEmptyString(values,
+		accountingKey(itExt.SettingSystemCurrency), accountingKey(itExt.SettingTenantSystemCurrency))
+	if currencyId == "" {
 		return nil
 	}
-	found, err := this.CurrencySvc.GetCurrencyByCode(ctx, itExt.GetCurrencyByCodeQuery{Code: code})
+	found, err := this.CurrencySvc.GetCurrency(ctx, itExt.GetCurrencyQuery{Id: model.Id(currencyId)})
 	if err != nil || found == nil || !found.HasData {
 		return nil
 	}
 	return map[string]any{
-		"code":   found.Data.Code,
-		"symbol": found.Data.Symbol,
-		// The currency catalogue seeds no symbols -- a wrong symbol on money is worse than none --
-		// so the frontend renders the code whenever symbol is empty.
-		"decimal_places": found.Data.DecimalPlaces,
+		"code": found.Data.Code,
+		// Only the currencies in use are seeded with a symbol, so the frontend renders the code
+		// whenever symbol is empty.
+		"symbol":          found.Data.Symbol,
+		"symbol_position": found.Data.SymbolPosition,
+		"decimal_places":  found.Data.DecimalPlaces,
 	}
+}
+
+func accountingKey(name string) string {
+	return itExt.AccountingModuleKey + "." + name
+}
+
+// firstNonEmptyString returns the first of keys holding a non-empty string in values.
+func firstNonEmptyString(values map[string]any, keys ...string) string {
+	for _, key := range keys {
+		if value, _ := values[key].(string); value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 // fallbackLanguage is the display language of last resort, used only when the settings read fails
@@ -224,14 +247,15 @@ func (this UserRest) resolveCurrency(ctx corectx.Context, values map[string]any)
 // hardcoded as a default -- and it is replaced the moment a real record resolves.
 func fallbackLanguage() itCore.Language {
 	return itCore.Language{
-		Name:               util.ToPtr("English"),
-		IsoCode:            util.ToPtr(model.LanguageCode(model.DefaultLanguageCode)),
+		Name:               util.ToPtr("English (US)"),
+		LocaleCode:         util.ToPtr(model.LanguageCode(model.DefaultLanguageCode)),
 		Direction:          util.ToPtr("ltr"),
 		DecimalSeparator:   util.ToPtr("."),
 		ThousandsSeparator: util.ToPtr(","),
-		DateFormat:         util.ToPtr("MM/dd/yyyy"),
-		TimeFormat:         util.ToPtr("HH:mm:ss"),
-		ShortTimeFormat:    util.ToPtr("HH:mm"),
+		Grouping:           util.ToPtr("[3,0]"),
+		DateFormat:         util.ToPtr("%m/%d/%Y"),
+		TimeFormat:         util.ToPtr("%H:%M:%S"),
+		ShortTimeFormat:    util.ToPtr("%H:%M"),
 		FirstDayOfWeek:     util.ToPtr("sunday"),
 	}
 }

@@ -56,7 +56,7 @@ type ManageM2mParam struct {
 	Validate func(ctx corectx.Context, change M2mChange, vErrs *ft.ClientErrors) error
 
 	// AfterChange runs after the junction rows changed, inside the same transaction, so a
-	// permission rebuild or an audit row stands or falls with the link. It does not run when the
+	// permission rebuild stands or falls with the link. It does not run when the
 	// call changed nothing. A returned error rolls the whole call back.
 	AfterChange func(tranxCtx corectx.Context, change M2mChange) error
 }
@@ -107,9 +107,6 @@ func manageM2mWith(
 		}
 		if !result.HasData {
 			return nil, nil
-		}
-		if err := recordM2mChange(tranxCtx, repo, param.DestSchemaName, *change); err != nil {
-			return nil, err
 		}
 		if param.AfterChange == nil {
 			return nil, nil

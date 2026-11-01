@@ -43,7 +43,8 @@
 			"default_value": "processing",
 			"description": {
 				"en-US": "How this attempt ended. 'unknown' IS NOT A FAILURE and is the reason this resource exists: the request reached the provider and the reply did not come back, so nobody can say whether a document was created. It must be reconciled against the provider before any retry - retrying an unknown is how one sale acquires two legal invoices."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "started_at",

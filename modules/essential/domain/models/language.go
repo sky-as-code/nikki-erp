@@ -30,10 +30,11 @@ const (
 
 	LanguageFieldId                 = basemodel.FieldId
 	LanguageFieldName               = "name"
-	LanguageFieldIsoCode            = "iso_code"
+	LanguageFieldLocaleCode         = "locale_code"
 	LanguageFieldDirection          = "direction"
 	LanguageFieldDecimalSeparator   = "decimal_separator"
 	LanguageFieldThousandsSeparator = "thousands_separator"
+	LanguageFieldGrouping           = "grouping"
 	LanguageFieldDateFormat         = "date_format"
 	LanguageFieldTimeFormat         = "time_format"
 	LanguageFieldShortTimeFormat    = "short_time_format"
@@ -60,7 +61,7 @@ func NewLanguageFrom(src dmodel.DynamicFields) *Language {
 	return &Language{basemodel.NewDynamicModel(src)}
 }
 
-// Every field of this model is stored as a string, iso_code included: GetFieldData has no
+// Every field of this model is stored as a string, locale_code included: GetFieldData has no
 // LanguageCode accessor, and a getter that silently cast to one would hide the conversion the
 // transport layer has to do anyway.
 
@@ -72,12 +73,12 @@ func (this *Language) SetName(v *string) {
 	this.GetFieldData().SetString(LanguageFieldName, v)
 }
 
-func (this Language) GetIsoCode() *string {
-	return this.GetFieldData().GetString(LanguageFieldIsoCode)
+func (this Language) GetLocaleCode() *string {
+	return this.GetFieldData().GetString(LanguageFieldLocaleCode)
 }
 
-func (this *Language) SetIsoCode(v *string) {
-	this.GetFieldData().SetString(LanguageFieldIsoCode, v)
+func (this *Language) SetLocaleCode(v *string) {
+	this.GetFieldData().SetString(LanguageFieldLocaleCode, v)
 }
 
 func (this Language) GetDirection() *string {
@@ -102,6 +103,15 @@ func (this Language) GetThousandsSeparator() *string {
 
 func (this *Language) SetThousandsSeparator(v *string) {
 	this.GetFieldData().SetString(LanguageFieldThousandsSeparator, v)
+}
+
+// GetGrouping returns the digit grouping as its stored JSON int array, e.g. "[3,0]".
+func (this Language) GetGrouping() *string {
+	return this.GetFieldData().GetString(LanguageFieldGrouping)
+}
+
+func (this *Language) SetGrouping(v *string) {
+	this.GetFieldData().SetString(LanguageFieldGrouping, v)
 }
 
 func (this Language) GetDateFormat() *string {

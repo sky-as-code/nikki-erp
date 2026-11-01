@@ -18,8 +18,9 @@ type countingTransaction struct {
 	rollbacks int
 }
 
-func (this *countingTransaction) Commit() error   { this.commits++; return nil }
-func (this *countingTransaction) Rollback() error { this.rollbacks++; return nil }
+func (this *countingTransaction) Commit() error      { this.commits++; return nil }
+func (this *countingTransaction) Rollback() error    { this.rollbacks++; return nil }
+func (this *countingTransaction) OnCommitted(func()) {}
 
 type transactionProbeRepo struct {
 	dynamicresource.CrudRepository

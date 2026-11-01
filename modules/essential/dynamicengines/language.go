@@ -11,6 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/essential/infra/repository"
+	itExt "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/external"
 	itLang "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 )
 
@@ -23,7 +24,9 @@ type languageEngineParam struct {
 func registerLanguageEngine() error {
 	err := deps.RegisterNamed(
 		dynamicresource.EngineDependencyName(models.LanguageSchemaName),
-		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+		func(
+			param dynamicresource.BuildParam, effectiveSettings itExt.EffectiveSettingsExtService,
+		) dynamicresource.DynamicResourceEngineOnion {
 			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:      models.LanguageSchemaName,
 				PermissionScope: tenantScope(),
@@ -31,7 +34,7 @@ func registerLanguageEngine() error {
 					return repo.NewLanguageRepository(base)
 				},
 				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
-					return services.NewLanguageDomainService(base)
+					return services.NewLanguageDomainService(base, effectiveSettings)
 				},
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewLanguageApplicationService(base)

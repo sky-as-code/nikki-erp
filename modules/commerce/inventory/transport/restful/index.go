@@ -38,7 +38,7 @@ func InitRestfulHandlers() error {
 		v1.NewStockProductConfigRest,
 		v1.NewStockReservationRest,
 	)
-	return stdErr.Join(err, initInventoryV1())
+	return stdErr.Join(err, initInventoryV1(), initSettingsV1())
 }
 
 // initInventoryV1 registers every resource at /v1/inventory/{schema_name}: the built-in route

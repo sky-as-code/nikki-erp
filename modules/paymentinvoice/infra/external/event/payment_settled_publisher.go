@@ -66,7 +66,7 @@ func (this *PaymentSettledEventPublisherImpl) PublishAsync(
 
 	bgCtx := corectx.NewRequestContext(context.WithoutCancel(ctx.InnerContext()))
 
-	go func() {
+	publish := func() {
 		defer func() {
 			// A panic on this goroutine would take the process down with it, and the settlement that
 			// spawned it has already been committed. It is contained and logged instead.
@@ -87,7 +87,9 @@ func (this *PaymentSettledEventPublisherImpl) PublishAsync(
 					"type":     string(event.Type),
 				})
 		}
-	}()
+	}
+	// A caller inside a transaction must not announce a write that may still roll back.
+	ctx.OnCommitted(func() { go publish() })
 }
 
 func (this *PaymentSettledEventPublisherImpl) publish(

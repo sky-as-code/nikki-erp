@@ -14,7 +14,7 @@ type LanguageRepository interface {
 
 // LanguageLookupService is what another module asks of the language catalogue.
 type LanguageLookupService interface {
-	GetLanguageByIsoCode(ctx corectx.Context, query GetLanguageByIsoCodeQuery) (*GetLanguageByIsoCodeResult, error)
+	GetLanguageByLocaleCode(ctx corectx.Context, query GetLanguageByLocaleCodeQuery) (*GetLanguageByLocaleCodeResult, error)
 	ListEnabledLanguages(ctx corectx.Context, query ListEnabledLanguagesQuery) (*ListEnabledLanguagesResult, error)
 }
 

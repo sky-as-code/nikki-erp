@@ -1,6 +1,8 @@
 {
+	"fields.itstorage_capacity_mibytes": "Dung lượng lưu trữ (MiB)",
 	"fields.level": "Cấp",
 	"fields.module_key": "Mô-đun",
+	"fields.name": "Tên",
 	"fields.owner_id": "Chủ sở hữu",
 	"fields.owner_type": "Loại chủ sở hữu",
 	"fields.schema": "Định nghĩa",
@@ -20,6 +22,7 @@
 	"page.empty": "Không có mô-đun nào cung cấp cài đặt có thể thay đổi.",
 	"page.save": "Lưu thay đổi",
 	"page.title": "Cài đặt",
+	"pane.accounting": "Kế toán",
 	"pane.general": "Chung",
 	"pane.security": "Bảo mật",
 	"settings.enforcedByTenant": "Bị áp đặt bởi tổ chức thuê bao và không thể thay đổi tại đây",
@@ -27,6 +30,9 @@
 	"settings.level.tenant": "Tổ chức thuê bao",
 	"settings.level.user": "Người dùng",
 	"settings.level_invalid": "Cấp phải là một trong tenant, org hoặc user",
+	"settings.menu.general": "Cài đặt chung",
+	"settings.menu.languages": "Ngôn ngữ",
+	"settings.menu.translations": "Bản dịch",
 	"settings.moduleLabel": "Cài đặt",
 	"settings.module_key_required": "Bắt buộc phải có mô-đun",
 	"settings.name_used_at_another_level": "Tên cài đặt này đã được khai báo ở cấp khác của mô-đun",
@@ -34,13 +40,11 @@
 	"settings.override_not_yours": "Chỉ Quản trị viên tổ chức thuê bao mới được thay đổi việc cho phép ghi đè cài đặt này",
 	"settings.owner_id_required": "Bắt buộc phải có chủ sở hữu",
 	"settings.schema_must_not_build_db": "Định nghĩa cài đặt chỉ được chứa siêu dữ liệu và không được khai báo should_build_db",
-	"settings.schema_required": "Bắt buộc phải có định nghĩa cài đặt",
 	"settings.schema_not_registered": "Mô-đun này chưa đăng ký cài đặt nào ở cấp này",
+	"settings.schema_required": "Bắt buộc phải có định nghĩa cài đặt",
 	"settings.setting_is_managed": "Cài đặt này do Quản trị viên tổ chức thuê bao quản lý",
 	"settings.unknownName": "Cài đặt này không được khai báo bởi mô-đun",
-	"settings_record.label": "Giá trị cài đặt",
-	"settings_schema.label": "Định nghĩa cài đặt",
 	"settings_quota.label": "Hạn mức",
-	"fields.itstorage_capacity_mibytes": "Dung lượng lưu trữ (MiB)",
-	"fields.name": "Tên"
+	"settings_record.label": "Giá trị cài đặt",
+	"settings_schema.label": "Định nghĩa cài đặt"
 }

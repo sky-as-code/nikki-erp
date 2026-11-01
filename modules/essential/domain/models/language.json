@@ -3,6 +3,7 @@
 	"label": "essential_language.label",
 	"table_name": "essential_languages",
 	"should_build_db": true,
+	"default_search_fields": ["name", "locale_code", "direction", "is_enabled"],
 	"extend_before": [
 		"core.basemodel.base_model"
 	],
@@ -15,11 +16,12 @@
 				"min": 1,
 				"max": 200
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"unique": true
 		},
 		{
-			"name": "iso_code",
-			"label": "fields.iso_code",
+			"name": "locale_code",
+			"label": "fields.locale_code",
 			"data_type": {
 				"type": "string",
 				"min": 5,
@@ -39,7 +41,8 @@
 					"rtl"
 				]
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "ltr"
 		},
 		{
 			"name": "decimal_separator",
@@ -49,17 +52,29 @@
 				"min": 1,
 				"max": 5
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "."
 		},
 		{
 			"name": "thousands_separator",
 			"label": "fields.thousands_separator",
 			"data_type": {
 				"type": "string",
-				"min": 1,
+				"min": 0,
 				"max": 5
 			},
-			"required_for_create": true
+			"default_value": ","
+		},
+		{
+			"name": "grouping",
+			"label": "fields.grouping",
+			"data_type": {
+				"type": "string",
+				"min": 2,
+				"max": 30
+			},
+			"required_for_create": true,
+			"default_value": "[3,0]"
 		},
 		{
 			"name": "date_format",
@@ -69,7 +84,8 @@
 				"min": 1,
 				"max": 30
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "%m/%d/%Y"
 		},
 		{
 			"name": "time_format",
@@ -79,7 +95,8 @@
 				"min": 1,
 				"max": 30
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "%H:%M:%S"
 		},
 		{
 			"name": "short_time_format",
@@ -89,7 +106,8 @@
 				"min": 1,
 				"max": 30
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "%H:%M"
 		},
 		{
 			"name": "first_day_of_week",
@@ -106,7 +124,8 @@
 					"sunday"
 				]
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "sunday"
 		},
 		{
 			"name": "is_enabled",

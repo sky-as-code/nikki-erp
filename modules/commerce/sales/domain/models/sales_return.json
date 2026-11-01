@@ -76,7 +76,8 @@
 			"no_update": true,
 			"description": {
 				"en-US": "Where the return has reached COMMERCIALLY. Per D-17 it reaches 'completed' once the goods are back and the money is refunded — the customer-facing halves — and NOT when the tax paperwork succeeds. fiscal_adjustment_status carries that separately and never gates this one. Moved only by the return service, never by a plain update."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "inventory_return_status",

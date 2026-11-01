@@ -33,6 +33,9 @@ type DbTxClient interface {
 	DbClient
 	Commit() error
 	Rollback() error
+	// OnCommitted queues fn to run, in registration order, after Commit succeeds. Rollback
+	// discards the queue. A panicking callback is logged and does not affect the others.
+	OnCommitted(fn func())
 }
 
 // SelectColumn is a select-list token for graph queries: plain field path, DISTINCT::field, or aggregates.

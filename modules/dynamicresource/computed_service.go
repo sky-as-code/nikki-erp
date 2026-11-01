@@ -72,6 +72,15 @@ func (this *computedFieldService) Update(
 	return this.CrudDomainService.Update(ctx, cmd, options...)
 }
 
+func (this *computedFieldService) UpdateManaged(
+	ctx corectx.Context, cmd UpdateCommand, options ...UpdateOptions,
+) (*MutateResult, error) {
+	if errs := computed.RejectWrites(this.Schema(), cmd); errs.Count() > 0 {
+		return &MutateResult{ClientErrors: errs}, nil
+	}
+	return this.CrudDomainService.UpdateManaged(ctx, cmd, options...)
+}
+
 func (this *computedFieldService) Search(
 	ctx corectx.Context, query SearchQuery, options ...corecrud.ServiceSearchOptions,
 ) (*SearchResult, error) {

@@ -24,7 +24,7 @@ func NewEnabledLanguagesResolver(langSvc itLang.LanguageLookupService) dyn.Enabl
 		}
 		codes := make([]cmodel.LanguageCode, 0, len(result.Data))
 		for _, language := range result.Data {
-			if code := supportedLanguageOf(safe.GetVal(language.GetIsoCode(), "")); code != nil {
+			if code := supportedLanguageOf(safe.GetVal(language.GetLocaleCode(), "")); code != nil {
 				codes = append(codes, *code)
 			}
 		}

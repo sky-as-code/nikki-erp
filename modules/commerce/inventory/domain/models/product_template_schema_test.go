@@ -61,19 +61,21 @@ func TestVariantDoesNotDuplicateTemplateOwnedFields(t *testing.T) {
 	}
 }
 
-// The display name is computed from template name plus attribute values; storing it would let it
-// drift out of step with the combination it describes.
-func TestVariantHasNoStoredDisplayName(t *testing.T) {
+// display_name is stored per locale so it can be filtered, sorted and used by import to resolve a
+// variant by its label; the variant service keeps it in step with the template name and values.
+func TestVariantDisplayNameIsStoredLangJson(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
 	schema := ProductVariantSchemaBuilder().Build()
 
-	if field, ok := schema.Fields()["display_name"]; assert.True(t, ok, "display_name must exist") {
-		assert.True(t, field.IsComputed(), "display_name must be computed, never stored")
-		assert.False(t, field.IsPersisted(), "display_name must occupy no column")
+	if field, ok := schema.Fields()[ProductVariantFieldDisplayName]; assert.True(t, ok, "display_name must exist") {
+		assert.False(t, field.IsComputed(), "display_name is stored by the variant service")
+		assert.True(t, field.IsPersisted(), "display_name must occupy a column so it can be filtered and sorted")
+		assert.Equal(t, dmodel.FieldDataTypeNameLangJson, field.DataType().String())
 	}
+	assert.Equal(t, ProductVariantFieldDisplayName, schema.RecordLabelField())
 	_, ok := schema.Fields()["variant_name"]
-	assert.False(t, ok, "variant_name must be computed, never stored")
+	assert.False(t, ok, "variant_name must not exist beside display_name")
 }
 
 // A single variant is the template's only concrete product by definition, so no flag marks it.

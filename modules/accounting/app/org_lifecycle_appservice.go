@@ -91,7 +91,7 @@ func (this *OrgLifecycleAppServiceImpl) seedSettings(ctx corectx.Context) error 
 	result, err := this.param.SettingsSvc.SeedOrgSettings(ctx, itExt.SetSettingsCommand{
 		ModuleKey: modconstants.AccountingModuleName,
 		Items: []itExt.SetSettingItem{
-			{Name: orgSettings.OrgSettingOrgDefaultCurrency, Value: string(currency.Data.Id)},
+			{Name: orgSettings.OrgSettingSystemCurrency, Value: string(currency.Data.Id)},
 			{Name: orgSettings.OrgSettingDefaultRoundingPolicyCode, Value: defaultRoundingPolicyCode},
 		},
 	})

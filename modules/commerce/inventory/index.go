@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"context"
 	"errors"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
@@ -9,9 +10,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/dynamicengines"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	itMessage "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/message"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/transport/restful"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
@@ -26,6 +29,13 @@ import (
 //
 // The superseded ./legacy implementation is deliberately not initialized; see ./legacy/README.md.
 func InitSubModule() error {
+	// The unit resolver feeds the template's computed unit names and the settings writer's rule.
+	if err := errors.Join(
+		deps.Register(services.NewOrgUnitResolver),
+		deps.Register(app.NewSettingsApplicationServiceImpl),
+	); err != nil {
+		return err
+	}
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}
@@ -36,20 +46,25 @@ func InitSubModule() error {
 	return dynamicengines.BuildInternalEngines()
 }
 
-// OnAppStarted registers the reservation expiry sweep and checks that every resource the
-// services may reach at call time was built. The sweep registers here rather than in Init so it
-// never ticks against a half-built container.
+// OnAppStarted registers the settings schema and the reservation expiry sweep, and checks that every
+// resource the services may reach at call time was built. Both register here rather than in Init:
+// the settings module may not have built its engines yet, and the sweep must never tick against a
+// half-built container.
 func OnAppStarted() error {
 	if err := assertEveryResourceInstalled(); err != nil {
 		return err
 	}
 	return deps.Invoke(func(
+		settingsSvc itExt.SettingsRegistrationExtService,
 		transfers itStock.StockTransferMovementService,
 		reservations itStock.WarehouseReservationService,
 		publisher itMessage.IntegrationEventPublisher,
 		cronjobs job.CronjobRegistry,
 		logger logging.LoggerService,
 	) error {
+		if err := registerOrgSettings(corectx.NewRequestContext(context.Background()), settingsSvc); err != nil {
+			return err
+		}
 		outbox := app.NewOutboxJobs(publisher, logger)
 		if err := outbox.RegisterJobs(cronjobs); err != nil {
 			return err

@@ -9,8 +9,14 @@ import (
 
 // The repository-level trail covers what a custom domain method writes straight through
 // Repository().Insert/Update/DeleteOne: an order's lines, a stock move, a status change. Each
-// write joins or opens a transaction with its entry, like the domain-level trail. An update reads
-// the row first to diff it, the price of covering writes the domain service never sees.
+// recorded write joins the caller's transaction or, when ctx carries none, opens one around the
+// write and its entry. An update that sets a tracked field reads the row first to diff it; any
+// other update (totals, counters, cached state) runs untouched, with no read and no transaction.
+
+// tracksRowUpdate reports whether a direct update of data can produce an entry.
+func (this *auditTrail) tracksRowUpdate(data dmodel.DynamicFields) bool {
+	return this.activeForUpdate() && audit.TouchesTrackedField(this.schema, data)
+}
 
 func (this *auditTrail) insert(
 	ctx corectx.Context, data dmodel.DynamicFields,

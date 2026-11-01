@@ -26,6 +26,7 @@ func InitRestfulHandlers() error {
 		v1.NewModelMetadataRest,
 		v1.NewModuleRest,
 		v1.NewTagRest,
+		v1.NewTimezoneRest,
 		v1.NewUomCatRest,
 		v1.NewUomConversionRest,
 		v1.NewUomRest,
@@ -55,6 +56,7 @@ func initEssentialV1() error {
 			initModuleV1(routeV1),
 			initTagV1(routeV1),
 			initSettingsV1(routeV1),
+			initTimezoneV1(routeV1),
 		)
 	})
 }
@@ -155,5 +157,12 @@ func initSettingsV1(route *echo.Group) error {
 	return deps.Invoke(func(settingsSvc itSettings.SettingsAppService) {
 		route.PATCH(coreSettings.UpdateSettingsRoutePath, coreSettings.UpdateSettingsHandler(settingsSvc.UpdateSettings),
 			m.UserSmokeAuthz())
+	})
+}
+
+// initTimezoneV1 serves the timezone catalogue at /v1/essential/timezones to any signed-in caller.
+func initTimezoneV1(route *echo.Group) error {
+	return deps.Invoke(func(timezoneRest *v1.TimezoneRest) {
+		route.GET("/timezones", timezoneRest.Search, m.UserSmokeAuthz())
 	})
 }

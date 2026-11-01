@@ -22,10 +22,10 @@ func newManagedSchema(withManagedField bool) *dmodel.ModelSchema {
 }
 
 func runManagedRule(
-	t *testing.T, withField bool, mode managedDeleteMode, hook ValidateExtraFn, stored dmodel.DynamicFields,
+	t *testing.T, withField bool, mode managedMode, action CrudAction, hook ValidateExtraFn, stored dmodel.DynamicFields,
 ) ft.ClientErrors {
 	service := &DefaultDomainServiceImpl{schema: newManagedSchema(withField)}
-	rule := service.withManagedDeleteRule(mode, hook)
+	rule := service.withManagedRule(mode, action, hook)
 	require.NotNil(t, rule)
 	vErrs := ft.ClientErrors{}
 	require.NoError(t, rule(newTestRequestCtx(), nil, NewDynamicEntityFrom(stored), &vErrs))
@@ -38,42 +38,61 @@ func managedRow(managedBy any) dmodel.DynamicFields {
 
 func TestDeleteRefusesAManagedRecord(t *testing.T) {
 	for _, managedBy := range []string{basemodel.ManagedByTypeSystem, "commerce/inventory_warehouse"} {
-		vErrs := runManagedRule(t, true, managedDeleteRefuse, nil, managedRow(managedBy))
+		vErrs := runManagedRule(t, true, managedRefuse, CrudActionDelete, nil, managedRow(managedBy))
 		require.Equal(t, 1, vErrs.Count(), managedBy)
 		assert.Equal(t, "common:err_record_managed_delete", vErrs[0].Key)
 	}
 }
 
 func TestDeleteAcceptsAnUnmanagedRecord(t *testing.T) {
-	vErrs := runManagedRule(t, true, managedDeleteRefuse, nil, managedRow(nil))
+	vErrs := runManagedRule(t, true, managedRefuse, CrudActionDelete, nil, managedRow(nil))
 	assert.Zero(t, vErrs.Count())
 }
 
 func TestDeleteRuleIsUnchangedForASchemaWithoutTheField(t *testing.T) {
 	service := &DefaultDomainServiceImpl{schema: newManagedSchema(false)}
-	assert.Nil(t, service.withManagedDeleteRule(managedDeleteRefuse, nil))
+	assert.Nil(t, service.withManagedRule(managedRefuse, CrudActionDelete, nil))
 }
 
 func TestDeleteManagedAcceptsOnlyAManagedRecord(t *testing.T) {
-	vErrs := runManagedRule(t, true, managedDeleteRequire, nil, managedRow("vendingmachine/vdmc_kiosks"))
+	vErrs := runManagedRule(t, true, managedRequire, CrudActionDelete, nil, managedRow("vendingmachine/vdmc_kiosks"))
 	assert.Zero(t, vErrs.Count())
 
-	vErrs = runManagedRule(t, true, managedDeleteRequire, nil, managedRow(nil))
+	vErrs = runManagedRule(t, true, managedRequire, CrudActionDelete, nil, managedRow(nil))
 	require.Equal(t, 1, vErrs.Count())
 	assert.Equal(t, "common:err_record_not_managed", vErrs[0].Key)
 
-	vErrs = runManagedRule(t, false, managedDeleteRequire, nil, dmodel.DynamicFields{"id": "01"})
+	vErrs = runManagedRule(t, false, managedRequire, CrudActionDelete, nil, dmodel.DynamicFields{"id": "01"})
 	require.Equal(t, 1, vErrs.Count(), "a schema without managed_by_type has no managed record")
 	assert.Equal(t, "common:err_record_not_managed", vErrs[0].Key)
 }
 
 func TestManagedRuleKeepsTheCallersOwnRefusal(t *testing.T) {
 	calls := []string{}
-	vErrs := runManagedRule(t, true, managedDeleteRefuse, recording(&calls, "hook"), managedRow("system"))
+	vErrs := runManagedRule(t, true, managedRefuse, CrudActionDelete, recording(&calls, "hook"), managedRow("system"))
 	assert.Equal(t, []string{"hook"}, calls)
 	assert.Equal(t, 1, vErrs.Count())
 
-	vErrs = runManagedRule(t, true, managedDeleteRefuse, violation("err_own_rule"), managedRow("system"))
+	vErrs = runManagedRule(t, true, managedRefuse, CrudActionDelete, violation("err_own_rule"), managedRow("system"))
 	require.Equal(t, 1, vErrs.Count())
 	assert.Equal(t, "common:err_own_rule", vErrs[0].Key)
+}
+
+func TestUpdateRefusesAManagedRecord(t *testing.T) {
+	for _, managedBy := range []string{basemodel.ManagedByTypeSystem, "vendingmachine/vdmc_kiosks"} {
+		vErrs := runManagedRule(t, true, managedRefuse, CrudActionUpdate, nil, managedRow(managedBy))
+		require.Equal(t, 1, vErrs.Count(), managedBy)
+		assert.Equal(t, "common:err_record_managed_update", vErrs[0].Key)
+	}
+	vErrs := runManagedRule(t, true, managedRefuse, CrudActionUpdate, nil, managedRow(nil))
+	assert.Zero(t, vErrs.Count())
+}
+
+func TestUpdateManagedAcceptsOnlyAManagedRecord(t *testing.T) {
+	vErrs := runManagedRule(t, true, managedRequire, CrudActionUpdate, nil, managedRow("commerce/inventory_warehouse"))
+	assert.Zero(t, vErrs.Count())
+
+	vErrs = runManagedRule(t, true, managedRequire, CrudActionUpdate, nil, managedRow(nil))
+	require.Equal(t, 1, vErrs.Count())
+	assert.Equal(t, "common:err_record_not_managed", vErrs[0].Key)
 }

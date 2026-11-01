@@ -3,6 +3,8 @@ package models
 import (
 	_ "embed"
 
+	"github.com/shopspring/decimal"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 
@@ -17,8 +19,15 @@ const (
 	CurrencyFieldNumericCode   = "numeric_code"
 	CurrencyFieldName          = "name"
 	CurrencyFieldSymbol        = "symbol"
+	CurrencyFieldSymbolPos     = "symbol_position"
+	CurrencyFieldUnitLabel     = "currency_unit_label"
+	CurrencyFieldSubunitLabel  = "currency_subunit_label"
+	CurrencyFieldRounding      = "rounding"
 	CurrencyFieldDecimalPlaces = "decimal_places"
 	CurrencyFieldIsActive      = "is_active"
+
+	CurrencySymbolBefore = "before"
+	CurrencySymbolAfter  = "after"
 )
 
 //go:embed currency.json
@@ -75,6 +84,22 @@ func (this Currency) GetSymbol() *string {
 
 func (this *Currency) SetSymbol(v *string) {
 	this.GetFieldData().SetString(CurrencyFieldSymbol, v)
+}
+
+func (this Currency) GetSymbolPosition() *string {
+	return this.GetFieldData().GetString(CurrencyFieldSymbolPos)
+}
+
+func (this *Currency) SetSymbolPosition(v *string) {
+	this.GetFieldData().SetString(CurrencyFieldSymbolPos, v)
+}
+
+func (this Currency) GetRounding() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(CurrencyFieldRounding)
+}
+
+func (this *Currency) SetRounding(v *decimal.Decimal) {
+	this.GetFieldData().SetDecimal(CurrencyFieldRounding, v)
 }
 
 func (this Currency) GetDecimalPlaces() *int32 {

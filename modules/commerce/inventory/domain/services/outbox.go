@@ -43,16 +43,24 @@ func SetOutboxDrain(drain OutboxDrain) {
 //
 // It returns immediately; the drain itself is somebody else's goroutine.
 //
-// A call from inside a transaction does nothing, deliberately rather than as a guard against
-// misuse: the rows are not committed yet, so a drain reading through that same transaction would
-// publish an event whose write may still roll back. That is the commit-then-publish race the outbox
-// exists to avoid, arriving from the other direction. Those events wait for the sweep, which is the
-// guarantee in every case anyway.
+// A call from inside a transaction is deferred to its commit: the rows are not committed yet, so
+// draining now would publish an event whose write may still roll back. A rollback drops the drain,
+// and the sweep remains the guarantee in every case. The deferred drain gets a context without the
+// finished transaction, which can no longer be read through.
 func DrainOutboxNow(ctx corectx.Context) {
-	if outboxDrain == nil || ctx.GetDbTranx() != nil {
+	drain := outboxDrain
+	if drain == nil {
 		return
 	}
-	outboxDrain(ctx)
+	if ctx.GetDbTranx() == nil {
+		drain(ctx)
+		return
+	}
+	ctx.OnCommitted(func() {
+		drainCtx := corectx.CloneRequestContext(ctx)
+		drainCtx.SetDbTranx(nil)
+		drain(drainCtx)
+	})
 }
 
 // RecordEventParams is one integration event to publish.

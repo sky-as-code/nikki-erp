@@ -70,16 +70,26 @@ func (this *stubVariantRepository) BeginTransaction(_ corectx.Context) (database
 type stubTransaction struct {
 	committed  bool
 	rolledBack bool
+	callbacks  []func()
 }
 
 func (this *stubTransaction) Commit() error {
 	this.committed = true
+	for _, fn := range this.callbacks {
+		fn()
+	}
+	this.callbacks = nil
 	return nil
 }
 
 func (this *stubTransaction) Rollback() error {
 	this.rolledBack = true
+	this.callbacks = nil
 	return nil
+}
+
+func (this *stubTransaction) OnCommitted(fn func()) {
+	this.callbacks = append(this.callbacks, fn)
 }
 
 // stubBaseService stands in for the engine's default resource service, which the override

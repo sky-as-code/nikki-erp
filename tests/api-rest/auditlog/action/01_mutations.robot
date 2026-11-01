@@ -1,6 +1,8 @@
 *** Settings ***
-Documentation     Each built-in mutation writes one entry naming its action, holding only the
-...               fields that changed: never id, etag, updated_at or another system field.
+Documentation     Create, archive, unarchive and delete each write one entry naming its action,
+...               holding only the fields that changed: never id, etag, updated_at or another
+...               system field. An update is recorded only when a track_history field changed;
+...               the UoM category tracks none, so renaming it writes nothing.
 Resource          resources/auditlog.resource
 Suite Setup       Run Keywords    Create Authorized API Session    AND    Ensure Audited Category
 Test Tags         auditlog    action    mutation
@@ -22,16 +24,15 @@ Create Is Recorded With The New Values
     Should Be Equal    ${entry}[actor][type]    user
     Should Not Be Equal    ${entry}[actor][id]    ${None}
 
-Update Records Only The Changed Field
-    ${old_name}=    Set Variable    ${AUDITED_CAT_NAME}
+Update Of An Untracked Field Writes No Entry
+    ${before}=    History Count    ${AUDITED_CAT_ID}
     ${new_name}=    Unique Display Name    Robot Audited Renamed
     Update Audited Category Name    ${new_name}
     Set Global Variable    ${AUDITED_CAT_NAME}    ${new_name}
+    ${after}=    History Count    ${AUDITED_CAT_ID}
+    Should Be Equal As Integers    ${after}    ${before}    msg=name has no track_history flag, so a rename is not history
     ${entry}=    Latest Entry    ${AUDITED_CAT_ID}
-    Entry Should Be    ${entry}    update    name
-    ${name}=    Change Of    ${entry}    name
-    Should Be Equal    ${name}[old][en-US]    ${old_name}
-    Should Be Equal    ${name}[new][en-US]    ${new_name}
+    Should Be Equal    ${entry}[action]    create
 
 Update Without A Change Writes No Entry
     ${before}=    History Count    ${AUDITED_CAT_ID}

@@ -173,7 +173,8 @@
 	"err_org_id_required": "This resource belongs to an organization, so an organization is required",
 	"err_overlapped_fields": "These fields must not have overlapping values: {{fields}}",
 	"err_record_managed_delete": "This record is managed by another record or by the system, so it is removed together with its manager",
-	"err_record_not_managed": "Only a managed record can be removed this way",
+	"err_record_managed_update": "This record is managed by another record or by the system, so only its manager can change it",
+	"err_record_not_managed": "Only a managed record can be changed or removed this way",
 	"err_required": "This field is required",
 	"err_schema_not_found": "The related data definition could not be found",
 	"err_schema_registry_required": "Relation field paths are not available here",
@@ -314,6 +315,7 @@
 	"pagination.page": "Page",
 	"pagination.previous": "Previous",
 	"pagination.size": "{{count}} / page",
+	"per": "per",
 	"permission.field_locked_title": "Field locked",
 	"permission.field_read_locked": "You do not have permission to view this field. Viewing it requires {{expression}}. Please contact your administrator to request access.",
 	"permission.field_update_locked": "You do not have permission to update this field. Updating it requires {{expression}}. Please contact your administrator to request access.",
@@ -434,5 +436,7 @@
 	"unauthorized_hint": "Please contact your administrator to request access permissions.",
 	"unauthorized_message": "You do not have permission to access this page.",
 	"unauthorized_message_with_module": "You do not have permission to access the \"{{module}}\" module.",
-	"unauthorized_title": "Access Denied"
+	"unauthorized_title": "Access Denied",
+	"format_pattern.directives_title": "Allowed directives",
+	"format_pattern.directives_help": "Show allowed directives"
 }

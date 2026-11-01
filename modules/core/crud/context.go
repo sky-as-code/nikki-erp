@@ -16,6 +16,7 @@ type Context interface {
 	SetLogger(logger logging.LoggerService)
 	GetDbTranx() db.DbTransaction
 	SetDbTranx(trx db.DbTransaction)
+	OnCommitted(fn func())
 }
 
 func NewRequestContext(ctx context.Context) Context {
@@ -52,4 +53,8 @@ func (this *RequestContext) GetDbTranx() db.DbTransaction {
 
 func (this *RequestContext) SetDbTranx(trx db.DbTransaction) {
 	this.repoTrx = trx
+}
+
+func (this *RequestContext) OnCommitted(fn func()) {
+	db.RunOnCommitted(this.repoTrx, fn, this.logger)
 }

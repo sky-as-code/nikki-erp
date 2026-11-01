@@ -31,6 +31,7 @@ func registerProductVariantEngine() error {
 			productSvc itProduct.ProductService,
 			usageDispatcher *usagecheck.Dispatcher,
 			catalogPublisher itEvent.CatalogChangedEventPublisher,
+			units *services.OrgUnitResolver,
 		) dynamicresource.DynamicResourceEngineOnion {
 			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.ProductVariantSchemaName,
@@ -45,7 +46,8 @@ func registerProductVariantEngine() error {
 				},
 				// Resolved lazily, per call: the attribute-value onion is registered by this same
 				// pass, so looking it up while building this one would depend on registration order.
-				ComputedFunctions: newVariantComputedFunctions(dynamicresource.LookupSourceOnion),
+				ComputedFunctions: mergeComputedFunctions(
+					newVariantComputedFunctions(dynamicresource.LookupSourceOnion), newVariantUnitFunctions(units)),
 			}, param)
 		},
 	)

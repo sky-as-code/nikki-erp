@@ -25,7 +25,8 @@
 			"name": "status",
 			"data_type": { "type": "enum_string", "values": ["pending", "approved", "rejected", "cancelled"] },
 			"required_for_create": true,
-			"default_value": "pending"
+			"default_value": "pending",
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "type",

@@ -30,16 +30,16 @@ type (
 
 type GetLanguageJsonResult = dyn.OpResult[model.LanguageTranslationItem]
 
-// GetLanguageByIsoCodeQuery resolves a language by the BCP47 code every consumer names it with.
+// GetLanguageByLocaleCodeQuery resolves a language by the BCP47 code every consumer names it with.
 // The only caller is another module reading the acting user's formatting rules.
-type GetLanguageByIsoCodeQuery struct {
-	IsoCode string
+type GetLanguageByLocaleCodeQuery struct {
+	LocaleCode string
 }
 
-// GetLanguageByIsoCodeResult carries the whole record rather than a narrowed projection: a caller
+// GetLanguageByLocaleCodeResult carries the whole record rather than a narrowed projection: a caller
 // formatting numbers and dates wants every field, and this table is global reference data with
 // nothing org- or tenant-scoped to withhold.
-type GetLanguageByIsoCodeResult = dyn.OpResult[models.Language]
+type GetLanguageByLocaleCodeResult = dyn.OpResult[models.Language]
 
 // ListEnabledLanguagesQuery lists the languages a user may pick, ordered by name.
 type ListEnabledLanguagesQuery struct{}

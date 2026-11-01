@@ -61,24 +61,21 @@ type EffectiveSettingsExtService interface {
 	) (*GetEffectiveSettingsResult, error)
 }
 
-// LanguageExtService resolves the iso code a settings value carries into the formatting rules the
+// LanguageExtService resolves the locale code a settings value carries into the formatting rules the
 // frontend renders numbers and dates with, and lists the languages a user may pick.
 type LanguageExtService interface {
-	GetLanguageByIsoCode(
-		ctx corectx.Context, query GetLanguageByIsoCodeQuery,
-	) (*GetLanguageByIsoCodeResult, error)
+	GetLanguageByLocaleCode(
+		ctx corectx.Context, query GetLanguageByLocaleCodeQuery,
+	) (*GetLanguageByLocaleCodeResult, error)
 	ListEnabledLanguages(
 		ctx corectx.Context, query ListEnabledLanguagesQuery,
 	) (*ListEnabledLanguagesResult, error)
 }
 
-// CurrencyExtService resolves the organization's configured currency into what it takes to render
-// an amount in it.
-//
-// By code rather than by id because essential's `default_currency` setting stores the alphabetic
-// code -- unlike accounting's own `org_default_currency`, which stores an id.
+// CurrencyExtService resolves the organization's system currency, which accounting stores as an
+// essential_currency id, into what it takes to render an amount in it.
 type CurrencyExtService interface {
-	GetCurrencyByCode(ctx corectx.Context, query GetCurrencyByCodeQuery) (*GetCurrencyByCodeResult, error)
+	GetCurrency(ctx corectx.Context, query GetCurrencyQuery) (*GetCurrencyResult, error)
 }
 
 // ModuleCatalogExtService lists the modules the org lifecycle must reach, grouped in dependency
@@ -116,10 +113,21 @@ const (
 	SettingDensity   = essentialSettings.UserSettingDensity
 	SettingLanguage  = essentialSettings.UserSettingLanguage
 
-	// SettingSystemLanguage and SettingDefaultCurrency are org-level: the language an organization
-	// produces its shared documents in, and the currency it denominates amounts in.
-	SettingSystemLanguage  = essentialSettings.OrgSettingSystemLanguage
-	SettingDefaultCurrency = essentialSettings.OrgSettingDefaultCurrency
+	// SettingSystemLanguage is org-level: the language an organization produces its shared
+	// documents in.
+	SettingSystemLanguage = essentialSettings.OrgSettingSystemLanguage
+
+	SettingTimezone       = essentialSettings.UserSettingTimezone
+	SettingSystemTimezone = essentialSettings.OrgSettingSystemTimezone
+)
+
+// Accounting's system currency, named by value rather than imported: iam does not depend on
+// accounting, it only reads the stored setting, and reads nothing when accounting is not loaded.
+// The org value wins over the tenant's. Keep in step with accounting/domain/settings.
+const (
+	AccountingModuleKey         = "accounting"
+	SettingSystemCurrency       = "system_currency"
+	SettingTenantSystemCurrency = "tenant_system_currency"
 
 	ThemeModeAuto  = essentialSettings.ThemeModeAuto
 	DefaultDensity = essentialSettings.DefaultDensity
@@ -135,13 +143,13 @@ type SettingItem = itSettings.SettingItem
 type GetEffectiveSettingsQuery = itSettings.GetEffectiveSettingsQuery
 type GetEffectiveSettingsResult = itSettings.GetEffectiveSettingsResult
 
-type GetLanguageByIsoCodeQuery = essentialLanguage.GetLanguageByIsoCodeQuery
-type GetLanguageByIsoCodeResult = essentialLanguage.GetLanguageByIsoCodeResult
+type GetLanguageByLocaleCodeQuery = essentialLanguage.GetLanguageByLocaleCodeQuery
+type GetLanguageByLocaleCodeResult = essentialLanguage.GetLanguageByLocaleCodeResult
 type ListEnabledLanguagesQuery = essentialLanguage.ListEnabledLanguagesQuery
 type ListEnabledLanguagesResult = essentialLanguage.ListEnabledLanguagesResult
 
-type GetCurrencyByCodeQuery = essentialCurrency.GetCurrencyByCodeQuery
-type GetCurrencyByCodeResult = essentialCurrency.GetCurrencyByCodeResult
+type GetCurrencyQuery = essentialCurrency.GetCurrencyQuery
+type GetCurrencyResult = essentialCurrency.GetCurrencyResult
 
 // const (
 // 	UserStatusInvited = iamModels.UserStatusInvited

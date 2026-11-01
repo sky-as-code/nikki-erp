@@ -16,13 +16,6 @@
 			"description": "settings_desc.system_timezone",
 			"data_type": { "type": "string", "min": 1, "max": 64 },
 			"metadata": { "allow_override": true }
-		},
-		{
-			"name": "default_currency",
-			"label": "essential.settings.defaultCurrency",
-			"description": "settings_desc.default_currency",
-			"data_type": { "type": "string", "min": 1, "max": 64 },
-			"metadata": { "allow_override": true }
 		}
 	]
 }

@@ -49,10 +49,10 @@ type LanguageApplicationServiceImpl struct {
 	mutex      sync.RWMutex
 }
 
-func (this *LanguageApplicationServiceImpl) GetLanguageByIsoCode(
-	ctx corectx.Context, query it.GetLanguageByIsoCodeQuery,
-) (*it.GetLanguageByIsoCodeResult, error) {
-	return this.languageSvc.GetLanguageByIsoCode(ctx, query)
+func (this *LanguageApplicationServiceImpl) GetLanguageByLocaleCode(
+	ctx corectx.Context, query it.GetLanguageByLocaleCodeQuery,
+) (*it.GetLanguageByLocaleCodeResult, error) {
+	return this.languageSvc.GetLanguageByLocaleCode(ctx, query)
 }
 
 func (this *LanguageApplicationServiceImpl) ListEnabledLanguages(

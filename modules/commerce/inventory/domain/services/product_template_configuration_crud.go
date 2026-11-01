@@ -70,8 +70,9 @@ func (this *ProductTemplateDomainServiceImpl) Create(
 
 // Update applies the template's own columns and, when the body carries `attribute_lines` or
 // `exclusions`, the configuration with its reconcile. A configuration-only save still moves the
-// template's etag, which is the configuration's version. A replaced default image is removed from
-// IT Storage once the whole update has committed.
+// template's etag, which is the configuration's version. A rename rewrites every variant's stored
+// display_name in the same transaction. A replaced default image is removed from IT Storage once
+// the whole update has committed.
 func (this *ProductTemplateDomainServiceImpl) Update(
 	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
 ) (*dynamicresource.MutateResult, error) {
@@ -85,7 +86,8 @@ func (this *ProductTemplateDomainServiceImpl) updateWithConfiguration(
 	if cErrs.Count() > 0 {
 		return &dynamicresource.MutateResult{ClientErrors: cErrs}, nil
 	}
-	if input == nil {
+	_, renamed := cmd[models.ProductTemplateFieldName]
+	if input == nil && !renamed {
 		return this.CrudDomainService.Update(ctx, cmd, opts)
 	}
 	var result *dynamicresource.MutateResult
@@ -98,8 +100,13 @@ func (this *ProductTemplateDomainServiceImpl) updateWithConfiguration(
 			if result.ClientErrors.Count() > 0 || !result.HasData {
 				return &result.ClientErrors, nil
 			}
+			templateId := string(dynamicresource.ParamId(cmd))
+			if input == nil {
+				return nil, RefreshTemplateVariantNames(tranxCtx, templateId)
+			}
+			// The reconcile refreshes the names itself, after it has extended and created variants.
 			_, cErrs, err := this.reconcile(tranxCtx, reconcileRequest{
-				templateId: string(dynamicresource.ParamId(cmd)), input: input, deleteAllowed: deleteAllowed,
+				templateId: templateId, input: input, deleteAllowed: deleteAllowed,
 			})
 			return &cErrs, err
 		})

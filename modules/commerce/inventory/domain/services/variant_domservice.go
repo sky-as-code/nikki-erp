@@ -45,6 +45,7 @@ func (this *ProductVariantDomainServiceImpl) Create(
 	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, normalizeVariantIdentifiers())
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, checkCreateCombination(this.Repository()))
+	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, fillVariantFromTemplate())
 	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra,
 		validateCreateIdentifiers(this.Repository()))
 	return this.CrudDomainService.Create(ctx, params, opts)
@@ -57,6 +58,7 @@ func (this *ProductVariantDomainServiceImpl) Update(
 	submittedTemplateId := ""
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, normalizeVariantIdentifiers())
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, captureSubmittedTemplateId(&submittedTemplateId))
+	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, dropServerManagedVariantFields())
 	opts.ValidateExtra = dynamicresource.ChainValidateExtra(
 		opts.ValidateExtra, validateVariantUpdate(this.Repository(), &submittedTemplateId),
 		validateUpdateIdentifiers(this.Repository()))

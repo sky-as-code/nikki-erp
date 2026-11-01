@@ -76,7 +76,8 @@
 			"default_value": "active",
 			"description": {
 				"en-US": "Whether the code may currently be applied. 'disabled' is an operator's decision and reversible; 'exhausted' is derived from usage_count reaching usage_limit and is set by the redemption path, not by hand. Expiry is deliberately NOT a status - it is a function of valid_until and the current time, so no job has to run to keep it true."
-			}
+			},
+			"metadata": {"track_history": true}
 		}
 	],
 

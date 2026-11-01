@@ -79,18 +79,19 @@ Schema Declares No Default Variant Flag
     Response Status Should Be    ${resp}    200
     Dictionary Should Not Contain Key    ${resp.json()}[fields]    is_default_variant
 
-Schema Declares Display Name As Computed And Never Stored
-    [Documentation]    BR §5.5 / AC-PROD-013: display_name is computed as template name plus
-    ...    attribute values on every read, never stored.
+Schema Declares Display Name As A Stored Column
+    [Documentation]    INV-001: display_name (template name plus attribute values, per language) is
+    ...    stored by the variant service, so it can be filtered, sorted and resolved by import.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${field}=    Set Variable    ${resp.json()}[fields][display_name]
-    Should Be Equal    ${field}[is_computed]    ${True}
-    Should Be Equal    ${field}[is_persisted]    ${False}
-    Should Be Equal    ${field}[is_virtual]    ${True}
+    Should Be Equal    ${field}[is_computed]    ${False}
+    Should Be Equal    ${field}[is_persisted]    ${True}
+    Should Be Equal    ${field}[is_filterable]    ${True}
+    Should Be Equal    ${field}[is_sortable]    ${True}
 
 Schema Declares Display Name As The Record Label
-    [Documentation]    The variant has no name of its own; its computed display name (template
+    [Documentation]    The variant has no name of its own; its stored display name (template
     ...    name plus attribute values) is what a relation picker shows instead of a raw ULID.
     ${resp}=    GET On Session    api    ${PRODUCT_VARIANT_API}/meta/schema
     Response Status Should Be    ${resp}    200

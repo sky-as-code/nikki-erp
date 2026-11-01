@@ -3,9 +3,9 @@
 	"label": "accounting.settings.orgSettings",
 	"fields": [
 		{
-			"name": "org_default_currency",
-			"label": "accounting.settings.orgDefaultCurrency",
-			"description": "settings_desc.org_default_currency",
+			"name": "system_currency",
+			"label": "accounting.settings.systemCurrency",
+			"description": "settings_desc.system_currency",
 			"data_type": { "type": "string", "min": 0, "max": 26 },
 			"metadata": { "allow_override": true }
 		},

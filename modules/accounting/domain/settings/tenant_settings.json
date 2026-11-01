@@ -1,0 +1,13 @@
+{
+	"name": "accounting_tenant_settings",
+	"label": "accounting.settings.tenantSettings",
+	"fields": [
+		{
+			"name": "tenant_system_currency",
+			"label": "accounting.settings.systemCurrency",
+			"description": "settings_desc.tenant_system_currency",
+			"data_type": { "type": "string", "min": 0, "max": 26 },
+			"metadata": { "allow_override": true }
+		}
+	]
+}

@@ -9,6 +9,7 @@ import (
 	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
 	c "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/settings"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/timezone"
 	itLanguage "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/settings"
 )
@@ -26,7 +27,7 @@ func NewSettingsApplicationServiceImpl(
 		coreSettings.LevelOrg:  settings.OrgSettingsSchemaBuilder().Build(),
 	}
 	writer := coreSettings.NewModuleSettingsWriter(
-		c.EssentialModuleName, schemas, settingsSvc, enabledLanguageRule(languageSvc),
+		c.EssentialModuleName, schemas, settingsSvc, enabledLanguageRule(languageSvc), knownTimezoneRule,
 	)
 	return &SettingsApplicationServiceImpl{writer: writer}
 }
@@ -41,6 +42,25 @@ func (this *SettingsApplicationServiceImpl) UpdateSettings(
 	return this.writer.Update(ctx, cmd)
 }
 
+// knownTimezoneRule refuses a timezone outside the hardcoded catalogue the Settings page picks from.
+// Clearing one is left to the schema's length rule.
+func knownTimezoneRule(_ corectx.Context, _ string, items []coreSettings.SetSettingItem) (ft.ClientErrors, error) {
+	vErrs := ft.ClientErrors{}
+	for _, item := range items {
+		zone, isString := item.Value.(string)
+		if !isString || zone == "" || !isTimezoneSetting(item.Name) || timezone.IsKnown(zone) {
+			continue
+		}
+		vErrs.Append(*ft.NewValidationError(item.Name, ft.ErrorKey("essential.timezone_unknown", "essential"),
+			"is not a known timezone"))
+	}
+	return vErrs, nil
+}
+
+func isTimezoneSetting(name string) bool {
+	return name == settings.UserSettingTimezone || name == settings.OrgSettingSystemTimezone
+}
+
 // enabledLanguageRule refuses a language a user could not read the interface in: only the
 // essential_languages rows marked is_enabled ship translations.
 func enabledLanguageRule(languageSvc itLanguage.LanguageDomainService) coreSettings.SettingsRule {
@@ -51,7 +71,7 @@ func enabledLanguageRule(languageSvc itLanguage.LanguageDomainService) coreSetti
 			if !isString || !isLanguageSetting(item.Name) {
 				continue
 			}
-			found, err := languageSvc.GetLanguageByIsoCode(ctx, itLanguage.GetLanguageByIsoCodeQuery{IsoCode: code})
+			found, err := languageSvc.GetLanguageByLocaleCode(ctx, itLanguage.GetLanguageByLocaleCodeQuery{LocaleCode: code})
 			if err != nil {
 				return nil, errors.Wrap(err, "enabledLanguageRule")
 			}

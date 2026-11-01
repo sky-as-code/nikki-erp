@@ -114,7 +114,7 @@ func (this *DefaultCrudRepositoryImpl) insert(
 func (this *DefaultCrudRepositoryImpl) Update(
 	ctx corectx.Context, data dmodel.DynamicFields,
 ) (*MutateResult, error) {
-	if this.audit.active() {
+	if this.audit.tracksRowUpdate(data) {
 		return this.audit.updateRow(ctx, data, this.update)
 	}
 	return this.update(ctx, data)

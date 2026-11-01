@@ -7,27 +7,31 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 )
 
-// The display name is composed, never stored, so it cannot drift from the combination it describes.
-func TestBuildDisplayName(t *testing.T) {
-	name := langJson("Classic T-Shirt")
+// The effective product names the variant by its stored display_name when the row carries it.
+func TestEffectiveDisplayNamePrefersStoredName(t *testing.T) {
+	variant := models.NewProductVariantFrom(dmodel.DynamicFields{})
+	variant.GetFieldData().SetLangJson(models.ProductVariantFieldDisplayName,
+		&model.LangJson{model.LanguageCodeEnUs: "Classic T-Shirt (Black, M)"})
 
-	assert.Equal(t, "Classic T-Shirt / Black / M",
-		BuildDisplayName(name, []string{"Black", "M"}))
-
-	// The single-variant case: no attribute values, so the template name stands alone.
-	assert.Equal(t, "Classic T-Shirt", BuildDisplayName(name, nil))
+	assert.Equal(t, "Classic T-Shirt (Black, M)",
+		effectiveDisplayName(models.NewProductTemplateFrom(dmodel.DynamicFields{}), variant, nil))
 }
 
-// A missing label must not leave a dangling separator in the middle of the name.
-func TestBuildDisplayNameSkipsEmptyLabels(t *testing.T) {
-	assert.Equal(t, "Classic T-Shirt / M",
-		BuildDisplayName(langJson("Classic T-Shirt"), []string{"", "M"}))
+// Without a stored name it is built by the one builder, skipping empty labels.
+func TestEffectiveDisplayNameFallsBackToTheBuilder(t *testing.T) {
+	template := models.NewProductTemplateFrom(dmodel.DynamicFields{})
+	template.GetFieldData().SetLangJson(models.ProductTemplateFieldName, langJson("Classic T-Shirt"))
+	variant := models.NewProductVariantFrom(dmodel.DynamicFields{})
+
+	assert.Equal(t, "Classic T-Shirt (Black, M)", effectiveDisplayName(template, variant, []string{"Black", "", "M"}))
+	assert.Equal(t, "Classic T-Shirt", effectiveDisplayName(template, variant, nil))
 }
 
 // LangJson is a map, so iterating it directly would pick a different language on each call and
@@ -39,18 +43,16 @@ func TestDisplayNameIsDeterministicAcrossLocales(t *testing.T) {
 		"fr-FR":                "T-Shirt FR",
 	}
 
-	first := BuildDisplayName(name, nil)
+	first := langJsonToString(name)
 	for i := 0; i < 20; i++ {
-		assert.Equal(t, first, BuildDisplayName(name, nil))
+		assert.Equal(t, first, langJsonToString(name))
 	}
 	// en-US wins when present, rather than an arbitrary map key.
 	assert.Equal(t, "T-Shirt", first)
 }
 
 func TestDisplayNameFallsBackWhenEnglishAbsent(t *testing.T) {
-	name := &model.LangJson{"vi-VN": "Áo thun"}
-
-	assert.Equal(t, "Áo thun", BuildDisplayName(name, nil))
+	assert.Equal(t, "Áo thun", langJsonToString(&model.LangJson{"vi-VN": "Áo thun"}))
 }
 
 // The variant reads name, type, category, brand and the capability flags from its template rather
@@ -66,7 +68,7 @@ func TestEffectiveProductInheritsTemplateOwnedFields(t *testing.T) {
 	assert.Equal(t, "01BRAND", effective.BrandId)
 	assert.True(t, effective.SaleOk)
 	assert.True(t, effective.PurchaseOk)
-	assert.Equal(t, "Classic T-Shirt / Black", effective.DisplayName)
+	assert.Equal(t, "Classic T-Shirt (Black)", effective.DisplayName)
 }
 
 // SKU and barcode belong to the variant: a template with several variants has nothing they could
@@ -167,7 +169,7 @@ func TestEffectiveProductFieldMapKeepsConsumerKeys(t *testing.T) {
 	}
 	// The variant is the concrete product, so "id" must be the variant's.
 	assert.Equal(t, "01VARIANT", fields["id"])
-	assert.Equal(t, "Classic T-Shirt / Black", fields["name"])
+	assert.Equal(t, "Classic T-Shirt (Black)", fields["name"])
 }
 
 func TestVariantValueIds(t *testing.T) {

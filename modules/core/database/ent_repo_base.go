@@ -98,6 +98,8 @@ type DbLock struct {
 type DbTransaction interface {
 	Commit() error
 	Rollback() error
+	// OnCommitted queues fn to run after a successful Commit; Rollback discards the queue.
+	OnCommitted(fn func())
 }
 
 func FindOneForUpdate[TDb any, TDomain any, TQuery interface {
