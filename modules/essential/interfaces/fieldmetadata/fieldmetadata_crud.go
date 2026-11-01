@@ -1,35 +1,35 @@
 package fieldmetadata
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type FieldMetadataRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type FieldMetadataDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type FieldMetadataApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateFieldMetadataCommand = composable.CreateCommand
-	UpdateFieldMetadataCommand = composable.UpdateCommand
-	DeleteFieldMetadataCommand = composable.DeleteCommand
-	GetFieldMetadataByIdQuery  = composable.GetByIdQuery
-	SearchFieldMetadataQuery   = composable.SearchQuery
-	FieldMetadataExistsQuery   = composable.ExistsQuery
+	CreateFieldMetadataCommand = dynamicresource.CreateCommand
+	UpdateFieldMetadataCommand = dynamicresource.UpdateCommand
+	DeleteFieldMetadataCommand = dynamicresource.DeleteCommand
+	GetFieldMetadataByIdQuery  = dynamicresource.GetByIdQuery
+	SearchFieldMetadataQuery   = dynamicresource.SearchQuery
+	FieldMetadataExistsQuery   = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateFieldMetadataResult  = composable.CreateResult
-	UpdateFieldMetadataResult  = composable.MutateResult
-	DeleteFieldMetadataResult  = composable.MutateResult
-	GetFieldMetadataByIdResult = composable.GetOneResult
-	SearchFieldMetadataResult  = composable.SearchResult
-	FieldMetadataExistsResult  = composable.ExistsResult
+	CreateFieldMetadataResult  = dynamicresource.CreateResult
+	UpdateFieldMetadataResult  = dynamicresource.MutateResult
+	DeleteFieldMetadataResult  = dynamicresource.MutateResult
+	GetFieldMetadataByIdResult = dynamicresource.GetOneResult
+	SearchFieldMetadataResult  = dynamicresource.SearchResult
+	FieldMetadataExistsResult  = dynamicresource.ExistsResult
 )

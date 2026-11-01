@@ -7,7 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
@@ -20,7 +20,7 @@ import (
 // NewPurchaseOrderLineDomainService wraps base, the line onion's default domain service, so built-in
 // CRUD still runs through it and the totals work layers around it.
 func NewPurchaseOrderLineDomainService(
-	base composable.CrudDomainService, products *ProductLineValidator, pricer *LinePricer,
+	base dynamicresource.CrudDomainService, products *ProductLineValidator, pricer *LinePricer,
 ) *PurchaseOrderLineDomainServiceImpl {
 	return &PurchaseOrderLineDomainServiceImpl{
 		CrudDomainService: base,
@@ -30,7 +30,7 @@ func NewPurchaseOrderLineDomainService(
 }
 
 type PurchaseOrderLineDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// products applies the product and unit-of-measure rules and computes inventory_quantity.
 	// Nil in tests that exercise only the totals arithmetic, which needs no ports.
@@ -45,7 +45,7 @@ type PurchaseOrderLineDomainServiceImpl struct {
 // precede the base call: subtotal and total are required_for_create, so the schema would refuse the
 // create before this service could repair it.
 func (this *PurchaseOrderLineDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	StampLineTotals(params)
 
@@ -87,7 +87,7 @@ func (this *PurchaseOrderLineDomainServiceImpl) Create(
 // merged under the incoming params first because an update is partial: computing a subtotal from
 // the params alone would price a quantity-only change at zero.
 func (this *PurchaseOrderLineDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	var result *dyn.OpResult[dyn.MutateResultData]
 
@@ -142,7 +142,7 @@ func (this *PurchaseOrderLineDomainServiceImpl) Update(
 // Delete removes the line and recomputes the header. The owning order must be read before the
 // delete: afterwards the line, and with it the only pointer to the order, is gone.
 func (this *PurchaseOrderLineDomainServiceImpl) Delete(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.DeleteOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	var result *dyn.OpResult[dyn.MutateResultData]
 

@@ -13,7 +13,7 @@ import (
 	itInvoicing "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external/invoicing"
 	itReturns "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/returns"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The return resources. The return itself is writable and carries the three lifecycle actions;
@@ -22,27 +22,27 @@ import (
 type salesReturnEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_return"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_return"`
 }
 
 func registerSalesReturnEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesReturnSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesReturnSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			dLock distributedlock.DistributedLock,
 			settings itExt.EffectiveSettingsExtService,
 			reservations itExt.FulfillmentReservationExtService,
 			orders itExt.PaymentOrderExtService,
 			fulfillment itExt.FulfillmentExtService,
 			invoicing itInvoicing.InvoicingExtService,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesReturnSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesReturnRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesReturnApplicationService(
 						base, dLock, settings, reservations, orders, fulfillment, invoicing)
 				},
@@ -62,20 +62,20 @@ func registerSalesReturnEngine() error {
 type salesReturnLineEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_return_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_return_line"`
 }
 
 func registerSalesReturnLineEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesReturnLineSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesReturnLineSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesReturnLineSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesReturnLineRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesReturnLineApplicationService(base)
 				},
 			}, param)
@@ -94,20 +94,20 @@ func registerSalesReturnLineEngine() error {
 type salesRefundPaymentEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_refund_payment"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_refund_payment"`
 }
 
 func registerSalesRefundPaymentEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesRefundPaymentSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesRefundPaymentSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesRefundPaymentSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesRefundPaymentRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesRefundPaymentApplicationService(base)
 				},
 			}, param)

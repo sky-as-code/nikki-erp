@@ -7,7 +7,7 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // valuesParent is the attribute a delta writes under. Its id and org are stamped on every added
@@ -60,7 +60,7 @@ func applyValuesDelta(
 // nothing is reported against the row: the id was checked to belong to the attribute, so it
 // vanished under a concurrent writer.
 func rowOutcome(
-	res *composable.MutateResult, err error, path string,
+	res *dynamicresource.MutateResult, err error, path string,
 ) (ft.ClientErrors, bool, error) {
 	if err != nil {
 		return nil, true, err

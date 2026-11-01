@@ -1,15 +1,17 @@
 package app
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itRecord "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settingsrecord"
 )
 
 // NewSettingsRecordApplicationService is handed the composable default by the onion: the authorized reads.
-func NewSettingsRecordApplicationService(base composable.CrudApplicationService) itRecord.SettingsRecordApplicationService {
+func NewSettingsRecordApplicationService(
+	base dynamicresource.CrudApplicationService,
+) itRecord.SettingsRecordApplicationService {
 	return &SettingsRecordApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SettingsRecordApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }

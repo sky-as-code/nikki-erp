@@ -7,7 +7,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/notification/constants"
 	"github.com/sky-as-code/nikki-erp/modules/notification/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/notification/interfaces/delivery"
@@ -15,7 +15,7 @@ import (
 
 // NewNotificationDomainService is handed the composable default by the notification onion.
 func NewNotificationDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 	notifications it.NotificationRepository,
 	recipients it.RecipientRepository,
 	deliveries it.DeliveryRepository,
@@ -31,7 +31,7 @@ func NewNotificationDomainService(
 }
 
 type NotificationDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	notifications it.NotificationRepository
 	recipients    it.RecipientRepository

@@ -4,14 +4,14 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
 // NewUserCrudApplicationService is handed the composable default by the iam_user onion.
 func NewUserCrudApplicationService(
-	base composable.CrudApplicationService, domSvc itUser.UserCrudDomainService,
+	base dynamicresource.CrudApplicationService, domSvc itUser.UserCrudDomainService,
 ) itUser.UserCrudApplicationService {
 	return &UserCrudApplicationServiceImpl{CrudApplicationService: base, domSvc: domSvc}
 }
@@ -19,7 +19,7 @@ func NewUserCrudApplicationService(
 // UserCrudApplicationServiceImpl is the authorized CRUD of the resource. The avatar is an
 // ordinary avatar_file_id file field, whose lifecycle the composable default service drives.
 type UserCrudApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	domSvc itUser.UserCrudDomainService
 }
 
@@ -28,8 +28,8 @@ type UserCrudApplicationServiceImpl struct {
 func (this *UserCrudApplicationServiceImpl) ManageRoles(
 	ctx corectx.Context, cmd itUser.ManageUserRolesCommand,
 ) (*itUser.ManageUserRolesResult, error) {
-	cErrs, err := composable.AssertRecordAction(ctx, this, cmd,
-		composable.ActionPermission{ActionCode: actionManageRoleAssignments})
+	cErrs, err := dynamicresource.AssertRecordAction(ctx, this, cmd,
+		dynamicresource.ActionPermission{ActionCode: actionManageRoleAssignments})
 	if err != nil || cErrs != nil {
 		return mutateRefused(cErrs, err)
 	}
@@ -41,7 +41,7 @@ func (this *UserCrudApplicationServiceImpl) ManageRoles(
 func (this *UserCrudApplicationServiceImpl) SendInvitation(
 	ctx corectx.Context, cmd itUser.SendUserInvitationCommand,
 ) (*itUser.SendUserInvitationResult, error) {
-	orgId, cErrs := this.AssertAction(ctx, composable.PermissionUpdate, cmd)
+	orgId, cErrs := this.AssertAction(ctx, dynamicresource.PermissionUpdate, cmd)
 	if cErrs == nil && orgId != nil {
 		var err error
 		if cErrs, err = this.AssertRecordInOrg(ctx, cmd, *orgId); err != nil {

@@ -9,7 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // A warehouse and the locations it manages live and go together. Each is managed by the warehouse
@@ -118,7 +118,7 @@ func (this *WarehouseDomainServiceImpl) createSystemLocation(
 		return "", err
 	}
 	if result == nil || result.ClientErrors.Count() > 0 {
-		return "", composable.ClientErrorSignal{Errors: clientErrorsOfFields(result)}
+		return "", dynamicresource.ClientErrorSignal{Errors: clientErrorsOfFields(result)}
 	}
 	locationId := readStringParam(result.Data, models.InventoryLocationFieldId)
 	return locationId, MarkLocationSystemGenerated(ctx, locationId)
@@ -129,33 +129,33 @@ func (this *WarehouseDomainServiceImpl) createSystemLocation(
 // managed location then fails, rolling everything back, while a user's location still hangs under it
 // or a move still names it.
 func (this *WarehouseDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
 	return this.deleteWithLocations(ctx, cmd, options, this.CrudDomainService.Delete)
 }
 
 // DeleteManaged is the manager's delete of a managed warehouse, with the same cascade as Delete.
 func (this *WarehouseDomainServiceImpl) DeleteManaged(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
 	return this.deleteWithLocations(ctx, cmd, options, this.CrudDomainService.DeleteManaged)
 }
 
 type deleteFn = func(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error)
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error)
 
 func (this *WarehouseDomainServiceImpl) deleteWithLocations(
-	ctx corectx.Context, cmd composable.DeleteCommand, options []composable.DeleteOptions, del deleteFn,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options []dynamicresource.DeleteOptions, del deleteFn,
+) (*dynamicresource.MutateResult, error) {
 	warehouse, vErrs, err := this.loadWarehouse(ctx, readStringParam(cmd, models.WarehouseFieldId))
 	if err != nil {
 		return nil, err
 	}
 	if vErrs.Count() > 0 {
-		return &composable.MutateResult{ClientErrors: *vErrs}, nil
+		return &dynamicresource.MutateResult{ClientErrors: *vErrs}, nil
 	}
-	return this.inRefusableTransaction(ctx, func(tranxCtx corectx.Context) (*composable.MutateResult, error) {
+	return this.inRefusableTransaction(ctx, func(tranxCtx corectx.Context) (*dynamicresource.MutateResult, error) {
 		result, err := del(tranxCtx, cmd, options...)
 		if err != nil || result == nil || result.ClientErrors.Count() > 0 {
 			return result, err
@@ -180,7 +180,7 @@ func (this *WarehouseDomainServiceImpl) inRefusableTransaction(
 	ctx corectx.Context, body func(tranxCtx corectx.Context) (*dyn.OpResult[dyn.MutateResultData], error),
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	var result *dyn.OpResult[dyn.MutateResultData]
-	cErrs, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	cErrs, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			res, err := body(tranxCtx)
 			if err != nil {

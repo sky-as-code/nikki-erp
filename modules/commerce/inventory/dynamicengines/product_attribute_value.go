@@ -11,29 +11,29 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type productAttributeValueEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_product_attribute_value"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_product_attribute_value"`
 }
 
 // registerProductAttributeValueEngine declares the product_attribute_value onion and publishes its typed layers.
 func registerProductAttributeValueEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.ProductAttributeValueSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.ProductAttributeValueSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.ProductAttributeValueSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewProductAttributeValueRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewProductAttributeValueDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewProductAttributeValueApplicationService(base)
 				},
 			}, param)

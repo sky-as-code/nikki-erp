@@ -13,7 +13,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
@@ -26,7 +26,7 @@ func withOrderTransaction(ctx corectx.Context, body func(tranxCtx corectx.Contex
 	if err != nil {
 		return err
 	}
-	return composable.InTransaction(ctx, repo, body)
+	return dynamicresource.InTransaction(ctx, repo, body)
 }
 
 // orderNotFoundResult reports a missing order as a client error, since the id came from the caller.

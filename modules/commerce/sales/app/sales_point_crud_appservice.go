@@ -5,7 +5,7 @@ import (
 	itChannel "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewSalesPointCrudApplicationService wraps the composable default with the point lifecycle.
@@ -13,7 +13,7 @@ import (
 // Named CrudApplicationService for the same reason as the channel's: the module already has a
 // SalesPointApplicationServiceImpl serving the cross-module registration port.
 func NewSalesPointCrudApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 	pointPayments itChannel.PointPaymentAppService,
 ) itCatalog.SalesPointApplicationService {
 	return &SalesPointCrudApplicationServiceImpl{
@@ -24,7 +24,7 @@ func NewSalesPointCrudApplicationService(
 }
 
 type SalesPointCrudApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	pointSvc      itCatalog.SalesPointDomainService
 	pointPayments itChannel.PointPaymentAppService
 }
@@ -51,7 +51,7 @@ func (this *SalesPointCrudApplicationServiceImpl) Activate(
 func (this *SalesPointCrudApplicationServiceImpl) Archive(
 	ctx corectx.Context, cmd itCatalog.SalesPointLifecycleCommand,
 ) (*itCatalog.SalesPointLifecycleResult, error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionSetArchived, cmd); cErrs != nil || err != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionSetArchived, cmd); cErrs != nil || err != nil {
 		return mutateFailure(cErrs, err)
 	}
 	return this.pointSvc.Archive(ctx, readStringParam(cmd, paramRecordId))
@@ -60,7 +60,7 @@ func (this *SalesPointCrudApplicationServiceImpl) Archive(
 func (this *SalesPointCrudApplicationServiceImpl) Unarchive(
 	ctx corectx.Context, cmd itCatalog.SalesPointLifecycleCommand,
 ) (*itCatalog.SalesPointLifecycleResult, error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionSetArchived, cmd); cErrs != nil || err != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionSetArchived, cmd); cErrs != nil || err != nil {
 		return mutateFailure(cErrs, err)
 	}
 	return this.pointSvc.Unarchive(ctx, readStringParam(cmd, paramRecordId))

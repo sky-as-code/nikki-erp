@@ -2,29 +2,29 @@ package repository
 
 import (
 	itReturns "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/returns"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func NewSalesReturnRepository(base composable.CrudRepository) itReturns.SalesReturnRepository {
+func NewSalesReturnRepository(base dynamicresource.CrudRepository) itReturns.SalesReturnRepository {
 	return &SalesReturnRepositoryImpl{CrudRepository: base}
 }
 
 type SalesReturnRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesReturnLineRepository(base composable.CrudRepository) itReturns.SalesReturnLineRepository {
+func NewSalesReturnLineRepository(base dynamicresource.CrudRepository) itReturns.SalesReturnLineRepository {
 	return &SalesReturnLineRepositoryImpl{CrudRepository: base}
 }
 
 type SalesReturnLineRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesRefundPaymentRepository(base composable.CrudRepository) itReturns.SalesRefundPaymentRepository {
+func NewSalesRefundPaymentRepository(base dynamicresource.CrudRepository) itReturns.SalesRefundPaymentRepository {
 	return &SalesRefundPaymentRepositoryImpl{CrudRepository: base}
 }
 
 type SalesRefundPaymentRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

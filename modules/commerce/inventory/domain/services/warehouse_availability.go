@@ -13,7 +13,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 )
@@ -311,7 +311,7 @@ func activeReservationsOfScope(ctx corectx.Context, key GuardKey) ([]models.Stoc
 // than truncating: a partial total would under-count a commitment, which is the one error an
 // availability figure must never make.
 func scanAllRows(
-	ctx corectx.Context, engine composable.CrudRepository, graph *dmodel.SearchGraph,
+	ctx corectx.Context, engine dynamicresource.CrudRepository, graph *dmodel.SearchGraph,
 	visit func(row dmodel.DynamicFields),
 ) error {
 	for page := 0; ; page++ {

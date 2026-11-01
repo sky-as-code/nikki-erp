@@ -9,7 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // Reason codes for the refusals this service raises. They are dotted constants rather than inline
@@ -30,11 +30,11 @@ const (
 var _ itCatalog.SalesFulfillmentMethodDomainService = (*SalesFulfillmentMethodDomainServiceImpl)(nil)
 
 type SalesFulfillmentMethodDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 func NewSalesFulfillmentMethodDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 ) *SalesFulfillmentMethodDomainServiceImpl {
 	return &SalesFulfillmentMethodDomainServiceImpl{CrudDomainService: base}
 }

@@ -6,11 +6,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewInventoryLocationApplicationService is handed the composable default by the location onion.
-func NewInventoryLocationApplicationService(base composable.CrudApplicationService) itWarehouse.InventoryLocationApplicationService {
+func NewInventoryLocationApplicationService(base dynamicresource.CrudApplicationService) itWarehouse.InventoryLocationApplicationService {
 	locationSvc, ok := base.DomainService().(*services.InventoryLocationDomainServiceImpl)
 	if !ok {
 		panic(errors.New("the inventory location onion must be built with NewInventoryLocationDomainService"))
@@ -19,7 +19,7 @@ func NewInventoryLocationApplicationService(base composable.CrudApplicationServi
 }
 
 type InventoryLocationApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	locationSvc *services.InventoryLocationDomainServiceImpl
 }
 

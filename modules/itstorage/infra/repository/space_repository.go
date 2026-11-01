@@ -8,20 +8,20 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	itSpace "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/space"
 )
 
 // NewSpaceRepository is handed the composable default by the itstorage_space onion.
-func NewSpaceRepository(base composable.CrudRepository) itSpace.SpaceRepository {
+func NewSpaceRepository(base dynamicresource.CrudRepository) itSpace.SpaceRepository {
 	return &SpaceRepositoryImpl{CrudRepository: base}
 }
 
 // SpaceRepositoryImpl adds the tree statements. They go around the row-at-a-time CRUD because a
 // size roll-up or a rename touches a whole chain of rows, which must change together.
 type SpaceRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 func (this *SpaceRepositoryImpl) AddSize(ctx corectx.Context, spaceId model.Id, delta int64) error {

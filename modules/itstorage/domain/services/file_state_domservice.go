@@ -14,7 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/core/storage"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/itstorage/constants"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	itConsumption "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/consumption"
@@ -173,7 +173,7 @@ func (this *FileDomainServiceImpl) DuplicateFile(
 		return nil, err
 	}
 	if source == nil {
-		return nil, composable.ClientErrorSignal{Errors: ft.ClientErrors{*ft.NewNotFoundError("file_id")}}
+		return nil, dynamicresource.ClientErrorSignal{Errors: ft.ClientErrors{*ft.NewNotFoundError("file_id")}}
 	}
 	space, cErrs, err := this.resolveUploadSpace(ctx, cmd.OrgId, nil)
 	if err != nil || cErrs.Count() > 0 {
@@ -229,7 +229,7 @@ func (this *FileDomainServiceImpl) findFiles(ctx corectx.Context, fileIds []mode
 	for _, fileId := range fileIds {
 		keys = append(keys, string(fileId))
 	}
-	rows, err := composable.SearchRepositoryRows(
+	rows, err := dynamicresource.SearchRepositoryRows(
 		ctx, this.Repository(), models.FileSchemaName, models.FileFieldId, keys, fileStateFields)
 	if err != nil {
 		return nil, errors.Wrap(err, "find files")
@@ -244,12 +244,12 @@ func (this *FileDomainServiceImpl) findFiles(ctx corectx.Context, fileIds []mode
 }
 
 // signalOrError hands client errors out of a port method that returns only an error, so a caller
-// inside composable.InRefusableTransaction answers 400 instead of 500.
+// inside dynamicresource.InRefusableTransaction answers 400 instead of 500.
 func signalOrError(cErrs ft.ClientErrors, err error) error {
 	if err != nil {
 		return err
 	}
-	return composable.ClientErrorSignal{Errors: cErrs}
+	return dynamicresource.ClientErrorSignal{Errors: cErrs}
 }
 
 func uniqueIds(ids []model.Id) []model.Id {

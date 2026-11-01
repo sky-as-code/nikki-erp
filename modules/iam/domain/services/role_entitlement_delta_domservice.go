@@ -11,7 +11,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itEnt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/entitlement"
@@ -80,7 +80,7 @@ func (this *RoleCrudDomainServiceImpl) recordEntitlementLinks(
 	if err != nil || cErrs.Count() > 0 {
 		return cErrs, err
 	}
-	return nil, composable.RecordLinkAudit(ctx, this.roleRepo.Schema(), roleId, orgId,
+	return nil, dynamicresource.RecordLinkAudit(ctx, this.roleRepo.Schema(), roleId, orgId,
 		domain.RoleEdgeEntitlements, added, removed)
 }
 

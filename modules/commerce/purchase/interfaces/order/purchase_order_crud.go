@@ -4,11 +4,11 @@ package order
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ActionCommand is the bound request of a custom action: path, body and the resolved org.
-type ActionCommand = composable.UpdateCommand
+type ActionCommand = dynamicresource.UpdateCommand
 
 // ActionResult answers a custom action with the body the legacy engine action returned: a
 // mutation summary, the created record, or the action's own report.
@@ -17,19 +17,19 @@ type ActionResult = dyn.OpResult[any]
 // PurchaseOrderCrudRepository reads and writes purchase orders. An RFQ and a PO are one record at
 // different statuses.
 type PurchaseOrderCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // PurchaseOrderCrudDomainService is the CRUD of the resource. Its Create stamps the fields a client
 // may not choose, its Delete refuses an order that is not cancelled, and the concrete service
 // carries the lifecycle operations.
 type PurchaseOrderCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // PurchaseOrderCrudApplicationService is the authorized surface the REST handler serves.
 type PurchaseOrderCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	// The lifecycle actions. Each asserts its own permission code: confirming or approving is a
 	// materially different power from editing a description.
@@ -53,63 +53,63 @@ type PurchaseOrderCrudApplicationService interface {
 }
 
 type (
-	CreatePurchaseOrderCommand      = composable.CreateCommand
-	UpdatePurchaseOrderCommand      = composable.UpdateCommand
-	DeletePurchaseOrderCommand      = composable.DeleteCommand
-	SetPurchaseOrderArchivedCommand = composable.SetArchivedCommand
-	GetPurchaseOrderByIdQuery       = composable.GetByIdQuery
-	SearchPurchaseOrdersQuery       = composable.SearchQuery
-	PurchaseOrderExistsQuery        = composable.ExistsQuery
+	CreatePurchaseOrderCommand      = dynamicresource.CreateCommand
+	UpdatePurchaseOrderCommand      = dynamicresource.UpdateCommand
+	DeletePurchaseOrderCommand      = dynamicresource.DeleteCommand
+	SetPurchaseOrderArchivedCommand = dynamicresource.SetArchivedCommand
+	GetPurchaseOrderByIdQuery       = dynamicresource.GetByIdQuery
+	SearchPurchaseOrdersQuery       = dynamicresource.SearchQuery
+	PurchaseOrderExistsQuery        = dynamicresource.ExistsQuery
 )
 
 // PurchaseOrderLineCrudRepository reads and writes purchase order lines.
 type PurchaseOrderLineCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // PurchaseOrderLineCrudDomainService is the CRUD of the resource. Every write recomputes the order header totals in
 // the same transaction.
 type PurchaseOrderLineCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // PurchaseOrderLineCrudApplicationService is the authorized surface the REST handler serves.
 type PurchaseOrderLineCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreatePurchaseOrderLineCommand      = composable.CreateCommand
-	UpdatePurchaseOrderLineCommand      = composable.UpdateCommand
-	DeletePurchaseOrderLineCommand      = composable.DeleteCommand
-	SetPurchaseOrderLineArchivedCommand = composable.SetArchivedCommand
-	GetPurchaseOrderLineByIdQuery       = composable.GetByIdQuery
-	SearchPurchaseOrderLinesQuery       = composable.SearchQuery
-	PurchaseOrderLineExistsQuery        = composable.ExistsQuery
+	CreatePurchaseOrderLineCommand      = dynamicresource.CreateCommand
+	UpdatePurchaseOrderLineCommand      = dynamicresource.UpdateCommand
+	DeletePurchaseOrderLineCommand      = dynamicresource.DeleteCommand
+	SetPurchaseOrderLineArchivedCommand = dynamicresource.SetArchivedCommand
+	GetPurchaseOrderLineByIdQuery       = dynamicresource.GetByIdQuery
+	SearchPurchaseOrderLinesQuery       = dynamicresource.SearchQuery
+	PurchaseOrderLineExistsQuery        = dynamicresource.ExistsQuery
 )
 
 // SourcingGroupCrudRepository reads and writes sourcing groups.
 type SourcingGroupCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // SourcingGroupCrudDomainService is the CRUD of the resource. Create and delete are refused: a group is made by
 // create_alternative and reaped when fewer than two alternatives remain.
 type SourcingGroupCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // SourcingGroupCrudApplicationService is the authorized surface the REST handler serves.
 type SourcingGroupCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateSourcingGroupCommand      = composable.CreateCommand
-	UpdateSourcingGroupCommand      = composable.UpdateCommand
-	DeleteSourcingGroupCommand      = composable.DeleteCommand
-	SetSourcingGroupArchivedCommand = composable.SetArchivedCommand
-	GetSourcingGroupByIdQuery       = composable.GetByIdQuery
-	SearchSourcingGroupsQuery       = composable.SearchQuery
-	SourcingGroupExistsQuery        = composable.ExistsQuery
+	CreateSourcingGroupCommand      = dynamicresource.CreateCommand
+	UpdateSourcingGroupCommand      = dynamicresource.UpdateCommand
+	DeleteSourcingGroupCommand      = dynamicresource.DeleteCommand
+	SetSourcingGroupArchivedCommand = dynamicresource.SetArchivedCommand
+	GetSourcingGroupByIdQuery       = dynamicresource.GetByIdQuery
+	SearchSourcingGroupsQuery       = dynamicresource.SearchQuery
+	SourcingGroupExistsQuery        = dynamicresource.ExistsQuery
 )

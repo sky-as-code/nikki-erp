@@ -14,7 +14,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type SalesPointApplicationServiceImpl struct{}
@@ -33,7 +33,7 @@ func (this *SalesPointApplicationServiceImpl) CreateSalesPoint(
 		return pointRejection(models.SalesPointFieldOrgId, "sales_point.org_required",
 			"a sales point always belongs to one org"), nil
 	}
-	if cErrs := assertPermissionInOrg(ctx, composable.PermissionCreate,
+	if cErrs := assertPermissionInOrg(ctx, dynamicresource.PermissionCreate,
 		c.SalesPointResource, c.ResourceScopeOrg, model.Id(command.OrgId)); cErrs != nil {
 		return &it.CreateSalesPointResult{ClientErrors: *cErrs}, nil
 	}
@@ -175,7 +175,7 @@ func (this *SalesPointApplicationServiceImpl) DeleteManagedSalesPoint(
 func (this *SalesPointApplicationServiceImpl) ArchiveSalesPoint(
 	ctx corectx.Context, command it.SalesPointCommand,
 ) (*it.SalesPointMutationResult, error) {
-	return this.mutate(ctx, command, composable.PermissionSetArchived,
+	return this.mutate(ctx, command, dynamicresource.PermissionSetArchived,
 		func(service *services.SalesPointDomainServiceImpl) (*dyn.OpResult[dyn.MutateResultData], error) {
 			return service.Archive(ctx, command.SalesPointId)
 		})
@@ -204,7 +204,7 @@ func (this *SalesPointApplicationServiceImpl) ActivateSalesPoint(
 func (this *SalesPointApplicationServiceImpl) DeleteSalesPoint(
 	ctx corectx.Context, command it.SalesPointCommand,
 ) (*it.DeleteSalesPointResult, error) {
-	cErrs, err := assertSalesPointPermission(ctx, composable.PermissionDelete, command.SalesPointId)
+	cErrs, err := assertSalesPointPermission(ctx, dynamicresource.PermissionDelete, command.SalesPointId)
 	if err != nil {
 		return nil, err
 	}

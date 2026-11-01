@@ -4,7 +4,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type ConvertQuantityResult = dyn.OpResult[ConvertQuantityResultData]
@@ -13,18 +13,18 @@ type GetUomResult = dyn.OpResult[GetUomResultData]
 
 // UomRepository reads and writes UoM rows.
 type UomRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // UomDomainService is the CRUD of the resource with the UoM invariants (BR-UOM-ESS-005/006/009/
 // 017/020) enforced on create and update.
 type UomDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // UomApplicationService is the authorized CRUD the REST handler serves.
 type UomApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // UomLookupService answers questions about a single UoM. It exists because other modules must be

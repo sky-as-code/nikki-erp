@@ -5,7 +5,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	itProfile "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/paymentprofile"
 )
@@ -22,20 +22,20 @@ import (
 // therefore binds the two write bodies itself so the field arrives at all (payment_profile_rest.go).
 
 func NewPaymentProfileCrudDomainService(
-	base composable.CrudDomainService, profiles *PaymentProfileDomainService,
+	base dynamicresource.CrudDomainService, profiles *PaymentProfileDomainService,
 ) itProfile.PaymentProfileCrudDomainService {
 	return &PaymentProfileCrudDomainServiceImpl{CrudDomainService: base, profiles: profiles}
 }
 
 type PaymentProfileCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	profiles *PaymentProfileDomainService
 }
 
 // Create encrypts before the default runs: "config" is not a schema field, so validation would
 // drop it and there would be nothing left to encrypt afterwards.
 func (this *PaymentProfileCrudDomainServiceImpl) Create(
-	ctx corectx.Context, cmd itProfile.CreatePaymentProfileCommand, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd itProfile.CreatePaymentProfileCommand, options ...dynamicresource.CreateOptions,
 ) (*itProfile.CreatePaymentProfileResult, error) {
 	if err := this.encryptParams(cmd); err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (this *PaymentProfileCrudDomainServiceImpl) Create(
 }
 
 func (this *PaymentProfileCrudDomainServiceImpl) Update(
-	ctx corectx.Context, cmd itProfile.UpdatePaymentProfileCommand, options ...composable.UpdateOptions,
+	ctx corectx.Context, cmd itProfile.UpdatePaymentProfileCommand, options ...dynamicresource.UpdateOptions,
 ) (*itProfile.UpdatePaymentProfileResult, error) {
 	if err := this.encryptParams(cmd); err != nil {
 		return nil, err
@@ -69,8 +69,8 @@ func (this *PaymentProfileCrudDomainServiceImpl) GetById(
 }
 
 func (this *PaymentProfileCrudDomainServiceImpl) GetOne(
-	ctx corectx.Context, query composable.GetOneQuery,
-) (*composable.GetOneResult, error) {
+	ctx corectx.Context, query dynamicresource.GetOneQuery,
+) (*dynamicresource.GetOneResult, error) {
 	swapConfigForEncryptedConfig(query)
 	result, err := this.CrudDomainService.GetOne(ctx, query)
 	if err != nil || result == nil || !result.HasData {

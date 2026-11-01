@@ -6,7 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/app"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/services"
@@ -19,28 +19,28 @@ import (
 type userEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_user"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_user"`
 }
 
 // registerUserEngine declares the iam_user onion and publishes its typed layers. User is the first
 // IAM resource on the composable engine; the others still go through engineSpecs.
 func registerUserEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.UserSchemaName),
+		dynamicresource.EngineDependencyName(models.UserSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			settingsSvc itExt.UserSettingsExtService, permRepo itPerm.PermissionRepository,
 			historyRepo itPerm.PermissionHistoryRepository,
-		) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.UserSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewUserCrudRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewUserCrudDomainService(base, settingsSvc, permRepo, historyRepo)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					domSvc := base.DomainService().(itUser.UserCrudDomainService)
 					return app.NewUserCrudApplicationService(base, domSvc)
 				},

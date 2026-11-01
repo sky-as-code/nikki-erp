@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -21,7 +21,7 @@ import (
 // The template_* fields are declared as related computed fields in product_variant.json, and the
 // engine's computed-field layer batches the template read and fills them on every read path.
 func NewProductVariantDomainService(
-	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher,
+	base dynamicresource.CrudDomainService, usageDispatcher *usagecheck.Dispatcher,
 ) *ProductVariantDomainServiceImpl {
 	return &ProductVariantDomainServiceImpl{
 		CrudDomainService: base,
@@ -32,32 +32,32 @@ func NewProductVariantDomainService(
 // ProductVariantDomainServiceImpl carries the variant's domain behaviors: the archive cascade kept
 // in step with the owning template, and the read services.
 type ProductVariantDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	usageDispatcher *usagecheck.Dispatcher
 }
 
-var _ composable.CrudDomainService = (*ProductVariantDomainServiceImpl)(nil)
+var _ dynamicresource.CrudDomainService = (*ProductVariantDomainServiceImpl)(nil)
 
 func (this *ProductVariantDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
-	opts := safe.GetOptional(options, composable.CreateOptions{})
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, normalizeVariantIdentifiers())
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, checkCreateCombination(this.Repository()))
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra,
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra,
 		validateCreateIdentifiers(this.Repository()))
 	return this.CrudDomainService.Create(ctx, params, opts)
 }
 
 func (this *ProductVariantDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
 	submittedTemplateId := ""
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, normalizeVariantIdentifiers())
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, captureSubmittedTemplateId(&submittedTemplateId))
-	opts.ValidateExtra = composable.ChainValidateExtra(
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(
 		opts.ValidateExtra, validateVariantUpdate(this.Repository(), &submittedTemplateId),
 		validateUpdateIdentifiers(this.Repository()))
 	return this.CrudDomainService.Update(ctx, params, opts)
@@ -76,7 +76,7 @@ func (this *ProductVariantDomainServiceImpl) Update(
 // Archiving is the alternative and is guarded separately: SetArchived refuses only on live stock,
 // because history does not prevent a variant from being withdrawn from sale.
 func (this *ProductVariantDomainServiceImpl) Delete(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.DeleteOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	vErrs := ft.NewClientErrors()
 	variantId := derefString(models.NewProductVariantFrom(params).GetId())

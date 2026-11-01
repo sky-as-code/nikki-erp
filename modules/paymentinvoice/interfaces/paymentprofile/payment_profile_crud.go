@@ -2,41 +2,41 @@
 package paymentprofile
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // PaymentProfileCrudRepository reads and writes payment profiles.
 type PaymentProfileCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // PaymentProfileCrudDomainService is the CRUD of the resource. Its overrides encrypt "config" into
 // "encrypted_config" on every write and decrypt it on every read.
 type PaymentProfileCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // PaymentProfileCrudApplicationService is the authorized surface the REST handler serves.
 type PaymentProfileCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreatePaymentProfileCommand      = composable.CreateCommand
-	UpdatePaymentProfileCommand      = composable.UpdateCommand
-	DeletePaymentProfileCommand      = composable.DeleteCommand
-	SetPaymentProfileArchivedCommand = composable.SetArchivedCommand
-	GetPaymentProfileByIdQuery       = composable.GetByIdQuery
-	SearchPaymentProfilesQuery       = composable.SearchQuery
-	PaymentProfileExistsQuery        = composable.ExistsQuery
+	CreatePaymentProfileCommand      = dynamicresource.CreateCommand
+	UpdatePaymentProfileCommand      = dynamicresource.UpdateCommand
+	DeletePaymentProfileCommand      = dynamicresource.DeleteCommand
+	SetPaymentProfileArchivedCommand = dynamicresource.SetArchivedCommand
+	GetPaymentProfileByIdQuery       = dynamicresource.GetByIdQuery
+	SearchPaymentProfilesQuery       = dynamicresource.SearchQuery
+	PaymentProfileExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreatePaymentProfileResult      = composable.CreateResult
-	UpdatePaymentProfileResult      = composable.MutateResult
-	DeletePaymentProfileResult      = composable.MutateResult
-	SetPaymentProfileArchivedResult = composable.MutateResult
-	GetPaymentProfileByIdResult     = composable.GetOneResult
-	SearchPaymentProfilesResult     = composable.SearchResult
-	PaymentProfileExistsResult      = composable.ExistsResult
+	CreatePaymentProfileResult      = dynamicresource.CreateResult
+	UpdatePaymentProfileResult      = dynamicresource.MutateResult
+	DeletePaymentProfileResult      = dynamicresource.MutateResult
+	SetPaymentProfileArchivedResult = dynamicresource.MutateResult
+	GetPaymentProfileByIdResult     = dynamicresource.GetOneResult
+	SearchPaymentProfilesResult     = dynamicresource.SearchResult
+	PaymentProfileExistsResult      = dynamicresource.ExistsResult
 )

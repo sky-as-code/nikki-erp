@@ -13,14 +13,14 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewInventoryLocationDomainService derives the location service from the engine's default one.
 // usage tells it what Stock holds at a location, injected rather than looked up so the archive
 // guard can be tested without a stock engine.
 func NewInventoryLocationDomainService(
-	base composable.CrudDomainService, usage itStock.LocationUsageReadService,
+	base dynamicresource.CrudDomainService, usage itStock.LocationUsageReadService,
 ) *InventoryLocationDomainServiceImpl {
 	return &InventoryLocationDomainServiceImpl{CrudDomainService: base, usage: usage}
 }
@@ -29,18 +29,18 @@ func NewInventoryLocationDomainService(
 // resource: keeping the tree coherent, and stopping a location from being retired while something
 // depends on it. None of it changes a quantity.
 type InventoryLocationDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	usage itStock.LocationUsageReadService
 }
 
-var _ composable.CrudDomainService = (*InventoryLocationDomainServiceImpl)(nil)
+var _ dynamicresource.CrudDomainService = (*InventoryLocationDomainServiceImpl)(nil)
 
 // Create is the client's create: it applies the tree rules and derives what the location inherits
 // from its parent. is_system_generated and the managed fields are stripped from whatever the client
 // sent: a client able to set them could mint a location that then refuses to be archived or deleted.
 func (this *InventoryLocationDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	prepared := copyFields(params)
 	delete(prepared, basemodel.FieldManagedByType)
@@ -58,7 +58,7 @@ func (this *InventoryLocationDomainServiceImpl) CreateManaged(
 }
 
 func (this *InventoryLocationDomainServiceImpl) create(
-	ctx corectx.Context, prepared dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, prepared dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	vErrs := ft.NewClientErrors()
 	rejectDerivedLocationFields(prepared, vErrs)
@@ -75,16 +75,16 @@ func (this *InventoryLocationDomainServiceImpl) create(
 	if vErrs.Count() > 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 	}
-	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.deriveOnCreate)
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.deriveOnCreate)
 	return this.CrudDomainService.Create(ctx, prepared, opts)
 }
 
 func (this *InventoryLocationDomainServiceImpl) CreateBulk(
-	ctx corectx.Context, cmds []composable.CreateCommand,
+	ctx corectx.Context, cmds []dynamicresource.CreateCommand,
 ) (*dyn.OpResult[[]dmodel.DynamicFields], error) {
 	return this.createBulk(ctx, cmds, func(
-		tranxCtx corectx.Context, cmd composable.CreateCommand,
+		tranxCtx corectx.Context, cmd dynamicresource.CreateCommand,
 	) (*dyn.OpResult[dmodel.DynamicFields], error) {
 		return this.Create(tranxCtx, cmd)
 	})
@@ -93,14 +93,14 @@ func (this *InventoryLocationDomainServiceImpl) CreateBulk(
 // CreateManagedBulk is CreateBulk for locations something manages - a kiosk's slots - keeping the
 // managed_by_type and managed_by_id each command carries. All or nothing, like CreateBulk.
 func (this *InventoryLocationDomainServiceImpl) CreateManagedBulk(
-	ctx corectx.Context, cmds []composable.CreateCommand,
+	ctx corectx.Context, cmds []dynamicresource.CreateCommand,
 ) (*dyn.OpResult[[]dmodel.DynamicFields], error) {
 	return this.createBulk(ctx, cmds, this.CreateManaged)
 }
 
 func (this *InventoryLocationDomainServiceImpl) createBulk(
-	ctx corectx.Context, cmds []composable.CreateCommand,
-	createOne func(corectx.Context, composable.CreateCommand) (*dyn.OpResult[dmodel.DynamicFields], error),
+	ctx corectx.Context, cmds []dynamicresource.CreateCommand,
+	createOne func(corectx.Context, dynamicresource.CreateCommand) (*dyn.OpResult[dmodel.DynamicFields], error),
 ) (*dyn.OpResult[[]dmodel.DynamicFields], error) {
 	created := make([]dmodel.DynamicFields, 0, len(cmds))
 	var refused ft.ClientErrors
@@ -136,7 +136,7 @@ var errLocationBulkRefused = errors.New("inventory location bulk create refused;
 // warehouse's root, Stock, Input or Output location may be renamed and given a storage category,
 // but re-parenting it or changing its type would break the warehouse that created it.
 func (this *InventoryLocationDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	locationId := readStringParam(params, models.InventoryLocationFieldId)
 	current, vErrs, err := this.loadLocation(ctx, locationId)
@@ -160,8 +160,8 @@ func (this *InventoryLocationDomainServiceImpl) Update(
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}, nil
 	}
 
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.deriveOnUpdate)
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.deriveOnUpdate)
 	if !changesLocationTree(prepared) {
 		return this.CrudDomainService.Update(ctx, prepared, opts)
 	}
@@ -193,7 +193,7 @@ func (this *InventoryLocationDomainServiceImpl) assertUpdateAllowed(
 }
 
 func (this *InventoryLocationDomainServiceImpl) updateAndCascade(
-	ctx corectx.Context, prepared dmodel.DynamicFields, opts composable.UpdateOptions,
+	ctx corectx.Context, prepared dmodel.DynamicFields, opts dynamicresource.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	var result *dyn.OpResult[dyn.MutateResultData]
 	err := runInTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
@@ -203,14 +203,14 @@ func (this *InventoryLocationDomainServiceImpl) updateAndCascade(
 		}
 		result = res
 		if res.ClientErrors.Count() > 0 {
-			return composable.ClientErrorSignal{Errors: res.ClientErrors}
+			return dynamicresource.ClientErrorSignal{Errors: res.ClientErrors}
 		}
 		if !res.HasData {
 			return nil
 		}
 		return this.cascadeSubtree(tranxCtx, readStringParam(prepared, models.InventoryLocationFieldId))
 	})
-	if signal, ok := composable.AsClientErrorSignal(err); ok {
+	if signal, ok := dynamicresource.AsClientErrorSignal(err); ok {
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: signal.Errors}, nil
 	}
 	if err != nil {

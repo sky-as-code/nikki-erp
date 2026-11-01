@@ -5,20 +5,20 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
 )
 
 // NewOrgCrudApplicationService is handed the composable default by the iam_org onion.
 func NewOrgCrudApplicationService(
-	base composable.CrudApplicationService, domSvc itOrg.OrgCrudDomainService, lifecycle *OrgLifecycleOrchestrator,
+	base dynamicresource.CrudApplicationService, domSvc itOrg.OrgCrudDomainService, lifecycle *OrgLifecycleOrchestrator,
 ) itOrg.OrgCrudApplicationService {
 	return &OrgCrudApplicationServiceImpl{CrudApplicationService: base, domSvc: domSvc, lifecycle: lifecycle}
 }
 
 type OrgCrudApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	domSvc    itOrg.OrgCrudDomainService
 	lifecycle *OrgLifecycleOrchestrator
 }
@@ -31,7 +31,7 @@ func (this *OrgCrudApplicationServiceImpl) Create(
 	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
 		return result, err
 	}
-	this.lifecycle.StartInit(ctx, composable.ParamId(result.Data))
+	this.lifecycle.StartInit(ctx, dynamicresource.ParamId(result.Data))
 	return result, nil
 }
 
@@ -46,8 +46,8 @@ func (this *OrgCrudApplicationServiceImpl) Update(
 func (this *OrgCrudApplicationServiceImpl) Delete(
 	ctx corectx.Context, cmd itOrg.DeleteOrgCommand,
 ) (*itOrg.DeleteOrgResult, error) {
-	cErrs, err := composable.AssertRecordAction(ctx, this, cmd,
-		composable.ActionPermission{ActionCode: composable.PermissionDelete})
+	cErrs, err := dynamicresource.AssertRecordAction(ctx, this, cmd,
+		dynamicresource.ActionPermission{ActionCode: dynamicresource.PermissionDelete})
 	if err != nil || cErrs != nil {
 		return mutateRefused(cErrs, err)
 	}
@@ -57,14 +57,16 @@ func (this *OrgCrudApplicationServiceImpl) Delete(
 	}
 	// Answered as a delete, which reports no etag: the client is done with this record.
 	result.Data.Etag = ""
-	this.lifecycle.StartCleanUp(ctx, composable.ParamId(cmd))
+	this.lifecycle.StartCleanUp(ctx, dynamicresource.ParamId(cmd))
 	return result, nil
 }
 
 func (this *OrgCrudApplicationServiceImpl) ManageUsers(
 	ctx corectx.Context, cmd itOrg.ManageOrgUsersCommand,
 ) (*itOrg.ManageOrgUsersResult, error) {
-	cErrs, err := composable.AssertRecordAction(ctx, this, cmd, composable.ActionPermission{ActionCode: actionManageUsers})
+	cErrs, err := dynamicresource.AssertRecordAction(
+		ctx, this, cmd, dynamicresource.ActionPermission{ActionCode: actionManageUsers},
+	)
 	if err != nil || cErrs != nil {
 		return mutateRefused(cErrs, err)
 	}

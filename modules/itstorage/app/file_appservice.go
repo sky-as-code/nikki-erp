@@ -4,7 +4,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	itFile "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/file"
 )
@@ -17,7 +17,7 @@ var metaFields = []string{
 }
 
 // NewFileApplicationService is handed the composable default by the itstorage_file onion.
-func NewFileApplicationService(base composable.CrudApplicationService) itFile.FileApplicationService {
+func NewFileApplicationService(base dynamicresource.CrudApplicationService) itFile.FileApplicationService {
 	return &FileApplicationServiceImpl{
 		CrudApplicationService: base,
 		domSvc:                 base.DomainService().(itFile.FileDomainService),
@@ -25,26 +25,26 @@ func NewFileApplicationService(base composable.CrudApplicationService) itFile.Fi
 }
 
 type FileApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	domSvc itFile.FileDomainService
 }
 
 // Create is refused: a row without its object would be a dangling file. Files arrive through
 // UploadFile only.
 func (this *FileApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
-	return &composable.CreateResult{ClientErrors: ft.ClientErrors{*ft.NewAnonymousBusinessViolation(
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
+	return &dynamicresource.CreateResult{ClientErrors: ft.ClientErrors{*ft.NewAnonymousBusinessViolation(
 		ft.ErrorKey("err_action_not_supported"),
 		"This resource does not support the requested action",
-		map[string]any{"action": string(composable.CrudActionCreate), "resource": models.FileSchemaName},
+		map[string]any{"action": string(dynamicresource.CrudActionCreate), "resource": models.FileSchemaName},
 	)}}, nil
 }
 
 func (this *FileApplicationServiceImpl) UploadFile(
 	ctx corectx.Context, cmd itFile.UploadFileCommand,
 ) (*itFile.UploadFileResult, error) {
-	if cErrs := assertFileAction(ctx, this, composable.PermissionCreate, cmd.OrgId); cErrs != nil {
+	if cErrs := assertFileAction(ctx, this, dynamicresource.PermissionCreate, cmd.OrgId); cErrs != nil {
 		return &itFile.UploadFileResult{ClientErrors: *cErrs}, nil
 	}
 	return this.domSvc.Upload(ctx, cmd)
@@ -89,7 +89,7 @@ func (this *FileApplicationServiceImpl) DownloadFileById(
 		return nil, err
 	}
 	if file == nil {
-		if cErrs := assertFileAction(ctx, this, composable.PermissionRead, nil); cErrs != nil {
+		if cErrs := assertFileAction(ctx, this, dynamicresource.PermissionRead, nil); cErrs != nil {
 			return &itFile.DownloadFileResult{ClientErrors: *cErrs}, nil
 		}
 		return &itFile.DownloadFileResult{ClientErrors: ft.ClientErrors{*ft.NewNotFoundError("id")}}, nil
@@ -113,7 +113,7 @@ func (this *FileApplicationServiceImpl) GetFileMetaById(
 		return nil, err
 	}
 	if file == nil {
-		if cErrs := assertFileAction(ctx, this, composable.PermissionRead, nil); cErrs != nil {
+		if cErrs := assertFileAction(ctx, this, dynamicresource.PermissionRead, nil); cErrs != nil {
 			return &itFile.GetFileMetaResult{ClientErrors: *cErrs}, nil
 		}
 		return &itFile.GetFileMetaResult{ClientErrors: ft.ClientErrors{*ft.NewNotFoundError("id")}}, nil
@@ -140,7 +140,7 @@ func (this *FileApplicationServiceImpl) resolveReadable(
 		return nil, nil, err
 	}
 	if resolved == nil {
-		if cErrs := assertFileAction(ctx, this, composable.PermissionRead, nil); cErrs != nil {
+		if cErrs := assertFileAction(ctx, this, dynamicresource.PermissionRead, nil); cErrs != nil {
 			return nil, cErrs, nil
 		}
 		return nil, &ft.ClientErrors{*ft.NewNotFoundError("path")}, nil

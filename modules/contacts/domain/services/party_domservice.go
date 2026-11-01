@@ -10,17 +10,17 @@ import (
 	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewPartyDomainService is handed the composable default by the party onion. The CRUD is the
 // default's; what this type adds is the capability other modules ask of a party.
-func NewPartyDomainService(base composable.CrudDomainService) itParty.PartyDomainService {
+func NewPartyDomainService(base dynamicresource.CrudDomainService) itParty.PartyDomainService {
 	return &PartyDomainServiceImpl{CrudDomainService: base}
 }
 
 type PartyDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // AssertAssignable reports whether a document in one organization may name this party.

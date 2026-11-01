@@ -8,7 +8,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
@@ -17,7 +17,7 @@ import (
 // NewUomDomainService is handed the composable default by the UoM onion, plus the dispatcher
 // that asks the consuming modules whether a unit is still in use.
 func NewUomDomainService(
-	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher,
+	base dynamicresource.CrudDomainService, usageDispatcher *usagecheck.Dispatcher,
 ) itUom.UomDomainService {
 	return &UomDomainServiceImpl{CrudDomainService: base, usageDispatcher: usageDispatcher}
 }
@@ -26,24 +26,24 @@ func NewUomDomainService(
 // delete. They are attached rather than reimplemented because the CRUD processing itself is
 // entirely the default's; only the validation the schema cannot express belongs here.
 type UomDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	usageDispatcher *usagecheck.Dispatcher
 }
 
 func (this *UomDomainServiceImpl) Create(
-	ctx corectx.Context, cmd itUom.CreateUomCommand, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd itUom.CreateUomCommand, options ...dynamicresource.CreateOptions,
 ) (*itUom.CreateUomResult, error) {
-	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, validateUomCreate(this.Repository()))
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, validateUomCreate(this.Repository()))
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 func (this *UomDomainServiceImpl) Update(
-	ctx corectx.Context, cmd itUom.UpdateUomCommand, options ...composable.UpdateOptions,
+	ctx corectx.Context, cmd itUom.UpdateUomCommand, options ...dynamicresource.UpdateOptions,
 ) (*itUom.UpdateUomResult, error) {
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra,
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra,
 		validateUomUpdate(this.Repository(), this.usageDispatcher))
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
@@ -55,7 +55,7 @@ func (this *UomDomainServiceImpl) Update(
 // number. That is what this check exists to prevent: the constraint keeps the reference from
 // dangling, and this keeps it from being erased. A unit in use is archived, not deleted.
 func (this *UomDomainServiceImpl) Delete(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.DeleteOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	vErrs := ft.NewClientErrors()
 	if err := assertUomDeletable(ctx, this.usageDispatcher, params, vErrs); err != nil {

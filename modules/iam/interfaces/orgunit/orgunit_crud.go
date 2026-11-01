@@ -2,33 +2,33 @@ package orgunit
 
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The composable layers of the iam_orgunit resource, served at /v1/iam/iam_orgunit.
 
 type OrgUnitCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // OrgUnitCrudDomainService is the CRUD of the resource plus its own rules: a create derives the
 // unit's path from its parent, and the unit's members are the users whose org_unit_id names it.
 type OrgUnitCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	ManageUsers(ctx corectx.Context, cmd ManageOrgUnitUsersCommand) (*ManageOrgUnitUsersResult, error)
 }
 
 type OrgUnitCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	ManageUsers(ctx corectx.Context, cmd ManageOrgUnitUsersCommand) (*ManageOrgUnitUsersResult, error)
 }
 
 type (
-	CreateOrgUnitCommand = composable.CreateCommand
-	CreateOrgUnitResult  = composable.CreateResult
+	CreateOrgUnitCommand = dynamicresource.CreateCommand
+	CreateOrgUnitResult  = dynamicresource.CreateResult
 
-	ManageOrgUnitUsersCommand = composable.ManageM2mCommand
-	ManageOrgUnitUsersResult  = composable.MutateResult
+	ManageOrgUnitUsersCommand = dynamicresource.ManageM2mCommand
+	ManageOrgUnitUsersResult  = dynamicresource.MutateResult
 )

@@ -7,75 +7,75 @@
 package catalog
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SalesComboRepository reads and writes combos, the bundles sold as a single order line.
 type SalesComboRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // SalesComboDomainService is the CRUD of the resource plus its own rules.
 type SalesComboDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // SalesComboApplicationService is the authorized surface the REST handler serves.
 type SalesComboApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // SalesComboComponentRepository reads and writes the products a combo is made of.
 type SalesComboComponentRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // SalesComboComponentDomainService is the CRUD of the resource plus its own rules.
 type SalesComboComponentDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // SalesComboComponentApplicationService is the authorized surface the REST handler serves.
 type SalesComboComponentApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateSalesComboCommand      = composable.CreateCommand
-	UpdateSalesComboCommand      = composable.UpdateCommand
-	DeleteSalesComboCommand      = composable.DeleteCommand
-	SetSalesComboArchivedCommand = composable.SetArchivedCommand
-	GetSalesComboByIdQuery       = composable.GetByIdQuery
-	SearchSalesCombosQuery       = composable.SearchQuery
-	SalesComboExistsQuery        = composable.ExistsQuery
+	CreateSalesComboCommand      = dynamicresource.CreateCommand
+	UpdateSalesComboCommand      = dynamicresource.UpdateCommand
+	DeleteSalesComboCommand      = dynamicresource.DeleteCommand
+	SetSalesComboArchivedCommand = dynamicresource.SetArchivedCommand
+	GetSalesComboByIdQuery       = dynamicresource.GetByIdQuery
+	SearchSalesCombosQuery       = dynamicresource.SearchQuery
+	SalesComboExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateSalesComboResult      = composable.CreateResult
-	UpdateSalesComboResult      = composable.MutateResult
-	DeleteSalesComboResult      = composable.MutateResult
-	SetSalesComboArchivedResult = composable.MutateResult
-	GetSalesComboByIdResult     = composable.GetOneResult
-	SearchSalesCombosResult     = composable.SearchResult
-	SalesComboExistsResult      = composable.ExistsResult
+	CreateSalesComboResult      = dynamicresource.CreateResult
+	UpdateSalesComboResult      = dynamicresource.MutateResult
+	DeleteSalesComboResult      = dynamicresource.MutateResult
+	SetSalesComboArchivedResult = dynamicresource.MutateResult
+	GetSalesComboByIdResult     = dynamicresource.GetOneResult
+	SearchSalesCombosResult     = dynamicresource.SearchResult
+	SalesComboExistsResult      = dynamicresource.ExistsResult
 )
 
 type (
-	CreateSalesComboComponentCommand      = composable.CreateCommand
-	UpdateSalesComboComponentCommand      = composable.UpdateCommand
-	DeleteSalesComboComponentCommand      = composable.DeleteCommand
-	SetSalesComboComponentArchivedCommand = composable.SetArchivedCommand
-	GetSalesComboComponentByIdQuery       = composable.GetByIdQuery
-	SearchSalesComboComponentsQuery       = composable.SearchQuery
-	SalesComboComponentExistsQuery        = composable.ExistsQuery
+	CreateSalesComboComponentCommand      = dynamicresource.CreateCommand
+	UpdateSalesComboComponentCommand      = dynamicresource.UpdateCommand
+	DeleteSalesComboComponentCommand      = dynamicresource.DeleteCommand
+	SetSalesComboComponentArchivedCommand = dynamicresource.SetArchivedCommand
+	GetSalesComboComponentByIdQuery       = dynamicresource.GetByIdQuery
+	SearchSalesComboComponentsQuery       = dynamicresource.SearchQuery
+	SalesComboComponentExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateSalesComboComponentResult      = composable.CreateResult
-	UpdateSalesComboComponentResult      = composable.MutateResult
-	DeleteSalesComboComponentResult      = composable.MutateResult
-	SetSalesComboComponentArchivedResult = composable.MutateResult
-	GetSalesComboComponentByIdResult     = composable.GetOneResult
-	SearchSalesComboComponentsResult     = composable.SearchResult
-	SalesComboComponentExistsResult      = composable.ExistsResult
+	CreateSalesComboComponentResult      = dynamicresource.CreateResult
+	UpdateSalesComboComponentResult      = dynamicresource.MutateResult
+	DeleteSalesComboComponentResult      = dynamicresource.MutateResult
+	SetSalesComboComponentArchivedResult = dynamicresource.MutateResult
+	GetSalesComboComponentByIdResult     = dynamicresource.GetOneResult
+	SearchSalesComboComponentsResult     = dynamicresource.SearchResult
+	SalesComboComponentExistsResult      = dynamicresource.ExistsResult
 )

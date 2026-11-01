@@ -12,7 +12,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -54,9 +54,9 @@ type variantAttributeHops struct {
 // forbids by name. The values are fetched once per call rather than cached, because an attribute
 // rename must show on the next read.
 func newVariantComputedFunctions(
-	lookupOnion func(schemaName string) (composable.DynamicResourceEngineOnion, bool),
-) map[string]composable.ComputedFieldFn {
-	displayName := func(ctx corectx.Context, req composable.ComputeFnRequest) ([]any, error) {
+	lookupOnion func(schemaName string) (dynamicresource.DynamicResourceEngineOnion, bool),
+) map[string]dynamicresource.ComputedFieldFn {
+	displayName := func(ctx corectx.Context, req dynamicresource.ComputeFnRequest) ([]any, error) {
 		byVariant, err := fetchVariantAttributes(ctx, lookupOnion, req.Models)
 		if err != nil {
 			return nil, err
@@ -75,7 +75,7 @@ func newVariantComputedFunctions(
 		return out, nil
 	}
 
-	attributeSummary := func(ctx corectx.Context, req composable.ComputeFnRequest) ([]any, error) {
+	attributeSummary := func(ctx corectx.Context, req dynamicresource.ComputeFnRequest) ([]any, error) {
 		byVariant, err := fetchVariantAttributes(ctx, lookupOnion, req.Models)
 		if err != nil {
 			return nil, err
@@ -92,7 +92,7 @@ func newVariantComputedFunctions(
 		return out, nil
 	}
 
-	return map[string]composable.ComputedFieldFn{
+	return map[string]dynamicresource.ComputedFieldFn{
 		VariantDisplayNameFn:      displayName,
 		VariantAttributeSummaryFn: attributeSummary,
 	}
@@ -119,7 +119,7 @@ func buildDisplayName(row dmodel.DynamicFields, attributes []variantAttributes) 
 // `id,display_name` alone would otherwise render every variant nameless.
 func fetchMissingNameSources(
 	ctx corectx.Context,
-	lookupOnion func(schemaName string) (composable.DynamicResourceEngineOnion, bool),
+	lookupOnion func(schemaName string) (dynamicresource.DynamicResourceEngineOnion, bool),
 	rows []dmodel.DynamicFields,
 ) (map[string]dmodel.DynamicFields, error) {
 	missing := make([]dmodel.DynamicFields, 0, len(rows))
@@ -158,7 +158,7 @@ func fetchMissingNameSources(
 // variant and ordered the way the template declares them.
 func fetchVariantAttributes(
 	ctx corectx.Context,
-	lookupOnion func(schemaName string) (composable.DynamicResourceEngineOnion, bool),
+	lookupOnion func(schemaName string) (dynamicresource.DynamicResourceEngineOnion, bool),
 	rows []dmodel.DynamicFields,
 ) (map[string][]variantAttributes, error) {
 	byVariant := map[string][]variantAttributes{}
@@ -296,7 +296,7 @@ func assembleVariantAttributes(hops variantAttributeHops) map[string][]variantAt
 // flat columns. Returns no rows for an empty id list rather than searching for everything.
 func searchByIds(
 	ctx corectx.Context,
-	lookupOnion func(schemaName string) (composable.DynamicResourceEngineOnion, bool),
+	lookupOnion func(schemaName string) (dynamicresource.DynamicResourceEngineOnion, bool),
 	schemaName string, idField string, ids []string, fields []string, size int,
 ) ([]dmodel.DynamicFields, error) {
 	if len(ids) == 0 {

@@ -8,11 +8,11 @@ import (
 	itQuotation "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/quotation"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type SalesQuotationApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	effectiveSettings itExt.EffectiveSettingsExtService
 	taxCalculation    itExt.TaxCalculationExtService
@@ -21,7 +21,7 @@ type SalesQuotationApplicationServiceImpl struct {
 }
 
 func NewSalesQuotationApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 	settings itExt.EffectiveSettingsExtService,
 	tax itExt.TaxCalculationExtService,
 	products itExt.ProductVariantExtService,
@@ -63,12 +63,12 @@ func (this *SalesQuotationApplicationServiceImpl) Cancel(
 	return this.runCancelQuotation(ctx, cmd)
 }
 
-func NewSalesQuotationLineApplicationService(base composable.CrudApplicationService) itQuotation.SalesQuotationLineApplicationService {
+func NewSalesQuotationLineApplicationService(base dynamicresource.CrudApplicationService) itQuotation.SalesQuotationLineApplicationService {
 	return &SalesQuotationLineApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesQuotationLineApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The moved action bodies follow.

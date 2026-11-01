@@ -4,17 +4,17 @@ import (
 	"go.uber.org/dig"
 
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // StockOperationTypeEngineName is the container name of the stock_operation_type onion, declared once for the struct tag and
-// checked against composable.EngineDependencyName by a test.
+// checked against dynamicresource.EngineDependencyName by a test.
 const StockOperationTypeEngineName = "dynengine_inventory_stock_operation_type"
 
 type stockOperationTypeRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_operation_type"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_operation_type"`
 }
 
 func NewStockOperationTypeRest(params stockOperationTypeRestParams) *StockOperationTypeRest {
@@ -26,6 +26,6 @@ func NewStockOperationTypeRest(params stockOperationTypeRestParams) *StockOperat
 
 // StockOperationTypeRest serves the built-in CRUD of the stock_operation_type resource.
 type StockOperationTypeRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	stockOperationTypeSvc itStock.StockOperationTypeApplicationService
 }

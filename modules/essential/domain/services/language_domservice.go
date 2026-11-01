@@ -6,19 +6,19 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 )
 
 // NewLanguageDomainService is handed the composable default by the language onion. The CRUD is
 // the default's; what this type adds is the lookups other modules make.
-func NewLanguageDomainService(base composable.CrudDomainService) it.LanguageDomainService {
+func NewLanguageDomainService(base dynamicresource.CrudDomainService) it.LanguageDomainService {
 	return &LanguageDomainServiceImpl{CrudDomainService: base}
 }
 
 type LanguageDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // GetLanguageByIsoCode resolves the code a setting or an i18n layer names a language with. The

@@ -3,37 +3,37 @@
 package commchannel
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type CommChannelRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type CommChannelDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type CommChannelApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateCommChannelCommand      = composable.CreateCommand
-	UpdateCommChannelCommand      = composable.UpdateCommand
-	DeleteCommChannelCommand      = composable.DeleteCommand
-	SetCommChannelArchivedCommand = composable.SetArchivedCommand
-	GetCommChannelByIdQuery       = composable.GetByIdQuery
-	SearchCommChannelsQuery       = composable.SearchQuery
-	CommChannelExistsQuery        = composable.ExistsQuery
+	CreateCommChannelCommand      = dynamicresource.CreateCommand
+	UpdateCommChannelCommand      = dynamicresource.UpdateCommand
+	DeleteCommChannelCommand      = dynamicresource.DeleteCommand
+	SetCommChannelArchivedCommand = dynamicresource.SetArchivedCommand
+	GetCommChannelByIdQuery       = dynamicresource.GetByIdQuery
+	SearchCommChannelsQuery       = dynamicresource.SearchQuery
+	CommChannelExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateCommChannelResult      = composable.CreateResult
-	UpdateCommChannelResult      = composable.MutateResult
-	DeleteCommChannelResult      = composable.MutateResult
-	SetCommChannelArchivedResult = composable.MutateResult
-	GetCommChannelByIdResult     = composable.GetOneResult
-	SearchCommChannelsResult     = composable.SearchResult
-	CommChannelExistsResult      = composable.ExistsResult
+	CreateCommChannelResult      = dynamicresource.CreateResult
+	UpdateCommChannelResult      = dynamicresource.MutateResult
+	DeleteCommChannelResult      = dynamicresource.MutateResult
+	SetCommChannelArchivedResult = dynamicresource.MutateResult
+	GetCommChannelByIdResult     = dynamicresource.GetOneResult
+	SearchCommChannelsResult     = dynamicresource.SearchResult
+	CommChannelExistsResult      = dynamicresource.ExistsResult
 )

@@ -9,7 +9,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/notification/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/notification/transport/restful/v1"
 )
@@ -55,21 +55,21 @@ func initResourcesV1(route *echo.Group) error {
 		recipientRest *v1.RecipientRest,
 		deliveryRest *v1.DeliveryRest,
 	) error {
-		readOnly := []composable.CrudAction{
-			composable.CrudActionGetById,
-			composable.CrudActionSearch,
-			composable.CrudActionExists,
-			composable.CrudActionGetSchema,
+		readOnly := []dynamicresource.CrudAction{
+			dynamicresource.CrudActionGetById,
+			dynamicresource.CrudActionSearch,
+			dynamicresource.CrudActionExists,
+			dynamicresource.CrudActionGetSchema,
 		}
 
 		return stdErr.Join(
-			composable.NewRestEngine(models.NotificationSchemaName, notificationRest).
+			dynamicresource.NewRestEngine(models.NotificationSchemaName, notificationRest).
 				AddCrudRoutes(readOnly...).
 				RegisterRoutes(route),
-			composable.NewRestEngine(models.RecipientSchemaName, recipientRest).
+			dynamicresource.NewRestEngine(models.RecipientSchemaName, recipientRest).
 				AddCrudRoutes(readOnly...).
 				RegisterRoutes(route),
-			composable.NewRestEngine(models.DeliverySchemaName, deliveryRest).
+			dynamicresource.NewRestEngine(models.DeliverySchemaName, deliveryRest).
 				AddCrudRoutes(readOnly...).
 				RegisterRoutes(route),
 		)
@@ -107,7 +107,7 @@ func initStreamV1(route *echo.Group) error {
 // The inbox handlers take the payload map the resource engine would have bound, so that they can be
 // written the same way as every other custom action in the codebase. These routes bind nothing
 // themselves: the filters are query parameters and the bodies are read by the handler.
-func wrap(handler composable.HandlerFn) echo.HandlerFunc {
+func wrap(handler dynamicresource.HandlerFn) echo.HandlerFunc {
 	return func(echoCtx *echo.Context) error {
 		payload := map[string]any{}
 		if echoCtx.Request().Method == http.MethodPost {

@@ -3,13 +3,13 @@ package v1
 import (
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itInvoice "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/invoice"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
 )
 
 // The container names the REST structs inject. A dig name tag must be a literal, so routes_test.go
-// asserts each still equals composable.EngineDependencyName of its schema.
+// asserts each still equals dynamicresource.EngineDependencyName of its schema.
 const (
 	PaymentMethodEngineName  = "dynengine_paymentinvoice_payment_method"
 	TransactionEngineName    = "dynengine_paymentinvoice_transaction"
@@ -22,7 +22,7 @@ const (
 type paymentMethodRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_payment_method"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_payment_method"`
 }
 
 func NewPaymentMethodRest(params paymentMethodRestParams) *PaymentMethodRest {
@@ -32,13 +32,13 @@ func NewPaymentMethodRest(params paymentMethodRestParams) *PaymentMethodRest {
 }
 
 type PaymentMethodRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type transactionRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_transaction"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_transaction"`
 }
 
 func NewTransactionRest(params transactionRestParams) *TransactionRest {
@@ -48,13 +48,13 @@ func NewTransactionRest(params transactionRestParams) *TransactionRest {
 }
 
 type TransactionRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type invoiceLineRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_invoice_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_invoice_line"`
 }
 
 func NewInvoiceLineRest(params invoiceLineRestParams) *InvoiceLineRest {
@@ -64,13 +64,13 @@ func NewInvoiceLineRest(params invoiceLineRestParams) *InvoiceLineRest {
 }
 
 type InvoiceLineRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type paymentProfileRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_payment_profile"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_payment_profile"`
 }
 
 func NewPaymentProfileRest(params paymentProfileRestParams) *PaymentProfileRest {
@@ -80,13 +80,13 @@ func NewPaymentProfileRest(params paymentProfileRestParams) *PaymentProfileRest 
 }
 
 type PaymentProfileRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type orderRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_order"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_order"`
 }
 
 func NewOrderRest(params orderRestParams) *OrderRest {
@@ -97,14 +97,14 @@ func NewOrderRest(params orderRestParams) *OrderRest {
 }
 
 type OrderRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	orderSvc itOrder.OrderCrudApplicationService
 }
 
 type invoiceRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_invoice"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_invoice"`
 }
 
 func NewInvoiceRest(params invoiceRestParams) *InvoiceRest {
@@ -115,6 +115,6 @@ func NewInvoiceRest(params invoiceRestParams) *InvoiceRest {
 }
 
 type InvoiceRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	invoiceSvc itInvoice.InvoiceCrudApplicationService
 }

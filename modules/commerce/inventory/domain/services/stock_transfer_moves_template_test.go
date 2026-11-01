@@ -13,7 +13,7 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func TestLiftMovesOrRefuseAcceptsTheTemplateForm(t *testing.T) {
@@ -70,7 +70,7 @@ func (this *fakeVariantResolver) ResolveCompleteVariant(
 }
 
 type templateRowRepository struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	found  bool
 	filter dmodel.DynamicFields
 }
@@ -89,7 +89,7 @@ func templateFormWriter(
 	repo := &templateRowRepository{found: templateFound}
 	original := repoFor
 	t.Cleanup(func() { repoFor = original })
-	repoFor = func(string) (composable.CrudRepository, error) { return repo, nil }
+	repoFor = func(string) (dynamicresource.CrudRepository, error) { return repo, nil }
 	resolver := &fakeVariantResolver{result: result}
 	writer := &transferMovesWriter{
 		transfer: *models.NewStockTransferFrom(dmodel.DynamicFields{"org_id": "01ORG"}), resolver: resolver,

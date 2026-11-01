@@ -4,7 +4,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/iam/transport/restful/v1"
 )
@@ -15,13 +15,13 @@ func initServiceCrudV1() error {
 	})
 }
 
-func serviceRestEngine(rest *v1.ServiceCrudRest) composable.RestEngine {
-	return composable.NewRestEngine(models.ServiceSchemaName, rest).
+func serviceRestEngine(rest *v1.ServiceCrudRest) dynamicresource.RestEngine {
+	return dynamicresource.NewRestEngine(models.ServiceSchemaName, rest).
 		AddCrudRoutes().
-		AddRoute(composable.RouteDefinition{
-			Path: ":id/manage_roles", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ManageRoles,
+		AddRoute(dynamicresource.RouteDefinition{
+			Path: ":id/manage_roles", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ManageRoles,
 		}).
-		AddRoute(composable.RouteDefinition{
-			Path: ":id/roles", ActionType: composable.ActionTypeRead, HandlerFn: rest.Roles,
+		AddRoute(dynamicresource.RouteDefinition{
+			Path: ":id/roles", ActionType: dynamicresource.ActionTypeRead, HandlerFn: rest.Roles,
 		})
 }

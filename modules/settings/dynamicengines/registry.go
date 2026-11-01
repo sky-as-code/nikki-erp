@@ -12,7 +12,7 @@ package dynamicengines
 import (
 	stdErr "errors"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // InitDynamicEngines registers every resource onion this module owns.
@@ -26,9 +26,9 @@ func InitDynamicEngines() error {
 
 // ReadOnlyCrudActions is the built-in action set both settings resources serve. It is also the
 // onion's allow-list, so a write is refused at the application layer as well as having no route.
-func ReadOnlyCrudActions() []composable.CrudAction {
-	return []composable.CrudAction{
-		composable.CrudActionGetById, composable.CrudActionGetByUnique, composable.CrudActionSearch,
-		composable.CrudActionExists, composable.CrudActionGetSchema, composable.CrudActionComputeField,
+func ReadOnlyCrudActions() []dynamicresource.CrudAction {
+	return []dynamicresource.CrudAction{
+		dynamicresource.CrudActionGetById, dynamicresource.CrudActionGetByUnique, dynamicresource.CrudActionSearch,
+		dynamicresource.CrudActionExists, dynamicresource.CrudActionGetSchema, dynamicresource.CrudActionComputeField,
 	}
 }

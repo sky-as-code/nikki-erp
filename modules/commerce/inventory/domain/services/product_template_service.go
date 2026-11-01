@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -24,7 +24,7 @@ const maxTemplateVariants = 1000
 // before reconcile or template delete removes one. The preview image's lifecycle is the composable
 // default's; files is used only to clone the image when a template is duplicated.
 func NewProductTemplateDomainService(
-	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher, files storage.StorageConsumer,
+	base dynamicresource.CrudDomainService, usageDispatcher *usagecheck.Dispatcher, files storage.StorageConsumer,
 ) itProduct.ProductService {
 	return &ProductTemplateDomainServiceImpl{
 		CrudDomainService: base,
@@ -40,7 +40,7 @@ func NewProductTemplateDomainService(
 // It resolves other resources' engines at call time rather than holding them, because engine
 // creation and this service's construction both happen during Init.
 type ProductTemplateDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	usageDispatcher *usagecheck.Dispatcher
 	files           storage.StorageConsumer
@@ -50,8 +50,8 @@ type ProductTemplateDomainServiceImpl struct {
 // and custom actions type-assert it back to the Products capability — since losing either would
 // only show up as a failed assertion at request time.
 var (
-	_ composable.CrudDomainService = (*ProductTemplateDomainServiceImpl)(nil)
-	_ itProduct.ProductService     = (*ProductTemplateDomainServiceImpl)(nil)
+	_ dynamicresource.CrudDomainService = (*ProductTemplateDomainServiceImpl)(nil)
+	_ itProduct.ProductService          = (*ProductTemplateDomainServiceImpl)(nil)
 
 	_ itProduct.ProductTemplateConfigurationService = (*ProductTemplateDomainServiceImpl)(nil)
 )

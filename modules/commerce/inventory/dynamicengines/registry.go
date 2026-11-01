@@ -12,7 +12,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // InitDynamicEngines registers every resource onion this module owns. Nothing is built here: an
@@ -51,23 +51,23 @@ func InitDynamicEngines() error {
 // readOnlyCrudActions withholds the built-in writes from a resource whose rows are derived or
 // engine-written. Bulk import is withheld too: importing a reservation or an outbox row would be
 // a write by another name.
-func readOnlyCrudActions() []composable.CrudAction {
-	return []composable.CrudAction{
-		composable.CrudActionGetById,
-		composable.CrudActionGetByUnique,
-		composable.CrudActionSearch,
-		composable.CrudActionExists,
-		composable.CrudActionGetSchema,
-		composable.CrudActionComputeField,
+func readOnlyCrudActions() []dynamicresource.CrudAction {
+	return []dynamicresource.CrudAction{
+		dynamicresource.CrudActionGetById,
+		dynamicresource.CrudActionGetByUnique,
+		dynamicresource.CrudActionSearch,
+		dynamicresource.CrudActionExists,
+		dynamicresource.CrudActionGetSchema,
+		dynamicresource.CrudActionComputeField,
 	}
 }
 
 // buildOnion builds one onion with the module-wide rules applied and installs it into the
 // resource hub. Every Inventory resource refuses is_archived on create: archiving goes through
 // the /archived action, and the guard runs ahead of any rule a derived service adds.
-func buildOnion(impl *composable.DynamicResourceEngineOnionImpl, param composable.BuildParam) composable.DynamicResourceEngineOnion {
+func buildOnion(impl *dynamicresource.DynamicResourceEngineOnionImpl, param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
 	impl.RejectArchivedOnCreate = true
-	onion := composable.MustBuild(impl, param)
+	onion := dynamicresource.MustBuild(impl, param)
 	services.InstallResource(impl.SchemaName, onion.Repository(), onion.DomainService())
 	return onion
 }

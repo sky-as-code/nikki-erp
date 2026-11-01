@@ -12,31 +12,31 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/event"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type productCategoryEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_product_category"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_product_category"`
 }
 
 // registerProductCategoryEngine declares the product_category onion and publishes its typed layers.
 func registerProductCategoryEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.ProductCategorySchemaName),
+		dynamicresource.EngineDependencyName(models.ProductCategorySchemaName),
 		func(
-			param composable.BuildParam, catalogPublisher itEvent.CatalogChangedEventPublisher,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+			param dynamicresource.BuildParam, catalogPublisher itEvent.CatalogChangedEventPublisher,
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.ProductCategorySchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewProductCategoryRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewProductCategoryDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewProductCategoryApplicationService(base, catalogPublisher)
 				},
 			}, param)

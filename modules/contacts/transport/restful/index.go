@@ -8,7 +8,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/contacts/transport/restful/v1"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func InitRestfulHandlers() error {
@@ -41,6 +41,6 @@ func initContactsV1() error {
 	})
 }
 
-func registerCrud(route *echo.Group, schemaName string, handlers composable.CrudRestHandlers) error {
-	return composable.NewRestEngine(schemaName, handlers).AddCrudRoutes().RegisterRoutes(route)
+func registerCrud(route *echo.Group, schemaName string, handlers dynamicresource.CrudRestHandlers) error {
+	return dynamicresource.NewRestEngine(schemaName, handlers).AddCrudRoutes().RegisterRoutes(route)
 }

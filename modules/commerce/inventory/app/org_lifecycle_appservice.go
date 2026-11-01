@@ -15,7 +15,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle/defaults"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // aliasWarehouseStockLoc names the main warehouse's stock location, where its goods live, for the
@@ -49,7 +49,7 @@ type OrgLifecycleParam struct {
 }
 
 func NewOrgLifecycleAppService(param OrgLifecycleParam) orglifecycle.OrgLifecycleService {
-	return &OrgLifecycleAppServiceImpl{param: param, cleanup: composable.NewOrgDataCleanup(cleanUpOrder...)}
+	return &OrgLifecycleAppServiceImpl{param: param, cleanup: dynamicresource.NewOrgDataCleanup(cleanUpOrder...)}
 }
 
 // OrgLifecycleAppServiceImpl gives a new org the root category, a main warehouse with the
@@ -57,11 +57,11 @@ func NewOrgLifecycleAppService(param OrgLifecycleParam) orglifecycle.OrgLifecycl
 // operation types sales and purchasing use.
 type OrgLifecycleAppServiceImpl struct {
 	param   OrgLifecycleParam
-	cleanup composable.OrgDataCleanup
+	cleanup dynamicresource.OrgDataCleanup
 }
 
 func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model.Id) error {
-	return composable.InTransaction(ctx, this.param.Location.Repository(), func(tranxCtx corectx.Context) error {
+	return dynamicresource.InTransaction(ctx, this.param.Location.Repository(), func(tranxCtx corectx.Context) error {
 		aliases := defaults.NewAliases()
 		steps := []func(corectx.Context, *defaults.Aliases, model.Id) error{
 			this.createStorageCategories, this.createRootCategory, this.createWarehouse,
@@ -121,7 +121,7 @@ func (this *OrgLifecycleAppServiceImpl) createWarehouse(
 			return "", errors.Errorf("warehouse %s has no stock location", derefString(warehouse.GetCode()))
 		}
 		aliases.Remember(aliasWarehouseStockLoc, *warehouse.GetStockLocationId())
-		return composable.ParamId(result.Data.Warehouse), nil
+		return dynamicresource.ParamId(result.Data.Warehouse), nil
 	})
 }
 
@@ -143,7 +143,7 @@ func (this *OrgLifecycleAppServiceImpl) createVirtualLocations(
 		if result.ClientErrors.Count() > 0 {
 			return "", result.ClientErrors.ToError()
 		}
-		id := composable.ParamId(result.Data)
+		id := dynamicresource.ParamId(result.Data)
 		return id, services.MarkLocationSystemGenerated(ctx, string(id))
 	})
 }
@@ -155,13 +155,13 @@ func (this *OrgLifecycleAppServiceImpl) createOperationTypes(
 }
 
 func createFromDefaults(
-	ctx corectx.Context, svc composable.CrudDomainService, aliases *defaults.Aliases, orgId model.Id,
+	ctx corectx.Context, svc dynamicresource.CrudDomainService, aliases *defaults.Aliases, orgId model.Id,
 ) error {
 	rows, err := defaults.Load(orgDefaults.Files, svc.Schema().Name())
 	if err != nil {
 		return err
 	}
-	return composable.CreateDefaults(ctx, svc, rows, aliases, orgId)
+	return dynamicresource.CreateDefaults(ctx, svc, rows, aliases, orgId)
 }
 
 func createdId(result *itProduct.CreateProductCategoryResult, err error, schemaName string) (model.Id, error) {
@@ -174,5 +174,5 @@ func createdId(result *itProduct.CreateProductCategoryResult, err error, schemaN
 	if !result.HasData {
 		return "", errors.Errorf("create %s returned no record", schemaName)
 	}
-	return composable.ParamId(result.Data), nil
+	return dynamicresource.ParamId(result.Data), nil
 }

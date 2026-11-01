@@ -10,7 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // What a location inherits from where it sits in the tree: canonical_name, warehouse_id and
@@ -82,7 +82,7 @@ func rejectDerivedLocationFields(cmd dmodel.DynamicFields, vErrs *ft.ClientError
 // fields are persisted with it. It runs after schema validation, which strips the auto-generated
 // fields from client input.
 func (this *InventoryLocationDomainServiceImpl) deriveOnCreate(
-	ctx corectx.Context, input *composable.DynamicEntity, _ *composable.DynamicEntity, _ *ft.ClientErrors,
+	ctx corectx.Context, input *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, _ *ft.ClientErrors,
 ) error {
 	location := models.NewInventoryLocationFrom(input.GetFieldData())
 	parent, err := this.findLocation(ctx, derefId(location.GetParentLocationId()))
@@ -96,7 +96,7 @@ func (this *InventoryLocationDomainServiceImpl) deriveOnCreate(
 // deriveOnUpdate re-derives the location's own fields when its name or parent changes; the subtree
 // follows in cascadeSubtree, inside the same transaction.
 func (this *InventoryLocationDomainServiceImpl) deriveOnUpdate(
-	ctx corectx.Context, input *composable.DynamicEntity, found *composable.DynamicEntity, _ *ft.ClientErrors,
+	ctx corectx.Context, input *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, _ *ft.ClientErrors,
 ) error {
 	fields := input.GetFieldData()
 	if found == nil || !changesLocationTree(fields) {

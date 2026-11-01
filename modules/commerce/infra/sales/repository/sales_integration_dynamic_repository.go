@@ -2,21 +2,23 @@ package repository
 
 import (
 	itIntegration "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/integration"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func NewSalesManualDiscountRepository(base composable.CrudRepository) itIntegration.SalesManualDiscountRepository {
+func NewSalesManualDiscountRepository(base dynamicresource.CrudRepository) itIntegration.SalesManualDiscountRepository {
 	return &SalesManualDiscountRepositoryImpl{CrudRepository: base}
 }
 
 type SalesManualDiscountRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesIntegrationOutboxRepository(base composable.CrudRepository) itIntegration.SalesIntegrationOutboxRepository {
+func NewSalesIntegrationOutboxRepository(
+	base dynamicresource.CrudRepository,
+) itIntegration.SalesIntegrationOutboxRepository {
 	return &SalesIntegrationOutboxRepositoryImpl{CrudRepository: base}
 }
 
 type SalesIntegrationOutboxRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

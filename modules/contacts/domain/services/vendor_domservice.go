@@ -11,17 +11,17 @@ import (
 	itVendor "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/vendor"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewVendorDomainService is handed the composable default by the vendor profile onion. The CRUD
 // is the default's; what this type adds is the capability a purchasing module asks of a vendor.
-func NewVendorDomainService(base composable.CrudDomainService) itVendor.VendorDomainService {
+func NewVendorDomainService(base dynamicresource.CrudDomainService) itVendor.VendorDomainService {
 	return &VendorDomainServiceImpl{CrudDomainService: base}
 }
 
 type VendorDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // GetVendor fetches a party's vendor profile, so that a purchasing module can validate a vendor

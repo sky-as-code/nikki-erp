@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -353,7 +353,7 @@ func lockGuardOfQuant(ctx corectx.Context, quantId string) error {
 }
 
 func lockQuantRow(
-	ctx corectx.Context, engine composable.CrudRepository, quant models.StockQuant, quantId string,
+	ctx corectx.Context, engine dynamicresource.CrudRepository, quant models.StockQuant, quantId string,
 ) (*LockedQuant, error) {
 	rows, err := LockQuantsForUpdate(ctx, engine.GetBaseRepo(), QuantLockKey{
 		OrgId:            model.Id(derefString(quant.GetOrgId())),

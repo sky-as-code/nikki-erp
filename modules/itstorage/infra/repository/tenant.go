@@ -7,7 +7,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // tenantScope returns the tenant column and the acting tenant for a set-based statement, which
@@ -35,7 +35,9 @@ func tenantScope(ctx corectx.Context, schema *dmodel.ModelSchema, action string)
 
 // execCount runs a statement on the request's client, which is the open transaction when the
 // context carries one, and returns the rows it touched.
-func execCount(ctx corectx.Context, repo composable.CrudRepository, query string, args []any, action string) (int, error) {
+func execCount(
+	ctx corectx.Context, repo dynamicresource.CrudRepository, query string, args []any, action string,
+) (int, error) {
 	result, err := repo.GetBaseRepo().ExtractClient(ctx).Exec(ctx, query, args...)
 	if err != nil {
 		return 0, errors.Wrap(err, action)
@@ -49,7 +51,7 @@ func execCount(ctx corectx.Context, repo composable.CrudRepository, query string
 
 // queryStrings runs a single-column SELECT and returns its values.
 func queryStrings(
-	ctx corectx.Context, repo composable.CrudRepository, query string, args []any, action string,
+	ctx corectx.Context, repo dynamicresource.CrudRepository, query string, args []any, action string,
 ) ([]string, error) {
 	rows, err := repo.GetBaseRepo().ExtractClient(ctx).Query(ctx, query, args...)
 	if err != nil {

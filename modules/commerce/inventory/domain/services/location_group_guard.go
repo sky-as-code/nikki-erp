@@ -7,7 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // A group location (a warehouse's root, or any node a user lays out only to organise others) holds
@@ -24,7 +24,7 @@ var movementLocationFields = []string{
 // validateMovementLocationsHoldStock is a ValidateExtra hook for moves and transfers. On update it
 // reads only the location fields the input carries.
 func validateMovementLocationsHoldStock(
-	ctx corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	return assertLocationsHoldStock(ctx, inputModel.GetFieldData(), vErrs)
 }

@@ -1,7 +1,7 @@
 package stock
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -16,7 +16,7 @@ import (
 // The goods-movement port other modules bind to.
 //
 // Narrowed deliberately rather than publishing the implementing struct, which also embeds
-// composable.CrudDomainService: full CRUD would let a consumer set a status to done without moving
+// dynamicresource.CrudDomainService: full CRUD would let a consumer set a status to done without moving
 // anything, or edit a validated document, making the lifecycle rules optional.
 //
 // Every method takes a transfer id, and the transfer already carries its operation type, locations
@@ -27,7 +27,7 @@ type StockTransferMovementService interface {
 	// status and policies from it. Writes the HEADER only — the move engine is not published, so a
 	// consumer outside Inventory must use CreateWithMoves instead.
 	Create(
-		ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+		ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 	) (*dyn.OpResult[dmodel.DynamicFields], error)
 
 	// CreateWithMoves raises a draft transfer together with the lines it moves, in ONE transaction.

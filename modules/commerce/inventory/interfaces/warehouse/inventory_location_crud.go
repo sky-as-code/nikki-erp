@@ -4,17 +4,17 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // InventoryLocationRepository reads and writes inventory_location rows.
 type InventoryLocationRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // InventoryLocationDomainService is the CRUD of the resource plus its own rules.
 type InventoryLocationDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	CreateBulk(
 		ctx corectx.Context, cmds []CreateInventoryLocationCommand,
@@ -35,29 +35,29 @@ type InventoryLocationDomainService interface {
 
 // InventoryLocationApplicationService is the authorized surface the REST handler serves.
 type InventoryLocationApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	InventoryLocationActionService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a
 // resource-specific name.
 type (
-	CreateInventoryLocationCommand      = composable.CreateCommand
-	UpdateInventoryLocationCommand      = composable.UpdateCommand
-	DeleteInventoryLocationCommand      = composable.DeleteCommand
-	SetInventoryLocationArchivedCommand = composable.SetArchivedCommand
-	GetInventoryLocationByIdQuery       = composable.GetByIdQuery
-	SearchInventoryLocationsQuery       = composable.SearchQuery
-	InventoryLocationExistsQuery        = composable.ExistsQuery
+	CreateInventoryLocationCommand      = dynamicresource.CreateCommand
+	UpdateInventoryLocationCommand      = dynamicresource.UpdateCommand
+	DeleteInventoryLocationCommand      = dynamicresource.DeleteCommand
+	SetInventoryLocationArchivedCommand = dynamicresource.SetArchivedCommand
+	GetInventoryLocationByIdQuery       = dynamicresource.GetByIdQuery
+	SearchInventoryLocationsQuery       = dynamicresource.SearchQuery
+	InventoryLocationExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateInventoryLocationResult      = composable.CreateResult
+	CreateInventoryLocationResult      = dynamicresource.CreateResult
 	CreateInventoryLocationsResult     = dyn.OpResult[[]dmodel.DynamicFields]
-	UpdateInventoryLocationResult      = composable.MutateResult
-	DeleteInventoryLocationResult      = composable.MutateResult
-	SetInventoryLocationArchivedResult = composable.MutateResult
-	GetInventoryLocationByIdResult     = composable.GetOneResult
-	SearchInventoryLocationsResult     = composable.SearchResult
-	InventoryLocationExistsResult      = composable.ExistsResult
+	UpdateInventoryLocationResult      = dynamicresource.MutateResult
+	DeleteInventoryLocationResult      = dynamicresource.MutateResult
+	SetInventoryLocationArchivedResult = dynamicresource.MutateResult
+	GetInventoryLocationByIdResult     = dynamicresource.GetOneResult
+	SearchInventoryLocationsResult     = dynamicresource.SearchResult
+	InventoryLocationExistsResult      = dynamicresource.ExistsResult
 )

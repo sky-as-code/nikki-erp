@@ -11,28 +11,28 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/accounting/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/taxconfig"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type taxMappingEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_accounting_tax_mapping"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_accounting_tax_mapping"`
 }
 
 func registerTaxMappingEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.TaxMappingSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.TaxMappingSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.TaxMappingSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewTaxMappingRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewTaxMappingDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewTaxMappingApplicationService(base)
 				},
 			}, param)

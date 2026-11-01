@@ -7,13 +7,13 @@ package repository
 
 import (
 	itCatalog "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/catalog"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func NewSalesFulfillmentMethodRepository(base composable.CrudRepository) itCatalog.SalesFulfillmentMethodRepository {
+func NewSalesFulfillmentMethodRepository(base dynamicresource.CrudRepository) itCatalog.SalesFulfillmentMethodRepository {
 	return &SalesFulfillmentMethodRepositoryImpl{CrudRepository: base}
 }
 
 type SalesFulfillmentMethodRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

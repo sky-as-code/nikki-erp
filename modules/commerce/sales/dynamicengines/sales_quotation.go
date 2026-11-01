@@ -11,31 +11,31 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	itQuotation "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/quotation"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type salesQuotationEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_quotation"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_quotation"`
 }
 
 func registerSalesQuotationEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesQuotationSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesQuotationSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			settings itExt.EffectiveSettingsExtService,
 			tax itExt.TaxCalculationExtService,
 			products itExt.ProductVariantExtService,
 			basis itExt.ProductPricingBasisExtService,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesQuotationSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesQuotationRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesQuotationApplicationService(base, settings, tax, products, basis)
 				},
 			}, param)
@@ -54,19 +54,19 @@ func registerSalesQuotationEngine() error {
 type salesQuotationLineEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_quotation_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_quotation_line"`
 }
 
 func registerSalesQuotationLineEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesQuotationLineSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesQuotationLineSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesQuotationLineSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesQuotationLineRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesQuotationLineApplicationService(base)
 				},
 			}, param)

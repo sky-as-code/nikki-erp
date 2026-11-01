@@ -12,13 +12,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type stockReservationEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_reservation"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_reservation"`
 }
 
 // registerStockReservationEngine declares the reservation onion. A reservation is transactional
@@ -26,18 +26,20 @@ type stockReservationEngineParam struct {
 // withheld here; REST withholds the same routes in transport/restful.
 func registerStockReservationEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.StockReservationSchemaName),
-		func(param composable.BuildParam, uom itExt.UomConversionExtService) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.StockReservationSchemaName),
+		func(
+			param dynamicresource.BuildParam, uom itExt.UomConversionExtService,
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.StockReservationSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewStockReservationRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewStockReservationDomainService(base, uom)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewStockReservationApplicationService(base)
 				},
 			}, param)

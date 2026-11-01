@@ -1,35 +1,35 @@
 package modelmetadata
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type ModelMetadataRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type ModelMetadataDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type ModelMetadataApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateModelMetadataCommand = composable.CreateCommand
-	UpdateModelMetadataCommand = composable.UpdateCommand
-	DeleteModelMetadataCommand = composable.DeleteCommand
-	GetModelMetadataByIdQuery  = composable.GetByIdQuery
-	SearchModelMetadataQuery   = composable.SearchQuery
-	ModelMetadataExistsQuery   = composable.ExistsQuery
+	CreateModelMetadataCommand = dynamicresource.CreateCommand
+	UpdateModelMetadataCommand = dynamicresource.UpdateCommand
+	DeleteModelMetadataCommand = dynamicresource.DeleteCommand
+	GetModelMetadataByIdQuery  = dynamicresource.GetByIdQuery
+	SearchModelMetadataQuery   = dynamicresource.SearchQuery
+	ModelMetadataExistsQuery   = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateModelMetadataResult  = composable.CreateResult
-	UpdateModelMetadataResult  = composable.MutateResult
-	DeleteModelMetadataResult  = composable.MutateResult
-	GetModelMetadataByIdResult = composable.GetOneResult
-	SearchModelMetadataResult  = composable.SearchResult
-	ModelMetadataExistsResult  = composable.ExistsResult
+	CreateModelMetadataResult  = dynamicresource.CreateResult
+	UpdateModelMetadataResult  = dynamicresource.MutateResult
+	DeleteModelMetadataResult  = dynamicresource.MutateResult
+	GetModelMetadataByIdResult = dynamicresource.GetOneResult
+	SearchModelMetadataResult  = dynamicresource.SearchResult
+	ModelMetadataExistsResult  = dynamicresource.ExistsResult
 )

@@ -5,7 +5,7 @@ import (
 	itChannel "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewSalesChannelCrudApplicationService wraps the composable default with the channel lifecycle.
@@ -14,7 +14,7 @@ import (
 // SalesChannelApplicationServiceImpl: that one is the cross-module registration port other modules
 // call to claim a channel, this one is the resource's own authorized CRUD surface.
 func NewSalesChannelCrudApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 	channelPayments itChannel.ChannelPaymentAppService,
 ) itCatalog.SalesChannelApplicationService {
 	return &SalesChannelCrudApplicationServiceImpl{
@@ -25,7 +25,7 @@ func NewSalesChannelCrudApplicationService(
 }
 
 type SalesChannelCrudApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	channelSvc      itCatalog.SalesChannelDomainService
 	channelPayments itChannel.ChannelPaymentAppService
 }
@@ -56,7 +56,7 @@ func (this *SalesChannelCrudApplicationServiceImpl) Activate(
 func (this *SalesChannelCrudApplicationServiceImpl) Archive(
 	ctx corectx.Context, cmd itCatalog.ChannelLifecycleCommand,
 ) (*itCatalog.ChannelLifecycleResult, error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionSetArchived, cmd); cErrs != nil || err != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionSetArchived, cmd); cErrs != nil || err != nil {
 		return mutateFailure(cErrs, err)
 	}
 	return this.channelSvc.Archive(ctx, readStringParam(cmd, paramRecordId))
@@ -67,7 +67,7 @@ func (this *SalesChannelCrudApplicationServiceImpl) Archive(
 func (this *SalesChannelCrudApplicationServiceImpl) Resolve(
 	ctx corectx.Context, query itCatalog.ResolveChannelQuery,
 ) (*dyn.OpResult[any], error) {
-	if _, cErrs := this.AssertAction(ctx, composable.PermissionRead, query); cErrs != nil {
+	if _, cErrs := this.AssertAction(ctx, dynamicresource.PermissionRead, query); cErrs != nil {
 		return anyFailure(cErrs, nil)
 	}
 	result, err := this.channelSvc.ResolveByCode(ctx,

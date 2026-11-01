@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The reservation resource's domain service. The composable defaults serve every read; the
@@ -23,16 +23,16 @@ func requestItemPath(list string, index int, field string) string {
 }
 
 func NewStockReservationDomainService(
-	base composable.CrudDomainService, uom itExt.UomConversionExtService,
+	base dynamicresource.CrudDomainService, uom itExt.UomConversionExtService,
 ) *StockReservationDomainServiceImpl {
 	return &StockReservationDomainServiceImpl{CrudDomainService: base, uom: uom}
 }
 
 type StockReservationDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// uom converts a caller's quantity into the variant's base unit before it meets a balance.
 	uom itExt.UomConversionExtService
 }
 
-var _ composable.CrudDomainService = (*StockReservationDomainServiceImpl)(nil)
+var _ dynamicresource.CrudDomainService = (*StockReservationDomainServiceImpl)(nil)

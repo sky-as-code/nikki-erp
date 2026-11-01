@@ -11,29 +11,29 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type stockMoveLineEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_move_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_move_line"`
 }
 
 // registerStockMoveLineEngine declares the stock_move_line onion and publishes its typed layers.
 func registerStockMoveLineEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.StockMoveLineSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.StockMoveLineSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.StockMoveLineSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewStockMoveLineRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewStockMoveLineDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewStockMoveLineApplicationService(base)
 				},
 			}, param)

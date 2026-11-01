@@ -2,13 +2,13 @@ package repository
 
 import (
 	itConfiguration "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/configuration"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func NewConfigurationRepository(base composable.CrudRepository) itConfiguration.ConfigurationCrudRepository {
+func NewConfigurationRepository(base dynamicresource.CrudRepository) itConfiguration.ConfigurationCrudRepository {
 	return &ConfigurationRepositoryImpl{CrudRepository: base}
 }
 
 type ConfigurationRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

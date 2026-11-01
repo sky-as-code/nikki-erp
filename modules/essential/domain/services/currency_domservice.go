@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
 )
@@ -23,12 +23,12 @@ const defaultDecimalPlaces = 2
 
 // NewCurrencyDomainService is handed the composable default by the currency onion. The CRUD is
 // the default's; what this type adds is the money capability other modules depend on.
-func NewCurrencyDomainService(base composable.CrudDomainService) itCurrency.CurrencyDomainService {
+func NewCurrencyDomainService(base dynamicresource.CrudDomainService) itCurrency.CurrencyDomainService {
 	return &CurrencyDomainServiceImpl{CrudDomainService: base}
 }
 
 type CurrencyDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // GetCurrency fetches a single currency, so that a consuming module can validate a currency

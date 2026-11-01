@@ -5,12 +5,12 @@ import (
 
 	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewPartyApplicationService is handed the composable default by the party onion. The domain
 // service behind it is the module's own, so the assertion is a wiring check rather than a guess.
-func NewPartyApplicationService(base composable.CrudApplicationService) itParty.PartyApplicationService {
+func NewPartyApplicationService(base dynamicresource.CrudApplicationService) itParty.PartyApplicationService {
 	partySvc, ok := base.DomainService().(itParty.PartyDomainService)
 	if !ok {
 		panic(errors.New("the party onion must be built with NewPartyDomainService"))
@@ -25,7 +25,7 @@ func NewPartyApplicationService(base composable.CrudApplicationService) itParty.
 // service, this is the type a REST client replaces. They assert no permission because the caller
 // is another module acting on its own authority, not a user reading parties.
 type PartyApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	partySvc itParty.PartyDomainService
 }
 

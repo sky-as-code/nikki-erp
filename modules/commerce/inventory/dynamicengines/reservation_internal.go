@@ -10,7 +10,7 @@ import (
 	repo "github.com/sky-as-code/nikki-erp/modules/commerce/infra/inventory/repository"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The two internal resources of the warehouse reservation feature. Neither is served over REST:
@@ -21,17 +21,17 @@ import (
 type warehouseProductGuardEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_warehouse_product_guard"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_warehouse_product_guard"`
 }
 
 func registerWarehouseProductGuardEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.WarehouseProductGuardSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.WarehouseProductGuardSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.WarehouseProductGuardSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewWarehouseProductGuardRepository(base)
 				},
 			}, param)
@@ -47,20 +47,20 @@ func registerWarehouseProductGuardEngine() error {
 type inventoryIntegrationOutboxEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_integration_outbox"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_integration_outbox"`
 }
 
 func registerInventoryIntegrationOutboxEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.InventoryIntegrationOutboxSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.InventoryIntegrationOutboxSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.InventoryIntegrationOutboxSchemaName,
 				CrudActions: readOnlyCrudActions(),
 				// Not audited: the outbox is delivery plumbing, and every event it carries describes a
 				// write the audit log already recorded.
 				IsAudited: util.ToPtr(false),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewInventoryIntegrationOutboxRepository(base)
 				},
 			}, param)

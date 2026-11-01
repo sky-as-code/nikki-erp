@@ -9,7 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 )
@@ -26,7 +26,7 @@ func (this *stubTranx) Commit() error   { this.committed = true; return nil }
 func (this *stubTranx) Rollback() error { this.rolledBack = true; return nil }
 
 type stubCrudRepo struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	schema *dmodel.ModelSchema
 	tranx  *stubTranx
 	base   *stubBaseRepo
@@ -39,7 +39,7 @@ type stubCrudRepo struct {
 // GetOne matches the id and every other filter key; a row without a type is a user, which is
 // what the type scope of the principal domain services filters on.
 func (this *stubCrudRepo) GetOne(_ corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[dmodel.DynamicFields], error) {
-	row, ok := this.rows[composable.ParamString(param.Filter, "id")]
+	row, ok := this.rows[dynamicresource.ParamString(param.Filter, "id")]
 	for key, want := range param.Filter {
 		if !ok || key == "id" {
 			continue
@@ -54,13 +54,13 @@ func (this *stubCrudRepo) GetOne(_ corectx.Context, param dyn.RepoGetOneParam) (
 }
 
 func (this *stubCrudRepo) KeyExist(_ corectx.Context, keys dmodel.DynamicFields) (*dyn.OpResult[bool], error) {
-	_, ok := this.rows[composable.ParamString(keys, "id")]
+	_, ok := this.rows[dynamicresource.ParamString(keys, "id")]
 	return &dyn.OpResult[bool]{Data: ok, HasData: true}, nil
 }
 
-func (this *stubCrudRepo) Update(_ corectx.Context, data dmodel.DynamicFields) (*composable.MutateResult, error) {
+func (this *stubCrudRepo) Update(_ corectx.Context, data dmodel.DynamicFields) (*dynamicresource.MutateResult, error) {
 	this.updates = append(this.updates, data)
-	return &composable.MutateResult{HasData: true}, nil
+	return &dynamicresource.MutateResult{HasData: true}, nil
 }
 
 func (this *stubCrudRepo) Schema() *dmodel.ModelSchema { return this.schema }
@@ -86,7 +86,7 @@ type stubBaseRepo struct {
 func (this *stubBaseRepo) Schema() *dmodel.ModelSchema { return this.schema }
 
 func (this *stubBaseRepo) GetOne(_ corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[dmodel.DynamicFields], error) {
-	row, ok := this.rows[composable.ParamString(param.Filter, "id")]
+	row, ok := this.rows[dynamicresource.ParamString(param.Filter, "id")]
 	return &dyn.OpResult[dmodel.DynamicFields]{Data: row, HasData: ok}, nil
 }
 
@@ -106,7 +106,7 @@ func (this *stubCrudRepo) BeginTransaction(corectx.Context) (database.DbTransact
 // fakeCrudDomain is the composable default: it runs the hooks it is handed against the command
 // and answers success, with a generated id on create.
 type fakeCrudDomain struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	repo       *stubCrudRepo
 	created    dmodel.DynamicFields
 	rejectNext bool
@@ -117,12 +117,12 @@ func newFakeCrudDomain() *fakeCrudDomain {
 	return &fakeCrudDomain{repo: &stubCrudRepo{schema: dmodel.DefineModel("iam_test").Build()}}
 }
 
-func (this *fakeCrudDomain) Repository() composable.CrudRepository { return this.repo }
+func (this *fakeCrudDomain) Repository() dynamicresource.CrudRepository { return this.repo }
 
 func (this *fakeCrudDomain) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
-	entity := composable.NewDynamicEntityFrom(cmd)
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
+	entity := dynamicresource.NewDynamicEntityFrom(cmd)
 	vErrs := ft.ClientErrors{}
 	if len(options) > 0 && options[0].BeforeValidation != nil {
 		var err error
@@ -134,20 +134,20 @@ func (this *fakeCrudDomain) Create(
 		vErrs.Append(*ft.NewValidationError("name", "err_test", "rejected"))
 	}
 	if vErrs.Count() > 0 {
-		return &composable.CreateResult{ClientErrors: vErrs}, nil
+		return &dynamicresource.CreateResult{ClientErrors: vErrs}, nil
 	}
 	this.created = entity.GetFieldData()
 	this.created["id"] = "01JTESTUSER000000000000000"
-	return &composable.CreateResult{Data: this.created, HasData: true}, nil
+	return &dynamicresource.CreateResult{Data: this.created, HasData: true}, nil
 }
 
 // Update writes through the stub repository, so a test can tell a written row from a rolled-back
 // one by the transaction the write ran in.
 func (this *fakeCrudDomain) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, _ ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, _ ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
 	if this.rejectNext {
-		return &composable.MutateResult{ClientErrors: ft.ClientErrors{
+		return &dynamicresource.MutateResult{ClientErrors: ft.ClientErrors{
 			*ft.NewValidationError("name", "err_test", "rejected"),
 		}}, nil
 	}
@@ -157,25 +157,25 @@ func (this *fakeCrudDomain) Update(
 // Delete runs the guard it is handed against the keys, the way the default service does after
 // fetching the stored record.
 func (this *fakeCrudDomain) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
 	vErrs := ft.ClientErrors{}
 	if len(options) > 0 && options[0].ValidateExtra != nil {
-		keys := composable.NewDynamicEntityFrom(cmd)
+		keys := dynamicresource.NewDynamicEntityFrom(cmd)
 		if err := options[0].ValidateExtra(ctx, keys, keys, &vErrs); err != nil {
 			return nil, err
 		}
 	}
 	if vErrs.Count() > 0 {
-		return &composable.MutateResult{ClientErrors: vErrs}, nil
+		return &dynamicresource.MutateResult{ClientErrors: vErrs}, nil
 	}
 	this.deleted++
-	return &composable.MutateResult{HasData: true}, nil
+	return &dynamicresource.MutateResult{HasData: true}, nil
 }
 
 func (this *fakeCrudDomain) DeleteManaged(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
 	return this.Delete(ctx, cmd, options...)
 }
 

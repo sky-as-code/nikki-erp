@@ -7,13 +7,13 @@ import (
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewWarehouseApplicationService is handed the composable default by the warehouse onion, plus
 // the location domain service the flow reconfigurations provision locations through.
 func NewWarehouseApplicationService(
-	base composable.CrudApplicationService, locationSvc *services.InventoryLocationDomainServiceImpl,
+	base dynamicresource.CrudApplicationService, locationSvc *services.InventoryLocationDomainServiceImpl,
 ) itWarehouse.WarehouseApplicationService {
 	warehouseSvc, ok := base.DomainService().(*services.WarehouseDomainServiceImpl)
 	if !ok {
@@ -32,7 +32,7 @@ func NewWarehouseApplicationService(
 // orchestration port other code calls directly. The port methods assert nothing: their callers
 // act on their own authority. The *Action methods are what the REST routes reach, and they do.
 type WarehouseApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	itWarehouse.WarehouseAppService
 	orchestrator *WarehouseAppServiceImpl
 	warehouseSvc *services.WarehouseDomainServiceImpl

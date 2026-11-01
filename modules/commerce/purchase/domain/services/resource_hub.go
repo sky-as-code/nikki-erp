@@ -6,7 +6,7 @@ import (
 
 	"go.bryk.io/pkg/errors"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The resource hub is how a Purchase service reaches a resource's repository or domain service at
@@ -17,8 +17,8 @@ import (
 // It is module-private: other modules inject the ports in interfaces/ instead.
 
 type resourceEntry struct {
-	repo   composable.CrudRepository
-	domSvc composable.CrudDomainService
+	repo   dynamicresource.CrudRepository
+	domSvc dynamicresource.CrudDomainService
 }
 
 var resourceHub = struct {
@@ -27,7 +27,7 @@ var resourceHub = struct {
 }{entries: map[string]resourceEntry{}}
 
 // InstallResource records a built onion's repository and domain service under its schema name.
-func InstallResource(schemaName string, repo composable.CrudRepository, domSvc composable.CrudDomainService) {
+func InstallResource(schemaName string, repo dynamicresource.CrudRepository, domSvc dynamicresource.CrudDomainService) {
 	resourceHub.mutex.Lock()
 	defer resourceHub.mutex.Unlock()
 	resourceHub.entries[schemaName] = resourceEntry{repo: repo, domSvc: domSvc}
@@ -58,7 +58,7 @@ func lookupResource(schemaName string) (resourceEntry, error) {
 
 // repoFor resolves a resource's repository. It is a variable so a test can substitute its own:
 // the hub is filled during Init, which a unit test cannot run.
-var repoFor = func(schemaName string) (composable.CrudRepository, error) {
+var repoFor = func(schemaName string) (dynamicresource.CrudRepository, error) {
 	entry, err := lookupResource(schemaName)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ var repoFor = func(schemaName string) (composable.CrudRepository, error) {
 
 // domainServiceFor resolves a resource's domain service, for the writes that must go through the
 // create pipeline (schema defaults, audit fields) rather than the bare repository.
-var domainServiceFor = func(schemaName string) (composable.CrudDomainService, error) {
+var domainServiceFor = func(schemaName string) (dynamicresource.CrudDomainService, error) {
 	entry, err := lookupResource(schemaName)
 	if err != nil {
 		return nil, err
@@ -78,6 +78,6 @@ var domainServiceFor = func(schemaName string) (composable.CrudDomainService, er
 
 // RepositoryFor exposes the hub lookup to sibling packages; the usage-check handler is the one
 // caller, and it reads only this module's own tables.
-func RepositoryFor(schemaName string) (composable.CrudRepository, error) {
+func RepositoryFor(schemaName string) (dynamicresource.CrudRepository, error) {
 	return repoFor(schemaName)
 }

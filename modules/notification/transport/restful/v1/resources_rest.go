@@ -3,7 +3,7 @@ package v1
 import (
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The read-only CRUD surfaces of the three resources.
@@ -16,7 +16,7 @@ import (
 type notificationRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_notification_notification"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_notification_notification"`
 }
 
 func NewNotificationRest(params notificationRestParams) *NotificationRest {
@@ -26,13 +26,13 @@ func NewNotificationRest(params notificationRestParams) *NotificationRest {
 }
 
 type NotificationRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type recipientRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_notification_recipient"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_notification_recipient"`
 }
 
 func NewRecipientRest(params recipientRestParams) *RecipientRest {
@@ -42,13 +42,13 @@ func NewRecipientRest(params recipientRestParams) *RecipientRest {
 }
 
 type RecipientRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type deliveryRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_notification_delivery"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_notification_delivery"`
 }
 
 func NewDeliveryRest(params deliveryRestParams) *DeliveryRest {
@@ -58,5 +58,5 @@ func NewDeliveryRest(params deliveryRestParams) *DeliveryRest {
 }
 
 type DeliveryRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

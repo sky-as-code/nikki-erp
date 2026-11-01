@@ -9,7 +9,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/dynamicengines"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // These read index.go as text rather than building a container, so they run in CI with no
@@ -18,7 +18,7 @@ import (
 
 // A collection-level custom route must be registered before its resource's ":id" routes.
 //
-// composable.RestEngine sorts by specificity when it registers, so the order in the file does not
+// dynamicresource.RestEngine sorts by specificity when it registers, so the order in the file does not
 // decide the outcome today -- but the file is where a reader looks to reason about it, and a
 // resource whose collection route is written after its ":id" ones invites the next author to
 // assume the file order is the registration order. Keeping them in order keeps the file honest.
@@ -81,7 +81,7 @@ func TestEveryEngineSchemaHasRoutes(t *testing.T) {
 // reports as a missing type at boot, far from the literal that caused it.
 func TestEngineDependencyNamesMatchTheSchemas(t *testing.T) {
 	for _, schema := range dynamicengines.EngineSchemaNames() {
-		want := composable.EngineDependencyName(schema)
+		want := dynamicresource.EngineDependencyName(schema)
 		if !strings.HasPrefix(want, "dynengine_") {
 			t.Errorf("EngineDependencyName(%q) = %q, which is not a dynengine_ name", schema, want)
 		}

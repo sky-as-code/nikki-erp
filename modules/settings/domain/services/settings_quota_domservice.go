@@ -6,19 +6,19 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	itQuota "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settingsquota"
 )
 
 // NewSettingsQuotaDomainService is handed the composable default by the onion. The resource is
 // read-only over REST, so it carries no write rule.
-func NewSettingsQuotaDomainService(base composable.CrudDomainService) itQuota.SettingsQuotaDomainService {
+func NewSettingsQuotaDomainService(base dynamicresource.CrudDomainService) itQuota.SettingsQuotaDomainService {
 	return &SettingsQuotaDomainServiceImpl{CrudDomainService: base}
 }
 
 type SettingsQuotaDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // FindQuota looks the row up by its unique key. The multi-tenant repository confines the read to

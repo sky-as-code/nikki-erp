@@ -2,7 +2,7 @@ package services
 
 import (
 	"fmt"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 
 	"go.bryk.io/pkg/errors"
 
@@ -18,7 +18,7 @@ import (
 const supplyGraphScanLimit = 50
 
 // NewSupplyRelationDomainService derives the supply relation service from the engine's default.
-func NewSupplyRelationDomainService(base composable.CrudDomainService) *SupplyRelationDomainServiceImpl {
+func NewSupplyRelationDomainService(base dynamicresource.CrudDomainService) *SupplyRelationDomainServiceImpl {
 	return &SupplyRelationDomainServiceImpl{CrudDomainService: base}
 }
 
@@ -26,13 +26,13 @@ func NewSupplyRelationDomainService(base composable.CrudDomainService) *SupplyRe
 // may restock whom — it reserves nothing and starts no transfer — so what is guarded is the shape
 // of the graph: no self-supply, no duplicates, one default per destination, no cycles.
 type SupplyRelationDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
-var _ composable.CrudDomainService = (*SupplyRelationDomainServiceImpl)(nil)
+var _ dynamicresource.CrudDomainService = (*SupplyRelationDomainServiceImpl)(nil)
 
 func (this *SupplyRelationDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	vErrs, err := this.assertRelationValid(ctx, params, "")
 	if err != nil {
@@ -48,7 +48,7 @@ func (this *SupplyRelationDomainServiceImpl) Create(
 // destination are deliberately not updatable: repointing a relation is really a different relation,
 // and rewriting one in place would make the audit trail read as though the old route never existed.
 func (this *SupplyRelationDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	relationId := readStringParam(params, models.WarehouseSupplyRelationFieldId)
 

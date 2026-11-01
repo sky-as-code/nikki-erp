@@ -5,7 +5,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The lifecycle of the locations a warehouse manages after creation: flow stops come and go with the
@@ -22,7 +22,7 @@ func (this *WarehouseDomainServiceImpl) ReconfigureFlowLocations(
 		vErrs := ft.NewClientErrors()
 		appendWarehouseViolation(vErrs, "", "warehouse.root_location_missing",
 			"the warehouse has no root location to create its flow locations under")
-		return composable.ClientErrorSignal{Errors: *vErrs}
+		return dynamicresource.ClientErrorSignal{Errors: *vErrs}
 	}
 	needed := incomingFlowLocations(nextFlow)
 	if outgoing {
@@ -108,7 +108,7 @@ func (this *WarehouseDomainServiceImpl) setManagedLocationArchived(
 		return err
 	}
 	if result != nil && result.ClientErrors.Count() > 0 {
-		return composable.ClientErrorSignal{Errors: result.ClientErrors}
+		return dynamicresource.ClientErrorSignal{Errors: result.ClientErrors}
 	}
 	return nil
 }

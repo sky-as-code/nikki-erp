@@ -17,7 +17,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle/defaults"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -69,22 +69,22 @@ type OrgLifecycleParam struct {
 }
 
 func NewOrgLifecycleAppService(param OrgLifecycleParam) orglifecycle.OrgLifecycleService {
-	return &OrgLifecycleAppServiceImpl{param: param, cleanup: composable.NewOrgDataCleanup(cleanUpOrder...)}
+	return &OrgLifecycleAppServiceImpl{param: param, cleanup: dynamicresource.NewOrgDataCleanup(cleanUpOrder...)}
 }
 
 // OrgLifecycleAppServiceImpl gives a new org the system sales channels, their payment and
 // fulfillment options, a back-office sales point and a default price list.
 type OrgLifecycleAppServiceImpl struct {
 	param   OrgLifecycleParam
-	cleanup composable.OrgDataCleanup
+	cleanup dynamicresource.OrgDataCleanup
 }
 
 func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model.Id) error {
-	svcs, err := composable.ResolveDomainServices(writeOrder...)
+	svcs, err := dynamicresource.ResolveDomainServices(writeOrder...)
 	if err != nil {
 		return err
 	}
-	return composable.InTransaction(ctx, svcs[0].Repository(), func(tranxCtx corectx.Context) error {
+	return dynamicresource.InTransaction(ctx, svcs[0].Repository(), func(tranxCtx corectx.Context) error {
 		aliases, err := this.externalAliases(tranxCtx)
 		if err != nil {
 			return err
@@ -94,7 +94,7 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model
 			if err != nil {
 				return err
 			}
-			if err := composable.CreateDefaults(tranxCtx, svc, rows, aliases, orgId); err != nil {
+			if err := dynamicresource.CreateDefaults(tranxCtx, svc, rows, aliases, orgId); err != nil {
 				return err
 			}
 		}
@@ -106,11 +106,11 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model
 }
 
 func (this *OrgLifecycleAppServiceImpl) CleanUpOrg(ctx corectx.Context, orgId model.Id) error {
-	svcs, err := composable.ResolveDomainServices(models.SalesChannelSchemaName)
+	svcs, err := dynamicresource.ResolveDomainServices(models.SalesChannelSchemaName)
 	if err != nil {
 		return err
 	}
-	return composable.InTransaction(ctx, svcs[0].Repository(), func(tranxCtx corectx.Context) error {
+	return dynamicresource.InTransaction(ctx, svcs[0].Repository(), func(tranxCtx corectx.Context) error {
 		if _, err := this.param.ChannelPayment.DeleteByOrg(tranxCtx, orgId); err != nil {
 			return err
 		}

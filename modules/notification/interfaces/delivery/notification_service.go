@@ -4,7 +4,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type SendNotificationResult = dyn.OpResult[SendNotificationResultData]
@@ -58,7 +58,7 @@ type MarkReadCommand struct {
 
 // NotificationRepository reads and writes notification rows.
 type NotificationRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 
 	// FindByIdempotencyKey returns the id of an existing notification raised under this key, or
 	// nil when there is none.
@@ -71,7 +71,7 @@ type NotificationRepository interface {
 // reads join notification to recipient, which is why they live here rather than on the
 // notification repository.
 type RecipientRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 
 	NextStreamSeq(ctx corectx.Context) (int64, error)
 	Inbox(ctx corectx.Context, orgId model.Id, userId model.Id, query InboxQuery) ([]InboxItem, error)
@@ -82,13 +82,13 @@ type RecipientRepository interface {
 
 // DeliveryRepository reads and writes delivery rows.
 type DeliveryRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // NotificationDomainService owns the send rules of BR 11, and is the only writer of a
 // notification and its recipients.
 type NotificationDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// Send writes the notification. orgId is resolved and authorized by the application
 	// service before it gets here: a domain service never decides which organization it is
@@ -100,7 +100,7 @@ type NotificationDomainService interface {
 // business use case both entry paths reach (BR 2): the command handler maps onto it rather than
 // reimplementing anything.
 type NotificationApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	SendNotification(ctx corectx.Context, request SendNotificationRequest) (*SendNotificationResult, error)
 }

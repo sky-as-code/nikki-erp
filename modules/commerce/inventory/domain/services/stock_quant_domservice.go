@@ -7,7 +7,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewStockQuantDomainService derives the quant service from the engine's default one, which it
@@ -16,7 +16,7 @@ import (
 // available_quantity is a computed field declared in stock_quant.json, evaluated by the engine on
 // every read.
 func NewStockQuantDomainService(
-	base composable.CrudDomainService, usageDispatcher *usagecheck.Dispatcher,
+	base dynamicresource.CrudDomainService, usageDispatcher *usagecheck.Dispatcher,
 ) *StockQuantDomainServiceImpl {
 	return &StockQuantDomainServiceImpl{
 		CrudDomainService: base,
@@ -27,12 +27,12 @@ func NewStockQuantDomainService(
 // StockQuantDomainServiceImpl carries the quant's domain behaviors: counting, adjustment,
 // reservation and location-usage reads.
 type StockQuantDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	usageDispatcher *usagecheck.Dispatcher
 }
 
-var _ composable.CrudDomainService = (*StockQuantDomainServiceImpl)(nil)
+var _ dynamicresource.CrudDomainService = (*StockQuantDomainServiceImpl)(nil)
 
 // Delete refuses a balance another module still names.
 //
@@ -45,14 +45,14 @@ var _ composable.CrudDomainService = (*StockQuantDomainServiceImpl)(nil)
 // Asked rather than enforced by a foreign key alone, for the reason doc 08 gives: the check names
 // the module and the record that is still using it, while a constraint violation names a column.
 func (this *StockQuantDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
 	vErrs := ft.NewClientErrors()
 	if err := assertQuantDeletable(ctx, this.usageDispatcher, cmd, vErrs); err != nil {
 		return nil, err
 	}
 	if vErrs.Count() > 0 {
-		return &composable.MutateResult{ClientErrors: *vErrs}, nil
+		return &dynamicresource.MutateResult{ClientErrors: *vErrs}, nil
 	}
 	return this.CrudDomainService.Delete(ctx, cmd, options...)
 }

@@ -5,44 +5,44 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ProductAttributeRepository reads and writes product_attribute rows.
 type ProductAttributeRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // ProductAttributeDomainService is the CRUD of the resource plus its own rules.
 type ProductAttributeDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // ProductAttributeApplicationService is the authorized surface the REST handler serves.
 type ProductAttributeApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a
 // resource-specific name.
 type (
-	CreateProductAttributeCommand      = composable.CreateCommand
-	UpdateProductAttributeCommand      = composable.UpdateCommand
-	DeleteProductAttributeCommand      = composable.DeleteCommand
-	SetProductAttributeArchivedCommand = composable.SetArchivedCommand
-	GetProductAttributeByIdQuery       = composable.GetByIdQuery
-	SearchProductAttributesQuery       = composable.SearchQuery
-	ProductAttributeExistsQuery        = composable.ExistsQuery
+	CreateProductAttributeCommand      = dynamicresource.CreateCommand
+	UpdateProductAttributeCommand      = dynamicresource.UpdateCommand
+	DeleteProductAttributeCommand      = dynamicresource.DeleteCommand
+	SetProductAttributeArchivedCommand = dynamicresource.SetArchivedCommand
+	GetProductAttributeByIdQuery       = dynamicresource.GetByIdQuery
+	SearchProductAttributesQuery       = dynamicresource.SearchQuery
+	ProductAttributeExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateProductAttributeResult      = composable.CreateResult
-	UpdateProductAttributeResult      = composable.MutateResult
-	DeleteProductAttributeResult      = composable.MutateResult
-	SetProductAttributeArchivedResult = composable.MutateResult
-	GetProductAttributeByIdResult     = composable.GetOneResult
-	SearchProductAttributesResult     = composable.SearchResult
-	ProductAttributeExistsResult      = composable.ExistsResult
+	CreateProductAttributeResult      = dynamicresource.CreateResult
+	UpdateProductAttributeResult      = dynamicresource.MutateResult
+	DeleteProductAttributeResult      = dynamicresource.MutateResult
+	SetProductAttributeArchivedResult = dynamicresource.MutateResult
+	GetProductAttributeByIdResult     = dynamicresource.GetOneResult
+	SearchProductAttributesResult     = dynamicresource.SearchResult
+	ProductAttributeExistsResult      = dynamicresource.ExistsResult
 )
 
 // ProductAttributeFieldValues carries the inline values editor on an attribute create or update.

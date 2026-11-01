@@ -11,7 +11,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -111,7 +111,7 @@ func loadAttributeValueNames(ctx corectx.Context, attributeId string) ([]attribu
 	}
 	out := make([]attributeValueName, 0, len(rows))
 	for _, row := range rows {
-		value := attributeValueName{id: composable.ParamId(row)}
+		value := attributeValueName{id: dynamicresource.ParamId(row)}
 		if name := row.GetLangJson(models.ProductAttributeValueFieldName); name != nil {
 			value.name = *name
 		}
@@ -124,7 +124,7 @@ func attrDistinctStrings(rows []dmodel.DynamicFields, field string) []string {
 	seen := map[string]bool{}
 	out := []string{}
 	for _, row := range rows {
-		text := composable.ParamString(row, field)
+		text := dynamicresource.ParamString(row, field)
 		if text == "" || seen[text] {
 			continue
 		}

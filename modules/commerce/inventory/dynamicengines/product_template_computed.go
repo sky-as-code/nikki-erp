@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -19,8 +19,8 @@ const (
 )
 
 // newTemplateComputedFunctions builds the "function"-kind computed fields of product_template.
-func newTemplateComputedFunctions() map[string]composable.ComputedFieldFn {
-	configuration := func(ctx corectx.Context, req composable.ComputeFnRequest) ([]any, error) {
+func newTemplateComputedFunctions() map[string]dynamicresource.ComputedFieldFn {
+	configuration := func(ctx corectx.Context, req dynamicresource.ComputeFnRequest) ([]any, error) {
 		views, err := services.ReadTemplateConfigurations(ctx, pageTemplateIds(req.Models))
 		if err != nil {
 			return nil, errors.Wrapf(err, "computed %q", TemplateAttributeConfigurationFn)
@@ -34,7 +34,7 @@ func newTemplateComputedFunctions() map[string]composable.ComputedFieldFn {
 		return out, nil
 	}
 
-	return map[string]composable.ComputedFieldFn{
+	return map[string]dynamicresource.ComputedFieldFn{
 		TemplateAttributeConfigurationFn: configuration,
 	}
 }

@@ -11,7 +11,7 @@ import (
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/order"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SalesOrderDomainServiceImpl derives the order resource, adding the rules the built-in CRUD
@@ -21,13 +21,13 @@ import (
 // immutability rule have exactly one enforcement point, which is this file: a write bypassing this
 // service bypasses the invariant entirely.
 type SalesOrderDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // A signature change on either side breaks the build here rather than at the engine registration.
 var _ itOrder.SalesOrderDomainService = (*SalesOrderDomainServiceImpl)(nil)
 
-func NewSalesOrderDomainService(base composable.CrudDomainService) *SalesOrderDomainServiceImpl {
+func NewSalesOrderDomainService(base dynamicresource.CrudDomainService) *SalesOrderDomainServiceImpl {
 	return &SalesOrderDomainServiceImpl{CrudDomainService: base}
 }
 
@@ -56,13 +56,13 @@ func (this *SalesOrderDomainServiceImpl) AssertEditable(
 
 // SalesOrderLineDomainServiceImpl derives the order line resource.
 type SalesOrderLineDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 var _ itOrder.SalesOrderLineDomainService = (*SalesOrderLineDomainServiceImpl)(nil)
 
 func NewSalesOrderLineDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 ) *SalesOrderLineDomainServiceImpl {
 	return &SalesOrderLineDomainServiceImpl{CrudDomainService: base}
 }
@@ -71,20 +71,20 @@ func NewSalesOrderLineDomainService(
 // only validates one allocation here: verifying that all allocations add up to their parent line
 // requires the complete input set and will be done by the order-creation flow.
 type SalesOrderLineAllocationDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 var _ itOrder.SalesOrderLineAllocationDomainService = (*SalesOrderLineAllocationDomainServiceImpl)(nil)
 
 func NewSalesOrderLineAllocationDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 ) *SalesOrderLineAllocationDomainServiceImpl {
 	return &SalesOrderLineAllocationDomainServiceImpl{CrudDomainService: base}
 }
 
 func (this *SalesOrderLineAllocationDomainServiceImpl) Create(
-	ctx corectx.Context, params composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, params dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
 	quantity := decimalField(params, models.SalesOrderLineAllocationFieldQuantity)
 	if quantity.IsPositive() {
 		return this.CrudDomainService.Create(ctx, params, options...)
@@ -102,8 +102,8 @@ func (this *SalesOrderLineAllocationDomainServiceImpl) Create(
 // create as well as update because a line can be born broken: ordered_quantity 0, or a fulfilled
 // quantity above it, would otherwise surface only when something computed a refund from it.
 func (this *SalesOrderLineDomainServiceImpl) Create(
-	ctx corectx.Context, params composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, params dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
 	if vErrs := assertQuantitiesConsistent(params); vErrs != nil {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 	}
@@ -116,8 +116,8 @@ func (this *SalesOrderLineDomainServiceImpl) Create(
 // checking the payload alone would let a fulfilled_quantity of 5 through against a stored
 // ordered_quantity of 3. The invariant is a property of the resulting row.
 func (this *SalesOrderLineDomainServiceImpl) Update(
-	ctx corectx.Context, params composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, params dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
 	lineId := stringOf(params, models.SalesOrderLineFieldId)
 	stored, err := loadRecord(ctx,
 		models.SalesOrderLineSchemaName, models.SalesOrderLineFieldId, lineId)

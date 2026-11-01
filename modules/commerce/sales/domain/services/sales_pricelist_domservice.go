@@ -7,7 +7,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SalesPricelistDomainServiceImpl adds the two rules a pricelist carries that plain CRUD cannot
@@ -17,10 +17,10 @@ import (
 var _ itCatalog.SalesPricelistDomainService = (*SalesPricelistDomainServiceImpl)(nil)
 
 type SalesPricelistDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
-func NewSalesPricelistDomainService(base composable.CrudDomainService) *SalesPricelistDomainServiceImpl {
+func NewSalesPricelistDomainService(base dynamicresource.CrudDomainService) *SalesPricelistDomainServiceImpl {
 	return &SalesPricelistDomainServiceImpl{CrudDomainService: base}
 }
 
@@ -103,8 +103,8 @@ func (this *SalesPricelistDomainServiceImpl) SetDefault(
 // its own price and currency, so the rules are what would be reinterpreted, and the answer does not
 // change as order history grows.
 func (this *SalesPricelistDomainServiceImpl) Update(
-	ctx corectx.Context, params composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, params dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
 	if _, changing := params[models.SalesPricelistFieldCurrencyId]; !changing {
 		return this.CrudDomainService.Update(ctx, params, options...)
 	}

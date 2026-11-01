@@ -10,7 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,7 +22,7 @@ type billStore struct {
 	calls       []string
 }
 type billRepo struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	store  *billStore
 	schema string
 }
@@ -47,7 +47,7 @@ func installBillStore(t *testing.T, s *billStore) {
 	t.Helper()
 	previous := repoFor
 	t.Cleanup(func() { repoFor = previous })
-	repoFor = func(schema string) (composable.CrudRepository, error) {
+	repoFor = func(schema string) (dynamicresource.CrudRepository, error) {
 		return &billRepo{store: s, schema: schema}, nil
 	}
 }

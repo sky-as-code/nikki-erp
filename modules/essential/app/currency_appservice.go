@@ -4,14 +4,14 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
 )
 
 // NewCurrencyApplicationService is handed the composable default by the currency onion. The
 // domain service behind it is the module's own, so the assertion is a wiring check rather
 // than a guess.
-func NewCurrencyApplicationService(base composable.CrudApplicationService) itCurrency.CurrencyApplicationService {
+func NewCurrencyApplicationService(base dynamicresource.CrudApplicationService) itCurrency.CurrencyApplicationService {
 	currencySvc, ok := base.DomainService().(itCurrency.CurrencyDomainService)
 	if !ok {
 		panic(errors.New("the currency onion must be built with NewCurrencyDomainService"))
@@ -27,7 +27,7 @@ func NewCurrencyApplicationService(base composable.CrudApplicationService) itCur
 // logic living here would have to be duplicated. They assert no permission because the caller is
 // another module acting on its own authority, not a user reading currencies.
 type CurrencyApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	currencySvc itCurrency.CurrencyDomainService
 }
 

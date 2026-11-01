@@ -9,14 +9,14 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	langjson "github.com/sky-as-code/nikki-erp/modules/essential/infra/langJson"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 )
 
 // NewLanguageApplicationService is handed the composable default by the language onion. The
 // domain service behind it is the module's own, so the assertion is a wiring check.
-func NewLanguageApplicationService(base composable.CrudApplicationService) it.LanguageApplicationService {
+func NewLanguageApplicationService(base dynamicresource.CrudApplicationService) it.LanguageApplicationService {
 	languageSvc, ok := base.DomainService().(it.LanguageDomainService)
 	if !ok {
 		panic(errors.New("the language onion must be built with NewLanguageDomainService"))
@@ -25,7 +25,7 @@ func NewLanguageApplicationService(base composable.CrudApplicationService) it.La
 }
 
 func newLanguageApplicationService(
-	base composable.CrudApplicationService, languageSvc it.LanguageDomainService,
+	base dynamicresource.CrudApplicationService, languageSvc it.LanguageDomainService,
 ) *LanguageApplicationServiceImpl {
 	return &LanguageApplicationServiceImpl{
 		CrudApplicationService: base,
@@ -41,7 +41,7 @@ func newLanguageApplicationService(
 // The lookups and the two public actions assert no permission: the lookups are another module
 // acting on its own authority, and the enabled list and the bundles render the sign-in page.
 type LanguageApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	languageSvc it.LanguageDomainService
 	// registered holds the translations modules ship themselves; langjson.EmbeddedPack stays the
 	// baseline.

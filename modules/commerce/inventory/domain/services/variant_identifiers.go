@@ -10,7 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // variantIdentifier is a variant field that must be unique within the org when present: what a
@@ -37,10 +37,10 @@ var variantIdentifiers = []variantIdentifier{
 // normalizeVariantIdentifiers trims the SKU and barcode and turns a blank one into NULL. The
 // database's partial uniques only skip NULL, so an empty string left as it is would collide with
 // every other variant whose identifier was cleared the same way.
-func normalizeVariantIdentifiers() composable.BeforeValidationFn {
+func normalizeVariantIdentifiers() dynamicresource.BeforeValidationFn {
 	return func(
-		_ corectx.Context, entity *composable.DynamicEntity, _ *ft.ClientErrors,
-	) (*composable.DynamicEntity, error) {
+		_ corectx.Context, entity *dynamicresource.DynamicEntity, _ *ft.ClientErrors,
+	) (*dynamicresource.DynamicEntity, error) {
 		data := entity.GetFieldData()
 		for _, identifier := range variantIdentifiers {
 			raw, ok := data[identifier.field].(string)
@@ -59,9 +59,10 @@ func normalizeVariantIdentifiers() composable.BeforeValidationFn {
 
 // validateCreateIdentifiers reports a SKU or barcode clash on its own field before the partial
 // unique index refuses the insert with an error naming no field.
-func validateCreateIdentifiers(repo models.ProductSearcher) composable.ValidateExtraFn {
+func validateCreateIdentifiers(repo models.ProductSearcher) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity,
+		vErrs *ft.ClientErrors,
 	) error {
 		data := inputModel.GetFieldData()
 		orgId, _ := data[models.ProductVariantFieldOrgId].(string)
@@ -72,9 +73,9 @@ func validateCreateIdentifiers(repo models.ProductSearcher) composable.ValidateE
 // validateUpdateIdentifiers checks only the identifiers the update submits: an untouched one
 // cannot have started colliding through this write. The org comes from the stored row, because an
 // update payload need not carry it.
-func validateUpdateIdentifiers(repo models.ProductSearcher) composable.ValidateExtraFn {
+func validateUpdateIdentifiers(repo models.ProductSearcher) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
 		if foundModel == nil {
 			return nil

@@ -12,7 +12,7 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	itInvoicing "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external/invoicing"
 	itFiscal "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/fiscal"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The fiscal resources: the request for an invoice, the instruction that says how to bill, and the
@@ -26,24 +26,24 @@ import (
 type salesFiscalRequestEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fiscal_request"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fiscal_request"`
 }
 
 func registerSalesFiscalRequestEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesFiscalRequestSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesFiscalRequestSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			invoicing itInvoicing.InvoicingExtService,
 			settings itExt.EffectiveSettingsExtService,
 			parties itExt.PartyExtService,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesFiscalRequestSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesFiscalRequestRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesFiscalRequestApplicationService(base, invoicing, settings, parties)
 				},
 			}, param)
@@ -62,23 +62,23 @@ func registerSalesFiscalRequestEngine() error {
 type salesBillingInstructionEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_billing_instruction"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_billing_instruction"`
 }
 
 func registerSalesBillingInstructionEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesBillingInstructionSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesBillingInstructionSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			parties itExt.PartyExtService,
 			settings itExt.EffectiveSettingsExtService,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesBillingInstructionSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesBillingInstructionRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesBillingInstructionApplicationService(base, parties, settings)
 				},
 			}, param)
@@ -97,21 +97,21 @@ func registerSalesBillingInstructionEngine() error {
 type salesBillingIssuanceAttemptEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_billing_issuance_attempt"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_billing_issuance_attempt"`
 }
 
 // The issuance attempt records what a provider answered, so it is read-only.
 func registerSalesBillingIssuanceAttemptEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesBillingIssuanceAttemptSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesBillingIssuanceAttemptSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesBillingIssuanceAttemptSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesBillingIssuanceAttemptRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesBillingIssuanceAttemptApplicationService(base)
 				},
 			}, param)

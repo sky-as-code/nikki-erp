@@ -7,11 +7,11 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func validateMappingCreate(
-	_ corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	params := inputModel.GetFieldData()
 	mapping := models.NewTaxMappingFrom(params)
@@ -22,7 +22,8 @@ func validateMappingCreate(
 }
 
 func validateMappingUpdate(
-	_ corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
+	vErrs *ft.ClientErrors,
 ) error {
 	params := inputModel.GetFieldData()
 	found := entityFields(foundModel)
@@ -41,7 +42,7 @@ func validateMappingUpdate(
 }
 
 func validateMappingDelete(
-	_ corectx.Context, _ *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	found := entityFields(foundModel)
 	assertDeletableLifecycle(models.TaxMappingFieldLifecycleStatus, found, vErrs)
@@ -51,16 +52,16 @@ func validateMappingDelete(
 // validateMappingLineCreate rejects a line that maps a tax onto itself: a no-op that reads as a
 // configured rule.
 func validateMappingLineCreate(
-	_ corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	params := inputModel.GetFieldData()
 	assertMappingLineSubstitutes(models.NewTaxMappingLineFrom(params), vErrs)
 	return nil
 }
 
-func validateMappingLineUpdate(mappingRepo models.TaxSearcher) composable.ValidateExtraFn {
+func validateMappingLineUpdate(mappingRepo models.TaxSearcher) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
 		vErrs *ft.ClientErrors,
 	) error {
 		params := inputModel.GetFieldData()
@@ -124,7 +125,7 @@ func assertParentMappingEditable(
 }
 
 func validateRoundingPolicyCreate(
-	_ corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	params := inputModel.GetFieldData()
 	policy := models.NewTaxRoundingPolicyFrom(params)
@@ -136,7 +137,8 @@ func validateRoundingPolicyCreate(
 }
 
 func validateRoundingPolicyUpdate(
-	_ corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
+	vErrs *ft.ClientErrors,
 ) error {
 	params := inputModel.GetFieldData()
 	found := entityFields(foundModel)
@@ -157,7 +159,7 @@ func validateRoundingPolicyUpdate(
 }
 
 func validateRoundingPolicyDelete(
-	_ corectx.Context, _ *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	found := entityFields(foundModel)
 	assertDeletableLifecycle(models.TaxRoundingPolicyFieldLifecycleStatus, found, vErrs)

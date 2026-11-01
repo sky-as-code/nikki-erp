@@ -10,7 +10,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	it "github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/tax"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type taxCalculationRestParams struct {
@@ -39,7 +39,7 @@ type TaxCalculationRest struct {
 // Calculate prices a whole document. It is a POST despite only reading, because the request is a
 // multi-line document that does not fit a query string. It has no side effects at all.
 func (this *TaxCalculationRest) Calculate(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "calculate tax", payload,
+	return dynamicresource.ServeAction(echoCtx, "calculate tax", payload,
 		func(ctx corectx.Context, params dmodel.DynamicFields) (*it.CalculateResult, error) {
 			request := CalculateTaxRequest{}
 			if cErrs := decodePayload(params, &request); cErrs != nil {
@@ -53,7 +53,7 @@ func (this *TaxCalculationRest) Calculate(echoCtx *echo.Context, payload map[str
 // Simulate runs the same pipeline and additionally returns the trace. It is separate from Calculate
 // because the explanation is expensive to assemble and pointless on the pricing hot path.
 func (this *TaxCalculationRest) Simulate(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "simulate tax", payload,
+	return dynamicresource.ServeAction(echoCtx, "simulate tax", payload,
 		func(ctx corectx.Context, params dmodel.DynamicFields) (*it.SimulateResult, error) {
 			request := SimulateTaxRequest{}
 			if cErrs := decodePayload(params, &request); cErrs != nil {
@@ -66,7 +66,7 @@ func (this *TaxCalculationRest) Simulate(echoCtx *echo.Context, payload map[stri
 
 // ReverseFull negates an entire original charge from its frozen snapshot.
 func (this *TaxCalculationRest) ReverseFull(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "reverse tax in full", payload,
+	return dynamicresource.ServeAction(echoCtx, "reverse tax in full", payload,
 		func(ctx corectx.Context, params dmodel.DynamicFields) (*it.ReverseResult, error) {
 			request := ReverseFullRequest{}
 			if cErrs := decodePayload(params, &request); cErrs != nil {
@@ -79,7 +79,7 @@ func (this *TaxCalculationRest) ReverseFull(echoCtx *echo.Context, payload map[s
 
 // ReversePartial reverses part of an original charge.
 func (this *TaxCalculationRest) ReversePartial(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "reverse tax partially", payload,
+	return dynamicresource.ServeAction(echoCtx, "reverse tax partially", payload,
 		func(ctx corectx.Context, params dmodel.DynamicFields) (*it.ReverseResult, error) {
 			request := ReversePartialRequest{}
 			if cErrs := decodePayload(params, &request); cErrs != nil {

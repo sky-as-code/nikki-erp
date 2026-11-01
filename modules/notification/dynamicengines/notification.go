@@ -7,7 +7,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/notification/app"
 	"github.com/sky-as-code/nikki-erp/modules/notification/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/notification/domain/services"
@@ -18,7 +18,7 @@ import (
 type notificationEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_notification_notification"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_notification_notification"`
 }
 
 // notificationLayerParam carries what the notification's own layers need beyond the composable
@@ -40,21 +40,21 @@ type notificationLayerParam struct {
 
 func registerNotificationEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.NotificationSchemaName),
-		func(param composable.BuildParam, layers notificationLayerParam) composable.DynamicResourceEngineOnion {
+		dynamicresource.EngineDependencyName(models.NotificationSchemaName),
+		func(param dynamicresource.BuildParam, layers notificationLayerParam) dynamicresource.DynamicResourceEngineOnion {
 			var notifications it.NotificationRepository
 
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.NotificationSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					notifications = repo.NewNotificationRepository(base)
 					return notifications
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewNotificationDomainService(
 						base, notifications, layers.Recipients, layers.Deliveries, layers.Normalizer)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewNotificationApplicationService(base, layers.Broker, layers.FanOut, layers.Logger)
 				},
 			}, param)

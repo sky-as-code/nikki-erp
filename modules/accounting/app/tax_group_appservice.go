@@ -2,16 +2,16 @@ package app
 
 import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/taxconfig"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewTaxGroupApplicationService is handed the composable default by the onion: the authorized CRUD.
 func NewTaxGroupApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 ) taxconfig.TaxGroupApplicationService {
 	return &TaxGroupApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type TaxGroupApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }

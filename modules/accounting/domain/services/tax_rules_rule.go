@@ -4,11 +4,11 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func validateRuleCreate(
-	_ corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	params := inputModel.GetFieldData()
 	rule := models.NewTaxRuleFrom(params)
@@ -18,7 +18,8 @@ func validateRuleCreate(
 }
 
 func validateRuleUpdate(
-	_ corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
+	vErrs *ft.ClientErrors,
 ) error {
 	params := inputModel.GetFieldData()
 	found := entityFields(foundModel)
@@ -36,7 +37,7 @@ func validateRuleUpdate(
 }
 
 func validateRuleDelete(
-	_ corectx.Context, _ *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	found := entityFields(foundModel)
 	assertDeletableLifecycle(models.TaxRuleFieldLifecycleStatus, found, vErrs)
@@ -44,19 +45,21 @@ func validateRuleDelete(
 }
 
 func validateRuleConditionUpdate(
-	ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity,
+	ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
 	vErrs *ft.ClientErrors,
 ) error {
 	params := inputModel.GetFieldData()
 	found := entityFields(foundModel)
-	return validateRuleConditionWrite(ctx, composable.NewDynamicEntityFrom(mergeFields(found, params)), foundModel, vErrs)
+	return validateRuleConditionWrite(
+		ctx, dynamicresource.NewDynamicEntityFrom(mergeFields(found, params)), foundModel, vErrs,
+	)
 }
 
 // validateRuleConditionWrite enforces the typed-condition contract: the field key must be one the
 // engine can read from the tax context, and the operator and value must agree about arity. The
 // whitelist is what keeps a condition a declarative comparison rather than an expression language.
 func validateRuleConditionWrite(
-	_ corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	params := inputModel.GetFieldData()
 	condition := models.NewTaxRuleConditionFrom(params)
@@ -102,19 +105,19 @@ func validateRuleConditionWrite(
 }
 
 func validateRuleResultUpdate(
-	ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity,
+	ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
 	vErrs *ft.ClientErrors,
 ) error {
 	params := inputModel.GetFieldData()
 	found := entityFields(foundModel)
-	return validateRuleResultWrite(ctx, composable.NewDynamicEntityFrom(mergeFields(found, params)), foundModel, vErrs)
+	return validateRuleResultWrite(ctx, dynamicresource.NewDynamicEntityFrom(mergeFields(found, params)), foundModel, vErrs)
 }
 
 // validateRuleResultWrite enforces the per-action required fields. JSON cannot express a
 // conditional requirement, so all three companion fields are nullable in the schema and the pairing
 // is checked here: an add_tax with no tax would appear to match while contributing nothing.
 func validateRuleResultWrite(
-	_ corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	params := inputModel.GetFieldData()
 	result := models.NewTaxRuleResultFrom(params)

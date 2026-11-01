@@ -7,7 +7,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/services"
@@ -18,14 +18,14 @@ import (
 type uomEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_essential_uom"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_essential_uom"`
 }
 
-// uomBuildParam is composable.BuildParam plus what the UoM's own rules need. Embedding rather
+// uomBuildParam is dynamicresource.BuildParam plus what the UoM's own rules need. Embedding rather
 // than extending BuildParam keeps the platform's parameter list free of one module's
 // dependencies; dig fills both halves the same way.
 type uomBuildParam struct {
-	composable.BuildParam
+	dynamicresource.BuildParam
 
 	UsageDispatcher *usagecheck.Dispatcher
 }
@@ -34,17 +34,17 @@ type uomBuildParam struct {
 // what the UoM Category onion and the conversion service inject to read UoM rows.
 func registerUomEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.UomSchemaName),
-		func(param uomBuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.UomSchemaName),
+		func(param uomBuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.UomSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewUomRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewUomDomainService(base, param.UsageDispatcher)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewUomApplicationService(base)
 				},
 			}, param.BuildParam)

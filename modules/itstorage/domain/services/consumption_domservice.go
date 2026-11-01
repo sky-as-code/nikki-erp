@@ -9,13 +9,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	itConsumption "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/consumption"
 )
 
 // NewConsumptionDomainService is handed the composable default by the itstorage_consumption onion.
-func NewConsumptionDomainService(base composable.CrudDomainService) itConsumption.ConsumptionDomainService {
+func NewConsumptionDomainService(base dynamicresource.CrudDomainService) itConsumption.ConsumptionDomainService {
 	return &ConsumptionDomainServiceImpl{
 		CrudDomainService: base,
 		repo:              base.Repository().(itConsumption.ConsumptionRepository),
@@ -26,7 +26,7 @@ func NewConsumptionDomainService(base composable.CrudDomainService) itConsumptio
 // its record commits or the upload fails. The reservation is what makes the quota check atomic:
 // reading the used bytes and comparing them would let concurrent uploads pass together.
 type ConsumptionDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	repo itConsumption.ConsumptionRepository
 }
 
@@ -45,7 +45,7 @@ func (this *ConsumptionDomainServiceImpl) Reserve(
 	if err := this.repo.Ensure(ctx, reservation.Owners); err != nil {
 		return false, err
 	}
-	err := composable.InTransaction(ctx, this.repo, func(tranxCtx corectx.Context) error {
+	err := dynamicresource.InTransaction(ctx, this.repo, func(tranxCtx corectx.Context) error {
 		for index, owner := range reservation.Owners {
 			capBytes := reservation.CapBytes
 			if index > 0 {

@@ -9,17 +9,17 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services/pricing"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/stretchr/testify/require"
 )
 
 type orderTotalsWriteRepo struct {
-	composable.CrudRepository
-	result *composable.MutateResult
+	dynamicresource.CrudRepository
+	result *dynamicresource.MutateResult
 	err    error
 }
 
-func (r orderTotalsWriteRepo) Update(corectx.Context, dmodel.DynamicFields) (*composable.MutateResult, error) {
+func (r orderTotalsWriteRepo) Update(corectx.Context, dmodel.DynamicFields) (*dynamicresource.MutateResult, error) {
 	return r.result, r.err
 }
 
@@ -27,21 +27,21 @@ func TestWriteOrderTotalsPropagatesRepositoryFailures(t *testing.T) {
 	dbErr := errors.New("database update failed")
 	for _, tc := range []struct {
 		name   string
-		result *composable.MutateResult
+		result *dynamicresource.MutateResult
 		err    error
 		want   string
 	}{
-		{name: "client error with nil Go error", result: &composable.MutateResult{
+		{name: "client error with nil Go error", result: &dynamicresource.MutateResult{
 			ClientErrors: ft.ClientErrors{*dmodel.NewInvalidDataTypeErr("tax_snapshot", "jsonb")},
 		}, want: "tax_snapshot"},
 		{name: "database error", err: dbErr, want: dbErr.Error()},
 		{name: "missing result", want: "order totals update returned no result"},
-		{name: "success", result: &composable.MutateResult{HasData: true}},
+		{name: "success", result: &dynamicresource.MutateResult{HasData: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			previous := repoFor
 			t.Cleanup(func() { repoFor = previous })
-			repoFor = func(string) (composable.CrudRepository, error) {
+			repoFor = func(string) (dynamicresource.CrudRepository, error) {
 				return orderTotalsWriteRepo{result: tc.result, err: tc.err}, nil
 			}
 			err := writeOrderTotals(corectx.NewRequestContext(context.Background()), "order", nil, pricing.Result{}, nil)

@@ -9,7 +9,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The guards receive the stored record as foundModel, the third argument, which is where the
@@ -20,7 +20,7 @@ import (
 func TestAuditEventWritesAreRefused(t *testing.T) {
 	vErrs := &ft.ClientErrors{}
 
-	err := rejectAuditEventWrite(nil, nil, composable.NewDynamicEntityFrom(dmodel.DynamicFields{}), vErrs)
+	err := rejectAuditEventWrite(nil, nil, dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{}), vErrs)
 
 	require.NoError(t, err, "a refusal is a client error, not a Go error")
 	assert.Equal(t, 1, vErrs.Count())
@@ -31,7 +31,7 @@ func TestAuditEventWritesAreRefused(t *testing.T) {
 func TestSourcingGroupWritesAreRefused(t *testing.T) {
 	vErrs := &ft.ClientErrors{}
 
-	err := rejectSourcingGroupWrite(nil, nil, composable.NewDynamicEntityFrom(dmodel.DynamicFields{}), vErrs)
+	err := rejectSourcingGroupWrite(nil, nil, dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{}), vErrs)
 
 	require.NoError(t, err)
 	assert.Equal(t, 1, vErrs.Count())
@@ -58,7 +58,7 @@ func TestOrderDeleteIsRefusedUnlessCancelled(t *testing.T) {
 				models.PurchaseOrderFieldStatus: string(testCase.status),
 			}
 
-			err := GuardOrderDelete(nil, nil, composable.NewDynamicEntityFrom(found), vErrs)
+			err := GuardOrderDelete(nil, nil, dynamicresource.NewDynamicEntityFrom(found), vErrs)
 
 			require.NoError(t, err)
 			if testCase.allowed {
@@ -90,7 +90,7 @@ func TestAgreementDeleteIsRefusedUnlessDraftOrCancelled(t *testing.T) {
 				models.AgreementFieldStatus: string(testCase.status),
 			}
 
-			err := GuardAgreementDelete(nil, nil, composable.NewDynamicEntityFrom(found), vErrs)
+			err := GuardAgreementDelete(nil, nil, dynamicresource.NewDynamicEntityFrom(found), vErrs)
 
 			require.NoError(t, err)
 			if testCase.allowed {
@@ -110,10 +110,10 @@ func TestDeleteGuardsRefuseAnUnreadableStatus(t *testing.T) {
 		fn   func(dmodel.DynamicFields, *ft.ClientErrors) error
 	}{
 		{"order", func(f dmodel.DynamicFields, v *ft.ClientErrors) error {
-			return GuardOrderDelete(nil, nil, composable.NewDynamicEntityFrom(f), v)
+			return GuardOrderDelete(nil, nil, dynamicresource.NewDynamicEntityFrom(f), v)
 		}},
 		{"agreement", func(f dmodel.DynamicFields, v *ft.ClientErrors) error {
-			return GuardAgreementDelete(nil, nil, composable.NewDynamicEntityFrom(f), v)
+			return GuardAgreementDelete(nil, nil, dynamicresource.NewDynamicEntityFrom(f), v)
 		}},
 	} {
 		t.Run(guard.name, func(t *testing.T) {
@@ -169,7 +169,7 @@ func TestACreatedVendorPriceIsValidated(t *testing.T) {
 	svc := &VendorProductPriceDomainServiceImpl{validator: NewVendorPriceValidator(nil, nil, nil)}
 	vErrs := &ft.ClientErrors{}
 
-	err := svc.validateVendorPrice(nil, composable.NewDynamicEntityFrom(dmodel.DynamicFields{
+	err := svc.validateVendorPrice(nil, dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{
 		models.VendorProductPriceFieldValidFrom: "2026-02-01T00:00:00Z",
 		models.VendorProductPriceFieldValidTo:   "2026-01-01T00:00:00Z",
 	}), nil, vErrs)

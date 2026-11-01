@@ -12,12 +12,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // valueNameRepository answers the attribute value read with canned names and counts the reads.
 type valueNameRepository struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	searches int
 	rows     []dmodel.DynamicFields
 }
@@ -40,7 +40,7 @@ func useValueNames(t *testing.T) *valueNameRepository {
 	}}
 	original := repoFor
 	t.Cleanup(func() { repoFor = original })
-	repoFor = func(schemaName string) (composable.CrudRepository, error) {
+	repoFor = func(schemaName string) (dynamicresource.CrudRepository, error) {
 		require.Equal(t, models.ProductAttributeValueSchemaName, schemaName)
 		return repo, nil
 	}

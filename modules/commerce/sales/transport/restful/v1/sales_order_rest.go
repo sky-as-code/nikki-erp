@@ -4,7 +4,7 @@ import (
 	"go.uber.org/dig"
 
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/order"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 type salesOrderRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order"`
 }
 
 func NewSalesOrderRest(params salesOrderRestParams) *SalesOrderRest {
@@ -29,14 +29,14 @@ func NewSalesOrderRest(params salesOrderRestParams) *SalesOrderRest {
 }
 
 type SalesOrderRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	orderSvc itOrder.SalesOrderApplicationService
 }
 
 type salesOrderLineRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_line"`
 }
 
 func NewSalesOrderLineRest(params salesOrderLineRestParams) *SalesOrderLineRest {
@@ -46,13 +46,13 @@ func NewSalesOrderLineRest(params salesOrderLineRestParams) *SalesOrderLineRest 
 }
 
 type SalesOrderLineRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesOrderLineComponentRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_line_component"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_line_component"`
 }
 
 func NewSalesOrderLineComponentRest(params salesOrderLineComponentRestParams) *SalesOrderLineComponentRest {
@@ -62,13 +62,13 @@ func NewSalesOrderLineComponentRest(params salesOrderLineComponentRestParams) *S
 }
 
 type SalesOrderLineComponentRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesOrderAdjustmentRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_adjustment"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_adjustment"`
 }
 
 func NewSalesOrderAdjustmentRest(params salesOrderAdjustmentRestParams) *SalesOrderAdjustmentRest {
@@ -78,13 +78,13 @@ func NewSalesOrderAdjustmentRest(params salesOrderAdjustmentRestParams) *SalesOr
 }
 
 type SalesOrderAdjustmentRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesOrderEventRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_event"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_event"`
 }
 
 func NewSalesOrderEventRest(params salesOrderEventRestParams) *SalesOrderEventRest {
@@ -94,5 +94,5 @@ func NewSalesOrderEventRest(params salesOrderEventRestParams) *SalesOrderEventRe
 }
 
 type SalesOrderEventRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

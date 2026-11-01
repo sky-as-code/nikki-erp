@@ -12,7 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type warehouseTestTransaction struct {
@@ -24,7 +24,7 @@ func (this *warehouseTestTransaction) Commit() error   { this.commits++; return 
 func (this *warehouseTestTransaction) Rollback() error { this.rollbacks++; return nil }
 
 type warehouseTestRepo struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	tranx *warehouseTestTransaction
 }
 
@@ -37,21 +37,21 @@ func (this *warehouseTestRepo) BeginTransaction(corectx.Context) (database.DbTra
 // warehouseTestBase stands in for the composable default domain service: it records whether it
 // ran inside a transaction and answers with the refusal it was given.
 type warehouseTestBase struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	repo           *warehouseTestRepo
 	refusal        *ft.ClientErrors
 	calls          int
 	sawTransaction bool
 }
 
-func (this *warehouseTestBase) Repository() composable.CrudRepository { return this.repo }
+func (this *warehouseTestBase) Repository() dynamicresource.CrudRepository { return this.repo }
 
 func (this *warehouseTestBase) Create(
-	ctx corectx.Context, _ composable.CreateCommand, _ ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, _ dynamicresource.CreateCommand, _ ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
 	this.calls++
 	this.sawTransaction = ctx.GetDbTranx() != nil
-	return &composable.CreateResult{ClientErrors: *this.refusal}, nil
+	return &dynamicresource.CreateResult{ClientErrors: *this.refusal}, nil
 }
 
 func newWarehouseCreateFixture() (*WarehouseDomainServiceImpl, *warehouseTestBase, *warehouseTestTransaction) {

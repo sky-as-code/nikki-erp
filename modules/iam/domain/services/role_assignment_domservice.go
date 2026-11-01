@@ -7,7 +7,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 )
@@ -72,19 +72,19 @@ func (this *RoleCrudDomainServiceImpl) ManageGroups(
 // entitlements produced and recomputes them, so removed principals lose them and added ones gain
 // them. Group audit rows name the group, not its members.
 func (this *RoleCrudDomainServiceImpl) managePrincipals(
-	ctx corectx.Context, cmd composable.ManageM2mCommand, kind rolePrincipalKind,
-) (*composable.MutateResult, error) {
-	return composable.ManageM2m(ctx, this.Repository(), cmd, composable.ManageM2mParam{
+	ctx corectx.Context, cmd dynamicresource.ManageM2mCommand, kind rolePrincipalKind,
+) (*dynamicresource.MutateResult, error) {
+	return dynamicresource.ManageM2m(ctx, this.Repository(), cmd, dynamicresource.ManageM2mParam{
 		Action:          kind.action,
 		DestSchemaName:  kind.destSchema,
 		JunctionIdField: kind.assignIdField,
-		Validate: func(ctx corectx.Context, change composable.M2mChange, vErrs *ft.ClientErrors) error {
+		Validate: func(ctx corectx.Context, change dynamicresource.M2mChange, vErrs *ft.ClientErrors) error {
 			if err := this.assertRoleAssignable(ctx, change.SrcId, vErrs); err != nil || kind.refusedType == nil {
 				return err
 			}
-			return kind.refusedType.refuseIdsOfType(ctx, this.userRepo, composable.FieldM2mAdd, change.Added, vErrs)
+			return kind.refusedType.refuseIdsOfType(ctx, this.userRepo, dynamicresource.FieldM2mAdd, change.Added, vErrs)
 		},
-		AfterChange: func(tranxCtx corectx.Context, change composable.M2mChange) error {
+		AfterChange: func(tranxCtx corectx.Context, change dynamicresource.M2mChange) error {
 			if err := this.permRepo.RebuildUserPermissionsForRole(tranxCtx, change.SrcId); err != nil {
 				return err
 			}

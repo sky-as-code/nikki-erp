@@ -4,7 +4,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	lock "github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
@@ -68,7 +68,7 @@ func NewSalesOrderExtService(
 func (this *SalesOrderExtServiceImpl) CreateOrder(
 	ctx corectx.Context, command it.CreateSalesOrderCommand,
 ) (*it.CreateSalesOrderResult, error) {
-	if cErrs, err := assertOrderRecordPermission(ctx, composable.PermissionCreate, models.SalesPointSchemaName, command.SalesPointId); err != nil || cErrs != nil {
+	if cErrs, err := assertOrderRecordPermission(ctx, dynamicresource.PermissionCreate, models.SalesPointSchemaName, command.SalesPointId); err != nil || cErrs != nil {
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +166,7 @@ func (this *SalesOrderExtServiceImpl) CreateOrder(
 func (this *SalesOrderExtServiceImpl) ConfirmOrder(
 	ctx corectx.Context, command it.SalesOrderCommand,
 ) (*it.ConfirmSalesOrderResult, error) {
-	if cErrs, err := assertOrderRecordPermission(ctx, composable.PermissionUpdate, models.SalesOrderSchemaName, command.SalesOrderId); err != nil || cErrs != nil {
+	if cErrs, err := assertOrderRecordPermission(ctx, dynamicresource.PermissionUpdate, models.SalesOrderSchemaName, command.SalesOrderId); err != nil || cErrs != nil {
 		if err != nil {
 			return nil, err
 		}
@@ -214,7 +214,7 @@ func (this *SalesOrderExtServiceImpl) ConfirmOrder(
 func (this *SalesOrderExtServiceImpl) CancelOrder(
 	ctx corectx.Context, command it.CancelSalesOrderCommand,
 ) (*it.CancelSalesOrderResult, error) {
-	if cErrs, err := assertOrderRecordPermission(ctx, composable.PermissionUpdate, models.SalesOrderSchemaName, command.SalesOrderId); err != nil || cErrs != nil {
+	if cErrs, err := assertOrderRecordPermission(ctx, dynamicresource.PermissionUpdate, models.SalesOrderSchemaName, command.SalesOrderId); err != nil || cErrs != nil {
 		if err != nil {
 			return nil, err
 		}
@@ -267,7 +267,7 @@ func (this *SalesOrderExtServiceImpl) CreateAttempt(
 ) (*it.CreateAttemptResult, error) {
 	// Update on the order, not a permission of its own: commanding a dispense changes what a
 	// delivery owes, which is the same power over the same sale that recording its result is.
-	if cErrs, err := assertOrderRecordPermission(ctx, composable.PermissionUpdate, models.SalesOrderFulfillmentSchemaName, command.FulfillmentId); err != nil || cErrs != nil {
+	if cErrs, err := assertOrderRecordPermission(ctx, dynamicresource.PermissionUpdate, models.SalesOrderFulfillmentSchemaName, command.FulfillmentId); err != nil || cErrs != nil {
 		if err != nil {
 			return nil, err
 		}
@@ -307,7 +307,7 @@ func (this *SalesOrderExtServiceImpl) CreateAttempt(
 func (this *SalesOrderExtServiceImpl) ReportAttemptResult(
 	ctx corectx.Context, command it.ReportAttemptResultCommand,
 ) (*it.ReportAttemptResultResult, error) {
-	if cErrs, err := assertOrderRecordPermission(ctx, composable.PermissionUpdate, models.SalesFulfillmentAttemptSchemaName, command.AttemptId); err != nil || cErrs != nil {
+	if cErrs, err := assertOrderRecordPermission(ctx, dynamicresource.PermissionUpdate, models.SalesFulfillmentAttemptSchemaName, command.AttemptId); err != nil || cErrs != nil {
 		if err != nil {
 			return nil, err
 		}
@@ -358,7 +358,7 @@ func (this *SalesOrderExtServiceImpl) ReportAttemptResult(
 func (this *SalesOrderExtServiceImpl) ViewFulfillment(
 	ctx corectx.Context, command it.ViewFulfillmentCommand,
 ) (*it.ViewFulfillmentResult, error) {
-	if cErrs, err := assertOrderRecordPermission(ctx, composable.PermissionRead, models.SalesOrderFulfillmentSchemaName, command.FulfillmentId); err != nil || cErrs != nil {
+	if cErrs, err := assertOrderRecordPermission(ctx, dynamicresource.PermissionRead, models.SalesOrderFulfillmentSchemaName, command.FulfillmentId); err != nil || cErrs != nil {
 		if err != nil {
 			return nil, err
 		}

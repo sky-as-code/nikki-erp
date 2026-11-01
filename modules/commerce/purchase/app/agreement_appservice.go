@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
 	itAgreement "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/agreement"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The agreement's authorized surface: the built-in CRUD plus confirm, close, cancel and
@@ -13,13 +13,15 @@ import (
 // set_archived, because splitting them would let a role archive agreements it could not bring back.
 
 type AgreementApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	agreements *services.PurchaseAgreementDomainServiceImpl
 }
 
 // NewAgreementApplicationService needs the derived agreement service, which alone carries the
 // lifecycle operations; any other wiring fails the boot.
-func NewAgreementApplicationService(base composable.CrudApplicationService) itAgreement.AgreementCrudApplicationService {
+func NewAgreementApplicationService(
+	base dynamicresource.CrudApplicationService,
+) itAgreement.AgreementCrudApplicationService {
 	agreements, ok := base.DomainService().(*services.PurchaseAgreementDomainServiceImpl)
 	if !ok {
 		panic("the purchase agreement onion is not running the derived agreement domain service")

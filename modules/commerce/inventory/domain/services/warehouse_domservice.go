@@ -8,13 +8,13 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewWarehouseDomainService derives the warehouse service from the engine's default one. locations
 // is the location service a warehouse provisions, archives and deletes its managed locations through.
 func NewWarehouseDomainService(
-	base composable.CrudDomainService, locations *InventoryLocationDomainServiceImpl,
+	base dynamicresource.CrudDomainService, locations *InventoryLocationDomainServiceImpl,
 ) *WarehouseDomainServiceImpl {
 	return &WarehouseDomainServiceImpl{CrudDomainService: base, locations: locations}
 }
@@ -23,17 +23,17 @@ func NewWarehouseDomainService(
 // the locations it manages (root, Stock, flow stops), which it creates, archives, unarchives and
 // deletes together with itself, in one transaction.
 type WarehouseDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	locations *InventoryLocationDomainServiceImpl
 }
 
-var _ composable.CrudDomainService = (*WarehouseDomainServiceImpl)(nil)
+var _ dynamicresource.CrudDomainService = (*WarehouseDomainServiceImpl)(nil)
 
 // Create is the client's create. The managed fields are stripped: a client able to set them could
 // mint a warehouse that then refuses to be deleted, as if a kiosk owned it.
 func (this *WarehouseDomainServiceImpl) Create(
-	ctx corectx.Context, cmd dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	prepared := copyFields(cmd)
 	delete(prepared, basemodel.FieldManagedByType)
@@ -53,12 +53,12 @@ func (this *WarehouseDomainServiceImpl) CreateManaged(
 // (the caller's, when ctx carries one): a warehouse whose locations failed is not created either.
 // The location FKs are written last, once the locations exist.
 func (this *WarehouseDomainServiceImpl) create(
-	ctx corectx.Context, cmd dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	if vErrs := AssertWarehouseFlowsKnown(cmd); vErrs.Count() > 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 	}
-	opts := safe.GetOptional(options, composable.CreateOptions{})
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
 
 	var result *dyn.OpResult[dmodel.DynamicFields]
 	err := runInTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
@@ -67,7 +67,7 @@ func (this *WarehouseDomainServiceImpl) create(
 			return err
 		}
 		if created == nil || created.ClientErrors.Count() > 0 {
-			return composable.ClientErrorSignal{Errors: clientErrorsOfFields(created)}
+			return dynamicresource.ClientErrorSignal{Errors: clientErrorsOfFields(created)}
 		}
 		result = created
 		locationFks, err := this.provisionLocations(tranxCtx, *models.NewWarehouseFrom(created.Data))
@@ -79,7 +79,7 @@ func (this *WarehouseDomainServiceImpl) create(
 		}
 		return nil
 	})
-	if signal, ok := composable.AsClientErrorSignal(err); ok {
+	if signal, ok := dynamicresource.AsClientErrorSignal(err); ok {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: signal.Errors}, nil
 	}
 	if err != nil {
@@ -91,7 +91,7 @@ func (this *WarehouseDomainServiceImpl) create(
 // Update protects the code once the warehouse exists: the code named its root location, and
 // renaming needs its own operation. A name change leaves the root location's name alone.
 func (this *WarehouseDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	warehouseId := readStringParam(params, models.WarehouseFieldId)
 	current, vErrs, err := this.loadWarehouse(ctx, warehouseId)

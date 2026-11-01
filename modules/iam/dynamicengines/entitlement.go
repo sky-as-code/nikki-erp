@@ -8,7 +8,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/app"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/services"
@@ -19,7 +19,7 @@ import (
 type entitlementEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_entitlement"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_entitlement"`
 }
 
 // registerEntitlementEngine declares the iam_entitlement onion. org_id is conditional on an
@@ -27,19 +27,21 @@ type entitlementEngineParam struct {
 // none, so org scoping is withdrawn rather than hiding those rows; permissions are tenant-scoped.
 func registerEntitlementEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.EntitlementSchemaName),
-		func(param composable.BuildParam, ruleDeps services.EntitlementCrudDeps) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.EntitlementSchemaName),
+		func(
+			param dynamicresource.BuildParam, ruleDeps services.EntitlementCrudDeps,
+		) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:      models.EntitlementSchemaName,
 				IsOrgScoped:     util.ToPtr(false),
 				PermissionScope: util.ToPtr(requestguard.ResourceScopeTenant),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewEntitlementCrudRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewEntitlementCrudDomainService(base, ruleDeps)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewEntitlementCrudApplicationService(base)
 				},
 			}, param)

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/essential/dynamicengines"
 	v1 "github.com/sky-as-code/nikki-erp/modules/essential/transport/restful/v1"
@@ -16,24 +16,24 @@ import (
 // The container names in the REST structs' tags are literals; they must be what the onions are
 // registered under, or the handlers resolve nothing at boot.
 func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
-	assert.Equal(t, composable.EngineDependencyName(models.CurrencySchemaName), v1.CurrencyEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.UomSchemaName), v1.UomEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.UomCatSchemaName), v1.UomCatEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.LanguageSchemaName), v1.LanguageEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.EnumSchemaName), v1.EnumEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.TagSchemaName), v1.TagEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.FieldMetadataSchemaName), v1.FieldMetadataEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.ModelMetadataSchemaName), v1.ModelMetadataEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.ModuleMetadataSchemaName), v1.ModuleMetadataEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.CurrencySchemaName), v1.CurrencyEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.UomSchemaName), v1.UomEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.UomCatSchemaName), v1.UomCatEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.LanguageSchemaName), v1.LanguageEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.EnumSchemaName), v1.EnumEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.TagSchemaName), v1.TagEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.FieldMetadataSchemaName), v1.FieldMetadataEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.ModelMetadataSchemaName), v1.ModelMetadataEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.ModuleMetadataSchemaName), v1.ModuleMetadataEngineName)
 }
 
 // registeredRoutes registers one resource's REST surface on a throwaway echo instance and
 // returns "METHOD path" in registration order.
-func registeredRoutes(t *testing.T, schemaName string, handlers composable.CrudRestHandlers) []string {
+func registeredRoutes(t *testing.T, schemaName string, handlers dynamicresource.CrudRestHandlers) []string {
 	t.Helper()
 
 	echoApp := echo.New()
-	restEngine := composable.NewRestEngine(schemaName, handlers).AddCrudRoutes()
+	restEngine := dynamicresource.NewRestEngine(schemaName, handlers).AddCrudRoutes()
 	require.NoError(t, restEngine.RegisterRoutes(echoApp.Group("/v1/essential"), passThrough))
 
 	routes := echoApp.Router().Routes()
@@ -52,7 +52,7 @@ func passThrough(next echo.HandlerFunc) echo.HandlerFunc {
 // table (PATCH for update, POST :id/archived, POST exists, GET meta/schema). The literal
 // segments must register ahead of the ":id" patterns that would swallow them.
 func TestBuiltinRoutesOfEveryComposableResource(t *testing.T) {
-	for schemaName, handlers := range map[string]composable.CrudRestHandlers{
+	for schemaName, handlers := range map[string]dynamicresource.CrudRestHandlers{
 		models.CurrencySchemaName:      &v1.CurrencyRest{},
 		models.UomSchemaName:           &v1.UomRest{},
 		models.UomCatSchemaName:        &v1.UomCatRest{},
@@ -86,10 +86,12 @@ func TestLanguageCustomRoutes(t *testing.T) {
 	echoApp := echo.New()
 	rest := &v1.LanguageRest{}
 	noop := func(*echo.Context, map[string]any) error { return nil }
-	restEngine := composable.NewRestEngine(models.LanguageSchemaName, rest).
+	restEngine := dynamicresource.NewRestEngine(models.LanguageSchemaName, rest).
 		AddCrudRoutes().
-		AddRoute(composable.RouteDefinition{Path: "json", ActionType: composable.ActionTypeRead, HandlerFn: noop}).
-		AddRoute(composable.RouteDefinition{Path: "enabled", ActionType: composable.ActionTypeRead, HandlerFn: noop})
+		AddRoute(dynamicresource.RouteDefinition{Path: "json", ActionType: dynamicresource.ActionTypeRead, HandlerFn: noop}).
+		AddRoute(
+			dynamicresource.RouteDefinition{Path: "enabled", ActionType: dynamicresource.ActionTypeRead, HandlerFn: noop},
+		)
 	require.NoError(t, restEngine.RegisterRoutes(echoApp.Group("/v1/essential"), passThrough))
 
 	got := map[string]int{}
@@ -107,7 +109,7 @@ func TestLanguageCustomRoutes(t *testing.T) {
 // The module catalogue is read-only over REST: its rows belong to the boot-time sync.
 func TestModuleCatalogueServesReadsOnly(t *testing.T) {
 	echoApp := echo.New()
-	require.NoError(t, composable.NewRestEngine(models.ModuleMetadataSchemaName, &v1.ModuleRest{}).
+	require.NoError(t, dynamicresource.NewRestEngine(models.ModuleMetadataSchemaName, &v1.ModuleRest{}).
 		AddCrudRoutes(dynamicengines.ModuleReadActions()...).
 		RegisterRoutes(echoApp.Group("/v1/essential"), passThrough))
 

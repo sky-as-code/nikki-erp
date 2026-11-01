@@ -9,7 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
@@ -19,7 +19,7 @@ import (
 // installation the switcher was never designed for.
 const maxUserOrgs = 500
 
-var orgUsersM2mParam = composable.ManageM2mParam{
+var orgUsersM2mParam = dynamicresource.ManageM2mParam{
 	Action:          "manage organization users",
 	DestSchemaName:  domain.UserSchemaName,
 	JunctionIdField: domain.OrgUsrRelFieldId,
@@ -27,7 +27,7 @@ var orgUsersM2mParam = composable.ManageM2mParam{
 
 // NewOrgCrudDomainService is handed the composable default by the iam_org onion.
 func NewOrgCrudDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 	settingsSvc itExt.OrgSettingsInitExtService,
 	usageDispatcher *usagecheck.Dispatcher,
 ) itOrg.OrgCrudDomainService {
@@ -39,7 +39,7 @@ func NewOrgCrudDomainService(
 }
 
 type OrgCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	settingsSvc     itExt.OrgSettingsInitExtService
 	usageDispatcher *usagecheck.Dispatcher
 }
@@ -48,16 +48,16 @@ type OrgCrudDomainServiceImpl struct {
 // transaction, so an org never exists without the settings rows the application reads from it, and
 // its creator can act in it straight away.
 func (this *OrgCrudDomainServiceImpl) Create(
-	ctx corectx.Context, cmd itOrg.CreateOrgCommand, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd itOrg.CreateOrgCommand, options ...dynamicresource.CreateOptions,
 ) (*itOrg.CreateOrgResult, error) {
 	var result *itOrg.CreateOrgResult
-	err := composable.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
+	err := dynamicresource.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
 		var err error
 		result, err = this.CrudDomainService.Create(tranxCtx, asProvisioning(cmd), options...)
 		if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
 			return err
 		}
-		orgId := composable.ParamId(result.Data)
+		orgId := dynamicresource.ParamId(result.Data)
 		if err := this.initOrgSettings(tranxCtx, orgId); err != nil {
 			return err
 		}
@@ -92,9 +92,9 @@ func (this *OrgCrudDomainServiceImpl) addCreatorAsMember(ctx corectx.Context, or
 	if perms.Principal.Kind != corectx.PrincipalKindUser || perms.UserId == "" {
 		return nil
 	}
-	result, err := composable.ManageM2m(ctx, this.Repository(), dmodel.DynamicFields{
-		basemodel.FieldId:      orgId,
-		composable.FieldM2mAdd: []model.Id{perms.UserId},
+	result, err := dynamicresource.ManageM2m(ctx, this.Repository(), dmodel.DynamicFields{
+		basemodel.FieldId:           orgId,
+		dynamicresource.FieldM2mAdd: []model.Id{perms.UserId},
 	}, orgUsersM2mParam)
 	if err != nil {
 		return err
@@ -109,21 +109,21 @@ func (this *OrgCrudDomainServiceImpl) addCreatorAsMember(ctx corectx.Context, or
 // refuses one another module references: every dependant answers for its own tables, and one that
 // cannot answer refuses the delete.
 func (this *OrgCrudDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd itOrg.DeleteOrgCommand, options ...composable.DeleteOptions,
+	ctx corectx.Context, cmd itOrg.DeleteOrgCommand, options ...dynamicresource.DeleteOptions,
 ) (*itOrg.DeleteOrgResult, error) {
-	opts := composable.DeleteOptions{}
+	opts := dynamicresource.DeleteOptions{}
 	if len(options) > 0 {
 		opts = options[0]
 	}
-	opts.ValidateExtra = composable.ChainValidateExtra(
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(
 		assertDeletedBeforeRemoval, this.assertDeletable, opts.ValidateExtra)
 	return this.CrudDomainService.Delete(ctx, cmd, opts)
 }
 
 func (this *OrgCrudDomainServiceImpl) assertDeletable(
-	ctx corectx.Context, keys *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, keys *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
-	return AssertOrgDeletable(ctx, this.usageDispatcher, string(composable.ParamId(keys.GetFieldData())), vErrs)
+	return AssertOrgDeletable(ctx, this.usageDispatcher, string(dynamicresource.ParamId(keys.GetFieldData())), vErrs)
 }
 
 // ManageUsers links users to and unlinks them from the organization. Membership is read at
@@ -131,7 +131,7 @@ func (this *OrgCrudDomainServiceImpl) assertDeletable(
 func (this *OrgCrudDomainServiceImpl) ManageUsers(
 	ctx corectx.Context, cmd itOrg.ManageOrgUsersCommand,
 ) (*itOrg.ManageOrgUsersResult, error) {
-	return composable.ManageM2m(ctx, this.Repository(), cmd, orgUsersM2mParam)
+	return dynamicresource.ManageM2m(ctx, this.Repository(), cmd, orgUsersM2mParam)
 }
 
 func (this *OrgCrudDomainServiceImpl) GetUserOrgs(

@@ -12,7 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/notification/constants"
 	"github.com/sky-as-code/nikki-erp/modules/notification/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/notification/interfaces/delivery"
@@ -22,7 +22,7 @@ import (
 // recordingDeliveries captures the rows the fan-out writes, so a test can read back what was
 // recorded without a database.
 type recordingDeliveries struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 
 	inserted []dmodel.DynamicFields
 	updated  []dmodel.DynamicFields
@@ -40,7 +40,7 @@ func (this *recordingDeliveries) Insert(
 
 func (this *recordingDeliveries) Update(
 	ctx corectx.Context, fields dmodel.DynamicFields,
-) (*composable.MutateResult, error) {
+) (*dynamicresource.MutateResult, error) {
 	this.updated = append(this.updated, snapshot(fields))
 	return nil, nil
 }

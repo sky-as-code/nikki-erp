@@ -8,7 +8,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 )
 
@@ -24,7 +24,7 @@ func newOrgUnitService(units map[string]dmodel.DynamicFields, users map[string]d
 
 func TestOrgUnitPathOfARootUnit(t *testing.T) {
 	svc, _ := newOrgUnitService(nil, nil)
-	unit := composable.NewDynamicEntityFrom(dmodel.DynamicFields{"id": "U1", domain.OrgUnitFieldOrgId: "O1"})
+	unit := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{"id": "U1", domain.OrgUnitFieldOrgId: "O1"})
 	vErrs := ft.ClientErrors{}
 
 	require.NoError(t, svc.applyPath(testContext(), unit, nil, &vErrs))
@@ -37,7 +37,7 @@ func TestOrgUnitPathExtendsTheParent(t *testing.T) {
 	svc, _ := newOrgUnitService(map[string]dmodel.DynamicFields{
 		"P1": {domain.OrgUnitFieldOrgId: "O1", domain.OrgUnitFieldPath: []string{"O1", "P1"}},
 	}, nil)
-	unit := composable.NewDynamicEntityFrom(dmodel.DynamicFields{
+	unit := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{
 		"id": "U1", domain.OrgUnitFieldOrgId: "O1", domain.OrgUnitFieldParentId: "P1",
 	})
 	vErrs := ft.ClientErrors{}
@@ -51,7 +51,7 @@ func TestOrgUnitPathRefusesAParentOfAnotherOrg(t *testing.T) {
 	svc, _ := newOrgUnitService(map[string]dmodel.DynamicFields{
 		"P1": {domain.OrgUnitFieldOrgId: "O2", domain.OrgUnitFieldPath: []string{"O2", "P1"}},
 	}, nil)
-	unit := composable.NewDynamicEntityFrom(dmodel.DynamicFields{
+	unit := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{
 		"id": "U1", domain.OrgUnitFieldOrgId: "O1", domain.OrgUnitFieldParentId: "P1",
 	})
 	vErrs := ft.ClientErrors{}
@@ -67,7 +67,7 @@ func TestOrgUnitManageUsersMovesMembers(t *testing.T) {
 	})
 
 	result, err := svc.ManageUsers(testContext(), dmodel.DynamicFields{
-		"id": "U1", composable.FieldM2mAdd: []any{"A"}, composable.FieldM2mRemove: []any{"B", "C"},
+		"id": "U1", dynamicresource.FieldM2mAdd: []any{"A"}, dynamicresource.FieldM2mRemove: []any{"B", "C"},
 	})
 
 	require.NoError(t, err)
@@ -82,7 +82,7 @@ func TestOrgUnitManageUsersRefusesAnUnknownUser(t *testing.T) {
 	svc, userRepo := newOrgUnitService(map[string]dmodel.DynamicFields{"U1": {}}, map[string]dmodel.DynamicFields{})
 
 	result, err := svc.ManageUsers(testContext(), dmodel.DynamicFields{
-		"id": "U1", composable.FieldM2mAdd: []any{"MISSING"},
+		"id": "U1", dynamicresource.FieldM2mAdd: []any{"MISSING"},
 	})
 
 	require.NoError(t, err)

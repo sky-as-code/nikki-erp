@@ -11,28 +11,28 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/contacts/infra/repository"
 	itCommChannel "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/commchannel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type commChannelEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_contacts_comm_channel"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_contacts_comm_channel"`
 }
 
 func registerCommChannelEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.CommChannelSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.CommChannelSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.CommChannelSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewCommChannelRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewCommChannelDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewCommChannelApplicationService(base)
 				},
 			}, param)

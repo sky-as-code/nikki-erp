@@ -13,7 +13,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
@@ -23,9 +23,11 @@ type lifecycleBus struct {
 	failing map[string]bool
 }
 
-func (this *lifecycleBus) SubscribeRequests(context.Context, ...cqrs.RequestHandler) error { return nil }
-func (this *lifecycleBus) RequestNoReply(context.Context, cqrs.Request) error              { return nil }
-func (this *lifecycleBus) IsRequestTypeRegistered(string) bool                            { return true }
+func (this *lifecycleBus) SubscribeRequests(context.Context, ...cqrs.RequestHandler) error {
+	return nil
+}
+func (this *lifecycleBus) RequestNoReply(context.Context, cqrs.Request) error { return nil }
+func (this *lifecycleBus) IsRequestTypeRegistered(string) bool                { return true }
 
 func (this *lifecycleBus) Request(_ context.Context, request cqrs.Request, _ any) error {
 	if this.failing[request.(*orglifecycle.OrgLifecycleCommand).TargetModule] {
@@ -54,7 +56,7 @@ func (this *fakeOrgDomSvc) SetLifecycleStatus(
 }
 
 func (this *fakeOrgDomSvc) Delete(
-	corectx.Context, itOrg.DeleteOrgCommand, ...composable.DeleteOptions,
+	corectx.Context, itOrg.DeleteOrgCommand, ...dynamicresource.DeleteOptions,
 ) (*itOrg.DeleteOrgResult, error) {
 	this.deleted = true
 	return &itOrg.DeleteOrgResult{HasData: true}, nil

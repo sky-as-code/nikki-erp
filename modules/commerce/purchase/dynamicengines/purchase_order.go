@@ -12,7 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/external"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/order"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The purchase order (an RFQ and a PO are one record at different statuses), with its twelve
@@ -21,33 +21,33 @@ import (
 type purchaseOrderEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_order"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_order"`
 }
 
 func registerPurchaseOrderEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.PurchaseOrderSchemaName),
+		dynamicresource.EngineDependencyName(models.PurchaseOrderSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			vendors itExt.VendorExtService,
 			currencies itExt.CurrencyExtService,
 			products itExt.ProductExtService,
 			uoms itExt.UomExtService,
-		) composable.DynamicResourceEngineOnion {
+		) dynamicresource.DynamicResourceEngineOnion {
 			references := services.NewOrderReferenceValidator(vendors, currencies)
 			// Totals round to the order's own currency rather than a fixed two places.
 			services.SetOrderScaleResolver(references.ScaleFor)
 			validator := services.NewProductLineValidator(products, uoms)
 			pricer := services.NewLinePricer(uoms)
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.PurchaseOrderSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewPurchaseOrderRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewPurchaseOrderDomainService(base, references, validator, pricer)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewPurchaseOrderApplicationService(base)
 				},
 			}, param)

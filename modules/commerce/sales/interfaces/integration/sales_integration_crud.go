@@ -7,21 +7,21 @@
 package integration
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type SalesManualDiscountRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesManualDiscountApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesIntegrationOutboxRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesIntegrationOutboxApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -105,7 +105,7 @@ func validateDeltaIds(delta itProduct.ProductAttributeValuesDelta) ft.ClientErro
 }
 
 func deltaRowId(row dmodel.DynamicFields) model.Id {
-	return composable.ParamId(row)
+	return dynamicresource.ParamId(row)
 }
 
 // finalValueEntry is one value of the attribute as it will stand after the delta. path is empty

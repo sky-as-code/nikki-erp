@@ -8,7 +8,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // Param names the custom actions read from the request.
@@ -28,7 +28,7 @@ type actionResult = dyn.OpResult[any]
 // assertRecordAction asserts the permission in the caller's org, then that the record the path
 // names belongs to that org.
 func assertRecordAction(
-	svc composable.CrudApplicationService, ctx corectx.Context, permission string, cmd dmodel.DynamicFields,
+	svc dynamicresource.CrudApplicationService, ctx corectx.Context, permission string, cmd dmodel.DynamicFields,
 ) (*ft.ClientErrors, error) {
 	orgId, cErrs := svc.AssertAction(ctx, permission, cmd)
 	if cErrs != nil || orgId == nil {

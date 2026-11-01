@@ -13,7 +13,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // What the movement flows hand the repository. A repository write goes straight to the query builder,
@@ -23,7 +23,7 @@ import (
 // moveWriteRepository stands in for the move repository. Its Update honours the etag the way the real
 // one does: a stale etag matches no row and changes nothing, without an error.
 type moveWriteRepository struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 
 	rows        []dmodel.DynamicFields
 	inserts     []dmodel.DynamicFields

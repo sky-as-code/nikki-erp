@@ -4,7 +4,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 )
 
@@ -14,7 +14,7 @@ const RoleEngineName = "dynengine_iam_role"
 type roleCrudRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_role"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_role"`
 }
 
 func NewRoleCrudRest(params roleCrudRestParams) *RoleCrudRest {
@@ -25,26 +25,26 @@ func NewRoleCrudRest(params roleCrudRestParams) *RoleCrudRest {
 
 // RoleCrudRest serves the built-in CRUD of the iam_role resource and its custom actions.
 type RoleCrudRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	roleSvc itRole.RoleCrudApplicationService
 }
 
 func (this *RoleCrudRest) ManageUsers(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "manage role users", payload, this.roleSvc.ManageUsers,
-		composable.MutateResponse)
+	return dynamicresource.ServeAction(echoCtx, "manage role users", payload, this.roleSvc.ManageUsers,
+		dynamicresource.MutateResponse)
 }
 
 func (this *RoleCrudRest) ManageServices(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "manage role services", payload, this.roleSvc.ManageServices,
-		composable.MutateResponse)
+	return dynamicresource.ServeAction(echoCtx, "manage role services", payload, this.roleSvc.ManageServices,
+		dynamicresource.MutateResponse)
 }
 
 func (this *RoleCrudRest) ManageGroups(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "manage role groups", payload, this.roleSvc.ManageGroups,
-		composable.MutateResponse)
+	return dynamicresource.ServeAction(echoCtx, "manage role groups", payload, this.roleSvc.ManageGroups,
+		dynamicresource.MutateResponse)
 }
 
 func (this *RoleCrudRest) Describe(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "describe roles", payload, this.roleSvc.Describe,
-		composable.Identity[itRole.DescribeRolesResultData])
+	return dynamicresource.ServeAction(echoCtx, "describe roles", payload, this.roleSvc.Describe,
+		dynamicresource.Identity[itRole.DescribeRolesResultData])
 }

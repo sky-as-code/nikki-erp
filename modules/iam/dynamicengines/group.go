@@ -6,7 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/app"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/services"
@@ -19,28 +19,28 @@ import (
 type groupEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_group"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_group"`
 }
 
 // registerGroupEngine declares the iam_group onion. The schema has no org_id, so the default
 // org scoping leaves it alone and permissions are checked without an org.
 func registerGroupEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.GroupSchemaName),
+		dynamicresource.EngineDependencyName(models.GroupSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			permRepo itPerm.PermissionRepository, historyRepo itPerm.PermissionHistoryRepository,
 			userRepo itUser.UserCrudRepository,
-		) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.GroupSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewGroupCrudRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewGroupCrudDomainService(base, permRepo, historyRepo, userRepo)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewGroupCrudApplicationService(base, base.DomainService().(itGroup.GroupCrudDomainService))
 				},
 			}, param)

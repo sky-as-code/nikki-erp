@@ -7,7 +7,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 )
 
 // ModuleName is the name feature modules must list in their Deps() to use composable resource onions.
@@ -64,7 +63,7 @@ func (*DynamicResourceModule) Version() semver.SemVer {
 func (*DynamicResourceModule) Init() error {
 	return stdErr.Join(
 		orglifecycle.RegisterNoop(ModuleName),
-		deps.Register(composable.NewResourceAccess),
+		deps.Register(NewResourceAccess),
 	)
 }
 
@@ -76,5 +75,5 @@ func (*DynamicResourceModule) Init() error {
 // By the time any OnAppStarted runs, every module's Init() has completed — so a missing function
 // fails the boot with a precise message instead of surfacing as a broken read later.
 func (*DynamicResourceModule) OnAppStarted() error {
-	return composable.AssertComputedFunctionsDefined()
+	return AssertComputedFunctionsDefined()
 }

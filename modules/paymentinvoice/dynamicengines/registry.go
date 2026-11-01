@@ -7,7 +7,7 @@ package dynamicengines
 import (
 	stdErr "errors"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 )
@@ -45,9 +45,9 @@ func EngineSchemaNames() []string {
 // buildOnion builds one onion and installs it into the resource hub, through which the payment
 // flow, the sweeps and the webhooks reach the repositories.
 func buildOnion(
-	impl *composable.DynamicResourceEngineOnionImpl, param composable.BuildParam,
-) composable.DynamicResourceEngineOnion {
-	onion := composable.MustBuild(impl, param)
+	impl *dynamicresource.DynamicResourceEngineOnionImpl, param dynamicresource.BuildParam,
+) dynamicresource.DynamicResourceEngineOnion {
+	onion := dynamicresource.MustBuild(impl, param)
 	services.InstallResource(impl.SchemaName, onion.Repository(), onion.DomainService())
 	return onion
 }

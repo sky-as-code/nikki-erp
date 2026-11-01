@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/constants"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // A permission code the application service demands but the seed never created denies every request for that
@@ -43,17 +43,17 @@ func TestOrderActionPermissionsAreSeeded(t *testing.T) {
 // nothing.
 func TestSeededOrderActionsAreDemanded(t *testing.T) {
 	demanded := map[string]bool{
-		composable.PermissionCreate: true,
-		composable.PermissionUpdate: true,
-		composable.PermissionDelete: true,
-		composable.PermissionRead:   true,
-		constants.ActionConfirm:     true,
-		constants.ActionApprove:     true,
-		constants.ActionCancel:      true,
-		constants.ActionSend:        true,
-		constants.ActionLock:        true,
-		constants.ActionUnlock:      true,
-		constants.ActionAcknowledge: true,
+		dynamicresource.PermissionCreate: true,
+		dynamicresource.PermissionUpdate: true,
+		dynamicresource.PermissionDelete: true,
+		dynamicresource.PermissionRead:   true,
+		constants.ActionConfirm:          true,
+		constants.ActionApprove:          true,
+		constants.ActionCancel:           true,
+		constants.ActionSend:             true,
+		constants.ActionLock:             true,
+		constants.ActionUnlock:           true,
+		constants.ActionAcknowledge:      true,
 		// Merge is seeded but not yet reached; the constant exists so the two cannot drift apart.
 		constants.ActionMerge: true,
 	}
@@ -103,7 +103,7 @@ func TestAgreementActionPermissionsAreSeeded(t *testing.T) {
 		constants.ActionConfirm,
 		constants.ActionClose,
 		constants.ActionCancel,
-		composable.PermissionSetArchived,
+		dynamicresource.PermissionSetArchived,
 	} {
 		assert.Contains(t, seeded, permission,
 			"the application service demands the %q permission, which 1006002_purchase_iam.sql does not seed",
@@ -119,14 +119,14 @@ func TestAgreementActionPermissionsAreSeeded(t *testing.T) {
 
 func TestSeededAgreementActionsAreDemanded(t *testing.T) {
 	demanded := map[string]bool{
-		composable.PermissionCreate:      true,
-		composable.PermissionUpdate:      true,
-		composable.PermissionDelete:      true,
-		composable.PermissionRead:        true,
-		composable.PermissionSetArchived: true,
-		constants.ActionConfirm:          true,
-		constants.ActionClose:            true,
-		constants.ActionCancel:           true,
+		dynamicresource.PermissionCreate:      true,
+		dynamicresource.PermissionUpdate:      true,
+		dynamicresource.PermissionDelete:      true,
+		dynamicresource.PermissionRead:        true,
+		dynamicresource.PermissionSetArchived: true,
+		constants.ActionConfirm:               true,
+		constants.ActionClose:                 true,
+		constants.ActionCancel:                true,
 	}
 
 	for _, code := range seededActionCodes(t, "purchase_agreement") {

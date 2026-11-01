@@ -8,7 +8,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/transport/restful/v1"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func InitRestfulHandlers() error {
@@ -77,7 +77,7 @@ func initInventoryV1() error {
 
 func initProductCategoryV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductCategoryRest) error {
-		return composable.NewRestEngine(models.ProductCategorySchemaName, rest).
+		return dynamicresource.NewRestEngine(models.ProductCategorySchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -85,7 +85,7 @@ func initProductCategoryV1(route *echo.Group) error {
 
 func initBrandV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.BrandRest) error {
-		return composable.NewRestEngine(models.BrandSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.BrandSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -93,7 +93,7 @@ func initBrandV1(route *echo.Group) error {
 
 func initProductAttributeV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductAttributeRest) error {
-		return composable.NewRestEngine(models.ProductAttributeSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.ProductAttributeSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -101,7 +101,7 @@ func initProductAttributeV1(route *echo.Group) error {
 
 func initProductAttributeValueV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductAttributeValueRest) error {
-		return composable.NewRestEngine(models.ProductAttributeValueSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.ProductAttributeValueSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -109,19 +109,19 @@ func initProductAttributeValueV1(route *echo.Group) error {
 
 func initProductTemplateV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductTemplateRest) error {
-		return composable.NewRestEngine(models.ProductTemplateSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.ProductTemplateSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{Path: ":id/generate_variants", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.GenerateVariants}).
-			AddRoute(composable.RouteDefinition{Path: "resolve_selection", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ResolveSelection}).
-			AddRoute(composable.RouteDefinition{Path: ":id/duplicate", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Duplicate}).
-			AddRoute(composable.RouteDefinition{Path: ":id/preview_attribute_configuration", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.PreviewAttributeConfiguration}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/generate_variants", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.GenerateVariants}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "resolve_selection", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ResolveSelection}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/duplicate", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Duplicate}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/preview_attribute_configuration", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.PreviewAttributeConfiguration}).
 			RegisterRoutes(route)
 	})
 }
 
 func initProductTemplateAttributeV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductTemplateAttributeRest) error {
-		return composable.NewRestEngine(models.ProductTemplateAttributeSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.ProductTemplateAttributeSchemaName, rest).
 			AddCrudRoutes(configurationReadRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -129,7 +129,7 @@ func initProductTemplateAttributeV1(route *echo.Group) error {
 
 func initProductTemplateAttributeValueV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductTemplateAttributeValueRest) error {
-		return composable.NewRestEngine(models.ProductTemplateAttributeValueSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.ProductTemplateAttributeValueSchemaName, rest).
 			AddCrudRoutes(templateValueRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -138,7 +138,7 @@ func initProductTemplateAttributeValueV1(route *echo.Group) error {
 // initProductTemplateCombinationExclusionV1 serves the reads only, as the junctions above do.
 func initProductTemplateCombinationExclusionV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductTemplateCombinationExclusionRest) error {
-		return composable.NewRestEngine(models.ProductTemplateCombinationExclusionSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.ProductTemplateCombinationExclusionSchemaName, rest).
 			AddCrudRoutes(configurationReadRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -149,35 +149,35 @@ func initProductTemplateCombinationExclusionV1(route *echo.Group) error {
 // configuration payload, so the UI, the API and an import share one path that reconciles the
 // variants; a direct write here would change the configuration without the reconcile. Import is
 // withheld for the same reason.
-func configurationReadRoutes() []composable.CrudAction {
-	return []composable.CrudAction{
-		composable.CrudActionGetById,
-		composable.CrudActionGetByUnique,
-		composable.CrudActionSearch,
-		composable.CrudActionExists,
-		composable.CrudActionGetSchema,
-		composable.CrudActionComputeField,
+func configurationReadRoutes() []dynamicresource.CrudAction {
+	return []dynamicresource.CrudAction{
+		dynamicresource.CrudActionGetById,
+		dynamicresource.CrudActionGetByUnique,
+		dynamicresource.CrudActionSearch,
+		dynamicresource.CrudActionExists,
+		dynamicresource.CrudActionGetSchema,
+		dynamicresource.CrudActionComputeField,
 	}
 }
 
 // templateValueRoutes adds PATCH :id to the reads: the domain service accepts only
 // sales_price_extra there, which changes no variant identity and so needs no reconcile.
-func templateValueRoutes() []composable.CrudAction {
-	return append(configurationReadRoutes(), composable.CrudActionUpdate)
+func templateValueRoutes() []dynamicresource.CrudAction {
+	return append(configurationReadRoutes(), dynamicresource.CrudActionUpdate)
 }
 
 func initProductVariantV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductVariantRest) error {
-		return composable.NewRestEngine(models.ProductVariantSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.ProductVariantSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{Path: ":id/effective", ActionType: composable.ActionTypeRead, HandlerFn: rest.GetEffective}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/effective", ActionType: dynamicresource.ActionTypeRead, HandlerFn: rest.GetEffective}).
 			RegisterRoutes(route)
 	})
 }
 
 func initProductVariantAttributeValueV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.ProductVariantAttributeValueRest) error {
-		return composable.NewRestEngine(models.ProductVariantAttributeValueSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.ProductVariantAttributeValueSchemaName, rest).
 			AddCrudRoutes(configurationReadRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -185,19 +185,19 @@ func initProductVariantAttributeValueV1(route *echo.Group) error {
 
 func initWarehouseV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.WarehouseRest) error {
-		return composable.NewRestEngine(models.WarehouseSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.WarehouseSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{Path: ":id/suspend", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Suspend}).
-			AddRoute(composable.RouteDefinition{Path: ":id/resume", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Resume}).
-			AddRoute(composable.RouteDefinition{Path: ":id/configure_incoming_flow", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ConfigureIncomingFlow}).
-			AddRoute(composable.RouteDefinition{Path: ":id/configure_outgoing_flow", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ConfigureOutgoingFlow}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/suspend", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Suspend}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/resume", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Resume}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/configure_incoming_flow", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ConfigureIncomingFlow}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/configure_outgoing_flow", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ConfigureOutgoingFlow}).
 			RegisterRoutes(route)
 	})
 }
 
 func initStorageCategoryV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StorageCategoryRest) error {
-		return composable.NewRestEngine(models.StorageCategorySchemaName, rest).
+		return dynamicresource.NewRestEngine(models.StorageCategorySchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -205,18 +205,18 @@ func initStorageCategoryV1(route *echo.Group) error {
 
 func initInventoryLocationV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.InventoryLocationRest) error {
-		return composable.NewRestEngine(models.InventoryLocationSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.InventoryLocationSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{Path: ":id/suspend", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Suspend}).
-			AddRoute(composable.RouteDefinition{Path: ":id/resume", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Resume}).
-			AddRoute(composable.RouteDefinition{Path: ":id/move", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Move}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/suspend", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Suspend}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/resume", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Resume}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/move", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Move}).
 			RegisterRoutes(route)
 	})
 }
 
 func initWarehouseSupplyRelationV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.WarehouseSupplyRelationRest) error {
-		return composable.NewRestEngine(models.WarehouseSupplyRelationSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.WarehouseSupplyRelationSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -224,16 +224,16 @@ func initWarehouseSupplyRelationV1(route *echo.Group) error {
 
 func initPutawayRuleV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.PutawayRuleRest) error {
-		return composable.NewRestEngine(models.PutawayRuleSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.PutawayRuleSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{Path: "suggest_location", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.SuggestLocation}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "suggest_location", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.SuggestLocation}).
 			RegisterRoutes(route)
 	})
 }
 
 func initStockOperationTypeV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockOperationTypeRest) error {
-		return composable.NewRestEngine(models.StockOperationTypeSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.StockOperationTypeSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -241,45 +241,45 @@ func initStockOperationTypeV1(route *echo.Group) error {
 
 func initStockQuantV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockQuantRest) error {
-		return composable.NewRestEngine(models.StockQuantSchemaName, rest).
-			AddCrudRoutes(composable.ReadCrudActions()...).
-			AddRoute(composable.RouteDefinition{Path: ":id/enter_count", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.EnterCount}).
-			AddRoute(composable.RouteDefinition{Path: ":id/reset_count", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ResetCount}).
-			AddRoute(composable.RouteDefinition{Path: ":id/apply_adjustment", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ApplyAdjustment}).
-			AddRoute(composable.RouteDefinition{Path: ":id/schedule_count", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ScheduleCount}).
-			AddRoute(composable.RouteDefinition{Path: ":id/assign_counter", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.AssignCounter}).
-			AddRoute(composable.RouteDefinition{Path: "variant_stock_summary", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.VariantStockSummary}).
-			AddRoute(composable.RouteDefinition{Path: "variant_stock_summaries", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.VariantStockSummaries}).
-			AddRoute(composable.RouteDefinition{Path: "template_stock_summary", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.TemplateStockSummary}).
-			AddRoute(composable.RouteDefinition{Path: "stock_by_warehouse", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.StockByWarehouse}).
-			AddRoute(composable.RouteDefinition{Path: "stock_by_location", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.StockByLocation}).
-			AddRoute(composable.RouteDefinition{Path: "product_usage", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ProductUsage}).
+		return dynamicresource.NewRestEngine(models.StockQuantSchemaName, rest).
+			AddCrudRoutes(dynamicresource.ReadCrudActions()...).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/enter_count", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.EnterCount}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/reset_count", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ResetCount}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/apply_adjustment", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ApplyAdjustment}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/schedule_count", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ScheduleCount}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/assign_counter", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.AssignCounter}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "variant_stock_summary", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.VariantStockSummary}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "variant_stock_summaries", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.VariantStockSummaries}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "template_stock_summary", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.TemplateStockSummary}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "stock_by_warehouse", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.StockByWarehouse}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "stock_by_location", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.StockByLocation}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "product_usage", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ProductUsage}).
 			RegisterRoutes(route)
 	})
 }
 
 func initStockTransferV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockTransferRest) error {
-		return composable.NewRestEngine(models.StockTransferSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.StockTransferSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{Path: ":id/confirm", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Confirm}).
-			AddRoute(composable.RouteDefinition{Path: ":id/check_availability", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.CheckAvailability}).
-			AddRoute(composable.RouteDefinition{Path: ":id/reserve", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Reserve}).
-			AddRoute(composable.RouteDefinition{Path: ":id/unreserve", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Unreserve}).
-			AddRoute(composable.RouteDefinition{Path: ":id/validate", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Validate}).
-			AddRoute(composable.RouteDefinition{Path: ":id/cancel", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Cancel}).
-			AddRoute(composable.RouteDefinition{Path: ":id/create_return", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.CreateReturn}).
-			AddRoute(composable.RouteDefinition{Path: "reserve_for_source", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ReserveForSource}).
-			AddRoute(composable.RouteDefinition{Path: "release_for_source", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ReleaseForSource}).
-			AddRoute(composable.RouteDefinition{Path: "reallocate_reservation", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ReallocateReservation}).
-			AddRoute(composable.RouteDefinition{Path: "apply_fulfillment_result", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ApplyFulfillmentResult}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/confirm", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Confirm}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/check_availability", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.CheckAvailability}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/reserve", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Reserve}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/unreserve", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Unreserve}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/validate", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Validate}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/cancel", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Cancel}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/create_return", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.CreateReturn}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "reserve_for_source", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ReserveForSource}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "release_for_source", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ReleaseForSource}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "reallocate_reservation", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ReallocateReservation}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "apply_fulfillment_result", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ApplyFulfillmentResult}).
 			RegisterRoutes(route)
 	})
 }
 
 func initStockMoveV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockMoveRest) error {
-		return composable.NewRestEngine(models.StockMoveSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.StockMoveSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -287,15 +287,15 @@ func initStockMoveV1(route *echo.Group) error {
 
 func initStockMoveLineV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockMoveLineRest) error {
-		return composable.NewRestEngine(models.StockMoveLineSchemaName, rest).
-			AddCrudRoutes(composable.ReadCrudActions()...).
+		return dynamicresource.NewRestEngine(models.StockMoveLineSchemaName, rest).
+			AddCrudRoutes(dynamicresource.ReadCrudActions()...).
 			RegisterRoutes(route)
 	})
 }
 
 func initStockMoveDependencyV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockMoveDependencyRest) error {
-		return composable.NewRestEngine(models.StockMoveDependencySchemaName, rest).
+		return dynamicresource.NewRestEngine(models.StockMoveDependencySchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -303,16 +303,16 @@ func initStockMoveDependencyV1(route *echo.Group) error {
 
 func initStockScrapV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockScrapRest) error {
-		return composable.NewRestEngine(models.StockScrapSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.StockScrapSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{Path: ":id/do_scrap", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.DoScrap}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/do_scrap", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.DoScrap}).
 			RegisterRoutes(route)
 	})
 }
 
 func initStockProductConfigV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockProductConfigRest) error {
-		return composable.NewRestEngine(models.StockProductConfigSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.StockProductConfigSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -322,19 +322,19 @@ func initStockProductConfigV1(route *echo.Group) error {
 // register as custom routes as they land, never by the built-in create, update or delete.
 func initStockReservationV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.StockReservationRest) error {
-		return composable.NewRestEngine(models.StockReservationSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.StockReservationSchemaName, rest).
 			AddCrudRoutes(
-				composable.CrudActionGetById,
-				composable.CrudActionGetByUnique,
-				composable.CrudActionSearch,
-				composable.CrudActionExists,
-				composable.CrudActionGetSchema,
-				composable.CrudActionComputeField,
+				dynamicresource.CrudActionGetById,
+				dynamicresource.CrudActionGetByUnique,
+				dynamicresource.CrudActionSearch,
+				dynamicresource.CrudActionExists,
+				dynamicresource.CrudActionGetSchema,
+				dynamicresource.CrudActionComputeField,
 			).
-			AddRoute(composable.RouteDefinition{Path: "reserve_warehouse_stock", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ReserveWarehouseStock}).
-			AddRoute(composable.RouteDefinition{Path: "check_warehouse_availability", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.CheckWarehouseAvailability}).
-			AddRoute(composable.RouteDefinition{Path: ":id/consume", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ConsumeReservation}).
-			AddRoute(composable.RouteDefinition{Path: ":id/release", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ReleaseReservation}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "reserve_warehouse_stock", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ReserveWarehouseStock}).
+			AddRoute(dynamicresource.RouteDefinition{Path: "check_warehouse_availability", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.CheckWarehouseAvailability}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/consume", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ConsumeReservation}).
+			AddRoute(dynamicresource.RouteDefinition{Path: ":id/release", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ReleaseReservation}).
 			RegisterRoutes(route)
 	})
 }

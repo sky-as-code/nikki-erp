@@ -1,26 +1,26 @@
 package taxconfig
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type TaxRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type TaxDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // TaxApplicationService is the authorized CRUD of the tax resource. The calculation actions
 // served on it (calculate, simulate, reverse_full, reverse_partial) are TaxCalculationActions.
 type TaxApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateTaxCommand = composable.CreateCommand
-	UpdateTaxCommand = composable.UpdateCommand
-	DeleteTaxCommand = composable.DeleteCommand
-	SearchTaxQuery   = composable.SearchQuery
+	CreateTaxCommand = dynamicresource.CreateCommand
+	UpdateTaxCommand = dynamicresource.UpdateCommand
+	DeleteTaxCommand = dynamicresource.DeleteCommand
+	SearchTaxQuery   = dynamicresource.SearchQuery
 )

@@ -1,42 +1,42 @@
 package product
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ProductVariantAttributeValueRepository reads and writes product_variant_attribute_value rows.
 type ProductVariantAttributeValueRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // ProductVariantAttributeValueDomainService is the CRUD of the resource plus its own rules.
 type ProductVariantAttributeValueDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // ProductVariantAttributeValueApplicationService is the authorized surface the REST handler serves.
 type ProductVariantAttributeValueApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a
 // resource-specific name.
 type (
-	CreateProductVariantAttributeValueCommand      = composable.CreateCommand
-	UpdateProductVariantAttributeValueCommand      = composable.UpdateCommand
-	DeleteProductVariantAttributeValueCommand      = composable.DeleteCommand
-	SetProductVariantAttributeValueArchivedCommand = composable.SetArchivedCommand
-	GetProductVariantAttributeValueByIdQuery       = composable.GetByIdQuery
-	SearchProductVariantAttributeValuesQuery       = composable.SearchQuery
-	ProductVariantAttributeValueExistsQuery        = composable.ExistsQuery
+	CreateProductVariantAttributeValueCommand      = dynamicresource.CreateCommand
+	UpdateProductVariantAttributeValueCommand      = dynamicresource.UpdateCommand
+	DeleteProductVariantAttributeValueCommand      = dynamicresource.DeleteCommand
+	SetProductVariantAttributeValueArchivedCommand = dynamicresource.SetArchivedCommand
+	GetProductVariantAttributeValueByIdQuery       = dynamicresource.GetByIdQuery
+	SearchProductVariantAttributeValuesQuery       = dynamicresource.SearchQuery
+	ProductVariantAttributeValueExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateProductVariantAttributeValueResult      = composable.CreateResult
-	UpdateProductVariantAttributeValueResult      = composable.MutateResult
-	DeleteProductVariantAttributeValueResult      = composable.MutateResult
-	SetProductVariantAttributeValueArchivedResult = composable.MutateResult
-	GetProductVariantAttributeValueByIdResult     = composable.GetOneResult
-	SearchProductVariantAttributeValuesResult     = composable.SearchResult
-	ProductVariantAttributeValueExistsResult      = composable.ExistsResult
+	CreateProductVariantAttributeValueResult      = dynamicresource.CreateResult
+	UpdateProductVariantAttributeValueResult      = dynamicresource.MutateResult
+	DeleteProductVariantAttributeValueResult      = dynamicresource.MutateResult
+	SetProductVariantAttributeValueArchivedResult = dynamicresource.MutateResult
+	GetProductVariantAttributeValueByIdResult     = dynamicresource.GetOneResult
+	SearchProductVariantAttributeValuesResult     = dynamicresource.SearchResult
+	ProductVariantAttributeValueExistsResult      = dynamicresource.ExistsResult
 )

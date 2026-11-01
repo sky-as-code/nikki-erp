@@ -3,7 +3,7 @@ package v1
 import (
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ResourceEngineName and ActionEngineName are the container names of the iam_resource and
@@ -16,7 +16,7 @@ const (
 type resourceCrudRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_resource"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_resource"`
 }
 
 func NewResourceCrudRest(params resourceCrudRestParams) *ResourceCrudRest {
@@ -27,13 +27,13 @@ func NewResourceCrudRest(params resourceCrudRestParams) *ResourceCrudRest {
 
 // ResourceCrudRest serves the built-in CRUD of the iam_resource resource.
 type ResourceCrudRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type actionCrudRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_action"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_action"`
 }
 
 func NewActionCrudRest(params actionCrudRestParams) *ActionCrudRest {
@@ -44,5 +44,5 @@ func NewActionCrudRest(params actionCrudRestParams) *ActionCrudRest {
 
 // ActionCrudRest serves the built-in CRUD of the iam_action resource.
 type ActionCrudRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

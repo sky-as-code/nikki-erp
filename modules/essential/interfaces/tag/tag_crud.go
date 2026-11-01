@@ -1,35 +1,35 @@
 package tag
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type TagRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type TagDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type TagApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateTagCommand = composable.CreateCommand
-	UpdateTagCommand = composable.UpdateCommand
-	DeleteTagCommand = composable.DeleteCommand
-	GetTagByIdQuery  = composable.GetByIdQuery
-	SearchTagsQuery  = composable.SearchQuery
-	TagExistsQuery   = composable.ExistsQuery
+	CreateTagCommand = dynamicresource.CreateCommand
+	UpdateTagCommand = dynamicresource.UpdateCommand
+	DeleteTagCommand = dynamicresource.DeleteCommand
+	GetTagByIdQuery  = dynamicresource.GetByIdQuery
+	SearchTagsQuery  = dynamicresource.SearchQuery
+	TagExistsQuery   = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateTagResult  = composable.CreateResult
-	UpdateTagResult  = composable.MutateResult
-	DeleteTagResult  = composable.MutateResult
-	GetTagByIdResult = composable.GetOneResult
-	SearchTagsResult = composable.SearchResult
-	TagExistsResult  = composable.ExistsResult
+	CreateTagResult  = dynamicresource.CreateResult
+	UpdateTagResult  = dynamicresource.MutateResult
+	DeleteTagResult  = dynamicresource.MutateResult
+	GetTagByIdResult = dynamicresource.GetOneResult
+	SearchTagsResult = dynamicresource.SearchResult
+	TagExistsResult  = dynamicresource.ExistsResult
 )

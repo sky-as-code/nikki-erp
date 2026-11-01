@@ -12,7 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
 	itAgreement "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/agreement"
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/external"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The purchase agreement, with confirm, close, cancel and create_rfq.
@@ -20,27 +20,27 @@ import (
 type agreementEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_agreement"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_agreement"`
 }
 
 func registerAgreementEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.AgreementSchemaName),
+		dynamicresource.EngineDependencyName(models.AgreementSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			vendors itExt.VendorExtService,
 			currencies itExt.CurrencyExtService,
-		) composable.DynamicResourceEngineOnion {
+		) dynamicresource.DynamicResourceEngineOnion {
 			references := services.NewOrderReferenceValidator(vendors, currencies)
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.AgreementSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewAgreementRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewPurchaseAgreementDomainService(base, references)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewAgreementApplicationService(base)
 				},
 			}, param)

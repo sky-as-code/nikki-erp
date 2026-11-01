@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 	corelog "github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/app"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/constants"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
@@ -47,11 +47,11 @@ func InitRestfulHandlers() error {
 
 // legacyCrudActions is the built-in verb set the legacy engine served: every CRUD action except
 // bulk create and import, which these resources never exposed.
-func legacyCrudActions() []composable.CrudAction {
-	return []composable.CrudAction{
-		composable.CrudActionCreate, composable.CrudActionUpdate, composable.CrudActionDelete,
-		composable.CrudActionSetArchived, composable.CrudActionGetById, composable.CrudActionSearch,
-		composable.CrudActionExists, composable.CrudActionGetSchema, composable.CrudActionComputeField,
+func legacyCrudActions() []dynamicresource.CrudAction {
+	return []dynamicresource.CrudAction{
+		dynamicresource.CrudActionCreate, dynamicresource.CrudActionUpdate, dynamicresource.CrudActionDelete,
+		dynamicresource.CrudActionSetArchived, dynamicresource.CrudActionGetById, dynamicresource.CrudActionSearch,
+		dynamicresource.CrudActionExists, dynamicresource.CrudActionGetSchema, dynamicresource.CrudActionComputeField,
 	}
 }
 
@@ -107,29 +107,30 @@ func initInvoiceLineV1(route *echo.Group) error {
 	})
 }
 
-func crudRoutes(schemaName string, rest composable.CrudRestHandlers) composable.RestEngine {
-	return composable.NewRestEngine(schemaName, rest).AddCrudRoutes(legacyCrudActions()...)
+func crudRoutes(schemaName string, rest dynamicresource.CrudRestHandlers) dynamicresource.RestEngine {
+	return dynamicresource.NewRestEngine(schemaName, rest).AddCrudRoutes(legacyCrudActions()...)
 }
 
 // orderRoutes keeps the action paths the vending machines and the ordering system call.
-func orderRoutes(rest *v1.OrderRest) composable.RestEngine {
+func orderRoutes(rest *v1.OrderRest) dynamicresource.RestEngine {
 	return crudRoutes(models.OrderSchemaName, rest).
-		AddRoute(composable.RouteDefinition{
-			Path: constants.ActionCreatePayment, ActionType: composable.ActionTypeGeneric, HandlerFn: rest.CreatePayment,
+		AddRoute(dynamicresource.RouteDefinition{
+			Path: constants.ActionCreatePayment, ActionType: dynamicresource.ActionTypeGeneric,
+			HandlerFn: rest.CreatePayment,
 		}).
-		AddRoute(composable.RouteDefinition{
-			Path: constants.ActionRefund, ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Refund,
+		AddRoute(dynamicresource.RouteDefinition{
+			Path: constants.ActionRefund, ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Refund,
 		}).
-		AddRoute(composable.RouteDefinition{
+		AddRoute(dynamicresource.RouteDefinition{
 			Path:       constants.ActionRemovePosOrders + "/:pos_id",
-			ActionType: composable.ActionTypeGeneric, HandlerFn: rest.RemovePosOrders,
+			ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.RemovePosOrders,
 		})
 }
 
-func invoiceRoutes(rest *v1.InvoiceRest) composable.RestEngine {
+func invoiceRoutes(rest *v1.InvoiceRest) dynamicresource.RestEngine {
 	return crudRoutes(models.InvoiceSchemaName, rest).
-		AddRoute(composable.RouteDefinition{
-			Path: ":id/" + constants.ActionIssue, ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Issue,
+		AddRoute(dynamicresource.RouteDefinition{
+			Path: ":id/" + constants.ActionIssue, ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Issue,
 		})
 }
 

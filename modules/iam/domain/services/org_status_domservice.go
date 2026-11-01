@@ -12,7 +12,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
@@ -39,18 +39,18 @@ func asProvisioning(cmd itOrg.CreateOrgCommand) itOrg.CreateOrgCommand {
 // Update refuses to change a deleted org, except for its status fields, which the org lifecycle
 // still writes while modules clean up.
 func (this *OrgCrudDomainServiceImpl) Update(
-	ctx corectx.Context, cmd itOrg.UpdateOrgCommand, options ...composable.UpdateOptions,
+	ctx corectx.Context, cmd itOrg.UpdateOrgCommand, options ...dynamicresource.UpdateOptions,
 ) (*itOrg.UpdateOrgResult, error) {
-	opts := composable.UpdateOptions{}
+	opts := dynamicresource.UpdateOptions{}
 	if len(options) > 0 {
 		opts = options[0]
 	}
-	opts.ValidateExtra = composable.ChainValidateExtra(assertOnlyStatusIfDeleted, opts.ValidateExtra)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(assertOnlyStatusIfDeleted, opts.ValidateExtra)
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
 
 func assertOnlyStatusIfDeleted(
-	ctx corectx.Context, input *composable.DynamicEntity, found *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, input *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	if found == nil || orgStatusOf(found.GetFieldData()) != domain.OrgStatusDeleted {
 		return nil
@@ -97,7 +97,7 @@ func (this *OrgCrudDomainServiceImpl) SetArchived(
 // assertDeletedBeforeRemoval allows the row to go only once the org lifecycle has marked the org
 // deleted and every module has cleaned up; a client's delete marks it, it never removes it.
 func assertDeletedBeforeRemoval(
-	_ corectx.Context, _ *composable.DynamicEntity, found *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	if found != nil && orgStatusOf(found.GetFieldData()) != domain.OrgStatusDeleted {
 		vErrs.Append(*ft.NewBusinessViolation(domain.OrgFieldStatus, ErrKeyOrgNotDeleted,
@@ -109,7 +109,7 @@ func assertDeletedBeforeRemoval(
 func (this *OrgCrudDomainServiceImpl) loadStatus(
 	ctx corectx.Context, keys dmodel.DynamicFields,
 ) (domain.OrgStatus, *ft.ClientErrors, error) {
-	found, cErrs, err := this.loadOrg(ctx, composable.ParamId(keys))
+	found, cErrs, err := this.loadOrg(ctx, dynamicresource.ParamId(keys))
 	if err != nil || cErrs != nil {
 		return "", cErrs, err
 	}
@@ -131,7 +131,7 @@ func orgDeletedViolation() *ft.ClientErrorItem {
 func (this *OrgCrudDomainServiceImpl) MarkDeleted(
 	ctx corectx.Context, cmd itOrg.DeleteOrgCommand,
 ) (*itOrg.DeleteOrgResult, error) {
-	found, cErrs, err := this.loadOrg(ctx, composable.ParamId(cmd))
+	found, cErrs, err := this.loadOrg(ctx, dynamicresource.ParamId(cmd))
 	if err != nil || cErrs != nil {
 		return &itOrg.DeleteOrgResult{ClientErrors: util.ValueOrZeroOf(cErrs)}, err
 	}
@@ -146,7 +146,7 @@ func (this *OrgCrudDomainServiceImpl) MarkDeleted(
 	var result *itOrg.DeleteOrgResult
 	// UpdateRegardless writes past the default domain service, so the entry is recorded here, in
 	// the same transaction.
-	err = composable.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
+	err = dynamicresource.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
 		var err error
 		result, err = corecrud.UpdateRegardless(tranxCtx, corecrud.UpdateRegardlessParam{
 			Action:       "mark organization deleted",
@@ -156,7 +156,7 @@ func (this *OrgCrudDomainServiceImpl) MarkDeleted(
 		if err != nil || result == nil || result.ClientErrors.Count() > 0 || !result.HasData {
 			return err
 		}
-		return composable.RecordAudit(tranxCtx, this.Schema(), ActionMarkOrgDeleted, found, data)
+		return dynamicresource.RecordAudit(tranxCtx, this.Schema(), ActionMarkOrgDeleted, found, data)
 	})
 	return result, errors.Wrap(err, "mark organization deleted")
 }

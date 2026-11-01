@@ -7,7 +7,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The resource hub is how one Sales service reaches another resource's repository or domain
@@ -20,8 +20,8 @@ import (
 // the typed ports Sales publishes into the dependency container.
 
 type resourceEntry struct {
-	repo   composable.CrudRepository
-	domSvc composable.CrudDomainService
+	repo   dynamicresource.CrudRepository
+	domSvc dynamicresource.CrudDomainService
 }
 
 var resourceHub = struct {
@@ -31,7 +31,7 @@ var resourceHub = struct {
 
 // InstallResource records a built onion's repository and domain service under its schema name.
 // Called by the module's engine registration once the container has built the onion.
-func InstallResource(schemaName string, repo composable.CrudRepository, domSvc composable.CrudDomainService) {
+func InstallResource(schemaName string, repo dynamicresource.CrudRepository, domSvc dynamicresource.CrudDomainService) {
 	resourceHub.mutex.Lock()
 	defer resourceHub.mutex.Unlock()
 	resourceHub.entries[schemaName] = resourceEntry{repo: repo, domSvc: domSvc}
@@ -62,7 +62,7 @@ func lookupResource(schemaName string) (resourceEntry, error) {
 
 // repoFor resolves another resource's repository. It is a variable so a test can substitute its
 // own repositories: the hub is filled during Init, which a unit test cannot run.
-var repoFor = func(schemaName string) (composable.CrudRepository, error) {
+var repoFor = func(schemaName string) (dynamicresource.CrudRepository, error) {
 	entry, err := lookupResource(schemaName)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ var repoFor = func(schemaName string) (composable.CrudRepository, error) {
 //
 // It has no legacy fallback: no Sales service reaches a peer's domain service today, so a lookup
 // that misses is a wiring error rather than a not-yet-migrated resource.
-var domainServiceFor = func(schemaName string) (composable.CrudDomainService, error) {
+var domainServiceFor = func(schemaName string) (dynamicresource.CrudDomainService, error) {
 	entry, err := lookupResource(schemaName)
 	if err != nil {
 		return nil, err
@@ -87,14 +87,14 @@ var domainServiceFor = func(schemaName string) (composable.CrudDomainService, er
 // repository. It answers whichever generation serves the schema, so a caller works unchanged
 // across the migration -- which EngineFor cannot do, because a migrated schema has no legacy
 // engine and its lookup fails with "no resource engine for '<schema>'".
-func RepositoryFor(schemaName string) (composable.CrudRepository, error) {
+func RepositoryFor(schemaName string) (dynamicresource.CrudRepository, error) {
 	return repoFor(schemaName)
 }
 
 // DomainServiceFor exposes the hub's domain-service lookup to sibling packages, for the few
 // writes that must go through a resource's create pipeline -- schema defaults and audit fields --
 // rather than its repository.
-func DomainServiceFor(schemaName string) (composable.CrudDomainService, error) {
+func DomainServiceFor(schemaName string) (dynamicresource.CrudDomainService, error) {
 	return domainServiceFor(schemaName)
 }
 

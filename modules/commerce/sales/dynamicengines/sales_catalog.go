@@ -13,7 +13,7 @@ import (
 	itCatalog "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/catalog"
 	itChannel "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
 	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/event"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The catalogue resources: the fulfillment policies, channels and points a sale happens through,
@@ -28,22 +28,22 @@ import (
 type salesFulfillmentMethodEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_method"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_method"`
 }
 
 func registerSalesFulfillmentMethodEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesFulfillmentMethodSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesFulfillmentMethodSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesFulfillmentMethodSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesFulfillmentMethodRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewSalesFulfillmentMethodDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesFulfillmentMethodApplicationService(base)
 				},
 			}, param)
@@ -66,25 +66,25 @@ func registerSalesFulfillmentMethodEngine() error {
 type salesChannelEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_channel"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_channel"`
 }
 
 func registerSalesChannelEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesChannelSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesChannelSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			channelPayments itChannel.ChannelPaymentAppService,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesChannelSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesChannelRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewSalesChannelDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesChannelCrudApplicationService(base, channelPayments)
 				},
 			}, param)
@@ -107,25 +107,25 @@ func registerSalesChannelEngine() error {
 type salesPointEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_point"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_point"`
 }
 
 func registerSalesPointEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesPointSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesPointSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			pointPayments itChannel.PointPaymentAppService,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesPointSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesPointRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewSalesPointDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesPointCrudApplicationService(base, pointPayments)
 				},
 			}, param)
@@ -148,24 +148,24 @@ func registerSalesPointEngine() error {
 type salesPricelistEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_pricelist"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_pricelist"`
 }
 
 func registerSalesPricelistEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesPricelistSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesPricelistSchemaName),
 		func(
-			param composable.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+			param dynamicresource.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesPricelistSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesPricelistRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewSalesPricelistDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesPricelistApplicationService(base, pricingChangedPub)
 				},
 			}, param)
@@ -188,24 +188,24 @@ func registerSalesPricelistEngine() error {
 type salesPricelistItemEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_pricelist_item"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_pricelist_item"`
 }
 
 func registerSalesPricelistItemEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesPricelistItemSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesPricelistItemSchemaName),
 		func(
-			param composable.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+			param dynamicresource.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesPricelistItemSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesPricelistItemRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewSalesPricelistItemDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesPricelistItemApplicationService(base, pricingChangedPub)
 				},
 			}, param)
@@ -228,7 +228,7 @@ func registerSalesPricelistItemEngine() error {
 type salesComboEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_combo"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_combo"`
 }
 
 // The combo resources carry no rules beyond their schemas, so they take the composable domain
@@ -236,16 +236,16 @@ type salesComboEngineParam struct {
 // is published by its own type rather than a shared one.
 func registerSalesComboEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesComboSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesComboSchemaName),
 		func(
-			param composable.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+			param dynamicresource.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesComboSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesComboRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesComboApplicationService(base, pricingChangedPub)
 				},
 			}, param)
@@ -265,21 +265,21 @@ func registerSalesComboEngine() error {
 type salesComboComponentEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_combo_component"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_combo_component"`
 }
 
 func registerSalesComboComponentEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesComboComponentSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesComboComponentSchemaName),
 		func(
-			param composable.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+			param dynamicresource.BuildParam, pricingChangedPub itEvent.PricingChangedEventPublisher,
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesComboComponentSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesComboComponentRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesComboComponentApplicationService(base, pricingChangedPub)
 				},
 			}, param)

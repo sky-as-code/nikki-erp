@@ -4,17 +4,17 @@ import (
 	"go.uber.org/dig"
 
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ProductVariantAttributeValueEngineName is the container name of the product_variant_attribute_value onion, declared once for the struct tag and
-// checked against composable.EngineDependencyName by a test.
+// checked against dynamicresource.EngineDependencyName by a test.
 const ProductVariantAttributeValueEngineName = "dynengine_inventory_product_variant_attribute_value"
 
 type productVariantAttributeValueRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_product_variant_attribute_value"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_product_variant_attribute_value"`
 }
 
 func NewProductVariantAttributeValueRest(params productVariantAttributeValueRestParams) *ProductVariantAttributeValueRest {
@@ -26,6 +26,6 @@ func NewProductVariantAttributeValueRest(params productVariantAttributeValueRest
 
 // ProductVariantAttributeValueRest serves the built-in CRUD of the product_variant_attribute_value resource.
 type ProductVariantAttributeValueRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	productVariantAttributeValueSvc itProduct.ProductVariantAttributeValueApplicationService
 }

@@ -10,7 +10,7 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func assertPointPaymentPermission(
@@ -55,7 +55,7 @@ func (this *PointPaymentApplicationServiceImpl) ListPointPaymentMethods(
 	if cErrs != nil {
 		return &it.ListPointPaymentMethodsResult{ClientErrors: *cErrs}, nil
 	}
-	if cErrs := assertPointPaymentPermission(ctx, composable.PermissionRead, point); cErrs != nil {
+	if cErrs := assertPointPaymentPermission(ctx, dynamicresource.PermissionRead, point); cErrs != nil {
 		return &it.ListPointPaymentMethodsResult{ClientErrors: *cErrs}, nil
 	}
 

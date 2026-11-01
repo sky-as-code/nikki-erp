@@ -4,7 +4,7 @@ import (
 	"go.uber.org/dig"
 
 	itBilling "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/billing"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 type salesBillRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_bill"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_bill"`
 }
 
 func NewSalesBillRest(params salesBillRestParams) *SalesBillRest {
@@ -30,14 +30,14 @@ func NewSalesBillRest(params salesBillRestParams) *SalesBillRest {
 }
 
 type SalesBillRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	billSvc itBilling.SalesBillApplicationService
 }
 
 type salesBillLineRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_bill_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_bill_line"`
 }
 
 func NewSalesBillLineRest(params salesBillLineRestParams) *SalesBillLineRest {
@@ -47,13 +47,13 @@ func NewSalesBillLineRest(params salesBillLineRestParams) *SalesBillLineRest {
 }
 
 type SalesBillLineRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesBillRelationRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_bill_relation"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_bill_relation"`
 }
 
 func NewSalesBillRelationRest(params salesBillRelationRestParams) *SalesBillRelationRest {
@@ -63,13 +63,13 @@ func NewSalesBillRelationRest(params salesBillRelationRestParams) *SalesBillRela
 }
 
 type SalesBillRelationRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesPaymentRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_payment"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_payment"`
 }
 
 func NewSalesPaymentRest(params salesPaymentRestParams) *SalesPaymentRest {
@@ -79,13 +79,13 @@ func NewSalesPaymentRest(params salesPaymentRestParams) *SalesPaymentRest {
 }
 
 type SalesPaymentRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesFulfillmentRequestRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_request"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_request"`
 }
 
 func NewSalesFulfillmentRequestRest(params salesFulfillmentRequestRestParams) *SalesFulfillmentRequestRest {
@@ -95,13 +95,13 @@ func NewSalesFulfillmentRequestRest(params salesFulfillmentRequestRestParams) *S
 }
 
 type SalesFulfillmentRequestRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesFulfillmentRequestLineRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_request_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_request_line"`
 }
 
 func NewSalesFulfillmentRequestLineRest(params salesFulfillmentRequestLineRestParams) *SalesFulfillmentRequestLineRest {
@@ -111,5 +111,5 @@ func NewSalesFulfillmentRequestLineRest(params salesFulfillmentRequestLineRestPa
 }
 
 type SalesFulfillmentRequestLineRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

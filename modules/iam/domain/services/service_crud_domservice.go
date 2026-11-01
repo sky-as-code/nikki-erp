@@ -6,7 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 	itService "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/service"
@@ -15,7 +15,7 @@ import (
 // NewServiceCrudDomainService is handed the composable default by the iam_service onion, whose
 // repository is the user repository viewed through the iam_service schema.
 func NewServiceCrudDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 	permRepo itPerm.PermissionRepository,
 	historyRepo itPerm.PermissionHistoryRepository,
 ) itService.ServiceCrudDomainService {
@@ -29,14 +29,14 @@ func NewServiceCrudDomainService(
 // ServiceCrudDomainServiceImpl confines every action to principals of type service (see
 // principalTypeScope) and projects only the iam_service fields.
 type ServiceCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	permRepo itPerm.PermissionRepository
 	auditor  permissionAuditor
 }
 
 func (this *ServiceCrudDomainServiceImpl) Search(
-	ctx corectx.Context, params composable.SearchQuery, options ...corecrud.ServiceSearchOptions,
-) (*composable.SearchResult, error) {
+	ctx corectx.Context, params dynamicresource.SearchQuery, options ...corecrud.ServiceSearchOptions,
+) (*dynamicresource.SearchResult, error) {
 	restrictFields(this.Schema(), params)
 	if err := serviceTypeScope.narrowSearch(params); err != nil {
 		return nil, err
@@ -45,11 +45,11 @@ func (this *ServiceCrudDomainServiceImpl) Search(
 }
 
 func (this *ServiceCrudDomainServiceImpl) GetById(
-	ctx corectx.Context, query composable.GetByIdQuery,
-) (*composable.GetOneResult, error) {
+	ctx corectx.Context, query dynamicresource.GetByIdQuery,
+) (*dynamicresource.GetOneResult, error) {
 	ok, err := serviceTypeScope.isOfType(ctx, this.Repository(), query)
 	if err != nil || !ok {
-		return &composable.GetOneResult{}, err
+		return &dynamicresource.GetOneResult{}, err
 	}
 	if _, asked := query[fieldsParam]; !asked {
 		// The default "whole record" is expanded by the shared repository against iam_user.
@@ -60,8 +60,8 @@ func (this *ServiceCrudDomainServiceImpl) GetById(
 }
 
 func (this *ServiceCrudDomainServiceImpl) GetOne(
-	ctx corectx.Context, query composable.GetOneQuery,
-) (*composable.GetOneResult, error) {
+	ctx corectx.Context, query dynamicresource.GetOneQuery,
+) (*dynamicresource.GetOneResult, error) {
 	restrictFields(this.Schema(), query)
 	result, err := this.CrudDomainService.GetOne(ctx, query)
 	if err != nil || result == nil || !result.HasData {
@@ -69,7 +69,7 @@ func (this *ServiceCrudDomainServiceImpl) GetOne(
 	}
 	ok, err := serviceTypeScope.isOfType(ctx, this.Repository(), result.Data.Item)
 	if err != nil || !ok {
-		return &composable.GetOneResult{}, err
+		return &dynamicresource.GetOneResult{}, err
 	}
 	return result, nil
 }
@@ -77,23 +77,23 @@ func (this *ServiceCrudDomainServiceImpl) GetOne(
 // Create writes the type after validation: iam_service declares no `type` field, so validation
 // would drop it, but the user repository underneath writes the column.
 func (this *ServiceCrudDomainServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
-	opts := composable.CreateOptions{}
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
+	opts := dynamicresource.CreateOptions{}
 	if len(options) > 0 {
 		opts = options[0]
 	}
 	opts.AfterValidationSuccess = setServiceType(opts.AfterValidationSuccess)
 
-	var result *composable.CreateResult
-	err := composable.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
+	var result *dynamicresource.CreateResult
+	err := dynamicresource.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
 		var err error
 		result, err = this.CrudDomainService.Create(tranxCtx, cmd, opts)
 		if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
 			return err
 		}
 		// A service holds every system role from its creation, like a user does.
-		return this.permRepo.RebuildUserPermission(tranxCtx, composable.ParamId(result.Data))
+		return this.permRepo.RebuildUserPermission(tranxCtx, dynamicresource.ParamId(result.Data))
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "create service")
@@ -101,8 +101,8 @@ func (this *ServiceCrudDomainServiceImpl) Create(
 	return result, nil
 }
 
-func setServiceType(next composable.AfterValidationFn) composable.AfterValidationFn {
-	return func(ctx corectx.Context, entity *composable.DynamicEntity) (*composable.DynamicEntity, error) {
+func setServiceType(next dynamicresource.AfterValidationFn) dynamicresource.AfterValidationFn {
+	return func(ctx corectx.Context, entity *dynamicresource.DynamicEntity) (*dynamicresource.DynamicEntity, error) {
 		entity.GetFieldData()[domain.UserFieldType] = string(domain.UserTypeService)
 		if next == nil {
 			return entity, nil
@@ -112,8 +112,8 @@ func setServiceType(next composable.AfterValidationFn) composable.AfterValidatio
 }
 
 func (this *ServiceCrudDomainServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
 	if refused, err := serviceTypeScope.assertOfType(ctx, this.Repository(), cmd); err != nil || refused != nil {
 		return refused, err
 	}
@@ -121,8 +121,8 @@ func (this *ServiceCrudDomainServiceImpl) Update(
 }
 
 func (this *ServiceCrudDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
 	if refused, err := serviceTypeScope.assertOfType(ctx, this.Repository(), cmd); err != nil || refused != nil {
 		return refused, err
 	}
@@ -130,8 +130,8 @@ func (this *ServiceCrudDomainServiceImpl) Delete(
 }
 
 func (this *ServiceCrudDomainServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
 	if refused, err := serviceTypeScope.assertOfType(ctx, this.Repository(), cmd); err != nil || refused != nil {
 		return refused, err
 	}
@@ -146,11 +146,11 @@ func (this *ServiceCrudDomainServiceImpl) ManageRoles(
 	if refused, err := serviceTypeScope.assertOfType(ctx, this.Repository(), cmd); err != nil || refused != nil {
 		return refused, err
 	}
-	return composable.ManageM2m(ctx, this.Repository(), cmd, composable.ManageM2mParam{
+	return dynamicresource.ManageM2m(ctx, this.Repository(), cmd, dynamicresource.ManageM2mParam{
 		Action:          "manage service role assignments",
 		DestSchemaName:  domain.RoleSchemaName,
 		JunctionIdField: domain.RoleUserAssignFieldId,
-		AfterChange: func(tranxCtx corectx.Context, change composable.M2mChange) error {
+		AfterChange: func(tranxCtx corectx.Context, change dynamicresource.M2mChange) error {
 			if err := this.permRepo.RebuildUserPermission(tranxCtx, change.SrcId); err != nil {
 				return err
 			}

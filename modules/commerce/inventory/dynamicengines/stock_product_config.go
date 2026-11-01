@@ -12,29 +12,29 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type stockProductConfigEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_product_config"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_product_config"`
 }
 
 // registerStockProductConfigEngine declares the stock_product_config onion and publishes its typed layers.
 func registerStockProductConfigEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.StockProductConfigSchemaName),
-		func(param composable.BuildParam, uoms itExt.UomLookupExtService) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.StockProductConfigSchemaName),
+		func(param dynamicresource.BuildParam, uoms itExt.UomLookupExtService) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.StockProductConfigSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewStockProductConfigRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewStockProductConfigDomainService(base, uoms)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewStockProductConfigApplicationService(base)
 				},
 			}, param)

@@ -7,7 +7,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/app"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/services"
@@ -21,13 +21,13 @@ import (
 type fileEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_itstorage_file"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_itstorage_file"`
 }
 
 type fileEngineBuildParam struct {
 	dig.In
 
-	Build    composable.BuildParam
+	Build    dynamicresource.BuildParam
 	SpaceSvc itSpace.SpaceDomainService
 	Storage  filestorage.FileStorageAdapter
 	QuotaSvc itExt.QuotaExtService
@@ -40,8 +40,8 @@ type fileEngineBuildParam struct {
 // download methods authorize tenant-wide files themselves.
 func registerFileEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.FileSchemaName),
-		func(param fileEngineBuildParam) composable.DynamicResourceEngineOnion {
+		dynamicresource.EngineDependencyName(models.FileSchemaName),
+		func(param fileEngineBuildParam) dynamicresource.DynamicResourceEngineOnion {
 			domainDeps := services.FileDomainDeps{
 				SpaceSvc:       param.SpaceSvc,
 				Storage:        param.Storage,
@@ -49,15 +49,15 @@ func registerFileEngine() error {
 				ConsumptionSvc: param.ConsumptionSvc,
 				ConfigSvc:      param.Build.ConfigSvc,
 			}
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.FileSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewFileRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewFileDomainService(base, domainDeps)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewFileApplicationService(base)
 				},
 			}, param.Build)

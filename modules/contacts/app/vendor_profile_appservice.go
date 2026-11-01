@@ -5,13 +5,13 @@ import (
 
 	itVendor "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/vendor"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewVendorProfileApplicationService is handed the composable default by the vendor profile
 // onion; the domain service assertion is a wiring check.
 func NewVendorProfileApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 ) itVendor.VendorProfileApplicationService {
 	vendorSvc, ok := base.DomainService().(itVendor.VendorDomainService)
 	if !ok {
@@ -24,7 +24,7 @@ func NewVendorProfileApplicationService(
 // Purchase binds to (VendorAppService). The cross-module methods assert no permission: the caller
 // is another module acting on its own authority.
 type VendorProfileApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	vendorSvc itVendor.VendorDomainService
 }
 

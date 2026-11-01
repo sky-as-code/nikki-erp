@@ -11,7 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/dynamicengines"
 	v1 "github.com/sky-as-code/nikki-erp/modules/accounting/transport/restful/v1"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The prefix is the same string the IAM resource codes and schema names share; drifting from it
@@ -38,7 +38,7 @@ func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
 		models.TaxRuleConditionSchemaName:         v1.TaxRuleConditionEngineName,
 		models.TaxRuleResultSchemaName:            v1.TaxRuleResultEngineName,
 	} {
-		assert.Equal(t, composable.EngineDependencyName(schemaName), literal)
+		assert.Equal(t, dynamicresource.EngineDependencyName(schemaName), literal)
 	}
 	assert.Len(t, dynamicengines.EngineSchemaNames(), 13)
 }
@@ -51,7 +51,7 @@ func passThrough(next echo.HandlerFunc) echo.HandlerFunc {
 // the ":id" routes that would otherwise swallow their literal segment.
 func TestTaxCalculationActionsAreCollectionPosts(t *testing.T) {
 	noop := func(*echo.Context, map[string]any) error { return nil }
-	restEngine := composable.NewRestEngine(models.TaxSchemaName, &v1.TaxRest{}).AddCrudRoutes()
+	restEngine := dynamicresource.NewRestEngine(models.TaxSchemaName, &v1.TaxRest{}).AddCrudRoutes()
 	for _, path := range TaxCalculationActionPaths {
 		restEngine.AddRoute(taxAction(path, noop))
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 )
 
@@ -110,7 +110,7 @@ func (this *UomConversionApplicationServiceImpl) assertSourceReadable(
 	if !found.HasData || found.Data == nil {
 		return nil, nil
 	}
-	_, cErrs := this.uomApp.AssertAction(ctx, composable.PermissionRead, dmodel.DynamicFields{
+	_, cErrs := this.uomApp.AssertAction(ctx, dynamicresource.PermissionRead, dmodel.DynamicFields{
 		basemodel.FieldOrgId: found.Data[basemodel.FieldOrgId],
 	})
 	return cErrs, nil

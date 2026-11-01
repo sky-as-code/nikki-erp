@@ -12,29 +12,31 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type inventoryLocationEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_location"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_location"`
 }
 
 // registerInventoryLocationEngine declares the inventory_location onion and publishes its typed layers.
 func registerInventoryLocationEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.InventoryLocationSchemaName),
-		func(param composable.BuildParam, usage itStock.LocationUsageReadService) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.InventoryLocationSchemaName),
+		func(
+			param dynamicresource.BuildParam, usage itStock.LocationUsageReadService,
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.InventoryLocationSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewInventoryLocationRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewInventoryLocationDomainService(base, usage)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewInventoryLocationApplicationService(base)
 				},
 			}, param)

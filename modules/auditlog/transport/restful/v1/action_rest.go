@@ -7,13 +7,13 @@ import (
 	c "github.com/sky-as-code/nikki-erp/modules/auditlog/constants"
 	itAction "github.com/sky-as-code/nikki-erp/modules/auditlog/interfaces/action"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type actionRestParams struct {
 	dig.In
 
-	Engine    composable.DynamicResourceEngineOnion `name:"dynengine_auditlog_action"`
+	Engine    dynamicresource.DynamicResourceEngineOnion `name:"dynengine_auditlog_action"`
 	ActionSvc itAction.ActionApplicationService
 }
 
@@ -25,7 +25,7 @@ func NewActionRest(params actionRestParams) *ActionRest {
 
 // ActionRest serves the read-only built-ins and the per-record history.
 type ActionRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 
 	actionSvc itAction.ActionApplicationService
 }
@@ -43,6 +43,6 @@ func (this *ActionRest) GetHistory(echoCtx *echo.Context) error {
 			payload[name] = value
 		}
 	}
-	return composable.ServeAction(echoCtx, "get "+c.ResourceAuditLogAction+" history", payload,
-		this.actionSvc.GetHistory, composable.Identity[itAction.HistoryResultData])
+	return dynamicresource.ServeAction(echoCtx, "get "+c.ResourceAuditLogAction+" history", payload,
+		this.actionSvc.GetHistory, dynamicresource.Identity[itAction.HistoryResultData])
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/taxconfig"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The domain services of the thirteen tax configuration resources. Each is the composable default
@@ -13,62 +13,68 @@ import (
 // ChainValidateExtra.
 
 type taxRuleSet struct {
-	create composable.ValidateExtraFn
-	update composable.ValidateExtraFn
-	delete composable.ValidateExtraFn
+	create dynamicresource.ValidateExtraFn
+	update dynamicresource.ValidateExtraFn
+	delete dynamicresource.ValidateExtraFn
 }
 
 type ruledDomainService struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	rules taxRuleSet
 }
 
-func newRuled(base composable.CrudDomainService, rules taxRuleSet) ruledDomainService {
+func newRuled(base dynamicresource.CrudDomainService, rules taxRuleSet) ruledDomainService {
 	return ruledDomainService{CrudDomainService: base, rules: rules}
 }
 
 func (this *ruledDomainService) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
-	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.rules.create)
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.rules.create)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 func (this *ruledDomainService) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.rules.update)
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.rules.update)
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
 
 func (this *ruledDomainService) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
-	opts := safe.GetOptional(options, composable.DeleteOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.rules.delete)
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.DeleteOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.rules.delete)
 	return this.CrudDomainService.Delete(ctx, cmd, opts)
 }
 
 // Plain resources: the schema states every invariant.
 
-type TaxDomainServiceImpl struct{ composable.CrudDomainService }
+type TaxDomainServiceImpl struct {
+	dynamicresource.CrudDomainService
+}
 
-func NewTaxDomainService(base composable.CrudDomainService) taxconfig.TaxDomainService {
+func NewTaxDomainService(base dynamicresource.CrudDomainService) taxconfig.TaxDomainService {
 	return &TaxDomainServiceImpl{CrudDomainService: base}
 }
 
-type TaxGroupDomainServiceImpl struct{ composable.CrudDomainService }
+type TaxGroupDomainServiceImpl struct {
+	dynamicresource.CrudDomainService
+}
 
-func NewTaxGroupDomainService(base composable.CrudDomainService) taxconfig.TaxGroupDomainService {
+func NewTaxGroupDomainService(base dynamicresource.CrudDomainService) taxconfig.TaxGroupDomainService {
 	return &TaxGroupDomainServiceImpl{CrudDomainService: base}
 }
 
-type TaxProductClassificationDomainServiceImpl struct{ composable.CrudDomainService }
+type TaxProductClassificationDomainServiceImpl struct {
+	dynamicresource.CrudDomainService
+}
 
 func NewTaxProductClassificationDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 ) taxconfig.TaxProductClassificationDomainService {
 	return &TaxProductClassificationDomainServiceImpl{CrudDomainService: base}
 }
@@ -79,7 +85,7 @@ func NewTaxProductClassificationDomainService(
 type TaxDefinitionVersionDomainServiceImpl struct{ ruledDomainService }
 
 func NewTaxDefinitionVersionDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 ) taxconfig.TaxDefinitionVersionDomainService {
 	return &TaxDefinitionVersionDomainServiceImpl{newRuled(base, taxRuleSet{
 		create: validateDefinitionVersionCreate(base.Repository()),
@@ -90,7 +96,7 @@ func NewTaxDefinitionVersionDomainService(
 
 type TaxRateVersionDomainServiceImpl struct{ ruledDomainService }
 
-func NewTaxRateVersionDomainService(base composable.CrudDomainService) taxconfig.TaxRateVersionDomainService {
+func NewTaxRateVersionDomainService(base dynamicresource.CrudDomainService) taxconfig.TaxRateVersionDomainService {
 	return &TaxRateVersionDomainServiceImpl{newRuled(base, taxRuleSet{
 		create: validateRateVersionCreate(base.Repository()),
 		update: validateRateVersionUpdate(base.Repository()),
@@ -101,7 +107,7 @@ func NewTaxRateVersionDomainService(base composable.CrudDomainService) taxconfig
 type TaxRoundingPolicyDomainServiceImpl struct{ ruledDomainService }
 
 func NewTaxRoundingPolicyDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 ) taxconfig.TaxRoundingPolicyDomainService {
 	return &TaxRoundingPolicyDomainServiceImpl{newRuled(base, taxRuleSet{
 		create: validateRoundingPolicyCreate,
@@ -115,7 +121,7 @@ func NewTaxRoundingPolicyDomainService(
 type TaxComponentDomainServiceImpl struct{ ruledDomainService }
 
 func NewTaxComponentDomainService(
-	base composable.CrudDomainService, versions taxconfig.TaxDefinitionVersionRepository,
+	base dynamicresource.CrudDomainService, versions taxconfig.TaxDefinitionVersionRepository,
 ) taxconfig.TaxComponentDomainService {
 	repos := componentRepos{Versions: versions, Components: base.Repository()}
 	return &TaxComponentDomainServiceImpl{newRuled(base, taxRuleSet{
@@ -126,7 +132,7 @@ func NewTaxComponentDomainService(
 
 type TaxJurisdictionDomainServiceImpl struct{ ruledDomainService }
 
-func NewTaxJurisdictionDomainService(base composable.CrudDomainService) taxconfig.TaxJurisdictionDomainService {
+func NewTaxJurisdictionDomainService(base dynamicresource.CrudDomainService) taxconfig.TaxJurisdictionDomainService {
 	return &TaxJurisdictionDomainServiceImpl{newRuled(base, taxRuleSet{
 		create: validateJurisdictionCreate(base.Repository()),
 		update: validateJurisdictionUpdate(base.Repository()),

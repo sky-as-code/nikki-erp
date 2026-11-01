@@ -9,7 +9,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/transport/restful/v1"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The container names in the REST structs' tags are literals; they must be what the onions are
@@ -41,7 +41,7 @@ func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
 		models.StockProductConfigSchemaName:                  v1.StockProductConfigEngineName,
 		models.StockReservationSchemaName:                    v1.StockReservationEngineName,
 	} {
-		assert.Equal(t, composable.EngineDependencyName(schemaName), engineName, schemaName)
+		assert.Equal(t, dynamicresource.EngineDependencyName(schemaName), engineName, schemaName)
 	}
 }
 
@@ -97,39 +97,39 @@ func TestCustomRoutesRegisterAheadOfIdPatterns(t *testing.T) {
 	assert.Contains(t, routes, "GET /v1/inventory/"+models.ProductVariantSchemaName+"/:id/effective")
 }
 
-func restEngineOf(schemaName string, handlers composable.CrudRestHandlers, defs []composable.RouteDefinition) composable.RestEngine {
-	restEngine := composable.NewRestEngine(schemaName, handlers).AddCrudRoutes()
+func restEngineOf(schemaName string, handlers dynamicresource.CrudRestHandlers, defs []dynamicresource.RouteDefinition) dynamicresource.RestEngine {
+	restEngine := dynamicresource.NewRestEngine(schemaName, handlers).AddCrudRoutes()
 	for _, def := range defs {
 		restEngine.AddRoute(def)
 	}
 	return restEngine
 }
 
-func quantRoutes(rest *v1.StockQuantRest) []composable.RouteDefinition {
-	return []composable.RouteDefinition{
-		{Path: ":id/enter_count", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.EnterCount},
-		{Path: "variant_stock_summary", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.VariantStockSummary},
+func quantRoutes(rest *v1.StockQuantRest) []dynamicresource.RouteDefinition {
+	return []dynamicresource.RouteDefinition{
+		{Path: ":id/enter_count", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.EnterCount},
+		{Path: "variant_stock_summary", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.VariantStockSummary},
 	}
 }
 
-func transferRoutes(rest *v1.StockTransferRest) []composable.RouteDefinition {
-	return []composable.RouteDefinition{
-		{Path: ":id/validate", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Validate},
-		{Path: "reserve_for_source", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ReserveForSource},
+func transferRoutes(rest *v1.StockTransferRest) []dynamicresource.RouteDefinition {
+	return []dynamicresource.RouteDefinition{
+		{Path: ":id/validate", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Validate},
+		{Path: "reserve_for_source", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ReserveForSource},
 	}
 }
 
-func templateRoutes(rest *v1.ProductTemplateRest) []composable.RouteDefinition {
-	return []composable.RouteDefinition{
-		{Path: ":id/generate_variants", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.GenerateVariants},
-		{Path: "resolve_selection", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ResolveSelection},
-		{Path: ":id/duplicate", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Duplicate},
+func templateRoutes(rest *v1.ProductTemplateRest) []dynamicresource.RouteDefinition {
+	return []dynamicresource.RouteDefinition{
+		{Path: ":id/generate_variants", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.GenerateVariants},
+		{Path: "resolve_selection", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ResolveSelection},
+		{Path: ":id/duplicate", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Duplicate},
 	}
 }
 
-func variantRoutes(rest *v1.ProductVariantRest) []composable.RouteDefinition {
-	return []composable.RouteDefinition{
-		{Path: ":id/effective", ActionType: composable.ActionTypeRead, HandlerFn: rest.GetEffective},
+func variantRoutes(rest *v1.ProductVariantRest) []dynamicresource.RouteDefinition {
+	return []dynamicresource.RouteDefinition{
+		{Path: ":id/effective", ActionType: dynamicresource.ActionTypeRead, HandlerFn: rest.GetEffective},
 	}
 }
 
@@ -156,7 +156,7 @@ func indexOf(values []string, target string) int {
 func TestConfigurationRowsServeReadsOnly(t *testing.T) {
 	routes := registeredRoutes(t, func(route *echo.Group) error {
 		rest := &v1.ProductTemplateCombinationExclusionRest{}
-		return composable.NewRestEngine(models.ProductTemplateCombinationExclusionSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.ProductTemplateCombinationExclusionSchemaName, rest).
 			AddCrudRoutes(configurationReadRoutes()...).
 			RegisterRoutes(route, passThrough)
 	})
@@ -174,7 +174,7 @@ func TestConfigurationRowsServeReadsOnly(t *testing.T) {
 func TestTemplateValueRowsServeReadsAndPatchOnly(t *testing.T) {
 	routes := registeredRoutes(t, func(route *echo.Group) error {
 		rest := &v1.ProductTemplateAttributeValueRest{}
-		return composable.NewRestEngine(models.ProductTemplateAttributeValueSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.ProductTemplateAttributeValueSchemaName, rest).
 			AddCrudRoutes(templateValueRoutes()...).
 			RegisterRoutes(route, passThrough)
 	})

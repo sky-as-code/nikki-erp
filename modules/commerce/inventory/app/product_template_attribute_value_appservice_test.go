@@ -13,7 +13,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const templateValueTestOrg = model.Id("01ORG00000000000000000001")
@@ -21,7 +21,7 @@ const templateValueTestOrg = model.Id("01ORG00000000000000000001")
 // templateValueFakeBase is the composable default reduced to what Update touches. The embedded nil
 // interface panics on anything else, which is the point: Update must not reach the default Update.
 type templateValueFakeBase struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	domSvc       *templateValueFakeDomain
 	recordChecks int
 }
@@ -40,18 +40,20 @@ func (this *templateValueFakeBase) AssertRecordInOrg(
 	return nil, nil
 }
 
-func (this *templateValueFakeBase) DomainService() composable.CrudDomainService { return this.domSvc }
+func (this *templateValueFakeBase) DomainService() dynamicresource.CrudDomainService {
+	return this.domSvc
+}
 
 type templateValueFakeDomain struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	updates int
 }
 
 func (this *templateValueFakeDomain) Update(
-	corectx.Context, composable.UpdateCommand, ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
+	corectx.Context, dynamicresource.UpdateCommand, ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
 	this.updates++
-	return &composable.MutateResult{}, nil
+	return &dynamicresource.MutateResult{}, nil
 }
 
 func templateValueCaller(entitlement string) corectx.Context {
@@ -79,7 +81,7 @@ func TestTemplateValueUpdatePassesWithUpdateValue(t *testing.T) {
 	svc := NewProductTemplateAttributeValueApplicationService(base)
 
 	res, err := svc.Update(templateValueCaller(orgExpression("update_value", "inventory_product_attribute")),
-		composable.UpdateCommand{"id": "01VALUE", "org_id": string(templateValueTestOrg)})
+		dynamicresource.UpdateCommand{"id": "01VALUE", "org_id": string(templateValueTestOrg)})
 
 	require.NoError(t, err)
 	assert.Zero(t, res.ClientErrors.Count())
@@ -94,7 +96,7 @@ func TestTemplateValueUpdateRefusesTheResourceOwnUpdate(t *testing.T) {
 
 	res, err := svc.Update(
 		templateValueCaller(orgExpression("update", "inventory_product_template_attribute_value")),
-		composable.UpdateCommand{"id": "01VALUE", "org_id": string(templateValueTestOrg)})
+		dynamicresource.UpdateCommand{"id": "01VALUE", "org_id": string(templateValueTestOrg)})
 
 	require.NoError(t, err)
 	assert.NotZero(t, res.ClientErrors.Count())

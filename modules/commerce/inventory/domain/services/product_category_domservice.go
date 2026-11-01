@@ -13,41 +13,41 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewProductCategoryDomainService attaches the category-tree invariants to create and update:
 // one root per org that never changes, a parent on every other category (the root when none is
 // given), no cycles, and a canonical name kept in step with the tree. The CRUD processing is the
 // default's; only the rules the schema cannot express belong here.
-func NewProductCategoryDomainService(base composable.CrudDomainService) itProduct.ProductCategoryDomainService {
+func NewProductCategoryDomainService(base dynamicresource.CrudDomainService) itProduct.ProductCategoryDomainService {
 	return &ProductCategoryDomainServiceImpl{CrudDomainService: base}
 }
 
 type ProductCategoryDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 func (this *ProductCategoryDomainServiceImpl) Create(
-	ctx corectx.Context, cmd itProduct.CreateProductCategoryCommand, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd itProduct.CreateProductCategoryCommand, options ...dynamicresource.CreateOptions,
 ) (*itProduct.CreateProductCategoryResult, error) {
 	vErrs := ft.NewClientErrors()
 	rejectServerManagedFields(cmd, vErrs)
 	if vErrs.Count() > 0 {
 		return &itProduct.CreateProductCategoryResult{ClientErrors: *vErrs}, nil
 	}
-	opts := safe.GetOptional(options, composable.CreateOptions{})
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, this.fillParentWithRoot)
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.validateCategoryCreate)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.validateCategoryCreate)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 // chainBeforeValidation runs the caller's hook first, then ours, over the entity the first returns.
-func chainBeforeValidation(first composable.BeforeValidationFn, second composable.BeforeValidationFn) composable.BeforeValidationFn {
+func chainBeforeValidation(first dynamicresource.BeforeValidationFn, second dynamicresource.BeforeValidationFn) dynamicresource.BeforeValidationFn {
 	if first == nil {
 		return second
 	}
-	return func(ctx corectx.Context, entity *composable.DynamicEntity, vErrs *ft.ClientErrors) (*composable.DynamicEntity, error) {
+	return func(ctx corectx.Context, entity *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors) (*dynamicresource.DynamicEntity, error) {
 		entity, err := first(ctx, entity, vErrs)
 		if err != nil || entity == nil {
 			return entity, err
@@ -59,7 +59,7 @@ func chainBeforeValidation(first composable.BeforeValidationFn, second composabl
 // Update rewrites the descendants' canonical names in the same transaction when the name or the
 // parent changes, so the tree never shows a path that no longer exists.
 func (this *ProductCategoryDomainServiceImpl) Update(
-	ctx corectx.Context, cmd itProduct.UpdateProductCategoryCommand, options ...composable.UpdateOptions,
+	ctx corectx.Context, cmd itProduct.UpdateProductCategoryCommand, options ...dynamicresource.UpdateOptions,
 ) (*itProduct.UpdateProductCategoryResult, error) {
 	vErrs := ft.NewClientErrors()
 	rejectServerManagedFields(cmd, vErrs)
@@ -67,8 +67,8 @@ func (this *ProductCategoryDomainServiceImpl) Update(
 	if vErrs.Count() > 0 {
 		return &itProduct.UpdateProductCategoryResult{ClientErrors: *vErrs}, nil
 	}
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.validateCategoryUpdate)
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.validateCategoryUpdate)
 	if !changesTree(cmd) {
 		return this.CrudDomainService.Update(ctx, cmd, opts)
 	}
@@ -81,14 +81,14 @@ func (this *ProductCategoryDomainServiceImpl) Update(
 		}
 		result = res
 		if res.ClientErrors.Count() > 0 {
-			return composable.ClientErrorSignal{Errors: res.ClientErrors}
+			return dynamicresource.ClientErrorSignal{Errors: res.ClientErrors}
 		}
 		if !res.HasData {
 			return nil
 		}
 		return this.cascadeCanonicalNames(tranxCtx, readStringParam(cmd, models.ProductCategoryFieldId))
 	})
-	if signal, ok := composable.AsClientErrorSignal(err); ok {
+	if signal, ok := dynamicresource.AsClientErrorSignal(err); ok {
 		return &itProduct.UpdateProductCategoryResult{ClientErrors: signal.Errors}, nil
 	}
 	if err != nil {
@@ -117,7 +117,7 @@ func rejectClearedParent(cmd dmodel.DynamicFields, vErrs *ft.ClientErrors) {
 // another org, then derives its canonical name. On create the record has no id yet, so only the
 // parent chain itself can be malformed.
 func (this *ProductCategoryDomainServiceImpl) validateCategoryCreate(
-	ctx corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	category := models.NewProductCategoryFrom(inputModel.GetFieldData())
 	parentId := derefString(category.GetParentCategoryId())
@@ -137,7 +137,8 @@ func (this *ProductCategoryDomainServiceImpl) validateCategoryCreate(
 // of its descendants (which is how a cycle is normally introduced), and re-derives the canonical
 // name when the name or the parent changes.
 func (this *ProductCategoryDomainServiceImpl) validateCategoryUpdate(
-	ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
+	vErrs *ft.ClientErrors,
 ) error {
 	if foundModel == nil {
 		return nil
@@ -250,7 +251,7 @@ func (this *ProductCategoryDomainServiceImpl) assertNoCategoryCycle(
 // Delete refuses to remove a category that still holds products or child categories. Without the
 // guard either foreign key refuses the statement and the failure reaches the client as a 500.
 func (this *ProductCategoryDomainServiceImpl) Delete(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.DeleteOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	templateRepo, err := repoFor(models.ProductTemplateSchemaName)
 	if err != nil {

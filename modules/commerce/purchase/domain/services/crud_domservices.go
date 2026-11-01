@@ -8,68 +8,70 @@ import (
 	itConfiguration "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/configuration"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/order"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The CRUD domain services of the resources that add no write rule of their own, and of the two a
 // client may not write. A refused write stays a defined action that answers a business violation,
 // so the caller gets a 400 naming the reason instead of a 404 that reads as a wrong URL.
 
-func NewConfigurationCrudDomainService(base composable.CrudDomainService) itConfiguration.ConfigurationCrudDomainService {
+func NewConfigurationCrudDomainService(
+	base dynamicresource.CrudDomainService,
+) itConfiguration.ConfigurationCrudDomainService {
 	return &ConfigurationCrudDomainServiceImpl{CrudDomainService: base}
 }
 
 type ConfigurationCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
-func NewAgreementLineCrudDomainService(base composable.CrudDomainService) itAgreement.AgreementLineCrudDomainService {
+func NewAgreementLineCrudDomainService(base dynamicresource.CrudDomainService) itAgreement.AgreementLineCrudDomainService {
 	return &AgreementLineCrudDomainServiceImpl{CrudDomainService: base}
 }
 
 type AgreementLineCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // NewAuditEventCrudDomainService closes the audit trail to clients. An event is written only by
 // the audit helper, through the repository and inside the transaction of the transition it
 // records; a client-written one would be indistinguishable from a real event. Update and delete are
 // refused because the record is immutable.
-func NewAuditEventCrudDomainService(base composable.CrudDomainService) itAudit.AuditEventCrudDomainService {
+func NewAuditEventCrudDomainService(base dynamicresource.CrudDomainService) itAudit.AuditEventCrudDomainService {
 	return &AuditEventCrudDomainServiceImpl{CrudDomainService: base}
 }
 
 type AuditEventCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 func (this *AuditEventCrudDomainServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
-	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(rejectAuditEventWrite, opts.ValidateExtra)
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(rejectAuditEventWrite, opts.ValidateExtra)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 func (this *AuditEventCrudDomainServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(rejectAuditEventWrite, opts.ValidateExtra)
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(rejectAuditEventWrite, opts.ValidateExtra)
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
 
 func (this *AuditEventCrudDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
-	opts := safe.GetOptional(options, composable.DeleteOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(rejectAuditEventWrite, opts.ValidateExtra)
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.DeleteOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(rejectAuditEventWrite, opts.ValidateExtra)
 	return this.CrudDomainService.Delete(ctx, cmd, opts)
 }
 
 // rejectAuditEventWrite is the refusal every client write of an audit event answers with.
 func rejectAuditEventWrite(
-	_ corectx.Context, _ *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	vErrs.Append(*ft.NewAnonymousBusinessViolation(
 		ft.ErrorKey("purchase_audit_event.not_client_writable", "purchase"),
@@ -83,32 +85,32 @@ func rejectAuditEventWrite(
 // group is created by create_alternative and reaped when it drops to one order or fewer, both
 // through the repository; a hand-made one would be an empty container nothing reaps and a
 // hand-deleted one would strand its orders. Update stays open.
-func NewSourcingGroupCrudDomainService(base composable.CrudDomainService) itOrder.SourcingGroupCrudDomainService {
+func NewSourcingGroupCrudDomainService(base dynamicresource.CrudDomainService) itOrder.SourcingGroupCrudDomainService {
 	return &SourcingGroupCrudDomainServiceImpl{CrudDomainService: base}
 }
 
 type SourcingGroupCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 func (this *SourcingGroupCrudDomainServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
-	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(rejectSourcingGroupWrite, opts.ValidateExtra)
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(rejectSourcingGroupWrite, opts.ValidateExtra)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 func (this *SourcingGroupCrudDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
-	opts := safe.GetOptional(options, composable.DeleteOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(rejectSourcingGroupWrite, opts.ValidateExtra)
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.DeleteOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(rejectSourcingGroupWrite, opts.ValidateExtra)
 	return this.CrudDomainService.Delete(ctx, cmd, opts)
 }
 
 func rejectSourcingGroupWrite(
-	_ corectx.Context, _ *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	vErrs.Append(*ft.NewAnonymousBusinessViolation(
 		ft.ErrorKey("purchase_sourcing_group.not_client_writable", "purchase"),

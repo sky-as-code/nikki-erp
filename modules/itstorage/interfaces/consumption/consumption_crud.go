@@ -7,14 +7,14 @@ package consumption
 import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 )
 
 // ConsumptionRepository adds the conditional counters. Each statement joins the transaction the
 // context carries and confines itself to the acting tenant.
 type ConsumptionRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 
 	// Ensure creates the missing rows, seeded with InitialUsedBytes; existing rows are untouched.
 	Ensure(ctx corectx.Context, owners []models.ConsumptionOwner) error
@@ -42,7 +42,7 @@ type Reservation struct {
 }
 
 type ConsumptionDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// Reserve ensures the owners' rows and reserves on all of them in one short transaction of its
 	// own, so no lock is held while the content streams. false means the cap refused it.
@@ -61,10 +61,10 @@ type ConsumptionDomainService interface {
 }
 
 type ConsumptionApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	GetConsumptionByIdQuery = composable.GetByIdQuery
-	SearchConsumptionsQuery = composable.SearchQuery
+	GetConsumptionByIdQuery = dynamicresource.GetByIdQuery
+	SearchConsumptionsQuery = dynamicresource.SearchQuery
 )

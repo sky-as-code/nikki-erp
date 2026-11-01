@@ -7,7 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The custom actions receive the request as the field map the REST engine bound. These helpers
@@ -132,7 +132,7 @@ func readDecimalParam(params map[string]any, field string) decimal.Decimal {
 // Collection-level actions call AssertAction directly instead: there is no record yet to place in
 // an org.
 func assertRecordAction(
-	appSvc composable.CrudApplicationService, ctx corectx.Context, permission string, params dmodel.DynamicFields,
+	appSvc dynamicresource.CrudApplicationService, ctx corectx.Context, permission string, params dmodel.DynamicFields,
 ) (*ft.ClientErrors, error) {
 	orgId, cErrs := appSvc.AssertAction(ctx, permission, params)
 	if cErrs != nil {

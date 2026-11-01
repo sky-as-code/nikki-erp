@@ -12,7 +12,7 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/channel"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func salesChannelOrgRequired() *ft.ClientErrors {
@@ -37,7 +37,7 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 	if command.OrgId == "" {
 		return &it.RegisterSalesChannelResult{ClientErrors: *salesChannelOrgRequired()}, nil
 	}
-	if cErrs := assertPermissionInOrg(ctx, composable.PermissionCreate,
+	if cErrs := assertPermissionInOrg(ctx, dynamicresource.PermissionCreate,
 		c.SalesChannelResource, c.ResourceScopeOrg, model.Id(command.OrgId)); cErrs != nil {
 		return &it.RegisterSalesChannelResult{ClientErrors: *cErrs}, nil
 	}
@@ -106,7 +106,7 @@ func (this *SalesChannelApplicationServiceImpl) RegisterSalesChannel(
 	return &it.RegisterSalesChannelResult{
 		HasData: true,
 		// Not the id generated above: schema validation regenerates an auto-generated primary key.
-		Data:    it.SalesChannelData{Id: stringOf(created.Data, models.SalesChannelFieldId), Code: code},
+		Data: it.SalesChannelData{Id: stringOf(created.Data, models.SalesChannelFieldId), Code: code},
 	}, nil
 }
 
@@ -116,7 +116,7 @@ func (this *SalesChannelApplicationServiceImpl) ResolveSalesChannelByCode(
 	if query.OrgId == "" {
 		return &it.ResolveSalesChannelResult{ClientErrors: *salesChannelOrgRequired()}, nil
 	}
-	if cErrs := assertPermissionInOrg(ctx, composable.PermissionRead,
+	if cErrs := assertPermissionInOrg(ctx, dynamicresource.PermissionRead,
 		c.SalesChannelResource, c.ResourceScopeOrg, model.Id(query.OrgId)); cErrs != nil {
 		return &it.ResolveSalesChannelResult{ClientErrors: *cErrs}, nil
 	}

@@ -6,7 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/services"
@@ -17,7 +17,7 @@ import (
 type currencyEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_essential_currency"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_essential_currency"`
 }
 
 // registerCurrencyEngine declares the currency onion and publishes its typed layers.
@@ -26,17 +26,17 @@ type currencyEngineParam struct {
 // capability sales, purchase and accounting already bind to, and it must keep resolving.
 func registerCurrencyEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.CurrencySchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.CurrencySchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.CurrencySchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewCurrencyRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewCurrencyDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewCurrencyApplicationService(base)
 				},
 			}, param)

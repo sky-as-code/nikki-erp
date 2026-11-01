@@ -6,7 +6,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle/defaults"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	orgDefaults "github.com/sky-as-code/nikki-erp/modules/essential/infra/defaults"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
@@ -38,12 +38,12 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model
 	}
 	referenceOf := takeField(cats, models.UomCatFieldReferenceUomId)
 
-	return composable.InTransaction(ctx, this.uomCatSvc.Repository(), func(tranxCtx corectx.Context) error {
+	return dynamicresource.InTransaction(ctx, this.uomCatSvc.Repository(), func(tranxCtx corectx.Context) error {
 		aliases := defaults.NewAliases()
-		if err := composable.CreateDefaults(tranxCtx, this.uomCatSvc, cats, aliases, orgId); err != nil {
+		if err := dynamicresource.CreateDefaults(tranxCtx, this.uomCatSvc, cats, aliases, orgId); err != nil {
 			return err
 		}
-		if err := composable.CreateDefaults(tranxCtx, this.uomSvc, uoms, aliases, orgId); err != nil {
+		if err := dynamicresource.CreateDefaults(tranxCtx, this.uomSvc, uoms, aliases, orgId); err != nil {
 			return err
 		}
 		return this.linkReferenceUoms(tranxCtx, aliases, referenceOf, orgId)
@@ -63,7 +63,7 @@ func (this *OrgLifecycleAppServiceImpl) linkReferenceUoms(
 			return err
 		}
 		fields := dmodel.DynamicFields{models.UomCatFieldReferenceUomId: resolved[models.UomCatFieldReferenceUomId]}
-		if err := composable.UpdateOne(ctx, this.uomCatSvc, catId, fields); err != nil {
+		if err := dynamicresource.UpdateOne(ctx, this.uomCatSvc, catId, fields); err != nil {
 			return err
 		}
 	}
@@ -71,8 +71,8 @@ func (this *OrgLifecycleAppServiceImpl) linkReferenceUoms(
 }
 
 func (this *OrgLifecycleAppServiceImpl) CleanUpOrg(ctx corectx.Context, orgId model.Id) error {
-	return composable.InTransaction(ctx, this.uomCatSvc.Repository(), func(tranxCtx corectx.Context) error {
-		return composable.DeleteOrgData(tranxCtx, orgId, this.uomSvc, this.uomCatSvc)
+	return dynamicresource.InTransaction(ctx, this.uomCatSvc.Repository(), func(tranxCtx corectx.Context) error {
+		return dynamicresource.DeleteOrgData(tranxCtx, orgId, this.uomSvc, this.uomCatSvc)
 	})
 }
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 )
@@ -15,7 +15,7 @@ import (
 const readableBySession = ""
 
 // NewModuleApplicationService is handed the composable default by the module metadata onion.
-func NewModuleApplicationService(base composable.CrudApplicationService) it.ModuleApplicationService {
+func NewModuleApplicationService(base dynamicresource.CrudApplicationService) it.ModuleApplicationService {
 	moduleSvc, ok := base.DomainService().(it.ModuleDomainService)
 	if !ok {
 		panic(errors.New("the module metadata onion must be built with NewModuleDomainService"))
@@ -29,7 +29,7 @@ func NewModuleApplicationService(base composable.CrudApplicationService) it.Modu
 // The reads still open with AssertAction, with an empty action code, so the org scoping and the
 // call shape stay those of every other application method.
 type ModuleApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	moduleSvc it.ModuleDomainService
 }
 
@@ -52,12 +52,12 @@ func (this *ModuleApplicationServiceImpl) GetById(
 }
 
 func (this *ModuleApplicationServiceImpl) GetSchema(
-	ctx corectx.Context, query composable.GetSchemaQuery,
-) (*composable.GetSchemaResult, error) {
+	ctx corectx.Context, query dynamicresource.GetSchemaQuery,
+) (*dynamicresource.GetSchemaResult, error) {
 	if _, cErrs := this.AssertAction(ctx, readableBySession, query); cErrs != nil {
-		return &composable.GetSchemaResult{ClientErrors: *cErrs}, nil
+		return &dynamicresource.GetSchemaResult{ClientErrors: *cErrs}, nil
 	}
-	return &composable.GetSchemaResult{Data: this.Schema().ToSimplized(), HasData: true}, nil
+	return &dynamicresource.GetSchemaResult{Data: this.Schema().ToSimplized(), HasData: true}, nil
 }
 
 // SyncModuleMetadata runs once at start-up with no request behind it, so it asserts nothing.

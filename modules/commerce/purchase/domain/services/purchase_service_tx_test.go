@@ -10,7 +10,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type countingTransaction struct {
@@ -22,7 +22,7 @@ func (this *countingTransaction) Commit() error   { this.commits++; return nil }
 func (this *countingTransaction) Rollback() error { this.rollbacks++; return nil }
 
 type transactionProbeRepo struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	begun []*countingTransaction
 }
 
@@ -37,7 +37,7 @@ func (this *transactionProbeRepo) BeginTransaction(corectx.Context) (database.Db
 func stubOrderRepo(t *testing.T) *transactionProbeRepo {
 	probe := &transactionProbeRepo{}
 	original := repoFor
-	repoFor = func(string) (composable.CrudRepository, error) { return probe, nil }
+	repoFor = func(string) (dynamicresource.CrudRepository, error) { return probe, nil }
 	t.Cleanup(func() { repoFor = original })
 	return probe
 }
@@ -70,11 +70,11 @@ func TestOrderTransactionRollsBackOnAnInnerRefusal(t *testing.T) {
 
 	err := withOrderTransaction(ctx, func(outerCtx corectx.Context) error {
 		return withOrderTransaction(outerCtx, func(corectx.Context) error {
-			return composable.ClientErrorSignal{}
+			return dynamicresource.ClientErrorSignal{}
 		})
 	})
 
-	_, isSignal := composable.AsClientErrorSignal(err)
+	_, isSignal := dynamicresource.AsClientErrorSignal(err)
 	assert.True(t, isSignal)
 	require.Len(t, probe.begun, 1)
 	assert.Zero(t, probe.begun[0].commits)

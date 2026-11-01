@@ -3,23 +3,23 @@ package invoice
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // InvoiceCrudRepository reads and writes invoices.
 type InvoiceCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // InvoiceCrudDomainService is the CRUD of the resource. Issuing and raising an invoice from a
 // source document live on the InvoiceDomainService port.
 type InvoiceCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // InvoiceCrudApplicationService is the authorized surface the REST handler serves.
 type InvoiceCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	// IssueAction closes a draft. It carries its own permission: closing a draft and minting its
 	// number is not the same authority as correcting its note.
@@ -27,62 +27,62 @@ type InvoiceCrudApplicationService interface {
 }
 
 // InvoiceActionCommand is the bound request of a custom invoice action.
-type InvoiceActionCommand = composable.UpdateCommand
+type InvoiceActionCommand = dynamicresource.UpdateCommand
 
 // InvoiceActionResult answers a custom invoice action with the flat body the legacy action returned.
 type InvoiceActionResult = dyn.OpResult[map[string]any]
 
 // InvoiceLineCrudRepository reads and writes invoice lines.
 type InvoiceLineCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // InvoiceLineCrudDomainService is the CRUD of the resource.
 type InvoiceLineCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // InvoiceLineCrudApplicationService is the authorized surface the REST handler serves.
 type InvoiceLineCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateInvoiceCommand      = composable.CreateCommand
-	UpdateInvoiceCommand      = composable.UpdateCommand
-	DeleteInvoiceCommand      = composable.DeleteCommand
-	SetInvoiceArchivedCommand = composable.SetArchivedCommand
-	GetInvoiceByIdQuery       = composable.GetByIdQuery
-	SearchInvoicesQuery       = composable.SearchQuery
-	InvoiceExistsQuery        = composable.ExistsQuery
+	CreateInvoiceCommand      = dynamicresource.CreateCommand
+	UpdateInvoiceCommand      = dynamicresource.UpdateCommand
+	DeleteInvoiceCommand      = dynamicresource.DeleteCommand
+	SetInvoiceArchivedCommand = dynamicresource.SetArchivedCommand
+	GetInvoiceByIdQuery       = dynamicresource.GetByIdQuery
+	SearchInvoicesQuery       = dynamicresource.SearchQuery
+	InvoiceExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateInvoiceResult      = composable.CreateResult
-	UpdateInvoiceResult      = composable.MutateResult
-	DeleteInvoiceResult      = composable.MutateResult
-	SetInvoiceArchivedResult = composable.MutateResult
-	GetInvoiceByIdResult     = composable.GetOneResult
-	SearchInvoicesResult     = composable.SearchResult
-	InvoiceExistsResult      = composable.ExistsResult
+	CreateInvoiceResult      = dynamicresource.CreateResult
+	UpdateInvoiceResult      = dynamicresource.MutateResult
+	DeleteInvoiceResult      = dynamicresource.MutateResult
+	SetInvoiceArchivedResult = dynamicresource.MutateResult
+	GetInvoiceByIdResult     = dynamicresource.GetOneResult
+	SearchInvoicesResult     = dynamicresource.SearchResult
+	InvoiceExistsResult      = dynamicresource.ExistsResult
 )
 
 type (
-	CreateInvoiceLineCommand      = composable.CreateCommand
-	UpdateInvoiceLineCommand      = composable.UpdateCommand
-	DeleteInvoiceLineCommand      = composable.DeleteCommand
-	SetInvoiceLineArchivedCommand = composable.SetArchivedCommand
-	GetInvoiceLineByIdQuery       = composable.GetByIdQuery
-	SearchInvoiceLinesQuery       = composable.SearchQuery
-	InvoiceLineExistsQuery        = composable.ExistsQuery
+	CreateInvoiceLineCommand      = dynamicresource.CreateCommand
+	UpdateInvoiceLineCommand      = dynamicresource.UpdateCommand
+	DeleteInvoiceLineCommand      = dynamicresource.DeleteCommand
+	SetInvoiceLineArchivedCommand = dynamicresource.SetArchivedCommand
+	GetInvoiceLineByIdQuery       = dynamicresource.GetByIdQuery
+	SearchInvoiceLinesQuery       = dynamicresource.SearchQuery
+	InvoiceLineExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateInvoiceLineResult      = composable.CreateResult
-	UpdateInvoiceLineResult      = composable.MutateResult
-	DeleteInvoiceLineResult      = composable.MutateResult
-	SetInvoiceLineArchivedResult = composable.MutateResult
-	GetInvoiceLineByIdResult     = composable.GetOneResult
-	SearchInvoiceLinesResult     = composable.SearchResult
-	InvoiceLineExistsResult      = composable.ExistsResult
+	CreateInvoiceLineResult      = dynamicresource.CreateResult
+	UpdateInvoiceLineResult      = dynamicresource.MutateResult
+	DeleteInvoiceLineResult      = dynamicresource.MutateResult
+	SetInvoiceLineArchivedResult = dynamicresource.MutateResult
+	GetInvoiceLineByIdResult     = dynamicresource.GetOneResult
+	SearchInvoiceLinesResult     = dynamicresource.SearchResult
+	InvoiceLineExistsResult      = dynamicresource.ExistsResult
 )

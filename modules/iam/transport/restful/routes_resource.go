@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/iam/transport/restful/v1"
 )
@@ -21,10 +21,10 @@ func initResourceV1() error {
 	})
 }
 
-func resourceRestEngine(rest *v1.ResourceCrudRest) composable.RestEngine {
-	return composable.NewRestEngine(models.ResourceSchemaName, rest).AddCrudRoutes()
+func resourceRestEngine(rest *v1.ResourceCrudRest) dynamicresource.RestEngine {
+	return dynamicresource.NewRestEngine(models.ResourceSchemaName, rest).AddCrudRoutes()
 }
 
-func actionRestEngine(rest *v1.ActionCrudRest) composable.RestEngine {
-	return composable.NewRestEngine(models.ActionSchemaName, rest).AddCrudRoutes()
+func actionRestEngine(rest *v1.ActionCrudRest) dynamicresource.RestEngine {
+	return dynamicresource.NewRestEngine(models.ActionSchemaName, rest).AddCrudRoutes()
 }

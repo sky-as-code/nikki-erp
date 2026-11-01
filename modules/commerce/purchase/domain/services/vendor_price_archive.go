@@ -8,7 +8,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
@@ -23,7 +23,7 @@ import (
 // NewVendorProductPriceDomainService derives the vendor price service from the onion's default.
 // Create and update chain the validator through ValidateExtra (purchase_guards.go).
 func NewVendorProductPriceDomainService(
-	base composable.CrudDomainService, validator *VendorPriceValidator,
+	base dynamicresource.CrudDomainService, validator *VendorPriceValidator,
 ) *VendorProductPriceDomainServiceImpl {
 	return &VendorProductPriceDomainServiceImpl{
 		CrudDomainService: base,
@@ -32,7 +32,7 @@ func NewVendorProductPriceDomainService(
 }
 
 type VendorProductPriceDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// The same validator the write guards use, so archiving and creating enforce one set of rules.
 	validator *VendorPriceValidator

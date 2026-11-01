@@ -3,17 +3,17 @@ package v1
 import (
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // VendorProfileEngineName is the container name of the onion. A struct tag cannot call
-// composable.EngineDependencyName, so the literal is declared once here and checked by a test.
+// dynamicresource.EngineDependencyName, so the literal is declared once here and checked by a test.
 const VendorProfileEngineName = "dynengine_contacts_vendor_profile"
 
 type vendorProfileRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_contacts_vendor_profile"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_contacts_vendor_profile"`
 }
 
 func NewVendorProfileRest(params vendorProfileRestParams) *VendorProfileRest {
@@ -24,5 +24,5 @@ func NewVendorProfileRest(params vendorProfileRestParams) *VendorProfileRest {
 
 // VendorProfileRest serves the built-in CRUD of the resource; it has no route of its own.
 type VendorProfileRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

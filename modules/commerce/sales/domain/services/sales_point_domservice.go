@@ -7,7 +7,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SalesPointDomainServiceImpl adds the sales point lifecycle to the engine's default service.
@@ -15,17 +15,17 @@ import (
 var _ itCatalog.SalesPointDomainService = (*SalesPointDomainServiceImpl)(nil)
 
 type SalesPointDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
-func NewSalesPointDomainService(base composable.CrudDomainService) *SalesPointDomainServiceImpl {
+func NewSalesPointDomainService(base dynamicresource.CrudDomainService) *SalesPointDomainServiceImpl {
 	return &SalesPointDomainServiceImpl{CrudDomainService: base}
 }
 
 // Create is the client's create. The managed fields are stripped: a client able to set them could
 // mint a point that then refuses to be deleted, as if a kiosk owned it.
 func (this *SalesPointDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	prepared := dmodel.DynamicFields{}
 	for key, value := range params {

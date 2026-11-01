@@ -3,7 +3,7 @@ package currency
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type GetCurrencyResult = dyn.OpResult[GetCurrencyResultData]
@@ -14,7 +14,7 @@ type AssertUsableResult = dyn.OpResult[struct{}]
 // CurrencyRepository reads and writes currency rows. It is the composable default and nothing
 // more today; it exists as its own type so a bespoke query has a home when one is needed.
 type CurrencyRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // CurrencyLookupService answers questions about a single currency. It exists because other
@@ -31,7 +31,7 @@ type CurrencyLookupService interface {
 // CurrencyDomainService is the full capability, implemented inside Essential: the CRUD of the
 // resource plus the money rules other modules depend on.
 type CurrencyDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	CurrencyLookupService
 
 	// Round rounds an amount to the currency's decimal_places.
@@ -63,6 +63,6 @@ type CurrencyAppService interface {
 // CurrencyApplicationService is the whole application layer of the resource: the authorized CRUD
 // the REST handler serves, plus the cross-module capability.
 type CurrencyApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	CurrencyAppService
 }

@@ -9,7 +9,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The association schemas get a repository and nothing else: no onion, no application service, no
@@ -32,7 +32,7 @@ func InitJunctionRepositories() error {
 }
 
 func registerChannelPaymentRelRepository() error {
-	err := deps.Register(func(param composable.BuildParam) (*services.ChannelPaymentDomainServiceImpl, error) {
+	err := deps.Register(func(param dynamicresource.BuildParam) (*services.ChannelPaymentDomainServiceImpl, error) {
 		repo, err := newJunctionRepository(param, models.SalesChannelPaymentRelSchemaName)
 		if err != nil {
 			return nil, err
@@ -45,7 +45,7 @@ func registerChannelPaymentRelRepository() error {
 }
 
 func registerPointPaymentRelRepository() error {
-	err := deps.Register(func(param composable.BuildParam) (*services.PointPaymentDomainServiceImpl, error) {
+	err := deps.Register(func(param dynamicresource.BuildParam) (*services.PointPaymentDomainServiceImpl, error) {
 		repo, err := newJunctionRepository(param, models.SalesPointPaymentRelSchemaName)
 		if err != nil {
 			return nil, err
@@ -58,7 +58,7 @@ func registerPointPaymentRelRepository() error {
 // The channel-to-method mapping is read through the resource hub by the fulfillment method
 // service, which asks whether a channel permits a method. It needs no service of its own.
 func registerChannelFulfillmentMethodRepository() error {
-	return deps.Invoke(func(param composable.BuildParam) error {
+	return deps.Invoke(func(param dynamicresource.BuildParam) error {
 		repo, err := newJunctionRepository(param, models.SalesChannelFulfillmentMethodSchemaName)
 		if err != nil {
 			return err
@@ -71,13 +71,13 @@ func registerChannelFulfillmentMethodRepository() error {
 }
 
 func newJunctionRepository(
-	param composable.BuildParam, schemaName string,
-) (composable.CrudRepository, error) {
+	param dynamicresource.BuildParam, schemaName string,
+) (dynamicresource.CrudRepository, error) {
 	schema := dmodel.GetSchema(schemaName)
 	if schema == nil {
 		return nil, errors.New("the '" + schemaName + "' schema is not registered")
 	}
-	return composable.NewDefaultCrudRepository(composable.NewRepositoryParam{
+	return dynamicresource.NewDefaultCrudRepository(dynamicresource.NewRepositoryParam{
 		Client:        param.Client,
 		ConfigSvc:     param.ConfigSvc,
 		QueryBuilder:  param.QueryBuilder,

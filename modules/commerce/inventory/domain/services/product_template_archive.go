@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -108,7 +108,7 @@ func (this *ProductTemplateDomainServiceImpl) guardStockUsage(
 // cascadeArchiveToVariants applies a template's archive change to each of its variants, deciding
 // per variant with ShouldSkipCascade and CascadeArchiveFields.
 func (this *ProductTemplateDomainServiceImpl) cascadeArchiveToVariants(
-	ctx corectx.Context, variantEngine composable.CrudRepository, templateId string, archive bool,
+	ctx corectx.Context, variantEngine dynamicresource.CrudRepository, templateId string, archive bool,
 ) error {
 	if templateId == "" {
 		return nil

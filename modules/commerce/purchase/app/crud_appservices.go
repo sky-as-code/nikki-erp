@@ -6,7 +6,7 @@ import (
 	itConfiguration "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/configuration"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/order"
 	itVendorPrice "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/vendorprice"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The application services of the resources that add nothing to the built-in CRUD. The default
@@ -14,61 +14,61 @@ import (
 // rules live in the domain services.
 
 func NewConfigurationApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 ) itConfiguration.ConfigurationCrudApplicationService {
 	return &ConfigurationApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type ConfigurationApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 func NewVendorProductPriceApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 ) itVendorPrice.VendorProductPriceCrudApplicationService {
 	return &VendorProductPriceApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type VendorProductPriceApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 func NewSourcingGroupApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 ) itOrder.SourcingGroupCrudApplicationService {
 	return &SourcingGroupApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SourcingGroupApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 func NewAuditEventApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 ) itAudit.AuditEventCrudApplicationService {
 	return &AuditEventApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type AuditEventApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 func NewAgreementLineApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 ) itAgreement.AgreementLineCrudApplicationService {
 	return &AgreementLineApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type AgreementLineApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 func NewPurchaseOrderLineApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 ) itOrder.PurchaseOrderLineCrudApplicationService {
 	return &PurchaseOrderLineApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type PurchaseOrderLineApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }

@@ -4,7 +4,7 @@ import (
 	"time"
 
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/constants"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	itInvoice "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/invoice"
@@ -20,12 +20,12 @@ const paramInvoiceId = "id"
 // being allowed to close one and mint its number.
 
 type InvoiceApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	invoices *services.InvoiceDomainService
 }
 
 func NewInvoiceApplicationService(
-	base composable.CrudApplicationService, invoices *services.InvoiceDomainService,
+	base dynamicresource.CrudApplicationService, invoices *services.InvoiceDomainService,
 ) itInvoice.InvoiceCrudApplicationService {
 	return &InvoiceApplicationServiceImpl{CrudApplicationService: base, invoices: invoices}
 }

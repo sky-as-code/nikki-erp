@@ -10,7 +10,7 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The template's own create, update and delete carry its attribute configuration and its
@@ -37,15 +37,15 @@ func liftConfigurationOrRefuse(
 // Create writes the template and its variants: the configuration's pre-created variants, or the
 // single empty-key default complete when there is no generating attribute (CR01 §6.1).
 func (this *ProductTemplateDomainServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
 	input, deleteAllowed, cErrs := liftConfigurationOrRefuse(cmd)
 	if cErrs.Count() > 0 {
-		return &composable.CreateResult{ClientErrors: cErrs}, nil
+		return &dynamicresource.CreateResult{ClientErrors: cErrs}, nil
 	}
-	opts := safe.GetOptional(options, composable.CreateOptions{})
-	var result *composable.CreateResult
-	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
+	var result *dynamicresource.CreateResult
+	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var err error
 			if result, err = this.CrudDomainService.Create(tranxCtx, cmd, opts); err != nil {
@@ -63,7 +63,7 @@ func (this *ProductTemplateDomainServiceImpl) Create(
 		return nil, errors.Wrap(err, "create product template")
 	}
 	if refused != nil {
-		return &composable.CreateResult{ClientErrors: *refused}, nil
+		return &dynamicresource.CreateResult{ClientErrors: *refused}, nil
 	}
 	return result, nil
 }
@@ -73,23 +73,23 @@ func (this *ProductTemplateDomainServiceImpl) Create(
 // template's etag, which is the configuration's version. A replaced default image is removed from
 // IT Storage once the whole update has committed.
 func (this *ProductTemplateDomainServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
-	return this.updateWithConfiguration(ctx, cmd, safe.GetOptional(options, composable.UpdateOptions{}))
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
+	return this.updateWithConfiguration(ctx, cmd, safe.GetOptional(options, dynamicresource.UpdateOptions{}))
 }
 
 func (this *ProductTemplateDomainServiceImpl) updateWithConfiguration(
-	ctx corectx.Context, cmd composable.UpdateCommand, opts composable.UpdateOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, opts dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
 	input, deleteAllowed, cErrs := liftConfigurationOrRefuse(cmd)
 	if cErrs.Count() > 0 {
-		return &composable.MutateResult{ClientErrors: cErrs}, nil
+		return &dynamicresource.MutateResult{ClientErrors: cErrs}, nil
 	}
 	if input == nil {
 		return this.CrudDomainService.Update(ctx, cmd, opts)
 	}
-	var result *composable.MutateResult
-	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	var result *dynamicresource.MutateResult
+	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var err error
 			if result, err = this.CrudDomainService.Update(tranxCtx, cmd, opts); err != nil {
@@ -99,7 +99,7 @@ func (this *ProductTemplateDomainServiceImpl) updateWithConfiguration(
 				return &result.ClientErrors, nil
 			}
 			_, cErrs, err := this.reconcile(tranxCtx, reconcileRequest{
-				templateId: string(composable.ParamId(cmd)), input: input, deleteAllowed: deleteAllowed,
+				templateId: string(dynamicresource.ParamId(cmd)), input: input, deleteAllowed: deleteAllowed,
 			})
 			return &cErrs, err
 		})
@@ -107,7 +107,7 @@ func (this *ProductTemplateDomainServiceImpl) updateWithConfiguration(
 		return nil, errors.Wrap(err, "update product template")
 	}
 	if refused != nil {
-		return &composable.MutateResult{ClientErrors: *refused}, nil
+		return &dynamicresource.MutateResult{ClientErrors: *refused}, nil
 	}
 	return result, nil
 }
@@ -116,10 +116,10 @@ func (this *ProductTemplateDomainServiceImpl) updateWithConfiguration(
 // (Inventory history and every dependant module) and no module names the template itself;
 // otherwise it refuses and suggests archiving. Lines, values and exclusions cascade.
 func (this *ProductTemplateDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
-	var result *composable.MutateResult
-	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
+	var result *dynamicresource.MutateResult
+	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			cErrs, err := this.deleteTemplateVariants(tranxCtx, cmd)
 			if err != nil || cErrs.Count() > 0 {
@@ -134,15 +134,15 @@ func (this *ProductTemplateDomainServiceImpl) Delete(
 		return nil, errors.Wrap(err, "delete product template")
 	}
 	if refused != nil {
-		return &composable.MutateResult{ClientErrors: *refused}, nil
+		return &dynamicresource.MutateResult{ClientErrors: *refused}, nil
 	}
 	return result, nil
 }
 
 func (this *ProductTemplateDomainServiceImpl) deleteTemplateVariants(
-	ctx corectx.Context, cmd composable.DeleteCommand,
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
 ) (ft.ClientErrors, error) {
-	templateId := string(composable.ParamId(cmd))
+	templateId := string(dynamicresource.ParamId(cmd))
 	template, err := this.fetchTemplate(ctx, templateId)
 	if err != nil || template == nil {
 		return nil, err

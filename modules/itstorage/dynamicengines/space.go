@@ -6,7 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/app"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/services"
@@ -17,24 +17,24 @@ import (
 type spaceEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_itstorage_space"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_itstorage_space"`
 }
 
 // registerSpaceEngine keeps every built-in action in the onion: the org lifecycle creates spaces
 // and a rename updates one through the domain service. Only the reads get routes.
 func registerSpaceEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SpaceSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SpaceSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SpaceSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSpaceRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewSpaceDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSpaceApplicationService(base)
 				},
 			}, param)

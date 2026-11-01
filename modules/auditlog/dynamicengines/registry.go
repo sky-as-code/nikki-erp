@@ -14,7 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/auditlog/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/auditlog/infra/repository"
 	itAction "github.com/sky-as-code/nikki-erp/modules/auditlog/interfaces/action"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func InitDynamicEngines() error {
@@ -23,17 +23,17 @@ func InitDynamicEngines() error {
 
 // ActionRestActions are the built-ins with a route. Entries are written by the AuditSink port
 // only and never change, so clients only read.
-func ActionRestActions() []composable.CrudAction {
-	return []composable.CrudAction{
-		composable.CrudActionGetById, composable.CrudActionSearch, composable.CrudActionExists,
-		composable.CrudActionGetSchema,
+func ActionRestActions() []dynamicresource.CrudAction {
+	return []dynamicresource.CrudAction{
+		dynamicresource.CrudActionGetById, dynamicresource.CrudActionSearch, dynamicresource.CrudActionExists,
+		dynamicresource.CrudActionGetSchema,
 	}
 }
 
 type actionEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_auditlog_action"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_auditlog_action"`
 }
 
 // registerActionEngine keeps create in the onion for the sink; update, delete and set_archived
@@ -42,19 +42,19 @@ type actionEngineParam struct {
 // write another.
 func registerActionEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.ActionSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.ActionSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.ActionSchemaName,
-				CrudActions: append(ActionRestActions(), composable.CrudActionCreate),
+				CrudActions: append(ActionRestActions(), dynamicresource.CrudActionCreate),
 				IsAudited:   util.ToPtr(false),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewActionRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewActionDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewActionApplicationService(base)
 				},
 			}, param)

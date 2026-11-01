@@ -2,69 +2,71 @@ package repository
 
 import (
 	itPromotion "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/promotion"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func NewSalesPromotionProgramRepository(base composable.CrudRepository) itPromotion.SalesPromotionProgramRepository {
+func NewSalesPromotionProgramRepository(base dynamicresource.CrudRepository) itPromotion.SalesPromotionProgramRepository {
 	return &SalesPromotionProgramRepositoryImpl{CrudRepository: base}
 }
 
 type SalesPromotionProgramRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesPromotionConditionGroupRepository(base composable.CrudRepository) itPromotion.SalesPromotionConditionGroupRepository {
+func NewSalesPromotionConditionGroupRepository(base dynamicresource.CrudRepository) itPromotion.SalesPromotionConditionGroupRepository {
 	return &SalesPromotionConditionGroupRepositoryImpl{CrudRepository: base}
 }
 
 type SalesPromotionConditionGroupRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesPromotionConditionRepository(base composable.CrudRepository) itPromotion.SalesPromotionConditionRepository {
+func NewSalesPromotionConditionRepository(
+	base dynamicresource.CrudRepository,
+) itPromotion.SalesPromotionConditionRepository {
 	return &SalesPromotionConditionRepositoryImpl{CrudRepository: base}
 }
 
 type SalesPromotionConditionRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesPromotionConditionTargetRepository(base composable.CrudRepository) itPromotion.SalesPromotionConditionTargetRepository {
+func NewSalesPromotionConditionTargetRepository(base dynamicresource.CrudRepository) itPromotion.SalesPromotionConditionTargetRepository {
 	return &SalesPromotionConditionTargetRepositoryImpl{CrudRepository: base}
 }
 
 type SalesPromotionConditionTargetRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesPromotionRewardRepository(base composable.CrudRepository) itPromotion.SalesPromotionRewardRepository {
+func NewSalesPromotionRewardRepository(base dynamicresource.CrudRepository) itPromotion.SalesPromotionRewardRepository {
 	return &SalesPromotionRewardRepositoryImpl{CrudRepository: base}
 }
 
 type SalesPromotionRewardRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesPromotionCompatibilityRepository(base composable.CrudRepository) itPromotion.SalesPromotionCompatibilityRepository {
+func NewSalesPromotionCompatibilityRepository(base dynamicresource.CrudRepository) itPromotion.SalesPromotionCompatibilityRepository {
 	return &SalesPromotionCompatibilityRepositoryImpl{CrudRepository: base}
 }
 
 type SalesPromotionCompatibilityRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesVoucherCodeRepository(base composable.CrudRepository) itPromotion.SalesVoucherCodeRepository {
+func NewSalesVoucherCodeRepository(base dynamicresource.CrudRepository) itPromotion.SalesVoucherCodeRepository {
 	return &SalesVoucherCodeRepositoryImpl{CrudRepository: base}
 }
 
 type SalesVoucherCodeRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesVoucherRedemptionRepository(base composable.CrudRepository) itPromotion.SalesVoucherRedemptionRepository {
+func NewSalesVoucherRedemptionRepository(base dynamicresource.CrudRepository) itPromotion.SalesVoucherRedemptionRepository {
 	return &SalesVoucherRedemptionRepositoryImpl{CrudRepository: base}
 }
 
 type SalesVoucherRedemptionRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

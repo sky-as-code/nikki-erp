@@ -10,12 +10,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/stretchr/testify/require"
 )
 
 type orderAuthRepo struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	result *dyn.OpResult[dmodel.DynamicFields]
 	err    error
 	t      *testing.T
