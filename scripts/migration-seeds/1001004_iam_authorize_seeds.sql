@@ -203,7 +203,8 @@ BEGIN
 		INSERT INTO "iam_entitlements" (
 			"id", "name", "description", "expression", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
 		) VALUES
-		('01M0CUR1QS6Z9HM0K4B1FCR7DM', 'User - Read Currencies', 'Read currencies', 'read:essential_currency:tenant', '01M0CUR1QQ2V5DH6F0X7BYM3ZJ', '01M0CUR1QK4N7VZBX2M9TPE5RD', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0CUR1QS6Z9HM0K4B1FCR7DM', 'User - Read Currencies', 'Read currencies', 'read:essential_currency:tenant', '01M0CUR1QQ2V5DH6F0X7BYM3ZJ', '01M0CUR1QK4N7VZBX2M9TPE5RD', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M51EPZ8KR000000000000EN1', 'User - Read Languages', 'Read languages', 'read:essential_language:tenant', '01M51EPZ8KR000000000000RD1', '01M51EPZ8K0CA51CB8DX821SM3', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

@@ -74,6 +74,11 @@ type DynamicResourceEngineOnionImpl struct {
 	// optional and NULL means "global".
 	IsOrgScoped *bool
 
+	// IsOrgBound makes a tenant-wide catalogue (no org_id column) answer per organization: every
+	// action requires an org_id the caller belongs to, and that org becomes the `${ctx.org_id}` its
+	// computed fields read (an activation flag), while rows are never filtered by org.
+	IsOrgBound bool
+
 	// RejectArchivedOnCreate refuses is_archived in a create body for a schema that has the
 	// field, ahead of any rule a derived service adds.
 	RejectArchivedOnCreate bool
@@ -175,6 +180,7 @@ func (this *DynamicResourceEngineOnionImpl) buildApplicationService(param BuildP
 		DomainService:   this.domSvc,
 		PermissionScope: this.PermissionScope,
 		IsOrgScoped:     this.IsOrgScoped,
+		IsOrgBound:      this.IsOrgBound,
 		CrudActions:     this.CrudActions,
 		Storage:         param.Storage,
 		ImportLimits:    readImportLimits(param.ConfigSvc),

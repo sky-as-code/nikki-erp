@@ -90,11 +90,13 @@ Ensure Purchase Currency
     [Arguments]    ${code}=USD
     ${resolved}=    Get Variable Value    ${PURCHASE_CURRENCY_ID}    ${EMPTY}
     IF    $resolved    RETURN
+    #    Currencies are a tenant catalogue answered per organization, so every request names one.
+    Ensure Purchase Org
     ${resp}=    GET On Session    api    /v1/essential/essential_currency
-    ...    params=${{ {'size': 1, 'graph': '{"if":["code","=","%s"]}' % $code} }}
+    ...    params=${{ {'size': 1, 'org_id': $PURCHASE_ORG_ID, 'graph': '{"if":["code","=","%s"]}' % $code} }}
     Response Status Should Be    ${resp}    200
     ${items}=    Set Variable    ${resp.json()}[items]
-    Should Not Be Empty    ${items}    msg=Currency ${code} is missing; the ISO-4217 seed has not been applied
+    Should Not Be Empty    ${items}    msg=Currency ${code} is missing; the essential currency seed has not been applied
     Set Global Variable    ${PURCHASE_CURRENCY_ID}    ${items}[0][id]
 
 Ensure Purchase Product

@@ -113,10 +113,10 @@ func mergeQueryParams(echoCtx *echo.Context, params dmodel.DynamicFields) {
 // The schema guard matters for create: createBodyParams rejects body keys the schema does not
 // declare, so writing org_id into the params of an org-less resource would invent a field the
 // resource has no column for.
-func mergeOrgId(echoCtx *echo.Context, schema *dmodel.ModelSchema, params dmodel.DynamicFields, actionType ActionType) {
-	if !schemaHasOrgId(schema) {
-		return
-	}
+//
+// It binds org_id for every schema: an org-bound catalogue has no org_id column yet acts per org, and
+// ResolveOrgScope drops the value for a resource that neither filters nor acts by org.
+func mergeOrgId(echoCtx *echo.Context, _ *dmodel.ModelSchema, params dmodel.DynamicFields, actionType ActionType) {
 	// Every write binder parses the body into params before calling this, so a body-supplied
 	// org is already present and only has to be left alone.
 	if actionType.HasRequestBody() && readString(params, queryParamOrgId) != "" {
@@ -159,16 +159,25 @@ func rawBodyParams(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
 // unknown field answers 201 to a request that did not do what the caller asked. Update keeps
 // the permissive binding, because clients round-tripping a fetched record back may carry
 // read-only or computed keys they never intended to write.
-func createBodyParams(echoCtx *echo.Context, schema *dmodel.ModelSchema) (dmodel.DynamicFields, error) {
+func createBodyParams(echoCtx *echo.Context, schema *dmodel.ModelSchema, orgBound bool) (dmodel.DynamicFields, error) {
 	raw, err := rawBodyParams(echoCtx)
 	if err != nil {
 		return nil, err
+	}
+	bodyOrgId, hasBodyOrgId := raw[queryParamOrgId]
+	hasBodyOrgId = hasBodyOrgId && orgBound && !schemaHasOrgId(schema)
+	if hasBodyOrgId {
+		// An org-bound catalogue names its org in the body without having an org_id column.
+		delete(raw, queryParamOrgId)
 	}
 	if cErrs := unknownFieldErrors(schema, raw); cErrs != nil {
 		return nil, &unknownFieldsError{errors: *cErrs}
 	}
 	// The body stream is already consumed, so filter the parsed map rather than re-binding.
 	params := httpserver.FilterToDynamicEntity(raw, schema)
+	if hasBodyOrgId {
+		params[queryParamOrgId] = bodyOrgId
+	}
 	mergePathParams(echoCtx, params)
 	mergeOrgId(echoCtx, schema, params, ActionTypeCreate)
 	return params, nil
@@ -214,9 +223,14 @@ func (this *unknownFieldsError) Error() string {
 // updateParams binds the record body, keeps only declared fields, and overrides the id with the
 // one from the path, so that the route always decides which record is being updated.
 func updateParams(echoCtx *echo.Context, schema *dmodel.ModelSchema) (dmodel.DynamicFields, error) {
-	params, err := httpserver.BindToDynamicEntity(echoCtx, schema)
+	raw, err := rawBodyParams(echoCtx)
 	if err != nil {
 		return nil, err
+	}
+	params := httpserver.FilterToDynamicEntity(raw, schema)
+	// Kept although undeclared on an org-bound catalogue, which has no org_id column.
+	if bodyOrgId, ok := raw[queryParamOrgId]; ok {
+		params[queryParamOrgId] = bodyOrgId
 	}
 	mergePathParams(echoCtx, params)
 	params[basemodel.FieldId] = echoCtx.Param("id")

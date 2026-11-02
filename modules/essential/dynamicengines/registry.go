@@ -16,6 +16,7 @@ import (
 func InitDynamicEngines() error {
 	return stdErr.Join(
 		registerCurrencyEngine(),
+		registerOrgActivationEngines(),
 		registerUomEngine(),
 		registerUomCatEngine(),
 		registerLanguageEngine(),

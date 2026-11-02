@@ -28,7 +28,6 @@ func TestEssentialSchemaJsonMatchesLegacy(t *testing.T) {
 // whatever base model is installed at that moment (see the multi-tenant variant).
 func assertEssentialSchemasMatchLegacy(t *testing.T) {
 	for name, pair := range map[string][2]*dmodel.ModelSchemaBuilder{
-		LanguageSchemaName:       {languageSchemaBuilderLegacy(), LanguageSchemaBuilder()},
 		EnumSchemaName:           {enumSchemaBuilderLegacy(), EnumSchemaBuilder()},
 		TagSchemaName:            {tagSchemaBuilderLegacy(), TagSchemaBuilder()},
 		FieldMetadataSchemaName:  {fieldMetadataSchemaBuilderLegacy(), FieldMetadataSchemaBuilder()},
@@ -44,113 +43,6 @@ func assertEssentialSchemasMatchLegacy(t *testing.T) {
 // ---------------------------------------------------------------------------
 // Legacy builders: verbatim copies of the pre-conversion Go chains.
 // ---------------------------------------------------------------------------
-
-// The language reference is no longer verbatim: it tracks the LANG-002 uplift (unique name,
-// grouping, Odoo defaults, optional thousands separator), so it still pins how the JSON parses.
-func languageSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(LanguageSchemaName).
-		Label(model.NewLangJsonRefSf("%s.label", LanguageSchemaName)).
-		TableName("essential_languages").
-		ShouldBuildDb().
-		Extend(basemodel.BaseModelSchemaBuilder()).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldName).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
-				RequiredForCreate().
-				Unique(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldLocaleCode).
-				// Hyphenated BCP47, not the underscore form: every consumer of an locale code speaks
-				// hyphen -- the stored `language` setting, the LangJson document
-				// keys, ToBCP47LanguageCode, i18next on the frontend. An underscore code could not
-				// have been matched by any of them.
-				DataType(dmodel.FieldDataTypeString(5, 10, dmodel.FieldDataTypeStringOpts{
-					Regex: regexp.MustCompile(`^[a-z]{2}-[A-Z]{2}$`),
-				})).
-				RequiredForCreate().
-				Unique(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldDirection).
-				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(LanguageDirectionLtr),
-					string(LanguageDirectionRtl),
-				})).
-				RequiredForCreate().
-				Default(string(LanguageDirectionLtr)),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldDecimalSeparator).
-				DataType(dmodel.FieldDataTypeString(1, 5)).
-				RequiredForCreate().
-				Default("."),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldThousandsSeparator).
-				DataType(dmodel.FieldDataTypeString(0, 5)).
-				Default(","),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldGrouping).
-				DataType(dmodel.FieldDataTypeString(2, 30)).
-				RequiredForCreate().
-				Default("[3,0]"),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldDateFormat).
-				DataType(dmodel.FieldDataTypeString(1, 30)).
-				RequiredForCreate().
-				Default("%m/%d/%Y"),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldTimeFormat).
-				DataType(dmodel.FieldDataTypeString(1, 30)).
-				RequiredForCreate().
-				Default("%H:%M:%S"),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldShortTimeFormat).
-				DataType(dmodel.FieldDataTypeString(1, 30)).
-				RequiredForCreate().
-				Default("%H:%M"),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldFirstDayOfWeek).
-				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(WeekDayMonday),
-					string(WeekDayTuesday),
-					string(WeekDayWednesday),
-					string(WeekDayThursday),
-					string(WeekDayFriday),
-					string(WeekDaySaturday),
-					string(WeekDaySunday),
-				})).
-				RequiredForCreate().
-				Default(string(WeekDaySunday)),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(LanguageFieldIsEnabled).
-				// The set of languages a user may pick. False by default: a language created before its
-				// translations ship would render every key as its raw namespace:key to whoever chose it.
-				DataType(dmodel.FieldDataTypeBoolean()).
-				Default(false),
-		).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder()).
-		Extend(basemodel.TraceableModelSchemaBuilder())
-}
 
 func enumSchemaBuilderLegacy() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(EnumSchemaName).

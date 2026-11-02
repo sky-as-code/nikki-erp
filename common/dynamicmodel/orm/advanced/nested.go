@@ -510,8 +510,13 @@ func (this *queryPlan) toManyCorrelation(
 // as SqlSelectGraph does and returns the folding plan, or nil when no edge is projected.
 func (this *AdvancedPgQueryBuilder) PlanNestedProjection(
 	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, columns []orm.SelectColumn,
+	computedCtx ...map[string]any,
 ) (*orm.NestedProjection, *ft.ClientErrors, error) {
-	plan, err := this.newPlan(schema, registry, nil, orm.SqlSelectGraphOpts{Columns: columns}, planSelect)
+	opts := orm.SqlSelectGraphOpts{Columns: columns}
+	if len(computedCtx) > 0 {
+		opts.ComputedContext = computedCtx[0]
+	}
+	plan, err := this.newPlan(schema, registry, nil, opts, planSelect)
 	if err == nil {
 		err = plan.applySelectColumns(sqlbuilder.PostgreSQL.NewSelectBuilder(), columns)
 	}

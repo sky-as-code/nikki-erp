@@ -7,6 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/resourceaccess"
 )
 
@@ -45,7 +46,7 @@ func (this *engineResourceAccess) ReadAsCaller(
 		// the caller, so it is answered like an unknown resource rather than a server fault.
 		return nil, unknownResource(), nil
 	}
-	found, err := appSvc.GetById(ctx, readAsCallerParams(schema, query))
+	found, err := appSvc.GetById(ctx, readAsCallerParams(query))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "ReadAsCaller.GetById")
 	}
@@ -73,11 +74,12 @@ func (this *engineResourceAccess) readGone(
 	return &resourceaccess.ReadAsCallerResult{Exists: false}, nil, nil
 }
 
-// readAsCallerParams asks for every column, so the masking covers each field an entry may carry.
-func readAsCallerParams(schema *dmodel.ModelSchema, query resourceaccess.ReadAsCallerQuery) GetByIdQuery {
+// readAsCallerParams asks for every readable field, so the masking covers each field an entry may
+// carry. It is the wildcard, not the names: a wide schema would exceed the `fields` length limit.
+func readAsCallerParams(query resourceaccess.ReadAsCallerQuery) GetByIdQuery {
 	params := GetByIdQuery{
 		basemodel.FieldId:     string(query.ResourceId),
-		basemodel.FieldFields: columnNames(schema),
+		basemodel.FieldFields: []string{corecrud.FieldsWildcard},
 	}
 	if query.OrgId != nil {
 		params[basemodel.FieldOrgId] = string(*query.OrgId)

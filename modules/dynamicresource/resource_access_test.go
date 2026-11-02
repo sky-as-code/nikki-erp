@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/audit"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/resourceaccess"
 )
 
@@ -35,7 +36,7 @@ func TestReadAsCallerRunsTheTargetGetById(t *testing.T) {
 	require.Empty(t, refused)
 	assert.True(t, result.Exists)
 	assert.Equal(t, "r1", domSvc.seen[basemodel.FieldId])
-	assert.Equal(t, columnNames(newOrgSchema()), domSvc.seen[basemodel.FieldFields])
+	assert.Equal(t, []string{corecrud.FieldsWildcard}, domSvc.seen[basemodel.FieldFields])
 }
 
 func TestReadAsCallerRefusesWithoutRead(t *testing.T) {

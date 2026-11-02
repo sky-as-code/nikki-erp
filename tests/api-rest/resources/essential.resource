@@ -4,6 +4,7 @@ Documentation     Essential-module helpers shared by the UoM suites: the categor
 ...               members can be created, and bulk sample data for Search/Exists.
 ...               All keywords expect an authorized session with alias "api".
 Library           Collections
+Library           String
 Resource          ${CURDIR}/../nikki_api/auth.resource
 Resource          ${CURDIR}/../nikki_api/assertions.resource
 Resource          ${CURDIR}/../nikki_api/data.resource
@@ -14,6 +15,9 @@ ${UOM_API}                  /v1/essential/essential_uom
 ${UOMCAT_API}               /v1/essential/essential_uomcat
 ${UOM_CONVERT_API}          /v1/essential/essential_uom/convert
 ${UOM_TO_REFERENCE_API}     /v1/essential/essential_uom/to_reference
+${CURRENCY_API}             /v1/essential/essential_currency
+${LANGUAGE_API}             /v1/essential/essential_language
+${TIMEZONES_API}            /v1/essential/timezones
 ${ESSENTIAL_SCHEMA_DIR}     ${CURDIR}/schemas/essential
 
 
@@ -217,4 +221,24 @@ Delete Uom Fixtures
         ...    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
         Set Global Variable    ${UOMCAT_ID}    ${EMPTY}
         Set Global Variable    ${UOMCAT_ETAG}    ${EMPTY}
+    END
+
+Unique Locale Code
+    [Documentation]    A locale code nobody has: two lower-case letters, a dash, two upper-case.
+    ${lang}=    Generate Random String    2    [LOWER]
+    ${country}=    Generate Random String    2    [UPPER]
+    RETURN    ${lang}-${country}
+
+Delete Currency Fixtures
+    ${id}=    Get Variable Value    ${CURRENCY_ID}    ${EMPTY}
+    IF    $id
+        DELETE On Session    api    ${CURRENCY_API}/${id}    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
+        Set Global Variable    ${CURRENCY_ID}    ${EMPTY}
+    END
+
+Delete Language Fixtures
+    ${id}=    Get Variable Value    ${LANGUAGE_ID}    ${EMPTY}
+    IF    $id
+        DELETE On Session    api    ${LANGUAGE_API}/${id}    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
+        Set Global Variable    ${LANGUAGE_ID}    ${EMPTY}
     END

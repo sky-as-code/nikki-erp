@@ -61,27 +61,45 @@ func isTimezoneSetting(name string) bool {
 	return name == settings.UserSettingTimezone || name == settings.OrgSettingSystemTimezone
 }
 
-// enabledLanguageRule refuses a language a user could not read the interface in: only the
-// essential_languages rows marked is_enabled ship translations.
+// enabledLanguageRule refuses a language a user could not read the interface in: only the languages
+// the caller's organization has active (else the public ones) are offered, so only those are taken.
 func enabledLanguageRule(languageSvc itLanguage.LanguageDomainService) coreSettings.SettingsRule {
 	return func(ctx corectx.Context, level string, items []coreSettings.SetSettingItem) (ft.ClientErrors, error) {
 		vErrs := ft.ClientErrors{}
+		var enabled map[string]bool
 		for _, item := range items {
 			code, isString := item.Value.(string)
 			if !isString || !isLanguageSetting(item.Name) {
 				continue
 			}
-			found, err := languageSvc.GetLanguageByLocaleCode(ctx, itLanguage.GetLanguageByLocaleCodeQuery{LocaleCode: code})
-			if err != nil {
-				return nil, errors.Wrap(err, "enabledLanguageRule")
+			if enabled == nil {
+				codes, err := enabledLocaleCodes(ctx, languageSvc)
+				if err != nil {
+					return nil, errors.Wrap(err, "enabledLanguageRule")
+				}
+				enabled = codes
 			}
-			if !found.HasData || found.Data.GetIsEnabled() == nil || !*found.Data.GetIsEnabled() {
+			if !enabled[code] {
 				vErrs.Append(*ft.NewValidationError(item.Name, ft.ErrorKey("essential.language_not_enabled", "essential"),
 					"is not a language this application is enabled for"))
 			}
 		}
 		return vErrs, nil
 	}
+}
+
+func enabledLocaleCodes(ctx corectx.Context, languageSvc itLanguage.LanguageDomainService) (map[string]bool, error) {
+	listed, err := languageSvc.ListEnabledLanguages(ctx, itLanguage.ListEnabledLanguagesQuery{})
+	if err != nil {
+		return nil, err
+	}
+	codes := make(map[string]bool, len(listed.Data))
+	for _, language := range listed.Data {
+		if code := language.GetLocaleCode(); code != nil {
+			codes[*code] = true
+		}
+	}
+	return codes, nil
 }
 
 func isLanguageSetting(name string) bool {

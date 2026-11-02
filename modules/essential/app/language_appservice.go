@@ -9,7 +9,9 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	langjson "github.com/sky-as-code/nikki-erp/modules/essential/infra/langJson"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 )
@@ -140,4 +142,26 @@ func (this *LanguageApplicationServiceImpl) hasTranslation(moduleName string, la
 	}
 	_, ok := this.registered[moduleName][langCode]
 	return ok
+}
+
+// Search answers per organization like every other language action when the query names an
+// org_id. Without one it is the only org-less language read: it may still only see what a reader
+// with no organization may see, the languages marked public_use.
+func (this *LanguageApplicationServiceImpl) Search(
+	ctx corectx.Context, query dynamicresource.SearchQuery,
+) (*dynamicresource.SearchResult, error) {
+	if orgId, _ := query[basemodel.FieldOrgId].(string); orgId != "" {
+		return this.CrudApplicationService.Search(ctx, query)
+	}
+	if cErrs := this.AssertPermission(ctx, dynamicresource.PermissionRead, nil); cErrs != nil {
+		return &dynamicresource.SearchResult{ClientErrors: *cErrs}, nil
+	}
+	publicOnly := dmodel.NewSearchNode()
+	publicOnly.NewCondition(models.LanguageFieldPublicUse, dmodel.Equals, true)
+	graph, err := dmodel.AndDecodedGraph(query["graph"], *publicOnly)
+	if err != nil {
+		return nil, errors.Wrap(err, "search public languages")
+	}
+	query["graph"] = graph
+	return this.DomainService().Search(ctx, query)
 }

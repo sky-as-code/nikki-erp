@@ -1,26 +1,3 @@
--- Create "essential_currencies" table
-CREATE TABLE "essential_currencies" (
-  "id" character varying NOT NULL,
-  "code" character varying NULL,
-  "numeric_code" character varying NULL,
-  "name" jsonb NULL,
-  "symbol" character varying NULL,
-  "symbol_position" character varying NULL,
-  "currency_unit_label" jsonb NULL,
-  "currency_subunit_label" jsonb NULL,
-  "rounding" numeric NULL,
-  "decimal_places" integer NULL,
-  "is_active" boolean NULL,
-  "is_archived" boolean NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  "etag" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "essent_currencies_code_ukey" UNIQUE ("code")
-);
--- Create index "essent_currencies_is_active_idx" to table: "essential_currencies"
-CREATE INDEX "essent_currencies_is_active_idx" ON "essential_currencies" ("is_active");
 -- Create "essential_enums" table
 CREATE TABLE "essential_enums" (
   "id" character varying NOT NULL,
@@ -32,28 +9,6 @@ CREATE TABLE "essential_enums" (
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
   PRIMARY KEY ("id")
-);
--- Create "essential_languages" table
-CREATE TABLE "essential_languages" (
-  "id" character varying NOT NULL,
-  "name" character varying NULL,
-  "locale_code" character varying NULL,
-  "direction" character varying NULL,
-  "decimal_separator" character varying NULL,
-  "thousands_separator" character varying NULL,
-  "grouping" character varying NULL,
-  "date_format" character varying NULL,
-  "time_format" character varying NULL,
-  "short_time_format" character varying NULL,
-  "first_day_of_week" character varying NULL,
-  "is_enabled" boolean NULL,
-  "etag" character varying NULL,
-  "created_at" timestamptz NULL,
-  "updated_at" timestamptz NULL,
-  "created_by" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "essential_languages_locale_code_ukey" UNIQUE ("locale_code"),
-  CONSTRAINT "essential_languages_name_ukey" UNIQUE ("name")
 );
 -- Create "essential_model_metadata" table
 CREATE TABLE "essential_model_metadata" (
@@ -119,6 +74,75 @@ CREATE TABLE "essential_field_metadata" (
   PRIMARY KEY ("id"),
   CONSTRAINT "essential_field_metadata_model_metadata_id_code_ukey" UNIQUE ("model_metadata_id", "code"),
   CONSTRAINT "essential_field_metadata_model_metadata_id_fkey" FOREIGN KEY ("model_metadata_id") REFERENCES "essential_model_metadata" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- Create "essential_currencies" table
+CREATE TABLE "essential_currencies" (
+  "id" character varying NOT NULL,
+  "code" character varying NULL,
+  "numeric_code" character varying NULL,
+  "name" jsonb NULL,
+  "symbol" character varying NULL,
+  "symbol_position" character varying NULL,
+  "currency_unit_label" jsonb NULL,
+  "currency_subunit_label" jsonb NULL,
+  "rounding" numeric NULL,
+  "decimal_places" integer NULL,
+  "is_archived" boolean NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  "etag" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "essent_currencies_code_ukey" UNIQUE ("code")
+);
+-- Create "essential_org_currencies" table
+CREATE TABLE "essential_org_currencies" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "currency_id" character varying NULL,
+  "is_active" boolean NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "essent_org_cur_org_currency_ukey" UNIQUE ("org_id", "currency_id"),
+  CONSTRAINT "essential_org_currencies_currency_id_fkey" FOREIGN KEY ("currency_id") REFERENCES "essential_currencies" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- Create "essential_languages" table
+CREATE TABLE "essential_languages" (
+  "id" character varying NOT NULL,
+  "name" character varying NULL,
+  "locale_code" character varying NULL,
+  "direction" character varying NULL,
+  "decimal_separator" character varying NULL,
+  "thousands_separator" character varying NULL,
+  "grouping" character varying NULL,
+  "date_format" character varying NULL,
+  "time_format" character varying NULL,
+  "short_time_format" character varying NULL,
+  "first_day_of_week" character varying NULL,
+  "public_use" boolean NULL,
+  "is_archived" boolean NULL,
+  "etag" character varying NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "essential_languages_locale_code_ukey" UNIQUE ("locale_code"),
+  CONSTRAINT "essential_languages_name_ukey" UNIQUE ("name")
+);
+-- Create "essential_org_languages" table
+CREATE TABLE "essential_org_languages" (
+  "id" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "language_id" character varying NULL,
+  "is_active" boolean NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "essent_org_lang_org_language_ukey" UNIQUE ("org_id", "language_id"),
+  CONSTRAINT "essential_org_languages_language_id_fkey" FOREIGN KEY ("language_id") REFERENCES "essential_languages" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "essential_uomcats" table
 CREATE TABLE "essential_uomcats" (

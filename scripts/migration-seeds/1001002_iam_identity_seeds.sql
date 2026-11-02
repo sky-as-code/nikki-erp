@@ -178,3 +178,39 @@ BEGIN
 		('01K0AUTH000000000000000103', 'otpCode',  3, 3, 1800, 'domain', '01JWNMZ36QHC7CQQ748H9NQ6J6', 'system');
 	END IF;
 END $$;
+
+-- ---------------------------------------------------------------------------
+-- Essential activations of the organizations seeded above.
+-- ---------------------------------------------------------------------------
+
+-- A new organization gets these rows from Essential's org lifecycle (InitOrg): the public_use
+-- languages and the default currencies (VND, USD) active. The organizations above are seeded in
+-- SQL instead, so they get the same rows here, after both they and the catalogue exist. Ids are
+-- derived from the pair, so a re-run is a no-op.
+
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'essential_org_languages'
+	) THEN
+		INSERT INTO "essential_org_languages" ("id", "org_id", "language_id", "is_active", "created_at")
+		SELECT '01ACTL' || upper(substr(md5(o."id" || l."id"), 1, 20)), o."id", l."id", TRUE, NOW()
+		FROM "iam_organizations" o
+		CROSS JOIN "essential_languages" l
+		WHERE l."public_use" = TRUE
+		ON CONFLICT DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'essential_org_currencies'
+	) THEN
+		INSERT INTO "essential_org_currencies" ("id", "org_id", "currency_id", "is_active", "created_at")
+		SELECT '01ACTC' || upper(substr(md5(o."id" || c."id"), 1, 20)), o."id", c."id", TRUE, NOW()
+		FROM "iam_organizations" o
+		CROSS JOIN "essential_currencies" c
+		WHERE c."code" IN ('VND', 'USD')
+		ON CONFLICT DO NOTHING;
+	END IF;
+END $$;

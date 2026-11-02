@@ -16,3 +16,13 @@ type SettingsRegistrationExtService interface {
 
 type RegisterSchemaCommand = itSettings.RegisterSchemaCommand
 type RegisterSchemaResult = itSettings.RegisterSchemaResult
+
+// OrgSettingsSeedExtService writes Essential's own settings for a new organization, from the org
+// lifecycle. It writes nothing else.
+type OrgSettingsSeedExtService interface {
+	SeedOrgSettings(ctx corectx.Context, cmd SetSettingsCommand) (*SetSettingsResult, error)
+}
+
+type SetSettingsCommand = itSettings.SetSettingsCommand
+type SetSettingItem = itSettings.SetSettingItem
+type SetSettingsResult = itSettings.SetSettingsResult

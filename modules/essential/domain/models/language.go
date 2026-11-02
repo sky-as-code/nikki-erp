@@ -39,7 +39,8 @@ const (
 	LanguageFieldTimeFormat         = "time_format"
 	LanguageFieldShortTimeFormat    = "short_time_format"
 	LanguageFieldFirstDayOfWeek     = "first_day_of_week"
-	LanguageFieldIsEnabled          = "is_enabled"
+	LanguageFieldIsActive           = "is_active"
+	LanguageFieldPublicUse          = "public_use"
 )
 
 //go:embed language.json
@@ -146,10 +147,15 @@ func (this *Language) SetFirstDayOfWeek(v *string) {
 	this.GetFieldData().SetString(LanguageFieldFirstDayOfWeek, v)
 }
 
-func (this Language) GetIsEnabled() *bool {
-	return this.GetFieldData().GetBool(LanguageFieldIsEnabled)
+// GetIsActive reads the computed per-organization activation; nil when the read had no acting org.
+func (this Language) GetIsActive() *bool {
+	return this.GetFieldData().GetBool(LanguageFieldIsActive)
 }
 
-func (this *Language) SetIsEnabled(v *bool) {
-	this.GetFieldData().SetBool(LanguageFieldIsEnabled, v)
+func (this Language) GetPublicUse() *bool {
+	return this.GetFieldData().GetBool(LanguageFieldPublicUse)
+}
+
+func (this *Language) SetPublicUse(v *bool) {
+	this.GetFieldData().SetBool(LanguageFieldPublicUse, v)
 }

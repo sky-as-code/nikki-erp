@@ -35,12 +35,15 @@ import (
 // nestedProjectionPlan asks a capable builder for its folding plan. A nil plan with no errors
 // means either the builder is not capable or the columns name no edge, and the caller falls
 // back to the per-row hydration path.
-func (this *BaseDynamicRepositoryImpl) nestedProjectionPlan(columns []string) (*orm.NestedProjection, ft.ClientErrors, error) {
+func (this *BaseDynamicRepositoryImpl) nestedProjectionPlan(
+	ctx corectx.Context, columns []string, computedCtx map[string]any,
+) (*orm.NestedProjection, ft.ClientErrors, error) {
 	capable, ok := this.queryBuilder.(orm.NestedProjectionCapable)
 	if !ok || len(columns) == 0 {
 		return nil, nil, nil
 	}
-	plan, cErrs, err := capable.PlanNestedProjection(this.schema, dmodel.GetSchemaRegistry(), orm.ToSelectColumns(columns))
+	plan, cErrs, err := capable.PlanNestedProjection(this.schema, dmodel.GetSchemaRegistry(), orm.ToSelectColumns(columns),
+		dyn.MergeComputedContext(ctx, computedCtx))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -118,7 +121,7 @@ func (this *BaseDynamicRepositoryImpl) runProjectedScan(
 		Page:            param.Page,
 		Size:            param.Size,
 		Language:        param.Language,
-		ComputedContext: param.ComputedContext,
+		ComputedContext: dyn.MergeComputedContext(ctx, param.ComputedContext),
 	})
 	if err != nil {
 		return nil, nil, err

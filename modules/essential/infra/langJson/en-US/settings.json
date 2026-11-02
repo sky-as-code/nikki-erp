@@ -30,6 +30,7 @@
 	"settings.level.tenant": "Tenant",
 	"settings.level.user": "User",
 	"settings.level_invalid": "The level must be one of tenant, org or user",
+	"settings.menu.currencies": "Currencies",
 	"settings.menu.general": "General settings",
 	"settings.menu.languages": "Languages",
 	"settings.menu.translations": "Translations",

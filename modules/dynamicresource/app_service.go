@@ -49,6 +49,8 @@ type CrudApplicationService interface {
 	AssertAction(ctx corectx.Context, actionCode string, params dmodel.DynamicFields) (*model.Id, *ft.ClientErrors)
 	AssertPermission(ctx corectx.Context, actionCode string, orgId *model.Id) *ft.ClientErrors
 	ResolveOrgScope(ctx corectx.Context, params dmodel.DynamicFields) (*model.Id, *ft.ClientErrors)
+	// IsOrgBound reports a tenant catalogue answered per org (see NewAppServiceParam.IsOrgBound).
+	IsOrgBound() bool
 	ConstrainSearchToOrg(params dmodel.DynamicFields, orgId model.Id) error
 	AssertRecordInOrg(ctx corectx.Context, params dmodel.DynamicFields, orgId model.Id) (*ft.ClientErrors, error)
 	FetchByKeys(ctx corectx.Context, keys dmodel.DynamicFields, vErrs *ft.ClientErrors) (dmodel.DynamicFields, error)
@@ -77,6 +79,10 @@ type NewAppServiceParam struct {
 	// on a resource whose schema declares no org_id field.
 	IsOrgScoped *bool
 
+	// IsOrgBound requires and checks org_id on a schema without an org_id column, recording it as
+	// the request's acting org (`dyn.WithActingOrg`) without filtering rows. See the onion's field.
+	IsOrgBound bool
+
 	// CrudActions is the allow-list. Empty means every action is supported.
 	CrudActions []CrudAction
 
@@ -102,6 +108,7 @@ func NewDefaultApplicationService(param NewAppServiceParam) CrudApplicationServi
 		domSvc:       param.DomainService,
 		scope:        scope,
 		orgScoped:    param.IsOrgScoped == nil || *param.IsOrgScoped,
+		orgBound:     param.IsOrgBound,
 		crudActions:  crudActions,
 		storage:      param.Storage,
 		importLimits: param.ImportLimits,
@@ -114,6 +121,7 @@ type DefaultApplicationServiceImpl struct {
 	domSvc       CrudDomainService
 	scope        requestguard.ResourceScope
 	orgScoped    bool
+	orgBound     bool
 	crudActions  map[CrudAction]bool
 	storage      filestorage.FileStorageAdapter
 	importLimits ImportLimits
@@ -267,14 +275,22 @@ func (this *DefaultApplicationServiceImpl) Exists(
 // GetSchema serves the resource schema in the simplified shape the clients cache. It asserts no
 // permission - the authenticated route is the only gate: the schema is metadata, identical for
 // every caller (ToSimplized takes no caller input), which is what lets the Web BFF cache it across
-// callers. A client needs it to render a locked field or edge it may not read.
+// callers. A client needs it to render a locked field or edge it may not read, and an org-bound
+// resource is flagged `is_org_bound` so any client sends org_id without knowing the resource.
 func (this *DefaultApplicationServiceImpl) GetSchema(
 	_ corectx.Context, _ GetSchemaQuery,
 ) (*GetSchemaResult, error) {
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionGetSchema); cErrs != nil {
 		return &GetSchemaResult{ClientErrors: *cErrs}, nil
 	}
-	return &GetSchemaResult{Data: this.Schema().ToSimplized(), HasData: true}, nil
+	if !this.orgBound {
+		return &GetSchemaResult{Data: this.Schema().ToSimplized(), HasData: true}, nil
+	}
+	schema, err := withOrgBoundFlag(this.Schema().ToSimplized())
+	if err != nil {
+		return nil, err
+	}
+	return &GetSchemaResult{Data: schema, HasData: true}, nil
 }
 
 // ComputeField evaluates a function-kind computed field over an unsaved model. The model travels
@@ -313,7 +329,7 @@ func (this *DefaultApplicationServiceImpl) assertCrudAction(
 	if cErrs != nil {
 		return nil, cErrs
 	}
-	return orgId, this.gate(ctx, permission, recordAccess{orgId: orgId})
+	return orgId, this.gate(ctx, permission, recordAccess{orgId: this.permissionOrg(ctx, orgId)})
 }
 
 func (this *DefaultApplicationServiceImpl) gate(

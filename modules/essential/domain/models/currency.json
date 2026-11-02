@@ -93,16 +93,31 @@
 			"name": "is_active",
 			"label": "fields.is_active",
 			"data_type": "boolean",
-			"required_for_create": true,
-			"default_value": true,
+			"computed": {
+				"kind": "exists",
+				"is_stored": false,
+				"source": "org_activations",
+				"filter": {
+					"and": [
+						{ "if": ["org_id", "=", "${ctx.org_id}"] },
+						{ "if": ["is_active", "=", true] }
+					]
+				},
+				"context": ["org_id"]
+			},
+			"metadata": {"writable": true},
 			"description": {
-				"en-US": "Whether new transactions may be denominated in this currency. Distinct from archiving: a currency withdrawn from use must remain readable, because amounts already recorded in it still refer to it."
+				"en-US": "Whether the acting organization uses this currency: its essential_org_currency row, false without one. Written through this record's create and update, never stored here, so each organization answers for itself."
 			}
 		}
 	],
 
-	"search_indexes": [
-		{ "index_name": "essent_currencies_is_active", "fields": ["is_active"] }
+	"edges_from": [
+		{
+			"edge": "org_activations",
+			"label": { "en-US": "Organization activations" },
+			"existing": { "src_schema": "essential_org_currency", "src_edge": "currency" }
+		}
 	],
 
 	"extend_after": [

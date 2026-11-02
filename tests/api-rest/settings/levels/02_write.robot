@@ -71,7 +71,7 @@ Writing A Value Outside The Enum Is Refused
     ...    msg=A value outside the declared enum must be refused.
 
 A Language That Is Not Enabled Is Refused
-    [Documentation]    The allowed languages are the essential_languages rows marked is_enabled,
+    [Documentation]    The allowed languages are the essential_languages the caller's organization has active,
     ...    checked by Essential's own settings update. A well-formed code with no enabled row
     ...    would render every key as its raw namespace:key to the user who picked it.
     [Tags]    negative

@@ -27,14 +27,17 @@ type currencyEngineParam struct {
 func registerCurrencyEngine() error {
 	err := deps.RegisterNamed(
 		dynamicresource.EngineDependencyName(models.CurrencySchemaName),
-		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+		func(
+			param dynamicresource.BuildParam, activation *services.CurrencyActivation,
+		) dynamicresource.DynamicResourceEngineOnion {
 			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.CurrencySchemaName,
+				IsOrgBound: true,
 				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewCurrencyRepository(base)
 				},
 				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
-					return services.NewCurrencyDomainService(base)
+					return services.NewCurrencyDomainService(base, activation)
 				},
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewCurrencyApplicationService(base)

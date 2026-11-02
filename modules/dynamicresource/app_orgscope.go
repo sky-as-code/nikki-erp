@@ -1,12 +1,15 @@
 package dynamicresource
 
 import (
+	"encoding/json"
+
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 )
@@ -28,10 +31,46 @@ func (this *DefaultApplicationServiceImpl) AssertAction(
 	if cErrs != nil {
 		return nil, cErrs
 	}
-	if cErrs := this.AssertPermission(ctx, actionCode, orgId); cErrs != nil {
+	if cErrs := this.AssertPermission(ctx, actionCode, this.permissionOrg(ctx, orgId)); cErrs != nil {
 		return nil, cErrs
 	}
 	return orgId, nil
+}
+
+// IsOrgBound reports a tenant catalogue answered per org; its REST binders accept org_id although
+// the schema declares no such field.
+func (this *DefaultApplicationServiceImpl) IsOrgBound() bool {
+	return this.orgBound
+}
+
+// fieldIsOrgBound flags an org-bound resource in its served schema.
+const fieldIsOrgBound = "is_org_bound"
+
+// withOrgBoundFlag adds is_org_bound to a simplified schema, an anonymous struct that only its JSON
+// form can be extended.
+func withOrgBoundFlag(simplized any) (map[string]any, error) {
+	raw, err := json.Marshal(simplized)
+	if err != nil {
+		return nil, errors.Wrap(err, "withOrgBoundFlag.Marshal")
+	}
+	schema := map[string]any{}
+	if err := json.Unmarshal(raw, &schema); err != nil {
+		return nil, errors.Wrap(err, "withOrgBoundFlag.Unmarshal")
+	}
+	schema[fieldIsOrgBound] = true
+	return schema, nil
+}
+
+// permissionOrg is the org a permission check matches grants in: the resolved org, or for an
+// org-bound catalogue (which filters no rows by org) the acting org, so org grants still match.
+func (this *DefaultApplicationServiceImpl) permissionOrg(ctx corectx.Context, orgId *model.Id) *model.Id {
+	if orgId != nil || !this.orgBound {
+		return orgId
+	}
+	if acting, ok := dyn.ActingOrgOf(ctx); ok {
+		return &acting
+	}
+	return nil
 }
 
 // AssertPermission checks the caller's entitlement for actionCode on this resource.
@@ -54,12 +93,35 @@ func (this *DefaultApplicationServiceImpl) AssertPermission(
 // confined to. A nil org means the resource is not org-scoped, and nothing downstream filters
 // by org. The authoritative org_id is normalized back into params so that every downstream
 // consumer - the search graph, the single-row key set, the create payload - reads one value.
+// Whichever org is resolved also becomes the request's acting org (`${ctx.org_id}`).
+//
+// An org-bound resource (no org_id column) resolves the org the same way, records it as the
+// acting org, drops it from params (no column takes it) and returns nil: nothing filters by it.
 func (this *DefaultApplicationServiceImpl) ResolveOrgScope(
 	ctx corectx.Context, params dmodel.DynamicFields,
 ) (*model.Id, *ft.ClientErrors) {
-	if !this.orgScoped || !this.schemaHasOrgId() {
+	hasOrgColumn := this.schemaHasOrgId()
+	if !(this.orgScoped && hasOrgColumn) && !this.orgBound {
+		if !hasOrgColumn {
+			delete(params, basemodel.FieldOrgId)
+		}
 		return nil, nil
 	}
+	orgId, cErrs := resolveMemberOrg(ctx, params)
+	if cErrs != nil {
+		return nil, cErrs
+	}
+	dyn.WithActingOrg(ctx, *orgId)
+	if !hasOrgColumn {
+		delete(params, basemodel.FieldOrgId)
+		return nil, nil
+	}
+	params[basemodel.FieldOrgId] = string(*orgId)
+	return orgId, nil
+}
+
+// resolveMemberOrg reads the required org_id and checks the caller may act inside it.
+func resolveMemberOrg(ctx corectx.Context, params dmodel.DynamicFields) (*model.Id, *ft.ClientErrors) {
 
 	rawOrgId := readString(params, basemodel.FieldOrgId)
 	if rawOrgId == "" {
@@ -85,7 +147,6 @@ func (this *DefaultApplicationServiceImpl) ResolveOrgScope(
 		return nil, &cErrs
 	}
 
-	params[basemodel.FieldOrgId] = rawOrgId
 	return &orgId, nil
 }
 

@@ -30,6 +30,7 @@
 	"settings.level.tenant": "Tổ chức thuê bao",
 	"settings.level.user": "Người dùng",
 	"settings.level_invalid": "Cấp phải là một trong tenant, org hoặc user",
+	"settings.menu.currencies": "Tiền tệ",
 	"settings.menu.general": "Cài đặt chung",
 	"settings.menu.languages": "Ngôn ngữ",
 	"settings.menu.translations": "Bản dịch",

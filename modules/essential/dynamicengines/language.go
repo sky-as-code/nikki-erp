@@ -26,15 +26,17 @@ func registerLanguageEngine() error {
 		dynamicresource.EngineDependencyName(models.LanguageSchemaName),
 		func(
 			param dynamicresource.BuildParam, effectiveSettings itExt.EffectiveSettingsExtService,
+			activation *services.LanguageActivation,
 		) dynamicresource.DynamicResourceEngineOnion {
 			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:      models.LanguageSchemaName,
 				PermissionScope: tenantScope(),
+				IsOrgBound:      true,
 				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewLanguageRepository(base)
 				},
 				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
-					return services.NewLanguageDomainService(base, effectiveSettings)
+					return services.NewLanguageDomainService(base, effectiveSettings, activation)
 				},
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewLanguageApplicationService(base)
