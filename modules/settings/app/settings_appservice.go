@@ -66,7 +66,7 @@ type OrgSettingsAppServiceImpl struct {
 func (this *OrgSettingsAppServiceImpl) GetOrgSettings(
 	ctx corectx.Context, query it.GetSettingsQuery,
 ) (*it.GetSettingsResult, error) {
-	if cErr := assertPermission(ctx, actionRead, settingsRecordResource); cErr != nil {
+	if cErr := assertOrgSettingsAccess(ctx, actionRead, query.OrgId); cErr != nil {
 		return &it.GetSettingsResult{ClientErrors: *cErr}, nil
 	}
 	return this.settingsSvc.GetSettings(ctx, c.LevelOrg, c.OwnerTypeOrg, query)
@@ -75,7 +75,7 @@ func (this *OrgSettingsAppServiceImpl) GetOrgSettings(
 func (this *OrgSettingsAppServiceImpl) SetOrgSettings(
 	ctx corectx.Context, cmd it.SetSettingsCommand,
 ) (*it.SetSettingsResult, error) {
-	if cErr := assertPermission(ctx, actionUpdate, settingsRecordResource); cErr != nil {
+	if cErr := assertOrgSettingsAccess(ctx, actionUpdate, cmd.OrgId); cErr != nil {
 		return &it.SetSettingsResult{ClientErrors: *cErr}, nil
 	}
 	return this.settingsSvc.SetSettings(ctx, c.LevelOrg, c.OwnerTypeOrg, cmd)

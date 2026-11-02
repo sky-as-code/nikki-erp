@@ -2,8 +2,11 @@ package app
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 )
 
@@ -29,4 +32,25 @@ func assertPermission(ctx corectx.Context, actionCode string, resourceCode strin
 		ResourceCode: resourceCode,
 		Scope:        reguard.ResourceScopeTenant,
 	})
+}
+
+// assertOrgSettingsAccess authorizes an org-level read or write. A request that names no org keeps
+// the tenant-scope check and lets the domain service infer the org, as before org_id existed.
+//
+// A named org is held to the rules of every org-scoped resource: the caller must belong to it, and
+// the permission is checked in it so an org-scoped grant answers. It then becomes the acting org,
+// which is what the domain service resolves the owner from.
+func assertOrgSettingsAccess(ctx corectx.Context, actionCode string, orgId *model.Id) *ft.ClientErrors {
+	if orgId == nil {
+		return assertPermission(ctx, actionCode, settingsRecordResource)
+	}
+	if cErr := dynamicresource.AssertCallerInOrg(ctx, *orgId); cErr != nil {
+		return cErr
+	}
+	perm := reguard.PermFor(actionCode, settingsRecordResource, reguard.ResourceScopeOrg).InOrg(orgId)
+	if cErr := reguard.AssertPermission(ctx, perm); cErr != nil {
+		return cErr
+	}
+	dyn.WithActingOrg(ctx, *orgId)
+	return nil
 }

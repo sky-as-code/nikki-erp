@@ -1,7 +1,8 @@
 package v1
 
 import (
-	it "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
+	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
+	it"github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 )
 
 // GetSettingsRequest reads one module's settings for the acting owner at the level the route
@@ -9,10 +10,13 @@ import (
 // caller cannot reach the tenant level by sending a different string on an org-level route.
 type GetSettingsRequest struct {
 	ModuleKey string `param:"module_key"`
+	// OrgId names the org an org-level read acts for, as on every org-scoped resource. Other
+	// levels ignore it.
+	OrgId *string `query:"org_id"`
 }
 
 func (this GetSettingsRequest) ToQuery() it.GetSettingsQuery {
-	return it.GetSettingsQuery{ModuleKey: this.ModuleKey}
+	return it.GetSettingsQuery{ModuleKey: this.ModuleKey, OrgId: coreSettings.OptionalOrgId(this.OrgId)}
 }
 
 // SettingItemResponse is one setting as the UI sees it: the value together with enough of its

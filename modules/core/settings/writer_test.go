@@ -9,6 +9,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
@@ -76,4 +77,32 @@ func TestModuleSettingsWriter_ModuleRuleCanRefuse(t *testing.T) {
 	result := update(t, writer, LevelUser, "dark")
 	assert.Equal(t, 1, result.ClientErrors.Count())
 	assert.Empty(t, service.calls)
+}
+
+// The org a request names must reach the Settings service, which checks membership and records it
+// as the acting org; dropping it here would write the org the request merely implies.
+func TestModuleSettingsWriter_CarriesTheNamedOrg(t *testing.T) {
+	service := &recordingService{}
+	writer := NewModuleSettingsWriter("test", map[string]*dmodel.ModelSchema{LevelOrg: testSchema()}, service)
+	ctx := corectx.NewRequestContext(context.Background())
+	ctx.SetPermissions(corectx.ContextPermissions{
+		IsOwner:   true,
+		Principal: corectx.Principal{Kind: corectx.PrincipalKindUser, Id: model.Id("01USER0000000000000000001")},
+	})
+	orgId := model.Id("01ORGB0000000000000000000B")
+
+	result, err := writer.Update(ctx, UpdateSettingsCommand{
+		Level: LevelOrg, Items: []SetSettingItem{{Name: "theme", Value: "dark"}}, OrgId: &orgId,
+	})
+
+	require.NoError(t, err)
+	assert.Zero(t, result.ClientErrors.Count())
+	require.Len(t, service.calls, 1)
+	assert.Equal(t, &orgId, service.calls[0].OrgId)
+}
+
+func TestUpdateSettingsRequest_BlankOrgIdMeansNone(t *testing.T) {
+	blank := ""
+	assert.Nil(t, UpdateSettingsRequest{OrgId: &blank}.ToCommand().OrgId)
+	assert.Nil(t, UpdateSettingsRequest{}.ToCommand().OrgId)
 }

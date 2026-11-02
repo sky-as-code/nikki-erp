@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 )
@@ -18,6 +19,8 @@ import (
 type UpdateSettingsRequest struct {
 	Level string                 `param:"level" json:"-"`
 	Items []UpdateSettingItemDto `json:"items"`
+	// OrgId names the org an org-level write acts for, as on every org-scoped resource.
+	OrgId *string `json:"org_id,omitempty"`
 }
 
 type UpdateSettingItemDto struct {
@@ -34,7 +37,16 @@ func (this UpdateSettingsRequest) ToCommand() UpdateSettingsCommand {
 	for _, item := range this.Items {
 		items = append(items, SetSettingItem{Name: item.Name, Value: item.Value, AllowOverride: item.AllowOverride})
 	}
-	return UpdateSettingsCommand{Level: this.Level, Items: items}
+	return UpdateSettingsCommand{Level: this.Level, Items: items, OrgId: OptionalOrgId(this.OrgId)}
+}
+
+// OptionalOrgId reads an optional org_id parameter; absent or blank both mean "not named".
+func OptionalOrgId(raw *string) *model.Id {
+	if raw == nil || *raw == "" {
+		return nil
+	}
+	orgId := model.Id(*raw)
+	return &orgId
 }
 
 type UpdateSettingsResponse struct {

@@ -3,6 +3,7 @@ package settings
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 )
@@ -16,6 +17,8 @@ const settingsRecordResource = "settings_record"
 type UpdateSettingsCommand struct {
 	Level string
 	Items []SetSettingItem
+	// OrgId is the org an org-level write acts for; see SetSettingsCommand.OrgId.
+	OrgId *model.Id
 }
 
 // SettingsRule is a module's own check on a write, beyond what its schema can say -- typically one
@@ -42,7 +45,7 @@ func NewModuleSettingsWriter(
 }
 
 func (this *ModuleSettingsWriter) Update(ctx corectx.Context, cmd UpdateSettingsCommand) (*SetSettingsResult, error) {
-	if cErr := assertCanWrite(ctx, cmd.Level); cErr != nil {
+	if cErr := assertCanWrite(ctx, cmd.Level, cmd.OrgId); cErr != nil {
 		return clientErrorsResult(*cErr), nil
 	}
 	schema, ok := this.schemas[cmd.Level]
@@ -62,7 +65,9 @@ func (this *ModuleSettingsWriter) Update(ctx corectx.Context, cmd UpdateSettings
 			return clientErrorsResult(vErrs), nil
 		}
 	}
-	return this.service.SetSettings(ctx, cmd.Level, SetSettingsCommand{ModuleKey: this.moduleKey, Items: cmd.Items})
+	return this.service.SetSettings(ctx, cmd.Level, SetSettingsCommand{
+		ModuleKey: this.moduleKey, Items: cmd.Items, OrgId: cmd.OrgId,
+	})
 }
 
 func clientErrorsResult(vErrs ft.ClientErrors) *SetSettingsResult {
@@ -73,9 +78,16 @@ func clientErrorsResult(vErrs ft.ClientErrors) *SetSettingsResult {
 // the right learns that first rather than whether the module declares the level. A tenant or org
 // write needs update on settings_record; a user write is the actor's own row. The Settings
 // application service asserts again when the port reaches it; the repeat is a cache lookup.
-func assertCanWrite(ctx corectx.Context, level string) *ft.ClientErrors {
+//
+// An org-level write that names its org is checked in that org, so an org-scoped grant answers;
+// membership in it is the Settings application service's check.
+func assertCanWrite(ctx corectx.Context, level string, orgId *model.Id) *ft.ClientErrors {
 	if level != LevelTenant && level != LevelOrg {
 		return nil
+	}
+	if level == LevelOrg && orgId != nil {
+		return reguard.AssertPermission(ctx,
+			reguard.PermFor("update", settingsRecordResource, reguard.ResourceScopeOrg).InOrg(orgId))
 	}
 	return reguard.AssertPermission(ctx, reguard.Perm{
 		ActionCode: "update", ResourceCode: settingsRecordResource, Scope: reguard.ResourceScopeTenant,
