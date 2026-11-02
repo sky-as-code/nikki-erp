@@ -7,6 +7,7 @@
 package settings
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
@@ -40,6 +41,11 @@ type SettingsService interface {
 type SetSettingsCommand struct {
 	ModuleKey string
 	Items     []SetSettingItem
+
+	// OrgId names the organization an org-level write acts for, as org_id does on every
+	// org-scoped resource. Nil keeps the owner the request implies (service principal's org, org
+	// unit's org, sole membership); other levels ignore it.
+	OrgId *model.Id
 }
 
 type SetSettingItem struct {

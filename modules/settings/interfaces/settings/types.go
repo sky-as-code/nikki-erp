@@ -58,6 +58,9 @@ type SettingItem struct {
 // GetSettingsQuery reads the settings one actor may see for one module.
 type GetSettingsQuery struct {
 	ModuleKey string
+
+	// OrgId names the organization an org-level read acts for; see SetSettingsCommand.OrgId.
+	OrgId *model.Id
 }
 
 type GetSettingsResultData struct {

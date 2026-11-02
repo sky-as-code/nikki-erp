@@ -5,6 +5,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	c "github.com/sky-as-code/nikki-erp/modules/settings/constants"
 )
 
@@ -54,7 +55,14 @@ func ownerIdFor(ctx corectx.Context, ownerType string) (string, error) {
 // failing. The org unit's organization is used when the request has one, since that is an explicit
 // choice rather than an inference. A service principal is minted for one organization, so that
 // is the one it acts for.
+//
+// An org the application service already authorized (`org_id` on the request, recorded as the
+// acting org) outranks all of these: it is the caller's explicit choice, and the org unit may sit
+// in another of the caller's organizations.
 func actingOrgId(ctx corectx.Context) string {
+	if orgId, ok := dyn.ActingOrgOf(ctx); ok {
+		return string(orgId)
+	}
 	permissions := ctx.GetPermissions()
 	if permissions.Principal.Kind == corectx.PrincipalKindService && permissions.Principal.OrgId != nil {
 		return string(*permissions.Principal.OrgId)

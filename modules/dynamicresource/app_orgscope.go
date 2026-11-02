@@ -122,7 +122,6 @@ func (this *DefaultApplicationServiceImpl) ResolveOrgScope(
 
 // resolveMemberOrg reads the required org_id and checks the caller may act inside it.
 func resolveMemberOrg(ctx corectx.Context, params dmodel.DynamicFields) (*model.Id, *ft.ClientErrors) {
-
 	rawOrgId := readString(params, basemodel.FieldOrgId)
 	if rawOrgId == "" {
 		cErrs := ft.ClientErrors{}
@@ -134,20 +133,30 @@ func resolveMemberOrg(ctx corectx.Context, params dmodel.DynamicFields) (*model.
 		return nil, &cErrs
 	}
 
-	// A caller may only act inside an org they belong to. Answering "not found" instead would
-	// hide the caller's own mistake behind the same response an empty org produces.
 	orgId := model.Id(rawOrgId)
-	if !mayActInOrg(ctx.GetPermissions(), orgId) {
-		cErrs := ft.ClientErrors{}
-		cErrs.Append(*ft.NewValidationError(
-			basemodel.FieldOrgId,
-			string(ft.ErrorKey("err_org_id_not_a_member")),
-			"you do not belong to this organization",
-		))
-		return nil, &cErrs
+	if cErrs := AssertCallerInOrg(ctx, orgId); cErrs != nil {
+		return nil, cErrs
 	}
-
 	return &orgId, nil
+}
+
+// AssertCallerInOrg refuses an org_id the caller may not act inside. It is exported so that a
+// service outside the resource engine that accepts an org_id (org-level settings) answers a
+// non-member with the same error the engine does.
+//
+// Answering "not found" instead would hide the caller's own mistake behind the same response an
+// empty org produces.
+func AssertCallerInOrg(ctx corectx.Context, orgId model.Id) *ft.ClientErrors {
+	if mayActInOrg(ctx.GetPermissions(), orgId) {
+		return nil
+	}
+	cErrs := ft.ClientErrors{}
+	cErrs.Append(*ft.NewValidationError(
+		basemodel.FieldOrgId,
+		string(ft.ErrorKey("err_org_id_not_a_member")),
+		"you do not belong to this organization",
+	))
+	return &cErrs
 }
 
 // mayActInOrg reports whether the caller is permitted to act inside orgId.
