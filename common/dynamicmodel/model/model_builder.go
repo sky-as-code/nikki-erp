@@ -455,6 +455,9 @@ func (this *ModelSchemaBuilder) Build() *ModelSchema {
 	if err := validateRequiredWithFields(schema); err != nil {
 		panic(errors.Wrap(err, "Build"))
 	}
+	if err := validateConditionalFields(schema); err != nil {
+		panic(errors.Wrap(err, "Build"))
+	}
 	if err := validateRecordLabelFields(schema); err != nil {
 		panic(errors.Wrap(err, "Build"))
 	}
@@ -763,6 +766,21 @@ func (this *FieldBuilder) RequiredForUpdate() *FieldBuilder {
 
 func (this *FieldBuilder) RequiredWith(otherFieldName string) *FieldBuilder {
 	this.field.requiredWithFieldName = otherFieldName
+	return this
+}
+
+// RequiredFields declares, per value of this enum_string field, the same-schema fields that must
+// have a value while it holds that value. Enforced on create and update (against the stored row);
+// skipped while this field has no value. Build() validates keys and field names.
+func (this *FieldBuilder) RequiredFields(byValue map[string][]string) *FieldBuilder {
+	this.field.requiredFields = cloneConditionalFields(byValue)
+	return this
+}
+
+// OptionalFields declares, per value of this enum_string field, the same-schema fields a client
+// should show while it holds that value. Never enforced server-side.
+func (this *FieldBuilder) OptionalFields(byValue map[string][]string) *FieldBuilder {
+	this.field.optionalFields = cloneConditionalFields(byValue)
 	return this
 }
 

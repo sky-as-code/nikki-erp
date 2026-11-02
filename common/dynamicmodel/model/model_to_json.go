@@ -108,6 +108,12 @@ func (this *ModelField) ToModelJson() (map[string]any, error) {
 	if metadata := this.Metadata(); len(metadata) > 0 {
 		field["metadata"] = metadata
 	}
+	if len(this.requiredFields) > 0 {
+		field["required_fields"] = cloneConditionalFields(this.requiredFields)
+	}
+	if len(this.optionalFields) > 0 {
+		field["optional_fields"] = cloneConditionalFields(this.optionalFields)
+	}
 
 	return field, nil
 }

@@ -20,6 +20,8 @@ const (
 	ProductCategoryFieldDisplayOrder     = "display_order"
 	ProductCategoryFieldDescription      = "description"
 	ProductCategoryFieldOrgId            = "org_id"
+	// Takes the same values as InventoryLocationFieldRemovalStrategy and overrides it when set.
+	ProductCategoryFieldForceRemovalStrategy = "force_removal_strategy"
 
 	ProductCategoryEdgeParentCategory = "parent_category"
 
@@ -99,6 +101,14 @@ func (this ProductCategory) GetDescription() *string {
 
 func (this *ProductCategory) SetDescription(v *string) {
 	this.GetFieldData().SetString(ProductCategoryFieldDescription, v)
+}
+
+func (this ProductCategory) GetForceRemovalStrategy() *string {
+	return this.GetFieldData().GetString(ProductCategoryFieldForceRemovalStrategy)
+}
+
+func (this *ProductCategory) SetForceRemovalStrategy(v *string) {
+	this.GetFieldData().SetString(ProductCategoryFieldForceRemovalStrategy, v)
 }
 
 func (this ProductCategory) GetOrgId() *model.Id {

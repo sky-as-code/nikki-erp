@@ -326,7 +326,7 @@ func issueActualSources(
 	planned := make([]plannedSource, 0, len(request.ActualSources))
 	refusedBefore := vErrs.Count()
 	for index, source := range request.ActualSources {
-		locked, err := LockQuantsForUpdate(ctx, quantRepo.GetBaseRepo(), QuantLockKey{
+		locked, err := lockQuantsInRemovalOrder(ctx, quantRepo.GetBaseRepo(), QuantLockKey{
 			OrgId:            model.Id(derefId(reservation.GetOrgId())),
 			ProductVariantId: model.Id(derefId(reservation.GetProductVariantId())),
 			LocationId:       source.LocationId,

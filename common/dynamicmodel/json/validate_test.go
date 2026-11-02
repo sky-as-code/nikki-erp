@@ -117,3 +117,20 @@ func TestValidateSchemaJson_RejectsUnknownProperty(t *testing.T) {
 
 	assert.Greater(t, errs.Count(), 0)
 }
+
+func TestValidateSchemaJson_ConditionalFields(t *testing.T) {
+	valid := `{"name": "t", "fields": [
+		{"name": "kind", "data_type": {"type": "enum_string", "values": ["a"]},
+			"required_fields": {"a": ["x"]}, "optional_fields": {"a": ["y"]}},
+		{"name": "x", "data_type": "boolean"},
+		{"name": "y", "data_type": "boolean"}
+	]}`
+	errs := ValidateSchemaJson(valid, ModelJsonSchema)
+	assert.Equal(t, 0, errs.Count(), "expected no errors, got: %v", errs)
+
+	notArray := `{"name": "t", "fields": [
+		{"name": "kind", "data_type": {"type": "enum_string", "values": ["a"]}, "required_fields": {"a": "x"}}
+	]}`
+	errs = ValidateSchemaJson(notArray, ModelJsonSchema)
+	assert.Greater(t, errs.Count(), 0)
+}

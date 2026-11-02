@@ -918,6 +918,13 @@ func runUpdateValidationFlow[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain
 			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
+			// Validate saw only the changed keys; required_fields needs the stored row for the rest.
+			if schema.HasConditionalRequiredFields() {
+				vErrs.Concat(schema.ValidateConditionalFields(inputModel.GetFieldData(), foundModel.GetFieldData()))
+			}
+			return nil
+		}).
+		Step(func(vErrs *ft.ClientErrors) error {
 			err := validateUniques(ctx, inputModel.GetFieldData(), dynamicRepo, vErrs)
 			return errors.Wrap(err, "Update.ValidateUniques")
 		}).

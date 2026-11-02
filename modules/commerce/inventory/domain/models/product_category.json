@@ -50,6 +50,16 @@
 			"data_type": { "type": "string", "min": 0, "max": 2000 }
 		},
 		{
+			"name": "force_removal_strategy",
+			"label": "fields.force_removal_strategy",
+			"data_type": {
+				"type": "enum_string",
+				"values": ["fifo", "lifo", "fefo", "closest", "least_packages"]
+			},
+			"description": "field_desc.inventory_product_category.force_removal_strategy",
+			"metadata": {"track_history": true}
+		},
+		{
 			"name": "source_system",
 			"label": "fields.source_system",
 			"data_type": { "type": "string", "min": 1, "max": 50 },

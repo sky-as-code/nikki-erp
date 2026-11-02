@@ -221,7 +221,7 @@ func reserveOneMove(
 		}
 	}
 
-	locked, err := LockQuantsForUpdate(ctx, operation.QuantRepo.GetBaseRepo(), QuantLockKey{
+	locked, err := lockQuantsInRemovalOrder(ctx, operation.QuantRepo.GetBaseRepo(), QuantLockKey{
 		OrgId:            derefString(move.GetOrgId()),
 		ProductVariantId: derefString(move.GetProductVariantId()),
 		LocationId:       derefString(move.GetSourceLocationId()),

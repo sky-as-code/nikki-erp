@@ -5,8 +5,10 @@
 package services
 
 import (
+	"database/sql"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
@@ -29,6 +31,8 @@ type LockedQuant struct {
 	LotRef     string
 	PackageRef string
 	OwnerRef   string
+	// IncomingDate orders removal; nil when the balance never recorded one.
+	IncomingDate *time.Time
 }
 
 // Available is the quantity this locked row can still promise to a new demand.
@@ -130,6 +134,7 @@ func lockedQuantColumns() []string {
 		models.StockQuantFieldLotRef,
 		models.StockQuantFieldPackageRef,
 		models.StockQuantFieldOwnerRef,
+		models.StockQuantFieldIncomingDate,
 	}
 }
 
@@ -156,18 +161,27 @@ func scanLockedQuant(row rowScanner) (LockedQuant, error) {
 		id               string
 		onHand, reserved decimal.NullDecimal
 		lot, pkg, owner  string
+		incoming         sql.NullTime
 	)
-	if err := row.Scan(&id, &onHand, &reserved, &lot, &pkg, &owner); err != nil {
+	if err := row.Scan(&id, &onHand, &reserved, &lot, &pkg, &owner, &incoming); err != nil {
 		return LockedQuant{}, errors.Wrap(err, "failed to scan a locked stock quant")
 	}
 	return LockedQuant{
-		Id:         model.Id(id),
-		OnHand:     nullDecimalOrZero(onHand),
-		Reserved:   nullDecimalOrZero(reserved),
-		LotRef:     lot,
-		PackageRef: pkg,
-		OwnerRef:   owner,
+		Id:           model.Id(id),
+		OnHand:       nullDecimalOrZero(onHand),
+		Reserved:     nullDecimalOrZero(reserved),
+		LotRef:       lot,
+		PackageRef:   pkg,
+		OwnerRef:     owner,
+		IncomingDate: nullTimeOrNil(incoming),
 	}, nil
+}
+
+func nullTimeOrNil(value sql.NullTime) *time.Time {
+	if !value.Valid {
+		return nil
+	}
+	return &value.Time
 }
 
 // nullDecimalOrZero reads a null quantity as zero, matching AvailableQuantity: a balance never

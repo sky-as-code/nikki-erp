@@ -98,6 +98,15 @@
 			]
 		},
 
+		"conditionalFields": {
+			"type": "object",
+			"additionalProperties": {
+				"type": "array",
+				"items": { "type": "string", "minLength": 1 },
+				"uniqueItems": true
+			}
+		},
+
 		"field": {
 			"type": "object",
 			"required": ["name", "data_type"],
@@ -113,6 +122,14 @@
 				"required_for_create": { "type": "boolean" },
 				"required_for_update": { "type": "boolean" },
 				"required_with": { "type": "string", "minLength": 1 },
+				"required_fields": {
+					"description": "Source must be enum_string. Maps a value of this field to same-schema fields that must have a value while it holds that value.",
+					"$ref": "#/$defs/conditionalFields"
+				},
+				"optional_fields": {
+					"description": "Source must be enum_string. Maps a value of this field to same-schema fields a client shows while it holds that value; never enforced.",
+					"$ref": "#/$defs/conditionalFields"
+				},
 
 				"db_nullable": {
 					"type": "boolean",

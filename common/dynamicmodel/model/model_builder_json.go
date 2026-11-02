@@ -45,11 +45,13 @@ type fieldJsonDto struct {
 	Placeholder any    `json:"placeholder"`
 	DataType    any    `json:"data_type"`
 
-	RequiredAlways    bool   `json:"required_always"`
-	RequiredForCreate bool   `json:"required_for_create"`
-	RequiredForUpdate bool   `json:"required_for_update"`
-	RequiredWith      string `json:"required_with"`
-	DbNullable        bool   `json:"db_nullable"`
+	RequiredAlways    bool                `json:"required_always"`
+	RequiredForCreate bool                `json:"required_for_create"`
+	RequiredForUpdate bool                `json:"required_for_update"`
+	RequiredWith      string              `json:"required_with"`
+	RequiredFields    map[string][]string `json:"required_fields"`
+	OptionalFields    map[string][]string `json:"optional_fields"`
+	DbNullable        bool                `json:"db_nullable"`
 
 	NoUpdate      bool `json:"no_update"`
 	Unique        bool `json:"unique"`
@@ -321,6 +323,12 @@ func applyFieldFlags(field *FieldBuilder, dto *fieldJsonDto) {
 	}
 	if dto.RequiredWith != "" {
 		field.RequiredWith(dto.RequiredWith)
+	}
+	if len(dto.RequiredFields) > 0 {
+		field.RequiredFields(dto.RequiredFields)
+	}
+	if len(dto.OptionalFields) > 0 {
+		field.OptionalFields(dto.OptionalFields)
 	}
 	if dto.NoUpdate {
 		field.NoUpdate()

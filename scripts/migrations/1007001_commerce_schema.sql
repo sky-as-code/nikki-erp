@@ -122,6 +122,7 @@ CREATE TABLE "inventory_product_categories" (
   "canonical_name" jsonb NULL,
   "display_order" integer NULL,
   "description" character varying NULL,
+  "force_removal_strategy" character varying NULL,
   "source_system" character varying NULL,
   "external_id" character varying NULL,
   "org_id" character varying NULL,

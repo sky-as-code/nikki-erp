@@ -30,7 +30,16 @@
 			},
 			"required_for_create": true,
 			"default_value": "internal",
-			"description": "field_desc.inventory_location.location_type"
+			"description": "field_desc.inventory_location.location_type",
+			"optional_fields": {
+				"vendor": ["barcode"],
+				"group": ["barcode", "removal_strategy"],
+				"transit": ["barcode", "removal_strategy"],
+				"customer": ["barcode"],
+				"inventory_loss": ["barcode"],
+				"production": ["barcode"],
+				"scrap": ["barcode"]
+			}
 		},
 		{
 			"name": "warehouse_id",
@@ -77,7 +86,6 @@
 			"name": "is_replenishment_destination",
 			"label": "fields.is_replenishment_destination",
 			"data_type": "boolean",
-			"required_for_create": true,
 			"default_value": false,
 			"description": "field_desc.inventory_location.is_replenishment_destination"
 		},
