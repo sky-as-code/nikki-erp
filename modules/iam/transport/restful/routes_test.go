@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/iam/transport/restful/v1"
 )
@@ -26,7 +26,7 @@ func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
 		models.ActionSchemaName:             v1.ActionEngineName,
 		models.RoleRequestSchemaName:        v1.GrantRequestEngineName,
 	} {
-		assert.Equal(t, composable.EngineDependencyName(schemaName), engineName, schemaName)
+		assert.Equal(t, dynamicresource.EngineDependencyName(schemaName), engineName, schemaName)
 	}
 }
 
@@ -36,7 +36,7 @@ func passThrough(next echo.HandlerFunc) echo.HandlerFunc {
 
 // registeredRoutes registers one resource's route table on a throwaway echo instance and returns
 // "METHOD path" in registration order.
-func registeredRoutes(t *testing.T, engine composable.RestEngine) []string {
+func registeredRoutes(t *testing.T, engine dynamicresource.RestEngine) []string {
 	t.Helper()
 	echoApp := echo.New()
 	require.NoError(t, engine.RegisterRoutes(echoApp.Group("/v1/iam"), passThrough))
@@ -51,7 +51,7 @@ func registeredRoutes(t *testing.T, engine composable.RestEngine) []string {
 
 func TestIamCustomRoutes(t *testing.T) {
 	for name, testCase := range map[string]struct {
-		engine   composable.RestEngine
+		engine   dynamicresource.RestEngine
 		expected []string
 	}{
 		"iam_user": {

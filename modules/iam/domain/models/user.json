@@ -39,7 +39,8 @@
 			"name": "status",
 			"data_type": { "type": "enum_string", "values": ["draft", "invited", "active", "suspended"] },
 			"required_for_create": true,
-			"default_value": "draft"
+			"default_value": "draft",
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "is_owner",

@@ -32,7 +32,8 @@
 			"default_value": "proposed",
 			"description": {
 				"en-US": "How far the vendor has got through qualification. It is an ordinary field rather than a state machine in this phase: no transition here has side effects, so there is nothing for a domain action to protect. Only 'active' should be orderable from, and Purchase enforces that at order confirmation rather than the schema, because the rule belongs to Purchase."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "status_reason",

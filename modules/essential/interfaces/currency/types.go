@@ -45,6 +45,12 @@ type GetCurrencyResultData struct {
 	Code   string
 	Symbol string
 
+	// SymbolPosition is "before" or "after" the amount.
+	SymbolPosition string
+
+	// Rounding is the smallest settled amount (1 for VND, 0.01 for USD); DecimalPlaces derives from it.
+	Rounding decimal.Decimal
+
 	// DecimalPlaces is how many fractional digits this currency is quoted to: 0 for VND, 2 for
 	// USD, 3 for KWD. A consumer rounds with Round rather than reading this and rounding itself,
 	// so that half-way cases are resolved the same way everywhere.

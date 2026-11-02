@@ -45,7 +45,8 @@
 			"no_update": true,
 			"description": {
 				"en-US": "The business lifecycle. Suspended stops new sales points and new orders while leaving history, returns, refunds and fiscal adjustments working (CR 9). Distinct from is_archived, which is the system lifecycle: the two must not substitute for each other. Written only by the suspend and activate actions, never by a plain update, so no transition escapes its audit event."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "is_system",

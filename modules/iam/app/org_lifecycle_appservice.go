@@ -4,7 +4,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itEnt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/entitlement"
 	itOrgUnit "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/orgunit"
 )
@@ -29,7 +29,7 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(corectx.Context, model.Id) error
 // CleanUpOrg removes the org's entitlements, whose foreign key would refuse the org's removal,
 // and its units. Memberships and the permission cache cascade with the org row.
 func (this *OrgLifecycleAppServiceImpl) CleanUpOrg(ctx corectx.Context, orgId model.Id) error {
-	return composable.InTransaction(ctx, this.entitlementSvc.Repository(), func(tranxCtx corectx.Context) error {
-		return composable.DeleteOrgData(tranxCtx, orgId, this.entitlementSvc, this.orgUnitSvc)
+	return dynamicresource.InTransaction(ctx, this.entitlementSvc.Repository(), func(tranxCtx corectx.Context) error {
+		return dynamicresource.DeleteOrgData(tranxCtx, orgId, this.entitlementSvc, this.orgUnitSvc)
 	})
 }

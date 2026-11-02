@@ -1,0 +1,47 @@
+{
+	"name": "essential_org_language",
+	"label": "essential_org_language.label",
+	"table_name": "essential_org_languages",
+	"should_build_db": true,
+	"composite_uniques": [
+		{ "index_name": "essent_org_lang_org_language", "fields": ["org_id", "language_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "language_id",
+			"label": "fields.language_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The tenant-wide language this row activates or deactivates for one organization."
+			}
+		},
+		{
+			"name": "is_active",
+			"label": "fields.is_active",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"metadata": {"track_history": true},
+			"description": {
+				"en-US": "Whether the organization uses this language. No row reads as inactive."
+			}
+		}
+	],
+
+	"edges_to": [
+		{
+			"edge": "language",
+			"label": { "en-US": "Language" },
+			"type": "many:one",
+			"dest_schema": "essential_language",
+			"key_map": { "language_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model", "core.basemodel.traceable_model"]
+}

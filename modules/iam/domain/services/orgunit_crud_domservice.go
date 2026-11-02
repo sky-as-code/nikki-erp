@@ -9,7 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itOrgUnit "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/orgunit"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
@@ -17,31 +17,31 @@ import (
 
 // NewOrgUnitCrudDomainService is handed the composable default by the iam_orgunit onion.
 func NewOrgUnitCrudDomainService(
-	base composable.CrudDomainService, userRepo itUser.UserCrudRepository,
+	base dynamicresource.CrudDomainService, userRepo itUser.UserCrudRepository,
 ) itOrgUnit.OrgUnitCrudDomainService {
 	return &OrgUnitCrudDomainServiceImpl{CrudDomainService: base, userRepo: userRepo}
 }
 
 type OrgUnitCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	userRepo itUser.UserCrudRepository
 }
 
 // Create derives the unit's path: [org_id, ...ancestor ids, own id]. The path is what a
 // unit-scoped grant is matched against, so it is computed here and never accepted from a client.
 func (this *OrgUnitCrudDomainServiceImpl) Create(
-	ctx corectx.Context, cmd itOrgUnit.CreateOrgUnitCommand, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd itOrgUnit.CreateOrgUnitCommand, options ...dynamicresource.CreateOptions,
 ) (*itOrgUnit.CreateOrgUnitResult, error) {
-	opts := composable.CreateOptions{}
+	opts := dynamicresource.CreateOptions{}
 	if len(options) > 0 {
 		opts = options[0]
 	}
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.applyPath)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.applyPath)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 func (this *OrgUnitCrudDomainServiceImpl) applyPath(
-	ctx corectx.Context, input *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, input *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	unit := domain.NewOrganizationalUnitFrom(input.GetFieldData())
 	selfId, orgId := unit.GetId(), unit.GetOrgId()
@@ -81,12 +81,12 @@ func (this *OrgUnitCrudDomainServiceImpl) applyPath(
 func (this *OrgUnitCrudDomainServiceImpl) ManageUsers(
 	ctx corectx.Context, cmd itOrgUnit.ManageOrgUnitUsersCommand,
 ) (*itOrgUnit.ManageOrgUnitUsersResult, error) {
-	change, cErrs := composable.ParseM2mChange(cmd)
+	change, cErrs := dynamicresource.ParseM2mChange(cmd)
 	if cErrs != nil {
 		return &itOrgUnit.ManageOrgUnitUsersResult{ClientErrors: *cErrs}, nil
 	}
 	affected := 0
-	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			vErrs := ft.ClientErrors{}
 			if err := this.assertMembershipChange(tranxCtx, *change, &vErrs); err != nil || vErrs.Count() > 0 {
@@ -112,7 +112,7 @@ func (this *OrgUnitCrudDomainServiceImpl) ManageUsers(
 }
 
 func (this *OrgUnitCrudDomainServiceImpl) assertMembershipChange(
-	ctx corectx.Context, change composable.M2mChange, vErrs *ft.ClientErrors,
+	ctx corectx.Context, change dynamicresource.M2mChange, vErrs *ft.ClientErrors,
 ) error {
 	unitExists, err := this.Repository().KeyExist(ctx, dmodel.DynamicFields{basemodel.FieldId: string(change.SrcId)})
 	if err != nil {
@@ -128,7 +128,7 @@ func (this *OrgUnitCrudDomainServiceImpl) assertMembershipChange(
 	}
 	for _, userId := range change.Added {
 		if removed[userId] {
-			vErrs.Append(*ft.NewBusinessViolation(composable.FieldM2mAdd, ft.ErrorKey("err_overlapped_fields"),
+			vErrs.Append(*ft.NewBusinessViolation(dynamicresource.FieldM2mAdd, ft.ErrorKey("err_overlapped_fields"),
 				"a user cannot be added and removed in the same call", map[string]any{"fields": "add, remove"}))
 			return nil
 		}
@@ -137,15 +137,17 @@ func (this *OrgUnitCrudDomainServiceImpl) assertMembershipChange(
 			return err
 		}
 		if userExists.ClientErrors.Count() > 0 || !userExists.Data {
-			vErrs.Append(*ft.NewNotFoundError(composable.FieldM2mAdd))
+			vErrs.Append(*ft.NewNotFoundError(dynamicresource.FieldM2mAdd))
 			return nil
 		}
 	}
 	// A service is a machine principal: it may join an org, never an org unit.
-	return serviceTypeScope.refuseIdsOfType(ctx, this.userRepo, composable.FieldM2mAdd, change.Added, vErrs)
+	return serviceTypeScope.refuseIdsOfType(ctx, this.userRepo, dynamicresource.FieldM2mAdd, change.Added, vErrs)
 }
 
-func (this *OrgUnitCrudDomainServiceImpl) applyMembership(ctx corectx.Context, change composable.M2mChange) (int, error) {
+func (this *OrgUnitCrudDomainServiceImpl) applyMembership(
+	ctx corectx.Context, change dynamicresource.M2mChange,
+) (int, error) {
 	affected := 0
 	for _, userId := range change.Added {
 		if err := this.setUserUnit(ctx, userId, string(change.SrcId)); err != nil {
@@ -161,7 +163,7 @@ func (this *OrgUnitCrudDomainServiceImpl) applyMembership(ctx corectx.Context, c
 		if err != nil {
 			return 0, err
 		}
-		if !found.HasData || composable.ParamString(found.Data, domain.UserFieldOrgUnitId) != string(change.SrcId) {
+		if !found.HasData || dynamicresource.ParamString(found.Data, domain.UserFieldOrgUnitId) != string(change.SrcId) {
 			continue
 		}
 		if err := this.setUserUnit(ctx, userId, nil); err != nil {

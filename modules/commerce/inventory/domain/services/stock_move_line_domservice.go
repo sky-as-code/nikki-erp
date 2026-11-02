@@ -2,7 +2,7 @@ package services
 
 import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewStockMoveLineDomainService closes the move line's write surface. A move line is an
@@ -14,10 +14,10 @@ import (
 // The actions are refused rather than removed, so a caller gets a 400 naming the reason instead
 // of a 404 that reads as a wrong URL. The reservation engine itself writes lines through the
 // repository, which this does not touch.
-func NewStockMoveLineDomainService(base composable.CrudDomainService) itStock.StockMoveLineDomainService {
+func NewStockMoveLineDomainService(base dynamicresource.CrudDomainService) itStock.StockMoveLineDomainService {
 	return &StockMoveLineDomainServiceImpl{CrudDomainService: base}
 }
 
 type StockMoveLineDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }

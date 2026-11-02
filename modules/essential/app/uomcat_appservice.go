@@ -3,12 +3,12 @@ package app
 import (
 	"go.bryk.io/pkg/errors"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itUomCat "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uomcat"
 )
 
 // NewUomCatApplicationService is handed the composable default by the UoM Category onion.
-func NewUomCatApplicationService(base composable.CrudApplicationService) itUomCat.UomCatApplicationService {
+func NewUomCatApplicationService(base dynamicresource.CrudApplicationService) itUomCat.UomCatApplicationService {
 	uomCatSvc, ok := base.DomainService().(itUomCat.UomCatDomainService)
 	if !ok {
 		panic(errors.New("the uomcat onion must be built with NewUomCatDomainService"))
@@ -17,6 +17,6 @@ func NewUomCatApplicationService(base composable.CrudApplicationService) itUomCa
 }
 
 type UomCatApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	uomCatSvc itUomCat.UomCatDomainService
 }

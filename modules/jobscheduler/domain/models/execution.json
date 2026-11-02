@@ -70,7 +70,8 @@
 				"type": "enum_string",
 				"values": ["queued", "running", "waiting_retry", "succeeded", "failed", "cancelled"]
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "available_at",

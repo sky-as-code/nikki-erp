@@ -9,7 +9,7 @@ import (
 	itFiscal "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/fiscal"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The fiscal request and billing instruction surfaces.
@@ -19,7 +19,7 @@ import (
 // document cannot be issued yet.
 
 type SalesFiscalRequestApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	invoicingProvider itInvoicing.InvoicingExtService
 	effectiveSettings itExt.EffectiveSettingsExtService
@@ -27,7 +27,7 @@ type SalesFiscalRequestApplicationServiceImpl struct {
 }
 
 func NewSalesFiscalRequestApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 	invoicing itInvoicing.InvoicingExtService,
 	settings itExt.EffectiveSettingsExtService,
 	parties itExt.PartyExtService,
@@ -51,14 +51,14 @@ func (this *SalesFiscalRequestApplicationServiceImpl) RequestInvoice(
 }
 
 type SalesBillingInstructionApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	partyPort         itExt.PartyExtService
 	effectiveSettings itExt.EffectiveSettingsExtService
 }
 
 func NewSalesBillingInstructionApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 	parties itExt.PartyExtService,
 	settings itExt.EffectiveSettingsExtService,
 ) itFiscal.SalesBillingInstructionApplicationService {
@@ -115,12 +115,12 @@ func (this *SalesBillingInstructionApplicationServiceImpl) Cancel(
 	return this.runCancelBillingInstruction(ctx, cmd)
 }
 
-func NewSalesBillingIssuanceAttemptApplicationService(base composable.CrudApplicationService) itFiscal.SalesBillingIssuanceAttemptApplicationService {
+func NewSalesBillingIssuanceAttemptApplicationService(base dynamicresource.CrudApplicationService) itFiscal.SalesBillingIssuanceAttemptApplicationService {
 	return &SalesBillingIssuanceAttemptApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesBillingIssuanceAttemptApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // Parameter names the moved bodies read.

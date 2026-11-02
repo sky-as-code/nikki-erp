@@ -4,7 +4,7 @@ import (
 	"go.uber.org/dig"
 
 	itFulfillment "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/fulfillment"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 type salesOrderFulfillmentRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_fulfillment"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_fulfillment"`
 }
 
 func NewSalesOrderFulfillmentRest(params salesOrderFulfillmentRestParams) *SalesOrderFulfillmentRest {
@@ -29,14 +29,14 @@ func NewSalesOrderFulfillmentRest(params salesOrderFulfillmentRestParams) *Sales
 }
 
 type SalesOrderFulfillmentRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	fulfillmentSvc itFulfillment.SalesOrderFulfillmentApplicationService
 }
 
 type salesOrderFulfillmentItemRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_fulfillment_item"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_fulfillment_item"`
 }
 
 func NewSalesOrderFulfillmentItemRest(params salesOrderFulfillmentItemRestParams) *SalesOrderFulfillmentItemRest {
@@ -46,13 +46,13 @@ func NewSalesOrderFulfillmentItemRest(params salesOrderFulfillmentItemRestParams
 }
 
 type SalesOrderFulfillmentItemRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesFulfillmentAttemptRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_attempt"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_attempt"`
 }
 
 func NewSalesFulfillmentAttemptRest(params salesFulfillmentAttemptRestParams) *SalesFulfillmentAttemptRest {
@@ -62,13 +62,13 @@ func NewSalesFulfillmentAttemptRest(params salesFulfillmentAttemptRestParams) *S
 }
 
 type SalesFulfillmentAttemptRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesFulfillmentAttemptItemRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_attempt_item"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_attempt_item"`
 }
 
 func NewSalesFulfillmentAttemptItemRest(params salesFulfillmentAttemptItemRestParams) *SalesFulfillmentAttemptItemRest {
@@ -78,13 +78,13 @@ func NewSalesFulfillmentAttemptItemRest(params salesFulfillmentAttemptItemRestPa
 }
 
 type SalesFulfillmentAttemptItemRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesFulfillmentTargetChangeRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_target_change"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_target_change"`
 }
 
 func NewSalesFulfillmentTargetChangeRest(params salesFulfillmentTargetChangeRestParams) *SalesFulfillmentTargetChangeRest {
@@ -94,5 +94,5 @@ func NewSalesFulfillmentTargetChangeRest(params salesFulfillmentTargetChangeRest
 }
 
 type SalesFulfillmentTargetChangeRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

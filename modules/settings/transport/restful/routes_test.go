@@ -7,16 +7,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/settings/dynamicengines"
 	v1 "github.com/sky-as-code/nikki-erp/modules/settings/transport/restful/v1"
 )
 
 func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
-	assert.Equal(t, composable.EngineDependencyName(models.SettingsSchemaSchemaName), v1.SettingsSchemaEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.SettingsRecordSchemaName), v1.SettingsRecordEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.SettingsQuotaSchemaName), v1.SettingsQuotaEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.SettingsSchemaSchemaName), v1.SettingsSchemaEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.SettingsRecordSchemaName), v1.SettingsRecordEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.SettingsQuotaSchemaName), v1.SettingsQuotaEngineName)
 }
 
 func passThrough(next echo.HandlerFunc) echo.HandlerFunc {
@@ -27,14 +27,14 @@ func passThrough(next echo.HandlerFunc) echo.HandlerFunc {
 // on either resource, because a module writes its own settings through PATCH
 // /v1/{module_key}/settings/:level.
 func TestSettingsResourcesServeReadsOnly(t *testing.T) {
-	for schemaName, handlers := range map[string]composable.CrudRestHandlers{
+	for schemaName, handlers := range map[string]dynamicresource.CrudRestHandlers{
 		models.SettingsSchemaSchemaName: &v1.SettingsSchemaRest{},
 		models.SettingsRecordSchemaName: &v1.SettingsRecordRest{},
 		models.SettingsQuotaSchemaName:  &v1.SettingsQuotaRest{},
 	} {
 		t.Run(schemaName, func(t *testing.T) {
 			echoApp := echo.New()
-			require.NoError(t, composable.NewRestEngine(schemaName, handlers).
+			require.NoError(t, dynamicresource.NewRestEngine(schemaName, handlers).
 				AddCrudRoutes(dynamicengines.ReadOnlyCrudActions()...).
 				RegisterRoutes(echoApp.Group("/v1/settings"), passThrough))
 

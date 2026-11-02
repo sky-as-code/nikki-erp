@@ -1,35 +1,35 @@
 package enum
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type EnumRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type EnumDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type EnumApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateEnumCommand = composable.CreateCommand
-	UpdateEnumCommand = composable.UpdateCommand
-	DeleteEnumCommand = composable.DeleteCommand
-	GetEnumByIdQuery  = composable.GetByIdQuery
-	SearchEnumsQuery  = composable.SearchQuery
-	EnumExistsQuery   = composable.ExistsQuery
+	CreateEnumCommand = dynamicresource.CreateCommand
+	UpdateEnumCommand = dynamicresource.UpdateCommand
+	DeleteEnumCommand = dynamicresource.DeleteCommand
+	GetEnumByIdQuery  = dynamicresource.GetByIdQuery
+	SearchEnumsQuery  = dynamicresource.SearchQuery
+	EnumExistsQuery   = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateEnumResult  = composable.CreateResult
-	UpdateEnumResult  = composable.MutateResult
-	DeleteEnumResult  = composable.MutateResult
-	GetEnumByIdResult = composable.GetOneResult
-	SearchEnumsResult = composable.SearchResult
-	EnumExistsResult  = composable.ExistsResult
+	CreateEnumResult  = dynamicresource.CreateResult
+	UpdateEnumResult  = dynamicresource.MutateResult
+	DeleteEnumResult  = dynamicresource.MutateResult
+	GetEnumByIdResult = dynamicresource.GetOneResult
+	SearchEnumsResult = dynamicresource.SearchResult
+	EnumExistsResult  = dynamicresource.ExistsResult
 )

@@ -8,17 +8,17 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // checkCreateCombination runs before schema validation on purpose: the schema's composite unique
 // on (product_template_id, variant_kind, combination_key) is checked right after it, and would report the clash
 // first as a generic error naming no field. This reports it on combination_key with its own key.
 // A value of the wrong type is left to schema validation, which reports it properly.
-func checkCreateCombination(repo models.ProductSearcher) composable.BeforeValidationFn {
+func checkCreateCombination(repo models.ProductSearcher) dynamicresource.BeforeValidationFn {
 	return func(
-		ctx corectx.Context, entity *composable.DynamicEntity, vErrs *ft.ClientErrors,
-	) (*composable.DynamicEntity, error) {
+		ctx corectx.Context, entity *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
+	) (*dynamicresource.DynamicEntity, error) {
 		data := entity.GetFieldData()
 		templateId, templateOk := data[models.ProductVariantFieldProductTemplateId].(string)
 		combinationKey, keyOk := data[models.ProductVariantFieldCombinationKey].(string)
@@ -38,10 +38,10 @@ func checkCreateCombination(repo models.ProductSearcher) composable.BeforeValida
 // captureSubmittedTemplateId records the product_template_id a client sent before the schema
 // validator drops it: it is declared no_update, so by ValidateExtra the field is gone and a
 // re-parenting attempt would otherwise be answered 200 as though it had applied.
-func captureSubmittedTemplateId(submitted *string) composable.BeforeValidationFn {
+func captureSubmittedTemplateId(submitted *string) dynamicresource.BeforeValidationFn {
 	return func(
-		_ corectx.Context, entity *composable.DynamicEntity, _ *ft.ClientErrors,
-	) (*composable.DynamicEntity, error) {
+		_ corectx.Context, entity *dynamicresource.DynamicEntity, _ *ft.ClientErrors,
+	) (*dynamicresource.DynamicEntity, error) {
 		if value, ok := entity.GetFieldData()[models.ProductVariantFieldProductTemplateId].(string); ok {
 			*submitted = value
 		}
@@ -52,9 +52,9 @@ func captureSubmittedTemplateId(submitted *string) composable.BeforeValidationFn
 // validateVariantUpdate re-checks uniqueness when the combination changes. An update is partial,
 // so the submitted fields are overlaid onto the stored record and the result validated, rather
 // than only what was sent. submittedTemplateId is filled by captureSubmittedTemplateId.
-func validateVariantUpdate(repo models.ProductSearcher, submittedTemplateId *string) composable.ValidateExtraFn {
+func validateVariantUpdate(repo models.ProductSearcher, submittedTemplateId *string) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
 		if foundModel == nil {
 			return nil

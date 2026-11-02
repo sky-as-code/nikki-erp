@@ -13,12 +13,12 @@ import (
 
 var _ itStock.StockOperationTypeReadService = (*StockTransferDomainServiceImpl)(nil)
 
-// FindOperationTypeByCode resolves one operation type by the pair that identifies it: `code` is
-// unique within an organization, so at most one row matches.
-func (this *StockTransferDomainServiceImpl) FindOperationTypeByCode(
+// FindOperationTypeById resolves one operation type, confined to the organization so an id taken
+// from another org's settings finds nothing.
+func (this *StockTransferDomainServiceImpl) FindOperationTypeById(
 	ctx corectx.Context, query itStock.FindOperationTypeQuery,
 ) (*itStock.FindOperationTypeResult, error) {
-	if query.OrgId == "" || query.Code == "" {
+	if query.OrgId == "" || query.Id == "" {
 		return &itStock.FindOperationTypeResult{}, nil
 	}
 
@@ -30,7 +30,7 @@ func (this *StockTransferDomainServiceImpl) FindOperationTypeByCode(
 	graph := &dmodel.SearchGraph{}
 	graph.And(
 		*dmodel.NewSearchNode().NewCondition(models.StockOperationTypeFieldOrgId, dmodel.Equals, query.OrgId),
-		*dmodel.NewSearchNode().NewCondition(models.StockOperationTypeFieldCode, dmodel.Equals, query.Code),
+		*dmodel.NewSearchNode().NewCondition(models.StockOperationTypeFieldId, dmodel.Equals, query.Id),
 	)
 
 	found, err := engine.Search(ctx, dyn.RepoSearchParam{
@@ -39,7 +39,7 @@ func (this *StockTransferDomainServiceImpl) FindOperationTypeByCode(
 		Size:  1,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "FindOperationTypeByCode")
+		return nil, errors.Wrap(err, "FindOperationTypeById")
 	}
 	if found == nil || !found.HasData || len(found.Data.Items) == 0 {
 		return &itStock.FindOperationTypeResult{}, nil

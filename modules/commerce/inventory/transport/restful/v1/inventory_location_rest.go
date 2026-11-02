@@ -4,17 +4,17 @@ import (
 	"go.uber.org/dig"
 
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // InventoryLocationEngineName is the container name of the inventory_location onion, declared once for the struct tag and
-// checked against composable.EngineDependencyName by a test.
+// checked against dynamicresource.EngineDependencyName by a test.
 const InventoryLocationEngineName = "dynengine_inventory_location"
 
 type inventoryLocationRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_location"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_location"`
 }
 
 func NewInventoryLocationRest(params inventoryLocationRestParams) *InventoryLocationRest {
@@ -26,6 +26,6 @@ func NewInventoryLocationRest(params inventoryLocationRestParams) *InventoryLoca
 
 // InventoryLocationRest serves the built-in CRUD of the inventory_location resource.
 type InventoryLocationRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	inventoryLocationSvc itWarehouse.InventoryLocationApplicationService
 }

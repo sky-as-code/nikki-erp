@@ -8,7 +8,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
@@ -302,7 +302,7 @@ func arrivalsAreClose(target, source dmodel.DynamicFields) bool {
 
 // addQuantityToLine sums the source line's quantity into the matching target line.
 func addQuantityToLine(
-	ctx corectx.Context, lineRepo composable.CrudRepository,
+	ctx corectx.Context, lineRepo dynamicresource.CrudRepository,
 	target, source dmodel.DynamicFields,
 ) error {
 	combined := decimalOf(target, models.PurchaseOrderLineFieldQuantity).Add(
@@ -344,7 +344,7 @@ func addQuantityToLine(
 
 // moveLineToOrder repoints one line at another order.
 func moveLineToOrder(
-	ctx corectx.Context, lineRepo composable.CrudRepository,
+	ctx corectx.Context, lineRepo dynamicresource.CrudRepository,
 	line dmodel.DynamicFields, targetId string,
 ) error {
 	_, err := lineRepo.Update(ctx, dmodel.DynamicFields{

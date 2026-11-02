@@ -2,20 +2,20 @@ package entitlement
 
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The composable layers of the iam_entitlement resource, served at /v1/iam/iam_entitlement.
 
 type EntitlementCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // EntitlementCrudDomainService is the CRUD of the resource plus its rules: a create validates the
 // scope and derives the expression, and every change to what an entitlement grants rebuilds the
 // permission cache of its role's holders and is audited.
 type EntitlementCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// The DeferRebuild variants skip the role rebuild, so a caller changing several entitlements
 	// of one role pays for a single rebuild at the end. The caller owns that rebuild.
@@ -25,14 +25,14 @@ type EntitlementCrudDomainService interface {
 }
 
 type EntitlementCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateEntitlementCommand = composable.CreateCommand
-	CreateEntitlementResult  = composable.CreateResult
-	UpdateEntitlementCommand = composable.UpdateCommand
-	UpdateEntitlementResult  = composable.MutateResult
-	DeleteEntitlementCommand = composable.DeleteCommand
-	DeleteEntitlementResult  = composable.MutateResult
+	CreateEntitlementCommand = dynamicresource.CreateCommand
+	CreateEntitlementResult  = dynamicresource.CreateResult
+	UpdateEntitlementCommand = dynamicresource.UpdateCommand
+	UpdateEntitlementResult  = dynamicresource.MutateResult
+	DeleteEntitlementCommand = dynamicresource.DeleteCommand
+	DeleteEntitlementResult  = dynamicresource.MutateResult
 )

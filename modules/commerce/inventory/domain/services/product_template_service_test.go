@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"testing"
 
 	"go.bryk.io/pkg/errors"
@@ -31,7 +31,7 @@ const (
 // stubVariantRepository stands in for the variant engine's repository. Only the three methods the
 // cascade uses are implemented; the embedded interface covers the rest.
 type stubVariantRepository struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 
 	variants []dmodel.DynamicFields
 	updates  []dmodel.DynamicFields
@@ -70,22 +70,32 @@ func (this *stubVariantRepository) BeginTransaction(_ corectx.Context) (database
 type stubTransaction struct {
 	committed  bool
 	rolledBack bool
+	callbacks  []func()
 }
 
 func (this *stubTransaction) Commit() error {
 	this.committed = true
+	for _, fn := range this.callbacks {
+		fn()
+	}
+	this.callbacks = nil
 	return nil
 }
 
 func (this *stubTransaction) Rollback() error {
 	this.rolledBack = true
+	this.callbacks = nil
 	return nil
+}
+
+func (this *stubTransaction) OnCommitted(fn func()) {
+	this.callbacks = append(this.callbacks, fn)
 }
 
 // stubBaseService stands in for the engine's default resource service, which the override
 // delegates the template write to.
 type stubBaseService struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	calls        int
 	seenContexts []corectx.Context
@@ -141,7 +151,7 @@ func runCascadeRaw(
 
 	original := repoFor
 	t.Cleanup(func() { repoFor = original })
-	repoFor = func(schemaName string) (composable.CrudRepository, error) {
+	repoFor = func(schemaName string) (dynamicresource.CrudRepository, error) {
 		// Two schemas are legitimately reached: the cascade writes variant rows, and the stock guard
 		// asks the quant engine what the variants hold. The quant engine is answered with an error,
 		// which the guard reads as "stock is not wired" and lets the archive proceed, keeping these

@@ -7,7 +7,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
@@ -150,7 +150,7 @@ func RecomputeOrderTotals(ctx corectx.Context, orderId string) error {
 // rewriteStaleLines stores each line's computed totals where they differ, and returns the lines
 // with the computed values in place so the header sums the new numbers, not the replaced ones.
 func rewriteStaleLines(
-	ctx corectx.Context, lineRepo composable.CrudRepository, lines []dmodel.DynamicFields,
+	ctx corectx.Context, lineRepo dynamicresource.CrudRepository, lines []dmodel.DynamicFields,
 	scale int32,
 ) ([]dmodel.DynamicFields, error) {
 	for _, line := range lines {
@@ -184,7 +184,7 @@ func rewriteStaleLines(
 
 // rewriteStaleHeader stores the order's three totals when they differ from the sum of its lines.
 func rewriteStaleHeader(
-	ctx corectx.Context, orderRepo composable.CrudRepository,
+	ctx corectx.Context, orderRepo dynamicresource.CrudRepository,
 	order dmodel.DynamicFields, lines []dmodel.DynamicFields,
 ) error {
 	totals := ComputeOrderTotals(lines)

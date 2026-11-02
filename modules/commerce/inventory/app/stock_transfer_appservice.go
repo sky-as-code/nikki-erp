@@ -11,7 +11,7 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // Param names the movement actions read from the request.
@@ -32,7 +32,9 @@ const (
 )
 
 // NewStockTransferApplicationService is handed the composable default by the transfer onion.
-func NewStockTransferApplicationService(base composable.CrudApplicationService) itStock.StockTransferApplicationService {
+func NewStockTransferApplicationService(
+	base dynamicresource.CrudApplicationService,
+) itStock.StockTransferApplicationService {
 	transferSvc, ok := base.DomainService().(*services.StockTransferDomainServiceImpl)
 	if !ok {
 		panic(errors.New("the stock transfer onion must be built with NewStockTransferDomainService"))
@@ -44,7 +46,7 @@ func NewStockTransferApplicationService(base composable.CrudApplicationService) 
 // none is a CRUD verb: a validate is not an update to a transfer, it is an event that happens to
 // one.
 type StockTransferApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	transferSvc *services.StockTransferDomainServiceImpl
 }
 
@@ -80,16 +82,16 @@ func (this *StockTransferApplicationServiceImpl) assertMovesDelta(
 		action   string
 		resource string
 	}{
-		{parts.Add, composable.PermissionCreate, constants.ResourceStockMove},
-		{parts.Update, composable.PermissionUpdate, constants.ResourceStockMove},
-		{parts.Remove, composable.PermissionDelete, constants.ResourceStockMove},
+		{parts.Add, dynamicresource.PermissionCreate, constants.ResourceStockMove},
+		{parts.Update, dynamicresource.PermissionUpdate, constants.ResourceStockMove},
+		{parts.Remove, dynamicresource.PermissionDelete, constants.ResourceStockMove},
 		{parts.Resolve, PermissionGenerateVariants, constants.ResourceProductTemplate},
 	}
 	for _, part := range required {
 		if !part.present {
 			continue
 		}
-		_, cErrs := composable.AssertActionPermission(ctx, this, cmd, composable.ActionPermission{
+		_, cErrs := dynamicresource.AssertActionPermission(ctx, this, cmd, dynamicresource.ActionPermission{
 			ActionCode: part.action, ResourceCode: part.resource,
 		})
 		if cErrs != nil {
@@ -112,7 +114,7 @@ func (this *StockTransferApplicationServiceImpl) Confirm(
 func (this *StockTransferApplicationServiceImpl) CheckAvailability(
 	ctx corectx.Context, query itStock.CheckAvailabilityQuery,
 ) (*itStock.TransferReadResult, error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionRead, query); err != nil || cErrs != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionRead, query); err != nil || cErrs != nil {
 		return anyFailure(cErrs, err)
 	}
 	return this.transferSvc.CheckAvailability(ctx, readStringField(query, paramRecordId))

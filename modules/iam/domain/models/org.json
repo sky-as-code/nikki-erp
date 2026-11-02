@@ -45,7 +45,8 @@
 			"default_value": "provisioning",
 			"description": {
 				"en-US": "Lifecycle of the organization: provisioning until every module has written its defaults, ready once they all have, deleted while modules clean up before the row is removed. Written only by the org lifecycle, never by a client."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "status_message",

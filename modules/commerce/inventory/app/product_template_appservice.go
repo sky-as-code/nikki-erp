@@ -11,12 +11,12 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewProductTemplateApplicationService is handed the composable default by the template onion.
 func NewProductTemplateApplicationService(
-	base composable.CrudApplicationService, catalogChangedPub itEvent.CatalogChangedEventPublisher,
+	base dynamicresource.CrudApplicationService, catalogChangedPub itEvent.CatalogChangedEventPublisher,
 ) itProduct.ProductTemplateApplicationService {
 	productSvc, ok := base.DomainService().(itProduct.ProductService)
 	if !ok {
@@ -30,7 +30,7 @@ func NewProductTemplateApplicationService(
 }
 
 type ProductTemplateApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	productSvc        itProduct.ProductService
 	catalogChangedPub itEvent.CatalogChangedEventPublisher
 }
@@ -79,7 +79,7 @@ func (this *ProductTemplateApplicationServiceImpl) GenerateVariants(
 func (this *ProductTemplateApplicationServiceImpl) ResolveSelection(
 	ctx corectx.Context, query itProduct.ResolveSelectionQuery,
 ) (*itProduct.ResolveSelectionResult, error) {
-	permission := composable.PermissionRead
+	permission := dynamicresource.PermissionRead
 	if readResolveMaterialize(query) {
 		permission = PermissionGenerateVariants
 	}
@@ -117,8 +117,8 @@ func (this *ProductTemplateApplicationServiceImpl) ResolveSelection(
 }
 
 func (this *ProductTemplateApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
 	this.stampVariantDeleteAllowed(ctx, cmd)
 	res, err := this.CrudApplicationService.Create(ctx, cmd)
 	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
@@ -129,8 +129,8 @@ func (this *ProductTemplateApplicationServiceImpl) Create(
 }
 
 func (this *ProductTemplateApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
 	this.stampVariantDeleteAllowed(ctx, cmd)
 	res, err := this.CrudApplicationService.Update(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
@@ -141,8 +141,8 @@ func (this *ProductTemplateApplicationServiceImpl) Update(
 }
 
 func (this *ProductTemplateApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Delete(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductTemplate, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -152,8 +152,8 @@ func (this *ProductTemplateApplicationServiceImpl) Delete(
 }
 
 func (this *ProductTemplateApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductTemplate, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))

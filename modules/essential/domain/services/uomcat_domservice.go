@@ -9,7 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
@@ -19,7 +19,7 @@ import (
 // NewUomCatDomainService is handed the composable default by the UoM Category onion. It also
 // takes the UoM repository, because a category's Reference UoM is a UoM row it must look at.
 func NewUomCatDomainService(
-	base composable.CrudDomainService, uomRepo itUom.UomRepository,
+	base dynamicresource.CrudDomainService, uomRepo itUom.UomRepository,
 	usageDispatcher *usagecheck.Dispatcher,
 ) itUomCat.UomCatDomainService {
 	return &UomCatDomainServiceImpl{
@@ -30,24 +30,24 @@ func NewUomCatDomainService(
 }
 
 type UomCatDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	uomRepo         itUom.UomRepository
 	usageDispatcher *usagecheck.Dispatcher
 }
 
 func (this *UomCatDomainServiceImpl) Create(
-	ctx corectx.Context, cmd itUomCat.CreateUomCatCommand, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd itUomCat.CreateUomCatCommand, options ...dynamicresource.CreateOptions,
 ) (*itUomCat.CreateUomCatResult, error) {
-	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, validateUomCatReference(this.uomRepo, nil))
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, validateUomCatReference(this.uomRepo, nil))
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 func (this *UomCatDomainServiceImpl) Update(
-	ctx corectx.Context, cmd itUomCat.UpdateUomCatCommand, options ...composable.UpdateOptions,
+	ctx corectx.Context, cmd itUomCat.UpdateUomCatCommand, options ...dynamicresource.UpdateOptions,
 ) (*itUomCat.UpdateUomCatResult, error) {
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra,
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra,
 		validateUomCatReference(this.uomRepo,
 			assertReferenceUomStableWhileInUse(this.usageDispatcher, this.uomRepo)))
 	return this.CrudDomainService.Update(ctx, cmd, opts)
@@ -56,7 +56,7 @@ func (this *UomCatDomainServiceImpl) Update(
 // Delete refuses to remove a category that still has units of measure. Without the guard the UoM
 // foreign key refuses the statement and the failure reaches the client as a 500.
 func (this *UomCatDomainServiceImpl) Delete(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.DeleteOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	vErrs := ft.NewClientErrors()
 	categoryId := readUomCatIdParam(params, models.UomCatFieldId)
@@ -108,9 +108,9 @@ type uomCatUpdateCheckFn func(
 // validateUomCatReference enforces BR-UOM-ESS-004 and UOM-ESS-INV-03: a category's Reference
 // UoM must be a UoM of that same category. onUpdate carries the checks that only make sense
 // once a stored record exists.
-func validateUomCatReference(uomRepo itUom.UomRepository, onUpdate uomCatUpdateCheckFn) composable.ValidateExtraFn {
+func validateUomCatReference(uomRepo itUom.UomRepository, onUpdate uomCatUpdateCheckFn) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
 		params := inputModel.GetFieldData()
 		if onUpdate != nil && foundModel != nil {

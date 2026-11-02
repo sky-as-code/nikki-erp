@@ -36,17 +36,19 @@ const (
 	StockShippingPolicyAllAtOnce = "all_at_once"
 )
 
-// StockCorrectionOperationTypeCode is the `code` of the operation type adjustments and scraps
-// generate their movements through. Seeded once per org; corrections resolve it by this code rather
-// than take one from the caller. The seed and this constant must agree exactly, or every correction
-// fails with "no internal operation type", which reads as a data problem rather than a typo.
-const StockCorrectionOperationTypeCode = "INV-CORRECTION"
+// The Commerce org settings that name an operation type by id. They are declared in the Commerce
+// org settings schema (sales/domain/settings/org_settings.json); Inventory seeds them for a new org
+// from the types it creates, and a stock correction records its movements under the correction type.
+const (
+	OrgSettingCorrectionOperationTypeId = "correction_operation_type_id"
+	OrgSettingOutgoingOperationTypeId   = "outgoing_operation_type_id"
+	OrgSettingIncomingOperationTypeId   = "incoming_operation_type_id"
+)
 
 const (
 	StockOperationTypeSchemaName = "inventory_stock_operation_type"
 
 	StockOperationTypeFieldId                           = basemodel.FieldId
-	StockOperationTypeFieldCode                         = "code"
 	StockOperationTypeFieldName                         = "name"
 	StockOperationTypeFieldOperationCode                = "operation_code"
 	StockOperationTypeFieldReservationMethod            = "reservation_method"
@@ -78,14 +80,6 @@ func NewStockOperationType() *StockOperationType {
 
 func NewStockOperationTypeFrom(src dmodel.DynamicFields) *StockOperationType {
 	return &StockOperationType{basemodel.NewDynamicModel(src)}
-}
-
-func (this StockOperationType) GetCode() *string {
-	return this.GetFieldData().GetString(StockOperationTypeFieldCode)
-}
-
-func (this *StockOperationType) SetCode(v *string) {
-	this.GetFieldData().SetString(StockOperationTypeFieldCode, v)
 }
 
 func (this StockOperationType) GetName() *model.LangJson {

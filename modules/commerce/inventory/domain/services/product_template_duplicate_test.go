@@ -23,7 +23,7 @@ func duplicateSourceTemplate() dmodel.DynamicFields {
 		models.ProductTemplateFieldPreviewImageFileId: "01TEAIMAGE",
 		"external_id":                                 "ext-1",
 		"source_system":                               "erp-x",
-		models.ProductTemplateFieldMinVariantCost:     "1.5",
+		models.ProductTemplateFieldWeightUomSymbol:   "kg",
 	}
 }
 
@@ -36,7 +36,7 @@ func TestDuplicateTemplateFieldsCarriesOnlyTheTemplatesOwnFields(t *testing.T) {
 	for _, dropped := range []string{
 		basemodel.FieldId, basemodel.FieldEtag, basemodel.FieldIsArchived, basemodel.FieldOrgId,
 		models.ProductTemplateFieldPreviewImageFileId, "external_id", "source_system",
-		models.ProductTemplateFieldMinVariantCost,
+		models.ProductTemplateFieldWeightUomSymbol,
 	} {
 		assert.NotContains(t, payload, dropped)
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/constants"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/transport/restful/v1"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // Every Purchase resource declares its routes through the composable RestEngine: the built-in CRUD
@@ -61,25 +61,25 @@ func initPurchaseV1() error {
 // legacyCrudActions is the built-in verb set the legacy engine served: every CRUD action except
 // bulk create and import, which these resources never exposed. The resources a client may not
 // write keep their write routes, which answer a business violation naming the reason.
-func legacyCrudActions() []composable.CrudAction {
-	return []composable.CrudAction{
-		composable.CrudActionCreate, composable.CrudActionUpdate, composable.CrudActionDelete,
-		composable.CrudActionSetArchived, composable.CrudActionGetById, composable.CrudActionSearch,
-		composable.CrudActionExists, composable.CrudActionGetSchema, composable.CrudActionComputeField,
+func legacyCrudActions() []dynamicresource.CrudAction {
+	return []dynamicresource.CrudAction{
+		dynamicresource.CrudActionCreate, dynamicresource.CrudActionUpdate, dynamicresource.CrudActionDelete,
+		dynamicresource.CrudActionSetArchived, dynamicresource.CrudActionGetById, dynamicresource.CrudActionSearch,
+		dynamicresource.CrudActionExists, dynamicresource.CrudActionGetSchema, dynamicresource.CrudActionComputeField,
 	}
 }
 
-func crudRoutes(schemaName string, rest composable.CrudRestHandlers) composable.RestEngine {
-	return composable.NewRestEngine(schemaName, rest).AddCrudRoutes(legacyCrudActions()...)
+func crudRoutes(schemaName string, rest dynamicresource.CrudRestHandlers) dynamicresource.RestEngine {
+	return dynamicresource.NewRestEngine(schemaName, rest).AddCrudRoutes(legacyCrudActions()...)
 }
 
-func genericRoute(path string, handler composable.HandlerFn) composable.RouteDefinition {
-	return composable.RouteDefinition{Path: path, ActionType: composable.ActionTypeGeneric, HandlerFn: handler}
+func genericRoute(path string, handler dynamicresource.HandlerFn) dynamicresource.RouteDefinition {
+	return dynamicresource.RouteDefinition{Path: path, ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: handler}
 }
 
 // purchaseOrderRoutes adds the lifecycle actions. merge is collection-level: it names several
 // orders in the body, so it is registered before the ":id" routes.
-func purchaseOrderRoutes(rest *v1.PurchaseOrderRest) composable.RestEngine {
+func purchaseOrderRoutes(rest *v1.PurchaseOrderRest) dynamicresource.RestEngine {
 	return crudRoutes(models.PurchaseOrderSchemaName, rest).
 		AddRoute(genericRoute(constants.ActionMerge, rest.Merge)).
 		AddRoute(genericRoute(":id/"+constants.ActionConfirm, rest.Confirm)).
@@ -95,7 +95,7 @@ func purchaseOrderRoutes(rest *v1.PurchaseOrderRest) composable.RestEngine {
 		AddRoute(genericRoute(":id/"+constants.ActionDuplicate, rest.Duplicate))
 }
 
-func agreementRoutes(rest *v1.AgreementRest) composable.RestEngine {
+func agreementRoutes(rest *v1.AgreementRest) dynamicresource.RestEngine {
 	return crudRoutes(models.AgreementSchemaName, rest).
 		AddRoute(genericRoute(":id/"+constants.ActionConfirm, rest.Confirm)).
 		AddRoute(genericRoute(":id/"+constants.ActionClose, rest.Close)).

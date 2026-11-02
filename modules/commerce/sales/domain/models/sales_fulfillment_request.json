@@ -46,7 +46,8 @@
 			"default_value": "pending",
 			"description": {
 				"en-US": "How far Inventory has got. 'accepted' means the request was taken and stock reserved; 'completed' means the goods actually moved. The two are distinct because BR 7.3's failure - money captured but goods not dispensed - lives exactly between them, and a single 'done' flag could not express it."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "inventory_reference",

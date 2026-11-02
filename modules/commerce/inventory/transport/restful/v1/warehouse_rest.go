@@ -4,17 +4,17 @@ import (
 	"go.uber.org/dig"
 
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // WarehouseEngineName is the container name of the warehouse onion, declared once for the struct tag and
-// checked against composable.EngineDependencyName by a test.
+// checked against dynamicresource.EngineDependencyName by a test.
 const WarehouseEngineName = "dynengine_inventory_warehouse"
 
 type warehouseRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_warehouse"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_warehouse"`
 }
 
 func NewWarehouseRest(params warehouseRestParams) *WarehouseRest {
@@ -26,6 +26,6 @@ func NewWarehouseRest(params warehouseRestParams) *WarehouseRest {
 
 // WarehouseRest serves the built-in CRUD of the warehouse resource.
 type WarehouseRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	warehouseSvc itWarehouse.WarehouseApplicationService
 }

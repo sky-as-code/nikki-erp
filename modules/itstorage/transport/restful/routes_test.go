@@ -6,15 +6,15 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/itstorage/transport/restful/v1"
 )
 
 func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
-	assert.Equal(t, composable.EngineDependencyName(models.SpaceSchemaName), v1.SpaceEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.FileSchemaName), v1.FileEngineName)
-	assert.Equal(t, composable.EngineDependencyName(models.ConsumptionSchemaName), v1.ConsumptionEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.SpaceSchemaName), v1.SpaceEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.FileSchemaName), v1.FileEngineName)
+	assert.Equal(t, dynamicresource.EngineDependencyName(models.ConsumptionSchemaName), v1.ConsumptionEngineName)
 }
 
 // The BFF codes against these paths; they must not drift under the engine's resource paths.

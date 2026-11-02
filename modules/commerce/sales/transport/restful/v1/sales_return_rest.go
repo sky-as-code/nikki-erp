@@ -4,7 +4,7 @@ import (
 	"go.uber.org/dig"
 
 	itReturns "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/returns"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 type salesReturnRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_return"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_return"`
 }
 
 func NewSalesReturnRest(params salesReturnRestParams) *SalesReturnRest {
@@ -27,14 +27,14 @@ func NewSalesReturnRest(params salesReturnRestParams) *SalesReturnRest {
 }
 
 type SalesReturnRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	returnSvc itReturns.SalesReturnApplicationService
 }
 
 type salesReturnLineRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_return_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_return_line"`
 }
 
 func NewSalesReturnLineRest(params salesReturnLineRestParams) *SalesReturnLineRest {
@@ -44,13 +44,13 @@ func NewSalesReturnLineRest(params salesReturnLineRestParams) *SalesReturnLineRe
 }
 
 type SalesReturnLineRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesRefundPaymentRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_refund_payment"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_refund_payment"`
 }
 
 func NewSalesRefundPaymentRest(params salesRefundPaymentRestParams) *SalesRefundPaymentRest {
@@ -60,5 +60,5 @@ func NewSalesRefundPaymentRest(params salesRefundPaymentRestParams) *SalesRefund
 }
 
 type SalesRefundPaymentRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

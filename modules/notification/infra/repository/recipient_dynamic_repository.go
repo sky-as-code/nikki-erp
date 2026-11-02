@@ -10,7 +10,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/notification/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/notification/interfaces/delivery"
 )
@@ -23,12 +23,12 @@ const (
 	notificationsTable = "notification_notifications"
 )
 
-func NewRecipientRepository(base composable.CrudRepository) it.RecipientRepository {
+func NewRecipientRepository(base dynamicresource.CrudRepository) it.RecipientRepository {
 	return &RecipientRepositoryImpl{CrudRepository: base}
 }
 
 type RecipientRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // NextStreamSeq draws the next ordering key.

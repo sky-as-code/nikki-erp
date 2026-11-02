@@ -30,15 +30,17 @@ const (
 
 	LanguageFieldId                 = basemodel.FieldId
 	LanguageFieldName               = "name"
-	LanguageFieldIsoCode            = "iso_code"
+	LanguageFieldLocaleCode         = "locale_code"
 	LanguageFieldDirection          = "direction"
 	LanguageFieldDecimalSeparator   = "decimal_separator"
 	LanguageFieldThousandsSeparator = "thousands_separator"
+	LanguageFieldGrouping           = "grouping"
 	LanguageFieldDateFormat         = "date_format"
 	LanguageFieldTimeFormat         = "time_format"
 	LanguageFieldShortTimeFormat    = "short_time_format"
 	LanguageFieldFirstDayOfWeek     = "first_day_of_week"
-	LanguageFieldIsEnabled          = "is_enabled"
+	LanguageFieldIsActive           = "is_active"
+	LanguageFieldPublicUse          = "public_use"
 )
 
 //go:embed language.json
@@ -60,7 +62,7 @@ func NewLanguageFrom(src dmodel.DynamicFields) *Language {
 	return &Language{basemodel.NewDynamicModel(src)}
 }
 
-// Every field of this model is stored as a string, iso_code included: GetFieldData has no
+// Every field of this model is stored as a string, locale_code included: GetFieldData has no
 // LanguageCode accessor, and a getter that silently cast to one would hide the conversion the
 // transport layer has to do anyway.
 
@@ -72,12 +74,12 @@ func (this *Language) SetName(v *string) {
 	this.GetFieldData().SetString(LanguageFieldName, v)
 }
 
-func (this Language) GetIsoCode() *string {
-	return this.GetFieldData().GetString(LanguageFieldIsoCode)
+func (this Language) GetLocaleCode() *string {
+	return this.GetFieldData().GetString(LanguageFieldLocaleCode)
 }
 
-func (this *Language) SetIsoCode(v *string) {
-	this.GetFieldData().SetString(LanguageFieldIsoCode, v)
+func (this *Language) SetLocaleCode(v *string) {
+	this.GetFieldData().SetString(LanguageFieldLocaleCode, v)
 }
 
 func (this Language) GetDirection() *string {
@@ -102,6 +104,15 @@ func (this Language) GetThousandsSeparator() *string {
 
 func (this *Language) SetThousandsSeparator(v *string) {
 	this.GetFieldData().SetString(LanguageFieldThousandsSeparator, v)
+}
+
+// GetGrouping returns the digit grouping as its stored JSON int array, e.g. "[3,0]".
+func (this Language) GetGrouping() *string {
+	return this.GetFieldData().GetString(LanguageFieldGrouping)
+}
+
+func (this *Language) SetGrouping(v *string) {
+	this.GetFieldData().SetString(LanguageFieldGrouping, v)
 }
 
 func (this Language) GetDateFormat() *string {
@@ -136,10 +147,15 @@ func (this *Language) SetFirstDayOfWeek(v *string) {
 	this.GetFieldData().SetString(LanguageFieldFirstDayOfWeek, v)
 }
 
-func (this Language) GetIsEnabled() *bool {
-	return this.GetFieldData().GetBool(LanguageFieldIsEnabled)
+// GetIsActive reads the computed per-organization activation; nil when the read had no acting org.
+func (this Language) GetIsActive() *bool {
+	return this.GetFieldData().GetBool(LanguageFieldIsActive)
 }
 
-func (this *Language) SetIsEnabled(v *bool) {
-	this.GetFieldData().SetBool(LanguageFieldIsEnabled, v)
+func (this Language) GetPublicUse() *bool {
+	return this.GetFieldData().GetBool(LanguageFieldPublicUse)
+}
+
+func (this *Language) SetPublicUse(v *bool) {
+	this.GetFieldData().SetBool(LanguageFieldPublicUse, v)
 }

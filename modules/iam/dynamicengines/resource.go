@@ -8,7 +8,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/app"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/services"
@@ -19,25 +19,25 @@ import (
 type resourceEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_resource"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_resource"`
 }
 
 // registerResourceEngine declares the iam_resource onion: the catalog of what can be authorized,
 // shared by the whole tenant, so its permissions are tenant-scoped.
 func registerResourceEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.ResourceSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.ResourceSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:      models.ResourceSchemaName,
 				PermissionScope: util.ToPtr(requestguard.ResourceScopeTenant),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewResourceCrudRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewResourceCrudDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewResourceCrudApplicationService(base)
 				},
 			}, param)

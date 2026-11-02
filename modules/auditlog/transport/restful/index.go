@@ -11,7 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/auditlog/dynamicengines"
 	v1 "github.com/sky-as-code/nikki-erp/modules/auditlog/transport/restful/v1"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func InitRestfulHandlers() error {
@@ -25,7 +25,7 @@ func initAuditLogV1() error {
 	return deps.Invoke(func(route *echo.Group, actionRest *v1.ActionRest) error {
 		routeV1 := route.Group("/v1/" + c.AuditLogModuleName)
 		routeV1.GET(c.RouteActionHistory, actionRest.GetHistory, m.UserSmokeAuthz())
-		return composable.NewRestEngine(models.ActionSchemaName, actionRest).
+		return dynamicresource.NewRestEngine(models.ActionSchemaName, actionRest).
 			AddCrudRoutes(dynamicengines.ActionRestActions()...).
 			RegisterRoutes(routeV1)
 	})

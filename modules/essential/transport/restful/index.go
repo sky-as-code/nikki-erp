@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/essential/dynamicengines"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/settings"
@@ -26,6 +26,7 @@ func InitRestfulHandlers() error {
 		v1.NewModelMetadataRest,
 		v1.NewModuleRest,
 		v1.NewTagRest,
+		v1.NewTimezoneRest,
 		v1.NewUomCatRest,
 		v1.NewUomConversionRest,
 		v1.NewUomRest,
@@ -55,13 +56,14 @@ func initEssentialV1() error {
 			initModuleV1(routeV1),
 			initTagV1(routeV1),
 			initSettingsV1(routeV1),
+			initTimezoneV1(routeV1),
 		)
 	})
 }
 
 func initCurrencyV1(route *echo.Group) error {
 	return deps.Invoke(func(currencyRest *v1.CurrencyRest) error {
-		return composable.NewRestEngine(models.CurrencySchemaName, currencyRest).
+		return dynamicresource.NewRestEngine(models.CurrencySchemaName, currencyRest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -71,13 +73,13 @@ func initCurrencyV1(route *echo.Group) error {
 // calculation over two records rather than an action on one, so they are collection-level.
 func initUomV1(route *echo.Group) error {
 	return deps.Invoke(func(uomRest *v1.UomRest, conversionRest *v1.UomConversionRest) error {
-		return composable.NewRestEngine(models.UomSchemaName, uomRest).
+		return dynamicresource.NewRestEngine(models.UomSchemaName, uomRest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: "convert", ActionType: composable.ActionTypeGeneric, HandlerFn: conversionRest.Convert,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: "convert", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: conversionRest.Convert,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: "to_reference", ActionType: composable.ActionTypeGeneric, HandlerFn: conversionRest.ToReference,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: "to_reference", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: conversionRest.ToReference,
 			}).
 			RegisterRoutes(route)
 	})
@@ -85,7 +87,7 @@ func initUomV1(route *echo.Group) error {
 
 func initEnumV1(route *echo.Group) error {
 	return deps.Invoke(func(enumRest *v1.EnumRest) error {
-		return composable.NewRestEngine(models.EnumSchemaName, enumRest).
+		return dynamicresource.NewRestEngine(models.EnumSchemaName, enumRest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -93,7 +95,7 @@ func initEnumV1(route *echo.Group) error {
 
 func initTagV1(route *echo.Group) error {
 	return deps.Invoke(func(tagRest *v1.TagRest) error {
-		return composable.NewRestEngine(models.TagSchemaName, tagRest).
+		return dynamicresource.NewRestEngine(models.TagSchemaName, tagRest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -104,14 +106,14 @@ func initTagV1(route *echo.Group) error {
 // a session.
 func initLanguageV1(route *echo.Group) error {
 	return deps.Invoke(func(languageRest *v1.LanguageRest) error {
-		return composable.NewRestEngine(models.LanguageSchemaName, languageRest).
+		return dynamicresource.NewRestEngine(models.LanguageSchemaName, languageRest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: "json", ActionType: composable.ActionTypeRead, HandlerFn: languageRest.GetLanguageJson,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: "json", ActionType: dynamicresource.ActionTypeRead, HandlerFn: languageRest.GetLanguageJson,
 				IsAuthorized: util.ToPtr(false),
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: "enabled", ActionType: composable.ActionTypeRead, HandlerFn: languageRest.ListEnabledLanguages,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: "enabled", ActionType: dynamicresource.ActionTypeRead, HandlerFn: languageRest.ListEnabledLanguages,
 				IsAuthorized: util.ToPtr(false),
 			}).
 			RegisterRoutes(route)
@@ -120,7 +122,7 @@ func initLanguageV1(route *echo.Group) error {
 
 func initFieldMetadataV1(route *echo.Group) error {
 	return deps.Invoke(func(fieldMetadataRest *v1.FieldMetadataRest) error {
-		return composable.NewRestEngine(models.FieldMetadataSchemaName, fieldMetadataRest).
+		return dynamicresource.NewRestEngine(models.FieldMetadataSchemaName, fieldMetadataRest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -128,7 +130,7 @@ func initFieldMetadataV1(route *echo.Group) error {
 
 func initModelMetadataV1(route *echo.Group) error {
 	return deps.Invoke(func(modelMetadataRest *v1.ModelMetadataRest) error {
-		return composable.NewRestEngine(models.ModelMetadataSchemaName, modelMetadataRest).
+		return dynamicresource.NewRestEngine(models.ModelMetadataSchemaName, modelMetadataRest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -137,7 +139,7 @@ func initModelMetadataV1(route *echo.Group) error {
 // initModuleV1 serves the module catalogue read-only at /v1/essential/essential_module_metadata.
 func initModuleV1(route *echo.Group) error {
 	return deps.Invoke(func(moduleRest *v1.ModuleRest) error {
-		return composable.NewRestEngine(models.ModuleMetadataSchemaName, moduleRest).
+		return dynamicresource.NewRestEngine(models.ModuleMetadataSchemaName, moduleRest).
 			AddCrudRoutes(dynamicengines.ModuleReadActions()...).
 			RegisterRoutes(route)
 	})
@@ -145,7 +147,7 @@ func initModuleV1(route *echo.Group) error {
 
 func initUomCatV1(route *echo.Group) error {
 	return deps.Invoke(func(uomCatRest *v1.UomCatRest) error {
-		return composable.NewRestEngine(models.UomCatSchemaName, uomCatRest).
+		return dynamicresource.NewRestEngine(models.UomCatSchemaName, uomCatRest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -155,5 +157,12 @@ func initSettingsV1(route *echo.Group) error {
 	return deps.Invoke(func(settingsSvc itSettings.SettingsAppService) {
 		route.PATCH(coreSettings.UpdateSettingsRoutePath, coreSettings.UpdateSettingsHandler(settingsSvc.UpdateSettings),
 			m.UserSmokeAuthz())
+	})
+}
+
+// initTimezoneV1 serves the timezone catalogue at /v1/essential/timezones to any signed-in caller.
+func initTimezoneV1(route *echo.Group) error {
+	return deps.Invoke(func(timezoneRest *v1.TimezoneRest) {
+		route.GET("/timezones", timezoneRest.Search, m.UserSmokeAuthz())
 	})
 }

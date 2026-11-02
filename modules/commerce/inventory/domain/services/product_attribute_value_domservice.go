@@ -10,59 +10,61 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewProductAttributeValueDomainService is handed the composable default by the
 // product_attribute_value onion.
-func NewProductAttributeValueDomainService(base composable.CrudDomainService) itProduct.ProductAttributeValueDomainService {
+func NewProductAttributeValueDomainService(
+	base dynamicresource.CrudDomainService,
+) itProduct.ProductAttributeValueDomainService {
 	return &ProductAttributeValueDomainServiceImpl{CrudDomainService: base}
 }
 
 // ProductAttributeValueDomainServiceImpl holds the value rules. The attribute's inline values
 // delta writes through this service too, so a value written either way obeys the same rules.
 type ProductAttributeValueDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // Create trims the name and refuses a blank one, one that clashes with a sibling, and a value
 // under an archived attribute.
 func (this *ProductAttributeValueDomainServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
 	trimLangJsonInPlace(cmd, models.ProductAttributeValueFieldName)
 	opts := attrFirstOption(options)
-	opts.ValidateExtra = composable.ChainValidateExtra(assertValueWritable, opts.ValidateExtra)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(assertValueWritable, opts.ValidateExtra)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 // Update applies the same rules as Create; the name rules only when the name changes.
 func (this *ProductAttributeValueDomainServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
 	trimLangJsonInPlace(cmd, models.ProductAttributeValueFieldName)
 	opts := attrFirstOption(options)
-	opts.ValidateExtra = composable.ChainValidateExtra(assertValueWritable, opts.ValidateExtra)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(assertValueWritable, opts.ValidateExtra)
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
 
 // Delete refuses a value any template line ever offered: variants were built from that row, so
 // the value can only be archived.
 func (this *ProductAttributeValueDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
 	opts := attrFirstOption(options)
-	opts.ValidateExtra = composable.ChainValidateExtra(assertValueHasNoHistory, opts.ValidateExtra)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(assertValueHasNoHistory, opts.ValidateExtra)
 	return this.CrudDomainService.Delete(ctx, cmd, opts)
 }
 
 // SetArchived refuses to archive a value an enabled template line still selects, and to
 // unarchive one whose attribute is archived.
 func (this *ProductAttributeValueDomainServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
-	archive, _ := composable.ParamBool(cmd, basemodel.FieldIsArchived)
-	valueId := string(composable.ParamId(cmd))
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
+	archive, _ := dynamicresource.ParamBool(cmd, basemodel.FieldIsArchived)
+	valueId := string(dynamicresource.ParamId(cmd))
 	var cErrs ft.ClientErrors
 	var err error
 	if archive {
@@ -74,7 +76,7 @@ func (this *ProductAttributeValueDomainServiceImpl) SetArchived(
 		return nil, errors.Wrap(err, "SetArchived product attribute value")
 	}
 	if cErrs.Count() > 0 {
-		return &composable.MutateResult{ClientErrors: cErrs}, nil
+		return &dynamicresource.MutateResult{ClientErrors: cErrs}, nil
 	}
 	return this.CrudDomainService.SetArchived(ctx, cmd)
 }
@@ -82,11 +84,11 @@ func (this *ProductAttributeValueDomainServiceImpl) SetArchived(
 // assertValueWritable stops at the first refusal: a value of an archived attribute is read-only,
 // so its name is not worth checking.
 func assertValueWritable(
-	ctx corectx.Context, input *composable.DynamicEntity, found *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, input *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
-	attributeId := composable.ParamString(input.GetFieldData(), models.ProductAttributeValueFieldAttributeId)
+	attributeId := dynamicresource.ParamString(input.GetFieldData(), models.ProductAttributeValueFieldAttributeId)
 	if found != nil {
-		attributeId = composable.ParamString(found.GetFieldData(), models.ProductAttributeValueFieldAttributeId)
+		attributeId = dynamicresource.ParamString(found.GetFieldData(), models.ProductAttributeValueFieldAttributeId)
 	}
 	if attributeId != "" {
 		archived, err := isAttributeArchived(ctx, model.Id(attributeId))
@@ -112,7 +114,7 @@ func newValueParentArchivedError(field string) *ft.ClientErrorItem {
 }
 
 func assertValueNameUnique(
-	ctx corectx.Context, input *composable.DynamicEntity, found *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, input *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	fields := input.GetFieldData()
 	name := fields.GetLangJson(models.ProductAttributeValueFieldName)
@@ -120,10 +122,10 @@ func assertValueNameUnique(
 		return nil
 	}
 	candidate := attributeValueName{name: *name}
-	attributeId := composable.ParamString(fields, models.ProductAttributeValueFieldAttributeId)
+	attributeId := dynamicresource.ParamString(fields, models.ProductAttributeValueFieldAttributeId)
 	if found != nil {
-		candidate.id = composable.ParamId(found.GetFieldData())
-		attributeId = composable.ParamString(found.GetFieldData(), models.ProductAttributeValueFieldAttributeId)
+		candidate.id = dynamicresource.ParamId(found.GetFieldData())
+		attributeId = dynamicresource.ParamString(found.GetFieldData(), models.ProductAttributeValueFieldAttributeId)
 	}
 	if attributeId == "" {
 		return nil
@@ -139,9 +141,9 @@ func assertValueNameUnique(
 }
 
 func assertValueHasNoHistory(
-	ctx corectx.Context, _ *composable.DynamicEntity, found *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, _ *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
-	valueId := string(composable.ParamId(found.GetFieldData()))
+	valueId := string(dynamicresource.ParamId(found.GetFieldData()))
 	if valueId == "" {
 		return nil
 	}
@@ -185,7 +187,7 @@ func (this *ProductAttributeValueDomainServiceImpl) assertParentActive(
 	if err != nil || len(values) == 0 {
 		return nil, err
 	}
-	attributeId := composable.ParamString(values[0], models.ProductAttributeValueFieldAttributeId)
+	attributeId := dynamicresource.ParamString(values[0], models.ProductAttributeValueFieldAttributeId)
 	archived, err := isAttributeArchived(ctx, model.Id(attributeId))
 	if err != nil || !archived {
 		return nil, err
@@ -200,7 +202,7 @@ func isAttributeArchived(ctx corectx.Context, attributeId model.Id) (bool, error
 	if err != nil || len(rows) == 0 {
 		return false, err
 	}
-	archived, _ := composable.ParamBool(rows[0], basemodel.FieldIsArchived)
+	archived, _ := dynamicresource.ParamBool(rows[0], basemodel.FieldIsArchived)
 	return archived, nil
 }
 

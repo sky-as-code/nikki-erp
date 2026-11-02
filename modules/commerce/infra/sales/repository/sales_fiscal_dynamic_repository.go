@@ -2,29 +2,29 @@ package repository
 
 import (
 	itFiscal "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/fiscal"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func NewSalesFiscalRequestRepository(base composable.CrudRepository) itFiscal.SalesFiscalRequestRepository {
+func NewSalesFiscalRequestRepository(base dynamicresource.CrudRepository) itFiscal.SalesFiscalRequestRepository {
 	return &SalesFiscalRequestRepositoryImpl{CrudRepository: base}
 }
 
 type SalesFiscalRequestRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesBillingInstructionRepository(base composable.CrudRepository) itFiscal.SalesBillingInstructionRepository {
+func NewSalesBillingInstructionRepository(base dynamicresource.CrudRepository) itFiscal.SalesBillingInstructionRepository {
 	return &SalesBillingInstructionRepositoryImpl{CrudRepository: base}
 }
 
 type SalesBillingInstructionRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesBillingIssuanceAttemptRepository(base composable.CrudRepository) itFiscal.SalesBillingIssuanceAttemptRepository {
+func NewSalesBillingIssuanceAttemptRepository(base dynamicresource.CrudRepository) itFiscal.SalesBillingIssuanceAttemptRepository {
 	return &SalesBillingIssuanceAttemptRepositoryImpl{CrudRepository: base}
 }
 
 type SalesBillingIssuanceAttemptRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

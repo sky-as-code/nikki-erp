@@ -3,7 +3,7 @@ package v1
 import (
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ModelMetadataEngineName is the container name of the onion, checked by a test.
@@ -12,7 +12,7 @@ const ModelMetadataEngineName = "dynengine_essential_model_metadata"
 type modelmetadataRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_essential_model_metadata"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_essential_model_metadata"`
 }
 
 func NewModelMetadataRest(params modelmetadataRestParams) *ModelMetadataRest {
@@ -23,5 +23,5 @@ func NewModelMetadataRest(params modelmetadataRestParams) *ModelMetadataRest {
 
 // ModelMetadataRest serves the built-in CRUD of the resource.
 type ModelMetadataRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

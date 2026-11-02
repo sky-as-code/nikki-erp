@@ -13,7 +13,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/core/storage"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/itstorage/constants"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	itConsumption "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/consumption"
@@ -312,11 +312,11 @@ func (this *FileDomainServiceImpl) recordFile(
 	if uploader := uploaderOf(ctx); uploader != nil {
 		fields[models.FileFieldUploadedBy] = *uploader
 	}
-	var created *composable.CreateResult
-	cErrs, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	var created *dynamicresource.CreateResult
+	cErrs, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var err error
-			created, err = this.CrudDomainService.Create(tranxCtx, fields, composable.CreateOptions{
+			created, err = this.CrudDomainService.Create(tranxCtx, fields, dynamicresource.CreateOptions{
 				AfterValidationSuccess: pinFileId(fileId),
 			})
 			if err != nil || created.ClientErrors.Count() > 0 {
@@ -333,7 +333,7 @@ func (this *FileDomainServiceImpl) recordFile(
 	return &itFile.UploadFileResultData{Created: created.Data}, nil, nil
 }
 
-func clientErrorsOf(result *composable.CreateResult) *ft.ClientErrors {
+func clientErrorsOf(result *dynamicresource.CreateResult) *ft.ClientErrors {
 	if result == nil {
 		return nil
 	}
@@ -348,10 +348,10 @@ func stateTags(status string) map[string]string {
 // pinFileId restores the id the object key was built from. Schema validation regenerates every
 // auto-generated field on create, the primary key included, but the object is already stored under
 // this id and file_path must name it.
-func pinFileId(fileId model.Id) composable.AfterValidationFn {
-	return func(_ corectx.Context, entity *composable.DynamicEntity) (*composable.DynamicEntity, error) {
+func pinFileId(fileId model.Id) dynamicresource.AfterValidationFn {
+	return func(_ corectx.Context, entity *dynamicresource.DynamicEntity) (*dynamicresource.DynamicEntity, error) {
 		fields := maps.Clone(entity.GetFieldData())
 		fields[models.FileFieldId] = fileId
-		return composable.NewDynamicEntityFrom(fields), nil
+		return dynamicresource.NewDynamicEntityFrom(fields), nil
 	}
 }

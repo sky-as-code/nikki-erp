@@ -13,7 +13,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/core/storage"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/itstorage/constants"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	itConsumption "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/consumption"
@@ -32,7 +32,7 @@ type FileDomainDeps struct {
 }
 
 // NewFileDomainService is handed the composable default by the itstorage_file onion.
-func NewFileDomainService(base composable.CrudDomainService, deps FileDomainDeps) itFile.FileDomainService {
+func NewFileDomainService(base dynamicresource.CrudDomainService, deps FileDomainDeps) itFile.FileDomainService {
 	maxSize := c.DefaultUploadMaxFileSizeBytes
 	if deps.ConfigSvc != nil {
 		// The configuration service parses its fallback from a string.
@@ -53,7 +53,7 @@ func NewFileDomainService(base composable.CrudDomainService, deps FileDomainDeps
 // step. A row and the size change commit together; the object is written before and removed
 // after, because storage cannot join the database transaction.
 type FileDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	repo           itFile.FileRepository
 	spaceSvc       itSpace.SpaceDomainService
 	storage        filestorage.FileStorageAdapter
@@ -112,9 +112,9 @@ func (this *FileDomainServiceImpl) findFile(ctx corectx.Context, fileId model.Id
 // A file in use is refused: the record referencing it would keep a dangling id. The record drops
 // the reference instead, which releases the file to expire.
 func (this *FileDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
-	file, err := this.findFile(ctx, composable.ParamId(cmd))
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
+	file, err := this.findFile(ctx, dynamicresource.ParamId(cmd))
 	if err != nil {
 		return nil, err
 	}
@@ -122,13 +122,13 @@ func (this *FileDomainServiceImpl) Delete(
 		return this.CrudDomainService.Delete(ctx, cmd, options...)
 	}
 	if file.GetStatus() == storage.FileStatusInUse {
-		return &composable.MutateResult{ClientErrors: ft.ClientErrors{*ft.NewAnonymousBusinessViolation(
+		return &dynamicresource.MutateResult{ClientErrors: ft.ClientErrors{*ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey("err_file_in_use", c.ItStorageModuleName),
 			"the file is referenced by a record; remove it from that record instead")}}, nil
 	}
 
-	var result *composable.MutateResult
-	cErrs, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	var result *dynamicresource.MutateResult
+	cErrs, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var err error
 			result, err = this.CrudDomainService.Delete(tranxCtx, cmd, options...)
@@ -147,7 +147,7 @@ func (this *FileDomainServiceImpl) Delete(
 		return nil, errors.Wrap(err, "FileDomainService.Delete")
 	}
 	if cErrs != nil && cErrs.Count() > 0 {
-		return &composable.MutateResult{ClientErrors: *cErrs}, nil
+		return &dynamicresource.MutateResult{ClientErrors: *cErrs}, nil
 	}
 	this.RemoveObjects(ctx, []string{file.GetObjectKey()})
 	return result, nil

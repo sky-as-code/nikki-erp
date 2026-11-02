@@ -3,18 +3,18 @@ package v1
 import (
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // CurrencyEngineName is the container name of the currency onion. A struct tag cannot call
-// composable.EngineDependencyName, so the literal is declared once here and checked against it
+// dynamicresource.EngineDependencyName, so the literal is declared once here and checked against it
 // by a test.
 const CurrencyEngineName = "dynengine_essential_currency"
 
 type currencyRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_essential_currency"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_essential_currency"`
 }
 
 func NewCurrencyRest(params currencyRestParams) *CurrencyRest {
@@ -28,5 +28,5 @@ func NewCurrencyRest(params currencyRestParams) *CurrencyRest {
 // from use is is_active, a plain field, because amounts already recorded in it must stay
 // readable either way.
 type CurrencyRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

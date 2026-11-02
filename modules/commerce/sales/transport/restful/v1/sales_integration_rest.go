@@ -3,7 +3,7 @@ package v1
 import (
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 type salesManualDiscountRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_manual_discount"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_manual_discount"`
 }
 
 func NewSalesManualDiscountRest(params salesManualDiscountRestParams) *SalesManualDiscountRest {
@@ -24,13 +24,13 @@ func NewSalesManualDiscountRest(params salesManualDiscountRestParams) *SalesManu
 }
 
 type SalesManualDiscountRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesIntegrationOutboxRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_integration_outbox"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_integration_outbox"`
 }
 
 func NewSalesIntegrationOutboxRest(params salesIntegrationOutboxRestParams) *SalesIntegrationOutboxRest {
@@ -40,5 +40,5 @@ func NewSalesIntegrationOutboxRest(params salesIntegrationOutboxRestParams) *Sal
 }
 
 type SalesIntegrationOutboxRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

@@ -6,7 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/settings/app"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/services"
@@ -17,22 +17,22 @@ import (
 type settingsQuotaEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_settings_quota"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_settings_quota"`
 }
 
 // registerSettingsQuotaEngine needs no org scoping: a quota row has no org_id, and its owner may
 // be the tenant itself.
 func registerSettingsQuotaEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SettingsQuotaSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SettingsQuotaSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SettingsQuotaSchemaName,
 				CrudActions: ReadOnlyCrudActions(),
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewSettingsQuotaDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSettingsQuotaApplicationService(base)
 				},
 			}, param)

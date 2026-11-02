@@ -1,42 +1,42 @@
 package stock
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // StockOperationTypeRepository reads and writes stock_operation_type rows.
 type StockOperationTypeRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // StockOperationTypeDomainService is the CRUD of the resource plus its own rules.
 type StockOperationTypeDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // StockOperationTypeApplicationService is the authorized surface the REST handler serves.
 type StockOperationTypeApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a
 // resource-specific name.
 type (
-	CreateStockOperationTypeCommand      = composable.CreateCommand
-	UpdateStockOperationTypeCommand      = composable.UpdateCommand
-	DeleteStockOperationTypeCommand      = composable.DeleteCommand
-	SetStockOperationTypeArchivedCommand = composable.SetArchivedCommand
-	GetStockOperationTypeByIdQuery       = composable.GetByIdQuery
-	SearchStockOperationTypesQuery       = composable.SearchQuery
-	StockOperationTypeExistsQuery        = composable.ExistsQuery
+	CreateStockOperationTypeCommand      = dynamicresource.CreateCommand
+	UpdateStockOperationTypeCommand      = dynamicresource.UpdateCommand
+	DeleteStockOperationTypeCommand      = dynamicresource.DeleteCommand
+	SetStockOperationTypeArchivedCommand = dynamicresource.SetArchivedCommand
+	GetStockOperationTypeByIdQuery       = dynamicresource.GetByIdQuery
+	SearchStockOperationTypesQuery       = dynamicresource.SearchQuery
+	StockOperationTypeExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateStockOperationTypeResult      = composable.CreateResult
-	UpdateStockOperationTypeResult      = composable.MutateResult
-	DeleteStockOperationTypeResult      = composable.MutateResult
-	SetStockOperationTypeArchivedResult = composable.MutateResult
-	GetStockOperationTypeByIdResult     = composable.GetOneResult
-	SearchStockOperationTypesResult     = composable.SearchResult
-	StockOperationTypeExistsResult      = composable.ExistsResult
+	CreateStockOperationTypeResult      = dynamicresource.CreateResult
+	UpdateStockOperationTypeResult      = dynamicresource.MutateResult
+	DeleteStockOperationTypeResult      = dynamicresource.MutateResult
+	SetStockOperationTypeArchivedResult = dynamicresource.MutateResult
+	GetStockOperationTypeByIdResult     = dynamicresource.GetOneResult
+	SearchStockOperationTypesResult     = dynamicresource.SearchResult
+	StockOperationTypeExistsResult      = dynamicresource.ExistsResult
 )

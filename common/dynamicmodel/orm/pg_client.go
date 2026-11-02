@@ -3,8 +3,12 @@ package orm
 import (
 	"context"
 	"database/sql"
+	"log/slog"
+	"sync"
 
 	"go.bryk.io/pkg/errors"
+
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 )
 
 // PgClient implements DBClient for PostgreSQL.
@@ -56,6 +60,9 @@ var _ DbTxClient = (*pgTxClient)(nil)
 type pgTxClient struct {
 	db *sql.DB
 	tx *sql.Tx
+
+	callbacksMu sync.Mutex
+	callbacks   []func()
 }
 
 // ErrTxNested is returned when BeginTx is called on a client already in a transaction.
@@ -82,9 +89,46 @@ func (this *pgTxClient) Close() error {
 }
 
 func (this *pgTxClient) Commit() error {
-	return this.tx.Commit()
+	err := this.tx.Commit()
+	callbacks := this.takeCallbacks()
+	if err != nil {
+		return err
+	}
+	for _, fn := range callbacks {
+		runCommittedCallback(fn)
+	}
+	return nil
 }
 
 func (this *pgTxClient) Rollback() error {
+	this.takeCallbacks()
 	return this.tx.Rollback()
+}
+
+func (this *pgTxClient) OnCommitted(fn func()) {
+	if fn == nil {
+		return
+	}
+	this.callbacksMu.Lock()
+	defer this.callbacksMu.Unlock()
+	this.callbacks = append(this.callbacks, fn)
+}
+
+func (this *pgTxClient) takeCallbacks() []func() {
+	this.callbacksMu.Lock()
+	defer this.callbacksMu.Unlock()
+	callbacks := this.callbacks
+	this.callbacks = nil
+	return callbacks
+}
+
+// runCommittedCallback isolates a callback: the data is already committed, so a panicking side
+// effect must neither fail the caller's request nor skip the callbacks queued after it.
+func runCommittedCallback(fn func()) {
+	defer func() {
+		if err := ft.RecoverPanic(recover(), "OnCommitted callback panicked"); err != nil {
+			slog.Error(err.Error())
+		}
+	}()
+	fn()
 }

@@ -7,7 +7,7 @@ import (
 	itCatalog "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/catalog"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SalesPricelistItemDomainServiceImpl enforces the rules a pricing rule carries that the schema
@@ -18,18 +18,18 @@ import (
 var _ itCatalog.SalesPricelistItemDomainService = (*SalesPricelistItemDomainServiceImpl)(nil)
 
 type SalesPricelistItemDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 func NewSalesPricelistItemDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 ) *SalesPricelistItemDomainServiceImpl {
 	return &SalesPricelistItemDomainServiceImpl{CrudDomainService: base}
 }
 
 func (this *SalesPricelistItemDomainServiceImpl) Create(
-	ctx corectx.Context, params composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, params dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
 	if vErrs := assertRuleConsistent(params); vErrs != nil {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 	}
@@ -46,8 +46,8 @@ func (this *SalesPricelistItemDomainServiceImpl) Create(
 // fields it changes, so validating the payload alone would reject a rule for lacking a target it
 // already has.
 func (this *SalesPricelistItemDomainServiceImpl) Update(
-	ctx corectx.Context, params composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, params dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
 	itemId := stringOf(params, models.SalesPricelistItemFieldId)
 	stored, err := loadRecord(ctx, models.SalesPricelistItemSchemaName,
 		models.SalesPricelistItemFieldId, itemId)

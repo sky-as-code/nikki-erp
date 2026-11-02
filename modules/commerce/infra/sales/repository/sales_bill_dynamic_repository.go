@@ -2,53 +2,53 @@ package repository
 
 import (
 	itBilling "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/billing"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func NewSalesBillRepository(base composable.CrudRepository) itBilling.SalesBillRepository {
+func NewSalesBillRepository(base dynamicresource.CrudRepository) itBilling.SalesBillRepository {
 	return &SalesBillRepositoryImpl{CrudRepository: base}
 }
 
 type SalesBillRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesBillLineRepository(base composable.CrudRepository) itBilling.SalesBillLineRepository {
+func NewSalesBillLineRepository(base dynamicresource.CrudRepository) itBilling.SalesBillLineRepository {
 	return &SalesBillLineRepositoryImpl{CrudRepository: base}
 }
 
 type SalesBillLineRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesBillRelationRepository(base composable.CrudRepository) itBilling.SalesBillRelationRepository {
+func NewSalesBillRelationRepository(base dynamicresource.CrudRepository) itBilling.SalesBillRelationRepository {
 	return &SalesBillRelationRepositoryImpl{CrudRepository: base}
 }
 
 type SalesBillRelationRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesPaymentRepository(base composable.CrudRepository) itBilling.SalesPaymentRepository {
+func NewSalesPaymentRepository(base dynamicresource.CrudRepository) itBilling.SalesPaymentRepository {
 	return &SalesPaymentRepositoryImpl{CrudRepository: base}
 }
 
 type SalesPaymentRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesFulfillmentRequestRepository(base composable.CrudRepository) itBilling.SalesFulfillmentRequestRepository {
+func NewSalesFulfillmentRequestRepository(base dynamicresource.CrudRepository) itBilling.SalesFulfillmentRequestRepository {
 	return &SalesFulfillmentRequestRepositoryImpl{CrudRepository: base}
 }
 
 type SalesFulfillmentRequestRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesFulfillmentRequestLineRepository(base composable.CrudRepository) itBilling.SalesFulfillmentRequestLineRepository {
+func NewSalesFulfillmentRequestLineRepository(base dynamicresource.CrudRepository) itBilling.SalesFulfillmentRequestLineRepository {
 	return &SalesFulfillmentRequestLineRepositoryImpl{CrudRepository: base}
 }
 
 type SalesFulfillmentRequestLineRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

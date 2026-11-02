@@ -20,15 +20,25 @@ import (
 
 type fakeDbTransaction struct {
 	committed bool
+	callbacks []func()
 }
 
 func (this *fakeDbTransaction) Commit() error {
 	this.committed = true
+	for _, fn := range this.callbacks {
+		fn()
+	}
+	this.callbacks = nil
 	return nil
 }
 
 func (this *fakeDbTransaction) Rollback() error {
+	this.callbacks = nil
 	return nil
+}
+
+func (this *fakeDbTransaction) OnCommitted(fn func()) {
+	this.callbacks = append(this.callbacks, fn)
 }
 
 // newPopulatedContext builds a context with every field a request carries set to a
@@ -107,4 +117,40 @@ func TestCloneOfAnEmptyContext(t *testing.T) {
 	assert.Nil(t, clone.GetDbTranx())
 	assert.Empty(t, clone.GetModuleName())
 	assert.Equal(t, model.Id(""), clone.GetPermissions().UserId)
+}
+
+func TestOnCommittedWaitsForTheContextTransaction(t *testing.T) {
+	ctx, tranx := newPopulatedContext()
+	ran := false
+
+	ctx.OnCommitted(func() { ran = true })
+
+	assert.False(t, ran, "a callback must not run before its transaction commits")
+	require.NoError(t, tranx.Commit())
+	assert.True(t, ran)
+}
+
+func TestOnCommittedRunsAtOnceWithoutATransaction(t *testing.T) {
+	ctx := NewRequestContext(context.Background())
+	ran := false
+
+	ctx.OnCommitted(func() { ran = true })
+
+	assert.True(t, ran, "with no transaction the write already autocommitted")
+}
+
+func TestOnCommittedWithoutATransactionSwallowsAPanic(t *testing.T) {
+	ctx := NewRequestContext(context.Background())
+
+	assert.NotPanics(t, func() { ctx.OnCommitted(func() { panic("boom") }) })
+}
+
+func TestOnCommittedOnACloneSharesTheTransaction(t *testing.T) {
+	original, tranx := newPopulatedContext()
+	ran := false
+
+	CloneRequestContext(original).OnCommitted(func() { ran = true })
+
+	require.NoError(t, tranx.Commit())
+	assert.True(t, ran)
 }

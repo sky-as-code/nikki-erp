@@ -7,7 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/notification/constants"
 	it "github.com/sky-as-code/nikki-erp/modules/notification/interfaces/delivery"
 )
@@ -18,7 +18,7 @@ import (
 // answers is a property of the recipient row: what is unread, what order it came in, what has been
 // read. The notification is joined in for its text.
 func NewInboxApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 	recipients it.RecipientRepository,
 	cfg config.ConfigService,
 ) it.InboxApplicationService {
@@ -30,7 +30,7 @@ func NewInboxApplicationService(
 }
 
 type InboxApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	recipients it.RecipientRepository
 	cfg        config.ConfigService

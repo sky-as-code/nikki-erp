@@ -106,7 +106,8 @@
 				"values": ["draft", "done"]
 			},
 			"required_for_create": true,
-			"default_value": "draft"
+			"default_value": "draft",
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "move_id",

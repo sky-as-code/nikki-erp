@@ -6,29 +6,29 @@
 package settingsschema
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type SettingsSchemaRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SettingsSchemaDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type SettingsSchemaApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	GetSettingsSchemaByIdQuery = composable.GetByIdQuery
-	SearchSettingsSchemasQuery = composable.SearchQuery
-	SettingsSchemaExistsQuery  = composable.ExistsQuery
+	GetSettingsSchemaByIdQuery = dynamicresource.GetByIdQuery
+	SearchSettingsSchemasQuery = dynamicresource.SearchQuery
+	SettingsSchemaExistsQuery  = dynamicresource.ExistsQuery
 )
 
 type (
-	GetSettingsSchemaByIdResult = composable.GetOneResult
-	SearchSettingsSchemasResult = composable.SearchResult
-	SettingsSchemaExistsResult  = composable.ExistsResult
+	GetSettingsSchemaByIdResult = dynamicresource.GetOneResult
+	SearchSettingsSchemasResult = dynamicresource.SearchResult
+	SettingsSchemaExistsResult  = dynamicresource.ExistsResult
 )

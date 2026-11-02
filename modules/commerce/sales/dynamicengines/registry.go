@@ -9,7 +9,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // junctionSchemas lists association schemas that need an engine built but not served: a schema here
@@ -89,10 +89,10 @@ func InitDynamicEngines() error {
 // hub. Every Sales resource refuses is_archived on create: archiving goes through the dedicated
 // actions, and no schema declares the field itself (domain/models/archivable_test.go holds that).
 func buildOnion(
-	impl *composable.DynamicResourceEngineOnionImpl, param composable.BuildParam,
-) composable.DynamicResourceEngineOnion {
+	impl *dynamicresource.DynamicResourceEngineOnionImpl, param dynamicresource.BuildParam,
+) dynamicresource.DynamicResourceEngineOnion {
 	impl.RejectArchivedOnCreate = true
-	onion := composable.MustBuild(impl, param)
+	onion := dynamicresource.MustBuild(impl, param)
 	services.InstallResource(impl.SchemaName, onion.Repository(), onion.DomainService())
 	return onion
 }

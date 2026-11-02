@@ -1,42 +1,42 @@
 package stock
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // StockMoveDependencyRepository reads and writes stock_move_dependency rows.
 type StockMoveDependencyRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // StockMoveDependencyDomainService is the CRUD of the resource plus its own rules.
 type StockMoveDependencyDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // StockMoveDependencyApplicationService is the authorized surface the REST handler serves.
 type StockMoveDependencyApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a
 // resource-specific name.
 type (
-	CreateStockMoveDependencyCommand      = composable.CreateCommand
-	UpdateStockMoveDependencyCommand      = composable.UpdateCommand
-	DeleteStockMoveDependencyCommand      = composable.DeleteCommand
-	SetStockMoveDependencyArchivedCommand = composable.SetArchivedCommand
-	GetStockMoveDependencyByIdQuery       = composable.GetByIdQuery
-	SearchStockMoveDependenciesQuery      = composable.SearchQuery
-	StockMoveDependencyExistsQuery        = composable.ExistsQuery
+	CreateStockMoveDependencyCommand      = dynamicresource.CreateCommand
+	UpdateStockMoveDependencyCommand      = dynamicresource.UpdateCommand
+	DeleteStockMoveDependencyCommand      = dynamicresource.DeleteCommand
+	SetStockMoveDependencyArchivedCommand = dynamicresource.SetArchivedCommand
+	GetStockMoveDependencyByIdQuery       = dynamicresource.GetByIdQuery
+	SearchStockMoveDependenciesQuery      = dynamicresource.SearchQuery
+	StockMoveDependencyExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateStockMoveDependencyResult      = composable.CreateResult
-	UpdateStockMoveDependencyResult      = composable.MutateResult
-	DeleteStockMoveDependencyResult      = composable.MutateResult
-	SetStockMoveDependencyArchivedResult = composable.MutateResult
-	GetStockMoveDependencyByIdResult     = composable.GetOneResult
-	SearchStockMoveDependenciesResult    = composable.SearchResult
-	StockMoveDependencyExistsResult      = composable.ExistsResult
+	CreateStockMoveDependencyResult      = dynamicresource.CreateResult
+	UpdateStockMoveDependencyResult      = dynamicresource.MutateResult
+	DeleteStockMoveDependencyResult      = dynamicresource.MutateResult
+	SetStockMoveDependencyArchivedResult = dynamicresource.MutateResult
+	GetStockMoveDependencyByIdResult     = dynamicresource.GetOneResult
+	SearchStockMoveDependenciesResult    = dynamicresource.SearchResult
+	StockMoveDependencyExistsResult      = dynamicresource.ExistsResult
 )

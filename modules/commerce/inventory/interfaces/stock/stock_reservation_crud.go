@@ -1,7 +1,7 @@
 package stock
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The warehouse-level reservation resource. Its rows are written only by the reservation
@@ -9,37 +9,37 @@ import (
 // are withheld at the engine, so the read surface is all a client reaches directly.
 
 type StockReservationRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type StockReservationDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type StockReservationApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	StockReservationActionService
 }
 
 type (
-	GetStockReservationByIdQuery = composable.GetByIdQuery
-	SearchStockReservationsQuery = composable.SearchQuery
-	StockReservationExistsQuery  = composable.ExistsQuery
+	GetStockReservationByIdQuery = dynamicresource.GetByIdQuery
+	SearchStockReservationsQuery = dynamicresource.SearchQuery
+	StockReservationExistsQuery  = dynamicresource.ExistsQuery
 )
 
 type (
-	GetStockReservationByIdResult = composable.GetOneResult
-	SearchStockReservationsResult = composable.SearchResult
-	StockReservationExistsResult  = composable.ExistsResult
+	GetStockReservationByIdResult = dynamicresource.GetOneResult
+	SearchStockReservationsResult = dynamicresource.SearchResult
+	StockReservationExistsResult  = dynamicresource.ExistsResult
 )
 
 // The guard is a lock target with no client surface at all; the outbox is Inventory's own event
 // queue. Both are onions only so their repositories exist for the services that use them.
 
 type WarehouseProductGuardRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type InventoryIntegrationOutboxRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

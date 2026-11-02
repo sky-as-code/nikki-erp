@@ -13,7 +13,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"time"
 )
 
@@ -25,7 +25,7 @@ import (
 // dependencies, so the ports had to be pushed into the package before any request arrived.
 
 type SalesOrderCrudApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	orderSvc itOrder.SalesOrderDomainService
 
 	taxCalculation    itExt.TaxCalculationExtService
@@ -50,7 +50,7 @@ type SalesOrderCrudApplicationServiceImpl struct {
 type SalesOrderApplicationServiceImpl = SalesOrderCrudApplicationServiceImpl
 
 func NewSalesOrderCrudApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 	tax itExt.TaxCalculationExtService,
 	settings itExt.EffectiveSettingsExtService,
 	dLock distributedlock.DistributedLock,
@@ -681,7 +681,7 @@ func readPartyAssignment(params dmodel.DynamicFields, field string) services.Par
 func (this *SalesOrderCrudApplicationServiceImpl) ListFulfillments(
 	ctx corectx.Context, query itOrder.OrderActionCommand,
 ) (*dyn.OpResult[any], error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionRead, query); cErrs != nil || err != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionRead, query); cErrs != nil || err != nil {
 		return anyFailure(cErrs, err)
 	}
 	return this.runOrderFulfillments(ctx, query)
@@ -690,7 +690,7 @@ func (this *SalesOrderCrudApplicationServiceImpl) ListFulfillments(
 func (this *SalesOrderCrudApplicationServiceImpl) SearchFulfillmentTargets(
 	ctx corectx.Context, query itOrder.OrderActionCommand,
 ) (*dyn.OpResult[any], error) {
-	if _, cErrs := this.AssertAction(ctx, composable.PermissionRead, query); cErrs != nil {
+	if _, cErrs := this.AssertAction(ctx, dynamicresource.PermissionRead, query); cErrs != nil {
 		return anyFailure(cErrs, nil)
 	}
 	return this.runFulfillmentTargetSearch(ctx, query)
@@ -840,7 +840,7 @@ func readAvailabilityItems(
 func (this *SalesOrderCrudApplicationServiceImpl) CreateRefunds(
 	ctx corectx.Context, cmd itOrder.OrderActionCommand,
 ) (*dyn.OpResult[any], error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionUpdate, cmd); cErrs != nil || err != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionUpdate, cmd); cErrs != nil || err != nil {
 		return anyFailure(cErrs, err)
 	}
 	return this.runCreateOrderRefund(ctx, cmd)
@@ -849,7 +849,7 @@ func (this *SalesOrderCrudApplicationServiceImpl) CreateRefunds(
 func (this *SalesOrderCrudApplicationServiceImpl) ViewRefunds(
 	ctx corectx.Context, query itOrder.OrderActionCommand,
 ) (*dyn.OpResult[any], error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionRead, query); cErrs != nil || err != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionRead, query); cErrs != nil || err != nil {
 		return anyFailure(cErrs, err)
 	}
 	return this.runViewOrderRefunds(ctx, query)
@@ -863,7 +863,7 @@ func (this *SalesOrderCrudApplicationServiceImpl) ViewRefunds(
 func (this *SalesOrderCrudApplicationServiceImpl) ListBills(
 	ctx corectx.Context, query itOrder.OrderActionCommand,
 ) (*dyn.OpResult[any], error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionRead, query); cErrs != nil || err != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionRead, query); cErrs != nil || err != nil {
 		return anyFailure(cErrs, err)
 	}
 	return this.runListOrderBills(ctx, query)

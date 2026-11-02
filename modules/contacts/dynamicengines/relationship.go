@@ -11,28 +11,28 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/contacts/infra/repository"
 	itRelationship "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/relationship"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type relationshipEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_contacts_relationship"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_contacts_relationship"`
 }
 
 func registerRelationshipEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.RelationshipSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.RelationshipSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.RelationshipSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewRelationshipRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewRelationshipDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewRelationshipApplicationService(base)
 				},
 			}, param)

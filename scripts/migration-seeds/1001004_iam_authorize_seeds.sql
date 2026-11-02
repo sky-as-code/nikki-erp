@@ -58,7 +58,7 @@ BEGIN
 		-- AuthzGrantRequest
 		('01JWNZ29T8K173M5GA3HF1TT5Y', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01KF32E4TSX9DVV9KVKBS7GQ0T', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWNZ2CMDCF51YV895YY1PQVZ', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01KF32E4TSX9DVV9KVKBS7GQ0T', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KNV107H9GRANTUPD8H2P6QK', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01KF32E4TSX9DVV9KVKBS7GQ0T', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KNV107H90GRANTUPD8H2P6QK', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01KF32E4TSX9DVV9KVKBS7GQ0T', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWNZ2N37F8ZXHIHI17QYNG6R', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01KF32E4TSX9DVV9KVKBS7GQ0T', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWNZ2H9TPT1YY1TZ5KPHRE3H', jsonb_build_object('en-US', 'Respond', 'vi-VN', 'Phản hồi'), 'respond', 'Respond grant or revoke requests despite not being role owners', '01KF32E4TSX9DVV9KVKBS7GQ0T', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		-- IamUser
@@ -173,13 +173,13 @@ BEGIN
 		-- Authorize module Readonly: Read actions on Authorize resources
 		('01JWPA3A4J2644C24V86419A2V', 'Authorize Readonly - Read Resources', 'Read resources in Authorize module', 'read:iam_resource:tenant', '01JWNYZEVSH78T2SH7WP47KDRM', '01JWNYWE9FBX2WTMYZMR9XHHX6', '01JWP80S5RXP8BD4YCY8ZHP7NZ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01KNHHJY19ZDZFQDG71WJETFFH', 'Authorize Readonly - Read Roles', 'Read roles in Authorize module', 'read:iam_role:tenant', '01JWNZ1D53FREVN8WX0Z7GZ1PS', '01JWNYV4RQ1ZKWG8RE0RMFTVCM', '01JWP80S5RXP8BD4YCY8ZHP7NZ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KNV107H9ROENTREADH2P6QK', 'Authorize Readonly - Read Entitlements', 'Read entitlements in Authorize module', 'read:iam_entitlement:tenant', '01JWNYK975JE0PKC1NRAB68D9C', '01JWNX10DN9E2PVZTVPJNTWR7D', '01JWP80S5RXP8BD4YCY8ZHP7NZ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KNV107H90ROENTREADH2P6QK', 'Authorize Readonly - Read Entitlements', 'Read entitlements in Authorize module', 'read:iam_entitlement:tenant', '01JWNYK975JE0PKC1NRAB68D9C', '01JWNX10DN9E2PVZTVPJNTWR7D', '01JWP80S5RXP8BD4YCY8ZHP7NZ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01KNHHJY19TQPRN03XDDEKQ6PE', 'Authorize Readonly - Read Grant Request', 'Read grant requests in Authorize module', 'read:iam_grant_request:tenant', '01JWNZ2N37F8ZXHIHI17QYNG6R', '01KF32E4TSX9DVV9KVKBS7GQ0T', '01JWP80S5RXP8BD4YCY8ZHP7NZ', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Authorize module Administrator: All actions on Authorize resources
 		('01JWPA35MPHG33G77FKQNYJS21', 'Authorize Admin - All Resource actions', 'All resource actions in Authorize module', '*:iam_resource:tenant', NULL, '01JWNYWE9FBX2WTMYZMR9XHHX6', '01JWP80WR22SAG8Z7EYKDB00K6', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JWPA3232EYYN4HQMWBBV345B', 'Authorize Admin - All Role actions', 'All role actions in Authorize module', '*:iam_role:tenant', NULL, '01JWNYV4RQ1ZKWG8RE0RMFTVCM', '01JWP80WR22SAG8Z7EYKDB00K6', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01KNV107H9ADENTALLH2P6QK7', 'Authorize Admin - All Entitlement actions', 'All entitlement actions in Authorize module', '*:iam_entitlement:tenant', NULL, '01JWNX10DN9E2PVZTVPJNTWR7D', '01JWP80WR22SAG8Z7EYKDB00K6', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KNV107H90ADENTALLH2P6QK7', 'Authorize Admin - All Entitlement actions', 'All entitlement actions in Authorize module', '*:iam_entitlement:tenant', NULL, '01JWNX10DN9E2PVZTVPJNTWR7D', '01JWP80WR22SAG8Z7EYKDB00K6', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01JW197DCKNR9DD16MP9TYA89J', 'Authorize Admin - All Grant Request actions', 'All grant and revoke request actions in Authorize module', '*:iam_grant_request:tenant', NULL, '01KF32E4TSX9DVV9KVKBS7GQ0T', '01JWP80WR22SAG8Z7EYKDB00K6', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Authorize module Moderator: All actions on Resource, Role except delete
@@ -203,7 +203,8 @@ BEGIN
 		INSERT INTO "iam_entitlements" (
 			"id", "name", "description", "expression", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
 		) VALUES
-		('01M0CUR1QS6Z9HM0K4B1FCR7DM', 'User - Read Currencies', 'Read currencies', 'read:essential_currency:tenant', '01M0CUR1QQ2V5DH6F0X7BYM3ZJ', '01M0CUR1QK4N7VZBX2M9TPE5RD', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M0CUR1QS6Z9HM0K4B1FCR7DM', 'User - Read Currencies', 'Read currencies', 'read:essential_currency:tenant', '01M0CUR1QQ2V5DH6F0X7BYM3ZJ', '01M0CUR1QK4N7VZBX2M9TPE5RD', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M51EPZ8KR000000000000EN1', 'User - Read Languages', 'Read languages', 'read:essential_language:tenant', '01M51EPZ8KR000000000000RD1', '01M51EPZ8K0CA51CB8DX821SM3', '01KZJ5XRJDXSXZY0DKNNE6S086', 'tenant', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

@@ -2,13 +2,13 @@ package repository
 
 import (
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/order"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func NewSourcingGroupRepository(base composable.CrudRepository) itOrder.SourcingGroupCrudRepository {
+func NewSourcingGroupRepository(base dynamicresource.CrudRepository) itOrder.SourcingGroupCrudRepository {
 	return &SourcingGroupRepositoryImpl{CrudRepository: base}
 }
 
 type SourcingGroupRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

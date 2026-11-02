@@ -116,7 +116,8 @@
 				"values": ["active", "suspended"]
 			},
 			"required_for_create": true,
-			"default_value": "active"
+			"default_value": "active",
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "notes",

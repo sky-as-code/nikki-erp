@@ -1,22 +1,22 @@
 package paymentmethod
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // PaymentMethodCrudRepository reads and writes payment methods.
 type PaymentMethodCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // PaymentMethodCrudDomainService is the CRUD of the resource.
 type PaymentMethodCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // PaymentMethodCrudApplicationService is the authorized surface the REST handler serves.
 type PaymentMethodCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	// The published port is served by the same instance, so the usability gates and the CRUD
 	// read the same rows through the same repository.
@@ -24,21 +24,21 @@ type PaymentMethodCrudApplicationService interface {
 }
 
 type (
-	CreatePaymentMethodCommand      = composable.CreateCommand
-	UpdatePaymentMethodCommand      = composable.UpdateCommand
-	DeletePaymentMethodCommand      = composable.DeleteCommand
-	SetPaymentMethodArchivedCommand = composable.SetArchivedCommand
-	GetPaymentMethodByIdQuery       = composable.GetByIdQuery
-	SearchPaymentMethodsQuery       = composable.SearchQuery
-	PaymentMethodExistsQuery        = composable.ExistsQuery
+	CreatePaymentMethodCommand      = dynamicresource.CreateCommand
+	UpdatePaymentMethodCommand      = dynamicresource.UpdateCommand
+	DeletePaymentMethodCommand      = dynamicresource.DeleteCommand
+	SetPaymentMethodArchivedCommand = dynamicresource.SetArchivedCommand
+	GetPaymentMethodByIdQuery       = dynamicresource.GetByIdQuery
+	SearchPaymentMethodsQuery       = dynamicresource.SearchQuery
+	PaymentMethodExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreatePaymentMethodResult      = composable.CreateResult
-	UpdatePaymentMethodResult      = composable.MutateResult
-	DeletePaymentMethodResult      = composable.MutateResult
-	SetPaymentMethodArchivedResult = composable.MutateResult
-	GetPaymentMethodByIdResult     = composable.GetOneResult
-	SearchPaymentMethodsResult     = composable.SearchResult
-	PaymentMethodExistsResult      = composable.ExistsResult
+	CreatePaymentMethodResult      = dynamicresource.CreateResult
+	UpdatePaymentMethodResult      = dynamicresource.MutateResult
+	DeletePaymentMethodResult      = dynamicresource.MutateResult
+	SetPaymentMethodArchivedResult = dynamicresource.MutateResult
+	GetPaymentMethodByIdResult     = dynamicresource.GetOneResult
+	SearchPaymentMethodsResult     = dynamicresource.SearchResult
+	PaymentMethodExistsResult      = dynamicresource.ExistsResult
 )

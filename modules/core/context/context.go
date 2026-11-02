@@ -23,6 +23,10 @@ type Context interface {
 	SetLogger(logger logging.LoggerService)
 	GetDbTranx() db.DbTransaction
 	SetDbTranx(trx db.DbTransaction)
+	// OnCommitted runs fn after the context's transaction commits, or right away when there is
+	// none, because the write it follows has already autocommitted. Use it for side effects
+	// (event publishes, cache invalidation) that must not escape a rolled-back write.
+	OnCommitted(fn func())
 	GetDomainConstraints() dmodel.DynamicFields
 	SetDomainConstraints(constraints dmodel.DynamicFields)
 	GetModuleName() string
@@ -215,6 +219,10 @@ func (this *RequestContext) GetDbTranx() db.DbTransaction {
 
 func (this *RequestContext) SetDbTranx(trx db.DbTransaction) {
 	this.repoTrx = trx
+}
+
+func (this *RequestContext) OnCommitted(fn func()) {
+	db.RunOnCommitted(this.repoTrx, fn, this.logger)
 }
 
 func (this *RequestContext) GetDomainConstraints() dmodel.DynamicFields {

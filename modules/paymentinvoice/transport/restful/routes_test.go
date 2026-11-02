@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/dynamicengines"
 	v1 "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/transport/restful/v1"
@@ -24,12 +24,12 @@ func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
 		models.InvoiceSchemaName:        v1.InvoiceEngineName,
 		models.InvoiceLineSchemaName:    v1.InvoiceLineEngineName,
 	} {
-		assert.Equal(t, composable.EngineDependencyName(schemaName), engineName)
+		assert.Equal(t, dynamicresource.EngineDependencyName(schemaName), engineName)
 	}
 	assert.Len(t, dynamicengines.SchemaNames(), 6)
 }
 
-func registeredRoutes(t *testing.T, restEngine composable.RestEngine) []string {
+func registeredRoutes(t *testing.T, restEngine dynamicresource.RestEngine) []string {
 	t.Helper()
 	echoApp := echo.New()
 	require.NoError(t, restEngine.RegisterRoutes(echoApp.Group(routeV1Prefix), passThrough))
@@ -64,7 +64,7 @@ func legacyBuiltinRoutes(schemaName string) []string {
 }
 
 func TestPlainResourcesKeepTheLegacyVerbSet(t *testing.T) {
-	for schemaName, handlers := range map[string]composable.CrudRestHandlers{
+	for schemaName, handlers := range map[string]dynamicresource.CrudRestHandlers{
 		models.PaymentMethodSchemaName:  &v1.PaymentMethodRest{},
 		models.PaymentProfileSchemaName: &v1.PaymentProfileRest{},
 		models.TransactionSchemaName:    &v1.TransactionRest{},

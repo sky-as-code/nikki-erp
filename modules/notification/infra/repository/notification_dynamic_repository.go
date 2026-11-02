@@ -8,16 +8,16 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	it "github.com/sky-as-code/nikki-erp/modules/notification/interfaces/delivery"
 )
 
-func NewNotificationRepository(base composable.CrudRepository) it.NotificationRepository {
+func NewNotificationRepository(base dynamicresource.CrudRepository) it.NotificationRepository {
 	return &NotificationRepositoryImpl{CrudRepository: base}
 }
 
 type NotificationRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // FindByIdempotencyKey answers "has this send already been handled?".

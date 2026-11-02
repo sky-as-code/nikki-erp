@@ -15,7 +15,7 @@ Schema Declares The Core Fields
     ${resp}=    GET On Session    api    ${STOCK_OPERATION_TYPE_API}/meta/schema
     Response Status Should Be    ${resp}    200
     ${fields}=    Set Variable    ${resp.json()}[fields]
-    Dictionary Should Contain Key    ${fields}    code
+    Dictionary Should Not Contain Key    ${fields}    code
     Dictionary Should Contain Key    ${fields}    name
     Dictionary Should Contain Key    ${fields}    operation_code
     Dictionary Should Contain Key    ${fields}    reservation_method

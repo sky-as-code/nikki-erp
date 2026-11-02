@@ -4,7 +4,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
 )
 
@@ -14,7 +14,7 @@ const OrgEngineName = "dynengine_iam_org"
 type orgCrudRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_org"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_org"`
 }
 
 func NewOrgCrudRest(params orgCrudRestParams) *OrgCrudRest {
@@ -25,11 +25,11 @@ func NewOrgCrudRest(params orgCrudRestParams) *OrgCrudRest {
 
 // OrgCrudRest serves the built-in CRUD of the iam_org resource and its custom actions.
 type OrgCrudRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	orgSvc itOrg.OrgCrudApplicationService
 }
 
 func (this *OrgCrudRest) ManageUsers(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "manage organization users", payload, this.orgSvc.ManageUsers,
-		composable.MutateResponse)
+	return dynamicresource.ServeAction(echoCtx, "manage organization users", payload, this.orgSvc.ManageUsers,
+		dynamicresource.MutateResponse)
 }

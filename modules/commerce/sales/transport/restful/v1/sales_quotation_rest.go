@@ -4,7 +4,7 @@ import (
 	"go.uber.org/dig"
 
 	itQuotation "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/quotation"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -15,7 +15,7 @@ const (
 type salesQuotationRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_quotation"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_quotation"`
 }
 
 func NewSalesQuotationRest(params salesQuotationRestParams) *SalesQuotationRest {
@@ -26,14 +26,14 @@ func NewSalesQuotationRest(params salesQuotationRestParams) *SalesQuotationRest 
 }
 
 type SalesQuotationRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	quotationSvc itQuotation.SalesQuotationApplicationService
 }
 
 type salesQuotationLineRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_quotation_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_quotation_line"`
 }
 
 func NewSalesQuotationLineRest(params salesQuotationLineRestParams) *SalesQuotationLineRest {
@@ -43,5 +43,5 @@ func NewSalesQuotationLineRest(params salesQuotationLineRestParams) *SalesQuotat
 }
 
 type SalesQuotationLineRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

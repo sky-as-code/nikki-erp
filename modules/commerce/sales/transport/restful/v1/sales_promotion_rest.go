@@ -3,24 +3,24 @@ package v1
 import (
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
-	SalesPromotionProgramEngineName = "dynengine_sales_promotion_program"
-	SalesPromotionConditionGroupEngineName = "dynengine_sales_promotion_condition_group"
-	SalesPromotionConditionEngineName = "dynengine_sales_promotion_condition"
+	SalesPromotionProgramEngineName         = "dynengine_sales_promotion_program"
+	SalesPromotionConditionGroupEngineName  = "dynengine_sales_promotion_condition_group"
+	SalesPromotionConditionEngineName       = "dynengine_sales_promotion_condition"
 	SalesPromotionConditionTargetEngineName = "dynengine_sales_promotion_condition_target"
-	SalesPromotionRewardEngineName = "dynengine_sales_promotion_reward"
-	SalesPromotionCompatibilityEngineName = "dynengine_sales_promotion_compatibility"
-	SalesVoucherCodeEngineName = "dynengine_sales_voucher_code"
-	SalesVoucherRedemptionEngineName = "dynengine_sales_voucher_redemption"
+	SalesPromotionRewardEngineName          = "dynengine_sales_promotion_reward"
+	SalesPromotionCompatibilityEngineName   = "dynengine_sales_promotion_compatibility"
+	SalesVoucherCodeEngineName              = "dynengine_sales_voucher_code"
+	SalesVoucherRedemptionEngineName        = "dynengine_sales_voucher_redemption"
 )
 
 type salesPromotionProgramRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_program"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_program"`
 }
 
 func NewSalesPromotionProgramRest(params salesPromotionProgramRestParams) *SalesPromotionProgramRest {
@@ -30,13 +30,13 @@ func NewSalesPromotionProgramRest(params salesPromotionProgramRestParams) *Sales
 }
 
 type SalesPromotionProgramRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesPromotionConditionGroupRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_condition_group"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_condition_group"`
 }
 
 func NewSalesPromotionConditionGroupRest(params salesPromotionConditionGroupRestParams) *SalesPromotionConditionGroupRest {
@@ -46,13 +46,13 @@ func NewSalesPromotionConditionGroupRest(params salesPromotionConditionGroupRest
 }
 
 type SalesPromotionConditionGroupRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesPromotionConditionRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_condition"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_condition"`
 }
 
 func NewSalesPromotionConditionRest(params salesPromotionConditionRestParams) *SalesPromotionConditionRest {
@@ -62,13 +62,13 @@ func NewSalesPromotionConditionRest(params salesPromotionConditionRestParams) *S
 }
 
 type SalesPromotionConditionRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesPromotionConditionTargetRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_condition_target"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_condition_target"`
 }
 
 func NewSalesPromotionConditionTargetRest(params salesPromotionConditionTargetRestParams) *SalesPromotionConditionTargetRest {
@@ -78,13 +78,13 @@ func NewSalesPromotionConditionTargetRest(params salesPromotionConditionTargetRe
 }
 
 type SalesPromotionConditionTargetRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesPromotionRewardRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_reward"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_reward"`
 }
 
 func NewSalesPromotionRewardRest(params salesPromotionRewardRestParams) *SalesPromotionRewardRest {
@@ -94,13 +94,13 @@ func NewSalesPromotionRewardRest(params salesPromotionRewardRestParams) *SalesPr
 }
 
 type SalesPromotionRewardRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesPromotionCompatibilityRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_compatibility"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_promotion_compatibility"`
 }
 
 func NewSalesPromotionCompatibilityRest(params salesPromotionCompatibilityRestParams) *SalesPromotionCompatibilityRest {
@@ -110,13 +110,13 @@ func NewSalesPromotionCompatibilityRest(params salesPromotionCompatibilityRestPa
 }
 
 type SalesPromotionCompatibilityRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesVoucherCodeRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_voucher_code"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_voucher_code"`
 }
 
 func NewSalesVoucherCodeRest(params salesVoucherCodeRestParams) *SalesVoucherCodeRest {
@@ -126,13 +126,13 @@ func NewSalesVoucherCodeRest(params salesVoucherCodeRestParams) *SalesVoucherCod
 }
 
 type SalesVoucherCodeRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesVoucherRedemptionRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_voucher_redemption"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_voucher_redemption"`
 }
 
 func NewSalesVoucherRedemptionRest(params salesVoucherRedemptionRestParams) *SalesVoucherRedemptionRest {
@@ -142,5 +142,5 @@ func NewSalesVoucherRedemptionRest(params salesVoucherRedemptionRestParams) *Sal
 }
 
 type SalesVoucherRedemptionRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

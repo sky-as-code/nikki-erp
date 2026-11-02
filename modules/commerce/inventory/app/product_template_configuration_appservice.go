@@ -10,7 +10,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The template's attribute configuration is applied by the template's own create and update (the
@@ -21,8 +21,10 @@ import (
 // mayDeleteVariants reports whether the caller holds delete on product variants in the org the
 // params name.
 func (this *ProductTemplateApplicationServiceImpl) mayDeleteVariants(ctx corectx.Context, params dmodel.DynamicFields) bool {
-	orgId := composable.ParamOrgId(params)
-	perm := requestguard.PermFor(composable.PermissionDelete, models.ProductVariantSchemaName, requestguard.ResourceScopeOrg)
+	orgId := dynamicresource.ParamOrgId(params)
+	perm := requestguard.PermFor(
+		dynamicresource.PermissionDelete, models.ProductVariantSchemaName, requestguard.ResourceScopeOrg,
+	)
 	return requestguard.AssertPermission(ctx, perm.InOrg(orgId)) == nil
 }
 

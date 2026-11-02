@@ -7,14 +7,14 @@ package space
 import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 )
 
 // SpaceRepository adds the set-based statements the tree needs. Each joins the transaction the
 // context carries and confines itself to the acting tenant.
 type SpaceRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 
 	// AddSize adds delta to the space and every ancestor in one statement, never below zero.
 	AddSize(ctx corectx.Context, spaceId model.Id, delta int64) error
@@ -31,7 +31,7 @@ type SpaceRepository interface {
 }
 
 type SpaceDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// FindSpace returns nil when no space has the id.
 	FindSpace(ctx corectx.Context, spaceId model.Id) (*models.Space, error)
@@ -45,16 +45,16 @@ type SpaceDomainService interface {
 }
 
 type SpaceApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateSpaceCommand = composable.CreateCommand
-	UpdateSpaceCommand = composable.UpdateCommand
-	GetSpaceByIdQuery  = composable.GetByIdQuery
-	SearchSpacesQuery  = composable.SearchQuery
-	CreateSpaceResult  = composable.CreateResult
-	MutateSpaceResult  = composable.MutateResult
-	GetSpaceByIdResult = composable.GetOneResult
-	SearchSpacesResult = composable.SearchResult
+	CreateSpaceCommand = dynamicresource.CreateCommand
+	UpdateSpaceCommand = dynamicresource.UpdateCommand
+	GetSpaceByIdQuery  = dynamicresource.GetByIdQuery
+	SearchSpacesQuery  = dynamicresource.SearchQuery
+	CreateSpaceResult  = dynamicresource.CreateResult
+	MutateSpaceResult  = dynamicresource.MutateResult
+	GetSpaceByIdResult = dynamicresource.GetOneResult
+	SearchSpacesResult = dynamicresource.SearchResult
 )

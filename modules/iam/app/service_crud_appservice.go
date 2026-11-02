@@ -2,20 +2,20 @@ package app
 
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itService "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/service"
 )
 
 // NewServiceCrudApplicationService is handed the composable default by the iam_service onion,
 // which authorizes every built-in action on the iam_service resource.
 func NewServiceCrudApplicationService(
-	base composable.CrudApplicationService, domSvc itService.ServiceCrudDomainService,
+	base dynamicresource.CrudApplicationService, domSvc itService.ServiceCrudDomainService,
 ) itService.ServiceCrudApplicationService {
 	return &ServiceCrudApplicationServiceImpl{CrudApplicationService: base, domSvc: domSvc}
 }
 
 type ServiceCrudApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	domSvc itService.ServiceCrudDomainService
 }
 
@@ -24,8 +24,8 @@ type ServiceCrudApplicationServiceImpl struct {
 func (this *ServiceCrudApplicationServiceImpl) ManageRoles(
 	ctx corectx.Context, cmd itService.ManageServiceRolesCommand,
 ) (*itService.ManageServiceRolesResult, error) {
-	cErrs, err := composable.AssertRecordAction(ctx, this, cmd,
-		composable.ActionPermission{ActionCode: actionManageRoleAssignments})
+	cErrs, err := dynamicresource.AssertRecordAction(ctx, this, cmd,
+		dynamicresource.ActionPermission{ActionCode: actionManageRoleAssignments})
 	if err != nil || cErrs != nil {
 		return mutateRefused(cErrs, err)
 	}

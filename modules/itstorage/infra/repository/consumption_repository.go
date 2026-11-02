@@ -8,20 +8,20 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	itConsumption "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/consumption"
 )
 
 // NewConsumptionRepository is handed the composable default by the itstorage_consumption onion.
-func NewConsumptionRepository(base composable.CrudRepository) itConsumption.ConsumptionRepository {
+func NewConsumptionRepository(base dynamicresource.CrudRepository) itConsumption.ConsumptionRepository {
 	return &ConsumptionRepositoryImpl{CrudRepository: base}
 }
 
 // ConsumptionRepositoryImpl keeps the counters with single conditional statements, so the database
 // serializes concurrent uploads on the owner's row without a transaction held across the upload.
 type ConsumptionRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 func (this *ConsumptionRepositoryImpl) Ensure(ctx corectx.Context, owners []models.ConsumptionOwner) error {

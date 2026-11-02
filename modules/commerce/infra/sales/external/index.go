@@ -127,13 +127,8 @@ func InitExternal() error {
 			// request that started this, so there is no application-service counterpart to call.
 			return &paymentOrderAdapter{orders: orders}
 		},
-		func(
-			currencySvc itCurrency.CurrencyAppService, operationTypeSvc itStock.StockOperationTypeDomainService,
-		) itExt.OrgDefaultsLookupExtService {
-			return &orgDefaultsLookup{currencySvc: currencySvc, operationTypeSvc: operationTypeSvc}
-		},
-		func(settings itSettings.OrgSettingsAppService) itExt.OrgSettingsSeedExtService {
-			return settings
+		func(currencySvc itCurrency.CurrencyAppService) itExt.OrgDefaultsLookupExtService {
+			return &orgDefaultsLookup{currencySvc: currencySvc}
 		},
 	); err != nil {
 		return err

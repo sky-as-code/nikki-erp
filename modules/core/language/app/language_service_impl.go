@@ -45,13 +45,13 @@ func (this *LanguageServiceImpl) ListLanguages(ctx context.Context, query it.Lis
 
 var languages = []it.Language{
 	{
-		Id:      util.ToPtr("01JZYF7DT3ASR4PXAX4HP4BVGZ"),
-		Name:    util.ToPtr("English (US)"),
-		IsoCode: util.ToPtr(model.LanguageCode("en-US")),
+		Id:         util.ToPtr("01JZYF7DT3ASR4PXAX4HP4BVGZ"),
+		Name:       util.ToPtr("English (US)"),
+		LocaleCode: util.ToPtr(model.LanguageCode("en-US")),
 	},
 	{
-		Id:      util.ToPtr("01JZYHK1T56TJYSK4A7EJ3A7R9"),
-		Name:    util.ToPtr("Vietnamese / Tiếng Việt"),
-		IsoCode: util.ToPtr(model.LanguageCode("vi-VN")),
+		Id:         util.ToPtr("01JZYHK1T56TJYSK4A7EJ3A7R9"),
+		Name:       util.ToPtr("Vietnamese / Tiếng Việt"),
+		LocaleCode: util.ToPtr(model.LanguageCode("vi-VN")),
 	},
 }

@@ -77,7 +77,8 @@
 			"no_update": true,
 			"description": {
 				"en-US": "The business lifecycle. Suspended stops new orders while leaving returns, refunds and history working (CR 14), which is what a temporarily offline kiosk needs. Distinct from is_archived. Written only by the suspend and activate actions."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "default_fulfillment_method_id",

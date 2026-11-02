@@ -1,14 +1,14 @@
 package repository
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itPaymentProfile "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/paymentprofile"
 )
 
-func NewPaymentProfileRepository(base composable.CrudRepository) itPaymentProfile.PaymentProfileCrudRepository {
+func NewPaymentProfileRepository(base dynamicresource.CrudRepository) itPaymentProfile.PaymentProfileCrudRepository {
 	return &PaymentProfileRepositoryImpl{CrudRepository: base}
 }
 
 type PaymentProfileRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

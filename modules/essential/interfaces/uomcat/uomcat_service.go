@@ -3,21 +3,21 @@
 package uomcat
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // UomCatRepository reads and writes UoM Category rows.
 type UomCatRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // UomCatDomainService is the CRUD of the resource with the reference-UoM rules enforced on
 // create and update.
 type UomCatDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // UomCatApplicationService is the authorized CRUD the REST handler serves.
 type UomCatApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }

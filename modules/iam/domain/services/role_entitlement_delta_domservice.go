@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"sort"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -11,7 +10,6 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itEnt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/entitlement"
@@ -38,8 +36,7 @@ type roleGrantPlan struct {
 // applyEntitlementsDelta expects the caller's transaction: the removals, the grants, their audit
 // rows and the single permission rebuild must commit or roll back together. Removals run first
 // so that a delta may revoke and re-grant the same expression. Description updates run last:
-// they touch only rows the role keeps. The grants added and removed are also recorded on the role,
-// whose history would otherwise never show them.
+// they touch only rows the role keeps.
 func (this *RoleCrudDomainServiceImpl) applyEntitlementsDelta(
 	ctx corectx.Context, roleId model.Id, delta itRole.RoleEntitlementsDelta,
 ) (ft.ClientErrors, error) {
@@ -49,11 +46,11 @@ func (this *RoleCrudDomainServiceImpl) applyEntitlementsDelta(
 	if cErrs := validateEntitlementUpdates(delta); cErrs.Count() > 0 {
 		return cErrs, nil
 	}
-	removed, cErrs, err := this.removeRoleEntitlements(ctx, roleId, delta.Remove)
+	cErrs, err := this.removeRoleEntitlements(ctx, roleId, delta.Remove)
 	if err != nil || cErrs.Count() > 0 {
 		return cErrs, err
 	}
-	added, cErrs, err := this.addRoleEntitlements(ctx, roleId, delta.Add)
+	cErrs, err = this.addRoleEntitlements(ctx, roleId, delta.Add)
 	if err != nil || cErrs.Count() > 0 {
 		return cErrs, err
 	}
@@ -61,27 +58,7 @@ func (this *RoleCrudDomainServiceImpl) applyEntitlementsDelta(
 	if err != nil || cErrs.Count() > 0 {
 		return cErrs, err
 	}
-	cErrs, err = this.recordEntitlementLinks(ctx, roleId, added, removed)
-	if err != nil || cErrs.Count() > 0 {
-		return cErrs, err
-	}
 	return nil, this.permRepo.RebuildUserPermissionsForRole(ctx, roleId)
-}
-
-// recordEntitlementLinks records expressions rather than ids: a removed entitlement row is
-// deleted, so the history could no longer name it by id.
-func (this *RoleCrudDomainServiceImpl) recordEntitlementLinks(
-	ctx corectx.Context, roleId model.Id, added, removed []string,
-) (ft.ClientErrors, error) {
-	if len(added) == 0 && len(removed) == 0 {
-		return nil, nil
-	}
-	orgId, cErrs, err := this.roleOrgIdOf(ctx, roleId)
-	if err != nil || cErrs.Count() > 0 {
-		return cErrs, err
-	}
-	return nil, composable.RecordLinkAudit(ctx, this.roleRepo.Schema(), roleId, orgId,
-		domain.RoleEdgeEntitlements, added, removed)
 }
 
 func validateDeltaSize(delta itRole.RoleEntitlementsDelta) ft.ClientErrors {
@@ -103,16 +80,15 @@ func validateDeltaSize(delta itRole.RoleEntitlementsDelta) ft.ClientErrors {
 	return out
 }
 
-// removeRoleEntitlements returns the expressions it removed.
 func (this *RoleCrudDomainServiceImpl) removeRoleEntitlements(
 	ctx corectx.Context, roleId model.Id, ids []model.Id,
-) ([]string, ft.ClientErrors, error) {
+) (ft.ClientErrors, error) {
 	if len(ids) == 0 {
-		return nil, nil, nil
+		return nil, nil
 	}
 	owned, cErrs, err := this.searchRoleEntitlements(ctx, roleId, basemodel.FieldId, idsToAny(ids))
 	if err != nil || cErrs.Count() > 0 {
-		return nil, prefixFields(cErrs, deltaFieldRemove), err
+		return prefixFields(cErrs, deltaFieldRemove), err
 	}
 	var out ft.ClientErrors
 	for i, entId := range ids {
@@ -124,54 +100,48 @@ func (this *RoleCrudDomainServiceImpl) removeRoleEntitlements(
 		}
 	}
 	if out.Count() > 0 {
-		return nil, out, nil
+		return out, nil
 	}
-	removed := make([]string, 0, len(owned))
-	for entId, expression := range owned {
+	for entId := range owned {
 		res, err := this.entitlementSvc.DeleteDeferRebuild(ctx, dmodel.DynamicFields{basemodel.FieldId: entId})
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if res.ClientErrors.Count() > 0 {
-			return nil, prefixFields(res.ClientErrors, deltaFieldRemove), nil
+			return prefixFields(res.ClientErrors, deltaFieldRemove), nil
 		}
-		removed = append(removed, expression)
 	}
-	sort.Strings(removed)
-	return removed, nil, nil
+	return nil, nil
 }
 
-// addRoleEntitlements returns the expressions it granted.
 func (this *RoleCrudDomainServiceImpl) addRoleEntitlements(
 	ctx corectx.Context, roleId model.Id, grants []itRole.RoleEntitlementGrant,
-) ([]string, ft.ClientErrors, error) {
+) (ft.ClientErrors, error) {
 	if len(grants) == 0 {
-		return nil, nil, nil
+		return nil, nil
 	}
 	roleOrgId, cErrs, err := this.roleOrgIdOf(ctx, roleId)
 	if err != nil || cErrs.Count() > 0 {
-		return nil, cErrs, err
+		return cErrs, err
 	}
 	plans, cErrs, err := this.planRoleGrants(ctx, roleOrgId, grants)
 	if err != nil || cErrs.Count() > 0 {
-		return nil, cErrs, err
+		return cErrs, err
 	}
 	cErrs, err = this.assertGrantsNotHeld(ctx, roleId, plans)
 	if err != nil || cErrs.Count() > 0 {
-		return nil, cErrs, err
+		return cErrs, err
 	}
-	added := make([]string, 0, len(plans))
 	for _, plan := range plans {
 		res, err := this.entitlementSvc.CreateDeferRebuild(ctx, plan.command(roleId))
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if res.ClientErrors.Count() > 0 {
-			return nil, prefixFields(res.ClientErrors, plan.field), nil
+			return prefixFields(res.ClientErrors, plan.field), nil
 		}
-		added = append(added, plan.expression)
 	}
-	return added, nil, nil
+	return nil, nil
 }
 
 func (this *RoleCrudDomainServiceImpl) roleOrgIdOf(

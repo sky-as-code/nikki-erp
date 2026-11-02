@@ -3,37 +3,37 @@
 package relationship
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type RelationshipRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type RelationshipDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type RelationshipApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateRelationshipCommand      = composable.CreateCommand
-	UpdateRelationshipCommand      = composable.UpdateCommand
-	DeleteRelationshipCommand      = composable.DeleteCommand
-	SetRelationshipArchivedCommand = composable.SetArchivedCommand
-	GetRelationshipByIdQuery       = composable.GetByIdQuery
-	SearchRelationshipsQuery       = composable.SearchQuery
-	RelationshipExistsQuery        = composable.ExistsQuery
+	CreateRelationshipCommand      = dynamicresource.CreateCommand
+	UpdateRelationshipCommand      = dynamicresource.UpdateCommand
+	DeleteRelationshipCommand      = dynamicresource.DeleteCommand
+	SetRelationshipArchivedCommand = dynamicresource.SetArchivedCommand
+	GetRelationshipByIdQuery       = dynamicresource.GetByIdQuery
+	SearchRelationshipsQuery       = dynamicresource.SearchQuery
+	RelationshipExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateRelationshipResult      = composable.CreateResult
-	UpdateRelationshipResult      = composable.MutateResult
-	DeleteRelationshipResult      = composable.MutateResult
-	SetRelationshipArchivedResult = composable.MutateResult
-	GetRelationshipByIdResult     = composable.GetOneResult
-	SearchRelationshipsResult     = composable.SearchResult
-	RelationshipExistsResult      = composable.ExistsResult
+	CreateRelationshipResult      = dynamicresource.CreateResult
+	UpdateRelationshipResult      = dynamicresource.MutateResult
+	DeleteRelationshipResult      = dynamicresource.MutateResult
+	SetRelationshipArchivedResult = dynamicresource.MutateResult
+	GetRelationshipByIdResult     = dynamicresource.GetOneResult
+	SearchRelationshipsResult     = dynamicresource.SearchResult
+	RelationshipExistsResult      = dynamicresource.ExistsResult
 )

@@ -11,28 +11,28 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/contacts/infra/repository"
 	itVendor "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/vendor"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type vendorProfileEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_contacts_vendor_profile"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_contacts_vendor_profile"`
 }
 
 func registerVendorProfileEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.VendorProfileSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.VendorProfileSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.VendorProfileSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewVendorProfileRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewVendorDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewVendorProfileApplicationService(base)
 				},
 			}, param)

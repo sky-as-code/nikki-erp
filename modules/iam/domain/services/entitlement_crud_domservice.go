@@ -8,7 +8,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itAct "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/action"
 	itEnt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/entitlement"
@@ -33,7 +33,7 @@ type EntitlementCrudDeps struct {
 
 // NewEntitlementCrudDomainService is handed the composable default by the iam_entitlement onion.
 func NewEntitlementCrudDomainService(
-	base composable.CrudDomainService, deps EntitlementCrudDeps,
+	base dynamicresource.CrudDomainService, deps EntitlementCrudDeps,
 ) itEnt.EntitlementCrudDomainService {
 	return &EntitlementCrudDomainServiceImpl{
 		CrudDomainService: base,
@@ -47,7 +47,7 @@ func NewEntitlementCrudDomainService(
 }
 
 type EntitlementCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	actionRepo   itAct.ActionCrudRepository
 	resourceRepo itRes.ResourceCrudRepository
 	orgRepo      itOrg.OrgCrudRepository
@@ -57,9 +57,9 @@ type EntitlementCrudDomainServiceImpl struct {
 }
 
 func (this *EntitlementCrudDomainServiceImpl) Create(
-	ctx corectx.Context, cmd itEnt.CreateEntitlementCommand, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd itEnt.CreateEntitlementCommand, options ...dynamicresource.CreateOptions,
 ) (*itEnt.CreateEntitlementResult, error) {
-	opts := composable.CreateOptions{}
+	opts := dynamicresource.CreateOptions{}
 	if len(options) > 0 {
 		opts = options[0]
 	}
@@ -69,20 +69,20 @@ func (this *EntitlementCrudDomainServiceImpl) Create(
 func (this *EntitlementCrudDomainServiceImpl) CreateDeferRebuild(
 	ctx corectx.Context, cmd itEnt.CreateEntitlementCommand,
 ) (*itEnt.CreateEntitlementResult, error) {
-	return this.create(ctx, cmd, composable.CreateOptions{}, false)
+	return this.create(ctx, cmd, dynamicresource.CreateOptions{}, false)
 }
 
 // create validates the scope before schema validation and computes the expression after it:
 // `expression` is auto-generated, and validation blanks every auto-generated field, so a value
 // computed earlier would be discarded and the column left NULL.
 func (this *EntitlementCrudDomainServiceImpl) create(
-	ctx corectx.Context, cmd itEnt.CreateEntitlementCommand, opts composable.CreateOptions, rebuild bool,
+	ctx corectx.Context, cmd itEnt.CreateEntitlementCommand, opts dynamicresource.CreateOptions, rebuild bool,
 ) (*itEnt.CreateEntitlementResult, error) {
 	opts.BeforeValidation = this.validateScopeHook(opts.BeforeValidation)
 	opts.AfterValidationSuccess = this.expressionHook(opts.AfterValidationSuccess)
 
 	var result *itEnt.CreateEntitlementResult
-	err := composable.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
+	err := dynamicresource.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
 		var err error
 		result, err = this.CrudDomainService.Create(tranxCtx, cmd, opts)
 		if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
@@ -115,11 +115,11 @@ func (this *EntitlementCrudDomainServiceImpl) afterCreated(
 }
 
 func (this *EntitlementCrudDomainServiceImpl) validateScopeHook(
-	next composable.BeforeValidationFn,
-) composable.BeforeValidationFn {
+	next dynamicresource.BeforeValidationFn,
+) dynamicresource.BeforeValidationFn {
 	return func(
-		ctx corectx.Context, entity *composable.DynamicEntity, vErrs *ft.ClientErrors,
-	) (*composable.DynamicEntity, error) {
+		ctx corectx.Context, entity *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
+	) (*dynamicresource.DynamicEntity, error) {
 		if err := this.validateScope(ctx, domain.NewEntitlementFrom(entity.GetFieldData()), vErrs); err != nil {
 			return entity, err
 		}
@@ -131,9 +131,9 @@ func (this *EntitlementCrudDomainServiceImpl) validateScopeHook(
 }
 
 func (this *EntitlementCrudDomainServiceImpl) expressionHook(
-	next composable.AfterValidationFn,
-) composable.AfterValidationFn {
-	return func(ctx corectx.Context, entity *composable.DynamicEntity) (*composable.DynamicEntity, error) {
+	next dynamicresource.AfterValidationFn,
+) dynamicresource.AfterValidationFn {
+	return func(ctx corectx.Context, entity *dynamicresource.DynamicEntity) (*dynamicresource.DynamicEntity, error) {
 		ent := domain.NewEntitlementFrom(entity.GetFieldData())
 		if err := this.calculateExpression(ctx, ent, ft.NewClientErrors()); err != nil {
 			return entity, err
@@ -146,11 +146,11 @@ func (this *EntitlementCrudDomainServiceImpl) expressionHook(
 }
 
 func (this *EntitlementCrudDomainServiceImpl) Update(
-	ctx corectx.Context, cmd itEnt.UpdateEntitlementCommand, options ...composable.UpdateOptions,
+	ctx corectx.Context, cmd itEnt.UpdateEntitlementCommand, options ...dynamicresource.UpdateOptions,
 ) (*itEnt.UpdateEntitlementResult, error) {
-	return this.mutate(ctx, func(tranxCtx corectx.Context) (*composable.MutateResult, error) {
+	return this.mutate(ctx, func(tranxCtx corectx.Context) (*dynamicresource.MutateResult, error) {
 		return this.CrudDomainService.Update(tranxCtx, cmd, options...)
-	}, this.rebuildForEntitlementFn(composable.ParamId(cmd)))
+	}, this.rebuildForEntitlementFn(dynamicresource.ParamId(cmd)))
 }
 
 func (this *EntitlementCrudDomainServiceImpl) UpdateDeferRebuild(
@@ -162,15 +162,15 @@ func (this *EntitlementCrudDomainServiceImpl) UpdateDeferRebuild(
 // SetArchived rebuilds the role's holders: archiving is a revocation and unarchiving a grant, and
 // neither reaches the cache on its own, because archived rows are filtered inside the rebuild.
 func (this *EntitlementCrudDomainServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
-	return this.mutate(ctx, func(tranxCtx corectx.Context) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
+	return this.mutate(ctx, func(tranxCtx corectx.Context) (*dynamicresource.MutateResult, error) {
 		return this.CrudDomainService.SetArchived(tranxCtx, cmd)
-	}, this.rebuildForEntitlementFn(composable.ParamId(cmd)))
+	}, this.rebuildForEntitlementFn(dynamicresource.ParamId(cmd)))
 }
 
 func (this *EntitlementCrudDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd itEnt.DeleteEntitlementCommand, options ...composable.DeleteOptions,
+	ctx corectx.Context, cmd itEnt.DeleteEntitlementCommand, options ...dynamicresource.DeleteOptions,
 ) (*itEnt.DeleteEntitlementResult, error) {
 	return this.delete(ctx, cmd, options, true)
 }
@@ -185,11 +185,11 @@ func (this *EntitlementCrudDomainServiceImpl) DeleteDeferRebuild(
 // resolve it from. The cascade removes this entitlement's cached rows, but the role's holders
 // still need the rest of their rows recomputed.
 func (this *EntitlementCrudDomainServiceImpl) delete(
-	ctx corectx.Context, cmd itEnt.DeleteEntitlementCommand, options []composable.DeleteOptions, rebuild bool,
+	ctx corectx.Context, cmd itEnt.DeleteEntitlementCommand, options []dynamicresource.DeleteOptions, rebuild bool,
 ) (*itEnt.DeleteEntitlementResult, error) {
-	entId := composable.ParamId(cmd)
+	entId := dynamicresource.ParamId(cmd)
 	var roleId *model.Id
-	return this.mutate(ctx, func(tranxCtx corectx.Context) (*composable.MutateResult, error) {
+	return this.mutate(ctx, func(tranxCtx corectx.Context) (*dynamicresource.MutateResult, error) {
 		var err error
 		if roleId, err = this.roleIdOfEntitlement(tranxCtx, entId); err != nil {
 			return nil, err
@@ -211,11 +211,11 @@ func (this *EntitlementCrudDomainServiceImpl) delete(
 // the mutation succeeded.
 func (this *EntitlementCrudDomainServiceImpl) mutate(
 	ctx corectx.Context,
-	op func(tranxCtx corectx.Context) (*composable.MutateResult, error),
+	op func(tranxCtx corectx.Context) (*dynamicresource.MutateResult, error),
 	after func(tranxCtx corectx.Context) error,
-) (*composable.MutateResult, error) {
-	var result *composable.MutateResult
-	err := composable.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
+) (*dynamicresource.MutateResult, error) {
+	var result *dynamicresource.MutateResult
+	err := dynamicresource.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
 		var err error
 		result, err = op(tranxCtx)
 		if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {

@@ -4,17 +4,17 @@ import (
 	"go.uber.org/dig"
 
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ProductCategoryEngineName is the container name of the product_category onion, declared once for the struct tag and
-// checked against composable.EngineDependencyName by a test.
+// checked against dynamicresource.EngineDependencyName by a test.
 const ProductCategoryEngineName = "dynengine_inventory_product_category"
 
 type productCategoryRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_product_category"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_product_category"`
 }
 
 func NewProductCategoryRest(params productCategoryRestParams) *ProductCategoryRest {
@@ -26,6 +26,6 @@ func NewProductCategoryRest(params productCategoryRestParams) *ProductCategoryRe
 
 // ProductCategoryRest serves the built-in CRUD of the product_category resource.
 type ProductCategoryRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	productCategorySvc itProduct.ProductCategoryApplicationService
 }

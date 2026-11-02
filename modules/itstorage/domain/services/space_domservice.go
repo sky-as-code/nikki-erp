@@ -10,14 +10,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/itstorage/constants"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	itSpace "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/space"
 )
 
 // NewSpaceDomainService is handed the composable default by the itstorage_space onion.
-func NewSpaceDomainService(base composable.CrudDomainService) itSpace.SpaceDomainService {
+func NewSpaceDomainService(base dynamicresource.CrudDomainService) itSpace.SpaceDomainService {
 	return &SpaceDomainServiceImpl{
 		CrudDomainService: base,
 		repo:              base.Repository().(itSpace.SpaceRepository),
@@ -27,29 +27,31 @@ func NewSpaceDomainService(base composable.CrudDomainService) itSpace.SpaceDomai
 // SpaceDomainServiceImpl keeps the materialised path true: a create derives it from the parent,
 // a rename rewrites it for the space and every descendant in one transaction.
 type SpaceDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	repo itSpace.SpaceRepository
 }
 
 func (this *SpaceDomainServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
 	cErrs, err := this.derivePath(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}
 	if cErrs.Count() > 0 {
-		return &composable.CreateResult{ClientErrors: cErrs}, nil
+		return &dynamicresource.CreateResult{ClientErrors: cErrs}, nil
 	}
 	// A new space holds nothing; the size is the roll-up of what is uploaded into it later.
 	cmd[models.SpaceFieldSizeBytes] = int64(0)
 	return this.CrudDomainService.Create(ctx, cmd, options...)
 }
 
-func (this *SpaceDomainServiceImpl) derivePath(ctx corectx.Context, cmd composable.CreateCommand) (ft.ClientErrors, error) {
+func (this *SpaceDomainServiceImpl) derivePath(
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (ft.ClientErrors, error) {
 	cErrs := ft.ClientErrors{}
 	parentPath := ""
-	if parentId := composable.ParamString(cmd, models.SpaceFieldParentId); parentId != "" {
+	if parentId := dynamicresource.ParamString(cmd, models.SpaceFieldParentId); parentId != "" {
 		parent, err := this.FindSpace(ctx, parentId)
 		if err != nil {
 			return cErrs, err
@@ -60,23 +62,23 @@ func (this *SpaceDomainServiceImpl) derivePath(ctx corectx.Context, cmd composab
 		}
 		parentPath = parent.GetPath()
 	}
-	cmd[models.SpaceFieldPath] = models.JoinPath(parentPath, composable.ParamString(cmd, models.SpaceFieldName))
+	cmd[models.SpaceFieldPath] = models.JoinPath(parentPath, dynamicresource.ParamString(cmd, models.SpaceFieldName))
 	return cErrs, nil
 }
 
 // Update recomputes the path only on a rename. The path is never taken from the caller.
 func (this *SpaceDomainServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
 	delete(cmd, models.SpaceFieldPath)
 	delete(cmd, models.SpaceFieldSizeBytes)
-	newName := composable.ParamString(cmd, models.SpaceFieldName)
+	newName := dynamicresource.ParamString(cmd, models.SpaceFieldName)
 	if newName == "" {
 		return this.CrudDomainService.Update(ctx, cmd, options...)
 	}
 
-	var result *composable.MutateResult
-	cErrs, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	var result *dynamicresource.MutateResult
+	cErrs, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var refused *ft.ClientErrors
 			var err error
@@ -87,15 +89,15 @@ func (this *SpaceDomainServiceImpl) Update(
 		return nil, errors.Wrap(err, "SpaceDomainService.Update")
 	}
 	if cErrs != nil && cErrs.Count() > 0 {
-		return &composable.MutateResult{ClientErrors: *cErrs}, nil
+		return &dynamicresource.MutateResult{ClientErrors: *cErrs}, nil
 	}
 	return result, nil
 }
 
 func (this *SpaceDomainServiceImpl) rename(
-	ctx corectx.Context, cmd composable.UpdateCommand, newName string, options []composable.UpdateOptions,
-) (*composable.MutateResult, *ft.ClientErrors, error) {
-	space, err := this.FindSpace(ctx, composable.ParamId(cmd))
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, newName string, options []dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, *ft.ClientErrors, error) {
+	space, err := this.FindSpace(ctx, dynamicresource.ParamId(cmd))
 	if err != nil {
 		return nil, nil, err
 	}

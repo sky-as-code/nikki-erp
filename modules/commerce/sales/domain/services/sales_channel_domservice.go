@@ -7,7 +7,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SalesChannelDomainServiceImpl adds the channel lifecycle to the engine's default service. It
@@ -16,10 +16,10 @@ import (
 var _ itCatalog.SalesChannelDomainService = (*SalesChannelDomainServiceImpl)(nil)
 
 type SalesChannelDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
-func NewSalesChannelDomainService(base composable.CrudDomainService) *SalesChannelDomainServiceImpl {
+func NewSalesChannelDomainService(base dynamicresource.CrudDomainService) *SalesChannelDomainServiceImpl {
 	return &SalesChannelDomainServiceImpl{CrudDomainService: base}
 }
 

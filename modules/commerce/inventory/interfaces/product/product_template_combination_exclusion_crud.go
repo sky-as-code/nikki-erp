@@ -1,42 +1,42 @@
 package product
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ProductTemplateCombinationExclusionRepository reads and writes the pairwise exclusion rows.
 type ProductTemplateCombinationExclusionRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // ProductTemplateCombinationExclusionDomainService is the CRUD of the resource plus its own rules.
 type ProductTemplateCombinationExclusionDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // ProductTemplateCombinationExclusionApplicationService is the authorized surface the REST reads serve.
 type ProductTemplateCombinationExclusionApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a
 // resource-specific name.
 type (
-	CreateProductTemplateCombinationExclusionCommand      = composable.CreateCommand
-	UpdateProductTemplateCombinationExclusionCommand      = composable.UpdateCommand
-	DeleteProductTemplateCombinationExclusionCommand      = composable.DeleteCommand
-	SetProductTemplateCombinationExclusionArchivedCommand = composable.SetArchivedCommand
-	GetProductTemplateCombinationExclusionByIdQuery       = composable.GetByIdQuery
-	SearchProductTemplateCombinationExclusionsQuery       = composable.SearchQuery
-	ProductTemplateCombinationExclusionExistsQuery        = composable.ExistsQuery
+	CreateProductTemplateCombinationExclusionCommand      = dynamicresource.CreateCommand
+	UpdateProductTemplateCombinationExclusionCommand      = dynamicresource.UpdateCommand
+	DeleteProductTemplateCombinationExclusionCommand      = dynamicresource.DeleteCommand
+	SetProductTemplateCombinationExclusionArchivedCommand = dynamicresource.SetArchivedCommand
+	GetProductTemplateCombinationExclusionByIdQuery       = dynamicresource.GetByIdQuery
+	SearchProductTemplateCombinationExclusionsQuery       = dynamicresource.SearchQuery
+	ProductTemplateCombinationExclusionExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateProductTemplateCombinationExclusionResult      = composable.CreateResult
-	UpdateProductTemplateCombinationExclusionResult      = composable.MutateResult
-	DeleteProductTemplateCombinationExclusionResult      = composable.MutateResult
-	SetProductTemplateCombinationExclusionArchivedResult = composable.MutateResult
-	GetProductTemplateCombinationExclusionByIdResult     = composable.GetOneResult
-	SearchProductTemplateCombinationExclusionsResult     = composable.SearchResult
-	ProductTemplateCombinationExclusionExistsResult      = composable.ExistsResult
+	CreateProductTemplateCombinationExclusionResult      = dynamicresource.CreateResult
+	UpdateProductTemplateCombinationExclusionResult      = dynamicresource.MutateResult
+	DeleteProductTemplateCombinationExclusionResult      = dynamicresource.MutateResult
+	SetProductTemplateCombinationExclusionArchivedResult = dynamicresource.MutateResult
+	GetProductTemplateCombinationExclusionByIdResult     = dynamicresource.GetOneResult
+	SearchProductTemplateCombinationExclusionsResult     = dynamicresource.SearchResult
+	ProductTemplateCombinationExclusionExistsResult      = dynamicresource.ExistsResult
 )

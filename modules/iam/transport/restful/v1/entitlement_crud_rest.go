@@ -3,7 +3,7 @@ package v1
 import (
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // EntitlementEngineName is the container name of the iam_entitlement onion, declared once for the
@@ -13,7 +13,7 @@ const EntitlementEngineName = "dynengine_iam_entitlement"
 type entitlementCrudRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_entitlement"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_entitlement"`
 }
 
 func NewEntitlementCrudRest(params entitlementCrudRestParams) *EntitlementCrudRest {
@@ -24,5 +24,5 @@ func NewEntitlementCrudRest(params entitlementCrudRestParams) *EntitlementCrudRe
 
 // EntitlementCrudRest serves the built-in CRUD of the iam_entitlement resource.
 type EntitlementCrudRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

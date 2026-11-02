@@ -33,6 +33,9 @@ type DbTxClient interface {
 	DbClient
 	Commit() error
 	Rollback() error
+	// OnCommitted queues fn to run, in registration order, after Commit succeeds. Rollback
+	// discards the queue. A panicking callback is logged and does not affect the others.
+	OnCommitted(fn func())
 }
 
 // SelectColumn is a select-list token for graph queries: plain field path, DISTINCT::field, or aggregates.
@@ -102,8 +105,10 @@ type NestedProjection struct {
 // the repository to issue follow-up reads per row. A repository probes for it and, when present,
 // passes the full column list to SqlSelectGraph and folds the flat row with the returned plan.
 type NestedProjectionCapable interface {
+	// computedCtx binds the "${ctx.*}" values the projected computed fields read; at most one.
 	PlanNestedProjection(
 		schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, columns []SelectColumn,
+		computedCtx ...map[string]any,
 	) (*NestedProjection, *ft.ClientErrors, error)
 }
 

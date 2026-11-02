@@ -1,15 +1,15 @@
 package repository
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itModelMeta "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/modelmetadata"
 )
 
 // NewModelMetadataRepository is handed the composable default by the onion.
-func NewModelMetadataRepository(base composable.CrudRepository) itModelMeta.ModelMetadataRepository {
+func NewModelMetadataRepository(base dynamicresource.CrudRepository) itModelMeta.ModelMetadataRepository {
 	return &ModelMetadataRepositoryImpl{CrudRepository: base}
 }
 
 type ModelMetadataRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

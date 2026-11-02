@@ -10,7 +10,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 )
@@ -43,7 +43,7 @@ func (this *ModuleDomainServiceImpl) SyncModuleMetadata(
 		}
 	}()
 
-	err = composable.WithTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
+	err = dynamicresource.WithTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
 		return this.syncInTranx(tranxCtx, installedModules)
 	})
 	return err == nil, err

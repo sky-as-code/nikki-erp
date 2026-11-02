@@ -8,18 +8,18 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itFile "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/file"
 )
 
 // FileEngineName is the container name of the onion, checked against
-// composable.EngineDependencyName by a test.
+// dynamicresource.EngineDependencyName by a test.
 const FileEngineName = "dynengine_itstorage_file"
 
 type fileRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_itstorage_file"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_itstorage_file"`
 }
 
 func NewFileRest(params fileRestParams) *FileRest {
@@ -31,7 +31,7 @@ func NewFileRest(params fileRestParams) *FileRest {
 // FileRest serves the read and delete built-ins, plus the file routes whose surface the engine
 // cannot express: a streamed multipart upload and the streamed downloads.
 type FileRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	fileSvc itFile.FileApplicationService
 }
 
@@ -69,7 +69,7 @@ func (this *FileRest) GetMeta(echoCtx *echo.Context) error {
 	return httpserver.ServeRequest2(
 		echoCtx, this.fileSvc.GetFileMeta,
 		func(request GetFileMetaRequest) itFile.GetFileMetaQuery { return itFile.GetFileMetaQuery(request) },
-		composable.Identity[dmodel.DynamicFields],
+		dynamicresource.Identity[dmodel.DynamicFields],
 		httpserver.JsonOk,
 	)
 }
@@ -80,7 +80,7 @@ func (this *FileRest) GetMetaById(echoCtx *echo.Context) error {
 		func(request GetFileMetaByIdRequest) itFile.GetFileMetaByIdQuery {
 			return itFile.GetFileMetaByIdQuery(request)
 		},
-		composable.Identity[dmodel.DynamicFields],
+		dynamicresource.Identity[dmodel.DynamicFields],
 		httpserver.JsonOk,
 	)
 }

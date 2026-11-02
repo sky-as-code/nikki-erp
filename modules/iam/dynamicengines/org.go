@@ -12,7 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/app"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/services"
@@ -24,7 +24,7 @@ import (
 type orgEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_org"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_org"`
 }
 
 // orgLifecycleDeps are what the org lifecycle orchestrator needs besides the org's own services.
@@ -42,22 +42,22 @@ type orgLifecycleDeps struct {
 // permissions are tenant-scoped and the schema carries no org_id to confine by.
 func registerOrgEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.OrganizationSchemaName),
+		dynamicresource.EngineDependencyName(models.OrganizationSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			settingsSvc itExt.OrgSettingsInitExtService, usageDispatcher *usagecheck.Dispatcher,
 			lifecycleDeps orgLifecycleDeps,
-		) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:      models.OrganizationSchemaName,
 				PermissionScope: util.ToPtr(requestguard.ResourceScopeTenant),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewOrgCrudRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewOrgCrudDomainService(base, settingsSvc, usageDispatcher)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					domSvc := base.DomainService().(itOrg.OrgCrudDomainService)
 					return app.NewOrgCrudApplicationService(base, domSvc, app.NewOrgLifecycleOrchestrator(
 						app.OrgLifecycleOrchestratorParam{

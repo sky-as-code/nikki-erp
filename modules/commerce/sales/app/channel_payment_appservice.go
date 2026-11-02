@@ -10,7 +10,7 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // assertChannelPaymentPermission authorizes against the channel's own org: every entry point here
@@ -61,7 +61,7 @@ func (this *ChannelPaymentApplicationServiceImpl) ListChannelPaymentMethods(
 	if cErrs != nil {
 		return &it.ListChannelPaymentMethodsResult{ClientErrors: *cErrs}, nil
 	}
-	if cErrs := assertChannelPaymentPermission(ctx, composable.PermissionRead, channel); cErrs != nil {
+	if cErrs := assertChannelPaymentPermission(ctx, dynamicresource.PermissionRead, channel); cErrs != nil {
 		return &it.ListChannelPaymentMethodsResult{ClientErrors: *cErrs}, nil
 	}
 	channelId := stringOf(channel, models.SalesChannelFieldId)
@@ -225,7 +225,7 @@ func (this *ChannelPaymentApplicationServiceImpl) IsPaymentMethodEnabledForChann
 	if cErrs != nil {
 		return &it.IsPaymentMethodEnabledResult{HasData: true, Data: false}, nil
 	}
-	if cErrs := assertChannelPaymentPermission(ctx, composable.PermissionRead, channel); cErrs != nil {
+	if cErrs := assertChannelPaymentPermission(ctx, dynamicresource.PermissionRead, channel); cErrs != nil {
 		return &it.IsPaymentMethodEnabledResult{ClientErrors: *cErrs}, nil
 	}
 	channelId := stringOf(channel, models.SalesChannelFieldId)

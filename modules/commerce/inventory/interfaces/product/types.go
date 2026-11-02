@@ -7,7 +7,7 @@ package product
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // EffectiveProduct and AttributeSelection live in this package, not domain/services: the
@@ -86,7 +86,7 @@ type GenerateVariantsResult = dyn.OpResult[GenerateVariantsResultData]
 // Template onion. It embeds the composable domain service so the onion keeps serving built-in
 // CRUD unchanged; the template's application service reaches the extra methods through it.
 type ProductService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	GetEffectiveProduct(ctx corectx.Context, query GetEffectiveProductQuery) (*GetEffectiveProductResult, error)
 	GetEffectiveProducts(ctx corectx.Context, query GetEffectiveProductsQuery) (*GetEffectiveProductsResult, error)

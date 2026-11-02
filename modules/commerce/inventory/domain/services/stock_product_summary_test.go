@@ -2,7 +2,7 @@ package services
 
 import (
 	"encoding/json"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"strings"
 	"testing"
 
@@ -32,7 +32,7 @@ const (
 // apply the graph's status conditions: the real repository filters in SQL, so a stub returning
 // everything would let a test pass while the production query excluded the rows under test.
 type stubRowRepository struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 
 	rows []dmodel.DynamicFields
 }
@@ -126,7 +126,7 @@ func useSchemaEngines(t *testing.T, rowsBySchema map[string][]dmodel.DynamicFiel
 
 	original := repoFor
 	t.Cleanup(func() { repoFor = original })
-	repoFor = func(schemaName string) (composable.CrudRepository, error) {
+	repoFor = func(schemaName string) (dynamicresource.CrudRepository, error) {
 		return &stubRowRepository{rows: rowsBySchema[schemaName]}, nil
 	}
 }
@@ -142,10 +142,10 @@ func quantRow(variantId, locationId string, onHand, reserved int64) dmodel.Dynam
 
 func internalLocationRow(id string) dmodel.DynamicFields {
 	return dmodel.DynamicFields{
-		models.InventoryLocationFieldId:            id,
+		models.InventoryLocationFieldId:           id,
 		models.InventoryLocationFieldLocationType: models.InventoryLocationTypeInternal,
-		models.InventoryLocationFieldStatus:        models.InventoryLocationStatusActive,
-		models.InventoryLocationFieldWarehouseId:   testWarehouseId,
+		models.InventoryLocationFieldStatus:       models.InventoryLocationStatusActive,
+		models.InventoryLocationFieldWarehouseId:  testWarehouseId,
 	}
 }
 

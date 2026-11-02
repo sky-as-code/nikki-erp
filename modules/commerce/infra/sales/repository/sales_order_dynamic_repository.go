@@ -2,55 +2,55 @@ package repository
 
 import (
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/order"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func NewSalesOrderRepository(base composable.CrudRepository) itOrder.SalesOrderRepository {
+func NewSalesOrderRepository(base dynamicresource.CrudRepository) itOrder.SalesOrderRepository {
 	return &SalesOrderRepositoryImpl{CrudRepository: base}
 }
 
 type SalesOrderRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesOrderLineRepository(base composable.CrudRepository) itOrder.SalesOrderLineRepository {
+func NewSalesOrderLineRepository(base dynamicresource.CrudRepository) itOrder.SalesOrderLineRepository {
 	return &SalesOrderLineRepositoryImpl{CrudRepository: base}
 }
 
 type SalesOrderLineRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 func NewSalesOrderLineAllocationRepository(
-	base composable.CrudRepository,
+	base dynamicresource.CrudRepository,
 ) itOrder.SalesOrderLineAllocationRepository {
 	return &SalesOrderLineAllocationRepositoryImpl{CrudRepository: base}
 }
 
 type SalesOrderLineAllocationRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesOrderLineComponentRepository(base composable.CrudRepository) itOrder.SalesOrderLineComponentRepository {
+func NewSalesOrderLineComponentRepository(base dynamicresource.CrudRepository) itOrder.SalesOrderLineComponentRepository {
 	return &SalesOrderLineComponentRepositoryImpl{CrudRepository: base}
 }
 
 type SalesOrderLineComponentRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesOrderAdjustmentRepository(base composable.CrudRepository) itOrder.SalesOrderAdjustmentRepository {
+func NewSalesOrderAdjustmentRepository(base dynamicresource.CrudRepository) itOrder.SalesOrderAdjustmentRepository {
 	return &SalesOrderAdjustmentRepositoryImpl{CrudRepository: base}
 }
 
 type SalesOrderAdjustmentRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
-func NewSalesOrderEventRepository(base composable.CrudRepository) itOrder.SalesOrderEventRepository {
+func NewSalesOrderEventRepository(base dynamicresource.CrudRepository) itOrder.SalesOrderEventRepository {
 	return &SalesOrderEventRepositoryImpl{CrudRepository: base}
 }
 
 type SalesOrderEventRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }

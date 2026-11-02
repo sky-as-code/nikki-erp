@@ -3,17 +3,17 @@ package v1
 import (
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SpaceEngineName is the container name of the onion, checked against
-// composable.EngineDependencyName by a test.
+// dynamicresource.EngineDependencyName by a test.
 const SpaceEngineName = "dynengine_itstorage_space"
 
 type spaceRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_itstorage_space"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_itstorage_space"`
 }
 
 func NewSpaceRest(params spaceRestParams) *SpaceRest {
@@ -24,5 +24,5 @@ func NewSpaceRest(params spaceRestParams) *SpaceRest {
 
 // SpaceRest serves the read-only built-ins: spaces are system-managed.
 type SpaceRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

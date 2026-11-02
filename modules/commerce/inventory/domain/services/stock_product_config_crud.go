@@ -7,7 +7,7 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // Stock's settings for a product line: today, the unit its stock is counted in. Changing that
@@ -17,36 +17,36 @@ import (
 // NewStockProductConfigDomainService attaches the inventory-unit guards to create and update.
 // Create checks the UoM may still be adopted; update adds the in-use check on top.
 func NewStockProductConfigDomainService(
-	base composable.CrudDomainService, uoms itExt.UomLookupExtService,
+	base dynamicresource.CrudDomainService, uoms itExt.UomLookupExtService,
 ) itStock.StockProductConfigDomainService {
 	return &StockProductConfigDomainServiceImpl{CrudDomainService: base, uoms: uoms}
 }
 
 type StockProductConfigDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	uoms itExt.UomLookupExtService
 }
 
 func (this *StockProductConfigDomainServiceImpl) Create(
-	ctx corectx.Context, cmd itStock.CreateStockProductConfigCommand, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd itStock.CreateStockProductConfigCommand, options ...dynamicresource.CreateOptions,
 ) (*itStock.CreateStockProductConfigResult, error) {
-	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.validateInventoryUomSelectable)
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.validateInventoryUomSelectable)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 func (this *StockProductConfigDomainServiceImpl) Update(
-	ctx corectx.Context, cmd itStock.UpdateStockProductConfigCommand, options ...composable.UpdateOptions,
+	ctx corectx.Context, cmd itStock.UpdateStockProductConfigCommand, options ...dynamicresource.UpdateOptions,
 ) (*itStock.UpdateStockProductConfigResult, error) {
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.validateInventoryUomChange)
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.validateInventoryUomChange)
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
 
 // validateInventoryUomSelectable refuses a UoM that may no longer be adopted. Only archived-ness
 // is checked: whether the unit exists and what it converts to are Essential's to answer.
 func (this *StockProductConfigDomainServiceImpl) validateInventoryUomSelectable(
-	ctx corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	uomId := readStringParam(inputModel.GetFieldData(), models.StockProductConfigFieldInventoryUomId)
 	if uomId == "" {
@@ -60,7 +60,8 @@ func (this *StockProductConfigDomainServiceImpl) validateInventoryUomSelectable(
 // through an explicit administrative migration, which is deliberately not this action. An update
 // leaving the unit alone passes untouched.
 func (this *StockProductConfigDomainServiceImpl) validateInventoryUomChange(
-	ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
+	vErrs *ft.ClientErrors,
 ) error {
 	newUomId := readStringParam(inputModel.GetFieldData(), models.StockProductConfigFieldInventoryUomId)
 	if newUomId == "" || foundModel == nil {

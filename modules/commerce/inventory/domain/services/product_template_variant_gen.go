@@ -7,7 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // Turning an attribute selection into a concrete variant, and bringing a template's variants in
@@ -65,7 +65,7 @@ func (this *ProductTemplateDomainServiceImpl) GenerateVariants(
 		return &itProduct.GenerateVariantsResult{}, nil
 	}
 	var outcome *reconcileOutcome
-	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var cErrs ft.ClientErrors
 			var err error

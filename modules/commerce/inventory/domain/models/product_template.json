@@ -106,6 +106,13 @@
 			"description": "field_desc.inventory_product_template.base_sales_price"
 		},
 		{
+			"name": "cost",
+			"label": "fields.cost",
+			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
+			"default_value": "0",
+			"description": "field_desc.inventory_product_template.cost"
+		},
+		{
 			"name": "default_weight",
 			"label": "fields.default_weight",
 			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
@@ -137,7 +144,8 @@
 				"values": ["draft", "active", "discontinued"]
 			},
 			"required_for_create": true,
-			"default_value": "draft"
+			"default_value": "draft",
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "source_system",
@@ -174,6 +182,13 @@
 			"description": "field_desc.inventory_product_template.uom_name"
 		},
 		{
+			"name": "uom_symbol",
+			"label": "fields.uom_symbol",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"computed": { "kind": "related", "is_stored": false, "field": "uom.symbol" },
+			"description": "field_desc.inventory_product_template.uom_symbol"
+		},
+		{
 			"name": "variant_count",
 			"label": "fields.variant_count",
 			"data_type": { "type": "int64", "min": 0, "max": 1000000000 },
@@ -186,30 +201,18 @@
 			"description": "field_desc.inventory_product_template.variant_count"
 		},
 		{
-			"name": "min_variant_cost",
-			"label": "fields.min_variant_cost",
-			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
-			"computed": {
-				"kind": "aggregate",
-				"is_stored": false,
-				"source": "variants",
-				"function": "min",
-				"field": "cost"
-			},
-			"description": "field_desc.inventory_product_template.min_variant_cost"
+			"name": "weight_uom_symbol",
+			"label": "fields.weight_uom_symbol",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"computed": { "kind": "function", "is_stored": false, "function": "inventory.template_weight_uom_symbol" },
+			"description": "field_desc.inventory_product_template.weight_uom_symbol"
 		},
 		{
-			"name": "max_variant_cost",
-			"label": "fields.max_variant_cost",
-			"data_type": { "type": "decimal", "min": "0", "max": "1000000000000", "scale": 6 },
-			"computed": {
-				"kind": "aggregate",
-				"is_stored": false,
-				"source": "variants",
-				"function": "max",
-				"field": "cost"
-			},
-			"description": "field_desc.inventory_product_template.max_variant_cost"
+			"name": "dimension_uom_symbol",
+			"label": "fields.dimension_uom_symbol",
+			"data_type": { "type": "string", "min": 0, "max": 50 },
+			"computed": { "kind": "function", "is_stored": false, "function": "inventory.template_dimension_uom_symbol" },
+			"description": "field_desc.inventory_product_template.dimension_uom_symbol"
 		},
 		{
 			"name": "attribute_configuration",

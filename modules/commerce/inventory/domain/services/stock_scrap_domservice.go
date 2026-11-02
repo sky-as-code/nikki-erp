@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"strings"
 
 	"github.com/shopspring/decimal"
@@ -18,7 +18,7 @@ import (
 
 // NewStockScrapDomainService derives the scrap service from the engine's default one, which it
 // embeds so built-in CRUD keeps running unchanged.
-func NewStockScrapDomainService(base composable.CrudDomainService) *StockScrapDomainServiceImpl {
+func NewStockScrapDomainService(base dynamicresource.CrudDomainService) *StockScrapDomainServiceImpl {
 	return &StockScrapDomainServiceImpl{CrudDomainService: base}
 }
 
@@ -26,16 +26,16 @@ func NewStockScrapDomainService(base composable.CrudDomainService) *StockScrapDo
 // balance: while draft it changes nothing, and completing it generates the movement. That is why
 // create, update and delete stay open here, merely constrained, where the quant refuses them.
 type StockScrapDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
-var _ composable.CrudDomainService = (*StockScrapDomainServiceImpl)(nil)
+var _ dynamicresource.CrudDomainService = (*StockScrapDomainServiceImpl)(nil)
 
 // Create stamps the scrap number and forces the status to draft. A client-chosen number could
 // collide with or impersonate another document's, and a scrap created `done` would be a completed
 // movement with nothing behind it.
 func (this *StockScrapDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	if vErrs := assertScrapQuantityPositive(params); vErrs.Count() > 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
@@ -66,7 +66,7 @@ func (this *StockScrapDomainServiceImpl) Create(
 // Update refuses to change a scrap that is already done: editing it would rewrite the description
 // of a movement that already happened, leaving document and stock disagreeing.
 func (this *StockScrapDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	scrap, vErrs, err := this.loadScrap(ctx, readStringParam(params, models.StockScrapFieldId))
 	if err != nil {
@@ -103,7 +103,7 @@ func (this *StockScrapDomainServiceImpl) Update(
 // and deleting the document would leave it unexplained. A scrap made in error is corrected by a
 // reverse movement.
 func (this *StockScrapDomainServiceImpl) Delete(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.DeleteOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	scrap, vErrs, err := this.loadScrap(ctx, readStringParam(params, models.StockScrapFieldId))
 	if err != nil {

@@ -3,43 +3,43 @@ package language
 import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
 // The CRUD commands, queries and results of the language resource: the composable shapes under a
 // resource-specific name.
 type (
-	CreateLanguageCommand      = composable.CreateCommand
-	UpdateLanguageCommand      = composable.UpdateCommand
-	DeleteLanguageCommand      = composable.DeleteCommand
-	SetLanguageArchivedCommand = composable.SetArchivedCommand
-	GetLanguageByIdQuery       = composable.GetByIdQuery
-	SearchLanguagesQuery       = composable.SearchQuery
-	LanguageExistsQuery        = composable.ExistsQuery
+	CreateLanguageCommand      = dynamicresource.CreateCommand
+	UpdateLanguageCommand      = dynamicresource.UpdateCommand
+	DeleteLanguageCommand      = dynamicresource.DeleteCommand
+	SetLanguageArchivedCommand = dynamicresource.SetArchivedCommand
+	GetLanguageByIdQuery       = dynamicresource.GetByIdQuery
+	SearchLanguagesQuery       = dynamicresource.SearchQuery
+	LanguageExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateLanguageResult  = composable.CreateResult
-	UpdateLanguageResult  = composable.MutateResult
-	DeleteLanguageResult  = composable.MutateResult
-	GetLanguageByIdResult = composable.GetOneResult
-	SearchLanguagesResult = composable.SearchResult
-	LanguageExistsResult  = composable.ExistsResult
+	CreateLanguageResult  = dynamicresource.CreateResult
+	UpdateLanguageResult  = dynamicresource.MutateResult
+	DeleteLanguageResult  = dynamicresource.MutateResult
+	GetLanguageByIdResult = dynamicresource.GetOneResult
+	SearchLanguagesResult = dynamicresource.SearchResult
+	LanguageExistsResult  = dynamicresource.ExistsResult
 )
 
 type GetLanguageJsonResult = dyn.OpResult[model.LanguageTranslationItem]
 
-// GetLanguageByIsoCodeQuery resolves a language by the BCP47 code every consumer names it with.
+// GetLanguageByLocaleCodeQuery resolves a language by the BCP47 code every consumer names it with.
 // The only caller is another module reading the acting user's formatting rules.
-type GetLanguageByIsoCodeQuery struct {
-	IsoCode string
+type GetLanguageByLocaleCodeQuery struct {
+	LocaleCode string
 }
 
-// GetLanguageByIsoCodeResult carries the whole record rather than a narrowed projection: a caller
+// GetLanguageByLocaleCodeResult carries the whole record rather than a narrowed projection: a caller
 // formatting numbers and dates wants every field, and this table is global reference data with
 // nothing org- or tenant-scoped to withhold.
-type GetLanguageByIsoCodeResult = dyn.OpResult[models.Language]
+type GetLanguageByLocaleCodeResult = dyn.OpResult[models.Language]
 
 // ListEnabledLanguagesQuery lists the languages a user may pick, ordered by name.
 type ListEnabledLanguagesQuery struct{}

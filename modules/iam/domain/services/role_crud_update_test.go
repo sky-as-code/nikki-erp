@@ -10,7 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itEnt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/entitlement"
 	itRes "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/resource"
@@ -25,8 +25,8 @@ type fakeEntitlementRepo struct {
 	held []dmodel.DynamicFields
 }
 
-func (this *fakeEntitlementRepo) Search(corectx.Context, dyn.RepoSearchParam) (*composable.SearchResult, error) {
-	return &composable.SearchResult{
+func (this *fakeEntitlementRepo) Search(corectx.Context, dyn.RepoSearchParam) (*dynamicresource.SearchResult, error) {
+	return &dynamicresource.SearchResult{
 		Data:    dyn.PagedResultData[dmodel.DynamicFields]{Items: this.held, Total: len(this.held)},
 		HasData: len(this.held) > 0,
 	}, nil
@@ -80,7 +80,7 @@ func newRoleUpdateFixture() *roleUpdateFixture {
 	return fx
 }
 
-func roleUpdateCommand(delta map[string]any) composable.UpdateCommand {
+func roleUpdateCommand(delta map[string]any) dynamicresource.UpdateCommand {
 	return dmodel.DynamicFields{
 		"id":                               string(testRoleId),
 		"etag":                             "etag-1",
@@ -93,7 +93,7 @@ func readGrant() map[string]any {
 	return map[string]any{"add": []any{map[string]any{"resource_id": testResourceId, "action_id": testReadId}}}
 }
 
-func (this *roleUpdateFixture) assertRolledBack(t *testing.T, result *composable.MutateResult, key string) {
+func (this *roleUpdateFixture) assertRolledBack(t *testing.T, result *dynamicresource.MutateResult, key string) {
 	t.Helper()
 	require.Equal(t, 1, result.ClientErrors.Count())
 	assert.Equal(t, key, result.ClientErrors[0].Key)

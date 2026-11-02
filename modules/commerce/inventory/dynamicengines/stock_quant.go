@@ -12,32 +12,32 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type stockQuantEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_quant"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_quant"`
 }
 
 // registerStockQuantEngine declares the stock_quant onion and publishes its typed layers.
 func registerStockQuantEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.StockQuantSchemaName),
+		dynamicresource.EngineDependencyName(models.StockQuantSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			usageDispatcher *usagecheck.Dispatcher,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.StockQuantSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewStockQuantRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewStockQuantDomainService(base, usageDispatcher)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewStockQuantApplicationService(base)
 				},
 			}, param)

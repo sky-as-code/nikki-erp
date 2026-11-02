@@ -13,11 +13,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func categoryEntity(fields dmodel.DynamicFields) *composable.DynamicEntity {
-	return composable.NewDynamicEntityFrom(fields)
+func categoryEntity(fields dmodel.DynamicFields) *dynamicresource.DynamicEntity {
+	return dynamicresource.NewDynamicEntityFrom(fields)
 }
 
 func canonicalLangJson(pairs ...string) *model.LangJson {
@@ -73,25 +73,25 @@ func TestBuildCanonicalNameUsesARefKeyOnlyAsALastResort(t *testing.T) {
 
 // rootRepository answers the root search with rootId, or with nothing when rootId is empty.
 type rootRepository struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	rootId string
 }
 
-func (this *rootRepository) Search(_ corectx.Context, _ dyn.RepoSearchParam) (*composable.SearchResult, error) {
+func (this *rootRepository) Search(_ corectx.Context, _ dyn.RepoSearchParam) (*dynamicresource.SearchResult, error) {
 	if this.rootId == "" {
-		return &composable.SearchResult{}, nil
+		return &dynamicresource.SearchResult{}, nil
 	}
-	return &composable.SearchResult{HasData: true, Data: dyn.PagedResultData[dmodel.DynamicFields]{
+	return &dynamicresource.SearchResult{HasData: true, Data: dyn.PagedResultData[dmodel.DynamicFields]{
 		Items: []dmodel.DynamicFields{{models.ProductCategoryFieldId: this.rootId}},
 	}}, nil
 }
 
 type rootBaseService struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	repo *rootRepository
 }
 
-func (this *rootBaseService) Repository() composable.CrudRepository { return this.repo }
+func (this *rootBaseService) Repository() dynamicresource.CrudRepository { return this.repo }
 
 func newRootService(rootId string) *ProductCategoryDomainServiceImpl {
 	return &ProductCategoryDomainServiceImpl{

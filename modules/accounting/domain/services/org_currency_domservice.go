@@ -64,8 +64,9 @@ func (this *OrgCurrencyDomainServiceImpl) GetOrgDefaultCurrency(
 		Data: itCurrency.GetOrgDefaultCurrencyResultData{
 			CurrencyId:    string(currency.Data.Id),
 			Code:          currency.Data.Code,
-			Symbol:        currency.Data.Symbol,
-			DecimalPlaces: currency.Data.DecimalPlaces,
+			Symbol:         currency.Data.Symbol,
+			SymbolPosition: currency.Data.SymbolPosition,
+			DecimalPlaces:  currency.Data.DecimalPlaces,
 		},
 	}, nil
 }
@@ -84,9 +85,12 @@ func (this *OrgCurrencyDomainServiceImpl) readConfiguredCurrencyId(
 		return "", nil
 	}
 
-	key := modconstants.AccountingModuleName + "." + accsettings.OrgSettingOrgDefaultCurrency
 	// Never a bare type assertion: the value has been through a jsonb column, so a wrong shape is a
-	// configuration defect rather than a reason to panic.
-	value, _ := result.Data.Values[key].(string)
-	return value, nil
+	// configuration defect rather than a reason to panic. The org's own value wins over the tenant's.
+	for _, name := range []string{accsettings.OrgSettingSystemCurrency, accsettings.TenantSettingSystemCurrency} {
+		if value, _ := result.Data.Values[modconstants.AccountingModuleName+"."+name].(string); value != "" {
+			return value, nil
+		}
+	}
+	return "", nil
 }

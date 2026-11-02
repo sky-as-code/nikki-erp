@@ -325,7 +325,7 @@ func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.Rep
 	if vErr := this.validateGetOneColumnsAndFilter(param.Fields, param.Filter); vErr != nil {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: ft.ClientErrors{*vErr}}, nil
 	}
-	plan, planErrs, err := this.nestedProjectionPlan(param.Fields)
+	plan, planErrs, err := this.nestedProjectionPlan(ctx, param.Fields, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +345,8 @@ func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.Rep
 	graph = this.injectTenantIntoGraph(ctx, graph)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(
 		this.schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-			Columns: orm.ToSelectColumns(this.ensureSystemColumns(param.Fields)),
+			Columns:         orm.ToSelectColumns(this.ensureSystemColumns(param.Fields)),
+			ComputedContext: dyn.MergeComputedContext(ctx, nil),
 		})
 	if err != nil {
 		return nil, err
@@ -829,7 +830,7 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 
 	// A builder that projects edges inside the root statement takes precedence over the per-row
 	// hydration path: one query per page instead of one per row per edge.
-	plan, planErrs, err := this.nestedProjectionPlan(param.Fields)
+	plan, planErrs, err := this.nestedProjectionPlan(ctx, param.Fields, param.ComputedContext)
 	if err != nil {
 		return nil, err
 	}
@@ -1329,8 +1330,9 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByFilter(
 	graph.And(nodes...)
 	graph = injectTenantIntoGraphForSchema(ctx, schema, graph)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-		Columns: orm.ToSelectColumns(columns),
-		Size:    size,
+		Columns:         orm.ToSelectColumns(columns),
+		Size:            size,
+		ComputedContext: dyn.MergeComputedContext(ctx, nil),
 	})
 	if err != nil {
 		return nil, err
@@ -1359,7 +1361,8 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByAnyFilter(
 	graph.Or(ors...)
 	graph = injectTenantIntoGraphForSchema(ctx, schema, graph)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-		Columns: orm.ToSelectColumns(columns),
+		Columns:         orm.ToSelectColumns(columns),
+		ComputedContext: dyn.MergeComputedContext(ctx, nil),
 	})
 	if err != nil {
 		return nil, err
@@ -1385,7 +1388,7 @@ func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraphOnSchema(
 	ctx corectx.Context, schema *dmodel.ModelSchema, graph *dmodel.SearchGraph, language *model.LanguageCode,
 	selectColumns []string, computedCtx map[string]any,
 ) (int, ft.ClientErrors, error) {
-	opts := orm.SqlSelectGraphOpts{Language: language, ComputedContext: computedCtx}
+	opts := orm.SqlSelectGraphOpts{Language: language, ComputedContext: dyn.MergeComputedContext(ctx, computedCtx)}
 	if len(selectColumns) > 0 {
 		opts.Columns = orm.ToSelectColumns(selectColumns)
 	}
@@ -1412,7 +1415,7 @@ func (this *BaseDynamicRepositoryImpl) runSelectGraphScan(
 			Page:            param.Page,
 			Size:            param.Size,
 			Language:        param.Language,
-			ComputedContext: param.ComputedContext,
+			ComputedContext: dyn.MergeComputedContext(ctx, param.ComputedContext),
 		})
 	if err != nil {
 		return nil, nil, err

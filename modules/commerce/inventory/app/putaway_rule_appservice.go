@@ -4,16 +4,18 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewPutawayRuleApplicationService is handed the composable default by the putaway rule onion.
-func NewPutawayRuleApplicationService(base composable.CrudApplicationService) itWarehouse.PutawayRuleApplicationService {
+func NewPutawayRuleApplicationService(
+	base dynamicresource.CrudApplicationService,
+) itWarehouse.PutawayRuleApplicationService {
 	return &PutawayRuleApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type PutawayRuleApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // suggestPutawayResponse is what the lookup answers with. Both fields are empty when no rule

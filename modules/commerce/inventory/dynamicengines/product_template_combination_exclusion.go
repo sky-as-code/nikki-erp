@@ -11,13 +11,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type productTemplateCombinationExclusionEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_product_template_combination_exclusion"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_product_template_combination_exclusion"`
 }
 
 // registerProductTemplateCombinationExclusionEngine declares the exclusion onion and publishes its
@@ -25,17 +25,17 @@ type productTemplateCombinationExclusionEngineParam struct {
 // the REST table exposes reads only.
 func registerProductTemplateCombinationExclusionEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.ProductTemplateCombinationExclusionSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.ProductTemplateCombinationExclusionSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.ProductTemplateCombinationExclusionSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewProductTemplateCombinationExclusionRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewProductTemplateCombinationExclusionDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewProductTemplateCombinationExclusionApplicationService(base)
 				},
 			}, param)

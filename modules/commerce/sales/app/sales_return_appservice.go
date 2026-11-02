@@ -9,7 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The return's authorized surface.
@@ -19,7 +19,7 @@ import (
 // update.
 
 type SalesReturnApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	orderLock               distributedlock.DistributedLock
 	effectiveSettings       itExt.EffectiveSettingsExtService
@@ -33,7 +33,7 @@ type SalesReturnApplicationServiceImpl struct {
 }
 
 func NewSalesReturnApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 	dLock distributedlock.DistributedLock,
 	settings itExt.EffectiveSettingsExtService,
 	reservations itExt.FulfillmentReservationExtService,
@@ -106,20 +106,20 @@ func (this *SalesReturnApplicationServiceImpl) Cancel(
 	return this.runCancelReturn(ctx, cmd)
 }
 
-func NewSalesReturnLineApplicationService(base composable.CrudApplicationService) itReturns.SalesReturnLineApplicationService {
+func NewSalesReturnLineApplicationService(base dynamicresource.CrudApplicationService) itReturns.SalesReturnLineApplicationService {
 	return &SalesReturnLineApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesReturnLineApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
-func NewSalesRefundPaymentApplicationService(base composable.CrudApplicationService) itReturns.SalesRefundPaymentApplicationService {
+func NewSalesRefundPaymentApplicationService(base dynamicresource.CrudApplicationService) itReturns.SalesRefundPaymentApplicationService {
 	return &SalesRefundPaymentApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesRefundPaymentApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The moved action bodies follow.

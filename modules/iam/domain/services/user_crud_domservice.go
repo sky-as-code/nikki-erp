@@ -7,7 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
 	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
@@ -16,7 +16,7 @@ import (
 
 // NewUserCrudDomainService is handed the composable default by the iam_user onion.
 func NewUserCrudDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 	settingsSvc itExt.UserSettingsExtService,
 	permRepo itPerm.PermissionRepository,
 	historyRepo itPerm.PermissionHistoryRepository,
@@ -30,7 +30,7 @@ func NewUserCrudDomainService(
 }
 
 type UserCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	settingsSvc itExt.UserSettingsExtService
 	permRepo    itPerm.PermissionRepository
 	auditor     permissionAuditor
@@ -45,11 +45,11 @@ func (this *UserCrudDomainServiceImpl) ManageRoles(
 	if refused, err := userTypeScope.assertOfType(ctx, this.Repository(), cmd); err != nil || refused != nil {
 		return refused, err
 	}
-	return composable.ManageM2m(ctx, this.Repository(), cmd, composable.ManageM2mParam{
+	return dynamicresource.ManageM2m(ctx, this.Repository(), cmd, dynamicresource.ManageM2mParam{
 		Action:          "manage user role assignments",
 		DestSchemaName:  domain.RoleSchemaName,
 		JunctionIdField: domain.RoleUserAssignFieldId,
-		AfterChange: func(tranxCtx corectx.Context, change composable.M2mChange) error {
+		AfterChange: func(tranxCtx corectx.Context, change dynamicresource.M2mChange) error {
 			if err := this.permRepo.RebuildUserPermission(tranxCtx, change.SrcId); err != nil {
 				return err
 			}
@@ -69,9 +69,9 @@ func (this *UserCrudDomainServiceImpl) ManageRoles(
 // yet, but does hold every system role: without the rebuild their cache stays empty, and the
 // inbox, among others, refuses them until something else happens to rebuild it.
 func (this *UserCrudDomainServiceImpl) Create(
-	ctx corectx.Context, cmd itUser.CreateUserCrudCommand, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd itUser.CreateUserCrudCommand, options ...dynamicresource.CreateOptions,
 ) (*itUser.CreateUserCrudResult, error) {
-	opts := composable.CreateOptions{}
+	opts := dynamicresource.CreateOptions{}
 	if len(options) > 0 {
 		opts = options[0]
 	}
@@ -80,7 +80,7 @@ func (this *UserCrudDomainServiceImpl) Create(
 	cmd[domain.UserFieldType] = string(domain.UserTypeUser)
 
 	var result *itUser.CreateUserCrudResult
-	err := composable.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
+	err := dynamicresource.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
 		var err error
 		result, err = this.CrudDomainService.Create(tranxCtx, cmd, opts)
 		// A rejected create has written nothing, so there is nothing to seed.
@@ -97,10 +97,10 @@ func (this *UserCrudDomainServiceImpl) Create(
 
 // clearIsOwner drops is_owner from a create: the owner is set up by the installer, and a normal
 // user must never carry the flag.
-func clearIsOwner(next composable.BeforeValidationFn) composable.BeforeValidationFn {
+func clearIsOwner(next dynamicresource.BeforeValidationFn) dynamicresource.BeforeValidationFn {
 	return func(
-		ctx corectx.Context, entity *composable.DynamicEntity, vErrs *ft.ClientErrors,
-	) (*composable.DynamicEntity, error) {
+		ctx corectx.Context, entity *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
+	) (*dynamicresource.DynamicEntity, error) {
 		delete(entity.GetFieldData(), domain.UserFieldIsOwner)
 		if next == nil {
 			return entity, nil
@@ -110,7 +110,7 @@ func clearIsOwner(next composable.BeforeValidationFn) composable.BeforeValidatio
 }
 
 func (this *UserCrudDomainServiceImpl) afterUserCreated(ctx corectx.Context, created dmodel.DynamicFields) error {
-	userId := composable.ParamId(created)
+	userId := dynamicresource.ParamId(created)
 	if userId == "" {
 		return errors.New("the created user has no id")
 	}

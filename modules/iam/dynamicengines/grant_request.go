@@ -8,7 +8,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itRoleReq "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/rolerequest"
 )
@@ -16,7 +16,7 @@ import (
 type grantRequestEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_grant_request"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_grant_request"`
 }
 
 // registerGrantRequestEngine declares the iam_grant_request onion, tenant-scoped. Grant requests
@@ -24,9 +24,9 @@ type grantRequestEngineParam struct {
 // is needed.
 func registerGrantRequestEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.RoleRequestSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.RoleRequestSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:      models.RoleRequestSchemaName,
 				PermissionScope: util.ToPtr(requestguard.ResourceScopeTenant),
 			}, param)

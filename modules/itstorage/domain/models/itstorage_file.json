@@ -71,7 +71,8 @@
 			"default_value": "pending",
 			"description": {
 				"en-US": "pending until a record references the file, in_use while one does, and pending again once that record drops it. The stored object carries the same value in its itstorage-state tag, and a storage lifecycle rule expires objects tagged pending after 24 hours. Written by the storage port only."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "in_use_at",

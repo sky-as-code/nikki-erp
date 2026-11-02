@@ -31,8 +31,9 @@ func TestBaseSalesPriceLivesOnTemplateOnly(t *testing.T) {
 }
 
 // Cost lives on the variant: two variants of one product genuinely cost different amounts and
-// nothing relates them. The template exposes it only as a read-only proxy, never a stored column.
-func TestCostLivesOnVariantAndIsNotStoredOnTemplate(t *testing.T) {
+// nothing relates them. The template's stored cost is only the starting cost of a variant created
+// without one (INV-002); it is never pushed onto existing variants and never read as their cost.
+func TestCostLivesOnVariantAndTheTemplateHoldsOnlyItsStartingCost(t *testing.T) {
 	requireBaseSchemasRegistered(t)
 
 	variant := ProductVariantSchemaBuilder().Build()
@@ -41,11 +42,9 @@ func TestCostLivesOnVariantAndIsNotStoredOnTemplate(t *testing.T) {
 	assert.False(t, costField.IsComputed(), "variant cost is stored input, not derived")
 
 	template := ProductTemplateSchemaBuilder().Build()
-	if templateCost, present := template.Fields()["cost"]; present {
-		assert.True(t, templateCost.IsComputed(),
-			"a cost on the template may only be a computed proxy of its single variant's cost "+
-				"(BR-PRICE-VARIANT-011), never a second stored value")
-	}
+	templateCost, present := template.Fields()[ProductTemplateFieldCost]
+	require.True(t, present, "the template holds the starting cost of its new variants")
+	assert.False(t, templateCost.IsComputed(), "the template cost is a stored value")
 }
 
 // Both halves of the sum must be reachable and the surcharge must be the template-scoped one: the

@@ -11,7 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
 	itAgreement "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/agreement"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The agreement line.
@@ -19,24 +19,24 @@ import (
 type agreementLineEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_agreement_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_agreement_line"`
 }
 
 func registerAgreementLineEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.AgreementLineSchemaName),
+		dynamicresource.EngineDependencyName(models.AgreementLineSchemaName),
 		func(
-			param composable.BuildParam,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+			param dynamicresource.BuildParam,
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.AgreementLineSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewAgreementLineRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewAgreementLineCrudDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewAgreementLineApplicationService(base)
 				},
 			}, param)

@@ -10,20 +10,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/storage"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	itFile "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/file"
 )
 
 // NewFileRepository is handed the composable default by the itstorage_file onion.
-func NewFileRepository(base composable.CrudRepository) itFile.FileRepository {
+func NewFileRepository(base dynamicresource.CrudRepository) itFile.FileRepository {
 	return &FileRepositoryImpl{CrudRepository: base}
 }
 
 // FileRepositoryImpl adds the statements that remove a whole space's files at once, for the org
 // cleanup, where one statement per file would hold the transaction open across every round trip.
 type FileRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 func (this *FileRepositoryImpl) ListObjectKeysInSpaces(
@@ -164,7 +164,7 @@ func (this *FileRepositoryImpl) ListObjectKeysWithStatus(
 }
 
 func queryIdKeys(
-	ctx corectx.Context, repo composable.CrudRepository, query string, args []any, action string,
+	ctx corectx.Context, repo dynamicresource.CrudRepository, query string, args []any, action string,
 ) (map[model.Id]string, error) {
 	rows, err := repo.GetBaseRepo().ExtractClient(ctx).Query(ctx, query, args...)
 	if err != nil {

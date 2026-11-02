@@ -10,35 +10,35 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // assertAttributeCreateAllowed is the create-time rule: only the display/mode pairing applies,
 // since a new attribute has no template using it.
 func assertAttributeCreateAllowed(
-	_ corectx.Context, input *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, input *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	fields := input.GetFieldData()
 	assertDisplayTypeFitsMode(
-		composable.ParamString(fields, models.ProductAttributeFieldDisplayType),
-		composable.ParamString(fields, models.ProductAttributeFieldVariantCreationMode), vErrs)
+		dynamicresource.ParamString(fields, models.ProductAttributeFieldDisplayType),
+		dynamicresource.ParamString(fields, models.ProductAttributeFieldVariantCreationMode), vErrs)
 	return nil
 }
 
 // assertAttributeUpdateAllowed checks the merged state of stored and submitted fields, so an
 // unused attribute may change display type and mode together in one save.
 func assertAttributeUpdateAllowed(
-	ctx corectx.Context, input *composable.DynamicEntity, found *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, input *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	stored := found.GetFieldData()
-	if archived, _ := composable.ParamBool(stored, basemodel.FieldIsArchived); archived {
+	if archived, _ := dynamicresource.ParamBool(stored, basemodel.FieldIsArchived); archived {
 		vErrs.Append(*ft.NewBusinessViolation(basemodel.FieldIsArchived,
 			ft.ErrorKey("product_attribute.archived_read_only", "inventory"),
 			"this attribute is archived; unarchive it before editing"))
 		return nil
 	}
 	submitted := input.GetFieldData()
-	storedMode := composable.ParamString(stored, models.ProductAttributeFieldVariantCreationMode)
+	storedMode := dynamicresource.ParamString(stored, models.ProductAttributeFieldVariantCreationMode)
 	finalMode := mergedString(submitted, stored, models.ProductAttributeFieldVariantCreationMode)
 	finalDisplay := mergedString(submitted, stored, models.ProductAttributeFieldDisplayType)
 	if assertDisplayTypeFitsMode(finalDisplay, finalMode, vErrs) {
@@ -47,7 +47,7 @@ func assertAttributeUpdateAllowed(
 	if finalMode == storedMode {
 		return nil
 	}
-	attributeId := string(composable.ParamId(stored))
+	attributeId := string(dynamicresource.ParamId(stored))
 	lines, err := findAttributeLines(ctx, attributeId, util.ToPtr(true), usageScanLimit)
 	if err != nil {
 		return errors.Wrap(err, "assertAttributeUpdateAllowed")
@@ -82,9 +82,9 @@ func assertDisplayTypeFitsMode(displayType string, mode string, vErrs *ft.Client
 
 func mergedString(submitted, stored dmodel.DynamicFields, field string) string {
 	if _, sent := submitted[field]; sent {
-		return composable.ParamString(submitted, field)
+		return dynamicresource.ParamString(submitted, field)
 	}
-	return composable.ParamString(stored, field)
+	return dynamicresource.ParamString(stored, field)
 }
 
 // assertAttributeNotInUse refuses to archive an attribute an enabled template line applies,

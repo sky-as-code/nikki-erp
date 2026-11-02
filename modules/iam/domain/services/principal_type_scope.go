@@ -9,7 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 )
 
@@ -29,7 +29,7 @@ func (this principalTypeScope) typeNode() *dmodel.SearchNode {
 }
 
 // narrowSearch ANDs the type condition after the caller's graph, keeping the caller's order.
-func (this principalTypeScope) narrowSearch(params composable.SearchQuery) error {
+func (this principalTypeScope) narrowSearch(params dynamicresource.SearchQuery) error {
 	graph, err := dmodel.AndDecodedGraph(params[graphParam], *this.typeNode())
 	if err != nil {
 		return err
@@ -42,9 +42,9 @@ func (this principalTypeScope) narrowSearch(params composable.SearchQuery) error
 // without an id, or with an id the repository rejects, is left to the default service, which
 // reports the missing or malformed key itself.
 func (this principalTypeScope) isOfType(
-	ctx corectx.Context, repo composable.CrudRepository, params dmodel.DynamicFields,
+	ctx corectx.Context, repo dynamicresource.CrudRepository, params dmodel.DynamicFields,
 ) (bool, error) {
-	id := composable.ParamId(params)
+	id := dynamicresource.ParamId(params)
 	if id == "" || !isWellFormedId(repo, id) {
 		return true, nil
 	}
@@ -52,7 +52,7 @@ func (this principalTypeScope) isOfType(
 	return matched || invalid, err
 }
 
-func isWellFormedId(repo composable.CrudRepository, id model.Id) bool {
+func isWellFormedId(repo dynamicresource.CrudRepository, id model.Id) bool {
 	schema := repo.Schema()
 	if schema == nil {
 		return true
@@ -67,7 +67,7 @@ func isWellFormedId(repo composable.CrudRepository, id model.Id) bool {
 
 // match looks the principal up by id and type; invalid reports an id the repository refused.
 func (this principalTypeScope) match(
-	ctx corectx.Context, repo composable.CrudRepository, id model.Id,
+	ctx corectx.Context, repo dynamicresource.CrudRepository, id model.Id,
 ) (matched bool, invalid bool, err error) {
 	found, err := repo.GetOne(ctx, dyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{basemodel.FieldId: string(id), domain.UserFieldType: string(this.principalType)},
@@ -84,8 +84,8 @@ func (this principalTypeScope) match(
 
 // assertOfType is isOfType for a mutating action: a mismatch is reported as not-found.
 func (this principalTypeScope) assertOfType(
-	ctx corectx.Context, repo composable.CrudRepository, params dmodel.DynamicFields,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, repo dynamicresource.CrudRepository, params dmodel.DynamicFields,
+) (*dynamicresource.MutateResult, error) {
 	ok, err := this.isOfType(ctx, repo, params)
 	if err != nil {
 		return nil, err
@@ -93,14 +93,14 @@ func (this principalTypeScope) assertOfType(
 	if ok {
 		return nil, nil
 	}
-	return &composable.MutateResult{ClientErrors: ft.ClientErrors{*ft.NewAnonymousNotFoundError()}}, nil
+	return &dynamicresource.MutateResult{ClientErrors: ft.ClientErrors{*ft.NewAnonymousNotFoundError()}}, nil
 }
 
 // refuseIdsOfType refuses every id in ids that is a principal of this scope's type: a membership or
 // an assignment the other kind of principal holds alone. An id naming no principal at all is left
 // to the foreign key, which reports it as before.
 func (this principalTypeScope) refuseIdsOfType(
-	ctx corectx.Context, repo composable.CrudRepository, field string, ids []model.Id, vErrs *ft.ClientErrors,
+	ctx corectx.Context, repo dynamicresource.CrudRepository, field string, ids []model.Id, vErrs *ft.ClientErrors,
 ) error {
 	for _, id := range ids {
 		matched, _, err := this.match(ctx, repo, id)
@@ -125,8 +125,8 @@ func (this principalTypeScope) refusedError(field string, id model.Id) *ft.Clien
 
 // refuseServiceIn is a ValidateExtra refusing a service in the id field named field, for an owner
 // that must be a person.
-func refuseServiceIn(repo composable.CrudRepository, field string) composable.ValidateExtraFn {
-	return func(ctx corectx.Context, input, _ *composable.DynamicEntity, vErrs *ft.ClientErrors) error {
+func refuseServiceIn(repo dynamicresource.CrudRepository, field string) dynamicresource.ValidateExtraFn {
+	return func(ctx corectx.Context, input, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors) error {
 		if input == nil {
 			return nil
 		}

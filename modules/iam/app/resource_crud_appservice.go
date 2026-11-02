@@ -1,25 +1,25 @@
 package app
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itAct "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/action"
 	itRes "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/resource"
 )
 
 // NewResourceCrudApplicationService is handed the composable default by the iam_resource onion.
-func NewResourceCrudApplicationService(base composable.CrudApplicationService) itRes.ResourceCrudApplicationService {
+func NewResourceCrudApplicationService(base dynamicresource.CrudApplicationService) itRes.ResourceCrudApplicationService {
 	return &ResourceCrudApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type ResourceCrudApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // NewActionCrudApplicationService is handed the composable default by the iam_action onion.
-func NewActionCrudApplicationService(base composable.CrudApplicationService) itAct.ActionCrudApplicationService {
+func NewActionCrudApplicationService(base dynamicresource.CrudApplicationService) itAct.ActionCrudApplicationService {
 	return &ActionCrudApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type ActionCrudApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }

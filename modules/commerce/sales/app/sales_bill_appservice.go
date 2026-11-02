@@ -11,7 +11,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The bill's authorized surface. As with the order, the bodies below are the former engine action
@@ -23,7 +23,7 @@ import (
 // race it exists to prevent.
 
 type SalesBillApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	effectiveSettings itExt.EffectiveSettingsExtService
 	orderLock         distributedlock.DistributedLock
@@ -38,7 +38,7 @@ type SalesBillApplicationServiceImpl struct {
 }
 
 func NewSalesBillApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 	settings itExt.EffectiveSettingsExtService,
 	dLock distributedlock.DistributedLock,
 	methods itExt.PaymentMethodExtService,
@@ -108,44 +108,48 @@ func (this *SalesBillApplicationServiceImpl) StartGatewayPayment(
 
 // The read-only billing resources.
 
-func NewSalesBillLineApplicationService(base composable.CrudApplicationService) itBilling.SalesBillLineApplicationService {
+func NewSalesBillLineApplicationService(
+	base dynamicresource.CrudApplicationService,
+) itBilling.SalesBillLineApplicationService {
 	return &SalesBillLineApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesBillLineApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
-func NewSalesBillRelationApplicationService(base composable.CrudApplicationService) itBilling.SalesBillRelationApplicationService {
+func NewSalesBillRelationApplicationService(base dynamicresource.CrudApplicationService) itBilling.SalesBillRelationApplicationService {
 	return &SalesBillRelationApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesBillRelationApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
-func NewSalesPaymentApplicationService(base composable.CrudApplicationService) itBilling.SalesPaymentApplicationService {
+func NewSalesPaymentApplicationService(
+	base dynamicresource.CrudApplicationService,
+) itBilling.SalesPaymentApplicationService {
 	return &SalesPaymentApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesPaymentApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
-func NewSalesFulfillmentRequestApplicationService(base composable.CrudApplicationService) itBilling.SalesFulfillmentRequestApplicationService {
+func NewSalesFulfillmentRequestApplicationService(base dynamicresource.CrudApplicationService) itBilling.SalesFulfillmentRequestApplicationService {
 	return &SalesFulfillmentRequestApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesFulfillmentRequestApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
-func NewSalesFulfillmentRequestLineApplicationService(base composable.CrudApplicationService) itBilling.SalesFulfillmentRequestLineApplicationService {
+func NewSalesFulfillmentRequestLineApplicationService(base dynamicresource.CrudApplicationService) itBilling.SalesFulfillmentRequestLineApplicationService {
 	return &SalesFulfillmentRequestLineApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesFulfillmentRequestLineApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The moved action bodies follow.

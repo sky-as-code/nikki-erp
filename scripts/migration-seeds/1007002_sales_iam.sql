@@ -859,7 +859,7 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_actions'
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
-		('01M3SALESRFCONFIRM0000001', jsonb_build_object('en-US', 'Confirm refund request', 'vi-VN', 'Xác nhận yêu cầu hoàn tiền'), 'confirm_return', 'Approve a refund request, record the note and dispatch the refund', '01M3SALES00000000000000076', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3SALESRFCONFIRM00000001', jsonb_build_object('en-US', 'Confirm refund request', 'vi-VN', 'Xác nhận yêu cầu hoàn tiền'), 'confirm_return', 'Approve a refund request, record the note and dispatch the refund', '01M3SALES00000000000000076', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

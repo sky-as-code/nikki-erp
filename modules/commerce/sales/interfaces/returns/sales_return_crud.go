@@ -5,23 +5,23 @@ package returns
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SalesReturnRepository reads and writes returns.
 type SalesReturnRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // SalesReturnDomainService is the CRUD of the resource. The state machine lives in the operation
 // services, each a multi-row transaction under a distributed lock.
 type SalesReturnDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // SalesReturnApplicationService is the authorized surface the REST handler serves.
 type SalesReturnApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	// CreateReturn is collection-level: it records the request, and deliberately is not the power
 	// to refund.
@@ -40,43 +40,43 @@ type SalesReturnApplicationService interface {
 }
 
 // ReturnActionCommand is the bound request of a custom return action.
-type ReturnActionCommand = composable.UpdateCommand
+type ReturnActionCommand = dynamicresource.UpdateCommand
 
 // The read-only return resources: a line is written by the return that covers it, a refund leg by
 // the processing that paid it back.
 
 type SalesReturnLineRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesReturnLineApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesRefundPaymentRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesRefundPaymentApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateSalesReturnCommand      = composable.CreateCommand
-	UpdateSalesReturnCommand      = composable.UpdateCommand
-	DeleteSalesReturnCommand      = composable.DeleteCommand
-	SetSalesReturnArchivedCommand = composable.SetArchivedCommand
-	GetSalesReturnByIdQuery       = composable.GetByIdQuery
-	SearchSalesReturnsQuery       = composable.SearchQuery
-	SalesReturnExistsQuery        = composable.ExistsQuery
+	CreateSalesReturnCommand      = dynamicresource.CreateCommand
+	UpdateSalesReturnCommand      = dynamicresource.UpdateCommand
+	DeleteSalesReturnCommand      = dynamicresource.DeleteCommand
+	SetSalesReturnArchivedCommand = dynamicresource.SetArchivedCommand
+	GetSalesReturnByIdQuery       = dynamicresource.GetByIdQuery
+	SearchSalesReturnsQuery       = dynamicresource.SearchQuery
+	SalesReturnExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateSalesReturnResult      = composable.CreateResult
-	UpdateSalesReturnResult      = composable.MutateResult
-	DeleteSalesReturnResult      = composable.MutateResult
-	SetSalesReturnArchivedResult = composable.MutateResult
-	GetSalesReturnByIdResult     = composable.GetOneResult
-	SearchSalesReturnsResult     = composable.SearchResult
-	SalesReturnExistsResult      = composable.ExistsResult
+	CreateSalesReturnResult      = dynamicresource.CreateResult
+	UpdateSalesReturnResult      = dynamicresource.MutateResult
+	DeleteSalesReturnResult      = dynamicresource.MutateResult
+	SetSalesReturnArchivedResult = dynamicresource.MutateResult
+	GetSalesReturnByIdResult     = dynamicresource.GetOneResult
+	SearchSalesReturnsResult     = dynamicresource.SearchResult
+	SalesReturnExistsResult      = dynamicresource.ExistsResult
 )

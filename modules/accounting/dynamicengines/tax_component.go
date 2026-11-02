@@ -11,35 +11,35 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/accounting/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/taxconfig"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type taxComponentEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_accounting_tax_component"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_accounting_tax_component"`
 }
 
-// taxComponentBuildParam is composable.BuildParam plus the sibling repository the rules read.
+// taxComponentBuildParam is dynamicresource.BuildParam plus the sibling repository the rules read.
 type taxComponentBuildParam struct {
-	composable.BuildParam
+	dynamicresource.BuildParam
 
 	Versions taxconfig.TaxDefinitionVersionRepository
 }
 
 func registerTaxComponentEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.TaxComponentSchemaName),
-		func(param taxComponentBuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.TaxComponentSchemaName),
+		func(param taxComponentBuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.TaxComponentSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewTaxComponentRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewTaxComponentDomainService(base, param.Versions)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewTaxComponentApplicationService(base)
 				},
 			}, param.BuildParam)

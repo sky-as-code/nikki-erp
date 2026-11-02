@@ -10,7 +10,7 @@ import (
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func TestLiftMovesOrRefuseRemovesTheDeltaFromTheCommand(t *testing.T) {
@@ -62,7 +62,7 @@ func TestReadTransferMovesDeltaPartsCountsAMalformedDeltaAsEveryPart(t *testing.
 }
 
 type operationTypeRowsRepository struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	rows  []dmodel.DynamicFields
 	graph *dmodel.SearchGraph
 }
@@ -82,7 +82,7 @@ func useOperationTypeRows(t *testing.T, rows ...dmodel.DynamicFields) *operation
 	repo := &operationTypeRowsRepository{rows: rows}
 	original := repoFor
 	t.Cleanup(func() { repoFor = original })
-	repoFor = func(string) (composable.CrudRepository, error) { return repo, nil }
+	repoFor = func(string) (dynamicresource.CrudRepository, error) { return repo, nil }
 	return repo
 }
 

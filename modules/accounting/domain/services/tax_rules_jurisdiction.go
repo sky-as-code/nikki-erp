@@ -6,7 +6,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // maxJurisdictionDepth bounds the parent walk so that a cycle already present in the database
@@ -16,9 +16,10 @@ const maxJurisdictionDepth = 10
 // validateJurisdictionCreate rejects a jurisdiction whose parent chain already forms a cycle. The
 // new row has no id yet so cannot be in a cycle itself, but inheriting a broken parent chain would
 // make every later walk through it non-terminating.
-func validateJurisdictionCreate(repo models.TaxSearcher) composable.ValidateExtraFn {
+func validateJurisdictionCreate(repo models.TaxSearcher) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity,
+		vErrs *ft.ClientErrors,
 	) error {
 		params := inputModel.GetFieldData()
 		juris := models.NewTaxJurisdictionFrom(params)
@@ -27,9 +28,9 @@ func validateJurisdictionCreate(repo models.TaxSearcher) composable.ValidateExtr
 }
 
 // validateJurisdictionUpdate rejects a reparent that would put the record inside its own ancestry.
-func validateJurisdictionUpdate(repo models.TaxSearcher) composable.ValidateExtraFn {
+func validateJurisdictionUpdate(repo models.TaxSearcher) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
 		vErrs *ft.ClientErrors,
 	) error {
 		params := inputModel.GetFieldData()

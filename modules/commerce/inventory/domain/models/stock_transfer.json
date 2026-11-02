@@ -67,7 +67,8 @@
 			},
 			"required_for_create": true,
 			"default_value": "draft",
-			"no_update": true
+			"no_update": true,
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "priority",

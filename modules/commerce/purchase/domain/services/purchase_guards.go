@@ -7,7 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The write and delete rules of the Purchase resources, chained into the domain services' own
@@ -33,24 +33,24 @@ var deletableAgreementStatuses = map[string]bool{
 }
 
 func (this *PurchaseOrderDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
-	opts := safe.GetOptional(options, composable.DeleteOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(GuardOrderDelete, opts.ValidateExtra)
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.DeleteOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(GuardOrderDelete, opts.ValidateExtra)
 	return this.CrudDomainService.Delete(ctx, cmd, opts)
 }
 
 func (this *PurchaseAgreementDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
-	opts := safe.GetOptional(options, composable.DeleteOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(GuardAgreementDelete, opts.ValidateExtra)
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.DeleteOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(GuardAgreementDelete, opts.ValidateExtra)
 	return this.CrudDomainService.Delete(ctx, cmd, opts)
 }
 
 // GuardOrderDelete refuses to delete an order that is not cancelled. found is the stored record.
 func GuardOrderDelete(
-	_ corectx.Context, _ *composable.DynamicEntity, found *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	if found == nil {
 		return nil
@@ -65,7 +65,7 @@ func GuardOrderDelete(
 
 // GuardAgreementDelete refuses to delete an agreement that is neither a draft nor cancelled.
 func GuardAgreementDelete(
-	_ corectx.Context, _ *composable.DynamicEntity, found *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	if found == nil {
 		return nil
@@ -96,23 +96,23 @@ func assertDeletableStatus(
 // rule whose units are absent from the request.
 
 func (this *VendorProductPriceDomainServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
-	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.validateVendorPrice)
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.validateVendorPrice)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 func (this *VendorProductPriceDomainServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.validateVendorPrice)
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.validateVendorPrice)
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
 
 func (this *VendorProductPriceDomainServiceImpl) validateVendorPrice(
-	ctx corectx.Context, input *composable.DynamicEntity, found *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, input *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	if this.validator == nil || input == nil {
 		return nil

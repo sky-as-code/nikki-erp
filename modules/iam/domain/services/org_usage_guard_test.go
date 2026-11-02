@@ -16,7 +16,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 )
 
@@ -78,7 +78,7 @@ func orgDispatcher(t *testing.T, bus *orgUsageBus) *usagecheck.Dispatcher {
 	return usagecheck.NewDispatcher(bus, registry, nil)
 }
 
-func deleteOrgThroughService(t *testing.T, bus *orgUsageBus) (*composable.MutateResult, *fakeCrudDomain, error) {
+func deleteOrgThroughService(t *testing.T, bus *orgUsageBus) (*dynamicresource.MutateResult, *fakeCrudDomain, error) {
 	t.Helper()
 	base := newFakeCrudDomain()
 	svc := NewOrgCrudDomainService(base, nil, orgDispatcher(t, bus))

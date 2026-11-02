@@ -11,14 +11,14 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/notification/constants"
 	it "github.com/sky-as-code/nikki-erp/modules/notification/interfaces/delivery"
 )
 
 // NewNotificationApplicationService is handed the composable default by the notification onion.
 func NewNotificationApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 	broker it.RealtimeNotificationBroker,
 	fanOut *ChannelFanOut,
 	logger logging.LoggerService,
@@ -37,7 +37,7 @@ func NewNotificationApplicationService(
 }
 
 type NotificationApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	domainSvc it.NotificationDomainService
 	broker    it.RealtimeNotificationBroker

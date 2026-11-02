@@ -1,12 +1,12 @@
 package product
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ProductTemplateRepository reads and writes product_template rows.
 type ProductTemplateRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // ProductTemplateDomainService is the Products capability under the layer name every resource
@@ -15,28 +15,28 @@ type ProductTemplateDomainService = ProductService
 
 // ProductTemplateApplicationService is the authorized surface the REST handler serves.
 type ProductTemplateApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	ProductTemplateActionService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a
 // resource-specific name.
 type (
-	CreateProductTemplateCommand      = composable.CreateCommand
-	UpdateProductTemplateCommand      = composable.UpdateCommand
-	DeleteProductTemplateCommand      = composable.DeleteCommand
-	SetProductTemplateArchivedCommand = composable.SetArchivedCommand
-	GetProductTemplateByIdQuery       = composable.GetByIdQuery
-	SearchProductTemplatesQuery       = composable.SearchQuery
-	ProductTemplateExistsQuery        = composable.ExistsQuery
+	CreateProductTemplateCommand      = dynamicresource.CreateCommand
+	UpdateProductTemplateCommand      = dynamicresource.UpdateCommand
+	DeleteProductTemplateCommand      = dynamicresource.DeleteCommand
+	SetProductTemplateArchivedCommand = dynamicresource.SetArchivedCommand
+	GetProductTemplateByIdQuery       = dynamicresource.GetByIdQuery
+	SearchProductTemplatesQuery       = dynamicresource.SearchQuery
+	ProductTemplateExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateProductTemplateResult      = composable.CreateResult
-	UpdateProductTemplateResult      = composable.MutateResult
-	DeleteProductTemplateResult      = composable.MutateResult
-	SetProductTemplateArchivedResult = composable.MutateResult
-	GetProductTemplateByIdResult     = composable.GetOneResult
-	SearchProductTemplatesResult     = composable.SearchResult
-	ProductTemplateExistsResult      = composable.ExistsResult
+	CreateProductTemplateResult      = dynamicresource.CreateResult
+	UpdateProductTemplateResult      = dynamicresource.MutateResult
+	DeleteProductTemplateResult      = dynamicresource.MutateResult
+	SetProductTemplateArchivedResult = dynamicresource.MutateResult
+	GetProductTemplateByIdResult     = dynamicresource.GetOneResult
+	SearchProductTemplatesResult     = dynamicresource.SearchResult
+	ProductTemplateExistsResult      = dynamicresource.ExistsResult
 )

@@ -12,7 +12,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The fulfillment's authorized surface: the dispense loop.
@@ -25,7 +25,7 @@ import (
 // opening its transaction and releases it after the commit.
 
 type SalesOrderFulfillmentApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	orderLock               distributedlock.DistributedLock
 	effectiveSettings       itExt.EffectiveSettingsExtService
@@ -33,7 +33,7 @@ type SalesOrderFulfillmentApplicationServiceImpl struct {
 }
 
 func NewSalesOrderFulfillmentApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 	dLock distributedlock.DistributedLock,
 	settings itExt.EffectiveSettingsExtService,
 	reservations itExt.FulfillmentReservationExtService,
@@ -49,7 +49,7 @@ func NewSalesOrderFulfillmentApplicationService(
 func (this *SalesOrderFulfillmentApplicationServiceImpl) CreateAttempt(
 	ctx corectx.Context, cmd itFulfillment.FulfillmentActionCommand,
 ) (*dyn.OpResult[any], error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionUpdate, cmd); cErrs != nil || err != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionUpdate, cmd); cErrs != nil || err != nil {
 		return anyFailure(cErrs, err)
 	}
 	return this.runCreateAttempt(ctx, cmd)
@@ -58,7 +58,7 @@ func (this *SalesOrderFulfillmentApplicationServiceImpl) CreateAttempt(
 func (this *SalesOrderFulfillmentApplicationServiceImpl) ApplyAttemptResult(
 	ctx corectx.Context, cmd itFulfillment.FulfillmentActionCommand,
 ) (*dyn.OpResult[any], error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionUpdate, cmd); cErrs != nil || err != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionUpdate, cmd); cErrs != nil || err != nil {
 		return anyFailure(cErrs, err)
 	}
 	return this.runAttemptResult(ctx, cmd)
@@ -67,7 +67,7 @@ func (this *SalesOrderFulfillmentApplicationServiceImpl) ApplyAttemptResult(
 func (this *SalesOrderFulfillmentApplicationServiceImpl) ReassignTarget(
 	ctx corectx.Context, cmd itFulfillment.FulfillmentActionCommand,
 ) (*dyn.OpResult[any], error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionUpdate, cmd); cErrs != nil || err != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionUpdate, cmd); cErrs != nil || err != nil {
 		return anyFailure(cErrs, err)
 	}
 	return this.runReassignTarget(ctx, cmd)
@@ -75,36 +75,36 @@ func (this *SalesOrderFulfillmentApplicationServiceImpl) ReassignTarget(
 
 // The read-only fulfillment resources.
 
-func NewSalesOrderFulfillmentItemApplicationService(base composable.CrudApplicationService) itFulfillment.SalesOrderFulfillmentItemApplicationService {
+func NewSalesOrderFulfillmentItemApplicationService(base dynamicresource.CrudApplicationService) itFulfillment.SalesOrderFulfillmentItemApplicationService {
 	return &SalesOrderFulfillmentItemApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesOrderFulfillmentItemApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
-func NewSalesFulfillmentAttemptApplicationService(base composable.CrudApplicationService) itFulfillment.SalesFulfillmentAttemptApplicationService {
+func NewSalesFulfillmentAttemptApplicationService(base dynamicresource.CrudApplicationService) itFulfillment.SalesFulfillmentAttemptApplicationService {
 	return &SalesFulfillmentAttemptApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesFulfillmentAttemptApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
-func NewSalesFulfillmentAttemptItemApplicationService(base composable.CrudApplicationService) itFulfillment.SalesFulfillmentAttemptItemApplicationService {
+func NewSalesFulfillmentAttemptItemApplicationService(base dynamicresource.CrudApplicationService) itFulfillment.SalesFulfillmentAttemptItemApplicationService {
 	return &SalesFulfillmentAttemptItemApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesFulfillmentAttemptItemApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
-func NewSalesFulfillmentTargetChangeApplicationService(base composable.CrudApplicationService) itFulfillment.SalesFulfillmentTargetChangeApplicationService {
+func NewSalesFulfillmentTargetChangeApplicationService(base dynamicresource.CrudApplicationService) itFulfillment.SalesFulfillmentTargetChangeApplicationService {
 	return &SalesFulfillmentTargetChangeApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesFulfillmentTargetChangeApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The parameter names the moved bodies read.

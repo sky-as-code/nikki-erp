@@ -11,17 +11,17 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewProductTemplateAttributeValueDomainService is handed the composable default by the
 // product_template_attribute_value onion.
-func NewProductTemplateAttributeValueDomainService(base composable.CrudDomainService) itProduct.ProductTemplateAttributeValueDomainService {
+func NewProductTemplateAttributeValueDomainService(base dynamicresource.CrudDomainService) itProduct.ProductTemplateAttributeValueDomainService {
 	return &ProductTemplateAttributeValueDomainServiceImpl{CrudDomainService: base}
 }
 
 type ProductTemplateAttributeValueDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // templateValueEditableFields are what a direct update may carry. Selection, sequence and the
@@ -37,10 +37,10 @@ var templateValueEditableFields = map[string]bool{
 // Update accepts only sales_price_extra. The configuration writer updates the other columns
 // through the repository, so this rule never stands in its way.
 func (this *ProductTemplateAttributeValueDomainServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
 	if cErrs := assertOnlySalesPriceExtra(cmd); cErrs.Count() > 0 {
-		return &composable.MutateResult{ClientErrors: cErrs}, nil
+		return &dynamicresource.MutateResult{ClientErrors: cErrs}, nil
 	}
 	result, err := this.CrudDomainService.Update(ctx, cmd, options...)
 	if err != nil || result == nil || result.ClientErrors.Count() > 0 {

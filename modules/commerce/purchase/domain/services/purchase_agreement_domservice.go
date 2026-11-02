@@ -10,7 +10,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
@@ -24,13 +24,13 @@ import (
 // agreements it could not bring back.
 
 func NewPurchaseAgreementDomainService(
-	base composable.CrudDomainService, references *OrderReferenceValidator,
+	base dynamicresource.CrudDomainService, references *OrderReferenceValidator,
 ) *PurchaseAgreementDomainServiceImpl {
 	return &PurchaseAgreementDomainServiceImpl{CrudDomainService: base, references: references}
 }
 
 type PurchaseAgreementDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	references *OrderReferenceValidator
 }
@@ -38,7 +38,7 @@ type PurchaseAgreementDomainServiceImpl struct {
 // Create stamps code and status server-side; both are no_update and a client may not choose either,
 // or an agreement could be created already confirmed, or with a code that collides with another.
 func (this *PurchaseAgreementDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	code, err := generateAgreementCode()
 	if err != nil {
@@ -410,7 +410,7 @@ func (this *PurchaseAgreementDomainServiceImpl) CreateRfq(
 func refusalOrResult(
 	result *dyn.OpResult[dmodel.DynamicFields], err error,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
-	if signal, ok := composable.AsClientErrorSignal(err); ok {
+	if signal, ok := dynamicresource.AsClientErrorSignal(err); ok {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: signal.Errors}, nil
 	}
 	if err != nil {
@@ -484,7 +484,7 @@ func (this *PurchaseAgreementDomainServiceImpl) copyAgreementLines(
 		}
 		// A refused line must not leave an RFQ short of it: the signal rolls the whole RFQ back.
 		if created.ClientErrors.Count() > 0 {
-			return composable.ClientErrorSignal{Errors: created.ClientErrors}
+			return dynamicresource.ClientErrorSignal{Errors: created.ClientErrors}
 		}
 	}
 	return nil

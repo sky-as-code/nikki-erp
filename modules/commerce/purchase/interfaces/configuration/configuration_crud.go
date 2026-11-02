@@ -2,30 +2,30 @@
 package configuration
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ConfigurationCrudRepository reads and writes purchase configurations.
 type ConfigurationCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // ConfigurationCrudDomainService is the CRUD of the resource.
 type ConfigurationCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // ConfigurationCrudApplicationService is the authorized surface the REST handler serves.
 type ConfigurationCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateConfigurationCommand      = composable.CreateCommand
-	UpdateConfigurationCommand      = composable.UpdateCommand
-	DeleteConfigurationCommand      = composable.DeleteCommand
-	SetConfigurationArchivedCommand = composable.SetArchivedCommand
-	GetConfigurationByIdQuery       = composable.GetByIdQuery
-	SearchConfigurationsQuery       = composable.SearchQuery
-	ConfigurationExistsQuery        = composable.ExistsQuery
+	CreateConfigurationCommand      = dynamicresource.CreateCommand
+	UpdateConfigurationCommand      = dynamicresource.UpdateCommand
+	DeleteConfigurationCommand      = dynamicresource.DeleteCommand
+	SetConfigurationArchivedCommand = dynamicresource.SetArchivedCommand
+	GetConfigurationByIdQuery       = dynamicresource.GetByIdQuery
+	SearchConfigurationsQuery       = dynamicresource.SearchQuery
+	ConfigurationExistsQuery        = dynamicresource.ExistsQuery
 )

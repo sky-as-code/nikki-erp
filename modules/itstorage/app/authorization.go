@@ -6,17 +6,17 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // assertFileRead authorizes reading a stored file by the org its record carries. The record's
 // own org is the scope, so there is no caller-named org to check membership of: a caller without
 // a read grant in that org is refused as unauthorized.
-func assertFileRead(ctx corectx.Context, svc composable.CrudApplicationService, orgId *model.Id) *ft.ClientErrors {
+func assertFileRead(ctx corectx.Context, svc dynamicresource.CrudApplicationService, orgId *model.Id) *ft.ClientErrors {
 	if orgId != nil {
-		return svc.AssertPermission(ctx, composable.PermissionRead, orgId)
+		return svc.AssertPermission(ctx, dynamicresource.PermissionRead, orgId)
 	}
-	return assertFileAction(ctx, svc, composable.PermissionRead, nil)
+	return assertFileAction(ctx, svc, dynamicresource.PermissionRead, nil)
 }
 
 // assertFileAction authorizes actionCode on a file of orgId, or on a tenant-wide file when orgId
@@ -27,7 +27,7 @@ func assertFileRead(ctx corectx.Context, svc composable.CrudApplicationService, 
 // or in any org they belong to: a user's avatar must be readable by colleagues whose grants are
 // all org-scoped.
 func assertFileAction(
-	ctx corectx.Context, svc composable.CrudApplicationService, actionCode string, orgId *model.Id,
+	ctx corectx.Context, svc dynamicresource.CrudApplicationService, actionCode string, orgId *model.Id,
 ) *ft.ClientErrors {
 	if orgId != nil {
 		_, cErrs := svc.AssertAction(ctx, actionCode, dmodel.DynamicFields{basemodel.FieldOrgId: *orgId})

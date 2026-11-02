@@ -60,7 +60,16 @@ type GetUomQuery struct {
 // must call Convert rather than reimplement the arithmetic (BR-UOM-ESS-023, AC-UOM-33).
 type GetUomResultData struct {
 	Id         model.Id
+	Name       model.LangJson
 	Symbol     string
 	CategoryId model.Id
+	OrgId      model.Id
 	IsArchived bool
+}
+
+// FindUomBySymbolQuery fetches the UoM an organization knows by a symbol, e.g. its "kg". A symbol
+// is unique per organization. HasData false on the result means the organization has none.
+type FindUomBySymbolQuery struct {
+	OrgId  model.Id
+	Symbol string
 }

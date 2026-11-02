@@ -1,7 +1,7 @@
 {
     "type": "object",
     "required": [
-        "id", "created_at", "code", "name", "operation_code", "reservation_method",
+        "id", "created_at", "name", "operation_code", "reservation_method",
         "backorder_policy", "etag", "is_archived", "org_id"
     ],
     "properties": {
@@ -19,10 +19,6 @@
         "updated_at": {
             "type": "string",
             "minLength": 20
-        },
-        "code": {
-            "type": "string",
-            "minLength": 1
         },
         "name": {
             "type": "object"

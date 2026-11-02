@@ -9,7 +9,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func TestAssertRoleNotSystemManaged(t *testing.T) {
@@ -23,7 +23,7 @@ func TestAssertRoleNotSystemManaged(t *testing.T) {
 	}
 	for name, testCase := range cases {
 		t.Run(name, func(t *testing.T) {
-			found := composable.NewDynamicEntityFrom(dmodel.DynamicFields{
+			found := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{
 				basemodel.FieldManagedByType: testCase.managedBy,
 			})
 			vErrs := ft.ClientErrors{}
@@ -36,7 +36,7 @@ func TestAssertRoleNotSystemManaged(t *testing.T) {
 
 func TestAssertRoleCreateNotSystemManaged(t *testing.T) {
 	for managedBy, refused := range map[string]bool{"system": true, "module": false, "user": false} {
-		input := composable.NewDynamicEntityFrom(dmodel.DynamicFields{basemodel.FieldManagedByType: managedBy})
+		input := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{basemodel.FieldManagedByType: managedBy})
 		vErrs := ft.ClientErrors{}
 
 		require.NoError(t, assertRoleCreateNotSystemManaged(nil, input, nil, &vErrs))

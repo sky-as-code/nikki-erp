@@ -4,7 +4,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 )
 
@@ -26,11 +26,11 @@ type UomConversionRest struct {
 }
 
 func (this *UomConversionRest) Convert(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "convert uom quantity", payload,
+	return dynamicresource.ServeAction(echoCtx, "convert uom quantity", payload,
 		this.conversionSvc.ConvertAction, NewConvertQuantityResponseAny)
 }
 
 func (this *UomConversionRest) ToReference(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "convert uom quantity to reference", payload,
+	return dynamicresource.ServeAction(echoCtx, "convert uom quantity to reference", payload,
 		this.conversionSvc.ToReferenceAction, NewToReferenceResponseAny)
 }

@@ -5,7 +5,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // mergeFields overlays a submitted patch onto the stored row, so that multi-field rules see the
@@ -40,7 +40,7 @@ func assertWellFormedPeriod(
 // entityFields exposes a fetched entity's fields as a pointer, preserving nil. Validation hooks
 // receive nil when there is no stored record and distinguish that from an empty field set, so the
 // nil must survive the unwrapping.
-func entityFields(entity *composable.DynamicEntity) *dmodel.DynamicFields {
+func entityFields(entity *dynamicresource.DynamicEntity) *dmodel.DynamicFields {
 	if entity == nil {
 		return nil
 	}

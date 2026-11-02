@@ -12,7 +12,7 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	itFulfillment "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/fulfillment"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The fulfillment resources. The fulfillment itself is writable and carries the dispense loop;
@@ -21,24 +21,24 @@ import (
 type salesOrderFulfillmentEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_fulfillment"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_fulfillment"`
 }
 
 func registerSalesOrderFulfillmentEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesOrderFulfillmentSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesOrderFulfillmentSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			dLock distributedlock.DistributedLock,
 			settings itExt.EffectiveSettingsExtService,
 			reservations itExt.FulfillmentReservationExtService,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesOrderFulfillmentSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesOrderFulfillmentRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesOrderFulfillmentApplicationService(base, dLock, settings, reservations)
 				},
 			}, param)
@@ -57,20 +57,20 @@ func registerSalesOrderFulfillmentEngine() error {
 type salesOrderFulfillmentItemEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_fulfillment_item"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_fulfillment_item"`
 }
 
 func registerSalesOrderFulfillmentItemEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesOrderFulfillmentItemSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesOrderFulfillmentItemSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesOrderFulfillmentItemSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesOrderFulfillmentItemRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesOrderFulfillmentItemApplicationService(base)
 				},
 			}, param)
@@ -89,20 +89,20 @@ func registerSalesOrderFulfillmentItemEngine() error {
 type salesFulfillmentAttemptEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_attempt"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_attempt"`
 }
 
 func registerSalesFulfillmentAttemptEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesFulfillmentAttemptSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesFulfillmentAttemptSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesFulfillmentAttemptSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesFulfillmentAttemptRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesFulfillmentAttemptApplicationService(base)
 				},
 			}, param)
@@ -121,20 +121,20 @@ func registerSalesFulfillmentAttemptEngine() error {
 type salesFulfillmentAttemptItemEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_attempt_item"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_attempt_item"`
 }
 
 func registerSalesFulfillmentAttemptItemEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesFulfillmentAttemptItemSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesFulfillmentAttemptItemSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesFulfillmentAttemptItemSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesFulfillmentAttemptItemRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesFulfillmentAttemptItemApplicationService(base)
 				},
 			}, param)
@@ -153,20 +153,20 @@ func registerSalesFulfillmentAttemptItemEngine() error {
 type salesFulfillmentTargetChangeEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_target_change"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_target_change"`
 }
 
 func registerSalesFulfillmentTargetChangeEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesFulfillmentTargetChangeSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesFulfillmentTargetChangeSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesFulfillmentTargetChangeSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesFulfillmentTargetChangeRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesFulfillmentTargetChangeApplicationService(base)
 				},
 			}, param)

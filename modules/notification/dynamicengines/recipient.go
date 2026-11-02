@@ -7,7 +7,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/notification/app"
 	"github.com/sky-as-code/nikki-erp/modules/notification/domain/models"
 	repo "github.com/sky-as-code/nikki-erp/modules/notification/infra/repository"
@@ -17,7 +17,7 @@ import (
 type recipientEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_notification_recipient"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_notification_recipient"`
 	Config config.ConfigService
 }
 
@@ -28,11 +28,11 @@ type recipientEngineParam struct {
 // recipient row.
 func registerRecipientEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.RecipientSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.RecipientSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.RecipientSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewRecipientRepository(base)
 				},
 			}, param)

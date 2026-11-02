@@ -101,7 +101,7 @@ func (*AccountingModule) Init() error {
 // module has built its engines. Registration is idempotent.
 func (*AccountingModule) OnAppStarted() error {
 	return deps.Invoke(func(settingsSvc itExt.SettingsRegistrationExtService) error {
-		return registerOrgSettings(corectx.NewRequestContext(context.Background()), settingsSvc)
+		return registerSettings(corectx.NewRequestContext(context.Background()), settingsSvc)
 	})
 }
 

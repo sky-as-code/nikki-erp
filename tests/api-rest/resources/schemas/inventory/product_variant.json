@@ -127,8 +127,17 @@
         "product_template_uom_name": {
             "type": ["object", "null"]
         },
-        "display_name": {
+        "product_template_uom_symbol": {
             "type": ["string", "null"]
+        },
+        "weight_uom_symbol": {
+            "type": ["string", "null"]
+        },
+        "dimension_uom_symbol": {
+            "type": ["string", "null"]
+        },
+        "display_name": {
+            "type": ["object", "string", "null"]
         },
         "attribute_summary": {
             "type": ["array", "null"],

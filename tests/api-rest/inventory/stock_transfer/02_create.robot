@@ -93,9 +93,8 @@ Create With An Archived Operation Type Fails
     ...    was archived must still resolve it (AC-STOCK-031).
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Archived Type
-    ${code}=    Unique Code    arcop
     ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
     ${type_id}    ${type_etag}=    Response Should Be Create Success    ${resp}
 
     POST On Session    api    ${STOCK_OPERATION_TYPE_API}/${type_id}/archived
@@ -133,9 +132,8 @@ Create By An Ambiguous Operation Code Is Refused
     ...    policies and default locations onto the transfer, so the client must choose.
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Second Internal Type
-    ${type_code}=    Unique Code    stkint
     ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'code': $type_code, 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
     ${type_id}    ${type_etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
     ...    json=${{ {'operation_code': 'internal', 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}

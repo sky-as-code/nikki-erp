@@ -7,7 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // Param names the counting actions read from the request body.
@@ -20,7 +20,7 @@ const (
 )
 
 // NewStockQuantApplicationService is handed the composable default by the quant onion.
-func NewStockQuantApplicationService(base composable.CrudApplicationService) itStock.StockQuantApplicationService {
+func NewStockQuantApplicationService(base dynamicresource.CrudApplicationService) itStock.StockQuantApplicationService {
 	quantSvc, ok := base.DomainService().(*services.StockQuantDomainServiceImpl)
 	if !ok {
 		panic(errors.New("the stock quant onion must be built with NewStockQuantDomainService"))
@@ -36,7 +36,7 @@ func NewStockQuantApplicationService(base composable.CrudApplicationService) itS
 // The actions are refused rather than removed so a caller gets a 400 naming the reason instead of
 // a 404 that reads as "wrong URL".
 type StockQuantApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	quantSvc *services.StockQuantDomainServiceImpl
 }
 

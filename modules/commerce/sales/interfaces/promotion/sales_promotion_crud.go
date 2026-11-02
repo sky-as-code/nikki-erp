@@ -7,99 +7,99 @@
 package promotion
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type SalesPromotionProgramRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesPromotionProgramDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type SalesPromotionProgramApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesPromotionConditionGroupRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesPromotionConditionGroupDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type SalesPromotionConditionGroupApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesPromotionConditionRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesPromotionConditionDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type SalesPromotionConditionApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesPromotionConditionTargetRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesPromotionConditionTargetDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type SalesPromotionConditionTargetApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesPromotionRewardRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesPromotionRewardDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type SalesPromotionRewardApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesPromotionCompatibilityRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesPromotionCompatibilityDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type SalesPromotionCompatibilityApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesVoucherCodeRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesVoucherCodeDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type SalesVoucherCodeApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesVoucherRedemptionRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesVoucherRedemptionApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The redemption ledger is read-only: a writable row could forge a discount's provenance or
@@ -107,11 +107,11 @@ type SalesVoucherRedemptionApplicationService interface {
 // holds for an in-process caller as well as for a route.
 
 type (
-	CreateSalesPromotionProgramCommand = composable.CreateCommand
-	UpdateSalesPromotionProgramCommand = composable.UpdateCommand
-	SearchSalesPromotionProgramsQuery  = composable.SearchQuery
-	SearchSalesPromotionProgramsResult = composable.SearchResult
-	CreateSalesVoucherCodeCommand      = composable.CreateCommand
-	SearchSalesVoucherCodesQuery       = composable.SearchQuery
-	SearchSalesVoucherCodesResult      = composable.SearchResult
+	CreateSalesPromotionProgramCommand = dynamicresource.CreateCommand
+	UpdateSalesPromotionProgramCommand = dynamicresource.UpdateCommand
+	SearchSalesPromotionProgramsQuery  = dynamicresource.SearchQuery
+	SearchSalesPromotionProgramsResult = dynamicresource.SearchResult
+	CreateSalesVoucherCodeCommand      = dynamicresource.CreateCommand
+	SearchSalesVoucherCodesQuery       = dynamicresource.SearchQuery
+	SearchSalesVoucherCodesResult      = dynamicresource.SearchResult
 )

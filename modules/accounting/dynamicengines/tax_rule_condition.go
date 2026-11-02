@@ -11,28 +11,28 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/accounting/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/taxconfig"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type taxRuleConditionEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_accounting_tax_rule_condition"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_accounting_tax_rule_condition"`
 }
 
 func registerTaxRuleConditionEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.TaxRuleConditionSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.TaxRuleConditionSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.TaxRuleConditionSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewTaxRuleConditionRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewTaxRuleConditionDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewTaxRuleConditionApplicationService(base)
 				},
 			}, param)

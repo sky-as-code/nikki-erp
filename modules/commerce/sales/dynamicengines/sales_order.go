@@ -14,7 +14,7 @@ import (
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/order"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The order resources.
@@ -32,14 +32,14 @@ import (
 type salesOrderEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order"`
 }
 
 func registerSalesOrderEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesOrderSchemaName),
+		dynamicresource.EngineDependencyName(models.SalesOrderSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			tax itExt.TaxCalculationExtService,
 			settings itExt.EffectiveSettingsExtService,
 			dLock distributedlock.DistributedLock,
@@ -50,16 +50,16 @@ func registerSalesOrderEngine() error {
 			reservations itExt.FulfillmentReservationExtService,
 			paymentOrders itExt.PaymentOrderExtService,
 			invoicing itInvoicing.InvoicingExtService,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesOrderSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesOrderRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewSalesOrderDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesOrderCrudApplicationService(
 						base, tax, settings, dLock, products, fulfillment, basis, reservations, parties,
 						paymentOrders, invoicing)
@@ -84,22 +84,22 @@ func registerSalesOrderEngine() error {
 type salesOrderLineEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_line"`
 }
 
 func registerSalesOrderLineEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesOrderLineSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesOrderLineSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.SalesOrderLineSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesOrderLineRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewSalesOrderLineDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesOrderLineApplicationService(base)
 				},
 			}, param)
@@ -125,20 +125,20 @@ func registerSalesOrderLineEngine() error {
 type salesOrderLineAllocationEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_line_allocation"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_line_allocation"`
 }
 
 func registerSalesOrderLineAllocationEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesOrderLineAllocationSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesOrderLineAllocationSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesOrderLineAllocationSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesOrderLineAllocationRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewSalesOrderLineAllocationDomainService(base)
 				},
 			}, param)
@@ -158,32 +158,32 @@ func registerSalesOrderLineAllocationEngine() error {
 // checked in the application layer, so it holds for an in-process caller as well as for a route:
 // a component, an adjustment or an event that a client could write directly could contradict the
 // order it describes.
-func readOnlyCrudActions() []composable.CrudAction {
-	return []composable.CrudAction{
-		composable.CrudActionGetById,
-		composable.CrudActionSearch,
-		composable.CrudActionExists,
-		composable.CrudActionGetSchema,
+func readOnlyCrudActions() []dynamicresource.CrudAction {
+	return []dynamicresource.CrudAction{
+		dynamicresource.CrudActionGetById,
+		dynamicresource.CrudActionSearch,
+		dynamicresource.CrudActionExists,
+		dynamicresource.CrudActionGetSchema,
 	}
 }
 
 type salesOrderLineComponentEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_line_component"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_line_component"`
 }
 
 func registerSalesOrderLineComponentEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesOrderLineComponentSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesOrderLineComponentSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesOrderLineComponentSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesOrderLineComponentRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesOrderLineComponentApplicationService(base)
 				},
 			}, param)
@@ -203,20 +203,20 @@ func registerSalesOrderLineComponentEngine() error {
 type salesOrderAdjustmentEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_adjustment"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_adjustment"`
 }
 
 func registerSalesOrderAdjustmentEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesOrderAdjustmentSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesOrderAdjustmentSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesOrderAdjustmentSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesOrderAdjustmentRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesOrderAdjustmentApplicationService(base)
 				},
 			}, param)
@@ -236,20 +236,20 @@ func registerSalesOrderAdjustmentEngine() error {
 type salesOrderEventEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_order_event"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_order_event"`
 }
 
 func registerSalesOrderEventEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesOrderEventSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesOrderEventSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesOrderEventSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesOrderEventRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesOrderEventApplicationService(base)
 				},
 			}, param)

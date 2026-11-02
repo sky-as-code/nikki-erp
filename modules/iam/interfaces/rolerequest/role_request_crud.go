@@ -1,7 +1,7 @@
 package rolerequest
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The composable layers of the iam_grant_request resource, served at /v1/iam/iam_grant_request.
@@ -9,13 +9,13 @@ import (
 // workflow (approve, reject, cancel) is not built yet.
 
 type RoleRequestCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type RoleRequestCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type RoleRequestCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }

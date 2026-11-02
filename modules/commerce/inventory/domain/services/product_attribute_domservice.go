@@ -9,43 +9,43 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewProductAttributeDomainService is handed the composable default by the product_attribute onion.
-func NewProductAttributeDomainService(base composable.CrudDomainService) itProduct.ProductAttributeDomainService {
+func NewProductAttributeDomainService(base dynamicresource.CrudDomainService) itProduct.ProductAttributeDomainService {
 	return &ProductAttributeDomainServiceImpl{CrudDomainService: base}
 }
 
 // ProductAttributeDomainServiceImpl holds the attribute rules and saves the inline values delta
 // in the attribute's own transaction.
 type ProductAttributeDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // Create writes the attribute and, when the body carries `values.add`, its first values in one
 // transaction: a refused value rolls the attribute back.
 func (this *ProductAttributeDomainServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
 	delta, malformed := itProduct.LiftProductAttributeValuesDelta(cmd)
 	if malformed {
-		return &composable.CreateResult{ClientErrors: malformedValuesDelta()}, nil
+		return &dynamicresource.CreateResult{ClientErrors: malformedValuesDelta()}, nil
 	}
 	opts := attrFirstOption(options)
-	opts.ValidateExtra = composable.ChainValidateExtra(assertAttributeCreateAllowed, opts.ValidateExtra)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(assertAttributeCreateAllowed, opts.ValidateExtra)
 	if delta == nil || delta.IsEmpty() {
 		return this.CrudDomainService.Create(ctx, cmd, opts)
 	}
 	if cErrs := validateValuesDeltaShape(*delta, true); cErrs.Count() > 0 {
-		return &composable.CreateResult{ClientErrors: cErrs}, nil
+		return &dynamicresource.CreateResult{ClientErrors: cErrs}, nil
 	}
 	if cErrs := validateValuesDeltaFinalState(nil, *delta); cErrs.Count() > 0 {
-		return &composable.CreateResult{ClientErrors: cErrs}, nil
+		return &dynamicresource.CreateResult{ClientErrors: cErrs}, nil
 	}
 
-	var result *composable.CreateResult
-	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	var result *dynamicresource.CreateResult
+	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var err error
 			if result, err = this.CrudDomainService.Create(tranxCtx, cmd, opts); err != nil {
@@ -55,8 +55,8 @@ func (this *ProductAttributeDomainServiceImpl) Create(
 				return &result.ClientErrors, nil
 			}
 			parent := valuesParent{
-				attributeId: composable.ParamString(result.Data, basemodel.FieldId),
-				orgId:       composable.ParamString(result.Data, models.ProductAttributeFieldOrgId),
+				attributeId: dynamicresource.ParamString(result.Data, basemodel.FieldId),
+				orgId:       dynamicresource.ParamString(result.Data, models.ProductAttributeFieldOrgId),
 			}
 			cErrs, err := applyValuesDelta(tranxCtx, parent, *delta)
 			return &cErrs, err
@@ -65,7 +65,7 @@ func (this *ProductAttributeDomainServiceImpl) Create(
 		return nil, errors.Wrap(err, "create product attribute")
 	}
 	if refused != nil {
-		return &composable.CreateResult{ClientErrors: *refused}, nil
+		return &dynamicresource.CreateResult{ClientErrors: *refused}, nil
 	}
 	return result, nil
 }
@@ -74,23 +74,23 @@ func (this *ProductAttributeDomainServiceImpl) Create(
 // delta, in one transaction. The attribute row is written first so its etag guards the delta
 // too, and a values-only save still moves the etag.
 func (this *ProductAttributeDomainServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
 	delta, malformed := itProduct.LiftProductAttributeValuesDelta(cmd)
 	if malformed {
-		return &composable.MutateResult{ClientErrors: malformedValuesDelta()}, nil
+		return &dynamicresource.MutateResult{ClientErrors: malformedValuesDelta()}, nil
 	}
 	opts := attrFirstOption(options)
-	opts.ValidateExtra = composable.ChainValidateExtra(assertAttributeUpdateAllowed, opts.ValidateExtra)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(assertAttributeUpdateAllowed, opts.ValidateExtra)
 	if delta == nil || delta.IsEmpty() {
 		return this.CrudDomainService.Update(ctx, cmd, opts)
 	}
 	if cErrs := validateValuesDeltaShape(*delta, false); cErrs.Count() > 0 {
-		return &composable.MutateResult{ClientErrors: cErrs}, nil
+		return &dynamicresource.MutateResult{ClientErrors: cErrs}, nil
 	}
 
-	var result *composable.MutateResult
-	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	var result *dynamicresource.MutateResult
+	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var err error
 			if result, err = this.CrudDomainService.Update(tranxCtx, cmd, opts); err != nil {
@@ -99,14 +99,14 @@ func (this *ProductAttributeDomainServiceImpl) Update(
 			if result.ClientErrors.Count() > 0 || !result.HasData {
 				return &result.ClientErrors, nil
 			}
-			cErrs, err := this.applyUpdateDelta(tranxCtx, string(composable.ParamId(cmd)), *delta)
+			cErrs, err := this.applyUpdateDelta(tranxCtx, string(dynamicresource.ParamId(cmd)), *delta)
 			return &cErrs, err
 		})
 	if err != nil {
 		return nil, errors.Wrap(err, "update product attribute")
 	}
 	if refused != nil {
-		return &composable.MutateResult{ClientErrors: *refused}, nil
+		return &dynamicresource.MutateResult{ClientErrors: *refused}, nil
 	}
 	return result, nil
 }
@@ -129,7 +129,7 @@ func (this *ProductAttributeDomainServiceImpl) applyUpdateDelta(
 	}
 	parent := valuesParent{
 		attributeId: attributeId,
-		orgId:       composable.ParamString(rows[0], models.ProductAttributeFieldOrgId),
+		orgId:       dynamicresource.ParamString(rows[0], models.ProductAttributeFieldOrgId),
 	}
 	return applyValuesDelta(ctx, parent, delta)
 }
@@ -137,15 +137,15 @@ func (this *ProductAttributeDomainServiceImpl) applyUpdateDelta(
 // SetArchived refuses to archive an attribute a template still applies. Unarchiving touches
 // nothing else: the values keep whatever archive state they had.
 func (this *ProductAttributeDomainServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
-	if archive, _ := composable.ParamBool(cmd, basemodel.FieldIsArchived); archive {
-		cErrs, err := assertAttributeNotInUse(ctx, string(composable.ParamId(cmd)))
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
+	if archive, _ := dynamicresource.ParamBool(cmd, basemodel.FieldIsArchived); archive {
+		cErrs, err := assertAttributeNotInUse(ctx, string(dynamicresource.ParamId(cmd)))
 		if err != nil {
 			return nil, errors.Wrap(err, "archive product attribute")
 		}
 		if cErrs.Count() > 0 {
-			return &composable.MutateResult{ClientErrors: cErrs}, nil
+			return &dynamicresource.MutateResult{ClientErrors: cErrs}, nil
 		}
 	}
 	return this.CrudDomainService.SetArchived(ctx, cmd)
@@ -155,11 +155,11 @@ func (this *ProductAttributeDomainServiceImpl) SetArchived(
 // attribute's values first, each through the value rules, and then the attribute, all in one
 // transaction: a value that cannot be deleted refuses the whole delete.
 func (this *ProductAttributeDomainServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand, options ...composable.DeleteOptions,
-) (*composable.MutateResult, error) {
-	attributeId := string(composable.ParamId(cmd))
-	var result *composable.MutateResult
-	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand, options ...dynamicresource.DeleteOptions,
+) (*dynamicresource.MutateResult, error) {
+	attributeId := string(dynamicresource.ParamId(cmd))
+	var result *dynamicresource.MutateResult
+	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			cErrs, err := assertAttributeDeletable(tranxCtx, attributeId)
 			if err != nil || cErrs.Count() > 0 {
@@ -177,7 +177,7 @@ func (this *ProductAttributeDomainServiceImpl) Delete(
 		return nil, errors.Wrap(err, "delete product attribute")
 	}
 	if refused != nil {
-		return &composable.MutateResult{ClientErrors: *refused}, nil
+		return &dynamicresource.MutateResult{ClientErrors: *refused}, nil
 	}
 	return result, nil
 }

@@ -121,6 +121,8 @@ func (*EssentialModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(models.LanguageSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.TagSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.CurrencySchemaBuilder()),
+		dmodel.RegisterSchemaB(models.OrgCurrencySchemaBuilder()),
+		dmodel.RegisterSchemaB(models.OrgLanguageSchemaBuilder()),
 		// The category must be registered before the UoM: the UoM's edge points at it.
 		dmodel.RegisterSchemaB(models.UomCatSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.UomSchemaBuilder()),

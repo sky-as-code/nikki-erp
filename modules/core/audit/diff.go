@@ -118,3 +118,51 @@ func isNull(value any) bool {
 	}
 	return false
 }
+
+// IsTrackedField reports a field flagged MetadataTrackHistory that a diff does not exclude anyway.
+func IsTrackedField(schema *dmodel.ModelSchema, name string) bool {
+	if schema == nil || IsExcludedField(schema, name) {
+		return false
+	}
+	field, _ := schema.Field(name)
+	flag, ok := field.MetadataValue(MetadataTrackHistory)
+	return ok && flag == true
+}
+
+// HasTrackedField reports whether any update of the schema can be recorded at all.
+func HasTrackedField(schema *dmodel.ModelSchema) bool {
+	if schema == nil {
+		return false
+	}
+	for name := range schema.Fields() {
+		if IsTrackedField(schema, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// TouchesTrackedField reports whether fields carries a tracked key, so a writer can skip reading
+// the stored row for an update that cannot produce an entry.
+func TouchesTrackedField(schema *dmodel.ModelSchema, fields dmodel.DynamicFields) bool {
+	for name := range fields {
+		if IsTrackedField(schema, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// DiffTracked is Diff restricted to the tracked fields: the shape of an update entry.
+func DiffTracked(
+	schema *dmodel.ModelSchema, before, after dmodel.DynamicFields,
+) (dmodel.DynamicFields, dmodel.DynamicFields) {
+	oldValues, newValues := Diff(schema, before, after)
+	for name := range newValues {
+		if !IsTrackedField(schema, name) {
+			delete(oldValues, name)
+			delete(newValues, name)
+		}
+	}
+	return oldValues, newValues
+}

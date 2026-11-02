@@ -16,7 +16,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/resourceaccess"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -77,8 +77,8 @@ func (this *ActionApplicationServiceImpl) GetHistory(
 
 func parseHistoryRequest(query itAction.GetHistoryQuery) (*historyRequest, *ft.ClientErrors) {
 	cErrs := ft.ClientErrors{}
-	code := composable.ParamString(query, paramResourceCode)
-	id := composable.ParamString(query, paramResourceId)
+	code := dynamicresource.ParamString(query, paramResourceCode)
+	id := dynamicresource.ParamString(query, paramResourceId)
 	for field, value := range map[string]string{paramResourceCode: code, paramResourceId: id} {
 		if value == "" {
 			cErrs.Append(*ft.NewValidationError(field, ft.ErrorKey("err_missing_required_field"), "field is required"))
@@ -97,7 +97,7 @@ func parseHistoryRequest(query itAction.GetHistoryQuery) (*historyRequest, *ft.C
 	}
 	return &historyRequest{
 		access: resourceaccess.ReadAsCallerQuery{
-			ResourceCode: code, ResourceId: model.Id(id), OrgId: composable.ParamOrgId(query),
+			ResourceCode: code, ResourceId: model.Id(id), OrgId: dynamicresource.ParamOrgId(query),
 		},
 		page: page,
 		size: min(size, c.MaxHistorySize),
@@ -122,7 +122,7 @@ func readInt(query dmodel.DynamicFields, field string, fallback int) (int, bool)
 
 // historySearchQuery is not confined to the caller's org: the target check above already decided
 // the caller may read this record, and a global record's entries carry no org at all.
-func historySearchQuery(request *historyRequest) composable.SearchQuery {
+func historySearchQuery(request *historyRequest) dynamicresource.SearchQuery {
 	graph := map[string]any{
 		"and": []any{
 			map[string]any{"if": []any{models.ActionFieldResourceCode, "=", request.access.ResourceCode}},
@@ -133,7 +133,7 @@ func historySearchQuery(request *historyRequest) composable.SearchQuery {
 			[]any{models.ActionFieldId, "desc"},
 		},
 	}
-	return composable.SearchQuery{
+	return dynamicresource.SearchQuery{
 		basemodel.FieldGraph:  graph,
 		basemodel.FieldFields: []string{"*", actorUserName, actorUserAvatar},
 		basemodel.FieldPage:   request.page,

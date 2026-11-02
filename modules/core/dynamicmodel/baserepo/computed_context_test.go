@@ -52,7 +52,7 @@ type projectingRecorder struct {
 }
 
 func (this *projectingRecorder) PlanNestedProjection(
-	_ *dmodel.ModelSchema, _ *dmodel.SchemaRegistry, _ []orm.SelectColumn,
+	_ *dmodel.ModelSchema, _ *dmodel.SchemaRegistry, _ []orm.SelectColumn, _ ...map[string]any,
 ) (*orm.NestedProjection, *ft.ClientErrors, error) {
 	return &orm.NestedProjection{}, nil, nil
 }
@@ -98,8 +98,10 @@ func assertContextForwarded(t *testing.T, builder *recordingBuilder) {
 	t.Helper()
 	require.Len(t, builder.countOpts, 1)
 	require.Len(t, builder.selectOpts, 1)
-	assert.Equal(t, requestContext, builder.countOpts[0].ComputedContext, "count")
-	assert.Equal(t, requestContext, builder.selectOpts[0].ComputedContext, "select")
+	// The request's own values travel unchanged; the acting org (none here) is laid over them.
+	forwarded := map[string]any{"location_id": "LOC1", "org_id": ""}
+	assert.Equal(t, forwarded, builder.countOpts[0].ComputedContext, "count")
+	assert.Equal(t, forwarded, builder.selectOpts[0].ComputedContext, "select")
 }
 
 // ---- a database that answers every query with a single zero ----------------------------------

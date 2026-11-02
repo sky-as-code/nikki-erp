@@ -2,7 +2,7 @@ package services
 
 import (
 	"github.com/shopspring/decimal"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -299,7 +299,7 @@ func clientErrorsOf[TData any](result *dyn.OpResult[TData]) any {
 // reserved_quantity although the field is `no_update`: that flag is enforced in the service layer
 // to close the field to clients, while the repository writes what it is given.
 func addToQuantReserved(
-	ctx corectx.Context, quantEngine composable.CrudRepository, quantId model.Id, delta decimal.Decimal,
+	ctx corectx.Context, quantEngine dynamicresource.CrudRepository, quantId model.Id, delta decimal.Decimal,
 ) error {
 	found, err := quantEngine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.StockQuantFieldId: quantId,
@@ -349,7 +349,7 @@ func addToQuantReserved(
 // validate consumes a move line the balance never reserved and drives its reserved quantity
 // negative - a failure that names the wrong operation, in the wrong request, minutes later.
 func assertQuantReserved(
-	ctx corectx.Context, quantEngine composable.CrudRepository, quantId model.Id, expected decimal.Decimal,
+	ctx corectx.Context, quantEngine dynamicresource.CrudRepository, quantId model.Id, expected decimal.Decimal,
 ) error {
 	found, err := quantEngine.FindByKeys(ctx, dmodel.DynamicFields{
 		models.StockQuantFieldId: quantId,

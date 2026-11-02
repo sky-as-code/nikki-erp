@@ -32,8 +32,9 @@ type GetOrgDefaultCurrencyQuery struct {
 // GetOrgDefaultCurrencyResultData is the resolved currency. DecimalPlaces is how many fractional
 // digits amounts in this currency are quoted to.
 type GetOrgDefaultCurrencyResultData struct {
-	CurrencyId    string
-	Code          string
-	Symbol        string
-	DecimalPlaces int32
+	CurrencyId     string
+	Code           string
+	Symbol         string
+	SymbolPosition string
+	DecimalPlaces  int32
 }

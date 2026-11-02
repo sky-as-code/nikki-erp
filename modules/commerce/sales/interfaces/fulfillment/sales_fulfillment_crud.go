@@ -5,19 +5,19 @@ package fulfillment
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SalesOrderFulfillmentRepository reads and writes the fulfillments of an order.
 type SalesOrderFulfillmentRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // SalesOrderFulfillmentDomainService is the CRUD of the resource. Its behaviour lives in the
 // operation services (create, attempt, reassign, release), each a multi-row transaction rather
 // than a check on a single write.
 type SalesOrderFulfillmentDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // SalesOrderFulfillmentApplicationService is the authorized surface the REST handler serves.
@@ -25,7 +25,7 @@ type SalesOrderFulfillmentDomainService interface {
 // All three actions reuse the update permission: commanding a dispense, recording its result and
 // moving a target all change what a delivery owes, which is the same power over the same sale.
 type SalesOrderFulfillmentApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	CreateAttempt(ctx corectx.Context, cmd FulfillmentActionCommand) (*dyn.OpResult[any], error)
 	ApplyAttemptResult(ctx corectx.Context, cmd FulfillmentActionCommand) (*dyn.OpResult[any], error)
@@ -33,60 +33,60 @@ type SalesOrderFulfillmentApplicationService interface {
 }
 
 // FulfillmentActionCommand is the bound request of a custom fulfillment action.
-type FulfillmentActionCommand = composable.UpdateCommand
+type FulfillmentActionCommand = dynamicresource.UpdateCommand
 
 // The read-only fulfillment resources. An item is written by the fulfillment that owns it, an
 // attempt and its items by the dispense loop, a target change by the reassignment that made it --
 // each is a record of something that happened, which a client must not be able to rewrite.
 
 type SalesOrderFulfillmentItemRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesOrderFulfillmentItemApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesFulfillmentAttemptRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesFulfillmentAttemptApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesFulfillmentAttemptItemRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesFulfillmentAttemptItemApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesFulfillmentTargetChangeRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesFulfillmentTargetChangeApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateSalesOrderFulfillmentCommand      = composable.CreateCommand
-	UpdateSalesOrderFulfillmentCommand      = composable.UpdateCommand
-	DeleteSalesOrderFulfillmentCommand      = composable.DeleteCommand
-	SetSalesOrderFulfillmentArchivedCommand = composable.SetArchivedCommand
-	GetSalesOrderFulfillmentByIdQuery       = composable.GetByIdQuery
-	SearchSalesOrderFulfillmentsQuery       = composable.SearchQuery
-	SalesOrderFulfillmentExistsQuery        = composable.ExistsQuery
+	CreateSalesOrderFulfillmentCommand      = dynamicresource.CreateCommand
+	UpdateSalesOrderFulfillmentCommand      = dynamicresource.UpdateCommand
+	DeleteSalesOrderFulfillmentCommand      = dynamicresource.DeleteCommand
+	SetSalesOrderFulfillmentArchivedCommand = dynamicresource.SetArchivedCommand
+	GetSalesOrderFulfillmentByIdQuery       = dynamicresource.GetByIdQuery
+	SearchSalesOrderFulfillmentsQuery       = dynamicresource.SearchQuery
+	SalesOrderFulfillmentExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateSalesOrderFulfillmentResult      = composable.CreateResult
-	UpdateSalesOrderFulfillmentResult      = composable.MutateResult
-	DeleteSalesOrderFulfillmentResult      = composable.MutateResult
-	SetSalesOrderFulfillmentArchivedResult = composable.MutateResult
-	GetSalesOrderFulfillmentByIdResult     = composable.GetOneResult
-	SearchSalesOrderFulfillmentsResult     = composable.SearchResult
-	SalesOrderFulfillmentExistsResult      = composable.ExistsResult
+	CreateSalesOrderFulfillmentResult      = dynamicresource.CreateResult
+	UpdateSalesOrderFulfillmentResult      = dynamicresource.MutateResult
+	DeleteSalesOrderFulfillmentResult      = dynamicresource.MutateResult
+	SetSalesOrderFulfillmentArchivedResult = dynamicresource.MutateResult
+	GetSalesOrderFulfillmentByIdResult     = dynamicresource.GetOneResult
+	SearchSalesOrderFulfillmentsResult     = dynamicresource.SearchResult
+	SalesOrderFulfillmentExistsResult      = dynamicresource.ExistsResult
 )

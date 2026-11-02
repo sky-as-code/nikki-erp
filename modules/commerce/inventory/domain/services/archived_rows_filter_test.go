@@ -10,7 +10,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func useGraphCapturingRepository(t *testing.T) *graphCapturingRepository {
@@ -18,7 +18,7 @@ func useGraphCapturingRepository(t *testing.T) *graphCapturingRepository {
 	repo := &graphCapturingRepository{}
 	original := repoFor
 	t.Cleanup(func() { repoFor = original })
-	repoFor = func(string) (composable.CrudRepository, error) { return repo, nil }
+	repoFor = func(string) (dynamicresource.CrudRepository, error) { return repo, nil }
 	return repo
 }
 
@@ -31,7 +31,7 @@ func assertSearchedUnarchivedOnly(t *testing.T, repo *graphCapturingRepository) 
 }
 
 type graphCapturingRepository struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	graphs []*dmodel.SearchGraph
 }
 

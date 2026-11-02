@@ -18,7 +18,6 @@ Read Org Settings Returns Every Declared Setting
     Response Status Should Be    ${resp}    200
     Find Setting Item    ${resp}    ${SETTING_SYSTEM_LANGUAGE}
     Find Setting Item    ${resp}    ${SETTING_SYSTEM_TIMEZONE}
-    Find Setting Item    ${resp}    ${SETTING_DEFAULT_CURRENCY}
 
 Every Org Setting Carries A Translated Description
     [Documentation]    The sentence explaining a setting is shown beside its control, so it must
@@ -49,16 +48,16 @@ An Org Setting Write Leaves The Others Untouched
     [Documentation]    The partial save is what protects concurrent editors: two admins changing
     ...    different settings of one organization must not overwrite each other.
     Set Settings At Level    ${SETTINGS_ORG_API}
-    ...    ${{ [{'name': 'default_currency', 'value': 'VND'}] }}
+    ...    ${{ [{'name': 'system_language', 'value': 'vi-VN'}] }}
     ${before}=    Get Settings At Level    ${SETTINGS_ORG_API}
-    ${currency}=    Find Setting Item    ${before}    ${SETTING_DEFAULT_CURRENCY}
+    ${language}=    Find Setting Item    ${before}    ${SETTING_SYSTEM_LANGUAGE}
 
     Set Settings At Level    ${SETTINGS_ORG_API}
     ...    ${{ [{'name': 'system_timezone', 'value': 'Europe/Paris'}] }}
 
     ${after}=    Get Settings At Level    ${SETTINGS_ORG_API}
-    ${currency_after}=    Find Setting Item    ${after}    ${SETTING_DEFAULT_CURRENCY}
-    Should Be Equal    ${currency_after}[value]    ${currency}[value]
+    ${language_after}=    Find Setting Item    ${after}    ${SETTING_SYSTEM_LANGUAGE}
+    Should Be Equal    ${language_after}[value]    ${language}[value]
     ...    msg=A partial save changed an org setting it did not name.
 
 An Org Locale Outside The Supported Set Is Refused
@@ -73,10 +72,10 @@ An Org Locale Outside The Supported Set Is Refused
 
 An Org Setting Cannot Be Written At The User Level
     [Documentation]    Each level declares its own names. Reaching an org setting through the user
-    ...    route would let a person redefine what their whole organization means by a currency.
+    ...    route would let a person redefine the clock their whole organization's reports are stamped with.
     [Tags]    negative
     ${resp}=    Set Settings At Level    ${SETTINGS_USER_API}
-    ...    ${{ [{'name': 'default_currency', 'value': 'USD'}] }}    expected_status=any
+    ...    ${{ [{'name': 'system_timezone', 'value': 'Europe/Paris'}] }}    expected_status=any
     Should Be True    400 <= ${resp.status_code} < 500
     ...    msg=An org-level setting must not be writable through the user-level route.
 

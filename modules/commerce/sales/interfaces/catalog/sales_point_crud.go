@@ -4,20 +4,20 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SalesPointRepository reads and writes sales points: the tills, kiosks and machines a channel
 // sells through.
 type SalesPointRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // SalesPointDomainService adds the lifecycle a point has beyond its rows: suspension for the
 // business state and archiving for the system one, plus the history check that decides whether a
 // point may be deleted outright or only retired.
 type SalesPointDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// CreateManaged creates a point something manages, keeping the managed_by_type and
 	// managed_by_id the command carries; Create strips them. No REST route reaches it.
@@ -42,7 +42,7 @@ type SalesPointDomainService interface {
 
 // SalesPointApplicationService is the authorized surface the REST handler serves.
 type SalesPointApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	Suspend(ctx corectx.Context, cmd SalesPointLifecycleCommand) (*SalesPointLifecycleResult, error)
 	Activate(ctx corectx.Context, cmd SalesPointLifecycleCommand) (*SalesPointLifecycleResult, error)
@@ -55,30 +55,30 @@ type SalesPointApplicationService interface {
 }
 
 type (
-	SalesPointLifecycleCommand = composable.UpdateCommand
-	SalesPointLifecycleResult  = composable.MutateResult
+	SalesPointLifecycleCommand = dynamicresource.UpdateCommand
+	SalesPointLifecycleResult  = dynamicresource.MutateResult
 
-	PointPaymentMethodsQuery  = composable.GetByIdQuery
-	PointPaymentMethodCommand = composable.UpdateCommand
-	PointPaymentMethodResult  = composable.MutateResult
+	PointPaymentMethodsQuery  = dynamicresource.GetByIdQuery
+	PointPaymentMethodCommand = dynamicresource.UpdateCommand
+	PointPaymentMethodResult  = dynamicresource.MutateResult
 )
 
 type (
-	CreateSalesPointCommand      = composable.CreateCommand
-	UpdateSalesPointCommand      = composable.UpdateCommand
-	DeleteSalesPointCommand      = composable.DeleteCommand
-	SetSalesPointArchivedCommand = composable.SetArchivedCommand
-	GetSalesPointByIdQuery       = composable.GetByIdQuery
-	SearchSalesPointsQuery       = composable.SearchQuery
-	SalesPointExistsQuery        = composable.ExistsQuery
+	CreateSalesPointCommand      = dynamicresource.CreateCommand
+	UpdateSalesPointCommand      = dynamicresource.UpdateCommand
+	DeleteSalesPointCommand      = dynamicresource.DeleteCommand
+	SetSalesPointArchivedCommand = dynamicresource.SetArchivedCommand
+	GetSalesPointByIdQuery       = dynamicresource.GetByIdQuery
+	SearchSalesPointsQuery       = dynamicresource.SearchQuery
+	SalesPointExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateSalesPointResult      = composable.CreateResult
-	UpdateSalesPointResult      = composable.MutateResult
-	DeleteSalesPointResult      = composable.MutateResult
-	SetSalesPointArchivedResult = composable.MutateResult
-	GetSalesPointByIdResult     = composable.GetOneResult
-	SearchSalesPointsResult     = composable.SearchResult
-	SalesPointExistsResult      = composable.ExistsResult
+	CreateSalesPointResult      = dynamicresource.CreateResult
+	UpdateSalesPointResult      = dynamicresource.MutateResult
+	DeleteSalesPointResult      = dynamicresource.MutateResult
+	SetSalesPointArchivedResult = dynamicresource.MutateResult
+	GetSalesPointByIdResult     = dynamicresource.GetOneResult
+	SearchSalesPointsResult     = dynamicresource.SearchResult
+	SalesPointExistsResult      = dynamicresource.ExistsResult
 )

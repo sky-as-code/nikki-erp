@@ -64,7 +64,8 @@
 			"no_update": true,
 			"description": {
 				"en-US": "System-managed lifecycle state. Immutable to clients: it is advanced only by create_payment, by refund, by a gateway callback and by the watchdog, because a status set by hand would claim money moved that nothing moved."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "amount",

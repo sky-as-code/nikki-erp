@@ -11,12 +11,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/stretchr/testify/require"
 )
 
 type draftInsertProbe struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	fields dmodel.DynamicFields
 	stop   error
 }
@@ -32,8 +32,9 @@ func (r *draftInsertProbe) BeginTransaction(corectx.Context) (database.DbTransac
 
 type draftInsertTransaction struct{}
 
-func (draftInsertTransaction) Commit() error   { return nil }
-func (draftInsertTransaction) Rollback() error { return nil }
+func (draftInsertTransaction) Commit() error      { return nil }
+func (draftInsertTransaction) Rollback() error    { return nil }
+func (draftInsertTransaction) OnCommitted(func()) {}
 
 // Stop at Insert so these tests inspect the actual maps without running pricing,
 // stage events or a real database transaction.
@@ -44,7 +45,7 @@ func TestDraftOrderInsertsExplicitArchiveDefault(t *testing.T) {
 			probe := &draftInsertProbe{stop: stop}
 			previous := repoFor
 			t.Cleanup(func() { repoFor = previous })
-			repoFor = func(name string) (composable.CrudRepository, error) {
+			repoFor = func(name string) (dynamicresource.CrudRepository, error) {
 				require.Equal(t, schema, name)
 				return probe, nil
 			}

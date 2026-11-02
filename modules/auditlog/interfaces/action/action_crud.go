@@ -9,19 +9,19 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type ActionRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type ActionDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type ActionApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	// GetHistory lists the entries of one record, newest first, to a caller who may read that
 	// record. Values of fields the caller may not read are nulled and listed in masked_fields.

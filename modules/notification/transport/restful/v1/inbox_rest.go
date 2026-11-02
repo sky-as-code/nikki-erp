@@ -9,7 +9,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	it "github.com/sky-as-code/nikki-erp/modules/notification/interfaces/delivery"
 )
 
@@ -31,14 +31,14 @@ func (this *InboxRest) GetInbox(echoCtx *echo.Context, payload map[string]any) e
 	call := func(ctx corectx.Context, _ dmodel.DynamicFields) (*dyn.OpResult[it.InboxResultData], error) {
 		return this.inbox.GetInbox(ctx, query)
 	}
-	return composable.ServeAction(echoCtx, "get notification inbox", payload, call, toInboxPageDto)
+	return dynamicresource.ServeAction(echoCtx, "get notification inbox", payload, call, toInboxPageDto)
 }
 
 func (this *InboxRest) GetUnreadCount(echoCtx *echo.Context, payload map[string]any) error {
 	call := func(ctx corectx.Context, _ dmodel.DynamicFields) (*dyn.OpResult[it.UnreadCountResultData], error) {
 		return this.inbox.GetUnreadCount(ctx)
 	}
-	return composable.ServeAction(echoCtx, "get unread notification count", payload, call, toUnreadCountDto)
+	return dynamicresource.ServeAction(echoCtx, "get unread notification count", payload, call, toUnreadCountDto)
 }
 
 // MarkOneRead marks the notification named in the path.
@@ -51,7 +51,7 @@ func (this *InboxRest) MarkOneRead(echoCtx *echo.Context, payload map[string]any
 	call := func(ctx corectx.Context, _ dmodel.DynamicFields) (*dyn.OpResult[it.MarkReadResultData], error) {
 		return this.inbox.MarkRead(ctx, it.MarkReadCommand{NotificationIds: []string{notificationId}})
 	}
-	return composable.ServeAction(echoCtx, "mark notification read", payload, call, toMarkReadDto)
+	return dynamicresource.ServeAction(echoCtx, "mark notification read", payload, call, toMarkReadDto)
 }
 
 func (this *InboxRest) MarkRead(echoCtx *echo.Context, payload map[string]any) error {
@@ -60,7 +60,7 @@ func (this *InboxRest) MarkRead(echoCtx *echo.Context, payload map[string]any) e
 	call := func(ctx corectx.Context, _ dmodel.DynamicFields) (*dyn.OpResult[it.MarkReadResultData], error) {
 		return this.inbox.MarkRead(ctx, it.MarkReadCommand{NotificationIds: ids})
 	}
-	return composable.ServeAction(echoCtx, "mark notifications read", payload, call, toMarkReadDto)
+	return dynamicresource.ServeAction(echoCtx, "mark notifications read", payload, call, toMarkReadDto)
 }
 
 // parseInboxQuery reads the filters off the query string.

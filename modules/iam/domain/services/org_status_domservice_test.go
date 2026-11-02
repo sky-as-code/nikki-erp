@@ -11,7 +11,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 )
 
@@ -43,23 +43,23 @@ func TestDeleteOrg_RefusedUntilMarkedDeleted(t *testing.T) {
 }
 
 func TestAssertOnlyStatusIfDeleted(t *testing.T) {
-	deleted := composable.NewDynamicEntityFrom(dmodel.DynamicFields{
+	deleted := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{
 		domain.OrgFieldStatus: string(domain.OrgStatusDeleted),
 	})
-	ready := composable.NewDynamicEntityFrom(dmodel.DynamicFields{
+	ready := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{
 		domain.OrgFieldStatus: string(domain.OrgStatusReady),
 	})
-	rename := composable.NewDynamicEntityFrom(dmodel.DynamicFields{
+	rename := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{
 		basemodel.FieldId: "ORG", basemodel.FieldEtag: "1", domain.OrgFieldSlug: "renamed",
 	})
-	statusOnly := composable.NewDynamicEntityFrom(dmodel.DynamicFields{
+	statusOnly := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{
 		basemodel.FieldId: "ORG", basemodel.FieldEtag: "1", domain.OrgFieldStatusMessage: "iam:x",
 	})
 	ctx := corectx.NewRequestContext(context.Background())
 
 	cases := []struct {
-		input    *composable.DynamicEntity
-		found    *composable.DynamicEntity
+		input    *dynamicresource.DynamicEntity
+		found    *dynamicresource.DynamicEntity
 		refusals int
 	}{
 		{rename, deleted, 1},

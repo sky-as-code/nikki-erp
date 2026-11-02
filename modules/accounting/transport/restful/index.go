@@ -10,7 +10,7 @@ import (
 	modconstants "github.com/sky-as-code/nikki-erp/modules/accounting/constants"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/accounting/transport/restful/v1"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 func InitRestfulHandlers() error {
@@ -77,8 +77,8 @@ func initAccountingV1() error {
 	})
 }
 
-func registerCrud(route *echo.Group, schemaName string, handlers composable.CrudRestHandlers) error {
-	return composable.NewRestEngine(schemaName, handlers).AddCrudRoutes().RegisterRoutes(route)
+func registerCrud(route *echo.Group, schemaName string, handlers dynamicresource.CrudRestHandlers) error {
+	return dynamicresource.NewRestEngine(schemaName, handlers).AddCrudRoutes().RegisterRoutes(route)
 }
 
 // initTaxV1 serves accounting_tax: the built-in CRUD plus the four calculation actions. They are
@@ -87,7 +87,7 @@ func registerCrud(route *echo.Group, schemaName string, handlers composable.Crud
 // context that does not fit a query string.
 func initTaxV1(routeV1 *echo.Group) error {
 	return deps.Invoke(func(taxRest *v1.TaxRest, calcRest *v1.TaxCalculationRest) error {
-		return composable.NewRestEngine(models.TaxSchemaName, taxRest).
+		return dynamicresource.NewRestEngine(models.TaxSchemaName, taxRest).
 			AddCrudRoutes().
 			AddRoute(taxAction("calculate", calcRest.Calculate)).
 			AddRoute(taxAction("simulate", calcRest.Simulate)).
@@ -100,6 +100,6 @@ func initTaxV1(routeV1 *echo.Group) error {
 // TaxCalculationActionPaths are the collection actions initTaxV1 adds to accounting_tax.
 var TaxCalculationActionPaths = []string{"calculate", "simulate", "reverse_full", "reverse_partial"}
 
-func taxAction(path string, handler composable.HandlerFn) composable.RouteDefinition {
-	return composable.RouteDefinition{Path: path, ActionType: composable.ActionTypeGeneric, HandlerFn: handler}
+func taxAction(path string, handler dynamicresource.HandlerFn) dynamicresource.RouteDefinition {
+	return dynamicresource.RouteDefinition{Path: path, ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: handler}
 }

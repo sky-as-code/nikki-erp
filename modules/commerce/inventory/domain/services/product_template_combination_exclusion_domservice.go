@@ -10,7 +10,7 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // Clients never write an exclusion directly: the template's own configuration payload is the one
@@ -20,33 +20,33 @@ import (
 // NewProductTemplateCombinationExclusionDomainService is handed the composable default by the
 // product_template_combination_exclusion onion.
 func NewProductTemplateCombinationExclusionDomainService(
-	base composable.CrudDomainService,
+	base dynamicresource.CrudDomainService,
 ) itProduct.ProductTemplateCombinationExclusionDomainService {
 	return &ProductTemplateCombinationExclusionDomainServiceImpl{CrudDomainService: base}
 }
 
 type ProductTemplateCombinationExclusionDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // Create normalizes the pair before schema validation, so the unique index sees one spelling of
 // {a, b}, then checks that the two values may be excluded from each other at all.
 func (this *ProductTemplateCombinationExclusionDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
-	opts := safe.GetOptional(options, composable.CreateOptions{})
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
 	opts.BeforeValidation = chainBeforeValidation(opts.BeforeValidation, normalizeExclusionEntity)
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, validateExclusionCreate)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, validateExclusionCreate)
 	return this.CrudDomainService.Create(ctx, params, opts)
 }
 
 // Update refuses re-pointing an exclusion at other values: a different pair is a different rule,
 // and the configuration writer archives one and creates the other.
 func (this *ProductTemplateCombinationExclusionDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, validateExclusionUpdate)
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, validateExclusionUpdate)
 	return this.CrudDomainService.Update(ctx, params, opts)
 }
 
@@ -64,8 +64,8 @@ func NormalizeExclusionPair(left string, right string) (string, string) {
 }
 
 func normalizeExclusionEntity(
-	_ corectx.Context, entity *composable.DynamicEntity, _ *ft.ClientErrors,
-) (*composable.DynamicEntity, error) {
+	_ corectx.Context, entity *dynamicresource.DynamicEntity, _ *ft.ClientErrors,
+) (*dynamicresource.DynamicEntity, error) {
 	data := entity.GetFieldData()
 	left, leftOk := data[exclusionFieldLeft].(string)
 	right, rightOk := data[exclusionFieldRight].(string)
@@ -112,7 +112,7 @@ func AppendExclusionPairViolations(
 }
 
 func validateExclusionCreate(
-	ctx corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	exclusion := models.NewProductTemplateCombinationExclusionFrom(inputModel.GetFieldData())
 	templateId := derefId(exclusion.GetProductTemplateId())
@@ -176,7 +176,8 @@ func assertExclusionNotDuplicated(ctx corectx.Context, data dmodel.DynamicFields
 }
 
 func validateExclusionUpdate(
-	_ corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
+	vErrs *ft.ClientErrors,
 ) error {
 	if foundModel == nil {
 		return nil

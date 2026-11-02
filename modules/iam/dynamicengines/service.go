@@ -6,7 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/app"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/services"
@@ -19,7 +19,7 @@ import (
 type serviceEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_iam_service"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_service"`
 }
 
 // registerServiceEngine declares the iam_service onion. Its repository is the user repository
@@ -27,20 +27,20 @@ type serviceEngineParam struct {
 // services - not the repository - decide which type each resource sees.
 func registerServiceEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.ServiceSchemaName),
+		dynamicresource.EngineDependencyName(models.ServiceSchemaName),
 		func(
-			param composable.BuildParam, userRepo itUser.UserCrudRepository,
+			param dynamicresource.BuildParam, userRepo itUser.UserCrudRepository,
 			permRepo itPerm.PermissionRepository, historyRepo itPerm.PermissionHistoryRepository,
-		) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.ServiceSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewServiceCrudRepository(userRepo, base.Schema())
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewServiceCrudDomainService(base, permRepo, historyRepo)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					domSvc := base.DomainService().(itService.ServiceCrudDomainService)
 					return app.NewServiceCrudApplicationService(base, domSvc)
 				},

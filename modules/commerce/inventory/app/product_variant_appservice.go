@@ -8,13 +8,13 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewProductVariantApplicationService is handed the composable default by the variant onion, plus
 // the Products capability of the template onion: the effective product is a template read.
 func NewProductVariantApplicationService(
-	base composable.CrudApplicationService, catalogChangedPub itEvent.CatalogChangedEventPublisher,
+	base dynamicresource.CrudApplicationService, catalogChangedPub itEvent.CatalogChangedEventPublisher,
 	productSvc itProduct.ProductService,
 ) itProduct.ProductVariantApplicationService {
 	return &ProductVariantApplicationServiceImpl{
@@ -25,7 +25,7 @@ func NewProductVariantApplicationService(
 }
 
 type ProductVariantApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	productSvc        itProduct.ProductService
 	catalogChangedPub itEvent.CatalogChangedEventPublisher
 }
@@ -34,7 +34,7 @@ type ProductVariantApplicationServiceImpl struct {
 func (this *ProductVariantApplicationServiceImpl) GetEffective(
 	ctx corectx.Context, query itProduct.GetEffectiveVariantQuery,
 ) (*itProduct.GetEffectiveVariantResult, error) {
-	if cErrs, err := assertRecordAction(this, ctx, composable.PermissionRead, query); err != nil || cErrs != nil {
+	if cErrs, err := assertRecordAction(this, ctx, dynamicresource.PermissionRead, query); err != nil || cErrs != nil {
 		return anyFailure(cErrs, err)
 	}
 
@@ -55,8 +55,8 @@ func (this *ProductVariantApplicationServiceImpl) GetEffective(
 }
 
 func (this *ProductVariantApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
 	res, err := this.CrudApplicationService.Create(ctx, cmd)
 	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductVariant, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
@@ -66,8 +66,8 @@ func (this *ProductVariantApplicationServiceImpl) Create(
 }
 
 func (this *ProductVariantApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Update(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductVariant, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -77,8 +77,8 @@ func (this *ProductVariantApplicationServiceImpl) Update(
 }
 
 func (this *ProductVariantApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Delete(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductVariant, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -88,8 +88,8 @@ func (this *ProductVariantApplicationServiceImpl) Delete(
 }
 
 func (this *ProductVariantApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedProductVariant, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))

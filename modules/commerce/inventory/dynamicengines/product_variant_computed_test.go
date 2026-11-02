@@ -14,28 +14,28 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // recordingOnion captures the search params of one schema and answers with canned rows.
 type recordingOnion struct {
-	composable.DynamicResourceEngineOnion
+	dynamicresource.DynamicResourceEngineOnion
 	repo *recordingRepo
 }
 
-func (this *recordingOnion) Repository() composable.CrudRepository { return this.repo }
+func (this *recordingOnion) Repository() dynamicresource.CrudRepository { return this.repo }
 
 type recordingRepo struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 	params []dyn.RepoSearchParam
 	items  []dmodel.DynamicFields
 }
 
 func (this *recordingRepo) Search(
 	_ corectx.Context, param dyn.RepoSearchParam,
-) (*composable.SearchResult, error) {
+) (*dynamicresource.SearchResult, error) {
 	this.params = append(this.params, param)
-	return &composable.SearchResult{
+	return &dynamicresource.SearchResult{
 		Data:    dyn.PagedResultData[dmodel.DynamicFields]{Items: this.items},
 		HasData: len(this.items) > 0,
 	}, nil
@@ -44,7 +44,7 @@ func (this *recordingRepo) Search(
 // variantAttributeFixture wires the four schemas the attribute walk reads, each returning the rows
 // that link to the next.
 func variantAttributeFixture() (
-	func(string) (composable.DynamicResourceEngineOnion, bool), map[string]*recordingRepo,
+	func(string) (dynamicresource.DynamicResourceEngineOnion, bool), map[string]*recordingRepo,
 ) {
 	repos := map[string]*recordingRepo{
 		models.ProductVariantAttributeValueSchemaName: {items: []dmodel.DynamicFields{
@@ -89,7 +89,7 @@ func variantAttributeFixture() (
 			{basemodel.FieldId: "attr_sugar", models.ProductAttributeFieldName: model.LangJson{"en-US": "Sugar"}},
 		}},
 	}
-	lookup := func(name string) (composable.DynamicResourceEngineOnion, bool) {
+	lookup := func(name string) (dynamicresource.DynamicResourceEngineOnion, bool) {
 		repo, ok := repos[name]
 		if !ok {
 			return nil, false
@@ -115,9 +115,9 @@ func TestVariantAttributeReadsStayWithinTheSelectionDotCap(t *testing.T) {
 	lookup, repos := variantAttributeFixture()
 	fns := newVariantComputedFunctions(lookup)
 
-	_, err := fns[VariantDisplayNameFn](nil, composable.ComputeFnRequest{
+	_, err := fns[VariantAttributeSummaryFn](nil, dynamicresource.ComputeFnRequest{
 		SchemaName: models.ProductVariantSchemaName,
-		FieldName:  "display_name",
+		FieldName:  "attribute_summary",
 		Models:     []dmodel.DynamicFields{variantRow()},
 	})
 
@@ -132,24 +132,20 @@ func TestVariantAttributeReadsStayWithinTheSelectionDotCap(t *testing.T) {
 	}
 }
 
-func TestVariantDisplayNameNamesTheTemplateAndItsValuesInSequence(t *testing.T) {
+// display_name is stored now; only the summary stays a function.
+func TestVariantDisplayNameIsNoLongerAFunction(t *testing.T) {
 	lookup, _ := variantAttributeFixture()
 	fns := newVariantComputedFunctions(lookup)
 
-	out, err := fns[VariantDisplayNameFn](nil, composable.ComputeFnRequest{
-		Models: []dmodel.DynamicFields{variantRow()},
-	})
-
-	require.NoError(t, err)
-	require.Len(t, out, 1)
-	assert.Equal(t, "Coca Cola (No sugar, Big)", out[0])
+	assert.Len(t, fns, 1)
+	assert.Contains(t, fns, VariantAttributeSummaryFn)
 }
 
 func TestVariantAttributeSummaryPairsEachAttributeWithItsValue(t *testing.T) {
 	lookup, _ := variantAttributeFixture()
 	fns := newVariantComputedFunctions(lookup)
 
-	out, err := fns[VariantAttributeSummaryFn](nil, composable.ComputeFnRequest{
+	out, err := fns[VariantAttributeSummaryFn](nil, dynamicresource.ComputeFnRequest{
 		Models: []dmodel.DynamicFields{variantRow()},
 	})
 
@@ -158,27 +154,21 @@ func TestVariantAttributeSummaryPairsEachAttributeWithItsValue(t *testing.T) {
 	assert.Equal(t, []string{"Sugar: No sugar", "Size: Big"}, out[0])
 }
 
-// A template with no variant-generating attributes is the ordinary single-variant case, so its
-// variant is named by the template alone rather than gaining an empty pair of brackets.
-func TestVariantWithNoAttributesIsNamedByItsTemplateAlone(t *testing.T) {
+// A template with no variant-generating attributes is the ordinary single-variant case.
+func TestVariantWithNoAttributesHasAnEmptySummary(t *testing.T) {
 	lookup, repos := variantAttributeFixture()
 	repos[models.ProductVariantAttributeValueSchemaName].items = nil
 	fns := newVariantComputedFunctions(lookup)
 
-	names, err := fns[VariantDisplayNameFn](nil, composable.ComputeFnRequest{
+	summaries, err := fns[VariantAttributeSummaryFn](nil, dynamicresource.ComputeFnRequest{
 		Models: []dmodel.DynamicFields{variantRow()},
 	})
-	require.NoError(t, err)
-	summaries, err := fns[VariantAttributeSummaryFn](nil, composable.ComputeFnRequest{
-		Models: []dmodel.DynamicFields{variantRow()},
-	})
-	require.NoError(t, err)
 
-	assert.Equal(t, "Coca Cola", names[0])
+	require.NoError(t, err)
 	assert.Empty(t, summaries[0])
 }
 
-// The engine pairs values with rows by position, so a short or reordered answer misnames records
+// The engine pairs values with rows by position, so a short or reordered answer mislabels records
 // rather than failing. Two variants sharing one attribute row exercise the grouping.
 func TestVariantComputedReturnsOneValuePerRowInOrder(t *testing.T) {
 	lookup, _ := variantAttributeFixture()
@@ -188,14 +178,14 @@ func TestVariantComputedReturnsOneValuePerRowInOrder(t *testing.T) {
 		models.ProductVariantFieldTemplateName: model.LangJson{"en-US": "Pepsi"},
 	}
 
-	out, err := fns[VariantDisplayNameFn](nil, composable.ComputeFnRequest{
+	out, err := fns[VariantAttributeSummaryFn](nil, dynamicresource.ComputeFnRequest{
 		Models: []dmodel.DynamicFields{variantRow(), other},
 	})
 
 	require.NoError(t, err)
 	require.Len(t, out, 2)
-	assert.Equal(t, "Coca Cola (No sugar, Big)", out[0])
-	assert.Equal(t, "Pepsi", out[1], "a variant with no attribute rows keeps its own name")
+	assert.Equal(t, []string{"Sugar: No sugar", "Size: Big"}, out[0])
+	assert.Empty(t, out[1], "a variant with no attribute rows has no summary")
 }
 
 // The whole page is read in a fixed number of queries: one per hop, never one per row.
@@ -207,7 +197,7 @@ func TestVariantAttributeReadIsBatchedPerHop(t *testing.T) {
 		models.ProductVariantFieldTemplateName: model.LangJson{"en-US": "Pepsi"},
 	}}
 
-	_, err := fns[VariantDisplayNameFn](nil, composable.ComputeFnRequest{Models: rows})
+	_, err := fns[VariantAttributeSummaryFn](nil, dynamicresource.ComputeFnRequest{Models: rows})
 
 	require.NoError(t, err)
 	for schemaName, repo := range repos {
@@ -215,25 +205,10 @@ func TestVariantAttributeReadIsBatchedPerHop(t *testing.T) {
 	}
 }
 
-// A missing template name would otherwise render the Go zero value of a LangJson into the label.
-func TestVariantDisplayNameFallsBackToSkuWithoutATemplateName(t *testing.T) {
-	lookup, repos := variantAttributeFixture()
-	repos[models.ProductVariantAttributeValueSchemaName].items = nil
-	fns := newVariantComputedFunctions(lookup)
-	row := dmodel.DynamicFields{basemodel.FieldId: "v1", models.ProductVariantFieldSku: "CC-NS-BIG"}
-
-	out, err := fns[VariantDisplayNameFn](nil, composable.ComputeFnRequest{
-		Models: []dmodel.DynamicFields{row},
-	})
-
-	require.NoError(t, err)
-	assert.Equal(t, "CC-NS-BIG", out[0])
-}
-
 // The template's line order wins over the value order within a line: the values' own sequences
-// are positions in two different lines, and comparing them across lines named the same product
+// are positions in two different lines, and comparing them across lines ordered the same product
 // "Big, No sugar" or "No sugar, Big" depending on which value happened to sit first in its line.
-func TestVariantDisplayNameFollowsTheTemplateLineOrder(t *testing.T) {
+func TestVariantAttributeSummaryFollowsTheTemplateLineOrder(t *testing.T) {
 	lookup, repos := variantAttributeFixture()
 	templateValues := repos[models.ProductTemplateAttributeValueSchemaName].items
 	templateValues[0][models.ProductTemplateAttributeValueFieldTemplateAttributeId] = "line_size"
@@ -244,7 +219,7 @@ func TestVariantDisplayNameFollowsTheTemplateLineOrder(t *testing.T) {
 		{basemodel.FieldId: "line_size", models.ProductTemplateAttributeFieldSequence: int64(2)},
 		{basemodel.FieldId: "line_sugar", models.ProductTemplateAttributeFieldSequence: int64(1)},
 	}}
-	withLines := func(name string) (composable.DynamicResourceEngineOnion, bool) {
+	withLines := func(name string) (dynamicresource.DynamicResourceEngineOnion, bool) {
 		if name == models.ProductTemplateAttributeSchemaName {
 			return &recordingOnion{repo: lineRepo}, true
 		}
@@ -252,11 +227,11 @@ func TestVariantDisplayNameFollowsTheTemplateLineOrder(t *testing.T) {
 	}
 	fns := newVariantComputedFunctions(withLines)
 
-	out, err := fns[VariantDisplayNameFn](nil, composable.ComputeFnRequest{
+	out, err := fns[VariantAttributeSummaryFn](nil, dynamicresource.ComputeFnRequest{
 		Models: []dmodel.DynamicFields{variantRow()},
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, "Coca Cola (No sugar, Big)", out[0])
+	assert.Equal(t, []string{"Sugar: No sugar", "Size: Big"}, out[0])
 	assert.Len(t, lineRepo.params, 1, "the line sequences are read once for the page")
 }

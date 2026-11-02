@@ -16,8 +16,8 @@ type EffectiveProduct struct {
 	VariantId  string
 	TemplateId string
 
-	// Name is the template's; DisplayName appends the variant's attribute values to it. The
-	// variant owns neither: a stored variant name drifts from the combination it describes.
+	// Name is the template's; DisplayName is the variant's stored display_name (the template name
+	// plus its attribute values), in one language.
 	Name        *model.LangJson
 	DisplayName string
 

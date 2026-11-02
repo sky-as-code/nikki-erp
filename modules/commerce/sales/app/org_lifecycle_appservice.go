@@ -9,22 +9,18 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	orgDefaults "github.com/sky-as-code/nikki-erp/modules/commerce/infra/sales/defaults"
-	c "github.com/sky-as-code/nikki-erp/modules/commerce/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
-	salessettings "github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/settings"
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle/defaults"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
 	defaultCurrencyCode = "VND"
-	// kioskOperationTypeCode is the operation type Inventory's defaults create for kiosk sales.
-	kioskOperationTypeCode = "VDMC-DISPENSE"
-	paymentMethodAlias     = "payment_method_"
+	paymentMethodAlias  = "payment_method_"
 )
 
 // writeOrder lists the defaulted resources parents first. The association rows between them are
@@ -63,28 +59,27 @@ type OrgLifecycleParam struct {
 
 	Lookup         itExt.OrgDefaultsLookupExtService
 	PaymentMethods itExt.PaymentMethodExtService
-	Settings       itExt.OrgSettingsSeedExtService
 	ChannelPayment *services.ChannelPaymentDomainServiceImpl
 	PointPayment   *services.PointPaymentDomainServiceImpl
 }
 
 func NewOrgLifecycleAppService(param OrgLifecycleParam) orglifecycle.OrgLifecycleService {
-	return &OrgLifecycleAppServiceImpl{param: param, cleanup: composable.NewOrgDataCleanup(cleanUpOrder...)}
+	return &OrgLifecycleAppServiceImpl{param: param, cleanup: dynamicresource.NewOrgDataCleanup(cleanUpOrder...)}
 }
 
 // OrgLifecycleAppServiceImpl gives a new org the system sales channels, their payment and
 // fulfillment options, a back-office sales point and a default price list.
 type OrgLifecycleAppServiceImpl struct {
 	param   OrgLifecycleParam
-	cleanup composable.OrgDataCleanup
+	cleanup dynamicresource.OrgDataCleanup
 }
 
 func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model.Id) error {
-	svcs, err := composable.ResolveDomainServices(writeOrder...)
+	svcs, err := dynamicresource.ResolveDomainServices(writeOrder...)
 	if err != nil {
 		return err
 	}
-	return composable.InTransaction(ctx, svcs[0].Repository(), func(tranxCtx corectx.Context) error {
+	return dynamicresource.InTransaction(ctx, svcs[0].Repository(), func(tranxCtx corectx.Context) error {
 		aliases, err := this.externalAliases(tranxCtx)
 		if err != nil {
 			return err
@@ -94,23 +89,23 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model
 			if err != nil {
 				return err
 			}
-			if err := composable.CreateDefaults(tranxCtx, svc, rows, aliases, orgId); err != nil {
+			if err := dynamicresource.CreateDefaults(tranxCtx, svc, rows, aliases, orgId); err != nil {
 				return err
 			}
 		}
 		if err := this.createAssociations(tranxCtx, aliases, orgId); err != nil {
 			return err
 		}
-		return this.seedSettings(tranxCtx, orgId)
+		return nil
 	})
 }
 
 func (this *OrgLifecycleAppServiceImpl) CleanUpOrg(ctx corectx.Context, orgId model.Id) error {
-	svcs, err := composable.ResolveDomainServices(models.SalesChannelSchemaName)
+	svcs, err := dynamicresource.ResolveDomainServices(models.SalesChannelSchemaName)
 	if err != nil {
 		return err
 	}
-	return composable.InTransaction(ctx, svcs[0].Repository(), func(tranxCtx corectx.Context) error {
+	return dynamicresource.InTransaction(ctx, svcs[0].Repository(), func(tranxCtx corectx.Context) error {
 		if _, err := this.param.ChannelPayment.DeleteByOrg(tranxCtx, orgId); err != nil {
 			return err
 		}
@@ -220,25 +215,4 @@ func withKnownPaymentMethods(rows []dmodel.DynamicFields, aliases *defaults.Alia
 		kept = append(kept, row)
 	}
 	return kept
-}
-
-// seedSettings points kiosk sales at the operation type Inventory created for them.
-func (this *OrgLifecycleAppServiceImpl) seedSettings(ctx corectx.Context, orgId model.Id) error {
-	operationTypeId, err := this.param.Lookup.OperationTypeIdByCode(ctx, orgId, kioskOperationTypeCode)
-	if err != nil {
-		return err
-	}
-	result, err := this.param.Settings.SeedOrgSettings(ctx, itExt.SetSettingsCommand{
-		ModuleKey: c.SettingsModuleKey,
-		Items: []itExt.SetSettingItem{
-			{Name: salessettings.OrgSettingOutgoingOperationTypeId, Value: string(operationTypeId)},
-		},
-	})
-	if err != nil {
-		return err
-	}
-	if result.ClientErrors.Count() > 0 {
-		return errors.Wrap(result.ClientErrors.ToError(), "seed sales settings")
-	}
-	return nil
 }

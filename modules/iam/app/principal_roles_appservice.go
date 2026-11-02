@@ -2,7 +2,7 @@ package app
 
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itGroup "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/group"
@@ -35,34 +35,34 @@ type PrincipalRolesApplicationServiceImpl struct {
 // UserRoles is a scoped read of the role schema, so it asserts read on iam_role like a role
 // search does, and confines the principal to the caller's org like a read of the principal.
 func (this *PrincipalRolesApplicationServiceImpl) UserRoles(
-	ctx corectx.Context, query composable.SearchQuery,
-) (*composable.SearchResult, error) {
+	ctx corectx.Context, query dynamicresource.SearchQuery,
+) (*dynamicresource.SearchResult, error) {
 	return this.principalRoles(ctx, this.userSvc, query, models.RoleEdgeAssignedUsers)
 }
 
 // ServiceRoles reads the same assignment rows as UserRoles, through the role's assigned_services
 // edge; the principal is confined to the service resource like a read of the service.
 func (this *PrincipalRolesApplicationServiceImpl) ServiceRoles(
-	ctx corectx.Context, query composable.SearchQuery,
-) (*composable.SearchResult, error) {
+	ctx corectx.Context, query dynamicresource.SearchQuery,
+) (*dynamicresource.SearchResult, error) {
 	return this.principalRoles(ctx, this.serviceSvc, query, models.RoleEdgeAssignedServices)
 }
 
 func (this *PrincipalRolesApplicationServiceImpl) GroupRoles(
-	ctx corectx.Context, query composable.SearchQuery,
-) (*composable.SearchResult, error) {
+	ctx corectx.Context, query dynamicresource.SearchQuery,
+) (*dynamicresource.SearchResult, error) {
 	return this.principalRoles(ctx, this.groupSvc, query, models.RoleEdgeAssignedGroups)
 }
 
 func (this *PrincipalRolesApplicationServiceImpl) principalRoles(
-	ctx corectx.Context, principalSvc composable.CrudApplicationService, query composable.SearchQuery, edge string,
-) (*composable.SearchResult, error) {
+	ctx corectx.Context, principalSvc dynamicresource.CrudApplicationService, query dynamicresource.SearchQuery, edge string,
+) (*dynamicresource.SearchResult, error) {
 	tenant := c.ResourceScopeTenant
-	cErrs, err := composable.AssertRecordAction(ctx, principalSvc, query, composable.ActionPermission{
-		ActionCode: composable.PermissionRead, ResourceCode: c.ResourceIamRole, Scope: &tenant,
+	cErrs, err := dynamicresource.AssertRecordAction(ctx, principalSvc, query, dynamicresource.ActionPermission{
+		ActionCode: dynamicresource.PermissionRead, ResourceCode: c.ResourceIamRole, Scope: &tenant,
 	})
 	if err != nil || cErrs != nil {
 		return searchRefused(cErrs, err)
 	}
-	return this.roleDomSvc.SearchPrincipalRoles(ctx, query, edge, composable.ParamId(query))
+	return this.roleDomSvc.SearchPrincipalRoles(ctx, query, edge, dynamicresource.ParamId(query))
 }

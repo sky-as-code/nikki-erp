@@ -1,15 +1,17 @@
 package services
 
 import (
+	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
 )
@@ -22,13 +24,65 @@ import (
 const defaultDecimalPlaces = 2
 
 // NewCurrencyDomainService is handed the composable default by the currency onion. The CRUD is
-// the default's; what this type adds is the money capability other modules depend on.
-func NewCurrencyDomainService(base composable.CrudDomainService) itCurrency.CurrencyDomainService {
-	return &CurrencyDomainServiceImpl{CrudDomainService: base}
+// the default's, with the rounding rules chained into Create and Update; what this type adds is
+// the money capability other modules depend on.
+func NewCurrencyDomainService(
+	base dynamicresource.CrudDomainService, activation Activations,
+) itCurrency.CurrencyDomainService {
+	return &CurrencyDomainServiceImpl{CrudDomainService: base, activation: activation}
 }
 
 type CurrencyDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
+	activation Activations
+}
+
+func (this *CurrencyDomainServiceImpl) Create(
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
+	change := popActiveChange(cmd, true)
+	vErrs := ft.NewClientErrors()
+	rejectDecimalPlaces(cmd, vErrs)
+	assertRoundingPositive(cmd, vErrs)
+	if vErrs.Count() > 0 {
+		return &dynamicresource.CreateResult{ClientErrors: *vErrs}, nil
+	}
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
+	opts.BeforeValidation = dynamicresource.ChainBeforeValidation(opts.BeforeValidation, fillDecimalPlacesOnCreate)
+	var result *dynamicresource.CreateResult
+	err := dynamicresource.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
+		created, err := this.CrudDomainService.Create(tranxCtx, cmd, opts)
+		result = created
+		if err != nil || created == nil || created.ClientErrors.Count() > 0 {
+			return err
+		}
+		return applyActiveChange(tranxCtx, this.activation, created.Data[models.CurrencyFieldId], change)
+	})
+	return result, errors.Wrap(err, "create currency")
+}
+
+func (this *CurrencyDomainServiceImpl) Update(
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
+	change := popActiveChange(cmd, false)
+	vErrs := ft.NewClientErrors()
+	rejectDecimalPlaces(cmd, vErrs)
+	assertRoundingPositive(cmd, vErrs)
+	if vErrs.Count() > 0 {
+		return &dynamicresource.MutateResult{ClientErrors: *vErrs}, nil
+	}
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.BeforeValidation = dynamicresource.ChainBeforeValidation(opts.BeforeValidation, fillDecimalPlacesOnUpdate)
+	var result *dynamicresource.MutateResult
+	err := dynamicresource.InTransaction(ctx, this.Repository(), func(tranxCtx corectx.Context) error {
+		updated, err := this.CrudDomainService.Update(tranxCtx, cmd, opts)
+		result = updated
+		if err != nil || updated == nil || updated.ClientErrors.Count() > 0 {
+			return err
+		}
+		return applyActiveChange(tranxCtx, this.activation, cmd[models.CurrencyFieldId], change)
+	})
+	return result, errors.Wrap(err, "update currency")
 }
 
 // GetCurrency fetches a single currency, so that a consuming module can validate a currency
@@ -52,7 +106,7 @@ func (this *CurrencyDomainServiceImpl) GetCurrency(
 	}, nil
 }
 
-// Round rounds an amount to the currency's decimal_places.
+// Round rounds an amount to the nearest multiple of the currency's rounding, as Odoo does.
 //
 // A currency that cannot be found is a violation rather than a silent pass-through: returning the
 // unrounded amount would put more fractional digits into a total than the currency has, and the
@@ -73,7 +127,9 @@ func (this *CurrencyDomainServiceImpl) Round(
 	}
 
 	return &itCurrency.RoundResult{
-		Data:    itCurrency.RoundResultData{Amount: query.Amount.Round(decimalPlacesOf(found))},
+		Data: itCurrency.RoundResultData{
+			Amount: roundToCurrency(query.Amount, found.GetRounding(), decimalPlacesOf(found)),
+		},
 		HasData: true,
 	}, nil
 }
@@ -102,8 +158,8 @@ func (this *CurrencyDomainServiceImpl) AssertUsable(
 		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("currency.not_found", "essential"),
 			"the currency does not exist"))
 	case !util.ValueOrZeroOf(found.GetIsActive()):
-		// Inactive is not archived. A currency withdrawn from use stays readable so that amounts
-		// already recorded in it still resolve; it simply cannot be chosen again.
+		// Inactive is not archived. A currency the acting org withdrew from use stays readable so
+		// that amounts already recorded in it still resolve; it simply cannot be chosen again.
 		vErrs.Append(*ft.NewBusinessViolation(field, ft.ErrorKey("currency.not_active", "essential"),
 			"the currency is not active"))
 	case util.ValueOrZeroOf(found.IsArchived()):
@@ -117,7 +173,6 @@ func (this *CurrencyDomainServiceImpl) AssertUsable(
 	return &itCurrency.AssertUsableResult{HasData: true}, nil
 }
 
-// loadCurrency fetches one currency by id, returning nil when it does not exist.
 // GetCurrencyByCode resolves an alphabetic code, for callers holding a code rather than an id --
 // the `default_currency` org setting chiefly, which stores free text.
 func (this *CurrencyDomainServiceImpl) GetCurrencyByCode(
@@ -137,6 +192,7 @@ func (this *CurrencyDomainServiceImpl) GetCurrencyByCode(
 	}, nil
 }
 
+// loadCurrency fetches one currency by id, returning nil when it does not exist.
 func (this *CurrencyDomainServiceImpl) loadCurrency(
 	ctx corectx.Context, currencyId model.Id,
 ) (*models.Currency, error) {
@@ -155,17 +211,36 @@ func (this *CurrencyDomainServiceImpl) loadCurrencyBy(
 	if !found.HasData {
 		return nil, nil
 	}
-	return models.NewCurrencyFrom(found.Data), nil
+	currency := models.NewCurrencyFrom(found.Data)
+	active, err := this.activeForActingOrg(ctx, currency)
+	if err != nil {
+		return nil, errors.Wrap(err, "loadCurrencyBy")
+	}
+	currency.GetFieldData()[models.CurrencyFieldIsActive] = active
+	return currency, nil
+}
+
+// activeForActingOrg answers is_active for the organization the request acts in: its activation
+// row. Without an acting org (a tenant-level check) a currency that exists is usable unless it is
+// archived, which the caller checks apart.
+func (this *CurrencyDomainServiceImpl) activeForActingOrg(ctx corectx.Context, src *models.Currency) (bool, error) {
+	orgId, ok := dyn.ActingOrgOf(ctx)
+	if !ok || this.activation == nil {
+		return true, nil
+	}
+	return this.activation.IsActive(ctx, orgId, *src.GetId())
 }
 
 func toResultData(src *models.Currency) itCurrency.GetCurrencyResultData {
 	return itCurrency.GetCurrencyResultData{
-		Id:            *src.GetId(),
-		Code:          util.ValueOrZeroOf(src.GetCode()),
-		Symbol:        util.ValueOrZeroOf(src.GetSymbol()),
-		DecimalPlaces: decimalPlacesOf(src),
-		IsActive:      util.ValueOrZeroOf(src.GetIsActive()),
-		IsArchived:    util.ValueOrZeroOf(src.IsArchived()),
+		Id:             *src.GetId(),
+		Code:           util.ValueOrZeroOf(src.GetCode()),
+		Symbol:         util.ValueOrZeroOf(src.GetSymbol()),
+		SymbolPosition: symbolPositionOf(src),
+		Rounding:       roundingOf(src),
+		DecimalPlaces:  decimalPlacesOf(src),
+		IsActive:       util.ValueOrZeroOf(src.GetIsActive()),
+		IsArchived:     util.ValueOrZeroOf(src.IsArchived()),
 	}
 }
 
@@ -178,4 +253,19 @@ func decimalPlacesOf(src *models.Currency) int32 {
 		return *places
 	}
 	return defaultDecimalPlaces
+}
+
+func symbolPositionOf(src *models.Currency) string {
+	if position := util.ValueOrZeroOf(src.GetSymbolPosition()); position != "" {
+		return position
+	}
+	return models.CurrencySymbolAfter
+}
+
+// roundingOf falls back to the unit matching decimal_places, for a row that predates the column.
+func roundingOf(src *models.Currency) decimal.Decimal {
+	if rounding := src.GetRounding(); rounding != nil && rounding.IsPositive() {
+		return *rounding
+	}
+	return decimal.New(1, -decimalPlacesOf(src))
 }

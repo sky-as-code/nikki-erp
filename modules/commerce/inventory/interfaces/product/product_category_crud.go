@@ -2,17 +2,17 @@ package product
 
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ProductCategoryRepository reads and writes product_category rows.
 type ProductCategoryRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // ProductCategoryDomainService is the CRUD of the resource plus its own rules.
 type ProductCategoryDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// CreateRoot creates an org's root category; the org lifecycle calls it once per org.
 	CreateRoot(ctx corectx.Context, cmd CreateProductCategoryCommand) (*CreateProductCategoryResult, error)
@@ -20,27 +20,27 @@ type ProductCategoryDomainService interface {
 
 // ProductCategoryApplicationService is the authorized surface the REST handler serves.
 type ProductCategoryApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a
 // resource-specific name.
 type (
-	CreateProductCategoryCommand      = composable.CreateCommand
-	UpdateProductCategoryCommand      = composable.UpdateCommand
-	DeleteProductCategoryCommand      = composable.DeleteCommand
-	SetProductCategoryArchivedCommand = composable.SetArchivedCommand
-	GetProductCategoryByIdQuery       = composable.GetByIdQuery
-	SearchProductCategoriesQuery      = composable.SearchQuery
-	ProductCategoryExistsQuery        = composable.ExistsQuery
+	CreateProductCategoryCommand      = dynamicresource.CreateCommand
+	UpdateProductCategoryCommand      = dynamicresource.UpdateCommand
+	DeleteProductCategoryCommand      = dynamicresource.DeleteCommand
+	SetProductCategoryArchivedCommand = dynamicresource.SetArchivedCommand
+	GetProductCategoryByIdQuery       = dynamicresource.GetByIdQuery
+	SearchProductCategoriesQuery      = dynamicresource.SearchQuery
+	ProductCategoryExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateProductCategoryResult      = composable.CreateResult
-	UpdateProductCategoryResult      = composable.MutateResult
-	DeleteProductCategoryResult      = composable.MutateResult
-	SetProductCategoryArchivedResult = composable.MutateResult
-	GetProductCategoryByIdResult     = composable.GetOneResult
-	SearchProductCategoriesResult    = composable.SearchResult
-	ProductCategoryExistsResult      = composable.ExistsResult
+	CreateProductCategoryResult      = dynamicresource.CreateResult
+	UpdateProductCategoryResult      = dynamicresource.MutateResult
+	DeleteProductCategoryResult      = dynamicresource.MutateResult
+	SetProductCategoryArchivedResult = dynamicresource.MutateResult
+	GetProductCategoryByIdResult     = dynamicresource.GetOneResult
+	SearchProductCategoriesResult    = dynamicresource.SearchResult
+	ProductCategoryExistsResult      = dynamicresource.ExistsResult
 )

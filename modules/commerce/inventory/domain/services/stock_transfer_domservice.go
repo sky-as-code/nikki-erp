@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"strings"
 	"time"
 
@@ -21,7 +21,7 @@ import (
 
 // NewStockTransferDomainService derives the transfer service from the onion's default one, which
 // it embeds so built-in CRUD keeps running unchanged.
-func NewStockTransferDomainService(base composable.CrudDomainService) *StockTransferDomainServiceImpl {
+func NewStockTransferDomainService(base dynamicresource.CrudDomainService) *StockTransferDomainServiceImpl {
 	return &StockTransferDomainServiceImpl{CrudDomainService: base}
 }
 
@@ -29,10 +29,10 @@ func NewStockTransferDomainService(base composable.CrudDomainService) *StockTran
 // transaction over the transfer, its moves, their lines and the balances on both sides, so they
 // live on the service rather than in an engine callback, which may only adapt and validate.
 type StockTransferDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
-var _ composable.CrudDomainService = (*StockTransferDomainServiceImpl)(nil)
+var _ dynamicresource.CrudDomainService = (*StockTransferDomainServiceImpl)(nil)
 
 // The published goods-movement port, asserted here so changing an operation's signature breaks the
 // build in this file rather than at deps.Register or in a consuming module.
@@ -41,14 +41,14 @@ var _ itStock.StockTransferMovementService = (*StockTransferDomainServiceImpl)(n
 // transferOperationContext carries what every movement operation needs: the engines it writes
 // through and the transfer it is acting on.
 type transferOperationContext struct {
-	TransferRepo composable.CrudRepository
-	MoveRepo     composable.CrudRepository
-	MoveLineRepo composable.CrudRepository
-	QuantRepo    composable.CrudRepository
+	TransferRepo dynamicresource.CrudRepository
+	MoveRepo     dynamicresource.CrudRepository
+	MoveLineRepo dynamicresource.CrudRepository
+	QuantRepo    dynamicresource.CrudRepository
 
 	// MoveLineSvc creates lines through the resource's own create pipeline, so schema defaults
 	// and audit fields are applied as they would be for a client write.
-	MoveLineSvc composable.CrudDomainService
+	MoveLineSvc dynamicresource.CrudDomainService
 
 	Transfer models.StockTransfer
 	Moves    []dmodel.DynamicFields
@@ -197,7 +197,7 @@ func mutateOk() *dyn.OpResult[dyn.MutateResultData] {
 // The guard sits here because every state-changing path goes through it, making an illegal
 // transition impossible to write rather than merely unlikely.
 func updateTransferStatus(
-	ctx corectx.Context, engine composable.CrudRepository, transfer models.StockTransfer, next string,
+	ctx corectx.Context, engine dynamicresource.CrudRepository, transfer models.StockTransfer, next string,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	current := derefString(transfer.GetStatus())
 	if current == next {
@@ -231,7 +231,7 @@ func updateTransferStatus(
 
 // updateMoveStatus writes a new move state, refusing a transition the machine forbids.
 func updateMoveStatus(
-	ctx corectx.Context, engine composable.CrudRepository, move models.StockMove, next string,
+	ctx corectx.Context, engine dynamicresource.CrudRepository, move models.StockMove, next string,
 ) error {
 	current := derefString(move.GetStatus())
 	if current == next {

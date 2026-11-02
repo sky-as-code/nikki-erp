@@ -4,17 +4,17 @@ import (
 	"go.uber.org/dig"
 
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // PutawayRuleEngineName is the container name of the putaway_rule onion, declared once for the struct tag and
-// checked against composable.EngineDependencyName by a test.
+// checked against dynamicresource.EngineDependencyName by a test.
 const PutawayRuleEngineName = "dynengine_inventory_putaway_rule"
 
 type putawayRuleRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_putaway_rule"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_putaway_rule"`
 }
 
 func NewPutawayRuleRest(params putawayRuleRestParams) *PutawayRuleRest {
@@ -26,6 +26,6 @@ func NewPutawayRuleRest(params putawayRuleRestParams) *PutawayRuleRest {
 
 // PutawayRuleRest serves the built-in CRUD of the putaway_rule resource.
 type PutawayRuleRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	putawayRuleSvc itWarehouse.PutawayRuleApplicationService
 }

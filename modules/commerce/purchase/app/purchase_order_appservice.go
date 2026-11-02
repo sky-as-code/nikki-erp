@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/order"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The purchase order's authorized surface: the built-in CRUD plus the lifecycle actions. Each
@@ -14,14 +14,16 @@ import (
 // action codes seeded in the purchase IAM migration.
 
 type PurchaseOrderApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	orders *services.PurchaseOrderDomainServiceImpl
 }
 
 // NewPurchaseOrderApplicationService needs the derived order service, which alone carries the
 // lifecycle operations. A base wired with any other domain service is a wiring bug, so it fails the
 // boot rather than the first request.
-func NewPurchaseOrderApplicationService(base composable.CrudApplicationService) itOrder.PurchaseOrderCrudApplicationService {
+func NewPurchaseOrderApplicationService(
+	base dynamicresource.CrudApplicationService,
+) itOrder.PurchaseOrderCrudApplicationService {
 	orders, ok := base.DomainService().(*services.PurchaseOrderDomainServiceImpl)
 	if !ok {
 		panic("the purchase order onion is not running the derived order domain service")

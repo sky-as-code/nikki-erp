@@ -1,0 +1,21 @@
+{
+	"name": "inventory_org_settings",
+	"label": "inventory.settings.orgSettings",
+
+	"fields": [
+		{
+			"name": "default_weight_uom_id",
+			"label": "inventory.settings.defaultWeightUomId",
+			"description": "settings_desc.default_weight_uom_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "default_length_uom_id",
+			"label": "inventory.settings.defaultLengthUomId",
+			"description": "settings_desc.default_length_uom_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
+		}
+	]
+}

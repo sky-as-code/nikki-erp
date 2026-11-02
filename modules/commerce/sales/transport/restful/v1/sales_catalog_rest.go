@@ -1,6 +1,6 @@
 // Package v1 serves the Sales resources over HTTP. Each Rest struct embeds the composable CRUD
 // base for the built-in routes and adds one method per custom action; the method is a single line,
-// because composable.ServeAction owns the whole HTTP contract -- binding, the 400 for a business
+// because dynamicresource.ServeAction owns the whole HTTP contract -- binding, the 400 for a business
 // refusal, the 404 for a missing record, and the shape of a success.
 package v1
 
@@ -8,11 +8,11 @@ import (
 	"go.uber.org/dig"
 
 	itCatalog "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/catalog"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The container names of the catalogue onions, declared once for the struct tags and checked
-// against composable.EngineDependencyName by a test.
+// against dynamicresource.EngineDependencyName by a test.
 const (
 	SalesFulfillmentMethodEngineName = "dynengine_sales_fulfillment_method"
 	SalesChannelEngineName           = "dynengine_sales_channel"
@@ -26,7 +26,7 @@ const (
 type salesFulfillmentMethodRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_method"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fulfillment_method"`
 }
 
 func NewSalesFulfillmentMethodRest(params salesFulfillmentMethodRestParams) *SalesFulfillmentMethodRest {
@@ -37,14 +37,14 @@ func NewSalesFulfillmentMethodRest(params salesFulfillmentMethodRestParams) *Sal
 }
 
 type SalesFulfillmentMethodRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	methodSvc itCatalog.SalesFulfillmentMethodApplicationService
 }
 
 type salesChannelRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_channel"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_channel"`
 }
 
 func NewSalesChannelRest(params salesChannelRestParams) *SalesChannelRest {
@@ -55,7 +55,7 @@ func NewSalesChannelRest(params salesChannelRestParams) *SalesChannelRest {
 }
 
 type SalesChannelRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	channelSvc itCatalog.SalesChannelApplicationService
 }
 
@@ -65,7 +65,7 @@ type SalesChannelRest struct {
 type salesPointRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_point"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_point"`
 }
 
 func NewSalesPointRest(params salesPointRestParams) *SalesPointRest {
@@ -76,14 +76,14 @@ func NewSalesPointRest(params salesPointRestParams) *SalesPointRest {
 }
 
 type SalesPointRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	pointSvc itCatalog.SalesPointApplicationService
 }
 
 type salesPricelistRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_pricelist"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_pricelist"`
 }
 
 func NewSalesPricelistRest(params salesPricelistRestParams) *SalesPricelistRest {
@@ -94,14 +94,14 @@ func NewSalesPricelistRest(params salesPricelistRestParams) *SalesPricelistRest 
 }
 
 type SalesPricelistRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	pricelistSvc itCatalog.SalesPricelistApplicationService
 }
 
 type salesPricelistItemRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_pricelist_item"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_pricelist_item"`
 }
 
 func NewSalesPricelistItemRest(params salesPricelistItemRestParams) *SalesPricelistItemRest {
@@ -111,13 +111,13 @@ func NewSalesPricelistItemRest(params salesPricelistItemRestParams) *SalesPricel
 }
 
 type SalesPricelistItemRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesComboRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_combo"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_combo"`
 }
 
 func NewSalesComboRest(params salesComboRestParams) *SalesComboRest {
@@ -127,13 +127,13 @@ func NewSalesComboRest(params salesComboRestParams) *SalesComboRest {
 }
 
 type SalesComboRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type salesComboComponentRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_combo_component"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_combo_component"`
 }
 
 func NewSalesComboComponentRest(params salesComboComponentRestParams) *SalesComboComponentRest {
@@ -143,5 +143,5 @@ func NewSalesComboComponentRest(params salesComboComponentRestParams) *SalesComb
 }
 
 type SalesComboComponentRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

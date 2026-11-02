@@ -9,14 +9,16 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	langjson "github.com/sky-as-code/nikki-erp/modules/essential/infra/langJson"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 )
 
 // NewLanguageApplicationService is handed the composable default by the language onion. The
 // domain service behind it is the module's own, so the assertion is a wiring check.
-func NewLanguageApplicationService(base composable.CrudApplicationService) it.LanguageApplicationService {
+func NewLanguageApplicationService(base dynamicresource.CrudApplicationService) it.LanguageApplicationService {
 	languageSvc, ok := base.DomainService().(it.LanguageDomainService)
 	if !ok {
 		panic(errors.New("the language onion must be built with NewLanguageDomainService"))
@@ -25,7 +27,7 @@ func NewLanguageApplicationService(base composable.CrudApplicationService) it.La
 }
 
 func newLanguageApplicationService(
-	base composable.CrudApplicationService, languageSvc it.LanguageDomainService,
+	base dynamicresource.CrudApplicationService, languageSvc it.LanguageDomainService,
 ) *LanguageApplicationServiceImpl {
 	return &LanguageApplicationServiceImpl{
 		CrudApplicationService: base,
@@ -41,7 +43,7 @@ func newLanguageApplicationService(
 // The lookups and the two public actions assert no permission: the lookups are another module
 // acting on its own authority, and the enabled list and the bundles render the sign-in page.
 type LanguageApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	languageSvc it.LanguageDomainService
 	// registered holds the translations modules ship themselves; langjson.EmbeddedPack stays the
 	// baseline.
@@ -49,10 +51,10 @@ type LanguageApplicationServiceImpl struct {
 	mutex      sync.RWMutex
 }
 
-func (this *LanguageApplicationServiceImpl) GetLanguageByIsoCode(
-	ctx corectx.Context, query it.GetLanguageByIsoCodeQuery,
-) (*it.GetLanguageByIsoCodeResult, error) {
-	return this.languageSvc.GetLanguageByIsoCode(ctx, query)
+func (this *LanguageApplicationServiceImpl) GetLanguageByLocaleCode(
+	ctx corectx.Context, query it.GetLanguageByLocaleCodeQuery,
+) (*it.GetLanguageByLocaleCodeResult, error) {
+	return this.languageSvc.GetLanguageByLocaleCode(ctx, query)
 }
 
 func (this *LanguageApplicationServiceImpl) ListEnabledLanguages(
@@ -140,4 +142,26 @@ func (this *LanguageApplicationServiceImpl) hasTranslation(moduleName string, la
 	}
 	_, ok := this.registered[moduleName][langCode]
 	return ok
+}
+
+// Search answers per organization like every other language action when the query names an
+// org_id. Without one it is the only org-less language read: it may still only see what a reader
+// with no organization may see, the languages marked public_use.
+func (this *LanguageApplicationServiceImpl) Search(
+	ctx corectx.Context, query dynamicresource.SearchQuery,
+) (*dynamicresource.SearchResult, error) {
+	if orgId, _ := query[basemodel.FieldOrgId].(string); orgId != "" {
+		return this.CrudApplicationService.Search(ctx, query)
+	}
+	if cErrs := this.AssertPermission(ctx, dynamicresource.PermissionRead, nil); cErrs != nil {
+		return &dynamicresource.SearchResult{ClientErrors: *cErrs}, nil
+	}
+	publicOnly := dmodel.NewSearchNode()
+	publicOnly.NewCondition(models.LanguageFieldPublicUse, dmodel.Equals, true)
+	graph, err := dmodel.AndDecodedGraph(query["graph"], *publicOnly)
+	if err != nil {
+		return nil, errors.Wrap(err, "search public languages")
+	}
+	query["graph"] = graph
+	return this.DomainService().Search(ctx, query)
 }

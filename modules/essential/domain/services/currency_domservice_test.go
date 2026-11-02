@@ -7,7 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
@@ -117,4 +119,59 @@ func TestToResultDataTreatsMissingIsActiveAsInactive(t *testing.T) {
 
 	assert.False(t, util.ValueOrZeroOf(src.GetIsActive()))
 	assert.False(t, toResultData(src).IsActive)
+}
+
+// decimal_places follows Odoo's ceil(log10(1/rounding)), so 0.25 quotes one digit, not two.
+func TestDecimalPlacesDerivedFromRounding(t *testing.T) {
+	testCases := map[string]int32{
+		"1": 0, "10": 0, "0.5": 1, "0.25": 1, "0.1": 1, "0.05": 2, "0.01": 2, "0.005": 3, "0.000001": 6,
+	}
+	for rounding, want := range testCases {
+		t.Run(rounding, func(t *testing.T) {
+			assert.Equal(t, want, decimalPlacesFromRounding(decimal.RequireFromString(rounding)))
+		})
+	}
+}
+
+func TestRoundToCurrencyRoundsToMultipleOfRounding(t *testing.T) {
+	nickel := decimal.RequireFromString("0.05")
+	testCases := []struct {
+		amount string
+		want   string
+	}{
+		{"1.02", "1"}, {"1.03", "1.05"}, {"1.025", "1.05"}, {"-1.025", "-1.05"}, {"2", "2"},
+	}
+	for _, testCase := range testCases {
+		got := roundToCurrency(decimal.RequireFromString(testCase.amount), &nickel, 2)
+		assert.True(t, got.Equal(decimal.RequireFromString(testCase.want)), "%s: want %s, got %s",
+			testCase.amount, testCase.want, got)
+	}
+	unrounded := roundToCurrency(decimal.RequireFromString("1.234"), nil, 2)
+	assert.True(t, unrounded.Equal(decimal.RequireFromString("1.23")))
+}
+
+func TestCurrencyWriteRules(t *testing.T) {
+	vErrs := ft.NewClientErrors()
+	rejectDecimalPlaces(dmodel.DynamicFields{models.CurrencyFieldDecimalPlaces: 2}, vErrs)
+	assertRoundingPositive(dmodel.DynamicFields{models.CurrencyFieldRounding: "0"}, vErrs)
+	assert.Equal(t, 2, vErrs.Count())
+
+	clean := ft.NewClientErrors()
+	assertRoundingPositive(dmodel.DynamicFields{models.CurrencyFieldRounding: "0.01"}, clean)
+	assertRoundingPositive(dmodel.DynamicFields{}, clean)
+	assert.Equal(t, 0, clean.Count())
+}
+
+func TestDecimalPlacesFilledFromRounding(t *testing.T) {
+	created := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{})
+	_, _ = fillDecimalPlacesOnCreate(nil, created, nil)
+	assert.Equal(t, int32(2), *created.GetFieldData().GetInt32(models.CurrencyFieldDecimalPlaces))
+
+	updated := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{models.CurrencyFieldRounding: "1"})
+	_, _ = fillDecimalPlacesOnUpdate(nil, updated, nil)
+	assert.Equal(t, int32(0), *updated.GetFieldData().GetInt32(models.CurrencyFieldDecimalPlaces))
+
+	untouched := dynamicresource.NewDynamicEntityFrom(dmodel.DynamicFields{models.CurrencyFieldSymbol: "$"})
+	_, _ = fillDecimalPlacesOnUpdate(nil, untouched, nil)
+	assert.Nil(t, untouched.GetFieldData().GetInt32(models.CurrencyFieldDecimalPlaces))
 }

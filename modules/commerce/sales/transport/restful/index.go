@@ -9,7 +9,7 @@ import (
 	modconstants "github.com/sky-as-code/nikki-erp/modules/commerce/sales/constants"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/commerce/sales/transport/restful/v1"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // Every Sales resource declares its routes explicitly through the composable RestEngine: the
@@ -116,7 +116,7 @@ func initSalesV1() error {
 // table is registered.
 func initSalesManualDiscountV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesManualDiscountRest) error {
-		return composable.NewRestEngine(models.SalesManualDiscountSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesManualDiscountSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -124,7 +124,7 @@ func initSalesManualDiscountV1(route *echo.Group) error {
 
 func initSalesIntegrationOutboxV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesIntegrationOutboxRest) error {
-		return composable.NewRestEngine(models.SalesIntegrationOutboxSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesIntegrationOutboxSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -132,13 +132,13 @@ func initSalesIntegrationOutboxV1(route *echo.Group) error {
 
 func initSalesFulfillmentMethodV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesFulfillmentMethodRest) error {
-		return composable.NewRestEngine(models.SalesFulfillmentMethodSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesFulfillmentMethodSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/archive", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Archive,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/archive", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Archive,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/unarchive", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Unarchive,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/unarchive", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Unarchive,
 			}).
 			RegisterRoutes(route)
 	})
@@ -148,30 +148,30 @@ func initSalesFulfillmentMethodV1(route *echo.Group) error {
 // as an id.
 func initSalesChannelV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesChannelRest) error {
-		return composable.NewRestEngine(models.SalesChannelSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesChannelSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: "resolve", ActionType: composable.ActionTypeRead, HandlerFn: rest.Resolve,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: "resolve", ActionType: dynamicresource.ActionTypeRead, HandlerFn: rest.Resolve,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/suspend", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Suspend,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/suspend", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Suspend,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/activate", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Activate,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/activate", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Activate,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/archive", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Archive,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/archive", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Archive,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/payment_methods", ActionType: composable.ActionTypeRead, HandlerFn: rest.PaymentMethods,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/payment_methods", ActionType: dynamicresource.ActionTypeRead, HandlerFn: rest.PaymentMethods,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/enable_payment_method",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.EnablePaymentMethod,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.EnablePaymentMethod,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/disable_payment_method",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.DisablePaymentMethod,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.DisablePaymentMethod,
 			}).
 			RegisterRoutes(route)
 	})
@@ -179,30 +179,30 @@ func initSalesChannelV1(route *echo.Group) error {
 
 func initSalesPointV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesPointRest) error {
-		return composable.NewRestEngine(models.SalesPointSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesPointSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/suspend", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Suspend,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/suspend", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Suspend,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/activate", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Activate,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/activate", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Activate,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/archive", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Archive,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/archive", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Archive,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/unarchive", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Unarchive,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/unarchive", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Unarchive,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/payment_methods", ActionType: composable.ActionTypeRead, HandlerFn: rest.PaymentMethods,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/payment_methods", ActionType: dynamicresource.ActionTypeRead, HandlerFn: rest.PaymentMethods,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/enable_payment_method",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.EnablePaymentMethod,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.EnablePaymentMethod,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/disable_payment_method",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.DisablePaymentMethod,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.DisablePaymentMethod,
 			}).
 			RegisterRoutes(route)
 	})
@@ -210,10 +210,10 @@ func initSalesPointV1(route *echo.Group) error {
 
 func initSalesPricelistV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesPricelistRest) error {
-		return composable.NewRestEngine(models.SalesPricelistSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesPricelistSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/set_default", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.SetDefault,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/set_default", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.SetDefault,
 			}).
 			RegisterRoutes(route)
 	})
@@ -221,7 +221,7 @@ func initSalesPricelistV1(route *echo.Group) error {
 
 func initSalesPricelistItemV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesPricelistItemRest) error {
-		return composable.NewRestEngine(models.SalesPricelistItemSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesPricelistItemSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -229,7 +229,7 @@ func initSalesPricelistItemV1(route *echo.Group) error {
 
 func initSalesComboV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesComboRest) error {
-		return composable.NewRestEngine(models.SalesComboSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesComboSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -237,7 +237,7 @@ func initSalesComboV1(route *echo.Group) error {
 
 func initSalesComboComponentV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesComboComponentRest) error {
-		return composable.NewRestEngine(models.SalesComboComponentSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesComboComponentSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -247,63 +247,64 @@ func initSalesComboComponentV1(route *echo.Group) error {
 // added before the :id routes, so the router cannot read either path segment as an id.
 func initSalesOrderV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesOrderRest) error {
-		return composable.NewRestEngine(models.SalesOrderSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesOrderSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: "create_order", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.CreateOrder,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: "create_order", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.CreateOrder,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       "fulfillment_targets/search",
-				ActionType: composable.ActionTypeRead, HandlerFn: rest.SearchFulfillmentTargets,
+				ActionType: dynamicresource.ActionTypeRead, HandlerFn: rest.SearchFulfillmentTargets,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/reprice", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Reprice,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/reprice", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Reprice,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/confirm", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Confirm,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/confirm", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Confirm,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/cancel", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Cancel,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/cancel", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Cancel,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/apply_voucher", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ApplyVoucher,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/apply_voucher", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ApplyVoucher,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/explain_price", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ExplainPrice,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/explain_price", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ExplainPrice,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/manual_discount", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.GrantManualDiscount,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/manual_discount", ActionType: dynamicresource.ActionTypeGeneric,
+				HandlerFn: rest.GrantManualDiscount,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/revoke_manual_discount",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.RevokeManualDiscount,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.RevokeManualDiscount,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/assign_parties", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.AssignParties,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/assign_parties", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.AssignParties,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/assign_sold_to_party",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.AssignSoldToParty,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.AssignSoldToParty,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/assign_bill_to_party",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.AssignBillToParty,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.AssignBillToParty,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/assign_payer_party",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.AssignPayerParty,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.AssignPayerParty,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/fulfillments", ActionType: composable.ActionTypeRead, HandlerFn: rest.ListFulfillments,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/fulfillments", ActionType: dynamicresource.ActionTypeRead, HandlerFn: rest.ListFulfillments,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/refunds", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.CreateRefunds,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/refunds", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.CreateRefunds,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/refunds_view", ActionType: composable.ActionTypeRead, HandlerFn: rest.ViewRefunds,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/refunds_view", ActionType: dynamicresource.ActionTypeRead, HandlerFn: rest.ViewRefunds,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/bills", ActionType: composable.ActionTypeRead, HandlerFn: rest.ListBills,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/bills", ActionType: dynamicresource.ActionTypeRead, HandlerFn: rest.ListBills,
 			}).
 			RegisterRoutes(route)
 	})
@@ -311,7 +312,7 @@ func initSalesOrderV1(route *echo.Group) error {
 
 func initSalesOrderLineV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesOrderLineRest) error {
-		return composable.NewRestEngine(models.SalesOrderLineSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesOrderLineSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -321,7 +322,7 @@ func initSalesOrderLineV1(route *echo.Group) error {
 // a write is not merely denied by IAM but has no route at all.
 func initSalesOrderLineComponentV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesOrderLineComponentRest) error {
-		return composable.NewRestEngine(models.SalesOrderLineComponentSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesOrderLineComponentSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -329,7 +330,7 @@ func initSalesOrderLineComponentV1(route *echo.Group) error {
 
 func initSalesOrderAdjustmentV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesOrderAdjustmentRest) error {
-		return composable.NewRestEngine(models.SalesOrderAdjustmentSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesOrderAdjustmentSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -337,18 +338,18 @@ func initSalesOrderAdjustmentV1(route *echo.Group) error {
 
 func initSalesOrderEventV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesOrderEventRest) error {
-		return composable.NewRestEngine(models.SalesOrderEventSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesOrderEventSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
 }
 
-func readOnlyRoutes() []composable.CrudAction {
-	return []composable.CrudAction{
-		composable.CrudActionGetById,
-		composable.CrudActionSearch,
-		composable.CrudActionExists,
-		composable.CrudActionGetSchema,
+func readOnlyRoutes() []dynamicresource.CrudAction {
+	return []dynamicresource.CrudAction{
+		dynamicresource.CrudActionGetById,
+		dynamicresource.CrudActionSearch,
+		dynamicresource.CrudActionExists,
+		dynamicresource.CrudActionGetSchema,
 	}
 }
 
@@ -356,23 +357,23 @@ func readOnlyRoutes() []composable.CrudAction {
 // cannot read "merge" as an id.
 func initSalesBillV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesBillRest) error {
-		return composable.NewRestEngine(models.SalesBillSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesBillSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: "merge", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Merge,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: "merge", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Merge,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/split", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Split,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/split", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Split,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/pay", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Pay,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/pay", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Pay,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/settle", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Settle,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/settle", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Settle,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/start_gateway_payment",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.StartGatewayPayment,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.StartGatewayPayment,
 			}).
 			RegisterRoutes(route)
 	})
@@ -380,7 +381,7 @@ func initSalesBillV1(route *echo.Group) error {
 
 func initSalesBillLineV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesBillLineRest) error {
-		return composable.NewRestEngine(models.SalesBillLineSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesBillLineSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -388,7 +389,7 @@ func initSalesBillLineV1(route *echo.Group) error {
 
 func initSalesBillRelationV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesBillRelationRest) error {
-		return composable.NewRestEngine(models.SalesBillRelationSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesBillRelationSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -396,7 +397,7 @@ func initSalesBillRelationV1(route *echo.Group) error {
 
 func initSalesPaymentV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesPaymentRest) error {
-		return composable.NewRestEngine(models.SalesPaymentSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesPaymentSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -404,7 +405,7 @@ func initSalesPaymentV1(route *echo.Group) error {
 
 func initSalesFulfillmentRequestV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesFulfillmentRequestRest) error {
-		return composable.NewRestEngine(models.SalesFulfillmentRequestSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesFulfillmentRequestSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -412,7 +413,7 @@ func initSalesFulfillmentRequestV1(route *echo.Group) error {
 
 func initSalesFulfillmentRequestLineV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesFulfillmentRequestLineRest) error {
-		return composable.NewRestEngine(models.SalesFulfillmentRequestLineSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesFulfillmentRequestLineSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -420,18 +421,18 @@ func initSalesFulfillmentRequestLineV1(route *echo.Group) error {
 
 func initSalesOrderFulfillmentV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesOrderFulfillmentRest) error {
-		return composable.NewRestEngine(models.SalesOrderFulfillmentSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesOrderFulfillmentSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/attempts", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.CreateAttempt,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/attempts", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.CreateAttempt,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/attempt_result",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ApplyAttemptResult,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ApplyAttemptResult,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/reassign_target",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ReassignTarget,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ReassignTarget,
 			}).
 			RegisterRoutes(route)
 	})
@@ -439,7 +440,7 @@ func initSalesOrderFulfillmentV1(route *echo.Group) error {
 
 func initSalesOrderFulfillmentItemV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesOrderFulfillmentItemRest) error {
-		return composable.NewRestEngine(models.SalesOrderFulfillmentItemSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesOrderFulfillmentItemSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -447,7 +448,7 @@ func initSalesOrderFulfillmentItemV1(route *echo.Group) error {
 
 func initSalesFulfillmentAttemptV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesFulfillmentAttemptRest) error {
-		return composable.NewRestEngine(models.SalesFulfillmentAttemptSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesFulfillmentAttemptSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -455,7 +456,7 @@ func initSalesFulfillmentAttemptV1(route *echo.Group) error {
 
 func initSalesFulfillmentAttemptItemV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesFulfillmentAttemptItemRest) error {
-		return composable.NewRestEngine(models.SalesFulfillmentAttemptItemSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesFulfillmentAttemptItemSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -463,7 +464,7 @@ func initSalesFulfillmentAttemptItemV1(route *echo.Group) error {
 
 func initSalesFulfillmentTargetChangeV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesFulfillmentTargetChangeRest) error {
-		return composable.NewRestEngine(models.SalesFulfillmentTargetChangeSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesFulfillmentTargetChangeSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -472,19 +473,19 @@ func initSalesFulfillmentTargetChangeV1(route *echo.Group) error {
 // create_return is collection-level and is added before the :id routes.
 func initSalesReturnV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesReturnRest) error {
-		return composable.NewRestEngine(models.SalesReturnSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesReturnSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: "create_return", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.CreateReturn,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: "create_return", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.CreateReturn,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/confirm", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Confirm,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/confirm", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Confirm,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/process", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Process,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/process", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Process,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/cancel", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Cancel,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/cancel", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Cancel,
 			}).
 			RegisterRoutes(route)
 	})
@@ -492,7 +493,7 @@ func initSalesReturnV1(route *echo.Group) error {
 
 func initSalesReturnLineV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesReturnLineRest) error {
-		return composable.NewRestEngine(models.SalesReturnLineSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesReturnLineSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -500,7 +501,7 @@ func initSalesReturnLineV1(route *echo.Group) error {
 
 func initSalesRefundPaymentV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesRefundPaymentRest) error {
-		return composable.NewRestEngine(models.SalesRefundPaymentSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesRefundPaymentSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -508,7 +509,7 @@ func initSalesRefundPaymentV1(route *echo.Group) error {
 
 func initSalesPromotionProgramV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesPromotionProgramRest) error {
-		return composable.NewRestEngine(models.SalesPromotionProgramSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesPromotionProgramSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -516,7 +517,7 @@ func initSalesPromotionProgramV1(route *echo.Group) error {
 
 func initSalesPromotionConditionGroupV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesPromotionConditionGroupRest) error {
-		return composable.NewRestEngine(models.SalesPromotionConditionGroupSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesPromotionConditionGroupSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -524,7 +525,7 @@ func initSalesPromotionConditionGroupV1(route *echo.Group) error {
 
 func initSalesPromotionConditionV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesPromotionConditionRest) error {
-		return composable.NewRestEngine(models.SalesPromotionConditionSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesPromotionConditionSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -532,7 +533,7 @@ func initSalesPromotionConditionV1(route *echo.Group) error {
 
 func initSalesPromotionConditionTargetV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesPromotionConditionTargetRest) error {
-		return composable.NewRestEngine(models.SalesPromotionConditionTargetSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesPromotionConditionTargetSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -540,7 +541,7 @@ func initSalesPromotionConditionTargetV1(route *echo.Group) error {
 
 func initSalesPromotionRewardV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesPromotionRewardRest) error {
-		return composable.NewRestEngine(models.SalesPromotionRewardSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesPromotionRewardSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -548,7 +549,7 @@ func initSalesPromotionRewardV1(route *echo.Group) error {
 
 func initSalesPromotionCompatibilityV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesPromotionCompatibilityRest) error {
-		return composable.NewRestEngine(models.SalesPromotionCompatibilitySchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesPromotionCompatibilitySchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -556,7 +557,7 @@ func initSalesPromotionCompatibilityV1(route *echo.Group) error {
 
 func initSalesVoucherCodeV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesVoucherCodeRest) error {
-		return composable.NewRestEngine(models.SalesVoucherCodeSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesVoucherCodeSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -564,7 +565,7 @@ func initSalesVoucherCodeV1(route *echo.Group) error {
 
 func initSalesVoucherRedemptionV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesVoucherRedemptionRest) error {
-		return composable.NewRestEngine(models.SalesVoucherRedemptionSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesVoucherRedemptionSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})
@@ -572,16 +573,16 @@ func initSalesVoucherRedemptionV1(route *echo.Group) error {
 
 func initSalesQuotationV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesQuotationRest) error {
-		return composable.NewRestEngine(models.SalesQuotationSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesQuotationSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/convert", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Convert,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/convert", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Convert,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/send", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Send,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/send", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Send,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/cancel", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Cancel,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/cancel", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Cancel,
 			}).
 			RegisterRoutes(route)
 	})
@@ -589,7 +590,7 @@ func initSalesQuotationV1(route *echo.Group) error {
 
 func initSalesQuotationLineV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesQuotationLineRest) error {
-		return composable.NewRestEngine(models.SalesQuotationLineSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesQuotationLineSchemaName, rest).
 			AddCrudRoutes().
 			RegisterRoutes(route)
 	})
@@ -599,10 +600,10 @@ func initSalesQuotationLineV1(route *echo.Group) error {
 // their resource's :id routes.
 func initSalesFiscalRequestV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesFiscalRequestRest) error {
-		return composable.NewRestEngine(models.SalesFiscalRequestSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesFiscalRequestSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
-				Path: "request_invoice", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.RequestInvoice,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: "request_invoice", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.RequestInvoice,
 			}).
 			RegisterRoutes(route)
 	})
@@ -610,25 +611,25 @@ func initSalesFiscalRequestV1(route *echo.Group) error {
 
 func initSalesBillingInstructionV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesBillingInstructionRest) error {
-		return composable.NewRestEngine(models.SalesBillingInstructionSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesBillingInstructionSchemaName, rest).
 			AddCrudRoutes().
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       "create_billing_instruction",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.CreateInstruction,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.CreateInstruction,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/update_billing_instruction",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.UpdateInstruction,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.UpdateInstruction,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/mark_ready", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.MarkReady,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/mark_ready", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.MarkReady,
 			}).
-			AddRoute(composable.RouteDefinition{
+			AddRoute(dynamicresource.RouteDefinition{
 				Path:       ":id/revert_to_draft",
-				ActionType: composable.ActionTypeGeneric, HandlerFn: rest.RevertToDraft,
+				ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.RevertToDraft,
 			}).
-			AddRoute(composable.RouteDefinition{
-				Path: ":id/cancel", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.Cancel,
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: ":id/cancel", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.Cancel,
 			}).
 			RegisterRoutes(route)
 	})
@@ -636,7 +637,7 @@ func initSalesBillingInstructionV1(route *echo.Group) error {
 
 func initSalesBillingIssuanceAttemptV1(route *echo.Group) error {
 	return deps.Invoke(func(rest *v1.SalesBillingIssuanceAttemptRest) error {
-		return composable.NewRestEngine(models.SalesBillingIssuanceAttemptSchemaName, rest).
+		return dynamicresource.NewRestEngine(models.SalesBillingIssuanceAttemptSchemaName, rest).
 			AddCrudRoutes(readOnlyRoutes()...).
 			RegisterRoutes(route)
 	})

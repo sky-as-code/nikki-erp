@@ -3,7 +3,7 @@ package app
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/constants"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
@@ -17,12 +17,12 @@ import (
 // collection-level (none addresses an order by its record id), so only AssertAction runs.
 
 type OrderApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	orders *services.OrderDomainService
 }
 
 func NewOrderApplicationService(
-	base composable.CrudApplicationService, orders *services.OrderDomainService,
+	base dynamicresource.CrudApplicationService, orders *services.OrderDomainService,
 ) itOrder.OrderCrudApplicationService {
 	return &OrderApplicationServiceImpl{CrudApplicationService: base, orders: orders}
 }

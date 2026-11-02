@@ -8,7 +8,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/settings/constants"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	itRecord "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settingsrecord"
@@ -17,7 +17,7 @@ import (
 const tenantIdColumn = "tenant_id"
 
 // NewSettingsRecordRepository is handed the composable default by the settings_record onion.
-func NewSettingsRecordRepository(base composable.CrudRepository) itRecord.SettingsRecordRepository {
+func NewSettingsRecordRepository(base dynamicresource.CrudRepository) itRecord.SettingsRecordRepository {
 	return &SettingsRecordRepositoryImpl{CrudRepository: base}
 }
 
@@ -29,7 +29,7 @@ func NewSettingsRecordRepository(base composable.CrudRepository) itRecord.Settin
 // one round trip per setting. The multi-tenant decorator does not see these statements, so each
 // scopes itself to the tenant explicitly.
 type SettingsRecordRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 func (this *SettingsRecordRepositoryImpl) HasTenantColumn() bool {

@@ -48,7 +48,8 @@
 			"no_update": true,
 			"description": {
 				"en-US": "System-managed. A draft becomes issued only through the issue action, which is what guarantees an issued invoice has a number and totals that match its lines."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "order_id",

@@ -1,0 +1,47 @@
+{
+	"name": "essential_org_currency",
+	"label": "essential_org_currency.label",
+	"table_name": "essential_org_currencies",
+	"should_build_db": true,
+	"composite_uniques": [
+		{ "index_name": "essent_org_cur_org_currency", "fields": ["org_id", "currency_id"] }
+	],
+	"extend_before": ["core.basemodel.base_model", "core.basemodel.org_base_model"],
+
+	"fields": [
+		{
+			"name": "currency_id",
+			"label": "fields.currency_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "The tenant-wide currency this row activates or deactivates for one organization."
+			}
+		},
+		{
+			"name": "is_active",
+			"label": "fields.is_active",
+			"data_type": "boolean",
+			"required_for_create": true,
+			"default_value": true,
+			"metadata": {"track_history": true},
+			"description": {
+				"en-US": "Whether the organization uses this currency. No row reads as inactive."
+			}
+		}
+	],
+
+	"edges_to": [
+		{
+			"edge": "currency",
+			"label": { "en-US": "Currency" },
+			"type": "many:one",
+			"dest_schema": "essential_currency",
+			"key_map": { "currency_id": "id" },
+			"on_delete": "CASCADE"
+		}
+	],
+
+	"extend_after": ["core.basemodel.auditable_model", "core.basemodel.traceable_model"]
+}

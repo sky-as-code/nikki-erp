@@ -6,31 +6,31 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 )
 
 // NewRoleCrudApplicationService is handed the composable default by the iam_role onion.
 func NewRoleCrudApplicationService(
-	base composable.CrudApplicationService, domSvc itRole.RoleCrudDomainService,
+	base dynamicresource.CrudApplicationService, domSvc itRole.RoleCrudDomainService,
 ) itRole.RoleCrudApplicationService {
 	return &RoleCrudApplicationServiceImpl{CrudApplicationService: base, domSvc: domSvc}
 }
 
 type RoleCrudApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	domSvc itRole.RoleCrudDomainService
 }
 
 // Update needs manage_entitlements on top of update when the body carries an entitlement delta:
 // changing what a role grants is that permission, whichever route carries it.
 func (this *RoleCrudApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
 	if itRole.HasEntitlementsDelta(cmd) {
-		cErrs, err := composable.AssertRecordAction(ctx, this, cmd,
-			composable.ActionPermission{ActionCode: actionManageEntitlements})
+		cErrs, err := dynamicresource.AssertRecordAction(ctx, this, cmd,
+			dynamicresource.ActionPermission{ActionCode: actionManageEntitlements})
 		if err != nil || cErrs != nil {
 			return mutateRefused(cErrs, err)
 		}
@@ -43,7 +43,7 @@ func (this *RoleCrudApplicationServiceImpl) Update(
 func (this *RoleCrudApplicationServiceImpl) ManageUsers(
 	ctx corectx.Context, cmd itRole.ManageRoleUsersCommand,
 ) (*itRole.ManageRoleUsersResult, error) {
-	cErrs, err := composable.AssertRecordAction(ctx, this, cmd, composable.ActionPermission{
+	cErrs, err := dynamicresource.AssertRecordAction(ctx, this, cmd, dynamicresource.ActionPermission{
 		ActionCode: actionManageRoleAssignments, ResourceCode: c.ResourceIamUser,
 	})
 	if err != nil || cErrs != nil {
@@ -56,7 +56,7 @@ func (this *RoleCrudApplicationServiceImpl) ManageUsers(
 func (this *RoleCrudApplicationServiceImpl) ManageServices(
 	ctx corectx.Context, cmd itRole.ManageRoleServicesCommand,
 ) (*itRole.ManageRoleServicesResult, error) {
-	cErrs, err := composable.AssertRecordAction(ctx, this, cmd, composable.ActionPermission{
+	cErrs, err := dynamicresource.AssertRecordAction(ctx, this, cmd, dynamicresource.ActionPermission{
 		ActionCode: actionManageRoleAssignments, ResourceCode: c.ResourceIamService,
 	})
 	if err != nil || cErrs != nil {
@@ -69,7 +69,7 @@ func (this *RoleCrudApplicationServiceImpl) ManageServices(
 func (this *RoleCrudApplicationServiceImpl) ManageGroups(
 	ctx corectx.Context, cmd itRole.ManageRoleGroupsCommand,
 ) (*itRole.ManageRoleGroupsResult, error) {
-	cErrs, err := composable.AssertRecordAction(ctx, this, cmd, composable.ActionPermission{
+	cErrs, err := dynamicresource.AssertRecordAction(ctx, this, cmd, dynamicresource.ActionPermission{
 		ActionCode: actionManageRoleAssignments, ResourceCode: c.ResourceIamGroup,
 	})
 	if err != nil || cErrs != nil {
@@ -82,8 +82,8 @@ func (this *RoleCrudApplicationServiceImpl) ManageGroups(
 func (this *RoleCrudApplicationServiceImpl) Describe(
 	ctx corectx.Context, query itRole.DescribeRolesParams,
 ) (*itRole.DescribeRolesResult, error) {
-	_, cErrs := composable.AssertActionPermission(ctx, this, query,
-		composable.ActionPermission{ActionCode: composable.PermissionRead})
+	_, cErrs := dynamicresource.AssertActionPermission(ctx, this, query,
+		dynamicresource.ActionPermission{ActionCode: dynamicresource.PermissionRead})
 	if cErrs != nil {
 		return &itRole.DescribeRolesResult{ClientErrors: *cErrs}, nil
 	}

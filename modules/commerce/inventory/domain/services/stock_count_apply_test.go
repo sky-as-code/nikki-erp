@@ -11,7 +11,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // quantRowRepository adds a lookup by id to the etag-honouring stub.
@@ -44,7 +44,7 @@ func TestApplyingACountClearsItOnTheRewrittenRow(t *testing.T) {
 	repo := &quantRowRepository{moveWriteRepository{rows: []dmodel.DynamicFields{stored}}}
 	original := repoFor
 	t.Cleanup(func() { repoFor = original })
-	repoFor = func(string) (composable.CrudRepository, error) { return repo, nil }
+	repoFor = func(string) (dynamicresource.CrudRepository, error) { return repo, nil }
 
 	staleRead := cloneFields(stored)
 	staleRead[basemodel.FieldEtag] = "etag-before-movement"

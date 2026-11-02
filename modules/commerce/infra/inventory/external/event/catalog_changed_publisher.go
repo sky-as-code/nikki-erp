@@ -62,7 +62,7 @@ func (this *CatalogChangedEventPublisherImpl) Publish(
 func (this *CatalogChangedEventPublisherImpl) PublishAsync(
 	ctx corectx.Context, eventType itEvent.CatalogChangedType, orgId string, ids ...string,
 ) {
-	go func() {
+	publish := func() {
 		bgCtx, cancel := context.WithTimeout(
 			context.WithoutCancel(ctx.InnerContext()), publishAsyncTimeout)
 		defer cancel()
@@ -71,5 +71,7 @@ func (this *CatalogChangedEventPublisherImpl) PublishAsync(
 			this.logger.Warn("catalog changed event publish failed",
 				logging.Attr{"error": err.Error(), "resource_type": eventType, "org_id": orgId, "ids": ids})
 		}
-	}()
+	}
+	// A caller inside a transaction must not announce a write that may still roll back.
+	ctx.OnCommitted(func() { go publish() })
 }

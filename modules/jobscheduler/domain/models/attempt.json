@@ -58,7 +58,8 @@
 			"required_for_create": true,
 			"description": {
 				"en-US": "'abandoned' means the lease expired without the attempt reporting an outcome, usually because the instance running it died."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "instance_id",

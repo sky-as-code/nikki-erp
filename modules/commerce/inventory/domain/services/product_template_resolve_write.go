@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // createResolvedComplete creates the complete and its value rows in one transaction. Two
@@ -20,7 +20,7 @@ func (this *ProductTemplateDomainServiceImpl) createResolvedComplete(
 		return nil, err
 	}
 	createdId := ""
-	refused, err := composable.InRefusableTransaction(ctx, repo,
+	refused, err := dynamicresource.InRefusableTransaction(ctx, repo,
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			id, cErrs, err := MaterializeVariant(tranxCtx, VariantMaterializeSpec{
 				TemplateId:    derefString(template.GetId()),

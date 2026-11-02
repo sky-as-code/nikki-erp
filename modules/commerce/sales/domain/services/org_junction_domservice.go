@@ -8,7 +8,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The association rows of an organization's sales configuration, as the org lifecycle writes and
@@ -59,7 +59,7 @@ func DeleteOrgChannelFulfillmentMethods(ctx corectx.Context, orgId model.Id) err
 	return err
 }
 
-func insertJunction(ctx corectx.Context, repo composable.CrudRepository, fields dmodel.DynamicFields) error {
+func insertJunction(ctx corectx.Context, repo dynamicresource.CrudRepository, fields dmodel.DynamicFields) error {
 	id, err := model.NewId()
 	if err != nil {
 		return err

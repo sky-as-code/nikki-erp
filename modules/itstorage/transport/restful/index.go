@@ -7,7 +7,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/itstorage/constants"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/dynamicengines"
@@ -28,13 +28,13 @@ func initItStorageV1() error {
 		routeV1 := route.Group("/v1/itstorage")
 		registerFileRoutes(routeV1, fileRest)
 		return stdErr.Join(
-			composable.NewRestEngine(models.SpaceSchemaName, spaceRest).
+			dynamicresource.NewRestEngine(models.SpaceSchemaName, spaceRest).
 				AddCrudRoutes(dynamicengines.SpaceRestActions()...).
 				RegisterRoutes(routeV1),
-			composable.NewRestEngine(models.FileSchemaName, fileRest).
+			dynamicresource.NewRestEngine(models.FileSchemaName, fileRest).
 				AddCrudRoutes(dynamicengines.FileRestActions()...).
 				RegisterRoutes(routeV1),
-			composable.NewRestEngine(models.ConsumptionSchemaName, consumptionRest).
+			dynamicresource.NewRestEngine(models.ConsumptionSchemaName, consumptionRest).
 				AddCrudRoutes(dynamicengines.ConsumptionRestActions()...).
 				RegisterRoutes(routeV1),
 		)

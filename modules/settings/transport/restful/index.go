@@ -7,7 +7,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/settings/dynamicengines"
 	v1 "github.com/sky-as-code/nikki-erp/modules/settings/transport/restful/v1"
@@ -57,8 +57,8 @@ func registerLevelRoutes(routeV1 *echo.Group, settingsRest *v1.SettingsRest) {
 
 // registerReadOnly serves a settings resource's reads only: Settings never takes a generic write
 // (see registerLevelRoutes).
-func registerReadOnly(route *echo.Group, schemaName string, handlers composable.CrudRestHandlers) error {
-	return composable.NewRestEngine(schemaName, handlers).
+func registerReadOnly(route *echo.Group, schemaName string, handlers dynamicresource.CrudRestHandlers) error {
+	return dynamicresource.NewRestEngine(schemaName, handlers).
 		AddCrudRoutes(dynamicengines.ReadOnlyCrudActions()...).
 		RegisterRoutes(route)
 }

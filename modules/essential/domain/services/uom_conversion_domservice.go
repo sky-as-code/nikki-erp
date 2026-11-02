@@ -114,15 +114,44 @@ func (this *UomConversionDomainServiceImpl) GetUom(
 		return &itUom.GetUomResult{HasData: false}, nil
 	}
 
+	return uomLookupResult(uom), nil
+}
+
+// FindUomBySymbol fetches the UoM an organization knows by a symbol, archived ones included, so a
+// module can find a default unit such as "kg" in an organization whose ids it cannot know.
+func (this *UomConversionDomainServiceImpl) FindUomBySymbol(
+	ctx corectx.Context, query itUom.FindUomBySymbolQuery,
+) (*itUom.GetUomResult, error) {
+	graph := &dmodel.SearchGraph{}
+	graph.And(
+		*dmodel.NewSearchNode().NewCondition(models.UomFieldSymbol, dmodel.Equals, query.Symbol),
+		*dmodel.NewSearchNode().NewCondition(models.UomFieldOrgId, dmodel.Equals, string(query.OrgId)),
+	)
+	found, err := this.uomRepo.Search(ctx, dyn.RepoSearchParam{Graph: graph, Page: 0, Size: 1})
+	if err != nil {
+		return nil, errors.Wrap(err, "find uom by symbol")
+	}
+	if found.ClientErrors.Count() > 0 {
+		return nil, errors.Wrap(found.ClientErrors.ToError(), "find uom by symbol")
+	}
+	if !found.HasData || len(found.Data.Items) == 0 {
+		return &itUom.GetUomResult{HasData: false}, nil
+	}
+	return uomLookupResult(models.NewUomFrom(found.Data.Items[0])), nil
+}
+
+func uomLookupResult(uom *models.Uom) *itUom.GetUomResult {
 	return &itUom.GetUomResult{
 		Data: itUom.GetUomResultData{
 			Id:         *uom.GetId(),
+			Name:       util.ValueOrZeroOf(uom.GetName()),
 			Symbol:     util.ValueOrZeroOf(uom.GetSymbol()),
 			CategoryId: util.ValueOrZeroOf(uom.GetCategoryId()),
+			OrgId:      util.ValueOrZeroOf(uom.GetOrgId()),
 			IsArchived: util.ValueOrZeroOf(uom.IsArchived()),
 		},
 		HasData: true,
-	}, nil
+	}
 }
 
 // loadConversionPair fetches both ends of a conversion and enforces the category boundary

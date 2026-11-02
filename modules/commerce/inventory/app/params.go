@@ -7,7 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The custom actions receive the request as the field map the REST engine bound. These helpers
@@ -18,7 +18,7 @@ import (
 const paramRecordId = "id"
 
 func readOptionalBool(params dmodel.DynamicFields, field string) *bool {
-	value, ok := composable.ParamBool(params, field)
+	value, ok := dynamicresource.ParamBool(params, field)
 	if !ok {
 		return nil
 	}
@@ -103,7 +103,7 @@ func derefId(id *string) string {
 // assertRecordAction is the authorization every id-addressed custom action performs: the org
 // scope and permission, then that the named record belongs to that org.
 func assertRecordAction(
-	appSvc composable.CrudApplicationService, ctx corectx.Context, permission string, params dmodel.DynamicFields,
+	appSvc dynamicresource.CrudApplicationService, ctx corectx.Context, permission string, params dmodel.DynamicFields,
 ) (*ft.ClientErrors, error) {
 	orgId, cErrs := appSvc.AssertAction(ctx, permission, params)
 	if cErrs != nil {

@@ -3,7 +3,7 @@ package v1
 import (
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // UomEngineName is the container name of the UoM onion, declared once for the struct tag.
@@ -12,7 +12,7 @@ const UomEngineName = "dynengine_essential_uom"
 type uomRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_essential_uom"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_essential_uom"`
 }
 
 func NewUomRest(params uomRestParams) *UomRest {
@@ -24,5 +24,5 @@ func NewUomRest(params uomRestParams) *UomRest {
 // UomRest serves the built-in CRUD of the UoM resource. Conversion is a calculation over two
 // records rather than an action on one, so it stays on UomConversionRest.
 type UomRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

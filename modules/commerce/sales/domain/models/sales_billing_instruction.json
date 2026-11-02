@@ -75,7 +75,8 @@
 			"no_update": true,
 			"description": {
 				"en-US": "Where this instruction stands. Only 'ready' is picked up by the issuance job, so marking ready is the buyer's consent to be billed - an instruction still being filled in must never be issued from. 'processing' means a worker has claimed it and the snapshot is frozen. Declared no_update so a client cannot move it: every transition is an action that checks what it requires first."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "source",

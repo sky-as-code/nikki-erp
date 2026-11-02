@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/safe"
@@ -26,7 +26,7 @@ import (
 // `done` would be a completed movement with nothing behind it. It creates no stock and reserves
 // nothing. A `moves.add` list creates the draft moves with the header, in one transaction.
 func (this *StockTransferDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	delta, cErrs := liftMovesOrRefuse(params)
 	if cErrs.Count() == 0 && delta != nil && (len(delta.Update) > 0 || len(delta.Remove) > 0) {
@@ -41,7 +41,7 @@ func (this *StockTransferDomainServiceImpl) Create(
 		return this.createHeader(ctx, params)
 	}
 	var result *dyn.OpResult[dmodel.DynamicFields]
-	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var err error
 			if result, err = this.createHeader(tranxCtx, params); err != nil {
@@ -109,10 +109,10 @@ func (this *StockTransferDomainServiceImpl) createHeader(
 // is applied after the transfer row, in one transaction, so the transfer's etag guards the moves
 // and a refused move rolls the whole update back.
 func (this *StockTransferDomainServiceImpl) Update(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.UpdateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.UpdateOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, validateMovementLocationsHoldStock)
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, validateMovementLocationsHoldStock)
 	delta, cErrs := liftMovesOrRefuse(params)
 	if cErrs.Count() > 0 {
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, nil
@@ -121,7 +121,7 @@ func (this *StockTransferDomainServiceImpl) Update(
 		return this.CrudDomainService.Update(ctx, params, opts)
 	}
 	var result *dyn.OpResult[dyn.MutateResultData]
-	refused, err := composable.InRefusableTransaction(ctx, this.Repository(),
+	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
 			var err error
 			if result, err = this.CrudDomainService.Update(tranxCtx, params, opts); err != nil {
@@ -130,7 +130,7 @@ func (this *StockTransferDomainServiceImpl) Update(
 			if result.ClientErrors.Count() > 0 || !result.HasData {
 				return &result.ClientErrors, nil
 			}
-			cErrs, err := applyMovesDelta(tranxCtx, string(composable.ParamId(params)), *delta)
+			cErrs, err := applyMovesDelta(tranxCtx, string(dynamicresource.ParamId(params)), *delta)
 			return &cErrs, err
 		})
 	if err != nil {

@@ -4,7 +4,7 @@ import (
 	"go.uber.org/dig"
 
 	itFiscal "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/fiscal"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 type salesFiscalRequestRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_fiscal_request"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_fiscal_request"`
 }
 
 func NewSalesFiscalRequestRest(params salesFiscalRequestRestParams) *SalesFiscalRequestRest {
@@ -27,14 +27,14 @@ func NewSalesFiscalRequestRest(params salesFiscalRequestRestParams) *SalesFiscal
 }
 
 type SalesFiscalRequestRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	fiscalSvc itFiscal.SalesFiscalRequestApplicationService
 }
 
 type salesBillingInstructionRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_billing_instruction"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_billing_instruction"`
 }
 
 func NewSalesBillingInstructionRest(params salesBillingInstructionRestParams) *SalesBillingInstructionRest {
@@ -45,14 +45,14 @@ func NewSalesBillingInstructionRest(params salesBillingInstructionRestParams) *S
 }
 
 type SalesBillingInstructionRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	billingSvc itFiscal.SalesBillingInstructionApplicationService
 }
 
 type salesBillingIssuanceAttemptRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_billing_issuance_attempt"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_billing_issuance_attempt"`
 }
 
 func NewSalesBillingIssuanceAttemptRest(params salesBillingIssuanceAttemptRestParams) *SalesBillingIssuanceAttemptRest {
@@ -62,5 +62,5 @@ func NewSalesBillingIssuanceAttemptRest(params salesBillingIssuanceAttemptRestPa
 }
 
 type SalesBillingIssuanceAttemptRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }

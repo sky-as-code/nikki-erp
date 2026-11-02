@@ -12,7 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
 	itAudit "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/audit"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The audit trail, written by the audit helper only; every client write is refused.
@@ -20,27 +20,27 @@ import (
 type auditEventEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_audit_event"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_audit_event"`
 }
 
 func registerAuditEventEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.AuditEventSchemaName),
+		dynamicresource.EngineDependencyName(models.AuditEventSchemaName),
 		func(
-			param composable.BuildParam,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+			param dynamicresource.BuildParam,
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.AuditEventSchemaName,
 				// Not audited: purchase audit events are an audit trail of their own, written next to
 				// the order change the audit log records.
 				IsAudited: util.ToPtr(false),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewAuditEventRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewAuditEventCrudDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewAuditEventApplicationService(base)
 				},
 			}, param)

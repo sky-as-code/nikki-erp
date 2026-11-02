@@ -6,107 +6,107 @@ import (
 	itPromotion "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/promotion"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The promotion and voucher application services. No custom actions: a discount is defined here
 // and applied by the order's apply_voucher, which lives on the order.
 
 func NewSalesPromotionProgramApplicationService(
-	base composable.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
+	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
 ) itPromotion.SalesPromotionProgramApplicationService {
 	return &SalesPromotionProgramApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
 }
 
 type SalesPromotionProgramApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	pricingChangedPub itEvent.PricingChangedEventPublisher
 }
 
 func NewSalesPromotionConditionGroupApplicationService(
-	base composable.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
+	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
 ) itPromotion.SalesPromotionConditionGroupApplicationService {
 	return &SalesPromotionConditionGroupApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
 }
 
 type SalesPromotionConditionGroupApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	pricingChangedPub itEvent.PricingChangedEventPublisher
 }
 
 func NewSalesPromotionConditionApplicationService(
-	base composable.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
+	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
 ) itPromotion.SalesPromotionConditionApplicationService {
 	return &SalesPromotionConditionApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
 }
 
 type SalesPromotionConditionApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	pricingChangedPub itEvent.PricingChangedEventPublisher
 }
 
 func NewSalesPromotionConditionTargetApplicationService(
-	base composable.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
+	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
 ) itPromotion.SalesPromotionConditionTargetApplicationService {
 	return &SalesPromotionConditionTargetApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
 }
 
 type SalesPromotionConditionTargetApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	pricingChangedPub itEvent.PricingChangedEventPublisher
 }
 
 func NewSalesPromotionRewardApplicationService(
-	base composable.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
+	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
 ) itPromotion.SalesPromotionRewardApplicationService {
 	return &SalesPromotionRewardApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
 }
 
 type SalesPromotionRewardApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	pricingChangedPub itEvent.PricingChangedEventPublisher
 }
 
 func NewSalesPromotionCompatibilityApplicationService(
-	base composable.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
+	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
 ) itPromotion.SalesPromotionCompatibilityApplicationService {
 	return &SalesPromotionCompatibilityApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
 }
 
 type SalesPromotionCompatibilityApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	pricingChangedPub itEvent.PricingChangedEventPublisher
 }
 
 func NewSalesVoucherCodeApplicationService(
-	base composable.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
+	base dynamicresource.CrudApplicationService, pricingChangedPub itEvent.PricingChangedEventPublisher,
 ) itPromotion.SalesVoucherCodeApplicationService {
 	return &SalesVoucherCodeApplicationServiceImpl{CrudApplicationService: base, pricingChangedPub: pricingChangedPub}
 }
 
 type SalesVoucherCodeApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	pricingChangedPub itEvent.PricingChangedEventPublisher
 }
 
-func NewSalesVoucherRedemptionApplicationService(base composable.CrudApplicationService) itPromotion.SalesVoucherRedemptionApplicationService {
+func NewSalesVoucherRedemptionApplicationService(base dynamicresource.CrudApplicationService) itPromotion.SalesVoucherRedemptionApplicationService {
 	return &SalesVoucherRedemptionApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesVoucherRedemptionApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 func (this *SalesPromotionProgramApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
 	res, err := this.CrudApplicationService.Create(ctx, cmd)
 	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionProgram, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
@@ -116,8 +116,8 @@ func (this *SalesPromotionProgramApplicationServiceImpl) Create(
 }
 
 func (this *SalesPromotionProgramApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Update(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionProgram, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -127,8 +127,8 @@ func (this *SalesPromotionProgramApplicationServiceImpl) Update(
 }
 
 func (this *SalesPromotionProgramApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Delete(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionProgram, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -138,8 +138,8 @@ func (this *SalesPromotionProgramApplicationServiceImpl) Delete(
 }
 
 func (this *SalesPromotionProgramApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionProgram, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -149,8 +149,8 @@ func (this *SalesPromotionProgramApplicationServiceImpl) SetArchived(
 }
 
 func (this *SalesPromotionConditionGroupApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
 	res, err := this.CrudApplicationService.Create(ctx, cmd)
 	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionGroup, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
@@ -160,8 +160,8 @@ func (this *SalesPromotionConditionGroupApplicationServiceImpl) Create(
 }
 
 func (this *SalesPromotionConditionGroupApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Update(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionGroup, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -171,8 +171,8 @@ func (this *SalesPromotionConditionGroupApplicationServiceImpl) Update(
 }
 
 func (this *SalesPromotionConditionGroupApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Delete(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionGroup, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -182,8 +182,8 @@ func (this *SalesPromotionConditionGroupApplicationServiceImpl) Delete(
 }
 
 func (this *SalesPromotionConditionGroupApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionGroup, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -193,8 +193,8 @@ func (this *SalesPromotionConditionGroupApplicationServiceImpl) SetArchived(
 }
 
 func (this *SalesPromotionConditionApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
 	res, err := this.CrudApplicationService.Create(ctx, cmd)
 	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCondition, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
@@ -204,8 +204,8 @@ func (this *SalesPromotionConditionApplicationServiceImpl) Create(
 }
 
 func (this *SalesPromotionConditionApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Update(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCondition, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -215,8 +215,8 @@ func (this *SalesPromotionConditionApplicationServiceImpl) Update(
 }
 
 func (this *SalesPromotionConditionApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Delete(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCondition, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -226,8 +226,8 @@ func (this *SalesPromotionConditionApplicationServiceImpl) Delete(
 }
 
 func (this *SalesPromotionConditionApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCondition, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -237,8 +237,8 @@ func (this *SalesPromotionConditionApplicationServiceImpl) SetArchived(
 }
 
 func (this *SalesPromotionConditionTargetApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
 	res, err := this.CrudApplicationService.Create(ctx, cmd)
 	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionTarget, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
@@ -248,8 +248,8 @@ func (this *SalesPromotionConditionTargetApplicationServiceImpl) Create(
 }
 
 func (this *SalesPromotionConditionTargetApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Update(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionTarget, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -259,8 +259,8 @@ func (this *SalesPromotionConditionTargetApplicationServiceImpl) Update(
 }
 
 func (this *SalesPromotionConditionTargetApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Delete(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionTarget, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -270,8 +270,8 @@ func (this *SalesPromotionConditionTargetApplicationServiceImpl) Delete(
 }
 
 func (this *SalesPromotionConditionTargetApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionConditionTarget, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -281,8 +281,8 @@ func (this *SalesPromotionConditionTargetApplicationServiceImpl) SetArchived(
 }
 
 func (this *SalesPromotionRewardApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
 	res, err := this.CrudApplicationService.Create(ctx, cmd)
 	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionReward, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
@@ -292,8 +292,8 @@ func (this *SalesPromotionRewardApplicationServiceImpl) Create(
 }
 
 func (this *SalesPromotionRewardApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Update(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionReward, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -303,8 +303,8 @@ func (this *SalesPromotionRewardApplicationServiceImpl) Update(
 }
 
 func (this *SalesPromotionRewardApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Delete(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionReward, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -314,8 +314,8 @@ func (this *SalesPromotionRewardApplicationServiceImpl) Delete(
 }
 
 func (this *SalesPromotionRewardApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionReward, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -325,8 +325,8 @@ func (this *SalesPromotionRewardApplicationServiceImpl) SetArchived(
 }
 
 func (this *SalesPromotionCompatibilityApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
 	res, err := this.CrudApplicationService.Create(ctx, cmd)
 	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCompatibility, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
@@ -336,8 +336,8 @@ func (this *SalesPromotionCompatibilityApplicationServiceImpl) Create(
 }
 
 func (this *SalesPromotionCompatibilityApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Update(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCompatibility, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -347,8 +347,8 @@ func (this *SalesPromotionCompatibilityApplicationServiceImpl) Update(
 }
 
 func (this *SalesPromotionCompatibilityApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Delete(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCompatibility, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -358,8 +358,8 @@ func (this *SalesPromotionCompatibilityApplicationServiceImpl) Delete(
 }
 
 func (this *SalesPromotionCompatibilityApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedPromotionCompatibility, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -369,8 +369,8 @@ func (this *SalesPromotionCompatibilityApplicationServiceImpl) SetArchived(
 }
 
 func (this *SalesVoucherCodeApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
 	res, err := this.CrudApplicationService.Create(ctx, cmd)
 	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedVoucherCode, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
@@ -380,8 +380,8 @@ func (this *SalesVoucherCodeApplicationServiceImpl) Create(
 }
 
 func (this *SalesVoucherCodeApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Update(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedVoucherCode, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -391,8 +391,8 @@ func (this *SalesVoucherCodeApplicationServiceImpl) Update(
 }
 
 func (this *SalesVoucherCodeApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Delete(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedVoucherCode, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -402,8 +402,8 @@ func (this *SalesVoucherCodeApplicationServiceImpl) Delete(
 }
 
 func (this *SalesVoucherCodeApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.pricingChangedPub.PublishAsync(ctx, itEvent.PricingChangedVoucherCode, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))

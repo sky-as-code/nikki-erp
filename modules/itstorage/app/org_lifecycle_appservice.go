@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/itstorage/constants"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 	itFile "github.com/sky-as-code/nikki-erp/modules/itstorage/interfaces/file"
@@ -48,7 +48,7 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model
 	if root != nil {
 		row[models.SpaceFieldParentId] = *root.GetId()
 	}
-	_, err = composable.CreateOne(ctx, this.spaceSvc, row)
+	_, err = dynamicresource.CreateOne(ctx, this.spaceSvc, row)
 	return err
 }
 
@@ -60,7 +60,7 @@ func (this *OrgLifecycleAppServiceImpl) CleanUpOrg(ctx corectx.Context, orgId mo
 		return err
 	}
 	var objectKeys []string
-	err = composable.InTransaction(ctx, this.spaceSvc.Repository(), func(tranxCtx corectx.Context) error {
+	err = dynamicresource.InTransaction(ctx, this.spaceSvc.Repository(), func(tranxCtx corectx.Context) error {
 		var err error
 		objectKeys, err = this.fileSvc.DeleteSpaceTree(tranxCtx, space)
 		return err

@@ -2,11 +2,11 @@ package app
 
 import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewProductAttributeApplicationService is handed the composable default by the product_attribute onion.
-func NewProductAttributeApplicationService(base composable.CrudApplicationService) itProduct.ProductAttributeApplicationService {
+func NewProductAttributeApplicationService(base dynamicresource.CrudApplicationService) itProduct.ProductAttributeApplicationService {
 	return &ProductAttributeApplicationServiceImpl{CrudApplicationService: base}
 }
 
@@ -17,5 +17,5 @@ func NewProductAttributeApplicationService(base composable.CrudApplicationServic
 // domain service writes them through the value domain service without a second permission
 // check. The standalone product_attribute_value routes keep their own permissions.
 type ProductAttributeApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }

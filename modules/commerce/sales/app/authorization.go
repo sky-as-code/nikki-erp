@@ -13,7 +13,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	reguard "github.com/sky-as-code/nikki-erp/modules/core/requestguard"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // assertPermission checks the caller's entitlement. The resource code is the schema name,
@@ -55,7 +55,7 @@ func assertOrderRecordPermission(ctx corectx.Context, action, schema, id string)
 	return assertStoredOrderPermission(ctx, action, id, repo)
 }
 
-func assertStoredOrderPermission(ctx corectx.Context, action, id string, repo composable.CrudRepository) (*ft.ClientErrors, error) {
+func assertStoredOrderPermission(ctx corectx.Context, action, id string, repo dynamicresource.CrudRepository) (*ft.ClientErrors, error) {
 	found, err := repo.FindByKeys(ctx, dmodel.DynamicFields{"id": id})
 	if err != nil {
 		return nil, err

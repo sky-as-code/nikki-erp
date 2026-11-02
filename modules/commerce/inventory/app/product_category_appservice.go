@@ -6,26 +6,26 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewProductCategoryApplicationService is handed the composable default by the product_category onion.
 func NewProductCategoryApplicationService(
-	base composable.CrudApplicationService, catalogChangedPub itEvent.CatalogChangedEventPublisher,
+	base dynamicresource.CrudApplicationService, catalogChangedPub itEvent.CatalogChangedEventPublisher,
 ) itProduct.ProductCategoryApplicationService {
 	return &ProductCategoryApplicationServiceImpl{CrudApplicationService: base, catalogChangedPub: catalogChangedPub}
 }
 
 // ProductCategoryApplicationServiceImpl is the authorized CRUD of the resource.
 type ProductCategoryApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	catalogChangedPub itEvent.CatalogChangedEventPublisher
 }
 
 func (this *ProductCategoryApplicationServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand,
-) (*composable.CreateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.CreateCommand,
+) (*dynamicresource.CreateResult, error) {
 	res, err := this.CrudApplicationService.Create(ctx, cmd)
 	if err == nil && res.HasData && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedCategory, lo.FromPtr(res.Data.GetString(basemodel.FieldOrgId)), lo.FromPtr(res.Data.GetString(basemodel.FieldId)))
@@ -35,8 +35,8 @@ func (this *ProductCategoryApplicationServiceImpl) Create(
 }
 
 func (this *ProductCategoryApplicationServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Update(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedCategory, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -46,8 +46,8 @@ func (this *ProductCategoryApplicationServiceImpl) Update(
 }
 
 func (this *ProductCategoryApplicationServiceImpl) Delete(
-	ctx corectx.Context, cmd composable.DeleteCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.DeleteCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.Delete(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedCategory, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))
@@ -57,8 +57,8 @@ func (this *ProductCategoryApplicationServiceImpl) Delete(
 }
 
 func (this *ProductCategoryApplicationServiceImpl) SetArchived(
-	ctx corectx.Context, cmd composable.SetArchivedCommand,
-) (*composable.MutateResult, error) {
+	ctx corectx.Context, cmd dynamicresource.SetArchivedCommand,
+) (*dynamicresource.MutateResult, error) {
 	res, err := this.CrudApplicationService.SetArchived(ctx, cmd)
 	if err == nil && res.ClientErrors.Count() == 0 {
 		this.catalogChangedPub.PublishAsync(ctx, itEvent.CatalogChangedCategory, lo.FromPtr(cmd.GetString(basemodel.FieldOrgId)), lo.FromPtr(cmd.GetString(basemodel.FieldId)))

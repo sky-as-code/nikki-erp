@@ -56,7 +56,11 @@ func (this *ProductTemplateDomainServiceImpl) reconcile(
 		return outcome, cErrs, err
 	}
 	cErrs, err = this.executeReconcile(ctx, outcome, state, desired, req.input != nil)
-	return outcome, cErrs, err
+	if err != nil || cErrs.Count() > 0 {
+		return outcome, cErrs, err
+	}
+	// An extended key or a reordered line changes the names of variants the plan kept.
+	return outcome, nil, RefreshTemplateVariantNames(ctx, req.templateId)
 }
 
 func (this *ProductTemplateDomainServiceImpl) planReconcile(

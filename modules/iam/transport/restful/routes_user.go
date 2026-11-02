@@ -5,7 +5,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/iam/transport/restful/v1"
 )
@@ -27,16 +27,16 @@ func initUserCrudV1() error {
 	})
 }
 
-func userRestEngine(rest *v1.UserCrudRest) composable.RestEngine {
-	return composable.NewRestEngine(models.UserSchemaName, rest).
+func userRestEngine(rest *v1.UserCrudRest) dynamicresource.RestEngine {
+	return dynamicresource.NewRestEngine(models.UserSchemaName, rest).
 		AddCrudRoutes().
-		AddRoute(composable.RouteDefinition{
-			Path: ":id/send_invitation", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.SendInvitation,
+		AddRoute(dynamicresource.RouteDefinition{
+			Path: ":id/send_invitation", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.SendInvitation,
 		}).
-		AddRoute(composable.RouteDefinition{
-			Path: ":id/manage_roles", ActionType: composable.ActionTypeGeneric, HandlerFn: rest.ManageRoles,
+		AddRoute(dynamicresource.RouteDefinition{
+			Path: ":id/manage_roles", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: rest.ManageRoles,
 		}).
-		AddRoute(composable.RouteDefinition{
-			Path: ":id/roles", ActionType: composable.ActionTypeRead, HandlerFn: rest.Roles,
+		AddRoute(dynamicresource.RouteDefinition{
+			Path: ":id/roles", ActionType: dynamicresource.ActionTypeRead, HandlerFn: rest.Roles,
 		})
 }

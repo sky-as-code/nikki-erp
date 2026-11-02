@@ -4,19 +4,19 @@ import (
 	"math"
 
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 )
 
 const moduleMetadataSyncLockKey = math.MaxInt64
 
 // NewModuleRepository is handed the composable default by the module metadata onion.
-func NewModuleRepository(base composable.CrudRepository) it.ModuleRepository {
+func NewModuleRepository(base dynamicresource.CrudRepository) it.ModuleRepository {
 	return &ModuleRepositoryImpl{CrudRepository: base}
 }
 
 type ModuleRepositoryImpl struct {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 func (this *ModuleRepositoryImpl) AcquireLock(ctx corectx.Context) (bool, error) {

@@ -14,14 +14,14 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/storage"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
 )
 
 // FileRepository adds the set-based statements the org cleanup needs. Both join the transaction
 // the context carries and confine themselves to the acting tenant.
 type FileRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 
 	ListObjectKeysInSpaces(ctx corectx.Context, spaceIds []model.Id) ([]string, error)
 	DeleteInSpaces(ctx corectx.Context, spaceIds []model.Id) (int, error)
@@ -38,7 +38,7 @@ type FileRepository interface {
 }
 
 type FileDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// Upload validates the declared metadata and the content, checks the tenant quota, streams
 	// the body to storage and records the file. It authorizes nothing.
@@ -70,7 +70,7 @@ type FileDomainService interface {
 }
 
 type FileApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	UploadFile(ctx corectx.Context, cmd UploadFileCommand) (*UploadFileResult, error)
 	GetFileMeta(ctx corectx.Context, query GetFileMetaQuery) (*GetFileMetaResult, error)
@@ -139,7 +139,7 @@ type DownloadFileResultData struct {
 type DownloadFileResult = dyn.OpResult[DownloadFileResultData]
 
 type (
-	GetFileByIdQuery  = composable.GetByIdQuery
-	SearchFilesQuery  = composable.SearchQuery
-	DeleteFileCommand = composable.DeleteCommand
+	GetFileByIdQuery  = dynamicresource.GetByIdQuery
+	SearchFilesQuery  = dynamicresource.SearchQuery
+	DeleteFileCommand = dynamicresource.DeleteCommand
 )

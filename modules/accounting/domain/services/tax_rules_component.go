@@ -7,7 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // componentRepos are the two tables a component rule reads. A repository answers only for its own
@@ -18,9 +18,10 @@ type componentRepos struct {
 	Components models.TaxSearcher
 }
 
-func validateComponentCreate(repos componentRepos) composable.ValidateExtraFn {
+func validateComponentCreate(repos componentRepos) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity,
+		vErrs *ft.ClientErrors,
 	) error {
 		params := inputModel.GetFieldData()
 		component := models.NewTaxComponentFrom(params)
@@ -28,9 +29,9 @@ func validateComponentCreate(repos componentRepos) composable.ValidateExtraFn {
 	}
 }
 
-func validateComponentUpdate(repos componentRepos) composable.ValidateExtraFn {
+func validateComponentUpdate(repos componentRepos) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
 		vErrs *ft.ClientErrors,
 	) error {
 		params := inputModel.GetFieldData()

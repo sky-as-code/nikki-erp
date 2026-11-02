@@ -51,7 +51,7 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M51EPZ8K0CA51CB8DX821SM3', jsonb_build_object('en-US', 'Essential - Language', 'vi-VN', 'Thiết yếu - Ngôn ngữ'), 'essential_language', 'Languages the application can be shown in', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M51EPZ8K0CA51CB8DX821SM3', jsonb_build_object('en-US', 'Essential - Language', 'vi-VN', 'Thiết yếu - Ngôn ngữ'), 'essential_language', 'Languages the application can be shown in', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -62,7 +62,9 @@ BEGIN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		('01M51EPZ8KZC4XAGSH6VMSQY2J', jsonb_build_object('en-US', 'Create', 'vi-VN', 'Tạo'), 'create', NULL, '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 		('01M51EPZ8K971CG6CDVQR2HM4C', jsonb_build_object('en-US', 'Update', 'vi-VN', 'Cập nhật'), 'update', NULL, '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M51EPZ8KAM7Q05W89H7KMFN4', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M51EPZ8KAM7Q05W89H7KMFN4', jsonb_build_object('en-US', 'Delete', 'vi-VN', 'Xóa'), 'delete', NULL, '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M51EPZ8KR000000000000RD1', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', NULL, '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M51EPZ8KR000000000000AR1', jsonb_build_object('en-US', 'Set archived status', 'vi-VN', 'Đặt trạng thái lưu trữ'), 'set_archived', 'Archive a language so it is out of the working set', '01M51EPZ8K0CA51CB8DX821SM3', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;

@@ -6,12 +6,13 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
-func validateDefinitionVersionCreate(repo models.TaxSearcher) composable.ValidateExtraFn {
+func validateDefinitionVersionCreate(repo models.TaxSearcher) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity,
+		vErrs *ft.ClientErrors,
 	) error {
 		params := inputModel.GetFieldData()
 		version := models.NewTaxDefinitionVersionFrom(params)
@@ -23,9 +24,9 @@ func validateDefinitionVersionCreate(repo models.TaxSearcher) composable.Validat
 	}
 }
 
-func validateDefinitionVersionUpdate(repo models.TaxSearcher) composable.ValidateExtraFn {
+func validateDefinitionVersionUpdate(repo models.TaxSearcher) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity,
 		vErrs *ft.ClientErrors,
 	) error {
 		params := inputModel.GetFieldData()
@@ -55,7 +56,7 @@ func validateDefinitionVersionUpdate(repo models.TaxSearcher) composable.Validat
 }
 
 func validateDefinitionVersionDelete(
-	_ corectx.Context, _ *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, _ *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	found := entityFields(foundModel)
 	assertDeletableLifecycle(models.TaxDefinitionVersionFieldLifecycleStatus, found, vErrs)

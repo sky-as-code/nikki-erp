@@ -13,36 +13,37 @@ import (
 	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/event"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type productTemplateEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_product_template"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_product_template"`
 }
 
 // registerProductTemplateEngine declares the product_template onion and publishes its typed layers.
 func registerProductTemplateEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.ProductTemplateSchemaName),
+		dynamicresource.EngineDependencyName(models.ProductTemplateSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			usageDispatcher *usagecheck.Dispatcher,
 			catalogPublisher itEvent.CatalogChangedEventPublisher,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+			units *services.OrgUnitResolver,
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.ProductTemplateSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewProductTemplateRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
-					return services.NewProductTemplateDomainService(base, usageDispatcher, composable.NewLazyStorageConsumer())
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
+					return services.NewProductTemplateDomainService(base, usageDispatcher, dynamicresource.NewLazyStorageConsumer())
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewProductTemplateApplicationService(base, catalogPublisher)
 				},
-				ComputedFunctions: newTemplateComputedFunctions(),
+				ComputedFunctions: newTemplateComputedFunctions(units),
 			}, param)
 		},
 	)

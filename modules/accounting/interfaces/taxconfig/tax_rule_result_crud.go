@@ -1,24 +1,24 @@
 package taxconfig
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type TaxRuleResultRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type TaxRuleResultDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type TaxRuleResultApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateTaxRuleResultCommand = composable.CreateCommand
-	UpdateTaxRuleResultCommand = composable.UpdateCommand
-	DeleteTaxRuleResultCommand = composable.DeleteCommand
-	SearchTaxRuleResultQuery   = composable.SearchQuery
+	CreateTaxRuleResultCommand = dynamicresource.CreateCommand
+	UpdateTaxRuleResultCommand = dynamicresource.UpdateCommand
+	DeleteTaxRuleResultCommand = dynamicresource.DeleteCommand
+	SearchTaxRuleResultQuery   = dynamicresource.SearchQuery
 )

@@ -1,42 +1,42 @@
 package product
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // BrandRepository reads and writes brand rows.
 type BrandRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // BrandDomainService is the CRUD of the resource plus its own rules.
 type BrandDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // BrandApplicationService is the authorized surface the REST handler serves.
 type BrandApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a
 // resource-specific name.
 type (
-	CreateBrandCommand      = composable.CreateCommand
-	UpdateBrandCommand      = composable.UpdateCommand
-	DeleteBrandCommand      = composable.DeleteCommand
-	SetBrandArchivedCommand = composable.SetArchivedCommand
-	GetBrandByIdQuery       = composable.GetByIdQuery
-	SearchBrandsQuery       = composable.SearchQuery
-	BrandExistsQuery        = composable.ExistsQuery
+	CreateBrandCommand      = dynamicresource.CreateCommand
+	UpdateBrandCommand      = dynamicresource.UpdateCommand
+	DeleteBrandCommand      = dynamicresource.DeleteCommand
+	SetBrandArchivedCommand = dynamicresource.SetArchivedCommand
+	GetBrandByIdQuery       = dynamicresource.GetByIdQuery
+	SearchBrandsQuery       = dynamicresource.SearchQuery
+	BrandExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateBrandResult      = composable.CreateResult
-	UpdateBrandResult      = composable.MutateResult
-	DeleteBrandResult      = composable.MutateResult
-	SetBrandArchivedResult = composable.MutateResult
-	GetBrandByIdResult     = composable.GetOneResult
-	SearchBrandsResult     = composable.SearchResult
-	BrandExistsResult      = composable.ExistsResult
+	CreateBrandResult      = dynamicresource.CreateResult
+	UpdateBrandResult      = dynamicresource.MutateResult
+	DeleteBrandResult      = dynamicresource.MutateResult
+	SetBrandArchivedResult = dynamicresource.MutateResult
+	GetBrandByIdResult     = dynamicresource.GetOneResult
+	SearchBrandsResult     = dynamicresource.SearchResult
+	BrandExistsResult      = dynamicresource.ExistsResult
 )

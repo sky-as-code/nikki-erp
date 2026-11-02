@@ -12,7 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
 	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/external"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/order"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The purchase order line. Its domain service validates the product and unit, prices the line and
@@ -21,28 +21,28 @@ import (
 type purchaseOrderLineEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_order_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_order_line"`
 }
 
 func registerPurchaseOrderLineEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.PurchaseOrderLineSchemaName),
+		dynamicresource.EngineDependencyName(models.PurchaseOrderLineSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			products itExt.ProductExtService,
 			uoms itExt.UomExtService,
-		) composable.DynamicResourceEngineOnion {
+		) dynamicresource.DynamicResourceEngineOnion {
 			validator := services.NewProductLineValidator(products, uoms)
 			pricer := services.NewLinePricer(uoms)
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.PurchaseOrderLineSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewPurchaseOrderLineRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewPurchaseOrderLineDomainService(base, validator, pricer)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewPurchaseOrderLineApplicationService(base)
 				},
 			}, param)

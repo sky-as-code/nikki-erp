@@ -2,7 +2,7 @@ package app
 
 import (
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/order"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The order's child resources.
@@ -13,34 +13,38 @@ import (
 // order they describe. CrudActions on their onions enforces that at the application layer, which
 // holds for an in-process caller too, not just for a route.
 
-func NewSalesOrderLineApplicationService(base composable.CrudApplicationService) itOrder.SalesOrderLineApplicationService {
+func NewSalesOrderLineApplicationService(
+	base dynamicresource.CrudApplicationService,
+) itOrder.SalesOrderLineApplicationService {
 	return &SalesOrderLineApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesOrderLineApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
-func NewSalesOrderLineComponentApplicationService(base composable.CrudApplicationService) itOrder.SalesOrderLineComponentApplicationService {
+func NewSalesOrderLineComponentApplicationService(base dynamicresource.CrudApplicationService) itOrder.SalesOrderLineComponentApplicationService {
 	return &SalesOrderLineComponentApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesOrderLineComponentApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
-func NewSalesOrderAdjustmentApplicationService(base composable.CrudApplicationService) itOrder.SalesOrderAdjustmentApplicationService {
+func NewSalesOrderAdjustmentApplicationService(base dynamicresource.CrudApplicationService) itOrder.SalesOrderAdjustmentApplicationService {
 	return &SalesOrderAdjustmentApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesOrderAdjustmentApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
-func NewSalesOrderEventApplicationService(base composable.CrudApplicationService) itOrder.SalesOrderEventApplicationService {
+func NewSalesOrderEventApplicationService(
+	base dynamicresource.CrudApplicationService,
+) itOrder.SalesOrderEventApplicationService {
 	return &SalesOrderEventApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SalesOrderEventApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }

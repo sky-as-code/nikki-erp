@@ -15,7 +15,7 @@ import (
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	itLang "github.com/sky-as-code/nikki-erp/modules/core/language/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 )
@@ -24,13 +24,13 @@ import (
 // is the default's, with the field rules chained into create and update and internal modules
 // hidden from every read; the boot-time sync is this type's own.
 func NewModuleDomainService(
-	base composable.CrudDomainService, cqrsBus cqrs.CqrsBus, logger logging.LoggerService,
+	base dynamicresource.CrudDomainService, cqrsBus cqrs.CqrsBus, logger logging.LoggerService,
 ) it.ModuleDomainService {
 	return &ModuleDomainServiceImpl{CrudDomainService: base, cqrsBus: cqrsBus, logger: logger}
 }
 
 type ModuleDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	cqrsBus cqrs.CqrsBus
 	logger  logging.LoggerService
 }
@@ -40,18 +40,18 @@ func (this *ModuleDomainServiceImpl) moduleRepo() it.ModuleRepository {
 }
 
 func (this *ModuleDomainServiceImpl) Create(
-	ctx corectx.Context, cmd it.CreateModuleCommand, options ...composable.CreateOptions,
+	ctx corectx.Context, cmd it.CreateModuleCommand, options ...dynamicresource.CreateOptions,
 ) (*it.CreateModuleResult, error) {
-	opts := safe.GetOptional(options, composable.CreateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.validateModuleFields)
+	opts := safe.GetOptional(options, dynamicresource.CreateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.validateModuleFields)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 func (this *ModuleDomainServiceImpl) Update(
-	ctx corectx.Context, cmd it.UpdateModuleCommand, options ...composable.UpdateOptions,
+	ctx corectx.Context, cmd it.UpdateModuleCommand, options ...dynamicresource.UpdateOptions,
 ) (*it.UpdateModuleResult, error) {
-	opts := safe.GetOptional(options, composable.UpdateOptions{})
-	opts.ValidateExtra = composable.ChainValidateExtra(opts.ValidateExtra, this.validateModuleFields)
+	opts := safe.GetOptional(options, dynamicresource.UpdateOptions{})
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(opts.ValidateExtra, this.validateModuleFields)
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
 
@@ -123,7 +123,7 @@ func excludeInternalModules(query dyn.SearchQuery) dyn.SearchQuery {
 // validateModuleFields checks the name and version formats and narrows the label to the enabled
 // languages, writing the narrowed label back onto the input.
 func (this *ModuleDomainServiceImpl) validateModuleFields(
-	ctx corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	module := models.NewModuleMetadataFrom(inputModel.GetFieldData())
 	if module.GetName() != nil {

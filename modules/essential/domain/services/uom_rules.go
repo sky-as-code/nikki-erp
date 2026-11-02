@@ -10,15 +10,16 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
 // validateUomCreate enforces the invariants that apply to a brand-new UoM.
-func validateUomCreate(repo models.UomSearcher) composable.ValidateExtraFn {
+func validateUomCreate(repo models.UomSearcher) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity,
+		vErrs *ft.ClientErrors,
 	) error {
 		params := inputModel.GetFieldData()
 		uom := models.NewUomFrom(params)
@@ -32,9 +33,9 @@ func validateUomCreate(repo models.UomSearcher) composable.ValidateExtraFn {
 // rules that only apply once a record exists.
 func validateUomUpdate(
 	repo models.UomSearcher, usageDispatcher *usagecheck.Dispatcher,
-) composable.ValidateExtraFn {
+) dynamicresource.ValidateExtraFn {
 	return func(
-		ctx corectx.Context, inputModel *composable.DynamicEntity, foundModel *composable.DynamicEntity, vErrs *ft.ClientErrors,
+		ctx corectx.Context, inputModel *dynamicresource.DynamicEntity, foundModel *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 	) error {
 		if foundModel == nil {
 			return nil

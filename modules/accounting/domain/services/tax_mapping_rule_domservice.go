@@ -2,14 +2,14 @@ package services
 
 import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/taxconfig"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The domain services of the determination resources: mappings and rules (ACC-02).
 
 type TaxMappingDomainServiceImpl struct{ ruledDomainService }
 
-func NewTaxMappingDomainService(base composable.CrudDomainService) taxconfig.TaxMappingDomainService {
+func NewTaxMappingDomainService(base dynamicresource.CrudDomainService) taxconfig.TaxMappingDomainService {
 	return &TaxMappingDomainServiceImpl{newRuled(base, taxRuleSet{
 		create: validateMappingCreate,
 		update: validateMappingUpdate,
@@ -22,7 +22,7 @@ func NewTaxMappingDomainService(base composable.CrudDomainService) taxconfig.Tax
 type TaxMappingLineDomainServiceImpl struct{ ruledDomainService }
 
 func NewTaxMappingLineDomainService(
-	base composable.CrudDomainService, mappings taxconfig.TaxMappingRepository,
+	base dynamicresource.CrudDomainService, mappings taxconfig.TaxMappingRepository,
 ) taxconfig.TaxMappingLineDomainService {
 	return &TaxMappingLineDomainServiceImpl{newRuled(base, taxRuleSet{
 		create: validateMappingLineCreate,
@@ -32,7 +32,7 @@ func NewTaxMappingLineDomainService(
 
 type TaxRuleDomainServiceImpl struct{ ruledDomainService }
 
-func NewTaxRuleDomainService(base composable.CrudDomainService) taxconfig.TaxRuleDomainService {
+func NewTaxRuleDomainService(base dynamicresource.CrudDomainService) taxconfig.TaxRuleDomainService {
 	return &TaxRuleDomainServiceImpl{newRuled(base, taxRuleSet{
 		create: validateRuleCreate,
 		update: validateRuleUpdate,
@@ -42,7 +42,7 @@ func NewTaxRuleDomainService(base composable.CrudDomainService) taxconfig.TaxRul
 
 type TaxRuleConditionDomainServiceImpl struct{ ruledDomainService }
 
-func NewTaxRuleConditionDomainService(base composable.CrudDomainService) taxconfig.TaxRuleConditionDomainService {
+func NewTaxRuleConditionDomainService(base dynamicresource.CrudDomainService) taxconfig.TaxRuleConditionDomainService {
 	return &TaxRuleConditionDomainServiceImpl{newRuled(base, taxRuleSet{
 		create: validateRuleConditionWrite,
 		update: validateRuleConditionUpdate,
@@ -51,7 +51,7 @@ func NewTaxRuleConditionDomainService(base composable.CrudDomainService) taxconf
 
 type TaxRuleResultDomainServiceImpl struct{ ruledDomainService }
 
-func NewTaxRuleResultDomainService(base composable.CrudDomainService) taxconfig.TaxRuleResultDomainService {
+func NewTaxRuleResultDomainService(base dynamicresource.CrudDomainService) taxconfig.TaxRuleResultDomainService {
 	return &TaxRuleResultDomainServiceImpl{newRuled(base, taxRuleSet{
 		create: validateRuleResultWrite,
 		update: validateRuleResultUpdate,

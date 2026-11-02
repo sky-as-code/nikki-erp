@@ -48,7 +48,8 @@
 			"no_update": true,
 			"description": {
 				"en-US": "The business lifecycle. Written only by the confirm, close and cancel actions, never by a plain update, so that no transition can happen without its audit event (BR 33, PUR-R3, PUR-R6). Independent of is_archived: a closed agreement may be archived or not, and both combinations are meaningful (BR 34)."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "vendor_id",

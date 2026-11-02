@@ -6,7 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/app"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
@@ -20,25 +20,25 @@ import (
 type paymentProfileEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_payment_profile"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_paymentinvoice_payment_profile"`
 }
 
 func registerPaymentProfileEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.PaymentProfileSchemaName),
+		dynamicresource.EngineDependencyName(models.PaymentProfileSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			profiles *services.PaymentProfileDomainService,
-		) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.PaymentProfileSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewPaymentProfileRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewPaymentProfileCrudDomainService(base, profiles)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewPaymentProfileApplicationService(base)
 				},
 			}, param)

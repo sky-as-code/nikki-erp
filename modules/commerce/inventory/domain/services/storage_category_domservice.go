@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -12,17 +12,17 @@ import (
 )
 
 // NewStorageCategoryDomainService derives the storage category service from the engine's default.
-func NewStorageCategoryDomainService(base composable.CrudDomainService) *StorageCategoryDomainServiceImpl {
+func NewStorageCategoryDomainService(base dynamicresource.CrudDomainService) *StorageCategoryDomainServiceImpl {
 	return &StorageCategoryDomainServiceImpl{CrudDomainService: base}
 }
 
 // StorageCategoryDomainServiceImpl guards archiving a category something still uses: withdrawing
 // one while a live location points at it leaves that location citing a policy nobody can look up.
 type StorageCategoryDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
-var _ composable.CrudDomainService = (*StorageCategoryDomainServiceImpl)(nil)
+var _ dynamicresource.CrudDomainService = (*StorageCategoryDomainServiceImpl)(nil)
 
 // SetArchived refuses to archive a category an unarchived location still uses. Historical use does
 // not count: an archived location that once carried it is no reason to keep it forever.

@@ -56,7 +56,9 @@ Ensure Payment Currency
     ...    one is minted only when the deployment has none.
     ${resolved}=    Get Variable Value    ${PAYINV_CURRENCY_ID}    ${EMPTY}
     IF    $resolved    RETURN
-    ${resp}=    GET On Session    api    ${CURRENCY_API}    params=${{ {'size': 1} }}
+    #    Currencies are a tenant catalogue answered per organization, so every request names one.
+    Ensure Payment Invoice Org
+    ${resp}=    GET On Session    api    ${CURRENCY_API}    params=${{ {'size': 1, 'org_id': $PAYINV_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     ${items}=    Set Variable    ${resp.json()}[items]
     IF    len($items) > 0
@@ -68,7 +70,7 @@ Ensure Payment Currency
     #    regex rejects.
     ${code}=    Generate Random String    3    [UPPER]
     ${resp}=    POST On Session    api    ${CURRENCY_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': 'Robot Currency'}, 'symbol': 'R', 'decimal_places': 2, 'is_active': True} }}
+    ...    json=${{ {'code': $code, 'name': {'en-US': 'Robot Currency'}, 'symbol': 'R', 'rounding': '0.01', 'is_active': True, 'org_id': $PAYINV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${PAYINV_CURRENCY_ID}    ${id}
     Set Global Variable    ${PAYINV_CREATED_CURRENCY_ID}    ${id}

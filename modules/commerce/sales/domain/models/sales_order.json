@@ -225,7 +225,8 @@
 			"no_update": true,
 			"description": {
 				"en-US": "The document's own lifecycle: whether the sale has been committed to, finished, or called off. One of FOUR independent status fields (BR 9), and they are never collapsed into one: a confirmed order can be fully paid and not yet delivered, or delivered and unpaid, and a single status would have to invent an ordering between those that the business does not have. Written only by the lifecycle operations, never by a plain update."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "payment_status",

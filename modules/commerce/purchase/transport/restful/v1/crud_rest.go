@@ -5,11 +5,11 @@ import (
 
 	itAgreement "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/agreement"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/order"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The container names the REST structs inject. A dig name tag must be a literal, so routes_test.go
-// asserts each still equals composable.EngineDependencyName of its schema.
+// asserts each still equals dynamicresource.EngineDependencyName of its schema.
 const (
 	ConfigurationEngineName      = "dynengine_purchase_configuration"
 	VendorProductPriceEngineName = "dynengine_purchase_vendor_product_price"
@@ -24,7 +24,7 @@ const (
 type configurationRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_configuration"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_configuration"`
 }
 
 func NewConfigurationRest(params configurationRestParams) *ConfigurationRest {
@@ -34,13 +34,13 @@ func NewConfigurationRest(params configurationRestParams) *ConfigurationRest {
 }
 
 type ConfigurationRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type vendorProductPriceRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_vendor_product_price"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_vendor_product_price"`
 }
 
 func NewVendorProductPriceRest(params vendorProductPriceRestParams) *VendorProductPriceRest {
@@ -50,13 +50,13 @@ func NewVendorProductPriceRest(params vendorProductPriceRestParams) *VendorProdu
 }
 
 type VendorProductPriceRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type sourcingGroupRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_sourcing_group"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_sourcing_group"`
 }
 
 func NewSourcingGroupRest(params sourcingGroupRestParams) *SourcingGroupRest {
@@ -66,13 +66,13 @@ func NewSourcingGroupRest(params sourcingGroupRestParams) *SourcingGroupRest {
 }
 
 type SourcingGroupRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type auditEventRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_audit_event"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_audit_event"`
 }
 
 func NewAuditEventRest(params auditEventRestParams) *AuditEventRest {
@@ -82,13 +82,13 @@ func NewAuditEventRest(params auditEventRestParams) *AuditEventRest {
 }
 
 type AuditEventRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type agreementLineRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_agreement_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_agreement_line"`
 }
 
 func NewAgreementLineRest(params agreementLineRestParams) *AgreementLineRest {
@@ -98,13 +98,13 @@ func NewAgreementLineRest(params agreementLineRestParams) *AgreementLineRest {
 }
 
 type AgreementLineRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type purchaseOrderLineRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_order_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_order_line"`
 }
 
 func NewPurchaseOrderLineRest(params purchaseOrderLineRestParams) *PurchaseOrderLineRest {
@@ -114,13 +114,13 @@ func NewPurchaseOrderLineRest(params purchaseOrderLineRestParams) *PurchaseOrder
 }
 
 type PurchaseOrderLineRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 }
 
 type agreementRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_agreement"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_agreement"`
 }
 
 func NewAgreementRest(params agreementRestParams) *AgreementRest {
@@ -131,14 +131,14 @@ func NewAgreementRest(params agreementRestParams) *AgreementRest {
 }
 
 type AgreementRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	agreementSvc itAgreement.AgreementCrudApplicationService
 }
 
 type purchaseOrderRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_purchase_order"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_purchase_order"`
 }
 
 func NewPurchaseOrderRest(params purchaseOrderRestParams) *PurchaseOrderRest {
@@ -149,6 +149,6 @@ func NewPurchaseOrderRest(params purchaseOrderRestParams) *PurchaseOrderRest {
 }
 
 type PurchaseOrderRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	orderSvc itOrder.PurchaseOrderCrudApplicationService
 }

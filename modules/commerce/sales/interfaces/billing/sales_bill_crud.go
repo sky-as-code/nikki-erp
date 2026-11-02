@@ -3,7 +3,7 @@ package billing
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The CRUD layers of the billing resources. The bill itself is writable and carries five actions;
@@ -11,19 +11,19 @@ import (
 
 // SalesBillRepository reads and writes bills.
 type SalesBillRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // SalesBillDomainService is the CRUD of the resource. The bill's rules live in the operation
 // services (split, merge, pay, settle) rather than in CRUD overrides, because each is a
 // multi-row transaction guarded by a distributed lock rather than a check on one write.
 type SalesBillDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // SalesBillApplicationService is the authorized surface the REST handler serves.
 type SalesBillApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	// Split and Merge restructure what the customer owes; Pay and Settle move money. Each is a
 	// power a grantor withholds independently of ordinary bill edits, so each carries its own
@@ -42,68 +42,68 @@ type SalesBillApplicationService interface {
 }
 
 // BillActionCommand is the bound request of a custom bill action.
-type BillActionCommand = composable.UpdateCommand
+type BillActionCommand = dynamicresource.UpdateCommand
 
 // The read-only billing resources. A line is written by the bill it belongs to, a relation by a
 // split or merge, a payment by the pay and settle paths, a fulfillment request by confirmation.
 // A client that could write them directly could contradict the bill they describe.
 
 type SalesBillLineRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesBillLineApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesBillRelationRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesBillRelationApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesPaymentRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesPaymentApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesFulfillmentRequestRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesFulfillmentRequestApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type SalesFulfillmentRequestLineRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type SalesFulfillmentRequestLineApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateSalesBillCommand      = composable.CreateCommand
-	UpdateSalesBillCommand      = composable.UpdateCommand
-	DeleteSalesBillCommand      = composable.DeleteCommand
-	SetSalesBillArchivedCommand = composable.SetArchivedCommand
-	GetSalesBillByIdQuery       = composable.GetByIdQuery
-	SearchSalesBillsQuery       = composable.SearchQuery
-	SalesBillExistsQuery        = composable.ExistsQuery
+	CreateSalesBillCommand      = dynamicresource.CreateCommand
+	UpdateSalesBillCommand      = dynamicresource.UpdateCommand
+	DeleteSalesBillCommand      = dynamicresource.DeleteCommand
+	SetSalesBillArchivedCommand = dynamicresource.SetArchivedCommand
+	GetSalesBillByIdQuery       = dynamicresource.GetByIdQuery
+	SearchSalesBillsQuery       = dynamicresource.SearchQuery
+	SalesBillExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateSalesBillResult      = composable.CreateResult
-	UpdateSalesBillResult      = composable.MutateResult
-	DeleteSalesBillResult      = composable.MutateResult
-	SetSalesBillArchivedResult = composable.MutateResult
-	GetSalesBillByIdResult     = composable.GetOneResult
-	SearchSalesBillsResult     = composable.SearchResult
-	SalesBillExistsResult      = composable.ExistsResult
+	CreateSalesBillResult      = dynamicresource.CreateResult
+	UpdateSalesBillResult      = dynamicresource.MutateResult
+	DeleteSalesBillResult      = dynamicresource.MutateResult
+	SetSalesBillArchivedResult = dynamicresource.MutateResult
+	GetSalesBillByIdResult     = dynamicresource.GetOneResult
+	SearchSalesBillsResult     = dynamicresource.SearchResult
+	SalesBillExistsResult      = dynamicresource.ExistsResult
 )

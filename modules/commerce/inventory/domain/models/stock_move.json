@@ -3,7 +3,7 @@
 	"label": "inventory_stock_move.label",
 	"table_name": "inventory_stock_moves",
 	"should_build_db": true,
-	"default_search_fields": ["sequence", "demand_quantity", "status"],
+	"default_search_fields": ["product_variant_id", "demand_quantity", "uom_id", "priority", "status", "source_location_id", "destination_location_id"],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
@@ -78,7 +78,8 @@
 			},
 			"required_for_create": true,
 			"default_value": "draft",
-			"no_update": true
+			"no_update": true,
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "priority",

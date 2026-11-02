@@ -3,6 +3,7 @@
 	"label": "essential_language.label",
 	"table_name": "essential_languages",
 	"should_build_db": true,
+	"default_search_fields": ["name", "locale_code", "direction", "public_use", "is_active"],
 	"extend_before": [
 		"core.basemodel.base_model"
 	],
@@ -15,11 +16,12 @@
 				"min": 1,
 				"max": 200
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"unique": true
 		},
 		{
-			"name": "iso_code",
-			"label": "fields.iso_code",
+			"name": "locale_code",
+			"label": "fields.locale_code",
 			"data_type": {
 				"type": "string",
 				"min": 5,
@@ -39,7 +41,8 @@
 					"rtl"
 				]
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "ltr"
 		},
 		{
 			"name": "decimal_separator",
@@ -49,17 +52,29 @@
 				"min": 1,
 				"max": 5
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "."
 		},
 		{
 			"name": "thousands_separator",
 			"label": "fields.thousands_separator",
 			"data_type": {
 				"type": "string",
-				"min": 1,
+				"min": 0,
 				"max": 5
 			},
-			"required_for_create": true
+			"default_value": ","
+		},
+		{
+			"name": "grouping",
+			"label": "fields.grouping",
+			"data_type": {
+				"type": "string",
+				"min": 2,
+				"max": 30
+			},
+			"required_for_create": true,
+			"default_value": "[3,0]"
 		},
 		{
 			"name": "date_format",
@@ -69,7 +84,8 @@
 				"min": 1,
 				"max": 30
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "%m/%d/%Y"
 		},
 		{
 			"name": "time_format",
@@ -79,7 +95,8 @@
 				"min": 1,
 				"max": 30
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "%H:%M:%S"
 		},
 		{
 			"name": "short_time_format",
@@ -89,7 +106,8 @@
 				"min": 1,
 				"max": 30
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "%H:%M"
 		},
 		{
 			"name": "first_day_of_week",
@@ -106,16 +124,51 @@
 					"sunday"
 				]
 			},
-			"required_for_create": true
+			"required_for_create": true,
+			"default_value": "sunday"
 		},
 		{
-			"name": "is_enabled",
-			"label": "fields.is_enabled",
+			"name": "public_use",
+			"label": "fields.public_use",
 			"data_type": "boolean",
-			"default_value": false
+			"default_value": false,
+			"metadata": {"track_history": true},
+			"description": {
+				"en-US": "Whether the language is offered where no organization is known yet: the sign-in page, and a language search without org_id. A new organization starts with these languages active."
+			}
+		},
+		{
+			"name": "is_active",
+			"label": "fields.is_active",
+			"data_type": "boolean",
+			"computed": {
+				"kind": "exists",
+				"is_stored": false,
+				"source": "org_activations",
+				"filter": {
+					"and": [
+						{ "if": ["org_id", "=", "${ctx.org_id}"] },
+						{ "if": ["is_active", "=", true] }
+					]
+				},
+				"context": ["org_id"]
+			},
+			"metadata": {"writable": true},
+			"description": {
+				"en-US": "Whether the acting organization uses this language: its essential_org_language row, false without one. Written through this record's create and update, never stored here, so each organization answers for itself."
+			}
+		}
+	],
+
+	"edges_from": [
+		{
+			"edge": "org_activations",
+			"label": { "en-US": "Organization activations" },
+			"existing": { "src_schema": "essential_org_language", "src_edge": "language" }
 		}
 	],
 	"extend_after": [
+		"core.basemodel.archivable_model",
 		"core.basemodel.versioned_model",
 		"core.basemodel.auditable_model",
 		"core.basemodel.traceable_model"

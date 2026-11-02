@@ -7,7 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
@@ -168,7 +168,7 @@ func applyMovesDelta(
 
 // transferMovesWriter applies a delta to one draft transfer's moves.
 type transferMovesWriter struct {
-	moveSvc      composable.CrudDomainService
+	moveSvc      dynamicresource.CrudDomainService
 	transfer     models.StockTransfer
 	transferId   string
 	owned        map[string]dmodel.DynamicFields

@@ -4,23 +4,23 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // LanguageRepository reads and writes language rows: the composable default today.
 type LanguageRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // LanguageLookupService is what another module asks of the language catalogue.
 type LanguageLookupService interface {
-	GetLanguageByIsoCode(ctx corectx.Context, query GetLanguageByIsoCodeQuery) (*GetLanguageByIsoCodeResult, error)
+	GetLanguageByLocaleCode(ctx corectx.Context, query GetLanguageByLocaleCodeQuery) (*GetLanguageByLocaleCodeResult, error)
 	ListEnabledLanguages(ctx corectx.Context, query ListEnabledLanguagesQuery) (*ListEnabledLanguagesResult, error)
 }
 
 // LanguageDomainService is the CRUD of the resource plus the lookups.
 type LanguageDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	LanguageLookupService
 }
 
@@ -39,7 +39,7 @@ type LanguageAppService interface {
 // LanguageApplicationService is the whole application layer: the authorized CRUD the REST handler
 // serves, the cross-module capability, and the two public collection actions.
 type LanguageApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	LanguageAppService
 
 	// GetLanguageJsonAction serves GET .../json: public, the translation bundles render every page

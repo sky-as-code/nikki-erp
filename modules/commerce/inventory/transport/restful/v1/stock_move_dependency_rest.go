@@ -4,17 +4,17 @@ import (
 	"go.uber.org/dig"
 
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // StockMoveDependencyEngineName is the container name of the stock_move_dependency onion, declared once for the struct tag and
-// checked against composable.EngineDependencyName by a test.
+// checked against dynamicresource.EngineDependencyName by a test.
 const StockMoveDependencyEngineName = "dynengine_inventory_stock_move_dependency"
 
 type stockMoveDependencyRestParams struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_move_dependency"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_inventory_stock_move_dependency"`
 }
 
 func NewStockMoveDependencyRest(params stockMoveDependencyRestParams) *StockMoveDependencyRest {
@@ -26,6 +26,6 @@ func NewStockMoveDependencyRest(params stockMoveDependencyRestParams) *StockMove
 
 // StockMoveDependencyRest serves the built-in CRUD of the stock_move_dependency resource.
 type StockMoveDependencyRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	stockMoveDependencySvc itStock.StockMoveDependencyApplicationService
 }

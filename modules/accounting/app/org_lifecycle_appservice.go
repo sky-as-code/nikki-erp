@@ -13,7 +13,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle/defaults"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The currency and rounding policy every new organization starts in. They match the defaults'
@@ -54,23 +54,23 @@ type OrgLifecycleAppServiceImpl struct {
 }
 
 // writeOrder lists the defaulted resources parents first.
-func (this *OrgLifecycleAppServiceImpl) writeOrder() []composable.CrudDomainService {
+func (this *OrgLifecycleAppServiceImpl) writeOrder() []dynamicresource.CrudDomainService {
 	p := this.param
-	return []composable.CrudDomainService{
+	return []dynamicresource.CrudDomainService{
 		p.Jurisdiction, p.Group, p.RoundingPolicy, p.Classification, p.Tax,
 		p.DefinitionVersion, p.RateVersion, p.Rule, p.RuleCondition, p.RuleResult,
 	}
 }
 
 func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model.Id) error {
-	return composable.InTransaction(ctx, this.param.Tax.Repository(), func(tranxCtx corectx.Context) error {
+	return dynamicresource.InTransaction(ctx, this.param.Tax.Repository(), func(tranxCtx corectx.Context) error {
 		aliases := defaults.NewAliases()
 		for _, svc := range this.writeOrder() {
 			rows, err := defaults.Load(orgDefaults.Files, svc.Schema().Name())
 			if err != nil {
 				return err
 			}
-			if err := composable.CreateDefaults(tranxCtx, svc, rows, aliases, orgId); err != nil {
+			if err := dynamicresource.CreateDefaults(tranxCtx, svc, rows, aliases, orgId); err != nil {
 				return err
 			}
 		}
@@ -91,7 +91,7 @@ func (this *OrgLifecycleAppServiceImpl) seedSettings(ctx corectx.Context) error 
 	result, err := this.param.SettingsSvc.SeedOrgSettings(ctx, itExt.SetSettingsCommand{
 		ModuleKey: modconstants.AccountingModuleName,
 		Items: []itExt.SetSettingItem{
-			{Name: orgSettings.OrgSettingOrgDefaultCurrency, Value: string(currency.Data.Id)},
+			{Name: orgSettings.OrgSettingSystemCurrency, Value: string(currency.Data.Id)},
 			{Name: orgSettings.OrgSettingDefaultRoundingPolicyCode, Value: defaultRoundingPolicyCode},
 		},
 	})
@@ -107,8 +107,8 @@ func (this *OrgLifecycleAppServiceImpl) seedSettings(ctx corectx.Context) error 
 // CleanUpOrg deletes children before the parents they reference.
 func (this *OrgLifecycleAppServiceImpl) CleanUpOrg(ctx corectx.Context, orgId model.Id) error {
 	p := this.param
-	return composable.InTransaction(ctx, p.Tax.Repository(), func(tranxCtx corectx.Context) error {
-		return composable.DeleteOrgData(tranxCtx, orgId,
+	return dynamicresource.InTransaction(ctx, p.Tax.Repository(), func(tranxCtx corectx.Context) error {
+		return dynamicresource.DeleteOrgData(tranxCtx, orgId,
 			p.RuleResult, p.RuleCondition, p.Rule, p.MappingLine, p.Mapping, p.Component,
 			p.RateVersion, p.DefinitionVersion, p.Tax, p.Classification, p.RoundingPolicy, p.Group, p.Jurisdiction,
 		)

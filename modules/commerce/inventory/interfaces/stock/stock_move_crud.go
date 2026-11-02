@@ -1,42 +1,42 @@
 package stock
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // StockMoveRepository reads and writes stock_move rows.
 type StockMoveRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // StockMoveDomainService is the CRUD of the resource plus its own rules.
 type StockMoveDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // StockMoveApplicationService is the authorized surface the REST handler serves.
 type StockMoveApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // The CRUD commands, queries and results of the resource, as composable shapes under a
 // resource-specific name.
 type (
-	CreateStockMoveCommand      = composable.CreateCommand
-	UpdateStockMoveCommand      = composable.UpdateCommand
-	DeleteStockMoveCommand      = composable.DeleteCommand
-	SetStockMoveArchivedCommand = composable.SetArchivedCommand
-	GetStockMoveByIdQuery       = composable.GetByIdQuery
-	SearchStockMovesQuery       = composable.SearchQuery
-	StockMoveExistsQuery        = composable.ExistsQuery
+	CreateStockMoveCommand      = dynamicresource.CreateCommand
+	UpdateStockMoveCommand      = dynamicresource.UpdateCommand
+	DeleteStockMoveCommand      = dynamicresource.DeleteCommand
+	SetStockMoveArchivedCommand = dynamicresource.SetArchivedCommand
+	GetStockMoveByIdQuery       = dynamicresource.GetByIdQuery
+	SearchStockMovesQuery       = dynamicresource.SearchQuery
+	StockMoveExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateStockMoveResult      = composable.CreateResult
-	UpdateStockMoveResult      = composable.MutateResult
-	DeleteStockMoveResult      = composable.MutateResult
-	SetStockMoveArchivedResult = composable.MutateResult
-	GetStockMoveByIdResult     = composable.GetOneResult
-	SearchStockMovesResult     = composable.SearchResult
-	StockMoveExistsResult      = composable.ExistsResult
+	CreateStockMoveResult      = dynamicresource.CreateResult
+	UpdateStockMoveResult      = dynamicresource.MutateResult
+	DeleteStockMoveResult      = dynamicresource.MutateResult
+	SetStockMoveArchivedResult = dynamicresource.MutateResult
+	GetStockMoveByIdResult     = dynamicresource.GetOneResult
+	SearchStockMovesResult     = dynamicresource.SearchResult
+	StockMoveExistsResult      = dynamicresource.ExistsResult
 )

@@ -6,11 +6,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewStockScrapApplicationService is handed the composable default by the scrap onion.
-func NewStockScrapApplicationService(base composable.CrudApplicationService) itStock.StockScrapApplicationService {
+func NewStockScrapApplicationService(base dynamicresource.CrudApplicationService) itStock.StockScrapApplicationService {
 	scrapSvc, ok := base.DomainService().(*services.StockScrapDomainServiceImpl)
 	if !ok {
 		panic(errors.New("the stock scrap onion must be built with NewStockScrapDomainService"))
@@ -19,7 +19,7 @@ func NewStockScrapApplicationService(base composable.CrudApplicationService) itS
 }
 
 type StockScrapApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	scrapSvc *services.StockScrapDomainServiceImpl
 }
 

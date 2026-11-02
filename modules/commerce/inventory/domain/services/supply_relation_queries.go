@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -123,7 +123,7 @@ func (this *SupplyRelationDomainServiceImpl) listSuppliedWarehouses(
 }
 
 func (this *SupplyRelationDomainServiceImpl) searchRelations(
-	ctx corectx.Context, engine composable.CrudRepository, graph *dmodel.SearchGraph,
+	ctx corectx.Context, engine dynamicresource.CrudRepository, graph *dmodel.SearchGraph,
 ) ([]models.WarehouseSupplyRelation, error) {
 	relations := make([]models.WarehouseSupplyRelation, 0)
 	for page := 0; ; page++ {

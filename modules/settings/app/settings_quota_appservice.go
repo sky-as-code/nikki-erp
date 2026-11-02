@@ -3,7 +3,7 @@ package app
 import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 	itQuota "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settingsquota"
 )
@@ -11,13 +11,13 @@ import (
 // NewSettingsQuotaApplicationService is handed the composable default by the onion: the
 // authorized reads, plus the unauthorized GetQuota port.
 func NewSettingsQuotaApplicationService(
-	base composable.CrudApplicationService,
+	base dynamicresource.CrudApplicationService,
 ) itQuota.SettingsQuotaApplicationService {
 	return &SettingsQuotaApplicationServiceImpl{CrudApplicationService: base}
 }
 
 type SettingsQuotaApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 // GetQuota is the cross-module read, so it asserts nothing; see itSettings.QuotaAppService.

@@ -8,13 +8,13 @@ package settingsrecord
 
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SettingsRecordRepository adds the set-based statements the settings write path needs on top of
 // the row-at-a-time CRUD. Both join the transaction the context carries.
 type SettingsRecordRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 
 	// FanOutValue overwrites one setting's value and override flag on every child record of the
 	// tenant, in one UPDATE. It returns the number of rows touched.
@@ -66,21 +66,21 @@ type DeleteOwnerRowsParam struct {
 }
 
 type SettingsRecordDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type SettingsRecordApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	GetSettingsRecordByIdQuery = composable.GetByIdQuery
-	SearchSettingsRecordsQuery = composable.SearchQuery
-	SettingsRecordExistsQuery  = composable.ExistsQuery
+	GetSettingsRecordByIdQuery = dynamicresource.GetByIdQuery
+	SearchSettingsRecordsQuery = dynamicresource.SearchQuery
+	SettingsRecordExistsQuery  = dynamicresource.ExistsQuery
 )
 
 type (
-	GetSettingsRecordByIdResult = composable.GetOneResult
-	SearchSettingsRecordsResult = composable.SearchResult
-	SettingsRecordExistsResult  = composable.ExistsResult
+	GetSettingsRecordByIdResult = dynamicresource.GetOneResult
+	SearchSettingsRecordsResult = dynamicresource.SearchResult
+	SettingsRecordExistsResult  = dynamicresource.ExistsResult
 )

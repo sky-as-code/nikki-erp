@@ -11,7 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // langJsonRefKey marks a translation-key name ({"$ref": key}); it is not a language.
@@ -144,8 +144,8 @@ func (this *ProductCategoryDomainServiceImpl) findCategoryById(
 // fillParentWithRoot puts a parent-less create under the org's root. An org without a root cannot
 // hold categories yet: creating the root with the org is a later feature, until then it is seeded.
 func (this *ProductCategoryDomainServiceImpl) fillParentWithRoot(
-	ctx corectx.Context, entity *composable.DynamicEntity, vErrs *ft.ClientErrors,
-) (*composable.DynamicEntity, error) {
+	ctx corectx.Context, entity *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
+) (*dynamicresource.DynamicEntity, error) {
 	category := models.NewProductCategoryFrom(entity.GetFieldData())
 	orgId := derefString(category.GetOrgId())
 	if derefString(category.GetParentCategoryId()) != "" || orgId == "" {
@@ -214,12 +214,12 @@ func assignCanonicalName(
 // runInTransaction joins the transaction ctx already carries (an import or bulk run), since the
 // database client refuses a nested one, and otherwise opens its own.
 func runInTransaction(
-	ctx corectx.Context, repo composable.CrudRepository, body func(tranxCtx corectx.Context) error,
+	ctx corectx.Context, repo dynamicresource.CrudRepository, body func(tranxCtx corectx.Context) error,
 ) error {
 	if ctx.GetDbTranx() != nil {
 		return body(ctx)
 	}
-	return composable.WithTransaction(ctx, repo, body)
+	return dynamicresource.WithTransaction(ctx, repo, body)
 }
 
 type canonicalNode struct {

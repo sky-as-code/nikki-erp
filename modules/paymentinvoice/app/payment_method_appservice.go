@@ -9,7 +9,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	itGateway "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/gateway"
 	it "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/paymentmethod"
@@ -27,12 +27,12 @@ const maxPaymentMethods = 500
 // the adapter this row names" — a question only the registry can answer, and the reason a consumer
 // cannot derive usability from the row alone.
 type PaymentMethodApplicationServiceImpl struct {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	registry *itGateway.Registry
 }
 
 func NewPaymentMethodApplicationService(
-	base composable.CrudApplicationService, registry *itGateway.Registry,
+	base dynamicresource.CrudApplicationService, registry *itGateway.Registry,
 ) it.PaymentMethodCrudApplicationService {
 	return &PaymentMethodApplicationServiceImpl{CrudApplicationService: base, registry: registry}
 }

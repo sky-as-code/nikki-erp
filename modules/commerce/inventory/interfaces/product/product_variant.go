@@ -4,7 +4,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The Product Variant port other modules bind to. A variant is what is physically stocked and
@@ -24,7 +24,7 @@ type ProductVariantsExistResult = dyn.OpResult[dyn.ExistsResultData]
 // ProductVariantDomainService reads product variants on behalf of another module. Deliberately
 // read-only: a consumer can resolve and validate references but not manage master data.
 type ProductVariantDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// SearchProductVariants finds variants matching a search graph. A requested template_* field
 	// is filled for the whole page in one batched read, so a listing costs two queries whatever

@@ -145,8 +145,9 @@ func TestNonPositiveBatchSizesAreRejected(t *testing.T) {
 // through it: the functions under test fail on their batch size before reaching the database.
 type fakeTransaction struct{}
 
-func (this *fakeTransaction) Commit() error   { return nil }
-func (this *fakeTransaction) Rollback() error { return nil }
+func (this *fakeTransaction) Commit() error      { return nil }
+func (this *fakeTransaction) Rollback() error    { return nil }
+func (this *fakeTransaction) OnCommitted(func()) {}
 
 // fakeRow feeds scan targets without a database, using the rowScanner seam.
 type fakeRow struct {

@@ -2,40 +2,40 @@
 package transaction
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // TransactionCrudRepository reads and writes payment transactions.
 type TransactionCrudRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // TransactionCrudDomainService is the CRUD of the resource.
 type TransactionCrudDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // TransactionCrudApplicationService is the authorized surface the REST handler serves.
 type TransactionCrudApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateTransactionCommand      = composable.CreateCommand
-	UpdateTransactionCommand      = composable.UpdateCommand
-	DeleteTransactionCommand      = composable.DeleteCommand
-	SetTransactionArchivedCommand = composable.SetArchivedCommand
-	GetTransactionByIdQuery       = composable.GetByIdQuery
-	SearchTransactionsQuery       = composable.SearchQuery
-	TransactionExistsQuery        = composable.ExistsQuery
+	CreateTransactionCommand      = dynamicresource.CreateCommand
+	UpdateTransactionCommand      = dynamicresource.UpdateCommand
+	DeleteTransactionCommand      = dynamicresource.DeleteCommand
+	SetTransactionArchivedCommand = dynamicresource.SetArchivedCommand
+	GetTransactionByIdQuery       = dynamicresource.GetByIdQuery
+	SearchTransactionsQuery       = dynamicresource.SearchQuery
+	TransactionExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateTransactionResult      = composable.CreateResult
-	UpdateTransactionResult      = composable.MutateResult
-	DeleteTransactionResult      = composable.MutateResult
-	SetTransactionArchivedResult = composable.MutateResult
-	GetTransactionByIdResult     = composable.GetOneResult
-	SearchTransactionsResult     = composable.SearchResult
-	TransactionExistsResult      = composable.ExistsResult
+	CreateTransactionResult      = dynamicresource.CreateResult
+	UpdateTransactionResult      = dynamicresource.MutateResult
+	DeleteTransactionResult      = dynamicresource.MutateResult
+	SetTransactionArchivedResult = dynamicresource.MutateResult
+	GetTransactionByIdResult     = dynamicresource.GetOneResult
+	SearchTransactionsResult     = dynamicresource.SearchResult
+	TransactionExistsResult      = dynamicresource.ExistsResult
 )

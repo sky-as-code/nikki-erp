@@ -8,7 +8,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // ChannelPaymentDomainService owns the sales_channel_payment_rel rows.
@@ -19,11 +19,11 @@ import (
 // resolves ids against a locally registered schema; a payment method belongs to paymentinvoice,
 // so this service validates the target through the port instead.
 type ChannelPaymentDomainServiceImpl struct {
-	repo composable.CrudRepository
+	repo dynamicresource.CrudRepository
 }
 
 func NewChannelPaymentDomainService(
-	repo composable.CrudRepository,
+	repo dynamicresource.CrudRepository,
 ) *ChannelPaymentDomainServiceImpl {
 	return &ChannelPaymentDomainServiceImpl{repo: repo}
 }

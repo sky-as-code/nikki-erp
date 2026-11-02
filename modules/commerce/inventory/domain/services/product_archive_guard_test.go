@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"testing"
 
 	"github.com/shopspring/decimal"
@@ -194,7 +194,7 @@ func useVariantEngine(t *testing.T, repo *stubVariantRepository) {
 
 	original := repoFor
 	t.Cleanup(func() { repoFor = original })
-	repoFor = func(_ string) (composable.CrudRepository, error) {
+	repoFor = func(_ string) (dynamicresource.CrudRepository, error) {
 		return repo, nil
 	}
 }

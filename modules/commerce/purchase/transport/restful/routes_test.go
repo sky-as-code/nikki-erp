@@ -10,7 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/dynamicengines"
 	v1 "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/transport/restful/v1"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The container names in the REST structs' tags are literals; they must be what the onions are
@@ -27,12 +27,12 @@ func TestEngineNamesMatchTheRegisteredOnions(t *testing.T) {
 		models.AuditEventSchemaName:         v1.AuditEventEngineName,
 	}
 	for schemaName, engineName := range engineNames {
-		assert.Equal(t, composable.EngineDependencyName(schemaName), engineName)
+		assert.Equal(t, dynamicresource.EngineDependencyName(schemaName), engineName)
 	}
 	assert.Len(t, dynamicengines.SchemaNames(), len(engineNames))
 }
 
-func registeredRoutes(t *testing.T, restEngine composable.RestEngine) []string {
+func registeredRoutes(t *testing.T, restEngine dynamicresource.RestEngine) []string {
 	t.Helper()
 	echoApp := echo.New()
 	require.NoError(t, restEngine.RegisterRoutes(echoApp.Group(routeV1Prefix), passThrough))
@@ -74,7 +74,7 @@ func withActions(schemaName string, paths ...string) []string {
 }
 
 func TestPlainResourcesKeepTheLegacyVerbSet(t *testing.T) {
-	for schemaName, handlers := range map[string]composable.CrudRestHandlers{
+	for schemaName, handlers := range map[string]dynamicresource.CrudRestHandlers{
 		models.ConfigurationSchemaName:      &v1.ConfigurationRest{},
 		models.VendorProductPriceSchemaName: &v1.VendorProductPriceRest{},
 		models.SourcingGroupSchemaName:      &v1.SourcingGroupRest{},

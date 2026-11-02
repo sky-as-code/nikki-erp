@@ -5,7 +5,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itAct "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/action"
@@ -13,40 +13,40 @@ import (
 )
 
 // NewResourceCrudDomainService is handed the composable default by the iam_resource onion.
-func NewResourceCrudDomainService(base composable.CrudDomainService) itRes.ResourceCrudDomainService {
+func NewResourceCrudDomainService(base dynamicresource.CrudDomainService) itRes.ResourceCrudDomainService {
 	return &ResourceCrudDomainServiceImpl{CrudDomainService: base}
 }
 
 type ResourceCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 func (this *ResourceCrudDomainServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
-	opts := composable.CreateOptions{}
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
+	opts := dynamicresource.CreateOptions{}
 	if len(options) > 0 {
 		opts = options[0]
 	}
-	opts.ValidateExtra = composable.ChainValidateExtra(assertResourceScopeBounds, opts.ValidateExtra)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(assertResourceScopeBounds, opts.ValidateExtra)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 func (this *ResourceCrudDomainServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
-	opts := composable.UpdateOptions{}
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
+	opts := dynamicresource.UpdateOptions{}
 	if len(options) > 0 {
 		opts = options[0]
 	}
-	opts.ValidateExtra = composable.ChainValidateExtra(assertResourceScopeBounds, opts.ValidateExtra)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(assertResourceScopeBounds, opts.ValidateExtra)
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
 
 // assertResourceScopeBounds refuses a min_scope wider than max_scope. On update a bound the call
 // leaves alone keeps its stored value, so either bound may change on its own.
 func assertResourceScopeBounds(
-	_ corectx.Context, input *composable.DynamicEntity, found *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	_ corectx.Context, input *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	minScope := effectiveField(input, found, domain.ResourceFieldMinScope)
 	maxScope := effectiveField(input, found, domain.ResourceFieldMaxScope)
@@ -61,7 +61,7 @@ func assertResourceScopeBounds(
 	return nil
 }
 
-func effectiveField(input *composable.DynamicEntity, found *composable.DynamicEntity, field string) *string {
+func effectiveField(input *dynamicresource.DynamicEntity, found *dynamicresource.DynamicEntity, field string) *string {
 	if value := input.GetFieldData().GetString(field); value != nil {
 		return value
 	}
@@ -73,42 +73,42 @@ func effectiveField(input *composable.DynamicEntity, found *composable.DynamicEn
 
 // NewActionCrudDomainService is handed the composable default by the iam_action onion.
 func NewActionCrudDomainService(
-	base composable.CrudDomainService, resourceRepo itRes.ResourceCrudRepository,
+	base dynamicresource.CrudDomainService, resourceRepo itRes.ResourceCrudRepository,
 ) itAct.ActionCrudDomainService {
 	return &ActionCrudDomainServiceImpl{CrudDomainService: base, resourceRepo: resourceRepo}
 }
 
 type ActionCrudDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	resourceRepo itRes.ResourceCrudRepository
 }
 
 func (this *ActionCrudDomainServiceImpl) Create(
-	ctx corectx.Context, cmd composable.CreateCommand, options ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
-	opts := composable.CreateOptions{}
+	ctx corectx.Context, cmd dynamicresource.CreateCommand, options ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
+	opts := dynamicresource.CreateOptions{}
 	if len(options) > 0 {
 		opts = options[0]
 	}
-	opts.ValidateExtra = composable.ChainValidateExtra(this.assertResourceExists, opts.ValidateExtra)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(this.assertResourceExists, opts.ValidateExtra)
 	return this.CrudDomainService.Create(ctx, cmd, opts)
 }
 
 func (this *ActionCrudDomainServiceImpl) Update(
-	ctx corectx.Context, cmd composable.UpdateCommand, options ...composable.UpdateOptions,
-) (*composable.MutateResult, error) {
-	opts := composable.UpdateOptions{}
+	ctx corectx.Context, cmd dynamicresource.UpdateCommand, options ...dynamicresource.UpdateOptions,
+) (*dynamicresource.MutateResult, error) {
+	opts := dynamicresource.UpdateOptions{}
 	if len(options) > 0 {
 		opts = options[0]
 	}
-	opts.ValidateExtra = composable.ChainValidateExtra(this.assertResourceExists, opts.ValidateExtra)
+	opts.ValidateExtra = dynamicresource.ChainValidateExtra(this.assertResourceExists, opts.ValidateExtra)
 	return this.CrudDomainService.Update(ctx, cmd, opts)
 }
 
 // assertResourceExists reports an unknown resource_id as not-found on that field rather than as a
 // foreign-key violation.
 func (this *ActionCrudDomainServiceImpl) assertResourceExists(
-	ctx corectx.Context, input *composable.DynamicEntity, _ *composable.DynamicEntity, vErrs *ft.ClientErrors,
+	ctx corectx.Context, input *dynamicresource.DynamicEntity, _ *dynamicresource.DynamicEntity, vErrs *ft.ClientErrors,
 ) error {
 	resourceId := input.GetFieldData().GetString(domain.ActionFieldResourceId)
 	if resourceId == nil {

@@ -1,37 +1,37 @@
 package vendor
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // VendorProfileRepository reads and writes vendor profile rows.
 type VendorProfileRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // VendorProfileApplicationService is the whole application layer of the vendor profile resource:
 // the authorized CRUD the REST handler serves, plus the cross-module capability.
 type VendorProfileApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 	VendorAppService
 }
 
 type (
-	CreateVendorProfileCommand      = composable.CreateCommand
-	UpdateVendorProfileCommand      = composable.UpdateCommand
-	DeleteVendorProfileCommand      = composable.DeleteCommand
-	SetVendorProfileArchivedCommand = composable.SetArchivedCommand
-	GetVendorProfileByIdQuery       = composable.GetByIdQuery
-	SearchVendorProfilesQuery       = composable.SearchQuery
-	VendorProfileExistsQuery        = composable.ExistsQuery
+	CreateVendorProfileCommand      = dynamicresource.CreateCommand
+	UpdateVendorProfileCommand      = dynamicresource.UpdateCommand
+	DeleteVendorProfileCommand      = dynamicresource.DeleteCommand
+	SetVendorProfileArchivedCommand = dynamicresource.SetArchivedCommand
+	GetVendorProfileByIdQuery       = dynamicresource.GetByIdQuery
+	SearchVendorProfilesQuery       = dynamicresource.SearchQuery
+	VendorProfileExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateVendorProfileResult      = composable.CreateResult
-	UpdateVendorProfileResult      = composable.MutateResult
-	DeleteVendorProfileResult      = composable.MutateResult
-	SetVendorProfileArchivedResult = composable.MutateResult
-	GetVendorProfileByIdResult     = composable.GetOneResult
-	SearchVendorProfilesResult     = composable.SearchResult
-	VendorProfileExistsResult      = composable.ExistsResult
+	CreateVendorProfileResult      = dynamicresource.CreateResult
+	UpdateVendorProfileResult      = dynamicresource.MutateResult
+	DeleteVendorProfileResult      = dynamicresource.MutateResult
+	SetVendorProfileArchivedResult = dynamicresource.MutateResult
+	GetVendorProfileByIdResult     = dynamicresource.GetOneResult
+	SearchVendorProfilesResult     = dynamicresource.SearchResult
+	VendorProfileExistsResult      = dynamicresource.ExistsResult
 )

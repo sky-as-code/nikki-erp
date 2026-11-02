@@ -353,7 +353,6 @@ Ensure Inventory Location Under Test
     IF    $id    RETURN
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Inventory Location
-    ${code}=    Unique Code    stkloc
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
     ...    json=${{ {'name': $name, 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
@@ -369,7 +368,7 @@ Ensure Stock Operation Type Under Test
     ${name}=    Unique Display Name    Robot Receipt Type
     ${code}=    Unique Code    stkop
     ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'at_confirmation', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'at_confirmation', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${STOCK_OPERATION_TYPE_ID}    ${id}
     Set Global Variable    ${STOCK_OPERATION_TYPE_ETAG}    ${etag}
@@ -383,7 +382,6 @@ Ensure Stock Destination Location Under Test
     IF    $id    RETURN
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Stock Destination
-    ${code}=    Unique Code    stkdst
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
     ...    json=${{ {'name': $name, 'location_type': 'internal', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
@@ -414,9 +412,8 @@ Ensure Internal Operation Type Under Test
     Ensure Inventory Location Under Test
     Ensure Stock Destination Location Under Test
     ${name}=    Unique Display Name    Robot Internal Type
-    ${code}=    Unique Code    stkint
     ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'always', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'always', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${INTERNAL_OPERATION_TYPE_ID}    ${id}
 
@@ -537,7 +534,6 @@ Ensure Supplier Location Under Test
     IF    $id    RETURN
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Supplier
-    ${code}=    Unique Code    stksup
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
     ...    json=${{ {'name': $name, 'location_type': 'vendor', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
@@ -550,9 +546,8 @@ Ensure Receipt Operation Type Under Test
     IF    $id    RETURN
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Receipt Flow Type
-    ${code}=    Unique Code    stkrcp
     ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'code': $code, 'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${RECEIPT_OPERATION_TYPE_ID}    ${id}
 
@@ -564,7 +559,6 @@ Ensure Inventory Loss Location Under Test
     IF    $id    RETURN
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Inventory Loss
-    ${code}=    Unique Code    stkloss
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
     ...    json=${{ {'name': $name, 'location_type': 'inventory_loss', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
@@ -578,7 +572,6 @@ Ensure Scrap Location Under Test
     IF    $id    RETURN
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Scrap Location
-    ${code}=    Unique Code    stkscrp
     ${resp}=    POST On Session    api    ${INVENTORY_LOCATION_API}
     ...    json=${{ {'name': $name, 'location_type': 'scrap', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
@@ -586,16 +579,10 @@ Ensure Scrap Location Under Test
 
 Ensure Correction Operation Type Under Test
     [Documentation]    The internal operation type adjustments and scraps generate their movements
-    ...    through (decision F3).
-    ...
-    ...    Its code is the fixed 'INV-CORRECTION', not a Unique Code like the other fixtures: the
-    ...    correction helper resolves it by that exact string, and the constant it matches is
-    ...    models.StockCorrectionOperationTypeCode. A randomised code here would make every
-    ...    adjustment and scrap fail with "no internal operation type", which reads as a data
-    ...    problem rather than a fixture mismatch.
-    ...
-    ...    Because the code is fixed it can already exist from an earlier run, so a conflict is
-    ...    tolerated and the existing record reused.
+    ...    through (decision F3). Corrections take it from the Commerce org setting
+    ...    correction_operation_type_id, which a new org gets from Inventory's org lifecycle; the
+    ...    seeded org these suites run in has none, so the fixture creates a type and points the
+    ...    setting at it through Commerce's own settings endpoint.
     ${id}=    Get Variable Value    ${CORRECTION_OPERATION_TYPE_ID}    ${EMPTY}
     IF    $id    RETURN
     Ensure Inventory Org
@@ -603,25 +590,12 @@ Ensure Correction Operation Type Under Test
     Ensure Inventory Loss Location Under Test
     ${name}=    Unique Display Name    Robot Correction Type
     ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'code': 'INV-CORRECTION', 'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
-    ...    expected_status=any
-    IF    ${resp.status_code} == 200 or ${resp.status_code} == 201
-        ${id}    ${etag}=    Response Should Be Create Success    ${resp}
-    ELSE
-        ${id}=    Find Operation Type By Code    INV-CORRECTION
-    END
-    Set Global Variable    ${CORRECTION_OPERATION_TYPE_ID}    ${id}
-
-Find Operation Type By Code
-    [Documentation]    Reads back an operation type by its code, for the fixed-code fixture above.
-    [Arguments]    ${code}
-    ${resp}=    GET On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'size': 100} }}
+    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    ${items}=    Create List    ${{ {'name': 'correction_operation_type_id', 'value': $id} }}
+    ${resp}=    PATCH On Session    api    /v1/commerce/settings/org    json=${{ {'items': $items} }}
     Response Status Should Be    ${resp}    200
-    FOR    ${item}    IN    @{resp.json()}[items]
-        IF    $item.get('code') == $code    RETURN    ${item}[id]
-    END
-    Fail    No operation type with code '${code}' exists; the correction fixture cannot continue
+    Set Global Variable    ${CORRECTION_OPERATION_TYPE_ID}    ${id}
 
 Ensure Correction Fixtures
     [Documentation]    Everything an adjustment or a scrap needs before it can generate a movement.

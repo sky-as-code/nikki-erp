@@ -21,5 +21,8 @@ func InitExternalServices() error {
 		deps.Register(func(settingsSvc itSettings.EffectiveSettingsAppService) itExt.EffectiveSettingsExtService {
 			return settingsSvc
 		}),
+		deps.Register(func(settingsSvc itSettings.OrgSettingsAppService) itExt.OrgSettingsSeedExtService {
+			return settingsSvc
+		}),
 	)
 }

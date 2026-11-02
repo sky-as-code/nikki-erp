@@ -198,7 +198,7 @@ type stubCapableBuilder struct {
 }
 
 func (this *stubCapableBuilder) PlanNestedProjection(
-	_ *dmodel.ModelSchema, _ *dmodel.SchemaRegistry, columns []orm.SelectColumn,
+	_ *dmodel.ModelSchema, _ *dmodel.SchemaRegistry, columns []orm.SelectColumn, _ ...map[string]any,
 ) (*orm.NestedProjection, *ft.ClientErrors, error) {
 	this.asked = append(this.asked, columns)
 	return this.plan, this.cErrs, nil
@@ -209,7 +209,7 @@ func TestSearch_CapableBuilderIsAskedForThePlan(t *testing.T) {
 	stub := &stubCapableBuilder{plan: &orm.NestedProjection{}}
 	repo.queryBuilder = stub
 
-	plan, cErrs, err := repo.nestedProjectionPlan([]string{"id", "peer.name"})
+	plan, cErrs, err := repo.nestedProjectionPlan(nil, []string{"id", "peer.name"}, nil)
 	require.NoError(t, err)
 	assert.Empty(t, cErrs)
 	assert.Same(t, stub.plan, plan)
@@ -221,7 +221,7 @@ func TestSearch_NonCapableBuilderKeepsHydrationPath(t *testing.T) {
 	repo := virtualRepo(t)
 	repo.queryBuilder = orm.NewPgQueryBuilder()
 
-	plan, cErrs, err := repo.nestedProjectionPlan([]string{"id", "peer.name"})
+	plan, cErrs, err := repo.nestedProjectionPlan(nil, []string{"id", "peer.name"}, nil)
 	require.NoError(t, err)
 	assert.Empty(t, cErrs)
 	assert.Nil(t, plan)
@@ -242,18 +242,18 @@ func TestSearch_AdvancedBuilderPlansAgainstTheGlobalRegistry(t *testing.T) {
 	repo := virtualRepo(t)
 	repo.queryBuilder = advanced.NewAdvancedPgQueryBuilder()
 
-	plan, cErrs, err := repo.nestedProjectionPlan([]string{"id", "peer.name"})
+	plan, cErrs, err := repo.nestedProjectionPlan(nil, []string{"id", "peer.name"}, nil)
 	require.NoError(t, err)
 	require.Empty(t, cErrs)
 	require.NotNil(t, plan)
 	assert.Equal(t, map[string]string{"peer.id": "id", "peer.name": "name"}, plan.ToOne["peer"].Leaves)
 
-	plan, cErrs, err = repo.nestedProjectionPlan([]string{"id", "sku"})
+	plan, cErrs, err = repo.nestedProjectionPlan(nil, []string{"id", "sku"}, nil)
 	require.NoError(t, err)
 	require.Empty(t, cErrs)
 	assert.Nil(t, plan, "no edge in the projection means the plain path")
 
-	_, cErrs, err = repo.nestedProjectionPlan([]string{"peer.nosuch"})
+	_, cErrs, err = repo.nestedProjectionPlan(nil, []string{"peer.nosuch"}, nil)
 	require.NoError(t, err)
 	require.NotEmpty(t, cErrs)
 	assert.Contains(t, cErrs[0].Key, "err_unknown_schema_field")

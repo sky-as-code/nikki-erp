@@ -7,7 +7,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/services"
@@ -19,7 +19,7 @@ import (
 type uomCatEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_essential_uomcat"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_essential_uomcat"`
 }
 
 // registerUomCatEngine declares the UoM Category onion. Its domain service reads UoM rows, so
@@ -27,21 +27,21 @@ type uomCatEngineParam struct {
 // onion first, and there is no cycle because the UoM onion needs nothing from the category.
 func registerUomCatEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.UomCatSchemaName),
+		dynamicresource.EngineDependencyName(models.UomCatSchemaName),
 		func(
-			param composable.BuildParam,
+			param dynamicresource.BuildParam,
 			uomRepo itUom.UomRepository,
 			usageDispatcher *usagecheck.Dispatcher,
-		) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.UomCatSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewUomCatRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewUomCatDomainService(base, uomRepo, usageDispatcher)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewUomCatApplicationService(base)
 				},
 			}, param)

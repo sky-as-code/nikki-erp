@@ -78,7 +78,8 @@
 			"no_update": true,
 			"description": {
 				"en-US": "Where the offer stands (BR 87.1). 'sent' is distinct from 'draft' because a quotation the customer has seen may no longer be edited freely - the offer is out. 'expired' is distinct from 'cancelled' because one lapsed on its own terms and the other was withdrawn, and a customer arriving with a lapsed quote is served differently from one whose quote was pulled. Moved by the lifecycle operations, never by a plain update."
-			}
+			},
+			"metadata": {"track_history": true}
 		},
 		{
 			"name": "valid_until",

@@ -10,7 +10,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	basemodel "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/settings/constants"
 	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
@@ -67,7 +67,7 @@ func (this *SettingsDomainServiceImpl) SetSettings(
 	}
 
 	written := 0
-	err = composable.WithTransaction(ctx, this.recordRepo, func(tranxCtx corectx.Context) error {
+	err = dynamicresource.WithTransaction(ctx, this.recordRepo, func(tranxCtx corectx.Context) error {
 		count, err := this.applyItems(tranxCtx, applyParam{
 			SchemaId:  schemaRow.GetId(),
 			ModuleKey: cmd.ModuleKey,

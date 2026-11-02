@@ -11,28 +11,28 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/accounting/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/taxconfig"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type taxDefinitionVersionEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_accounting_tax_definition_version"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_accounting_tax_definition_version"`
 }
 
 func registerTaxDefinitionVersionEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.TaxDefinitionVersionSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.TaxDefinitionVersionSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.TaxDefinitionVersionSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewTaxDefinitionVersionRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewTaxDefinitionVersionDomainService(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewTaxDefinitionVersionApplicationService(base)
 				},
 			}, param)

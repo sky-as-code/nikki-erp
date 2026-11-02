@@ -3,19 +3,19 @@ package catalog
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // SalesFulfillmentMethodRepository reads and writes the fulfillment policy catalogue.
 type SalesFulfillmentMethodRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 // SalesFulfillmentMethodDomainService adds the archive lifecycle to the default CRUD. There is no
 // suspend here, unlike a channel or a point: a method is either offered to new orders or it is
 // not, and the fulfillments that already snapshotted it keep running either way.
 type SalesFulfillmentMethodDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// Archive withdraws a method from new orders, refusing while a channel or point still names it
 	// as a default -- the configuration left behind would refuse every order it received.
@@ -36,7 +36,7 @@ type SalesFulfillmentMethodDomainService interface {
 
 // SalesFulfillmentMethodApplicationService is the authorized surface the REST handler serves.
 type SalesFulfillmentMethodApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 
 	Archive(ctx corectx.Context, cmd ArchiveFulfillmentMethodCommand) (*ArchiveFulfillmentMethodResult, error)
 	Unarchive(ctx corectx.Context, cmd ArchiveFulfillmentMethodCommand) (*ArchiveFulfillmentMethodResult, error)
@@ -45,26 +45,26 @@ type SalesFulfillmentMethodApplicationService interface {
 // Archiving and unarchiving share one command shape and one permission: they are the same power in
 // reverse, so whoever may retire a policy may undo it.
 type (
-	ArchiveFulfillmentMethodCommand = composable.UpdateCommand
-	ArchiveFulfillmentMethodResult  = composable.MutateResult
+	ArchiveFulfillmentMethodCommand = dynamicresource.UpdateCommand
+	ArchiveFulfillmentMethodResult  = dynamicresource.MutateResult
 )
 
 type (
-	CreateSalesFulfillmentMethodCommand      = composable.CreateCommand
-	UpdateSalesFulfillmentMethodCommand      = composable.UpdateCommand
-	DeleteSalesFulfillmentMethodCommand      = composable.DeleteCommand
-	SetSalesFulfillmentMethodArchivedCommand = composable.SetArchivedCommand
-	GetSalesFulfillmentMethodByIdQuery       = composable.GetByIdQuery
-	SearchSalesFulfillmentMethodsQuery       = composable.SearchQuery
-	SalesFulfillmentMethodExistsQuery        = composable.ExistsQuery
+	CreateSalesFulfillmentMethodCommand      = dynamicresource.CreateCommand
+	UpdateSalesFulfillmentMethodCommand      = dynamicresource.UpdateCommand
+	DeleteSalesFulfillmentMethodCommand      = dynamicresource.DeleteCommand
+	SetSalesFulfillmentMethodArchivedCommand = dynamicresource.SetArchivedCommand
+	GetSalesFulfillmentMethodByIdQuery       = dynamicresource.GetByIdQuery
+	SearchSalesFulfillmentMethodsQuery       = dynamicresource.SearchQuery
+	SalesFulfillmentMethodExistsQuery        = dynamicresource.ExistsQuery
 )
 
 type (
-	CreateSalesFulfillmentMethodResult      = composable.CreateResult
-	UpdateSalesFulfillmentMethodResult      = composable.MutateResult
-	DeleteSalesFulfillmentMethodResult      = composable.MutateResult
-	SetSalesFulfillmentMethodArchivedResult = composable.MutateResult
-	GetSalesFulfillmentMethodByIdResult     = composable.GetOneResult
-	SearchSalesFulfillmentMethodsResult     = composable.SearchResult
-	SalesFulfillmentMethodExistsResult      = composable.ExistsResult
+	CreateSalesFulfillmentMethodResult      = dynamicresource.CreateResult
+	UpdateSalesFulfillmentMethodResult      = dynamicresource.MutateResult
+	DeleteSalesFulfillmentMethodResult      = dynamicresource.MutateResult
+	SetSalesFulfillmentMethodArchivedResult = dynamicresource.MutateResult
+	GetSalesFulfillmentMethodByIdResult     = dynamicresource.GetOneResult
+	SearchSalesFulfillmentMethodsResult     = dynamicresource.SearchResult
+	SalesFulfillmentMethodExistsResult      = dynamicresource.ExistsResult
 )

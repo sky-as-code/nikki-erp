@@ -99,6 +99,13 @@
 			"description": "settings_desc.incoming_operation_type_id",
 			"data_type": { "type": "string", "min": 0, "max": 30 },
 			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "correction_operation_type_id",
+			"label": "inventory.settings.correctionOperationTypeId",
+			"description": "settings_desc.correction_operation_type_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
 		}
 	]
 }

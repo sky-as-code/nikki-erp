@@ -11,35 +11,35 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/accounting/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/accounting/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/interfaces/taxconfig"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type taxMappingLineEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_accounting_tax_mapping_line"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_accounting_tax_mapping_line"`
 }
 
-// taxMappingLineBuildParam is composable.BuildParam plus the sibling repository the rules read.
+// taxMappingLineBuildParam is dynamicresource.BuildParam plus the sibling repository the rules read.
 type taxMappingLineBuildParam struct {
-	composable.BuildParam
+	dynamicresource.BuildParam
 
 	Mappings taxconfig.TaxMappingRepository
 }
 
 func registerTaxMappingLineEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.TaxMappingLineSchemaName),
-		func(param taxMappingLineBuildParam) composable.DynamicResourceEngineOnion {
-			return composable.MustBuild(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.TaxMappingLineSchemaName),
+		func(param taxMappingLineBuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return dynamicresource.MustBuild(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.TaxMappingLineSchemaName,
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewTaxMappingLineRepository(base)
 				},
-				NewDomainServiceFn: func(base composable.CrudDomainService) composable.CrudDomainService {
+				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
 					return services.NewTaxMappingLineDomainService(base, param.Mappings)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewTaxMappingLineApplicationService(base)
 				},
 			}, param.BuildParam)

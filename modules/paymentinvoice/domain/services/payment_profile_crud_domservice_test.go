@@ -10,33 +10,33 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 )
 
 // recordingDomainService stands in for the default CRUD: it records what reached it and answers
 // with the record it was given, so the profile overrides can be checked either side of it.
 type recordingDomainService struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 	created dmodel.DynamicFields
-	search  composable.SearchQuery
+	search  dynamicresource.SearchQuery
 }
 
 func (this *recordingDomainService) Create(
-	_ corectx.Context, cmd composable.CreateCommand, _ ...composable.CreateOptions,
-) (*composable.CreateResult, error) {
+	_ corectx.Context, cmd dynamicresource.CreateCommand, _ ...dynamicresource.CreateOptions,
+) (*dynamicresource.CreateResult, error) {
 	this.created = dmodel.DynamicFields{}
 	for key, value := range cmd {
 		this.created[key] = value
 	}
-	return &composable.CreateResult{HasData: true, Data: cmd}, nil
+	return &dynamicresource.CreateResult{HasData: true, Data: cmd}, nil
 }
 
 func (this *recordingDomainService) Search(
-	_ corectx.Context, query composable.SearchQuery, _ ...corecrud.ServiceSearchOptions,
-) (*composable.SearchResult, error) {
+	_ corectx.Context, query dynamicresource.SearchQuery, _ ...corecrud.ServiceSearchOptions,
+) (*dynamicresource.SearchResult, error) {
 	this.search = query
-	return &composable.SearchResult{HasData: true, Data: dyn.PagedResultData[dmodel.DynamicFields]{
+	return &dynamicresource.SearchResult{HasData: true, Data: dyn.PagedResultData[dmodel.DynamicFields]{
 		Items:         []dmodel.DynamicFields{},
 		DesiredFields: []string{"name", models.PaymentProfileFieldEncryptedConfig},
 	}}, nil

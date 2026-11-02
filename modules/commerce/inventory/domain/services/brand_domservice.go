@@ -9,23 +9,23 @@ import (
 	itProduct "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/product"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // NewBrandDomainService is handed the composable default by the brand onion. The resource is plain
 // CRUD; the type exists so a rule has a home when one is needed.
-func NewBrandDomainService(base composable.CrudDomainService) itProduct.BrandDomainService {
+func NewBrandDomainService(base dynamicresource.CrudDomainService) itProduct.BrandDomainService {
 	return &BrandDomainServiceImpl{CrudDomainService: base}
 }
 
 type BrandDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 // Delete refuses to remove a brand still carried by a product template. Without the guard the
 // template foreign key refuses the statement and the failure reaches the client as a 500.
 func (this *BrandDomainServiceImpl) Delete(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.DeleteOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.DeleteOptions,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	templateRepo, err := repoFor(models.ProductTemplateSchemaName)
 	if err != nil {

@@ -9,7 +9,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // InitDynamicEngines registers every resource this module serves. It must run after
@@ -45,9 +45,9 @@ func SchemaNames() []string {
 // buildOnion builds one onion and installs it into the resource hub, through which the lifecycle
 // operations, the totals recomputation and the usage checker reach the repositories.
 func buildOnion(
-	impl *composable.DynamicResourceEngineOnionImpl, param composable.BuildParam,
-) composable.DynamicResourceEngineOnion {
-	onion := composable.MustBuild(impl, param)
+	impl *dynamicresource.DynamicResourceEngineOnionImpl, param dynamicresource.BuildParam,
+) dynamicresource.DynamicResourceEngineOnion {
+	onion := dynamicresource.MustBuild(impl, param)
 	services.InstallResource(impl.SchemaName, onion.Repository(), onion.DomainService())
 	return onion
 }

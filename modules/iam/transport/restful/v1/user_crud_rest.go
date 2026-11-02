@@ -4,7 +4,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
@@ -15,7 +15,7 @@ const UserEngineName = "dynengine_iam_user"
 type userCrudRestParams struct {
 	dig.In
 
-	Engine         composable.DynamicResourceEngineOnion `name:"dynengine_iam_user"`
+	Engine         dynamicresource.DynamicResourceEngineOnion `name:"dynengine_iam_user"`
 	PrincipalRoles itRole.PrincipalRolesApplicationService
 }
 
@@ -28,22 +28,22 @@ func NewUserCrudRest(params userCrudRestParams) *UserCrudRest {
 
 // UserCrudRest serves the built-in CRUD of the iam_user resource and its custom actions.
 type UserCrudRest struct {
-	composable.CrudRestBase
+	dynamicresource.CrudRestBase
 	userSvc  itUser.UserCrudApplicationService
 	rolesSvc itRole.PrincipalRolesApplicationService
 }
 
 func (this *UserCrudRest) ManageRoles(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "manage user roles", payload, this.userSvc.ManageRoles,
-		composable.MutateResponse)
+	return dynamicresource.ServeAction(echoCtx, "manage user roles", payload, this.userSvc.ManageRoles,
+		dynamicresource.MutateResponse)
 }
 
 func (this *UserCrudRest) Roles(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "search user roles", payload, this.rolesSvc.UserRoles,
-		composable.SearchResponse)
+	return dynamicresource.ServeAction(echoCtx, "search user roles", payload, this.rolesSvc.UserRoles,
+		dynamicresource.SearchResponse)
 }
 
 func (this *UserCrudRest) SendInvitation(echoCtx *echo.Context, payload map[string]any) error {
-	return composable.ServeAction(echoCtx, "send user invitation", payload, this.userSvc.SendInvitation,
-		composable.Identity[any])
+	return dynamicresource.ServeAction(echoCtx, "send user invitation", payload, this.userSvc.SendInvitation,
+		dynamicresource.Identity[any])
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 )
@@ -17,7 +17,7 @@ import (
 // lifecycle operations live only on this type; the order application service reaches them by
 // type-asserting its domain service at construction.
 func NewPurchaseOrderDomainService(
-	base composable.CrudDomainService, references *OrderReferenceValidator,
+	base dynamicresource.CrudDomainService, references *OrderReferenceValidator,
 	products *ProductLineValidator, pricer *LinePricer,
 ) *PurchaseOrderDomainServiceImpl {
 	return &PurchaseOrderDomainServiceImpl{
@@ -29,7 +29,7 @@ func NewPurchaseOrderDomainService(
 }
 
 type PurchaseOrderDomainServiceImpl struct {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 
 	// Validates the vendor and currency and defaults the currency from the vendor. Nil in tests
 	// that exercise only the lifecycle rules.
@@ -47,7 +47,7 @@ type PurchaseOrderDomainServiceImpl struct {
 // at confirm time from the org configuration and the order total. Client values for these are
 // overwritten rather than rejected, so echoing a record back does not fail.
 func (this *PurchaseOrderDomainServiceImpl) Create(
-	ctx corectx.Context, params dmodel.DynamicFields, options ...composable.CreateOptions,
+	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	code, err := generateOrderCode()
 	if err != nil {

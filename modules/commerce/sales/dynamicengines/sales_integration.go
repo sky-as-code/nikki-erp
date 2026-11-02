@@ -11,7 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/app"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
 	itIntegration "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/integration"
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 // The two self-records, both read-only.
@@ -19,20 +19,20 @@ import (
 type salesManualDiscountEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_manual_discount"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_manual_discount"`
 }
 
 func registerSalesManualDiscountEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesManualDiscountSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesManualDiscountSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesManualDiscountSchemaName,
 				CrudActions: readOnlyCrudActions(),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesManualDiscountRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesManualDiscountApplicationService(base)
 				},
 			}, param)
@@ -51,23 +51,23 @@ func registerSalesManualDiscountEngine() error {
 type salesIntegrationOutboxEngineParam struct {
 	dig.In
 
-	Engine composable.DynamicResourceEngineOnion `name:"dynengine_sales_integration_outbox"`
+	Engine dynamicresource.DynamicResourceEngineOnion `name:"dynengine_sales_integration_outbox"`
 }
 
 func registerSalesIntegrationOutboxEngine() error {
 	err := deps.RegisterNamed(
-		composable.EngineDependencyName(models.SalesIntegrationOutboxSchemaName),
-		func(param composable.BuildParam) composable.DynamicResourceEngineOnion {
-			return buildOnion(&composable.DynamicResourceEngineOnionImpl{
+		dynamicresource.EngineDependencyName(models.SalesIntegrationOutboxSchemaName),
+		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName:  models.SalesIntegrationOutboxSchemaName,
 				CrudActions: readOnlyCrudActions(),
 				// Not audited: the outbox is delivery plumbing, and every event it carries describes a
 				// write the audit log already recorded.
 				IsAudited: util.ToPtr(false),
-				NewRepositoryFn: func(base composable.CrudRepository) composable.CrudRepository {
+				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewSalesIntegrationOutboxRepository(base)
 				},
-				NewAppServiceFn: func(base composable.CrudApplicationService) composable.CrudApplicationService {
+				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewSalesIntegrationOutboxApplicationService(base)
 				},
 			}, param)

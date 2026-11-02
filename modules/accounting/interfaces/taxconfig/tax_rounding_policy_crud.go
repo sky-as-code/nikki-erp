@@ -1,24 +1,24 @@
 package taxconfig
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/dynamicresource/composable"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
 
 type TaxRoundingPolicyRepository interface {
-	composable.CrudRepository
+	dynamicresource.CrudRepository
 }
 
 type TaxRoundingPolicyDomainService interface {
-	composable.CrudDomainService
+	dynamicresource.CrudDomainService
 }
 
 type TaxRoundingPolicyApplicationService interface {
-	composable.CrudApplicationService
+	dynamicresource.CrudApplicationService
 }
 
 type (
-	CreateTaxRoundingPolicyCommand = composable.CreateCommand
-	UpdateTaxRoundingPolicyCommand = composable.UpdateCommand
-	DeleteTaxRoundingPolicyCommand = composable.DeleteCommand
-	SearchTaxRoundingPolicyQuery   = composable.SearchQuery
+	CreateTaxRoundingPolicyCommand = dynamicresource.CreateCommand
+	UpdateTaxRoundingPolicyCommand = dynamicresource.UpdateCommand
+	DeleteTaxRoundingPolicyCommand = dynamicresource.DeleteCommand
+	SearchTaxRoundingPolicyQuery   = dynamicresource.SearchQuery
 )
