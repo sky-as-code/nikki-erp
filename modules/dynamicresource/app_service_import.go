@@ -37,7 +37,8 @@ var importMimesByExtension = map[string][]string{
 // caller must not be able to cause.
 func (this *DefaultApplicationServiceImpl) Import(
 	ctx corectx.Context, cmd ImportCommand,
-) (*BulkCreateResult, error) {
+) (out *BulkCreateResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionImport)(&outErr)
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionImport); cErrs != nil {
 		return &BulkCreateResult{ClientErrors: *cErrs}, nil
 	}
@@ -122,7 +123,7 @@ func (this *DefaultApplicationServiceImpl) storeImportFile(
 // can sweep the bucket; it never changes the outcome the caller already got.
 func (this *DefaultApplicationServiceImpl) removeImportFile(ctx corectx.Context, key string) {
 	if err := this.storage.Remove(ctx, key); err != nil && this.logger != nil {
-		this.logger.Error("failed to remove import file '"+key+"' from object storage", err)
+		this.logger.Error(ctx, "failed to remove import file '"+key+"' from object storage", err)
 	}
 }
 

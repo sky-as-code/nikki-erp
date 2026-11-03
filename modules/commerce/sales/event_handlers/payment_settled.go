@@ -42,7 +42,7 @@ func (this *paymentSettledHandler) Handle(
 		// machines' orders, and Sales hears about those too — but worth a line when the money was
 		// actually taken, because then it is money nothing here accounts for.
 		if this.outcome == services.ConfirmPaymentPaid {
-			this.logger.Warn("sales: a settled payment order matched no sales payment",
+			this.logger.Warn(ctx, "sales: a settled payment order matched no sales payment",
 				logging.Attr{"order_id": event.OrderId, "type": string(event.Type)})
 		}
 		return nil
@@ -65,7 +65,7 @@ func (this *paymentSettledHandler) Handle(
 	// machine that looks broken.
 	services.DrainOutboxNow(ctx)
 
-	this.logger.Info("sales: payment settled",
+	this.logger.Info(ctx, "sales: payment settled",
 		logging.Attr{
 			"sales_payment_id": result.SalesPaymentId,
 			"sales_bill_id":    result.SalesBillId,

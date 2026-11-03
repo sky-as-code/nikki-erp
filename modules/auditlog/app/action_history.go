@@ -148,7 +148,7 @@ func toHistoryItem(row dmodel.DynamicFields, masked map[string]bool) itAction.Hi
 		Id:           stringOf(row[models.ActionFieldId]),
 		Action:       stringOf(row[models.ActionFieldAction]),
 		CreatedAt:    stringOf(row[models.ActionFieldCreatedAt]),
-		RequestId:    optionalString(row[models.ActionFieldRequestId]),
+		TraceId:      optionalString(row[models.ActionFieldTraceId]),
 		Actor:        toHistoryActor(row),
 		Changes:      changes,
 		MaskedFields: maskedFields,

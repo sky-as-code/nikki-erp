@@ -68,7 +68,7 @@ func (this *ReservationExpiryJobs) Sweep(ctx corectx.Context) error {
 		return err
 	}
 	if released > 0 && this.logger != nil {
-		this.logger.Infof("released %d lapsed stock reservation(s)", released)
+		this.logger.Infof(ctx, "released %d lapsed stock reservation(s)", released)
 	}
 	if this.reservations == nil {
 		return nil
@@ -78,7 +78,7 @@ func (this *ReservationExpiryJobs) Sweep(ctx corectx.Context) error {
 		return err
 	}
 	if expired > 0 && this.logger != nil {
-		this.logger.Infof("recorded expiry of %d lapsed warehouse reservation(s)", expired)
+		this.logger.Infof(ctx, "recorded expiry of %d lapsed warehouse reservation(s)", expired)
 	}
 	return nil
 }

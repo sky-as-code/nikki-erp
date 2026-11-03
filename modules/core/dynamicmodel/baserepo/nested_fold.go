@@ -129,7 +129,7 @@ func (this *BaseDynamicRepositoryImpl) runProjectedScan(
 	if qbClientErrs != nil && qbClientErrs.Count() > 0 {
 		return nil, *qbClientErrs, nil
 	}
-	this.logQuery(*sqlQuery)
+	this.logQuery(ctx, *sqlQuery)
 	rows, err := this.queryAndScan(ctx, *sqlQuery, projectedScanFields(registry, this.schema, param.Fields, plan))
 	if err != nil {
 		return nil, nil, err

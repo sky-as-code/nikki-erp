@@ -68,11 +68,13 @@ func (this *StaticRequestGuardServiceImpl) configCors() middleware.CORSConfig {
 	corsOrigins := this.configSvc.GetStrArr(c.HttpCorsOrigins)
 	corsHeaders := this.configSvc.GetStrArr(c.HttpCorsHeaders)
 	corsMethods := this.configSvc.GetStrArr(c.HttpCorsMethods)
+	exposeHeaders := this.configSvc.GetStrArr(c.HttpCorsExposeHeaders, "X-Trace-ID,X-Idempotency-ID")
 
 	return middleware.CORSConfig{
-		AllowOrigins: corsOrigins,
-		AllowHeaders: corsHeaders,
-		AllowMethods: corsMethods,
+		AllowOrigins:  corsOrigins,
+		AllowHeaders:  corsHeaders,
+		AllowMethods:  corsMethods,
+		ExposeHeaders: exposeHeaders,
 	}
 }
 

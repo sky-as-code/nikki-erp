@@ -7,6 +7,7 @@
 package gateway
 
 import (
+	"context"
 	"strings"
 
 	"go.bryk.io/pkg/errors"
@@ -52,7 +53,7 @@ func BuildRegistry(
 	if len(registry.Codes()) == 0 {
 		// Not an error: a deployment that takes no card or wallet payments is legitimate, and
 		// every attempt to pay through a method will report the gateway as unavailable.
-		logger.Warnf("paymentinvoice: no payment gateway is enabled; no payment can be taken")
+		logger.Warnf(context.Background(), "paymentinvoice: no payment gateway is enabled; no payment can be taken")
 	}
 	return registry, nil
 }

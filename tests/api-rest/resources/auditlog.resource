@@ -28,7 +28,7 @@ Ensure Audited Category
     Set Global Variable    ${AUDITED_CAT_ID}    ${id}
     Set Global Variable    ${AUDITED_CAT_ETAG}    ${etag}
     Set Global Variable    ${AUDITED_CAT_NAME}    ${name}
-    Set Global Variable    ${AUDITED_CAT_REQUEST_ID}    ${resp.headers}[X-Request-Id]
+    Set Global Variable    ${AUDITED_CAT_TRACE_ID}    ${resp.headers}[X-Trace-ID]
 
 Get History Response
     [Documentation]    Raw history call, for the tests that expect a refusal.

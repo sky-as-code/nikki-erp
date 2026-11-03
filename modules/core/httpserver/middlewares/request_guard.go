@@ -13,11 +13,7 @@ import (
 // Only takes effect if enabled in the configuration.
 func CorsEchoMiddleware() echo.MiddlewareFunc {
 	return createMiddlewareFunc(func(c *echo.Context, guardSvc reguard.RequestGuardService, next echo.HandlerFunc) error {
-		reqCtx, err := corectx.AsRequestContext(c)
-		if err != nil {
-			return err
-		}
-		corsMiddleware, err := guardSvc.GetCorsMiddleware(reqCtx)
+		corsMiddleware, err := guardSvc.GetCorsMiddleware(corsRequestContext(c))
 		if err != nil {
 			return err
 		}
@@ -27,6 +23,15 @@ func CorsEchoMiddleware() echo.MiddlewareFunc {
 		}
 		return corsMiddleware(next)(c)
 	})
+}
+
+// corsRequestContext tolerates a request the chain rejected before RequestContextMiddleware ran
+// (the idempotency 400 answers through CORS), lending the guard a context it does not keep.
+func corsRequestContext(echoCtx *echo.Context) corectx.Context {
+	if reqCtx, err := corectx.AsRequestContext(echoCtx); err == nil {
+		return reqCtx
+	}
+	return corectx.NewRequestContext(echoCtx.Request().Context())
 }
 
 type handlerFn func(c *echo.Context, guardSvc reguard.RequestGuardService, next echo.HandlerFunc) error

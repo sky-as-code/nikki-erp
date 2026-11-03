@@ -150,8 +150,9 @@ func initDomainServices() error {
 		// settle an order need the same one: the gateway callbacks, wired during Init, and the
 		// sweeps, wired at OnAppStarted. Two instances would mean two HTTP clients and two
 		// connection pools pointed at the same tenants for no gain.
-		func(cfg config.ConfigService) *app.ResultSyncClient {
+		func(cfg config.ConfigService, httpClient *httpclientclient.HttpClient) *app.ResultSyncClient {
 			return app.NewResultSyncClient(
+				httpClient,
 				time.Duration(cfg.GetInt(modconstants.SyncTimeoutSecs, defaultSyncTimeoutSecs))*time.Second,
 				cfg.GetInt(modconstants.SyncMaxRetries, defaultSyncMaxRetries),
 			)

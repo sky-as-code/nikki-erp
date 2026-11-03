@@ -51,7 +51,7 @@ func (this *PendingPoller) Poll(ctx corectx.Context) error {
 	if len(awaiting) == 0 {
 		return nil
 	}
-	this.logger.Infof("%s: %d order(s) awaiting payment", jobNamePendingPoller, len(awaiting))
+	this.logger.Infof(ctx, "%s: %d order(s) awaiting payment", jobNamePendingPoller, len(awaiting))
 
 	for _, order := range awaiting {
 		this.pollOne(ctx, order)
@@ -62,7 +62,7 @@ func (this *PendingPoller) Poll(ctx corectx.Context) error {
 func (this *PendingPoller) pollOne(ctx corectx.Context, order services.StaleOrder) {
 	verdict, err := this.orders.ReconcileStaleOrder(ctx, order)
 	if err != nil {
-		this.logger.Warnf("%s: order '%s' could not be checked: %s",
+		this.logger.Warnf(ctx, "%s: order '%s' could not be checked: %s",
 			jobNamePendingPoller, order.OrderId, err.Error())
 		return
 	}
@@ -70,7 +70,7 @@ func (this *PendingPoller) pollOne(ctx corectx.Context, order services.StaleOrde
 		return
 	}
 
-	this.logger.Infof("%s: order '%s' settled by polling, paid=%t",
+	this.logger.Infof(ctx, "%s: order '%s' settled by polling, paid=%t",
 		jobNamePendingPoller, order.OrderId, verdict.Paid)
 	this.notifier.Notify(ctx, NotifyTarget{
 		Pk:        order.Pk,

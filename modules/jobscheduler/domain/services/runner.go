@@ -101,35 +101,35 @@ func (this *Runner) Tick(ctx context.Context, reason WakeReason) (*time.Time, er
 	var errs []error
 	if err := this.reapExpiredLeases(reqCtx, now); err != nil {
 		errs = append(errs, err)
-		this.logError("jobscheduler: lease recovery failed", err)
+		this.logError(reqCtx, "jobscheduler: lease recovery failed", err)
 	}
 	if err := this.materializeDueJobs(reqCtx, now); err != nil {
 		errs = append(errs, err)
-		this.logError("jobscheduler: materialization failed", err)
+		this.logError(reqCtx, "jobscheduler: materialization failed", err)
 	}
 	if err := this.claimAndDispatch(ctx, reqCtx, now); err != nil {
 		errs = append(errs, err)
-		this.logError("jobscheduler: claim and dispatch failed", err)
+		this.logError(reqCtx, "jobscheduler: claim and dispatch failed", err)
 	}
 	if err := this.pruneHistoryIfDue(reqCtx, now); err != nil {
 		// Retention failing is the least urgent of the four: it wastes disk, it does not stop
 		// work running. It is logged and not returned for that reason.
-		this.logError("jobscheduler: history cleanup failed", err)
+		this.logError(reqCtx, "jobscheduler: history cleanup failed", err)
 	}
 
 	horizon, err := this.nextHorizon(reqCtx)
 	if err != nil {
 		errs = append(errs, err)
-		this.logError("jobscheduler: horizon lookup failed", err)
+		this.logError(reqCtx, "jobscheduler: horizon lookup failed", err)
 	}
 	return horizon, joinTickErrors(errs)
 }
 
-func (this *Runner) logError(message string, err error) {
+func (this *Runner) logError(ctx context.Context, message string, err error) {
 	if this.logger == nil || err == nil {
 		return
 	}
-	this.logger.Error(message, err)
+	this.logger.Error(ctx, message, err)
 }
 
 // newRequestContext builds the ambient context the repositories expect.

@@ -1,6 +1,7 @@
 package restful
 
 import (
+	"context"
 	stdErr "errors"
 
 	"github.com/labstack/echo/v5"
@@ -172,7 +173,8 @@ func registerWebhookRoutes(
 		cfg.GetStr(constants.VietQrInboundJwtSecret),
 	)
 	if !inbound.IsConfigured() {
-		logger.Warnf("paymentinvoice: VIETQR.INBOUND_* is unset; the VietQR callbacks will refuse every request")
+		logger.Warnf(context.Background(),
+			"paymentinvoice: VIETQR.INBOUND_* is unset; the VietQR callbacks will refuse every request")
 	}
 
 	webhook := v1.NewWebhookRest(orders, notifier, registry, inbound, logger)

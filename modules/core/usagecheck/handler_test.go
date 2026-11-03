@@ -17,10 +17,10 @@ func salesCommand(resources ...ResourceRef) *CheckResourceUsageCommand {
 		resources = []ResourceRef{productRef()}
 	}
 	return &CheckResourceUsageCommand{
-		RequestId:    "REQ-1",
-		SourceModule: "inventory",
-		TargetModule: "sales",
-		Resources:    resources,
+		CorrelationId: "REQ-1",
+		SourceModule:  "inventory",
+		TargetModule:  "sales",
+		Resources:     resources,
 	}
 }
 
@@ -57,7 +57,7 @@ func TestHandler_AnswersPerResource(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, reply.Result.Results, 2)
 	assert.Equal(t, "sales", reply.Result.Module)
-	assert.Equal(t, "REQ-1", reply.Result.RequestId)
+	assert.Equal(t, "REQ-1", reply.Result.CorrelationId)
 	assert.True(t, reply.Result.Results[0].IsUsed)
 	assert.Equal(t, "sales_order_line", reply.Result.Results[0].UsedBy)
 	assert.False(t, reply.Result.Results[1].IsUsed)

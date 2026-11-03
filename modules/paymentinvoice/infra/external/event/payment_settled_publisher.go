@@ -15,6 +15,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	coreEvent "github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/telemetry"
 
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/constants"
 	itEvent "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/event"
@@ -64,23 +65,23 @@ func (this *PaymentSettledEventPublisherImpl) PublishAsync(
 		return
 	}
 
-	bgCtx := corectx.NewRequestContext(context.WithoutCancel(ctx.InnerContext()))
-
-	publish := func() {
+	publish := func(source context.Context) {
+		detachedCtx, span := telemetry.StartDetached(source, "paymentinvoice.payment_settled.publish")
+		defer span.End()
 		defer func() {
 			// A panic on this goroutine would take the process down with it, and the settlement that
 			// spawned it has already been committed. It is contained and logged instead.
 			if recovered := recover(); recovered != nil {
-				this.logger.Errorf("paymentinvoice: announcing order '%s' panicked: %v",
+				this.logger.Errorf(detachedCtx, "paymentinvoice: announcing order '%s' panicked: %v",
 					event.OrderId, recovered)
 			}
 		}()
 
-		timedCtx, cancel := context.WithTimeout(bgCtx.InnerContext(), publishAsyncTimeout)
+		timedCtx, cancel := context.WithTimeout(detachedCtx, publishAsyncTimeout)
 		defer cancel()
 
 		if err := this.publish(timedCtx, event); err != nil {
-			this.logger.Warn("paymentinvoice: payment settled event publish failed",
+			this.logger.Warn(timedCtx, "paymentinvoice: payment settled event publish failed",
 				logging.Attr{
 					"error":    err.Error(),
 					"order_id": event.OrderId,
@@ -89,7 +90,10 @@ func (this *PaymentSettledEventPublisherImpl) PublishAsync(
 		}
 	}
 	// A caller inside a transaction must not announce a write that may still roll back.
-	ctx.OnCommitted(func() { go publish() })
+	ctx.OnCommitted(func() {
+		source := ctx.InnerContext()
+		go publish(source)
+	})
 }
 
 func (this *PaymentSettledEventPublisherImpl) publish(

@@ -3,35 +3,41 @@ package logging
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path"
 	"runtime"
 
-	"github.com/sky-as-code/nikki-erp/common/env"
 	"go.bryk.io/pkg/errors"
+
+	"github.com/sky-as-code/nikki-erp/common/env"
 )
 
+// skippedCallStackDepth reaches the caller of a public write method:
+// getFileName <- write* <- Debug/Info/... <- caller.
 const skippedCallStackDepth = 3
 
 func NewLogger(levels ...Level) LoggerService {
-	level := LevelInfo // default level
+	return NewLoggerTo(os.Stdout, levels...)
+}
+
+// NewLoggerTo writes to out instead of stdout; tests read the JSON lines back from it.
+func NewLoggerTo(out io.Writer, levels ...Level) LoggerService {
+	level := LevelInfo
 	if len(levels) > 0 {
 		level = levels[0]
 	}
-
 	levelVar := new(slog.LevelVar)
 	levelVar.Set(slogLevelMap[level])
-	slogger := NewSloggerWithCorrectCallDepth(levelVar, 6)
 	return &loggerImpl{
 		level:    level,
 		levelVar: levelVar,
-		slogger:  slogger,
+		slogger:  slog.New(NewTelemetryHandler(out, levelVar)),
 	}
 }
 
 type loggerImpl struct {
-	context  map[string]string
 	level    Level
 	levelVar *slog.LevelVar
 	slogger  *slog.Logger
@@ -43,7 +49,6 @@ func (this *loggerImpl) InnerLogger() any {
 
 func (this *loggerImpl) Clone() LoggerService {
 	return &loggerImpl{
-		context:  this.context,
 		level:    this.level,
 		levelVar: this.levelVar,
 		slogger:  this.slogger,
@@ -55,84 +60,95 @@ func (this *loggerImpl) Level() Level {
 }
 
 func (this *loggerImpl) SetLevel(lvl Level) {
+	this.level = lvl
 	this.levelVar.Set(slogLevelMap[lvl])
-	this.Infof("Log level is set to %s", lvl)
+	this.Infof(context.Background(), "Log level is set to %s", lvl)
 }
 
-func (this *loggerImpl) SetContext(key string, value string) {
-	this.context[key] = value
+func (this *loggerImpl) Debug(ctx context.Context, message string, data Attr) {
+	this.writeLogData(ctx, LevelDebug, message, data)
 }
 
-func (this *loggerImpl) GetContext(key string) string {
-	return this.context[key]
+func (this *loggerImpl) Debugf(ctx context.Context, format string, args ...any) {
+	this.writeLogFormat(ctx, LevelDebug, format, args...)
 }
 
-func (this *loggerImpl) RemoveContext(key string) {
-	delete(this.context, key)
+func (this *loggerImpl) Info(ctx context.Context, message string, data Attr) {
+	this.writeLogData(ctx, LevelInfo, message, data)
 }
 
-func (this *loggerImpl) Debug(message string, data Attr) {
-	this.writeLogData(LevelDebug, message, data)
+func (this *loggerImpl) Infof(ctx context.Context, format string, args ...any) {
+	this.writeLogFormat(ctx, LevelInfo, format, args...)
 }
 
-func (this *loggerImpl) Debugf(format string, args ...any) {
-	this.writeLogFormat(LevelDebug, format, args...)
+func (this *loggerImpl) Warn(ctx context.Context, message string, data Attr) {
+	this.writeLogData(ctx, LevelWarn, message, data)
 }
 
-func (this *loggerImpl) Info(message string, data Attr) {
-	this.writeLogData(LevelInfo, message, data)
+func (this *loggerImpl) Warnf(ctx context.Context, format string, args ...any) {
+	this.writeLogFormat(ctx, LevelWarn, format, args...)
 }
 
-func (this *loggerImpl) Infof(format string, args ...any) {
-	this.writeLogFormat(LevelInfo, format, args...)
+func (this *loggerImpl) Error(ctx context.Context, message string, err error) {
+	this.writeErrorData(ctx, message, err)
 }
 
-func (this *loggerImpl) Warn(message string, data Attr) {
-	this.writeLogData(LevelWarn, message, data)
+func (this *loggerImpl) Errorf(ctx context.Context, format string, args ...any) {
+	this.writeLogFormat(ctx, LevelError, format, args...)
 }
 
-func (this *loggerImpl) Warnf(format string, args ...any) {
-	this.writeLogFormat(LevelWarn, format, args...)
-}
-
-func (this *loggerImpl) Error(message string, err error) {
-	this.writeErrorData(message, err)
-}
-
-func (this *loggerImpl) Errorf(format string, args ...any) {
-	this.writeLogFormat(LevelError, format, args...)
-}
-
-func (this *loggerImpl) writeLogData(level Level, message string, data Attr) {
-	fileNameLine := getFileName(skippedCallStackDepth)
-	this.slogger.Log(context.Background(), slogLevelMap[level], message, slog.Any("data", data), slog.String("source", fileNameLine))
-}
-
-func (this *loggerImpl) writeLogFormat(level Level, format string, args ...any) {
-	fileNameLine := getFileName(skippedCallStackDepth)
-	this.slogger.Log(context.Background(), slogLevelMap[level], fmt.Sprintf(format, args...), slog.String("source", fileNameLine))
-}
-
-func (this *loggerImpl) writeErrorData(message string, err error) {
-	var typedErr *errors.Error
-	var data any
-	isLocal := env.IsLocal()
-	codec := NewJsonCodec(isLocal)
-
-	if errors.As(err, &typedErr) {
-		js, _ := errors.Report(typedErr, codec)
-		data = string(js)
-	} else {
-		data = err
+func (this *loggerImpl) writeLogData(ctx context.Context, level Level, message string, data Attr) {
+	if !this.slogger.Enabled(ctx, slogLevelMap[level]) {
+		return
 	}
-
-	// Copy writeLogData implementation here so the stackDepth is correct
 	fileNameLine := getFileName(skippedCallStackDepth)
-	this.slogger.Log(context.Background(), slog.LevelError, message, slog.Any("data", data), slog.String("source", fileNameLine))
+	attrs := []slog.Attr{slog.String(attrKeySource, fileNameLine)}
+	if data != nil {
+		attrs = append(attrs, slog.Any(attrKeyData, data))
+	}
+	this.slogger.LogAttrs(ctx, slogLevelMap[level], message, attrs...)
+}
 
-	if isLocal {
+func (this *loggerImpl) writeLogFormat(ctx context.Context, level Level, format string, args ...any) {
+	if !this.slogger.Enabled(ctx, slogLevelMap[level]) {
+		return
+	}
+	fileNameLine := getFileName(skippedCallStackDepth)
+	this.slogger.LogAttrs(ctx, slogLevelMap[level], fmt.Sprintf(format, args...), slog.String(attrKeySource, fileNameLine))
+}
+
+func (this *loggerImpl) writeErrorData(ctx context.Context, message string, err error) {
+	if !this.slogger.Enabled(ctx, slog.LevelError) {
+		return
+	}
+	isLocal := env.IsLocal()
+	fileNameLine := getFileName(skippedCallStackDepth)
+	attrs := []slog.Attr{slog.String(attrKeySource, fileNameLine)}
+	if err != nil {
+		attrs = append(attrs,
+			slog.String(attrKeyErrorType, errorTypeOf(err)),
+			slog.Any(attrKeyData, NewErrReport(err, isLocal)),
+		)
+	}
+	this.slogger.LogAttrs(ctx, slog.LevelError, message, attrs...)
+
+	if isLocal && err != nil {
 		printStackTrace(err)
 	}
+}
+
+// errorTypeOf groups errors by the Go type of the innermost cause, a bounded set, rather than by
+// the message, which would make every distinct failure its own group.
+func errorTypeOf(err error) string {
+	cause := err
+	for {
+		next := errors.Unwrap(cause)
+		if next == nil {
+			break
+		}
+		cause = next
+	}
+	return fmt.Sprintf("%T", cause)
 }
 
 func getFileName(depth int) string {
@@ -144,24 +160,15 @@ func getFileName(depth int) string {
 	return fmt.Sprintf("%s:%d", file, line)
 }
 
-func NewSloggerWithCorrectCallDepth(level slog.Leveler, callDepth int) *slog.Logger {
-	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level:     level,
-		AddSource: false, // we’ll manually inject source
-	})
-
-	return slog.New(handler)
-}
-
 func printStackTrace(err error) {
 	rec := NewErrReport(err, false)
 	printRed("Stacktrace:", "")
 	for i, frame := range rec.Stacktrace {
-		// Print in red color
 		printRed(frame, fmt.Sprintf("[%d] ", i))
 	}
 }
 
+// printRed writes the local-env stack trace for a human at a terminal, not a log record.
 func printRed(message string, prefix string) {
 	fmt.Printf("\033[31m%s%v\033[0m\n", prefix, message)
 }

@@ -56,5 +56,5 @@ func (this *RequestContext) SetDbTranx(trx db.DbTransaction) {
 }
 
 func (this *RequestContext) OnCommitted(fn func()) {
-	db.RunOnCommitted(this.repoTrx, fn, this.logger)
+	db.RunOnCommitted(this, this.repoTrx, fn, this.logger)
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/language"
 	"github.com/sky-as-code/nikki-erp/modules/core/message"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
+	"github.com/sky-as-code/nikki-erp/modules/core/telemetry"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
 )
 
@@ -85,6 +86,8 @@ func (*CoreModule) Init() error {
 	err := errors.Join(
 		deps.Invoke(infra.InitSubModule),
 		deps.Invoke(config.InitSubModule),
+		// Before every client and the HTTP server, which take the global tracer provider.
+		deps.Invoke(telemetry.InitSubModule),
 		deps.Invoke(message.InitSubModule),
 		deps.Invoke(cqrs.InitSubModule),
 		// After cqrs: the dispatcher takes the bus as a constructor dependency.

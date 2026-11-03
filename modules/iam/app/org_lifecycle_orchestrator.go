@@ -1,17 +1,18 @@
 package app
 
 import (
-	"context"
 	"strings"
 	"time"
 
 	"go.bryk.io/pkg/errors"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
+	"github.com/sky-as-code/nikki-erp/modules/core/telemetry"
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
@@ -72,17 +73,22 @@ func (this *OrgLifecycleOrchestrator) StartCleanUp(ctx corectx.Context, orgId mo
 func (this *OrgLifecycleOrchestrator) runDetached(
 	ctx corectx.Context, verb string, orgId model.Id, run func(corectx.Context, model.Id) error,
 ) {
-	bgCtx := corectx.CloneWithInner(ctx, context.WithoutCancel(ctx.InnerContext()))
+	source := ctx.InnerContext()
+	bgCtx := corectx.CloneWithInner(ctx, source)
 	bgCtx.SetDbTranx(nil)
 
 	go func() {
+		detachedCtx, span := telemetry.StartDetached(source, "iam.org_lifecycle.run")
+		defer span.End()
+		span.SetAttributes(attribute.String("coremart.org_lifecycle.verb", verb))
+		bgCtx = corectx.CloneWithInner(bgCtx, detachedCtx)
 		defer func() {
 			if recovered := recover(); recovered != nil {
-				this.logger.Errorf("iam: org lifecycle %s of org %s panicked: %v", verb, orgId, recovered)
+				this.logger.Errorf(bgCtx, "iam: org lifecycle %s of org %s panicked: %v", verb, orgId, recovered)
 			}
 		}()
 		if err := run(bgCtx, orgId); err != nil {
-			this.logger.Errorf("iam: org lifecycle %s of org %s: %v", verb, orgId, err)
+			this.logger.Errorf(bgCtx, "iam: org lifecycle %s of org %s: %v", verb, orgId, err)
 		}
 	}()
 }
@@ -90,7 +96,7 @@ func (this *OrgLifecycleOrchestrator) runDetached(
 // InitOrg asks every module to write its defaults, then marks the org ready, or records which
 // modules failed and tells the creator.
 func (this *OrgLifecycleOrchestrator) InitOrg(ctx corectx.Context, orgId model.Id) error {
-	failed, skipped, requestId, err := this.dispatch(ctx, orglifecycle.ActionInitOrg, orgId, false)
+	failed, skipped, correlationId, err := this.dispatch(ctx, orglifecycle.ActionInitOrg, orgId, false)
 	if err != nil {
 		return err
 	}
@@ -99,7 +105,7 @@ func (this *OrgLifecycleOrchestrator) InitOrg(ctx corectx.Context, orgId model.I
 	}
 
 	this.recordFailure(ctx, orgId, domain.OrgStatusProvisioning, OrgStatusMsgInitFailed, failed, skipped)
-	this.notify(ctx, orgId, "iam-org-init-"+requestId, "Fail to create organization",
+	this.notify(ctx, orgId, "iam-org-init-"+correlationId, "Fail to create organization",
 		"Failed to set up defaults for modules: "+strings.Join(failed, ", "))
 	return nil
 }
@@ -107,7 +113,7 @@ func (this *OrgLifecycleOrchestrator) InitOrg(ctx corectx.Context, orgId model.I
 // CleanUpOrg asks every module to delete the org's data, in reverse dependency order, then
 // removes the org row.
 func (this *OrgLifecycleOrchestrator) CleanUpOrg(ctx corectx.Context, orgId model.Id) error {
-	failed, skipped, requestId, err := this.dispatch(ctx, orglifecycle.ActionCleanUpOrg, orgId, true)
+	failed, skipped, correlationId, err := this.dispatch(ctx, orglifecycle.ActionCleanUpOrg, orgId, true)
 	if err != nil {
 		return err
 	}
@@ -119,7 +125,7 @@ func (this *OrgLifecycleOrchestrator) CleanUpOrg(ctx corectx.Context, orgId mode
 	}
 
 	this.recordFailure(ctx, orgId, domain.OrgStatusDeleted, OrgStatusMsgCleanupFailed, failed, skipped)
-	this.notify(ctx, orgId, "iam-org-cleanup-"+requestId, "Fail to delete organization",
+	this.notify(ctx, orgId, "iam-org-cleanup-"+correlationId, "Fail to delete organization",
 		"Failed to clean up modules: "+strings.Join(failed, ", "))
 	return nil
 }
@@ -128,10 +134,10 @@ func (this *OrgLifecycleOrchestrator) CleanUpOrg(ctx corectx.Context, orgId mode
 // cannot be read fails the whole action under Essential's name, since nobody was asked.
 func (this *OrgLifecycleOrchestrator) dispatch(
 	ctx corectx.Context, action string, orgId model.Id, reverse bool,
-) (failed []string, skipped []string, requestId string, err error) {
+) (failed []string, skipped []string, correlationId string, err error) {
 	waves, err := this.catalog.ListModuleWaves(ctx)
 	if err != nil {
-		this.logger.Errorf("iam: org lifecycle %s of org %s: listing modules: %v", action, orgId, err)
+		this.logger.Errorf(ctx, "iam: org lifecycle %s of org %s: listing modules: %v", action, orgId, err)
 		return []string{"essential"}, nil, string(orgId), nil
 	}
 	if reverse {
@@ -142,7 +148,7 @@ func (this *OrgLifecycleOrchestrator) dispatch(
 	if err != nil {
 		return nil, nil, "", errors.Wrapf(err, "dispatch %s", action)
 	}
-	return outcome.FailedModules(), outcome.SkippedModules(), outcome.RequestId, nil
+	return outcome.FailedModules(), outcome.SkippedModules(), outcome.CorrelationId, nil
 }
 
 // removeOrg deletes the org row once every module has cleaned up. A refusal is reported as an
@@ -155,7 +161,7 @@ func (this *OrgLifecycleOrchestrator) removeOrg(ctx corectx.Context, orgId model
 		return nil, errors.Wrap(err, "remove cleaned-up organization")
 	}
 	if result.ClientErrors.Count() > 0 {
-		this.logger.Errorf("iam: removing org %s after cleanup was refused: %v", orgId, result.ClientErrors.ToError())
+		this.logger.Errorf(ctx, "iam: removing org %s after cleanup was refused: %v", orgId, result.ClientErrors.ToError())
 		return []string{c.IamModuleName}, nil
 	}
 	return nil, nil
@@ -169,7 +175,7 @@ func (this *OrgLifecycleOrchestrator) recordFailure(
 		"skipped_modules": strings.Join(skipped, ", "),
 	}
 	if err := this.domSvc.SetLifecycleStatus(ctx, orgId, status, &messageKey, vars); err != nil {
-		this.logger.Errorf("iam: recording lifecycle failure of org %s: %v", orgId, err)
+		this.logger.Errorf(ctx, "iam: recording lifecycle failure of org %s: %v", orgId, err)
 	}
 }
 
@@ -192,6 +198,6 @@ func (this *OrgLifecycleOrchestrator) notify(
 		Metadata:         map[string]any{"org_id": string(orgId)},
 	})
 	if err != nil {
-		this.logger.Errorf("iam: notifying user %s about org %s: %v", userId, orgId, err)
+		this.logger.Errorf(ctx, "iam: notifying user %s about org %s: %v", userId, orgId, err)
 	}
 }

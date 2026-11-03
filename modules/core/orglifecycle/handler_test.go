@@ -31,7 +31,7 @@ func (this *recordingService) CleanUpOrg(ctx corectx.Context, orgId model.Id) er
 
 func salesCommand(action string) *OrgLifecycleCommand {
 	return &OrgLifecycleCommand{
-		RequestId: "REQ-1", TargetModule: "sales", Action: action, OrgId: "ORG-1", RequestedBy: "USR-1",
+		CorrelationId: "REQ-1", TargetModule: "sales", Action: action, OrgId: "ORG-1", RequestedBy: "USR-1",
 	}
 }
 
@@ -44,7 +44,7 @@ func TestHandler_RoutesActionAndActsAsService(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.Equal(t, "sales", reply.Result.Module)
-		assert.Equal(t, "REQ-1", reply.Result.RequestId)
+		assert.Equal(t, "REQ-1", reply.Result.CorrelationId)
 		assert.Equal(t, action, svc.action)
 		assert.Equal(t, model.Id("ORG-1"), svc.orgId)
 

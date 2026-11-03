@@ -30,7 +30,7 @@ func (this *BaseDynamicRepositoryImpl) DeleteByOrg(ctx corectx.Context, orgId mo
 		return nil, errors.Wrapf(qbClientErrs.ToError(), "DeleteByOrg on %s", this.schema.Name())
 	}
 
-	this.logQuery(*sqlQuery)
+	this.logQuery(ctx, *sqlQuery)
 	result, err := this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
 	if err != nil {
 		return nil, errors.Wrapf(err, "DeleteByOrg on %s", this.schema.Name())

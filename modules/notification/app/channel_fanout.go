@@ -73,7 +73,7 @@ func (this *ChannelFanOut) Deliver(
 				// The channel was attached when this was sent and is not now. The row is
 				// committed and the sender is gone, so this is a deployment change to be recorded
 				// rather than a request to refuse.
-				this.warnf("notification: channel '%s' is no longer attached; delivery skipped", name)
+				this.warnf(ctx, "notification: channel '%s' is no longer attached; delivery skipped", name)
 				continue
 			}
 
@@ -98,7 +98,7 @@ func (this *ChannelFanOut) deliverOne(
 ) {
 	delivery, err := this.insertPending(ctx, orgId, recipientId, channel.Name())
 	if err != nil {
-		this.errorf("notification: a delivery row could not be written", err)
+		this.errorf(ctx, "notification: a delivery row could not be written", err)
 		return
 	}
 
@@ -199,7 +199,7 @@ func (this *ChannelFanOut) finish(
 	}
 
 	if _, err := this.deliveries.Update(ctx, delivery.GetFieldData()); err != nil {
-		this.errorf("notification: a delivery outcome could not be recorded", err)
+		this.errorf(ctx, "notification: a delivery outcome could not be recorded", err)
 	}
 }
 
@@ -231,15 +231,15 @@ func userIdAt(data it.SendNotificationResultData, index int) model.Id {
 	return ""
 }
 
-func (this *ChannelFanOut) warnf(format string, args ...any) {
+func (this *ChannelFanOut) warnf(ctx context.Context, format string, args ...any) {
 	if this.logger != nil {
-		this.logger.Warnf(format, args...)
+		this.logger.Warnf(ctx, format, args...)
 	}
 }
 
-func (this *ChannelFanOut) errorf(message string, err error) {
+func (this *ChannelFanOut) errorf(ctx context.Context, message string, err error) {
 	if this.logger != nil {
-		this.logger.Error(message, err)
+		this.logger.Error(ctx, message, err)
 	}
 }
 

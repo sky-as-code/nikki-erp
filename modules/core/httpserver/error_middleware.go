@@ -11,7 +11,7 @@ import (
 func CustomHttpErrorHandler(defaultHandler echo.HTTPErrorHandler) echo.HTTPErrorHandler {
 	return func(ctx *echo.Context, err error) {
 		msg := fmt.Sprintf("Error from endpoint: %s %s", ctx.Request().Method, ctx.Request().URL.Path)
-		logging.Logger().Error(msg, err)
+		logging.Logger().Error(ctx.Request().Context(), msg, err)
 
 		defaultHandler(ctx, err)
 	}

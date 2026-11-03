@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sky-as-code/nikki-erp/modules/core/httpclient/client"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 )
 
@@ -21,9 +23,16 @@ import (
 // the retry behaviour.
 
 func newTestClient(server *httptest.Server, retries int) *ResultSyncClient {
-	client := NewResultSyncClient(2*time.Second, retries)
 	_ = server
-	return client
+	return NewResultSyncClient(sharedHttpClient(), 2*time.Second, retries)
+}
+
+func sharedHttpClient() *client.HttpClient {
+	shared, err := client.NewHttpClient(&client.HttpClientConfig{}, logging.NewLogger())
+	if err != nil {
+		panic(err)
+	}
+	return shared
 }
 
 // The JSON keys are the old NestJS service's, and the machines reading them were never updated.
@@ -128,7 +137,8 @@ func TestRetriesStopAtTheConfiguredBound(t *testing.T) {
 // An order with no callback URL has nobody to tell. Recording that as a failure would have the
 // retry sweep chase it every five minutes forever.
 func TestAnOrderWithNoCallbackUrlIsACompleteOutcome(t *testing.T) {
-	outcome := NewResultSyncClient(time.Second, 3).Sync(context.Background(), ResultSyncRequest{
+	syncClient := NewResultSyncClient(sharedHttpClient(), time.Second, 3)
+	outcome := syncClient.Sync(context.Background(), ResultSyncRequest{
 		ReturnUrl: "",
 		OrderId:   "ORDER1",
 		Status:    models.OrderStatusPaymentSuccess,
@@ -172,7 +182,8 @@ func TestASlowTenantIsAbandonedAtTheTimeout(t *testing.T) {
 	defer server.Close()
 
 	started := time.Now()
-	outcome := NewResultSyncClient(50*time.Millisecond, 1).Sync(context.Background(), ResultSyncRequest{
+	syncClient := NewResultSyncClient(sharedHttpClient(), 50*time.Millisecond, 1)
+	outcome := syncClient.Sync(context.Background(), ResultSyncRequest{
 		ReturnUrl: server.URL,
 		OrderId:   "ORDER1",
 		Status:    models.OrderStatusPaymentSuccess,
@@ -184,7 +195,7 @@ func TestASlowTenantIsAbandonedAtTheTimeout(t *testing.T) {
 
 // A misconfigured client must not become one that never retries or has no timeout at all.
 func TestDegenerateConfigurationFallsBackToSafeValues(t *testing.T) {
-	client := NewResultSyncClient(0, 0)
+	client := NewResultSyncClient(sharedHttpClient(), 0, 0)
 
 	assert.Positive(t, client.httpClient.Timeout, "a zero timeout would wait forever")
 	assert.GreaterOrEqual(t, client.maxRetries, 1, "zero retries would send nothing at all")

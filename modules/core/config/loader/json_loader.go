@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,7 +31,7 @@ type JsonConfigLoader struct {
 
 func (loader *JsonConfigLoader) Init() (err error) {
 	loader.jsonResult, err = loader.load()
-	logging.Logger().Infof("JsonConfigLoader.Init conf: %v", loader.jsonResult)
+	logging.Logger().Infof(context.Background(), "JsonConfigLoader.Init conf: %v", loader.jsonResult)
 	return err
 }
 

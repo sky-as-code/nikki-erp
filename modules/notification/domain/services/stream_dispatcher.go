@@ -76,7 +76,7 @@ func (this *StreamDispatcher) dispatch(ctx context.Context, signal it.WakeUpSign
 	if err != nil {
 		// The notification is durable and the client reconciles through the inbox or an
 		// after_seq reconnect, so a failed read costs a realtime push and nothing more.
-		this.logger.Error("notification wake-up could not be read back", err)
+		this.logger.Error(ctx, "notification wake-up could not be read back", err)
 		return
 	}
 

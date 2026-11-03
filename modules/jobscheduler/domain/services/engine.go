@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -157,14 +158,16 @@ func (this *Engine) run() {
 func (this *Engine) runTick(reason WakeReason, timer Timer) {
 	ctx, cancel := this.tickContext()
 	defer cancel()
+	ctx, span := startTickSpan(ctx, reason)
 
 	next, err := this.tick(ctx, reason)
+	job.EndRun(span, err)
 	if err != nil {
 		// A failed tick is logged and the loop continues. The alternative - stopping - would turn
 		// one bad query into a scheduler that never runs again, and the reconciliation timer means
 		// the next tick retries whatever this one could not do.
 		if this.logger != nil {
-			this.logger.Error("scheduler tick failed", err)
+			this.logger.Error(ctx, "scheduler tick failed", err)
 		}
 	}
 

@@ -141,7 +141,7 @@ func (this *RestEngineImpl) AddRoute(def RouteDefinition) RestEngine {
 		name:       def.Path,
 		method:     def.ActionType.HttpMethod(),
 		path:       def.Path,
-		handler:    this.wrapHandler(def),
+		handler:    traceCustomAction(this.schemaName, customActionName(def), this.wrapHandler(def)),
 		authorized: def.IsAuthorized == nil || *def.IsAuthorized,
 		extra:      def.Middlewares,
 	})

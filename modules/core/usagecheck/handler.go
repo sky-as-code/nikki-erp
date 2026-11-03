@@ -39,7 +39,7 @@ func newModuleHandler(
 		*cqrs.Reply[CheckResourceUsageResult], error),
 ) cqrs.RequestHandler {
 	return &moduleScopedHandler{
-		moduleName:  moduleName,
+		moduleName:     moduleName,
 		RequestHandler: cqrs.NewHandler(handle),
 	}
 }
@@ -117,9 +117,9 @@ func (this *checkUsageHandler) answer(
 
 	return &cqrs.Reply[CheckResourceUsageResult]{
 		Result: CheckResourceUsageResult{
-			RequestId: cmd.RequestId,
-			Module:    this.moduleName,
-			Results:   results,
+			CorrelationId: cmd.CorrelationId,
+			Module:        this.moduleName,
+			Results:       results,
 		},
 	}, nil
 }

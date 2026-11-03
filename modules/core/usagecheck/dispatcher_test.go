@@ -94,7 +94,7 @@ func answers(module string, used bool) answerFn {
 				IsUsed:       used,
 			})
 		}
-		return CheckResourceUsageResult{RequestId: cmd.RequestId, Module: module, Results: items}, nil
+		return CheckResourceUsageResult{CorrelationId: cmd.CorrelationId, Module: module, Results: items}, nil
 	}
 }
 
@@ -194,7 +194,7 @@ func TestCheckUsage_MissingHandlerBlocksDelete(t *testing.T) {
 // A short reply leaves resources unanswered, and an unanswered resource must not read as unused.
 func TestCheckUsage_ShortReplyBlocksDelete(t *testing.T) {
 	bus := newFakeBus().answer("sales", func(cmd *CheckResourceUsageCommand) (CheckResourceUsageResult, error) {
-		return CheckResourceUsageResult{RequestId: cmd.RequestId, Module: "sales"}, nil
+		return CheckResourceUsageResult{CorrelationId: cmd.CorrelationId, Module: "sales"}, nil
 	})
 	dispatcher := NewDispatcher(bus, registryWith(t, "inventory", "sales"), nil)
 

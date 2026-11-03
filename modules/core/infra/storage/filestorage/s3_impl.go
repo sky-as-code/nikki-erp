@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/constants"
@@ -48,6 +49,7 @@ func NewS3Adapter(cfg config.ConfigService, logger logging.LoggerService) (FileS
 	client := s3.NewFromConfig(s3Config, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String(cfg.GetStr(constants.S3StorageEndpoint))
 		o.UsePathStyle = true
+		o.TracerProvider = s3TracerProvider(otel.GetTracerProvider())
 	})
 
 	uploader := manager.NewUploader(client, func(u *manager.Uploader) {

@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/labstack/gommon/log"
 	"gopkg.in/jeevatkm/go-model.v1"
 )
 
@@ -48,13 +47,11 @@ func Copy[TSrc any, TDest any](fromValue TSrc, toValue TDest) (err error) {
 func JSONCopy(dst, src interface{}) error {
 	bytes, err := json.Marshal(src)
 	if err != nil {
-		log.Info("JSONCopy: err marshal json = ", err)
 		return err
 	}
 
 	err = json.Unmarshal(bytes, dst)
 	if err != nil {
-		log.Info("JSONCopy: err unmarshal json = ", err)
 		return err
 	}
 
@@ -82,7 +79,6 @@ func CopyWithJSONTag(dest interface{}, source interface{}) error {
 			return nameJson == sFieldName
 		})
 		if !found {
-			log.Infof("CopyWithJSONTag Error sField: %v, sFieldName: %v, dField: %v", sField, sFieldName, dField)
 			continue
 		}
 
@@ -94,8 +90,6 @@ func CopyWithJSONTag(dest interface{}, source interface{}) error {
 		if dFieldName != sFieldName {
 			continue
 		}
-
-		//log.Infof("CopyWithJSONTag sField: %v, sFieldName: %v, dField: %v, dFieldName: %v", sField, sFieldName, dField, dFieldName)
 
 		if sField.Type != dField.Type {
 			continue
@@ -128,7 +122,6 @@ func CopyExWithJSONTag(dest interface{}, source interface{}) error {
 			return nameJson == sFieldName
 		})
 		if !found {
-			log.Infof("CopyExWithJSONTag Error sField: %v, sFieldName: %v, dField: %v", sField, sFieldName, dField)
 			continue
 		}
 
@@ -140,8 +133,6 @@ func CopyExWithJSONTag(dest interface{}, source interface{}) error {
 		if dFieldName != sFieldName {
 			continue
 		}
-
-		//log.Infof("CopyExWithJSONTag sField: %v, sFieldName: %v, dField: %v, dFieldName: %v", sField, sFieldName, dField, dFieldName)
 
 		// Nếu trường là con trỏ và trường tương ứng trong struct dest là giá trị
 		if sField.Type == reflect.PtrTo(dField.Type) && sValue.Field(i).IsNil() == false {

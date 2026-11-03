@@ -12,12 +12,12 @@
 			"items": {
 				"type": "object",
 				"additionalProperties": false,
-				"required": ["id", "action", "created_at", "request_id", "actor", "changes", "masked_fields"],
+				"required": ["id", "action", "created_at", "trace_id", "actor", "changes", "masked_fields"],
 				"properties": {
 					"id": { "type": "string", "minLength": 1 },
 					"action": { "type": "string", "minLength": 1 },
 					"created_at": { "type": "string", "minLength": 1 },
-					"request_id": { "type": ["string", "null"] },
+					"trace_id": { "type": ["string", "null"] },
 					"actor": {
 						"type": "object",
 						"additionalProperties": false,

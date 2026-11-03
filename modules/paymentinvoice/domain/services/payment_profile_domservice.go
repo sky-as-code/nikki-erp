@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/crypto"
@@ -33,7 +34,7 @@ func NewPaymentProfileDomainService(
 ) *PaymentProfileDomainService {
 	encryptionKey := configSvc.GetStr(constants.PaymentProfileEncryptionKey)
 	if len(encryptionKey) == 0 && logger != nil {
-		logger.Warnf(
+		logger.Warnf(context.Background(),
 			"paymentinvoice: %s is unset; payment profile credentials can be neither stored nor read",
 			string(constants.PaymentProfileEncryptionKey),
 		)

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+
 	"time"
 
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -68,25 +70,25 @@ func (this *ExpiryJobs) Sweep(ctx corectx.Context) error {
 
 	orders, err := services.ExpireStaleDrafts(ctx, policy, now, expiryPageSize)
 	if err != nil {
-		this.logError("sales expiry: expiring stale drafts failed", err)
+		this.logError(ctx, "sales expiry: expiring stale drafts failed", err)
 	} else if len(orders.ExpiredOrderIds) > 0 {
-		this.logInfo("sales expiry: expired drafts", len(orders.ExpiredOrderIds),
+		this.logInfo(ctx, "sales expiry: expired drafts", len(orders.ExpiredOrderIds),
 			len(orders.ReleasedVoucherCodeIds))
 	}
 
 	// Bookkeeping for the payment deadline: every gate already decides expiry on the clock, so
 	// this only writes expired_at where no request has yet noticed.
 	if expired, err := services.ExpireUnpaidOrders(ctx, now, expiryPageSize); err != nil {
-		this.logError("sales expiry: stamping unpaid orders past their deadline failed", err)
+		this.logError(ctx, "sales expiry: stamping unpaid orders past their deadline failed", err)
 	} else if expired > 0 {
-		this.logInfo("sales expiry: stamped unpaid orders past their deadline", expired, 0)
+		this.logInfo(ctx, "sales expiry: stamped unpaid orders past their deadline", expired, 0)
 	}
 
 	quotations, err := services.ExpireLapsedQuotations(ctx, now, expiryPageSize)
 	if err != nil {
-		this.logError("sales expiry: expiring lapsed quotations failed", err)
+		this.logError(ctx, "sales expiry: expiring lapsed quotations failed", err)
 	} else if len(quotations.ExpiredQuotationIds) > 0 {
-		this.logInfo("sales expiry: expired quotations",
+		this.logInfo(ctx, "sales expiry: expired quotations",
 			len(quotations.ExpiredQuotationIds), 0)
 	}
 
@@ -96,28 +98,28 @@ func (this *ExpiryJobs) Sweep(ctx corectx.Context) error {
 	fulfillments, err := services.ExpireLapsedFulfillments(
 		ctx, now, expiryPageSize, this.reservations)
 	if err != nil {
-		this.logError("sales expiry: expiring lapsed fulfillment reservations failed", err)
+		this.logError(ctx, "sales expiry: expiring lapsed fulfillment reservations failed", err)
 		return nil
 	}
 	if len(fulfillments.ExpiredFulfillmentIds) > 0 {
-		this.logInfo("sales expiry: expired fulfillment reservations",
+		this.logInfo(ctx, "sales expiry: expired fulfillment reservations",
 			len(fulfillments.ExpiredFulfillmentIds), 0)
 	}
 	return nil
 }
 
-func (this *ExpiryJobs) logError(message string, err error) {
+func (this *ExpiryJobs) logError(ctx context.Context, message string, err error) {
 	if this.logger == nil {
 		return
 	}
-	this.logger.Error(message, err)
+	this.logger.Error(ctx, message, err)
 }
 
 // logInfo reports what the sweep did. The released-code count is logged separately because it is
 // the part with an effect outside these orders, and what an investigator greps for.
-func (this *ExpiryJobs) logInfo(message string, count, releasedCodes int) {
+func (this *ExpiryJobs) logInfo(ctx context.Context, message string, count, releasedCodes int) {
 	if this.logger == nil {
 		return
 	}
-	this.logger.Infof("%s: %d, released voucher codes: %d", message, count, releasedCodes)
+	this.logger.Infof(ctx, "%s: %d, released voucher codes: %d", message, count, releasedCodes)
 }

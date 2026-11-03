@@ -15,5 +15,5 @@ func itAuditEntry() audit.Entry {
 }
 
 func metaWithoutSource() corectx.RequestMeta {
-	return corectx.RequestMeta{Id: "req_1"}
+	return corectx.RequestMeta{}
 }

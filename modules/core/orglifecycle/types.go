@@ -31,10 +31,10 @@ func RequestTypeFor(targetModule string, action string) cqrs.RequestType {
 // TargetModule and Action address the command; the handler checks both on arrival so a command
 // that reaches the wrong module is refused rather than executed under another module's name.
 type OrgLifecycleCommand struct {
-	RequestId    string `json:"request_id"`
-	TargetModule string `json:"target_module"`
-	Action       string `json:"action"`
-	OrgId        string `json:"org_id"`
+	CorrelationId string `json:"correlation_id"`
+	TargetModule  string `json:"target_module"`
+	Action        string `json:"action"`
+	OrgId         string `json:"org_id"`
 	// RequestedBy is the user who created or deleted the org. Rows a module writes are stamped
 	// with it, so the defaults read as created by the person who created the org.
 	RequestedBy string `json:"requested_by"`
@@ -45,6 +45,6 @@ func (this OrgLifecycleCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 type OrgLifecycleResult struct {
-	RequestId string `json:"request_id"`
-	Module    string `json:"module"`
+	CorrelationId string `json:"correlation_id"`
+	Module        string `json:"module"`
 }

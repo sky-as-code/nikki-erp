@@ -1,6 +1,7 @@
 package mqttclient
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -28,7 +29,7 @@ func NewVerneMq(cfg config.ConfigService, logger logging.LoggerService) MqttClie
 	opts.AddBroker(uri)
 	opts.SetAutoReconnect(true)
 	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
-		logging.Logger().Error("[MQTT] Connection Lost", err)
+		logging.Logger().Error(context.Background(), "[MQTT] Connection Lost", err)
 	})
 	opts.SetClientID(uuid.NewString())
 	opts.SetUsername(cfg.GetStr(constants.PubSubVerneUsername))

@@ -33,16 +33,16 @@ func NewRedisPubSub(logger logging.LoggerService, cfg config.ConfigService) PubS
 }
 
 func (this *RedisPubSub) Publish(ctx context.Context, topic string, message []byte) error {
-	this.logger.Debug("Publishing message to topic", logging.Attr{"topic": topic, "message": message})
+	this.logger.Debug(ctx, "Publishing message to topic", logging.Attr{"topic": topic, "message": message})
 	return this.redisClient.Publish(ctx, topic, message).Err()
 }
 
 func (this *RedisPubSub) Subscribe(ctx context.Context, topic string) (<-chan []byte, error) {
 	pubSub := this.redisClient.Subscribe(ctx, topic)
-	this.logger.Debug("Subscribing to topic", logging.Attr{"topic": topic})
+	this.logger.Debug(ctx, "Subscribing to topic", logging.Attr{"topic": topic})
 	_, err := pubSub.Receive(ctx)
 	if err != nil {
-		this.logger.Error("Failed to subscribe to topic", err)
+		this.logger.Error(ctx, "Failed to subscribe to topic", err)
 		return nil, err
 	}
 

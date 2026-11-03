@@ -44,7 +44,7 @@ type HistoryItem struct {
 	Id           string          `json:"id"`
 	Action       string          `json:"action"`
 	CreatedAt    string          `json:"created_at"`
-	RequestId    *string         `json:"request_id"`
+	TraceId      *string         `json:"trace_id"`
 	Actor        HistoryActor    `json:"actor"`
 	Changes      []HistoryChange `json:"changes"`
 	MaskedFields []string        `json:"masked_fields"`

@@ -86,7 +86,7 @@ func (this *ConsumptionDomainServiceImpl) Release(ctx corectx.Context, reservati
 	}
 	detached := detachedContext(ctx)
 	if err := this.repo.Release(detached, reservation.Owners, reservation.Bytes); err != nil {
-		ctx.GetLogger().Warn("itstorage: failed to release reserved bytes; they stay reserved until reconciled",
+		ctx.GetLogger().Warn(ctx, "itstorage: failed to release reserved bytes; they stay reserved until reconciled",
 			logging.Attr{"bytes": reservation.Bytes, "error": err.Error()})
 	}
 }

@@ -14,7 +14,8 @@ import (
 // application layer holds that reference.
 func (this *DefaultApplicationServiceImpl) CreateBulk(
 	ctx corectx.Context, cmd BulkCreateCommand,
-) (*BulkCreateResult, error) {
+) (out *BulkCreateResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionBulkCreate)(&outErr)
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionBulkCreate); cErrs != nil {
 		return &BulkCreateResult{ClientErrors: *cErrs}, nil
 	}

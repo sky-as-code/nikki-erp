@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/modules/core/httpclient/client"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 )
 
@@ -88,8 +89,9 @@ type ResultSyncClient struct {
 //
 // The timeout is per attempt rather than across all of them, because it is a bound on how long one
 // unresponsive tenant may hold a worker, and that is what matters when a sweep is working through
-// a backlog.
-func NewResultSyncClient(timeout time.Duration, maxRetries int) *ResultSyncClient {
+// a backlog. It is derived from the shared client so the calls keep its instrumented transport: a
+// CLIENT span per attempt, and trace/idempotency headers only to an allowlisted return_url host.
+func NewResultSyncClient(shared *client.HttpClient, timeout time.Duration, maxRetries int) *ResultSyncClient {
 	if timeout <= 0 {
 		timeout = 5 * time.Second
 	}
@@ -97,7 +99,7 @@ func NewResultSyncClient(timeout time.Duration, maxRetries int) *ResultSyncClien
 		maxRetries = 1
 	}
 	return &ResultSyncClient{
-		httpClient: &http.Client{Timeout: timeout},
+		httpClient: shared.WithTimeout(timeout),
 		maxRetries: maxRetries,
 	}
 }

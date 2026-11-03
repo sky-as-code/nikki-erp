@@ -25,9 +25,9 @@ type ModuleAnswer struct {
 }
 
 type Outcome struct {
-	RequestId string
-	Action    string
-	Answers   []ModuleAnswer
+	CorrelationId string
+	Action        string
+	Answers       []ModuleAnswer
 }
 
 func (this Outcome) Succeeded() bool {
@@ -92,7 +92,7 @@ func (this *Dispatcher) Dispatch(
 	if err != nil {
 		return nil, errors.Wrap(err, "orglifecycle: failed to generate a request id")
 	}
-	outcome := &Outcome{RequestId: newUlid.String(), Action: action}
+	outcome := &Outcome{CorrelationId: newUlid.String(), Action: action}
 	started := time.Now()
 
 	failed := false
@@ -103,17 +103,17 @@ func (this *Dispatcher) Dispatch(
 			}
 			continue
 		}
-		answers := this.dispatchWave(ctx, outcome.RequestId, action, wave, orgId, requestedBy)
+		answers := this.dispatchWave(ctx, outcome.CorrelationId, action, wave, orgId, requestedBy)
 		outcome.Answers = append(outcome.Answers, answers...)
 		failed = !(Outcome{Answers: answers}).Succeeded()
 	}
 
-	this.logOutcome(orgId, outcome, time.Since(started))
+	this.logOutcome(ctx, orgId, outcome, time.Since(started))
 	return outcome, nil
 }
 
 func (this *Dispatcher) dispatchWave(
-	ctx corectx.Context, requestId string, action string, wave []string, orgId model.Id, requestedBy model.Id,
+	ctx corectx.Context, correlationId string, action string, wave []string, orgId model.Id, requestedBy model.Id,
 ) []ModuleAnswer {
 	answers := make([]ModuleAnswer, len(wave))
 	var waitGroup sync.WaitGroup
@@ -122,7 +122,7 @@ func (this *Dispatcher) dispatchWave(
 		go func(index int, target string) {
 			defer waitGroup.Done()
 			cmd := OrgLifecycleCommand{
-				RequestId: requestId, TargetModule: target, Action: action,
+				CorrelationId: correlationId, TargetModule: target, Action: action,
 				OrgId: string(orgId), RequestedBy: string(requestedBy),
 			}
 			answers[index] = this.ask(ctx, cmd)
@@ -158,23 +158,23 @@ func (this *Dispatcher) ask(ctx corectx.Context, cmd OrgLifecycleCommand) (answe
 	return answer
 }
 
-func (this *Dispatcher) logOutcome(orgId model.Id, outcome *Outcome, elapsed time.Duration) {
+func (this *Dispatcher) logOutcome(ctx context.Context, orgId model.Id, outcome *Outcome, elapsed time.Duration) {
 	if this.logger == nil {
 		return
 	}
 	if outcome.Succeeded() {
-		this.logger.Infof("org lifecycle %s %s: org=%s modules=%d duration=%s result=ok",
-			outcome.Action, outcome.RequestId, orgId, len(outcome.Answers), elapsed)
+		this.logger.Infof(ctx, "org lifecycle %s %s: org=%s modules=%d duration=%s result=ok",
+			outcome.Action, outcome.CorrelationId, orgId, len(outcome.Answers), elapsed)
 		return
 	}
 	for _, answer := range outcome.Answers {
 		if answer.Err != nil {
-			this.logger.Errorf("org lifecycle %s %s: org=%s module=%s: %v",
-				outcome.Action, outcome.RequestId, orgId, answer.Module, answer.Err)
+			this.logger.Errorf(ctx, "org lifecycle %s %s: org=%s module=%s: %v",
+				outcome.Action, outcome.CorrelationId, orgId, answer.Module, answer.Err)
 		}
 	}
-	this.logger.Errorf("org lifecycle %s %s: org=%s duration=%s result=failed failed=%s skipped=%s",
-		outcome.Action, outcome.RequestId, orgId, elapsed,
+	this.logger.Errorf(ctx, "org lifecycle %s %s: org=%s duration=%s result=failed failed=%s skipped=%s",
+		outcome.Action, outcome.CorrelationId, orgId, elapsed,
 		strings.Join(outcome.FailedModules(), ","), strings.Join(outcome.SkippedModules(), ","))
 }
 

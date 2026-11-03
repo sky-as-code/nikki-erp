@@ -22,7 +22,7 @@ const (
 	ActionFieldActorDisplayName = "actor_display_name"
 	ActionFieldBefore           = "before"
 	ActionFieldAfter            = "after"
-	ActionFieldRequestId        = "request_id"
+	ActionFieldTraceId          = "trace_id"
 	ActionFieldSource           = "source"
 
 	ActionEdgeActorUser = "actor_user"

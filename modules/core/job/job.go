@@ -4,32 +4,33 @@ import (
 	"context"
 	"time"
 
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
 type JobHandleFn func(ctx context.Context, jobArgs *string) error
 
-func Handle(logger logging.LoggerService, jobName string, jobFn JobHandleFn, timeout time.Duration, jobArgs *string) error {
+// Handle runs one job under its own root span and idempotency id. A panic is contained here,
+// where the run's context still exists to log it with.
+func Handle(
+	logger logging.LoggerService, jobName string, jobFn JobHandleFn, timeout time.Duration, jobArgs *string,
+) (err error) {
 	ctx, cc := context.WithTimeout(context.Background(), timeout)
 	defer cc()
-	// One id per run, so every entry the job writes reads as one execution.
+	ctx, span := StartRun(ctx, jobName)
+	defer func() { EndRun(span, err) }()
 	ctx = corectx.WithRequestMeta(ctx, corectx.NewRequestMeta(corectx.RequestSourceJob))
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			err = ft.RecoverPanicFailedTo(recovered, "run job "+jobName)
+			logger.Error(ctx, "[JOB] panicked", err)
+		}
+	}()
 
-	// random, err := util.GenerateRandomStr("1234567890", 10)
-	// if err != nil {
-	// 	logger.Error("GenerateRandomStr err", err)
-	// 	return err
-	// }
-
-	// logger.Infof("[JOB] %s(%s) perform", jobName, random)
-	err := jobFn(ctx, jobArgs)
+	err = jobFn(ctx, jobArgs)
 	if err != nil {
-		// logger.Infof("[JOB] %s(%s) error", jobName, random)
-		logger.Error("[JOB] error", err)
-		return err
+		logger.Error(ctx, "[JOB] error", err)
 	}
-
-	// logger.Infof("[JOB] %s(%s) done", jobName, random)
-	return nil
+	return err
 }

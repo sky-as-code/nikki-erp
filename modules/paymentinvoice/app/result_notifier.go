@@ -1,11 +1,11 @@
 package app
 
 import (
-	"context"
 	"time"
 
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/telemetry"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	itEvent "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/event"
@@ -93,7 +93,7 @@ func (this *ResultNotifier) Notify(ctx corectx.Context, target NotifyTarget, sta
 
 	facts, err := this.orders.SyncFactsFor(ctx, target.OrderId)
 	if err != nil {
-		this.logger.Warnf("paymentinvoice: order '%s' could not be read for notification: %s",
+		this.logger.Warnf(ctx, "paymentinvoice: order '%s' could not be read for notification: %s",
 			target.OrderId, err.Error())
 		return
 	}
@@ -108,11 +108,11 @@ func (this *ResultNotifier) Notify(ctx corectx.Context, target NotifyTarget, sta
 	})
 
 	if err := this.orders.RecordSyncOutcome(ctx, target.Pk, SyncOutcomeOf(outcome, this.now())); err != nil {
-		this.logger.Errorf("paymentinvoice: order '%s' sync outcome could not be recorded: %s",
+		this.logger.Errorf(ctx, "paymentinvoice: order '%s' sync outcome could not be recorded: %s",
 			target.OrderId, err.Error())
 	}
 	if !outcome.Succeeded() {
-		this.logger.Warnf("paymentinvoice: order '%s' could not be reported to its caller: %s",
+		this.logger.Warnf(ctx, "paymentinvoice: order '%s' could not be reported to its caller: %s",
 			target.OrderId, outcome.Detail)
 	}
 }
@@ -136,7 +136,7 @@ func (this *ResultNotifier) announce(ctx corectx.Context, target NotifyTarget, s
 	if err != nil {
 		// Logged, not fatal: the HTTP sync below is a separate path to the same news, and the
 		// subscriber's own reconciliation is the backstop for both.
-		this.logger.Warnf("paymentinvoice: order '%s' could not be read for announcement: %s",
+		this.logger.Warnf(ctx, "paymentinvoice: order '%s' could not be read for announcement: %s",
 			target.OrderId, err.Error())
 		return
 	}
@@ -187,14 +187,17 @@ func settledTypeOf(status string) (itEvent.PaymentSettledType, bool) {
 // own transaction before this was reached, and an order settled but never reported is exactly what
 // the retry sweep looks for.
 func (this *ResultNotifier) NotifyDetached(ctx corectx.Context, target NotifyTarget, status string) {
-	bgCtx := corectx.NewRequestContext(context.WithoutCancel(ctx.InnerContext()))
+	source := ctx.InnerContext()
 
 	go func() {
+		detachedCtx, span := telemetry.StartDetached(source, "paymentinvoice.result.notify")
+		defer span.End()
+		bgCtx := corectx.NewRequestContext(detachedCtx)
 		defer func() {
 			// A panic on this goroutine would take the process down with it, and the request that
 			// spawned it has already been answered. It is contained and logged instead.
 			if recovered := recover(); recovered != nil {
-				this.logger.Errorf("paymentinvoice: notifying order '%s' panicked: %v",
+				this.logger.Errorf(bgCtx, "paymentinvoice: notifying order '%s' panicked: %v",
 					target.OrderId, recovered)
 			}
 		}()

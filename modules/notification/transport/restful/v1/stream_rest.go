@@ -12,6 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/telemetry"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/notification/constants"
 	it "github.com/sky-as-code/nikki-erp/modules/notification/interfaces/delivery"
 )
@@ -149,7 +150,9 @@ func (this *StreamRest) pump(
 		select {
 		case <-request.Context().Done():
 			// The client disconnected. That is not a delivery failure and must leave the
-			// notification and its read state exactly as they were (BR-FS 21).
+			// notification and its read state exactly as they were (BR-FS 21). Nor is it an
+			// error on the span, which the tracing middleware ends as this returns.
+			telemetry.MarkCancelled(request.Context())
 			return nil
 
 		case event, open := <-events:
@@ -186,7 +189,7 @@ func (this *StreamRest) writeEvent(echoCtx *echo.Context, event it.StreamEvent) 
 	if err != nil {
 		// A notification whose payload will not marshal must not take the stream down with it:
 		// every other notification on this connection is still deliverable.
-		this.logger.Error("notification stream event is not serializable", err)
+		this.logger.Error(echoCtx.Request().Context(), "notification stream event is not serializable", err)
 		return nil
 	}
 

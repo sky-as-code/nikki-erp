@@ -105,7 +105,7 @@ func (this *NotificationApplicationServiceImpl) announce(
 	for _, userId := range data.RecipientUserIds {
 		signal := it.WakeUpSignal{OrgId: orgId, UserId: model.Id(userId)}
 		if err := this.broker.Publish(context.WithoutCancel(ctx), signal); err != nil {
-			this.logger.Error("notification wake-up signal was not published", err)
+			this.logger.Error(ctx, "notification wake-up signal was not published", err)
 		}
 	}
 }

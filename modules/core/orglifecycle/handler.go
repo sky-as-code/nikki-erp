@@ -84,7 +84,7 @@ func (this *lifecycleHandler) answer(
 	}
 
 	return &cqrs.Reply[OrgLifecycleResult]{
-		Result: OrgLifecycleResult{RequestId: cmd.RequestId, Module: this.moduleName},
+		Result: OrgLifecycleResult{CorrelationId: cmd.CorrelationId, Module: this.moduleName},
 	}, nil
 }
 
