@@ -54,7 +54,7 @@ func (this *NotificationHandler) SendNotification(
 	if result.ClientErrors.Count() > 0 {
 		// A refused command is not a transport failure. Returning an error would have the bus
 		// redeliver a command that will be refused identically every time.
-		this.logger.Warn("notification command was refused", map[string]any{
+		this.logger.Warn(requestCtx, "notification command was refused", map[string]any{
 			"command_id": command.CommandId,
 			"errors":     result.ClientErrors,
 		})

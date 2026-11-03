@@ -7,7 +7,7 @@
 	"record_sub_label_field": "resource_code",
 	"default_search_fields": [
 		"action", "resource_code", "resource_id", "actor_type", "actor_id", "actor_display_name",
-		"before", "after", "request_id", "source", "org_id", "created_at"
+		"before", "after", "trace_id", "source", "org_id", "created_at"
 	],
 	"search_indexes": [
 		{ "index_name": "auditlog_actions_res", "fields": ["resource_code", "resource_id", "created_at"] },
@@ -90,11 +90,11 @@
 			}
 		},
 		{
-			"name": "request_id",
-			"label": "fields.request_id",
-			"data_type": { "type": "string", "min": 1, "max": 100 },
+			"name": "trace_id",
+			"label": "fields.trace_id",
+			"data_type": { "type": "string", "min": 1, "max": 32 },
 			"description": {
-				"en-US": "Shared by every entry one request, job run or message wrote, so a call that changed several records reads as one."
+				"en-US": "The OpenTelemetry trace id. Groups every entry written under one trace — one request, job run or message — so a call that changed several records reads as one. Empty when no trace was active."
 			}
 		},
 		{

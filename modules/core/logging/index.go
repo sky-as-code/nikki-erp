@@ -1,6 +1,8 @@
 package logging
 
 import (
+	"context"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -17,9 +19,13 @@ func InitSubModule() {
 	logLevel, ok := levelNameMap[levelEnv]
 	if !ok {
 		logLevel = defaultLvl
-		logger.Warnf("Value '%s' of the env var %s is not a valid log level. Fallback to level '%s'", levelEnv, c.LogLevel, defaultLvl)
+		logger.Warnf(context.Background(), "Value '%s' of the env var %s is not a valid log level. Fallback to level '%s'",
+			levelEnv, c.LogLevel, defaultLvl)
 	}
 	logger.SetLevel(logLevel)
+	// Routes stdlib slog and log output (libraries, common/ packages that cannot import this one)
+	// through the same JSON schema. Those calls carry no ctx, so their telemetry fields are null.
+	slog.SetDefault(logger.InnerLogger().(*slog.Logger))
 	err := deps.Register(func() LoggerService {
 		return logger
 	})

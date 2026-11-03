@@ -30,7 +30,7 @@ func NewVerneMq(cfg config.ConfigService, logger logging.LoggerService) PubSubOu
 	opts.AddBroker(uri)
 	opts.SetAutoReconnect(true)
 	opts.SetConnectionLostHandler(func(client mqtt.Client, err error) {
-		logging.Logger().Error("[MQTT] Connection Lost", err)
+		logging.Logger().Error(context.Background(), "[MQTT] Connection Lost", err)
 	})
 	opts.SetClientID(uuid.NewString())
 	opts.SetUsername(cfg.GetStr(constants.PubSubVerneUsername))
@@ -57,7 +57,7 @@ func NewVerneMq(cfg config.ConfigService, logger logging.LoggerService) PubSubOu
 }
 
 func (this *mqttImpl) Publish(ctx context.Context, topic string, message []byte) error {
-	this.logger.Debug("Publishing message to topic", logging.Attr{"topic": topic, "message": message})
+	this.logger.Debug(ctx, "Publishing message to topic", logging.Attr{"topic": topic, "message": message})
 	return this.client.Publish(topic, Qos, false, message).Error()
 }
 

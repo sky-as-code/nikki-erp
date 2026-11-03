@@ -1,6 +1,7 @@
 package job
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -39,13 +40,13 @@ func (this *JobManager) Register(jobName string, handleFn JobHandleFn, jobTimeou
 	}
 
 	this.jobs[jobName] = job
-	this.logger.Infof("[JobManager] Register job %s", jobName)
+	this.logger.Infof(context.Background(), "[JobManager] Register job %s", jobName)
 }
 
 func (this *JobManager) HandleJob(jobName string, jobArgs *string) {
 	job, ok := this.jobs[jobName]
 	if !ok {
-		this.logger.Errorf("[JobManager] unknown job: %s", jobName)
+		this.logger.Errorf(context.Background(), "[JobManager] unknown job: %s", jobName)
 		os.Exit(1)
 	}
 

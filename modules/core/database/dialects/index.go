@@ -22,7 +22,7 @@ func InitDbClient(opts ClientOptions) (orm.DbClient, error) {
 	switch opts.DialectName {
 	case orm.DialectPostgres:
 		dsn := buildPgDsn(opts.DialectOptions)
-		conn, err := sql.Open(orm.DialectPostgres, dsn)
+		conn, err := openTraced(orm.DialectPostgres, dsn)
 		if err != nil {
 			return nil, err
 		}
@@ -61,10 +61,10 @@ func OpenConnection(opts ClientOptions) (*sql.DB, error) {
 	switch opts.DialectName {
 	case orm.DialectMySql:
 		dsn = buildMysqlDsn(opts.DialectOptions)
-		conn, err = sql.Open(orm.DialectMySql, dsn)
+		conn, err = openTraced(orm.DialectMySql, dsn)
 	case orm.DialectPostgres:
 		dsn = buildPgDsn(opts.DialectOptions)
-		conn, err = sql.Open(orm.DialectPostgres, dsn)
+		conn, err = openTraced(orm.DialectPostgres, dsn)
 	default:
 		return nil, errors.Errorf("unsupported dialect: %s", opts.DialectName)
 	}

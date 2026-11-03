@@ -1,10 +1,12 @@
 package dynamicmodel
 
 import (
+	"context"
 	"maps"
 
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
 // ComputedContextOrgId is the `${ctx.org_id}` a computed field may read: the organization the
@@ -44,4 +46,16 @@ func MergeComputedContext(ctx corectx.Context, explicit map[string]any) map[stri
 		merged[ComputedContextOrgId] = ""
 	}
 	return merged
+}
+
+// org_id in a log record is the acting org the server asserted, never one read from the
+// request body, headers or baggage. Reading the key off any context keeps it on contexts derived
+// from the request context too.
+func init() {
+	logging.RegisterContextFields(func(ctx context.Context) map[string]any {
+		if orgId, ok := ctx.Value(actingOrgCtxKey{}).(model.Id); ok && orgId != "" {
+			return map[string]any{logging.FieldOrgId: string(orgId)}
+		}
+		return nil
+	})
 }

@@ -151,7 +151,8 @@ func (this *DefaultApplicationServiceImpl) ResourceCode() string {
 // before the record is written.
 func (this *DefaultApplicationServiceImpl) Create(
 	ctx corectx.Context, cmd CreateCommand,
-) (*CreateResult, error) {
+) (out *CreateResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionCreate)(&outErr)
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionCreate); cErrs != nil {
 		return &CreateResult{ClientErrors: *cErrs}, nil
 	}
@@ -178,7 +179,8 @@ func (this *DefaultApplicationServiceImpl) orgIdIsSchemaRequired() bool {
 
 func (this *DefaultApplicationServiceImpl) Update(
 	ctx corectx.Context, cmd UpdateCommand,
-) (*MutateResult, error) {
+) (out *MutateResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionUpdate)(&outErr)
 	access, cErrs, err := this.guardRecord(ctx, CrudActionUpdate, PermissionUpdate, cmd)
 	if err == nil && cErrs == nil {
 		cErrs = this.assertFieldsIn(ctx, PermissionUpdate, access, cmd)
@@ -191,7 +193,8 @@ func (this *DefaultApplicationServiceImpl) Update(
 
 func (this *DefaultApplicationServiceImpl) Delete(
 	ctx corectx.Context, cmd DeleteCommand,
-) (*MutateResult, error) {
+) (out *MutateResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionDelete)(&outErr)
 	if _, cErrs, err := this.guardRecord(ctx, CrudActionDelete, PermissionDelete, cmd); err != nil || cErrs != nil {
 		return mutateFailure(cErrs, err)
 	}
@@ -200,7 +203,8 @@ func (this *DefaultApplicationServiceImpl) Delete(
 
 func (this *DefaultApplicationServiceImpl) SetArchived(
 	ctx corectx.Context, cmd SetArchivedCommand,
-) (*MutateResult, error) {
+) (out *MutateResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionSetArchived)(&outErr)
 	_, cErrs, err := this.guardRecord(ctx, CrudActionSetArchived, PermissionSetArchived, cmd)
 	if err != nil || cErrs != nil {
 		return mutateFailure(cErrs, err)
@@ -210,7 +214,8 @@ func (this *DefaultApplicationServiceImpl) SetArchived(
 
 func (this *DefaultApplicationServiceImpl) GetById(
 	ctx corectx.Context, query GetByIdQuery,
-) (*GetOneResult, error) {
+) (out *GetOneResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionGetById)(&outErr)
 	access, cErrs, err := this.guardRecord(ctx, CrudActionGetById, PermissionRead, query)
 	if err != nil {
 		return nil, err
@@ -227,7 +232,8 @@ func (this *DefaultApplicationServiceImpl) GetById(
 // column-named param, org_id included, into an equality condition.
 func (this *DefaultApplicationServiceImpl) GetOne(
 	ctx corectx.Context, query GetOneQuery,
-) (*GetOneResult, error) {
+) (out *GetOneResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionGetByUnique)(&outErr)
 	orgId, cErrs := this.guard(ctx, CrudActionGetByUnique, PermissionRead, query)
 	if cErrs == nil {
 		// Every column-named param is an equality condition, so it must be readable like a filter.
@@ -243,7 +249,8 @@ func (this *DefaultApplicationServiceImpl) GetOne(
 
 func (this *DefaultApplicationServiceImpl) Search(
 	ctx corectx.Context, query SearchQuery,
-) (*SearchResult, error) {
+) (out *SearchResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionSearch)(&outErr)
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionSearch); cErrs != nil {
 		return &SearchResult{ClientErrors: *cErrs}, nil
 	}
@@ -265,7 +272,8 @@ func (this *DefaultApplicationServiceImpl) Search(
 
 func (this *DefaultApplicationServiceImpl) Exists(
 	ctx corectx.Context, query ExistsQuery,
-) (*ExistsResult, error) {
+) (out *ExistsResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionExists)(&outErr)
 	if _, cErrs := this.guard(ctx, CrudActionExists, PermissionRead, query); cErrs != nil {
 		return &ExistsResult{ClientErrors: *cErrs}, nil
 	}
@@ -278,8 +286,9 @@ func (this *DefaultApplicationServiceImpl) Exists(
 // callers. A client needs it to render a locked field or edge it may not read, and an org-bound
 // resource is flagged `is_org_bound` so any client sends org_id without knowing the resource.
 func (this *DefaultApplicationServiceImpl) GetSchema(
-	_ corectx.Context, _ GetSchemaQuery,
-) (*GetSchemaResult, error) {
+	ctx corectx.Context, _ GetSchemaQuery,
+) (out *GetSchemaResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionGetSchema)(&outErr)
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionGetSchema); cErrs != nil {
 		return &GetSchemaResult{ClientErrors: *cErrs}, nil
 	}
@@ -298,7 +307,8 @@ func (this *DefaultApplicationServiceImpl) GetSchema(
 // checked: computing a derived value discloses no more than reading the record would.
 func (this *DefaultApplicationServiceImpl) ComputeField(
 	ctx corectx.Context, cmd ComputeFieldCommand,
-) (*ComputeFieldResult, error) {
+) (out *ComputeFieldResult, outErr error) {
+	defer this.traceAction(ctx, CrudActionComputeField)(&outErr)
 	if cErrs := assertActionSupported(this.crudActions, this.ResourceCode(), CrudActionComputeField); cErrs != nil {
 		return &ComputeFieldResult{ClientErrors: *cErrs}, nil
 	}

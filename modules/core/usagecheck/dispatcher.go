@@ -27,8 +27,8 @@ type ModuleAnswer struct {
 
 // CheckOutcome aggregates every dependant's answer.
 type CheckOutcome struct {
-	RequestId string
-	Answers   []ModuleAnswer
+	CorrelationId string
+	Answers       []ModuleAnswer
 }
 
 // MayDelete reports whether every dependant answered, and answered "not used". Anything else -
@@ -110,8 +110,8 @@ func (this *Dispatcher) CheckUsage(
 	if err != nil {
 		return nil, errors.Wrap(err, "usagecheck: failed to generate a request id")
 	}
-	requestId := newUlid.String()
-	outcome := &CheckOutcome{RequestId: requestId, Answers: make([]ModuleAnswer, len(dependants))}
+	correlationId := newUlid.String()
+	outcome := &CheckOutcome{CorrelationId: correlationId, Answers: make([]ModuleAnswer, len(dependants))}
 
 	// BR-DEL-001: nobody references this module's resources, so there is nothing to ask and
 	// the delete proceeds on the owning module's own rules alone.
@@ -125,19 +125,19 @@ func (this *Dispatcher) CheckUsage(
 		waitGroup.Add(1)
 		go func(index int, target string) {
 			defer waitGroup.Done()
-			outcome.Answers[index] = this.ask(ctx, requestId, sourceModule, target, resources)
+			outcome.Answers[index] = this.ask(ctx, correlationId, sourceModule, target, resources)
 		}(i, dependant)
 	}
 	waitGroup.Wait()
 
-	this.logOutcome(sourceModule, resources, outcome, time.Since(started))
+	this.logOutcome(ctx, sourceModule, resources, outcome, time.Since(started))
 	return outcome, nil
 }
 
 // ask sends one command and turns whatever comes back into an answer. Each goroutine writes its
 // own slot in the results slice, so no lock is needed.
 func (this *Dispatcher) ask(
-	ctx corectx.Context, requestId string, sourceModule string, target string, resources []ResourceRef,
+	ctx corectx.Context, correlationId string, sourceModule string, target string, resources []ResourceRef,
 ) (answer ModuleAnswer) {
 	answer.Module = target
 
@@ -149,10 +149,10 @@ func (this *Dispatcher) ask(
 	}()
 
 	cmd := CheckResourceUsageCommand{
-		RequestId:    requestId,
-		SourceModule: sourceModule,
-		TargetModule: target,
-		Resources:    resources,
+		CorrelationId: correlationId,
+		SourceModule:  sourceModule,
+		TargetModule:  target,
+		Resources:     resources,
 	}
 
 	timedCtx, cancel := context.WithTimeout(ctx, this.timeout)
@@ -181,7 +181,7 @@ func (this *Dispatcher) ask(
 // logOutcome records one dispatch. It is the only trace a refusal leaves: the client is told
 // which module blocked, and this is where the reason behind it lives.
 func (this *Dispatcher) logOutcome(
-	sourceModule string, resources []ResourceRef, outcome *CheckOutcome, elapsed time.Duration,
+	ctx context.Context, sourceModule string, resources []ResourceRef, outcome *CheckOutcome, elapsed time.Duration,
 ) {
 	if this.logger == nil {
 		return
@@ -193,9 +193,9 @@ func (this *Dispatcher) logOutcome(
 	}
 
 	if err := outcome.FirstError(); err != nil {
-		this.logger.Errorf(
+		this.logger.Errorf(ctx,
 			"usage check %s: source=%s resources=%s count=%d duration=%s result=error blocked_by=%s: %v",
-			outcome.RequestId, sourceModule, strings.Join(resourceNames, ","), len(resources),
+			outcome.CorrelationId, sourceModule, strings.Join(resourceNames, ","), len(resources),
 			elapsed, strings.Join(outcome.BlockingModules(), ","), err)
 		return
 	}
@@ -204,8 +204,8 @@ func (this *Dispatcher) logOutcome(
 	if !outcome.MayDelete() {
 		result = "used"
 	}
-	this.logger.Debugf(
+	this.logger.Debugf(ctx,
 		"usage check %s: source=%s resources=%s count=%d duration=%s result=%s blocked_by=%s",
-		outcome.RequestId, sourceModule, strings.Join(resourceNames, ","), len(resources),
+		outcome.CorrelationId, sourceModule, strings.Join(resourceNames, ","), len(resources),
 		elapsed, result, strings.Join(outcome.BlockingModules(), ","))
 }

@@ -10,7 +10,7 @@ CREATE TABLE "auditlog_actions" (
   "actor_display_name" character varying NULL,
   "before" jsonb NULL,
   "after" jsonb NULL,
-  "request_id" character varying NULL,
+  "trace_id" character varying NULL,
   "source" character varying NULL,
   "created_at" timestamptz NULL,
   PRIMARY KEY ("id")

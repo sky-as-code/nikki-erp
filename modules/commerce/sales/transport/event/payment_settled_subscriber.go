@@ -58,7 +58,7 @@ func (this *PaymentSettledSubscriber) Register(ctx context.Context) error {
 		return err
 	}
 
-	this.logger.Info("sales payment settled subscriber registered",
+	this.logger.Info(ctx, "sales payment settled subscriber registered",
 		logging.Attr{"topic": this.topic})
 
 	go this.consume(ctx, deliveries)
@@ -75,12 +75,14 @@ func (this *PaymentSettledSubscriber) consume(
 			// The bus decoded into the prototype this subscriber gave it, so this cannot happen
 			// without the bus having changed underneath. Logged rather than asserted, because a
 			// panic here would stop every later verdict.
-			this.logger.Warn("sales payment settled event had an unexpected payload type", nil)
+			this.logger.Warn(rootCtx, "sales payment settled event had an unexpected payload type", nil)
 			continue
 		}
 
 		bg, cancel := context.WithTimeout(rootCtx, handleTimeout)
-		this.dispatch(corectx.NewRequestContext(bg), delivery, *event)
+		handleCtx, span := delivery.StartHandling(bg)
+		this.dispatch(corectx.NewRequestContext(handleCtx), delivery, *event)
+		span.End()
 		cancel()
 	}
 }
@@ -99,7 +101,7 @@ func (this *PaymentSettledSubscriber) dispatch(
 ) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
-			this.logger.Error("sales payment settled handler panicked",
+			this.logger.Error(ctx, "sales payment settled handler panicked",
 				fmt.Errorf("%v", recovered))
 		}
 	}()
@@ -121,13 +123,13 @@ func (this *PaymentSettledSubscriber) handle(
 	if !ok {
 		// A verdict this build does not know. Logged rather than guessed at: forcing an unknown
 		// outcome into one of the four would move a payment on a assumption.
-		this.logger.Warn("no sales handler for payment settled type",
+		this.logger.Warn(ctx, "no sales handler for payment settled type",
 			logging.Attr{"type": string(event.Type), "order_id": event.OrderId})
 		return
 	}
 
 	if err := handler.Handle(ctx, event); err != nil {
-		this.logger.Warn("sales payment settled handler failed",
+		this.logger.Warn(ctx, "sales payment settled handler failed",
 			logging.Attr{
 				"error":    err.Error(),
 				"type":     string(event.Type),

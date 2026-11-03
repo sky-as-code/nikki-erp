@@ -42,9 +42,11 @@ type EventDelivery struct {
 	// was scoped by nothing, which is every publish in a single-tenant build.
 	Constraints dmodel.DynamicFields
 
-	// RequestMeta is the publisher's request id when it sent one, else one minted for this
-	// delivery, so the entries the handler writes read as one execution.
+	// RequestMeta labels the entries the handler writes as written under an event delivery.
 	RequestMeta corectx.RequestMeta
+
+	// Trace is the publisher's trace context and idempotency id; see StartHandling.
+	Trace DeliveryTrace
 }
 
 // ScopeContext re-establishes the publisher's scope on the context a handler will be given.
@@ -55,7 +57,7 @@ func (this EventDelivery) ScopeContext(ctx corectx.Context) {
 	if len(this.Constraints) > 0 {
 		ctx.SetDomainConstraints(this.Constraints)
 	}
-	if this.RequestMeta.Id != "" {
+	if this.RequestMeta.Source != "" {
 		corectx.SetRequestMeta(ctx, this.RequestMeta)
 	}
 }

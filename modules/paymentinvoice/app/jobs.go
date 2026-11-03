@@ -111,7 +111,7 @@ func (this *JobsManager) Watchdog(ctx corectx.Context) error {
 	if len(stale) == 0 {
 		return nil
 	}
-	this.logger.Infof("%s: %d order(s) awaiting a verdict", jobNameWatchdog, len(stale))
+	this.logger.Infof(ctx, "%s: %d order(s) awaiting a verdict", jobNameWatchdog, len(stale))
 
 	for _, order := range stale {
 		this.reconcileOne(ctx, order)
@@ -125,7 +125,7 @@ func (this *JobsManager) reconcileOne(ctx corectx.Context, order services.StaleO
 	if err != nil {
 		// The gateway could not be asked. The order keeps its status and the next run asks again:
 		// an unreachable gateway is not evidence about a payment.
-		this.logger.Warnf("%s: order '%s' could not be checked: %s",
+		this.logger.Warnf(ctx, "%s: order '%s' could not be checked: %s",
 			jobNameWatchdog, order.OrderId, err.Error())
 		return
 	}
@@ -140,7 +140,7 @@ func (this *JobsManager) reconcileOne(ctx corectx.Context, order services.StaleO
 
 	expired, err := this.orders.ExpireStaleOrder(ctx, order)
 	if err != nil {
-		this.logger.Errorf("%s: order '%s' could not be expired: %s",
+		this.logger.Errorf(ctx, "%s: order '%s' could not be expired: %s",
 			jobNameWatchdog, order.OrderId, err.Error())
 		return
 	}
@@ -167,13 +167,13 @@ func (this *JobsManager) Cleaner(ctx corectx.Context) error {
 	deleted := 0
 	for _, order := range cleanable {
 		if err := services.DeleteOrder(ctx, order.Pk); err != nil {
-			this.logger.Warnf("%s: order '%s' could not be deleted: %s",
+			this.logger.Warnf(ctx, "%s: order '%s' could not be deleted: %s",
 				jobNameCleaner, order.OrderId, err.Error())
 			continue
 		}
 		deleted++
 	}
-	this.logger.Infof("%s: deleted %d of %d stale order(s)", jobNameCleaner, deleted, len(cleanable))
+	this.logger.Infof(ctx, "%s: deleted %d of %d stale order(s)", jobNameCleaner, deleted, len(cleanable))
 	return nil
 }
 
@@ -194,7 +194,7 @@ func (this *JobsManager) SyncRetry(ctx corectx.Context) error {
 	if len(pending) == 0 {
 		return nil
 	}
-	this.logger.Infof("%s: %d order(s) to re-notify", jobNameSyncRetry, len(pending))
+	this.logger.Infof(ctx, "%s: %d order(s) to re-notify", jobNameSyncRetry, len(pending))
 
 	for _, order := range pending {
 		this.notify(ctx, services.StaleOrder{

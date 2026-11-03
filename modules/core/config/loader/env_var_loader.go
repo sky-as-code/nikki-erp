@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,7 +34,7 @@ func (this *EnvVarConfigLoader) Init() (appErr error) {
 		return
 	}
 	env.RunOnLocal(func() {
-		this.logger.Infof("Local development detected! Loading local env file")
+		this.logger.Infof(context.Background(), "Local development detected! Loading local env file")
 		if err := this.loadLocalEnvFile(); err != nil {
 			appErr = err
 		}
@@ -52,8 +53,8 @@ func (this *EnvVarConfigLoader) loadLocalEnvFile() error {
 	workDir := env.Cwd()
 	err := godotenv.Load(filepath.Join(workDir, localEnvPath))
 	if err != nil && strings.Contains(err.Error(), "no such file") {
-		this.logger.Warnf("Skipped loading env files because config/.env.local doesn't exist. " +
-			"Note that .env.local file is excluded from Git commits, you must create it yourself " +
+		this.logger.Warnf(context.Background(), "Skipped loading env files because config/.env.local doesn't exist. "+
+			"Note that .env.local file is excluded from Git commits, you must create it yourself "+
 			"for local development to store passwords and other secrets")
 		return nil
 	}

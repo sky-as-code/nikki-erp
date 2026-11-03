@@ -13,7 +13,7 @@ import (
 func TestToHistoryItemMasksUnreadableFields(t *testing.T) {
 	row := dmodel.DynamicFields{
 		"id": "a1", "action": "update", "actor_type": "user", "actor_id": "u1",
-		"actor_display_name": "Old name", "request_id": "req_1",
+		"actor_display_name": "Old name", "trace_id": "0af7651916cd43dd8448eb211c80319c",
 		"before":     map[string]any{"name": "old", "salary": 1},
 		"after":      map[string]any{"name": "new", "salary": 2},
 		"actor_user": map[string]any{"display_name": "Current name", "avatar_file_id": "f1"},
@@ -28,7 +28,7 @@ func TestToHistoryItemMasksUnreadableFields(t *testing.T) {
 	assert.Equal(t, []string{"salary"}, item.MaskedFields)
 	assert.Equal(t, "Current name", *item.Actor.DisplayName)
 	assert.Equal(t, "f1", *item.Actor.AvatarFileId)
-	assert.Equal(t, "req_1", *item.RequestId)
+	assert.Equal(t, "0af7651916cd43dd8448eb211c80319c", *item.TraceId)
 }
 
 func TestToHistoryActorFallsBackToTheSnapshot(t *testing.T) {
@@ -55,7 +55,7 @@ func TestParseHistoryRequestIsZeroBasedAndClamped(t *testing.T) {
 }
 
 func TestBuildActionRowFallsBackToSystem(t *testing.T) {
-	row, err := buildActionRow(itAuditEntry(), actorSnapshot{kind: "system"}, metaWithoutSource())
+	row, err := buildActionRow(itAuditEntry(), actorSnapshot{kind: "system"}, metaWithoutSource(), "")
 
 	require.NoError(t, err)
 	assert.Equal(t, "system", row["source"])
@@ -63,4 +63,6 @@ func TestBuildActionRowFallsBackToSystem(t *testing.T) {
 	assert.Equal(t, map[string]any{"name": "n"}, row["after"])
 	_, hasActor := row["actor_id"]
 	assert.False(t, hasActor)
+	_, hasTrace := row["trace_id"]
+	assert.False(t, hasTrace)
 }

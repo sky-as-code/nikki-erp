@@ -225,7 +225,7 @@ func (this *FileDomainServiceImpl) subtractTreeConsumption(
 func (this *FileDomainServiceImpl) RemoveObjects(ctx corectx.Context, objectKeys []string) {
 	for _, objectKey := range objectKeys {
 		if err := this.storage.Remove(ctx, objectKey); err != nil {
-			ctx.GetLogger().Warn("itstorage: failed to remove a stored object; it is now an orphan", logging.Attr{
+			ctx.GetLogger().Warn(ctx, "itstorage: failed to remove a stored object; it is now an orphan", logging.Attr{
 				"object_key": objectKey,
 				"error":      err.Error(),
 			})

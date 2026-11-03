@@ -73,7 +73,7 @@ func NewWebhookRest(
 func (this *WebhookRest) MomoIpn(echoCtx *echo.Context) error {
 	var payload momo.IpnPayload
 	if err := echoCtx.Bind(&payload); err != nil {
-		this.logger.Warnf("paymentinvoice: malformed MoMo IPN body: %s", err.Error())
+		this.logger.Warnf(echoCtx.Request().Context(), "paymentinvoice: malformed MoMo IPN body: %s", err.Error())
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
@@ -81,13 +81,14 @@ func (this *WebhookRest) MomoIpn(echoCtx *echo.Context) error {
 	if !ok {
 		// MoMo is calling a deployment that does not have it enabled. Nothing here can verify the
 		// signature, so nothing here may act on the body.
-		this.logger.Warnf("paymentinvoice: a MoMo IPN arrived but the MoMo gateway is not enabled")
+		this.logger.Warnf(echoCtx.Request().Context(),
+			"paymentinvoice: a MoMo IPN arrived but the MoMo gateway is not enabled")
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
 	reqCtx, ok := requestContext(echoCtx)
 	if !ok {
-		this.logger.Errorf("paymentinvoice: a webhook ran without a request context")
+		this.logger.Errorf(echoCtx.Request().Context(), "paymentinvoice: a webhook ran without a request context")
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
@@ -97,14 +98,14 @@ func (this *WebhookRest) MomoIpn(echoCtx *echo.Context) error {
 	// answer an unknown code got before: a 204 that says nothing either way.
 	profileConfig, err := this.orders.ProfileConfigForOrderCode(reqCtx, payload.OrderId)
 	if err != nil {
-		this.logger.Errorf("paymentinvoice: resolving a MoMo IPN's payment profile failed: %s", err.Error())
+		this.logger.Errorf(reqCtx, "paymentinvoice: resolving a MoMo IPN's payment profile failed: %s", err.Error())
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
 	if !adapter.VerifyIpn(payload, profileConfig) {
 		// Deliberately not distinguished from a valid callback in the response: telling an
 		// unsigned caller that their signature was wrong helps them work out a correct one.
-		this.logger.Warnf("paymentinvoice: a MoMo IPN failed signature verification")
+		this.logger.Warnf(reqCtx, "paymentinvoice: a MoMo IPN failed signature verification")
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
@@ -129,13 +130,14 @@ func (this *WebhookRest) MposWebhook(echoCtx *echo.Context) error {
 
 	adapter, ok := adapterAs[*mpos.Adapter](this.registry, models.AdapterCodeMpos)
 	if !ok {
-		this.logger.Warnf("paymentinvoice: an mPOS callback arrived but the gateway is not enabled")
+		this.logger.Warnf(echoCtx.Request().Context(),
+			"paymentinvoice: an mPOS callback arrived but the gateway is not enabled")
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
 	reqCtx, ok := requestContext(echoCtx)
 	if !ok {
-		this.logger.Errorf("paymentinvoice: a webhook ran without a request context")
+		this.logger.Errorf(echoCtx.Request().Context(), "paymentinvoice: a webhook ran without a request context")
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
@@ -143,7 +145,7 @@ func (this *WebhookRest) MposWebhook(echoCtx *echo.Context) error {
 	if !found {
 		// The callback names a merchant account this deployment holds no credentials for, so there
 		// is nothing here that could read the body, let alone act on it.
-		this.logger.Warnf("paymentinvoice: an mPOS callback named an unknown merchant account")
+		this.logger.Warnf(reqCtx, "paymentinvoice: an mPOS callback named an unknown merchant account")
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
@@ -151,7 +153,7 @@ func (this *WebhookRest) MposWebhook(echoCtx *echo.Context) error {
 	if err != nil {
 		// A body that will not decrypt did not come from mPOS, so it is refused rather than acted
 		// on. The reason is logged but not returned, for the same reason as MoMo's signature.
-		this.logger.Warnf("paymentinvoice: an mPOS callback could not be decrypted")
+		this.logger.Warnf(reqCtx, "paymentinvoice: an mPOS callback could not be decrypted")
 		return echoCtx.NoContent(http.StatusNoContent)
 	}
 
@@ -239,23 +241,23 @@ func (this *WebhookRest) VietQrTransactionSync(echoCtx *echo.Context) error {
 func (this *WebhookRest) apply(echoCtx *echo.Context, result services.GatewayResult) {
 	reqCtx, ok := requestContext(echoCtx)
 	if !ok {
-		this.logger.Errorf("paymentinvoice: a webhook ran without a request context")
+		this.logger.Errorf(echoCtx.Request().Context(), "paymentinvoice: a webhook ran without a request context")
 		return
 	}
 
 	outcome, err := this.settle(reqCtx, result)
 	if err != nil {
-		this.logger.Errorf("paymentinvoice: applying a gateway result failed: %s", err.Error())
+		this.logger.Errorf(reqCtx, "paymentinvoice: applying a gateway result failed: %s", err.Error())
 		return
 	}
 	if !outcome.OrderFound {
-		this.logger.Warnf("paymentinvoice: a callback named unknown order code '%s'", result.OrderCode)
+		this.logger.Warnf(reqCtx, "paymentinvoice: a callback named unknown order code '%s'", result.OrderCode)
 		return
 	}
 	if !outcome.Applied {
 		// Ordinary: every one of these gateways retries a callback it did not get a clean answer
 		// to, so the same result arriving twice is expected rather than exceptional.
-		this.logger.Infof("paymentinvoice: order '%s' had already settled; callback ignored", outcome.OrderId)
+		this.logger.Infof(reqCtx, "paymentinvoice: order '%s' had already settled; callback ignored", outcome.OrderId)
 	}
 }
 
@@ -348,7 +350,7 @@ func (this *WebhookRest) mposProfileConfig(
 
 	configs, err := this.orders.ProfileConfigs(ctx)
 	if err != nil {
-		this.logger.Errorf("paymentinvoice: reading the mPOS payment profiles failed: %s", err.Error())
+		this.logger.Errorf(ctx, "paymentinvoice: reading the mPOS payment profiles failed: %s", err.Error())
 		return nil, false
 	}
 

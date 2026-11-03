@@ -103,7 +103,7 @@ func (this *BillingHandler) IssueEinvoices(
 	result := total
 
 	if this.logger != nil && result.Examined > 0 {
-		this.logger.Infof(
+		this.logger.Infof(ctx,
 			"sales einvoice issuance: examined %d, issued %d, failed %d, indeterminate %d",
 			result.Examined, result.Issued, result.Failed, result.Indeterminate)
 	}
@@ -111,7 +111,7 @@ func (this *BillingHandler) IssueEinvoices(
 	// Raised rather than counted quietly: an indeterminate attempt means a document may exist that
 	// nothing here knows about, and no amount of waiting resolves it.
 	if this.logger != nil && result.Indeterminate > 0 {
-		this.logger.Warnf(
+		this.logger.Warnf(ctx,
 			"sales einvoice issuance: %d attempts left undetermined and need reconciling",
 			result.Indeterminate)
 	}

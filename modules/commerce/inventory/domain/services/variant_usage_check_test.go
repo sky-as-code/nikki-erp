@@ -65,9 +65,9 @@ func (this *variantFakeBus) Request(_ context.Context, request cqrs.Request, res
 		})
 	}
 	*(result.(*usagecheck.CheckResourceUsageResult)) = usagecheck.CheckResourceUsageResult{
-		RequestId: cmd.RequestId,
-		Module:    cmd.TargetModule,
-		Results:   items,
+		CorrelationId: cmd.CorrelationId,
+		Module:        cmd.TargetModule,
+		Results:       items,
 	}
 	return nil
 }

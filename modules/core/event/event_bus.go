@@ -37,9 +37,6 @@ const (
 	// buses scope a handler the same way; see EventDelivery for why this belongs on the message
 	// rather than inside each event's payload.
 	MetaDomainConstraints = "domain_constraints"
-
-	// MetaRequestId carries the publisher's request id, under the CQRS bus's name for it.
-	MetaRequestId = "request_id"
 )
 
 type EventBusParams struct {
@@ -93,7 +90,7 @@ func (bus *EventBusImpl) PublishRequest(ctx context.Context, request EventReques
 	msg.Metadata.Set(MetaReplyTopic, request.replyTopic)
 	msg.Metadata.Set(MetaNoReply, "false")
 	setDomainConstraints(ctx, msg)
-	setRequestId(ctx, msg)
+	injectTelemetry(ctx, msg)
 
 	// Publish the event
 	err = bus.publisher.Publish(request.eventTopic, msg)
@@ -194,7 +191,7 @@ func (bus *EventBusImpl) SubscribeEvent(
 		defer func() {
 			if r := recover(); r != nil {
 				err := fmt.Errorf("panic in message handler for topic %s: %v", request.eventTopic, r)
-				bus.logger.Error("message handler panic", err)
+				bus.logger.Error(ctx, "message handler panic", err)
 			}
 		}()
 
@@ -210,15 +207,16 @@ func (bus *EventBusImpl) SubscribeEvent(
 
 				payload := newPayloadOf(prototype)
 				if err := bus.marshaler.Unmarshal(msg, payload); err != nil {
-					bus.logger.Error("event bus unmarshal failed",
+					bus.logger.Error(ctx, "event bus unmarshal failed",
 						fmt.Errorf("topic %s: %w", request.eventTopic, err))
 					continue
 				}
 
 				deliveryChan <- EventDelivery{
 					Payload:     payload,
-					Constraints: bus.domainConstraintsOf(msg, request.eventTopic),
+					Constraints: bus.domainConstraintsOf(ctx, msg, request.eventTopic),
 					RequestMeta: deliveryRequestMeta(msg),
+					Trace:       deliveryTraceOf(msg, request.eventTopic),
 				}
 			case <-ctx.Done():
 				bus.subscriptions.Delete(request.eventTopic)
@@ -236,7 +234,7 @@ func (bus *EventBusImpl) SubscribeEvent(
 // Unreadable constraints are logged and dropped rather than failing the message: the event itself
 // decoded fine, and a handler that runs unscoped fails loudly on its first query, whereas a message
 // silently discarded here would look like an event that was never published.
-func (bus *EventBusImpl) domainConstraintsOf(msg *message.Message, topic string) dmodel.DynamicFields {
+func (bus *EventBusImpl) domainConstraintsOf(ctx context.Context, msg *message.Message, topic string) dmodel.DynamicFields {
 	encoded := msg.Metadata.Get(MetaDomainConstraints)
 	if encoded == "" {
 		return nil
@@ -244,25 +242,17 @@ func (bus *EventBusImpl) domainConstraintsOf(msg *message.Message, topic string)
 
 	constraints := dmodel.DynamicFields{}
 	if err := json.Unmarshal([]byte(encoded), &constraints); err != nil {
-		bus.logger.Error("event bus domain constraints decode failed",
+		bus.logger.Error(ctx, "event bus domain constraints decode failed",
 			fmt.Errorf("topic %s: %w", topic, err))
 		return nil
 	}
 	return constraints
 }
 
-// deliveryRequestMeta keeps the publisher's request id; the delivery itself is the event source.
-func deliveryRequestMeta(msg *message.Message) corectx.RequestMeta {
-	if id := msg.Metadata.Get(MetaRequestId); id != "" {
-		return corectx.RequestMeta{Id: id, Source: corectx.RequestSourceEvent}
-	}
+// deliveryRequestMeta labels the delivery itself as the source; correlation with the publisher
+// is the span link the trace context carries.
+func deliveryRequestMeta(_ *message.Message) corectx.RequestMeta {
 	return corectx.NewRequestMeta(corectx.RequestSourceEvent)
-}
-
-func setRequestId(ctx context.Context, msg *message.Message) {
-	if meta, ok := corectx.RequestMetaOf(ctx); ok {
-		msg.Metadata.Set(MetaRequestId, meta.Id)
-	}
 }
 
 // setDomainConstraints stamps the publisher's scope onto an outgoing message.
@@ -324,7 +314,7 @@ func (bus *EventBusImpl) Close() error {
 	defer func() {
 		if r := recover(); r != nil {
 			err := fmt.Errorf("panic in Close: %v", r)
-			bus.logger.Error("close panic", err)
+			bus.logger.Error(context.Background(), "close panic", err)
 		}
 	}()
 
@@ -350,6 +340,6 @@ func (bus *EventBusImpl) Close() error {
 		return stdErrors.Join(errs...)
 	}
 
-	bus.logger.Info("event bus closed successfully", nil)
+	bus.logger.Info(context.Background(), "event bus closed successfully", nil)
 	return nil
 }

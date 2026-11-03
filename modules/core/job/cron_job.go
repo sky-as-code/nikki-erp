@@ -1,6 +1,7 @@
 package job
 
 import (
+	"context"
 	"time"
 
 	"github.com/go-co-op/gocron/v2"
@@ -24,11 +25,6 @@ func (this *CronJob) Register(crontab string,
 	_, err := this.scheduler.NewJob(
 		gocron.CronJob(crontab, false),
 		gocron.NewTask(func() {
-			defer func() {
-				if r := recover(); r != nil {
-					this.logger.Errorf("[CRONJOB] %s panicked: %v", jobName, r)
-				}
-			}()
 			jobTimeout := constants.BackgroudJobTimeout
 			if len(timeout) > 0 {
 				jobTimeout = timeout[0]
@@ -49,7 +45,7 @@ func (this *CronJob) Register(crontab string,
 // job that is an hour of silence nobody would connect to the cause.
 func (this *CronJob) Start() error {
 	this.scheduler.Start()
-	this.logger.Infof("CronJob server started")
+	this.logger.Infof(context.Background(), "CronJob server started")
 
 	return nil
 }
@@ -62,7 +58,7 @@ func (this *CronJob) Start() error {
 // uncommitted, and the caller's shutdown budget is what bounds the wait.
 func (this *CronJob) Stop() error {
 	err := this.scheduler.Shutdown()
-	this.logger.Infof("CronJob server stopped")
+	this.logger.Infof(context.Background(), "CronJob server stopped")
 	return err
 }
 
@@ -76,7 +72,7 @@ type initCronJobResult struct {
 func initCronJob(logger logging.LoggerService) initCronJobResult {
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
-		logger.Errorf("Fail to init CronJob")
+		logger.Errorf(context.Background(), "Fail to init CronJob")
 		panic(err)
 	}
 

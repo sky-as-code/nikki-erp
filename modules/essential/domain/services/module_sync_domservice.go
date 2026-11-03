@@ -33,11 +33,11 @@ func (this *ModuleDomainServiceImpl) SyncModuleMetadata(
 		return false, err
 	}
 	if !acquired {
-		this.logger.Debugf("Could not acquire lock to sync module metadata. Another instance has acquired it")
+		this.logger.Debugf(ctx, "Could not acquire lock to sync module metadata. Another instance has acquired it")
 		return false, nil
 	}
 	defer func() {
-		this.logger.Debugf("Releasing lock for module metadata sync")
+		this.logger.Debugf(ctx, "Releasing lock for module metadata sync")
 		if releaseErr := this.moduleRepo().ReleaseLock(ctx); releaseErr != nil {
 			err = errors.Wrap(releaseErr, "release module metadata lock")
 		}
@@ -78,7 +78,7 @@ func (this *ModuleDomainServiceImpl) syncInTranx(ctx corectx.Context, installedM
 	if err != nil {
 		return err
 	}
-	this.logger.Info("Sync module status", logging.Attr{
+	this.logger.Info(ctx, "Sync module status", logging.Attr{
 		"installed_modules": len(installedModules),
 		"new_modules":       newCount,
 		"modified_modules":  modifiedCount,

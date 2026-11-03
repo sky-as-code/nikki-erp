@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"context"
 	"log/slog"
 )
 
@@ -28,20 +29,20 @@ var slogLevelMap = map[Level]slog.Level{
 	LevelError: slog.LevelError,
 }
 
+// LoggerService takes ctx on every write so each record carries the span, idempotency id,
+// tenant and org active at that point, not those of the place the logger was obtained.
+// Code with no operation (boot, shutdown, CLI) passes context.Background(): the fields are null.
 type LoggerService interface {
 	InnerLogger() any
 	Clone() LoggerService
 	Level() Level
 	SetLevel(lvl Level)
-	SetContext(key string, value string)
-	GetContext(key string) string
-	RemoveContext(key string)
-	Debug(message string, data Attr)
-	Debugf(format string, args ...any)
-	Info(message string, data Attr)
-	Infof(format string, args ...any)
-	Warn(message string, data Attr)
-	Warnf(format string, args ...any)
-	Error(message string, err error)
-	Errorf(format string, args ...any)
+	Debug(ctx context.Context, message string, data Attr)
+	Debugf(ctx context.Context, format string, args ...any)
+	Info(ctx context.Context, message string, data Attr)
+	Infof(ctx context.Context, format string, args ...any)
+	Warn(ctx context.Context, message string, data Attr)
+	Warnf(ctx context.Context, format string, args ...any)
+	Error(ctx context.Context, message string, err error)
+	Errorf(ctx context.Context, format string, args ...any)
 }

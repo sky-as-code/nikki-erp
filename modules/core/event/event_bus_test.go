@@ -26,7 +26,7 @@ type recordingLogger struct {
 	errors []error
 }
 
-func (this *recordingLogger) Error(_ string, err error) {
+func (this *recordingLogger) Error(_ context.Context, _ string, err error) {
 	this.errors = append(this.errors, err)
 }
 
@@ -46,7 +46,7 @@ func TestDomainConstraintsRoundTripThroughAMessage(t *testing.T) {
 	setDomainConstraints(ctx, msg)
 
 	bus := &EventBusImpl{}
-	assert.Equal(t, constraints, bus.domainConstraintsOf(msg, "test/topic"),
+	assert.Equal(t, constraints, bus.domainConstraintsOf(context.Background(), msg, "test/topic"),
 		"the subscriber must see exactly what the publisher was scoped by")
 }
 
@@ -64,7 +64,7 @@ func TestDomainConstraintsSurviveADetachedContext(t *testing.T) {
 	bus := &EventBusImpl{}
 	assert.Equal(t,
 		dmodel.DynamicFields{"tenant_id": model.Id("01JQZ0X0000000000000000001")},
-		bus.domainConstraintsOf(msg, "test/topic"))
+		bus.domainConstraintsOf(context.Background(), msg, "test/topic"))
 }
 
 // A single-tenant build scopes nothing, and must not end up with an empty constraints map that
@@ -76,7 +76,7 @@ func TestAnUnscopedPublishStampsNothing(t *testing.T) {
 	assert.Empty(t, msg.Metadata.Get(MetaDomainConstraints))
 
 	bus := &EventBusImpl{}
-	assert.Nil(t, bus.domainConstraintsOf(msg, "test/topic"))
+	assert.Nil(t, bus.domainConstraintsOf(context.Background(), msg, "test/topic"))
 }
 
 // Constraints that cannot be read are dropped, not fatal: the event itself decoded, and a handler
@@ -89,7 +89,7 @@ func TestUnreadableConstraintsAreLoggedAndDropped(t *testing.T) {
 	logger := &recordingLogger{}
 	bus := &EventBusImpl{logger: logger}
 
-	assert.Nil(t, bus.domainConstraintsOf(msg, "test/topic"))
+	assert.Nil(t, bus.domainConstraintsOf(context.Background(), msg, "test/topic"))
 	assert.Len(t, logger.errors, 1)
 }
 

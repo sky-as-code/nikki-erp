@@ -15,6 +15,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/telemetry"
 )
 
 type StartableApp interface {
@@ -85,17 +86,22 @@ func Main(param MainParam) {
 			err = server.Start()
 		}
 		if err != nil {
-			app.Logger().Error("failed to start HTTP server", err)
+			app.Logger().Error(context.Background(), "failed to start HTTP server", err)
 			os.Exit(1)
 		}
 	}()
 
 	<-awaitOsTerminateSignal()
+	shutdownGracefully(app, server)
+}
 
+// shutdownGracefully keeps the whole stop within SHUTDOWN_GRACE_SECS plus SHUTDOWN_FLUSH_SECS, so
+// the orchestrator's stop grace period can be sized from config.
+func shutdownGracefully(app StartableApp, server *httpserver.HttpServer) {
 	// Modules drain first, then the HTTP server closes. The order matters: a module draining
 	// background work may still need the services the server's shutdown would tear down, and
 	// nothing new arrives in the meantime because the signal has already stopped the traffic
-	// that would create it.
+	// that would create it. Both share one deadline.
 	graceSecs := config.ConfigSvcSingleton().GetInt(c.ShutdownGraceSecs, defaultShutdownGraceSecs)
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Duration(graceSecs)*time.Second)
 	defer cancel()
@@ -104,7 +110,14 @@ func Main(param MainParam) {
 	// server is assigned by the goroutine above and is nil if startup failed before it got
 	// that far, in which case there is nothing to shut down.
 	if server != nil {
-		server.Shutdown()
+		server.Shutdown(shutdownCtx)
+	}
+
+	// Spans of the drained requests are flushed last, with their own bound.
+	flushCtx, cancelFlush := context.WithTimeout(context.Background(), telemetry.ShutdownTimeout())
+	defer cancelFlush()
+	if err := telemetry.Shutdown(flushCtx); err != nil {
+		app.Logger().Warn(context.Background(), "telemetry flush did not complete", logging.Attr{"error": err.Error()})
 	}
 }
 

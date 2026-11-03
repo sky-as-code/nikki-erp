@@ -3,26 +3,42 @@ package client
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"net/http"
 	"time"
 
+	"go.bryk.io/pkg/errors"
+	"golang.org/x/crypto/pkcs12"
+
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/constants"
-	"golang.org/x/crypto/pkcs12"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/telemetry"
 )
 
 const (
 	DefaultHttpTimeout = 30 * time.Second
 )
 
+// HttpClient is the one outbound HTTP client. Its transport is instrumented (see
+// newInstrumentedTransport), so a client derived from it must keep Transport, as WithTimeout does.
 type HttpClient struct {
 	http.Client
 }
 
-func NewCoreHttpClient(cfg config.ConfigService) *HttpClient {
+// WithTimeout derives a client that shares this one's instrumented transport and connection pool
+// but bounds each request by timeout instead of the shared ceiling.
+func (this *HttpClient) WithTimeout(timeout time.Duration) *http.Client {
+	derived := this.Client
+	derived.Timeout = timeout
+	return &derived
+}
+
+// NewCoreHttpClient reads the propagation allowlist when DI first resolves the client, which is
+// after telemetry.InitSubModule has loaded it.
+func NewCoreHttpClient(cfg config.ConfigService, logger logging.LoggerService) *HttpClient {
 	httpClientConfig := HttpClientConfig{
-		Timeout: cfg.GetInt64(constants.HttpClientTimeout),
+		Timeout:                  cfg.GetInt64(constants.HttpClientTimeout),
+		PropagationHostAllowlist: telemetry.PropagationHostAllowlist(),
 		TlsConfig: TlsConfig{
 			InsecureSkipVerify:     cfg.GetBool(constants.HttpClientSkipVerifyServer, false),
 			IncludeSystemTrustedCa: cfg.GetBool(constants.HttpClientIncludeSystemTrustedCA, true),
@@ -37,7 +53,7 @@ func NewCoreHttpClient(cfg config.ConfigService) *HttpClient {
 		},
 	}
 
-	c, err := NewHttpClient(&httpClientConfig)
+	c, err := NewHttpClient(&httpClientConfig, logger)
 	if err != nil {
 		panic(err)
 	}
@@ -45,12 +61,12 @@ func NewCoreHttpClient(cfg config.ConfigService) *HttpClient {
 	return c
 }
 
-func NewHttpClient(cfg *HttpClientConfig) (*HttpClient, error) {
+func NewHttpClient(cfg *HttpClientConfig, logger logging.LoggerService) (*HttpClient, error) {
 	rootClient, err := httpClientFromConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
-
+	rootClient.Transport = newInstrumentedTransport(rootClient.Transport, cfg.PropagationHostAllowlist, logger)
 	return &HttpClient{*rootClient}, nil
 }
 

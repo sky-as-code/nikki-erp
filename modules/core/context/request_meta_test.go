@@ -9,21 +9,20 @@ import (
 
 func TestRequestMetaTravelsWithClones(t *testing.T) {
 	ctx := NewRequestContext(context.Background())
-	SetRequestMeta(ctx, RequestMeta{Id: "req_1", Source: RequestSourceHttp})
+	SetRequestMeta(ctx, RequestMeta{Source: RequestSourceHttp})
 
 	meta, ok := RequestMetaOf(CloneRequestContext(ctx))
 
 	assert.True(t, ok)
-	assert.Equal(t, RequestMeta{Id: "req_1", Source: RequestSourceHttp}, meta)
+	assert.Equal(t, RequestMeta{Source: RequestSourceHttp}, meta)
 }
 
-func TestEnsureRequestMetaMintsOnceAndKeepsIt(t *testing.T) {
+func TestEnsureRequestMetaStoresTheFallbackOnce(t *testing.T) {
 	ctx := NewRequestContext(context.Background())
 
 	first := EnsureRequestMeta(ctx, RequestSourceSystem)
 	second := EnsureRequestMeta(ctx, RequestSourceEvent)
 
-	assert.NotEmpty(t, first.Id)
 	assert.Equal(t, first, second)
 	assert.Equal(t, RequestSourceSystem, second.Source)
 }

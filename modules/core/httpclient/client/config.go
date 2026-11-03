@@ -7,6 +7,10 @@ type HttpClientConfig struct {
 
 	// for mTLS
 	ClientCertConfig ClientCertConfig
+
+	// PropagationHostAllowlist names the hosts that receive traceparent, tracestate, baggage and
+	// X-Idempotency-ID (CORE.TELEMETRY.PROPAGATION_HOST_ALLOWLIST). Empty: no host does.
+	PropagationHostAllowlist []string
 }
 
 type TlsConfig struct {

@@ -162,7 +162,7 @@ func (this *HttpCaller) Do(ctx context.Context, req *Request) (*Response, error)
 
 	out := &Response{StatusCode: status, Headers: hdr, Body: respBody}
 
-	this.LogRequest(req, out)
+	this.LogRequest(ctx, req, out)
 
 	if status < 200 || status > 299 {
 		return out, errors.Errorf("http error: status %d, body: %s", status, errBodySnippet(respBody))
@@ -171,8 +171,8 @@ func (this *HttpCaller) Do(ctx context.Context, req *Request) (*Response, error)
 	return out, nil
 }
 
-func (this *HttpCaller) LogRequest(req *Request, res *Response) {
-	this.logger.Info("[HTTP Caller] Send request", logging.Attr{
+func (this *HttpCaller) LogRequest(ctx context.Context, req *Request, res *Response) {
+	this.logger.Info(ctx, "[HTTP Caller] Send request", logging.Attr{
 		"method":          req.Method,
 		"path":            req.Path,
 		"request_headers": req.Headers,

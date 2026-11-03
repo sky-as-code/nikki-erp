@@ -85,7 +85,7 @@ func (this *PubSubBroker) decodeLoop(
 			}
 			var signal it.WakeUpSignal
 			if err := json.Unmarshal(message, &signal); err != nil {
-				this.logger.Error("notification wake-up signal is not readable", err)
+				this.logger.Error(ctx, "notification wake-up signal is not readable", err)
 				continue
 			}
 			select {

@@ -1,6 +1,7 @@
 package external
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -34,7 +35,7 @@ func NewChannelDispatcher(
 	if len(channels) == 0 && logger != nil {
 		// Not fatal. A deployment that wants only the durable inbox is a legitimate one: a
 		// notification is readable whether or not anything ever delivers it.
-		logger.Warnf("notification: no distribution channel is attached; nothing will be delivered")
+		logger.Warnf(context.Background(), "notification: no distribution channel is attached; nothing will be delivered")
 	}
 
 	return &ChannelDispatcher{
@@ -79,7 +80,7 @@ func (this *ChannelDispatcher) EnabledFor(
 		isEnabled, err := this.channels[name].IsEnabledFor(ctx, orgId)
 		if err != nil {
 			if this.logger != nil {
-				this.logger.Error(
+				this.logger.Error(ctx,
 					fmt.Sprintf("notification: channel '%s' could not be read for org '%s'", name, orgId),
 					err)
 			}

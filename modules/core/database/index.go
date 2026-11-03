@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -58,7 +59,7 @@ func InitSubModule(params InitParams) error {
 	driver, err := dialects.NewEntDriver(entDriverOpts)
 
 	if err != nil {
-		logger.Error("failed to open database connection", err)
+		logger.Error(context.Background(), "failed to open database connection", err)
 		return err
 	}
 

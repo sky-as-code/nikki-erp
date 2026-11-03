@@ -54,7 +54,7 @@ func (*JobSchedulerModule) OnAppStarted() error {
 			// Not fatal, but worth saying once at boot: a batch far larger than the pool means
 			// each tick claims work it cannot start, and those executions hold leases while they
 			// wait for a slot.
-			logger.Warnf(
+			logger.Warnf(context.Background(),
 				"jobscheduler: claim batch size %d is large for a worker pool of %d",
 				cfg.ClaimBatchSize, cfg.WorkerConcurrency,
 			)
@@ -85,7 +85,7 @@ func (*JobSchedulerModule) OnAppStarted() error {
 		waker.Attach(engine)
 		engine.Start()
 
-		logger.Infof(
+		logger.Infof(context.Background(),
 			"jobscheduler: engine started as instance %s with %d workers, reconciling every %s",
 			services.InstanceId(), cfg.WorkerConcurrency, cfg.ReconciliationInterval,
 		)

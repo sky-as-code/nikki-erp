@@ -2,8 +2,6 @@ package context
 
 import (
 	"context"
-
-	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
 // RequestSource says what started the execution: an HTTP request, a scheduled job, a message
@@ -17,10 +15,9 @@ const (
 	RequestSourceSystem = RequestSource("system")
 )
 
-// RequestMeta identifies one execution, so that the several records one call writes (an audit
-// entry per resource it touched) can be correlated.
+// RequestMeta says what started the execution. Records one call writes are correlated by the
+// active span's trace id instead (see auditlog), so the meta carries no id of its own.
 type RequestMeta struct {
-	Id     string
 	Source RequestSource
 }
 
@@ -44,29 +41,23 @@ func RequestMetaOf(ctx context.Context) (RequestMeta, bool) {
 		return RequestMeta{}, false
 	}
 	meta, ok := ctx.Value(ctxKeyRequestMeta).(RequestMeta)
-	return meta, ok && meta.Id != ""
+	return meta, ok && meta.Source != ""
 }
 
-// NewRequestMeta mints a meta with a fresh id.
+// NewRequestMeta returns a meta for an execution started by source.
 func NewRequestMeta(source RequestSource) RequestMeta {
-	id, err := model.NewId()
-	if err != nil || id == nil {
-		return RequestMeta{Source: source}
-	}
-	return RequestMeta{Id: string(*id), Source: source}
+	return RequestMeta{Source: source}
 }
 
-// EnsureRequestMeta returns the meta ctx carries, or mints one with fallbackSource and stores it
-// on ctx, so later writes through the same ctx share it. An entry point should set the meta
-// itself: a meta minted here does not reach a context cloned from ctx before this call.
+// EnsureRequestMeta returns the meta ctx carries, or one with fallbackSource stored on ctx, so
+// later writes through the same ctx share it. An entry point should set the meta itself: a meta
+// stored here does not reach a context cloned from ctx before this call.
 func EnsureRequestMeta(ctx Context, fallbackSource RequestSource) RequestMeta {
 	if meta, ok := RequestMetaOf(ctx); ok {
 		return meta
 	}
 	meta := NewRequestMeta(fallbackSource)
-	if meta.Id != "" {
-		SetRequestMeta(ctx, meta)
-	}
+	SetRequestMeta(ctx, meta)
 	return meta
 }
 

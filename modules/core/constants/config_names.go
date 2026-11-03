@@ -49,19 +49,20 @@ const (
 	HttpClientClientP12Password      ConfigName = "CORE.HTTP_CLIENT.CLIENT_P12_PASSWORD"
 
 	// HTTP Server
-	HttpBasePath       ConfigName = "CORE.HTTP.BASE_PATH"
-	HttpHost           ConfigName = "CORE.HTTP.HOST"
-	HttpPort           ConfigName = "CORE.HTTP.PORT"
-	HttpsPort          ConfigName = "CORE.HTTP.HTTPS_PORT"
-	HttpsEnabled       ConfigName = "CORE.HTTP.HTTPS_ENABLED"
-	HttpsRsaPublicKey  ConfigName = "CORE.HTTP.HTTPS_RSA_PUBLIC_KEY"
-	HttpsRsaPrivateKey ConfigName = "CORE.HTTP.HTTPS_RSA_PRIVATE_KEY"
-	MtlsEnabled        ConfigName = "CORE.HTTP.MTLS_ENABLED"
-	MtlsClientCaCert   ConfigName = "CORE.HTTP.MTLS_CLIENT_CA_CERT"
-	HttpCorsEnabled    ConfigName = "CORE.HTTP.CORS_ENABLED"
-	HttpCorsOrigins    ConfigName = "CORE.HTTP.CORS_ORIGINS"
-	HttpCorsHeaders    ConfigName = "CORE.HTTP.CORS_HEADERS"
-	HttpCorsMethods    ConfigName = "CORE.HTTP.CORS_METHODS"
+	HttpBasePath          ConfigName = "CORE.HTTP.BASE_PATH"
+	HttpHost              ConfigName = "CORE.HTTP.HOST"
+	HttpPort              ConfigName = "CORE.HTTP.PORT"
+	HttpsPort             ConfigName = "CORE.HTTP.HTTPS_PORT"
+	HttpsEnabled          ConfigName = "CORE.HTTP.HTTPS_ENABLED"
+	HttpsRsaPublicKey     ConfigName = "CORE.HTTP.HTTPS_RSA_PUBLIC_KEY"
+	HttpsRsaPrivateKey    ConfigName = "CORE.HTTP.HTTPS_RSA_PRIVATE_KEY"
+	MtlsEnabled           ConfigName = "CORE.HTTP.MTLS_ENABLED"
+	MtlsClientCaCert      ConfigName = "CORE.HTTP.MTLS_CLIENT_CA_CERT"
+	HttpCorsEnabled       ConfigName = "CORE.HTTP.CORS_ENABLED"
+	HttpCorsOrigins       ConfigName = "CORE.HTTP.CORS_ORIGINS"
+	HttpCorsHeaders       ConfigName = "CORE.HTTP.CORS_HEADERS"
+	HttpCorsMethods       ConfigName = "CORE.HTTP.CORS_METHODS"
+	HttpCorsExposeHeaders ConfigName = "CORE.HTTP.CORS_EXPOSE_HEADERS"
 
 	//Pub sub Redis
 	PubSubRedisHost     ConfigName = "CORE.PUB_SUB.REDIS_HOST"
@@ -111,6 +112,28 @@ const (
 	S3StorageSecretKey   ConfigName = "CORE.S3_STORAGE.SECRET_KEY"
 	S3StorageEndpoint    ConfigName = "CORE.S3_STORAGE.ENDPOINT"
 	S3StorageBucket      ConfigName = "CORE.S3_STORAGE.BUCKET"
+)
+
+// OpenTelemetry SDK settings. Keys mirror the standard OTEL_* environment variables, which the
+// env loader maps to them, so the SDK is built from the config chain rather than its own env reads.
+const (
+	OtelServiceName          ConfigName = "OTEL.SERVICE_NAME"
+	OtelResourceAttributes   ConfigName = "OTEL.RESOURCE_ATTRIBUTES"
+	OtelPropagators          ConfigName = "OTEL.PROPAGATORS"
+	OtelTracesSampler        ConfigName = "OTEL.TRACES_SAMPLER"
+	OtelTracesSamplerArg     ConfigName = "OTEL.TRACES_SAMPLER_ARG"
+	OtelTracesExporter       ConfigName = "OTEL.TRACES_EXPORTER"
+	OtelExporterOtlpProtocol ConfigName = "OTEL.EXPORTER_OTLP_PROTOCOL"
+	OtelExporterOtlpEndpoint ConfigName = "OTEL.EXPORTER_OTLP_ENDPOINT"
+	OtelExporterOtlpHeaders  ConfigName = "OTEL.EXPORTER_OTLP_HEADERS"
+	OtelBspMaxQueueSize      ConfigName = "OTEL.BSP_MAX_QUEUE_SIZE"
+	OtelBspMaxExportBatch    ConfigName = "OTEL.BSP_MAX_EXPORT_BATCH_SIZE"
+	OtelBspExportTimeoutMs   ConfigName = "OTEL.BSP_EXPORT_TIMEOUT"
+	OtelBspScheduleDelayMs   ConfigName = "OTEL.BSP_SCHEDULE_DELAY"
+
+	TelemetryBaggageAllowlist         ConfigName = "CORE.TELEMETRY.BAGGAGE_ALLOWLIST"
+	TelemetryPropagationHostAllowlist ConfigName = "CORE.TELEMETRY.PROPAGATION_HOST_ALLOWLIST"
+	TelemetryShutdownFlushSecs        ConfigName = "CORE.TELEMETRY.SHUTDOWN_FLUSH_SECS"
 )
 
 // Resource import (POST /{resource}/import on the composable engine).

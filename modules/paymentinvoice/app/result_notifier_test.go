@@ -109,7 +109,7 @@ func (this *fakeSettledPublisher) events() []itEvent.PaymentSettledEvent {
 
 func newTestNotifier(store orderSyncStore, retries int) *ResultNotifier {
 	notifier := NewResultNotifier(
-		nil, NewResultSyncClient(2*time.Second, retries), nil, logging.NewLogger())
+		nil, NewResultSyncClient(sharedHttpClient(), 2*time.Second, retries), nil, logging.NewLogger())
 	notifier.orders = store
 	return notifier
 }
@@ -118,7 +118,7 @@ func newAnnouncingNotifier(
 	store orderSyncStore, publisher itEvent.PaymentSettledEventPublisher,
 ) *ResultNotifier {
 	notifier := NewResultNotifier(
-		nil, NewResultSyncClient(2*time.Second, 0), publisher, logging.NewLogger())
+		nil, NewResultSyncClient(sharedHttpClient(), 2*time.Second, 0), publisher, logging.NewLogger())
 	notifier.orders = store
 	return notifier
 }

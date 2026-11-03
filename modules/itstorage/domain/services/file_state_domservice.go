@@ -14,6 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/core/storage"
+	"github.com/sky-as-code/nikki-erp/modules/core/telemetry"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	c "github.com/sky-as-code/nikki-erp/modules/itstorage/constants"
 	"github.com/sky-as-code/nikki-erp/modules/itstorage/domain/models"
@@ -129,9 +130,12 @@ func (this *FileDomainServiceImpl) ReleaseFiles(ctx corectx.Context, cmd storage
 }
 
 func (this *FileDomainServiceImpl) tagPendingOnceCommitted(ctx corectx.Context, fileIds []model.Id) {
+	spanCtx, span := telemetry.StartDetached(ctx.InnerContext(), "itstorage.release_files.tag")
+	defer span.End()
+	ctx = corectx.CloneWithInner(ctx, spanCtx)
 	defer func() {
 		if recovered := recover(); recovered != nil {
-			ctx.GetLogger().Errorf("itstorage: tagging released files panicked: %v", recovered)
+			ctx.GetLogger().Errorf(ctx, "itstorage: tagging released files panicked: %v", recovered)
 		}
 	}()
 	waiting := fileIds
@@ -139,7 +143,7 @@ func (this *FileDomainServiceImpl) tagPendingOnceCommitted(ctx corectx.Context, 
 		time.Sleep(delay)
 		committed, err := this.repo.ListObjectKeysWithStatus(ctx, waiting, storage.FileStatusPending)
 		if err != nil {
-			ctx.GetLogger().Warn("itstorage: cannot re-read released files", logging.Attr{"error": err.Error()})
+			ctx.GetLogger().Warn(ctx, "itstorage: cannot re-read released files", logging.Attr{"error": err.Error()})
 			continue
 		}
 		this.tagPending(ctx, committed)
@@ -148,7 +152,7 @@ func (this *FileDomainServiceImpl) tagPendingOnceCommitted(ctx corectx.Context, 
 			return
 		}
 	}
-	ctx.GetLogger().Info("itstorage: released files never committed as pending; their objects stay tagged in_use",
+	ctx.GetLogger().Info(ctx, "itstorage: released files never committed as pending; their objects stay tagged in_use",
 		logging.Attr{"file_ids": waiting})
 }
 
@@ -156,7 +160,7 @@ func (this *FileDomainServiceImpl) tagPendingOnceCommitted(ctx corectx.Context, 
 func (this *FileDomainServiceImpl) tagPending(ctx corectx.Context, objectKeys map[model.Id]string) {
 	for fileId, objectKey := range objectKeys {
 		if err := this.storage.SetTags(ctx, objectKey, stateTags(storage.FileStatusPending)); err != nil {
-			ctx.GetLogger().Warn("itstorage: failed to tag a released object pending; it will not expire",
+			ctx.GetLogger().Warn(ctx, "itstorage: failed to tag a released object pending; it will not expire",
 				logging.Attr{"file_id": fileId, "object_key": objectKey, "error": err.Error()})
 		}
 	}

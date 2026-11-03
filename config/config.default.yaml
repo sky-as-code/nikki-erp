@@ -1,10 +1,48 @@
 GENERAL:
   APP_NAME: "Nikki ERP"
 
+OTEL:
+  # One name per binary; the module is the span attribute coremart.module.
+  SERVICE_NAME: "nikki-erp"
+  # Extra resource attributes as k=v pairs, comma-separated (deployment.environment.name=staging).
+  # service.instance.id is always generated at boot and cannot be set here.
+  RESOURCE_ATTRIBUTES: ""
+  # tracecontext | baggage | none, comma-separated. Baggage is always filtered by CORE.TELEMETRY.BAGGAGE_ALLOWLIST.
+  PROPAGATORS: "tracecontext,baggage"
+  # parentbased_traceidratio | parentbased_always_on | parentbased_always_off | traceidratio | always_on | always_off
+  TRACES_SAMPLER: "parentbased_traceidratio"
+  # Root sampling ratio, 0 to 1. Production suggestion: 0.1.
+  TRACES_SAMPLER_ARG: "1.0"
+  # none | otlp | console. "none" still creates trace/span IDs and propagates them, it only exports nothing.
+  TRACES_EXPORTER: "none"
+  # http/protobuf | grpc
+  EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  # Base URL of an existing receiver, e.g. http://otel-collector:4318. Empty with "otlp" exports nothing.
+  EXPORTER_OTLP_ENDPOINT: ""
+  # k=v pairs, comma-separated. Prefer env OTEL_EXPORTER_OTLP_HEADERS or a secret file at
+  # OTEL.EXPORTER_OTLP_HEADERS_FILE when they hold credentials.
+  EXPORTER_OTLP_HEADERS: ""
+  # Batch span processor bounds: spans beyond the queue are dropped, never buffered without limit.
+  BSP_MAX_QUEUE_SIZE: 2048
+  BSP_MAX_EXPORT_BATCH_SIZE: 512
+  # Milliseconds
+  BSP_EXPORT_TIMEOUT: 30000
+  # Milliseconds
+  BSP_SCHEDULE_DELAY: 5000
+
 CORE:
   # Seconds given to modules to drain background work after a termination signal, before
   # the HTTP server closes and the process exits. A module that overruns is abandoned.
   SHUTDOWN_GRACE_SECS: 30
+  TELEMETRY:
+    # Baggage keys kept at the service boundary, comma-separated; every other key is dropped.
+    # Empty drops all baggage. At most 16 entries / 2048 bytes are kept, in header order.
+    BAGGAGE_ALLOWLIST: ""
+    # Hosts that outbound HTTP calls send traceparent/tracestate/baggage/X-Idempotency-ID to,
+    # comma-separated: "host", "host:port" or "*.suffix". Empty sends them nowhere.
+    PROPAGATION_HOST_ALLOWLIST: ""
+    # Seconds given to flush pending spans after the HTTP server has drained.
+    SHUTDOWN_FLUSH_SECS: 5
   CQRS:
     # Number of seconds before a CQRS request is timed out
     REQUEST_TIMEOUT_SECS: 50
@@ -75,9 +113,11 @@ CORE:
     # Allowed origins for Cross-Origin Resource Sharing
     CORS_ORIGINS: "*"
     # Allowed headers for Cross-Origin Resource Sharing
-    CORS_HEADERS: "Accept,Authorization,Content-Type,Origin,X-NIKKI-ACCESSTOKEN"
+    CORS_HEADERS: "Accept,Authorization,Content-Type,Origin,X-NIKKI-ACCESSTOKEN,traceparent,tracestate,baggage,X-Idempotency-ID"
     # Allowed methods for Cross-Origin Resource Sharing
     CORS_METHODS: "OPTIONS,HEAD,GET,POST,PUT,PATCH,DELETE"
+    # Response headers a cross-origin browser script may read
+    CORS_EXPOSE_HEADERS: "X-Trace-ID,X-Idempotency-ID"
     MTLS_ENABLED: true
     MTLS_CLIENT_CA_CERT_FILE: "scripts/cert/pki/client-ca/nikkierp-client-ca.crt"
     MTLS_CLIENT_CERT_FILE: "scripts/cert/pki/client-cert/nikkierp-client-cert.crt"

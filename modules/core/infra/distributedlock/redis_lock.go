@@ -8,6 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/redisclient"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -17,14 +18,13 @@ type RedisDistributedLock struct {
 }
 
 func NewRedisDistributedLock(logger logging.LoggerService, cfg config.ConfigService) DistributedLock {
-	return &RedisDistributedLock{
-		logger: logger,
-		redisClient: redis.NewClient(&redis.Options{
-			Addr:     fmt.Sprintf("%s:%s", cfg.GetStr(c.DistributedLockRedisHost), cfg.GetStr(c.DistributedLockRedisPort)),
-			Password: cfg.GetStr(c.DistributedLockRedisPassword),
-			DB:       cfg.GetInt(c.DistributedLockRedisDB),
-		}),
-	}
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", cfg.GetStr(c.DistributedLockRedisHost), cfg.GetStr(c.DistributedLockRedisPort)),
+		Password: cfg.GetStr(c.DistributedLockRedisPassword),
+		DB:       cfg.GetInt(c.DistributedLockRedisDB),
+	})
+	redisclient.InstrumentTracing(client, logger)
+	return &RedisDistributedLock{logger: logger, redisClient: client}
 }
 
 func (this *RedisDistributedLock) Acquire(ctx context.Context, key string, ttl time.Duration) (bool, error) {

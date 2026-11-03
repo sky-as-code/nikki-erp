@@ -50,14 +50,14 @@ func (this *Application) Logger() logging.LoggerService {
 func (this *Application) Start() {
 	modules, err := this.moduleLoader.LoadModules()
 	if err != nil {
-		this.logger.Errorf("failed to load modules: %v", err)
+		this.logger.Errorf(context.Background(), "failed to load modules: %v", err)
 	}
 
 	this.modules = modules
 
 	err = this.initModules()
 	if err != nil {
-		this.logger.Error("failed to initialize modules", err)
+		this.logger.Error(context.Background(), "failed to initialize modules", err)
 		os.Exit(1)
 	}
 	this.config = config.ConfigSvcSingleton()
@@ -69,12 +69,12 @@ func (this *Application) Stop(ctx context.Context) {
 	if len(this.orderedMods) == 0 {
 		return
 	}
-	this.logger.Info("Start stopping modules", nil)
+	this.logger.Info(ctx, "Start stopping modules", nil)
 
 	// Scheduler stops first so no sweep fires against a half-torn-down module; blocks until
 	// in-flight jobs return.
 	if err := job.GetCronjob().Stop(); err != nil {
-		this.logger.Error("the cron scheduler did not stop cleanly", err)
+		this.logger.Error(ctx, "the cron scheduler did not stop cleanly", err)
 	}
 
 	for i := len(this.orderedMods) - 1; i >= 0; i-- {
@@ -85,15 +85,15 @@ func (this *Application) Stop(ctx context.Context) {
 		}
 
 		if err := ctx.Err(); err != nil {
-			this.logger.Errorf("shutdown budget spent; skipping OnAppStopping() for module %s", mod.Name())
+			this.logger.Errorf(ctx, "shutdown budget spent; skipping OnAppStopping() for module %s", mod.Name())
 			continue
 		}
 
 		if err := modWithStopping.OnAppStopping(ctx); err != nil {
-			this.logger.Error(fmt.Sprintf("module %s failed to stop cleanly", mod.Name()), err)
+			this.logger.Error(ctx, fmt.Sprintf("module %s failed to stop cleanly", mod.Name()), err)
 			continue
 		}
-		this.logger.Debugf("Invoked OnAppStopping() on module %s", mod.Name())
+		this.logger.Debugf(ctx, "Invoked OnAppStopping() on module %s", mod.Name())
 	}
 }
 
@@ -227,7 +227,7 @@ func (this *Application) registerDependants() error {
 	}
 
 	for _, owner := range registry.OwnersWithAbsentDependants() {
-		this.logger.Warnf("module %s declares dependant(s) not loaded in this binary: %s; "+
+		this.logger.Warnf(context.Background(), "module %s declares dependant(s) not loaded in this binary: %s; "+
 			"usage checks will skip them", owner, strings.Join(registry.AbsentDependants(owner), ", "))
 	}
 
@@ -273,7 +273,7 @@ func (this *Application) validateDependencies(depGraph map[string][]string) erro
 }
 
 func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeModule, depGraph map[string][]string) error {
-	this.logger.Info("Start initializing modules", nil)
+	this.logger.Info(context.Background(), "Start initializing modules", nil)
 
 	initOrder, err := topologicalSort(depGraph)
 	if err != nil {
@@ -287,7 +287,7 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 			return err
 		}
 		orderedMods = append(orderedMods, mod)
-		this.logger.Infof("Initialized module %s", mod.Name())
+		this.logger.Infof(context.Background(), "Initialized module %s", mod.Name())
 	}
 
 	this.orderedMods = orderedMods
@@ -301,7 +301,7 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 			if err := modWithAppStarted.OnAppStarted(); err != nil {
 				return err
 			}
-			this.logger.Debugf("Invoked OnAppStarted() on module %s", mod.Name())
+			this.logger.Debugf(context.Background(), "Invoked OnAppStarted() on module %s", mod.Name())
 		}
 	}
 
@@ -310,14 +310,14 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 	// until the next tick. Failure is logged, not fatal: degraded background sweeps beat not
 	// booting at all.
 	if err := job.GetCronjob().Start(); err != nil {
-		this.logger.Error("failed to start the cron scheduler; background sweeps will not run", err)
+		this.logger.Error(context.Background(), "failed to start the cron scheduler; background sweeps will not run", err)
 	}
 
 	return nil
 }
 
 func (this *Application) registerModelInOrder(moduleMap map[string]modules.InCodeModule, depGraph map[string][]string) error {
-	this.logger.Info("Start registering models for modules", nil)
+	this.logger.Info(context.Background(), "Start registering models for modules", nil)
 
 	initOrder, err := topologicalSort(depGraph)
 	if err != nil {
@@ -337,7 +337,7 @@ func (this *Application) registerModelInOrder(moduleMap map[string]modules.InCod
 		if err := modWithDynamic.RegisterModels(); err != nil {
 			return err
 		}
-		this.logger.Infof("Registered models for module %s", mod.Name())
+		this.logger.Infof(context.Background(), "Registered models for module %s", mod.Name())
 	}
 
 	if err := dmodel.GetSchemaRegistry().FinalizeRelations(); err != nil {

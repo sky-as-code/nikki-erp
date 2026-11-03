@@ -64,7 +64,7 @@ func registerEinvoiceJob(
 	// Logged only on the first registration. Every later boot re-registers the same job, and saying
 	// so each time would bury the one occurrence that is actually news.
 	if logger != nil && result != nil && result.WasCreated {
-		logger.Infof("sales: registered the electronic invoice issuance job (%s)", result.JobId)
+		logger.Infof(ctx, "sales: registered the electronic invoice issuance job (%s)", result.JobId)
 	}
 	return nil
 }

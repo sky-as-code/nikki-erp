@@ -11,6 +11,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	coreEvent "github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/telemetry"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/constants"
 	itEvent "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/event"
@@ -62,16 +63,20 @@ func (this *PricingChangedEventPublisherImpl) Publish(
 func (this *PricingChangedEventPublisherImpl) PublishAsync(
 	ctx corectx.Context, eventType itEvent.PricingChangedType, orgId string, ids ...string,
 ) {
-	publish := func() {
-		bgCtx, cancel := context.WithTimeout(
-			context.WithoutCancel(ctx.InnerContext()), publishAsyncTimeout)
+	publish := func(source context.Context) {
+		detachedCtx, span := telemetry.StartDetached(source, "sales.pricing_changed.publish")
+		defer span.End()
+		bgCtx, cancel := context.WithTimeout(detachedCtx, publishAsyncTimeout)
 		defer cancel()
 
 		if err := this.Publish(corectx.NewRequestContext(bgCtx), eventType, orgId, ids...); err != nil {
-			this.logger.Warn("pricing changed event publish failed",
+			this.logger.Warn(bgCtx, "pricing changed event publish failed",
 				logging.Attr{"error": err.Error(), "resource_type": eventType, "org_id": orgId, "ids": ids})
 		}
 	}
 	// A caller inside a transaction must not announce a write that may still roll back.
-	ctx.OnCommitted(func() { go publish() })
+	ctx.OnCommitted(func() {
+		source := ctx.InnerContext()
+		go publish(source)
+	})
 }

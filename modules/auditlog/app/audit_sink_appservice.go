@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"go.bryk.io/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -31,11 +32,11 @@ func (this *AuditSinkAppServiceImpl) Record(ctx corectx.Context, entries []audit
 	if len(entries) == 0 || !hasTenantScope(ctx) {
 		return nil
 	}
-	// A meta minted here is stored on ctx, so the other entries this ctx writes share it.
 	meta := corectx.EnsureRequestMeta(ctx, corectx.RequestSourceSystem)
 	actor := actorOf(ctx)
+	traceId := activeTraceId(ctx)
 	for _, entry := range entries {
-		row, err := buildActionRow(entry, actor, meta)
+		row, err := buildActionRow(entry, actor, meta, traceId)
 		if err != nil {
 			return err
 		}
@@ -93,7 +94,19 @@ func actorOf(ctx corectx.Context) actorSnapshot {
 	return actor
 }
 
-func buildActionRow(entry audit.Entry, actor actorSnapshot, meta corectx.RequestMeta) (dmodel.DynamicFields, error) {
+// activeTraceId is the trace id of the span active on ctx, or "" when there is no valid one. None
+// is minted: an entry written outside a trace stays ungrouped rather than grouped by a made-up id.
+func activeTraceId(ctx corectx.Context) string {
+	spanCtx := trace.SpanContextFromContext(ctx)
+	if !spanCtx.IsValid() {
+		return ""
+	}
+	return spanCtx.TraceID().String()
+}
+
+func buildActionRow(
+	entry audit.Entry, actor actorSnapshot, meta corectx.RequestMeta, traceId string,
+) (dmodel.DynamicFields, error) {
 	before, err := plainJsonMap(entry.Before)
 	if err != nil {
 		return nil, err
@@ -118,8 +131,8 @@ func buildActionRow(entry audit.Entry, actor actorSnapshot, meta corectx.Request
 	if actor.userId != nil {
 		row[models.ActionFieldActorId] = string(*actor.userId)
 	}
-	if meta.Id != "" {
-		row[models.ActionFieldRequestId] = meta.Id
+	if traceId != "" {
+		row[models.ActionFieldTraceId] = traceId
 	}
 	return row, nil
 }

@@ -86,7 +86,7 @@ func (this *PasswordDomainServiceImpl) CreatePasswordOtp(ctx corectx.Context, cm
 
 	createdOtp := this.createOtp(principal.Username)
 
-	this.logger.Debug("create otp password", logging.Attr{
+	this.logger.Debug(ctx, "create otp password", logging.Attr{
 		"principalType": cmd.PrincipalType,
 		"PrincipalId":   cmd.PrincipalId,
 		"passwordotp":   createdOtp.otpUrl,
@@ -156,7 +156,7 @@ func (this *PasswordDomainServiceImpl) ConfirmPasswordOtp(ctx corectx.Context, c
 			return nil
 		}).
 		Step(func(cErrs *ft.ClientErrors) error {
-			recoveryCodes = this.createOtpRecovery(cmd)
+			recoveryCodes = this.createOtpRecovery(ctx, cmd)
 			err = this.upsertPasswordStoreHash(
 				ctx,
 				cmd.PrincipalType,
@@ -230,7 +230,7 @@ func (this *PasswordDomainServiceImpl) CreatePasswordTemp(ctx corectx.Context, c
 	// The generated password is a live credential. It is never logged: a secret
 	// written to the log outlives the request, spreads to wherever logs are
 	// shipped, and is readable by people who were never granted the account.
-	this.logger.Debug("create temp password", logging.Attr{
+	this.logger.Debug(ctx, "create temp password", logging.Attr{
 		"principalType": cmd.PrincipalType,
 		"username":      cmd.Username,
 	})
@@ -321,7 +321,7 @@ func (this *PasswordDomainServiceImpl) SetPassword(ctx corectx.Context, cmd it.S
 				))
 				return nil
 			}
-			curPassMatched := this.isPasswordEqual(curPassHash, *cmd.CurrentPassword)
+			curPassMatched := this.isPasswordEqual(ctx, curPassHash, *cmd.CurrentPassword)
 			if !curPassMatched {
 				cErrs.Append(*ft.NewValidationError(
 					"current_password",
@@ -332,7 +332,7 @@ func (this *PasswordDomainServiceImpl) SetPassword(ctx corectx.Context, cmd it.S
 			return nil
 		}).
 		Step(func(cErrs *ft.ClientErrors) error {
-			this.validateNewPass(curPassHash, cmd.NewPassword, cErrs)
+			this.validateNewPass(ctx, curPassHash, cmd.NewPassword, cErrs)
 			return nil
 		}).
 		End()
@@ -397,7 +397,7 @@ func (this *PasswordDomainServiceImpl) VerifyPassword(ctx corectx.Context, cmd i
 		return &it.VerifyPasswordResult{ClientErrors: cErrs}, nil
 	}
 
-	isMatched, reason := this.validateCurrentAndTempPass(cmd.Password, stores)
+	isMatched, reason := this.validateCurrentAndTempPass(ctx, cmd.Password, stores)
 
 	return &it.VerifyPasswordResult{
 		Data: it.VerifyPasswordResultData{
@@ -433,7 +433,7 @@ func (this *PasswordDomainServiceImpl) VerifyOtpCode(ctx corectx.Context, cmd it
 		return &it.VerifyOtpCodeResult{ClientErrors: cErrs}, nil
 	}
 
-	result, err := this.verifyOtpAndRecovery(cmd.OtpCode, stores)
+	result, err := this.verifyOtpAndRecovery(ctx, cmd.OtpCode, stores)
 	if err != nil {
 		return nil, err
 	}

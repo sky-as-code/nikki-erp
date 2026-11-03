@@ -10,7 +10,6 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v5"
-	"github.com/labstack/echo/v5/middleware"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
@@ -42,11 +41,18 @@ func initHttpServer(params httpServerParams) httpServerResult {
 		config:     params.Config,
 	}
 
-	httpServer.Use(middleware.RequestLogger())
-	httpServer.Use(middleware.Recover())
+	// Tracing first: everything after it, including the access log, runs inside the server span.
+	// The access log wraps the idempotency check so a rejected request still gets its line.
+	// CORS runs ahead of the global lazywares (tenant, client cert) so their rejections are
+	// readable cross-origin; the idempotency 400, answered before it, goes through it explicitly.
+	corsLazyware := m.Lazyware(m.CorsEchoMiddleware)
+	httpServer.Use(m.TracingMiddleware)
+	httpServer.Use(m.AccessLogMiddleware(params.Logger))
+	httpServer.Use(m.IdempotencyMiddleware(params.Logger, corsLazyware.Middleware()))
+	httpServer.Use(m.RecoverMiddleware(params.Logger))
 	httpServer.Use(m.RequestContextMiddleware)
+	httpServer.UseLazy(corsLazyware)
 	applyGlobalLazywares(&httpServer)
-	httpServer.UseLazy(m.Lazyware(m.CorsEchoMiddleware))
 	// httpServer.Use(m.EnsureAuthorized)
 
 	return httpServerResult{
@@ -104,7 +110,7 @@ func (this *HttpServer) startHttp() error {
 	httpPort := this.config.GetInt32(c.HttpPort)
 	address := fmt.Sprintf("%s:%d", httpHost, httpPort)
 
-	this.logger.Infof("Starting HTTP server %s at %s", this.Name, address)
+	this.logger.Infof(context.Background(), "Starting HTTP server %s at %s", this.Name, address)
 
 	for _, lazyware := range this.LazyMiddlewares {
 		lazyware.Enable()
@@ -122,7 +128,7 @@ func (this *HttpServer) startHttp() error {
 		return err
 	}
 
-	this.logger.Infof("HTTP server %s is running at %s", this.Name, address)
+	this.logger.Infof(context.Background(), "HTTP server %s is running at %s", this.Name, address)
 
 	err = httpServer.Serve(listener)
 	if err != nil && !stdErr.Is(err, http.ErrServerClosed) {
@@ -139,7 +145,7 @@ func (this *HttpServer) startHttps() error {
 	mtlsEnabled := this.config.GetBool(c.MtlsEnabled)
 	address := fmt.Sprintf("%s:%d", httpHost, httpsPort)
 
-	this.logger.Infof("Starting HTTPS server %s at %s", this.Name, address)
+	this.logger.Infof(context.Background(), "Starting HTTPS server %s at %s", this.Name, address)
 
 	for _, lazyware := range this.LazyMiddlewares {
 		lazyware.Enable()
@@ -193,7 +199,7 @@ func (this *HttpServer) startHttps() error {
 		return err
 	}
 
-	this.logger.Infof("HTTPS server %s is running at %s", this.Name, address)
+	this.logger.Infof(context.Background(), "HTTPS server %s is running at %s", this.Name, address)
 
 	err = tlsServer.ServeTLS(listener, "", "")
 	if err != nil && !stdErr.Is(err, http.ErrServerClosed) {
@@ -202,12 +208,17 @@ func (this *HttpServer) startHttps() error {
 	return nil
 }
 
-func (this HttpServer) Shutdown() {
-	this.logger.Infof("Stopping HTTP(S) server %s ...", this.Name)
+// Shutdown stops accepting connections and waits for in-flight requests until ctx ends; the
+// connections still open then are closed.
+func (this HttpServer) Shutdown(ctx context.Context) {
+	this.logger.Infof(ctx, "Stopping HTTP(S) server %s ...", this.Name)
 	if this.httpServer != nil {
-		_ = this.httpServer.Shutdown(context.Background()) //nolint:errcheck
+		if err := this.httpServer.Shutdown(ctx); err != nil {
+			this.logger.Warn(ctx, "HTTP(S) server drain did not complete", logging.Attr{"error": err.Error()})
+			_ = this.httpServer.Close() //nolint:errcheck
+		}
 	}
-	this.logger.Infof("HTTP(S) server %s exited", this.Name)
+	this.logger.Infof(ctx, "HTTP(S) server %s exited", this.Name)
 }
 
 func (this HttpServer) Use(middlewares ...echo.MiddlewareFunc) {

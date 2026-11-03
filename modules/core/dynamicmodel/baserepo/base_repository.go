@@ -1,6 +1,7 @@
 package baserepo
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"reflect"
@@ -69,7 +70,7 @@ func (this *BaseDynamicRepositoryImpl) ExecFunc(ctx corectx.Context, sqlFuncName
 	if err != nil {
 		return err
 	}
-	this.logQuery(sqlQuery)
+	this.logQuery(ctx, sqlQuery)
 	_, err = this.ExtractClient(ctx).Exec(ctx.InnerContext(), sqlQuery, sqlFuncArgs...)
 	return err
 }
@@ -79,7 +80,7 @@ func (this *BaseDynamicRepositoryImpl) QueryFunc(ctx corectx.Context, sqlFuncNam
 	if err != nil {
 		return nil, err
 	}
-	this.logQuery(sqlQuery)
+	this.logQuery(ctx, sqlQuery)
 	rows, err := this.ExtractClient(ctx).Query(ctx.InnerContext(), sqlQuery, sqlFuncArgs...)
 	return rows, err
 }
@@ -103,7 +104,6 @@ func (this *BaseDynamicRepositoryImpl) prepareFunc(sqlFuncName string, sqlFuncAr
 	sqlBuilder.WriteString(")")
 
 	sqlQuery := sqlBuilder.String()
-	this.logQuery(sqlQuery)
 	return sqlQuery, nil
 }
 
@@ -124,7 +124,7 @@ func (this *BaseDynamicRepositoryImpl) CheckUniqueCollisions(ctx corectx.Context
 		return &dyn.OpResult[[][]string]{ClientErrors: *qbClientErrs}, nil
 	}
 
-	this.logQuery(sqlQuery.Sql)
+	this.logQuery(ctx, sqlQuery.Sql)
 	rows, err := this.ExtractClient(ctx).Query(ctx, sqlQuery.Sql, sqlQuery.Args...)
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func (this *BaseDynamicRepositoryImpl) DeleteOne(
 		return &dyn.OpResult[int]{ClientErrors: *qbClientErrs}, nil
 	}
 
-	this.logQuery(*sqlQuery)
+	this.logQuery(ctx, *sqlQuery)
 	result, err := this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
 	if err != nil {
 		// The constraint that refuses a delete belongs to the table still referencing this row,
@@ -216,7 +216,7 @@ func (this *BaseDynamicRepositoryImpl) existsOnSchema(
 func (this *BaseDynamicRepositoryImpl) runExistsManyQuery(
 	ctx corectx.Context, sqlData orm.SqlExistsManyData, keys []dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	this.logQuery(sqlData.Sql)
+	this.logQuery(ctx, sqlData.Sql)
 	rows, err := this.ExtractClient(ctx).Query(ctx, sqlData.Sql, sqlData.Args...)
 	if err != nil {
 		return nil, err
@@ -274,7 +274,7 @@ func (this *BaseDynamicRepositoryImpl) Insert(ctx corectx.Context, data dmodel.D
 		return &dyn.OpResult[int]{ClientErrors: *qbClientErrs}, nil
 	}
 
-	this.logQuery(*sqlQuery)
+	this.logQuery(ctx, *sqlQuery)
 	result, err := this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
 	if err != nil {
 		if fkErrs := normalizeWriteViolation(err, this.schema); fkErrs != nil {
@@ -304,7 +304,7 @@ func (this *BaseDynamicRepositoryImpl) InsertBulk(ctx corectx.Context, data []dm
 		return &dyn.OpResult[int]{ClientErrors: *qbClientErrs}, nil
 	}
 
-	this.logQuery(*sqlQuery)
+	this.logQuery(ctx, *sqlQuery)
 	result, err := this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
 	if err != nil {
 		if fkErrs := normalizeWriteViolation(err, this.schema); fkErrs != nil {
@@ -355,7 +355,7 @@ func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.Rep
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *qbClientErrs}, nil
 	}
 
-	this.logQuery(*sqlQuery)
+	this.logQuery(ctx, *sqlQuery)
 	mainColumns := this.ensureSystemColumns(param.Fields)
 	rows, err := this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(this.schema, mainColumns))
 	if err != nil {
@@ -467,7 +467,7 @@ func (this *BaseDynamicRepositoryImpl) ExistsM2m(ctx corectx.Context, param dyn.
 	if sqlPtr == nil {
 		return false, nil
 	}
-	this.logQuery(*sqlPtr)
+	this.logQuery(ctx, *sqlPtr)
 	return this.queryScalarBool(ctx, *sqlPtr)
 }
 
@@ -676,7 +676,7 @@ func (this *BaseDynamicRepositoryImpl) deleteJunctionRows(ctx corectx.Context,
 	if qbClientErrs != nil && qbClientErrs.Count() > 0 {
 		return &dyn.OpResult[int]{ClientErrors: *qbClientErrs}, nil
 	}
-	this.logQuery(*sqlStr)
+	this.logQuery(ctx, *sqlStr)
 	execRes, err := this.ExtractClient(ctx).Exec(ctx, *sqlStr)
 	if err != nil {
 		return nil, err
@@ -710,7 +710,7 @@ func (this *BaseDynamicRepositoryImpl) insertJunctionRows(ctx corectx.Context,
 	if qbClientErrs != nil && qbClientErrs.Count() > 0 {
 		return &dyn.OpResult[int]{ClientErrors: *qbClientErrs}, nil
 	}
-	this.logQuery(*sqlRes)
+	this.logQuery(ctx, *sqlRes)
 	execRes, err := this.ExtractClient(ctx).Exec(ctx, *sqlRes)
 	if err != nil {
 		return nil, err
@@ -1340,7 +1340,7 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByFilter(
 	if qbClientErrs != nil && qbClientErrs.Count() > 0 {
 		return nil, errors.Wrap(qbClientErrs.ToError(), "selectRowsByFilter: invalid query graph")
 	}
-	this.logQuery(*sqlQuery)
+	this.logQuery(ctx, *sqlQuery)
 	return this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(schema, columns))
 }
 
@@ -1370,7 +1370,7 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByAnyFilter(
 	if qbClientErrs != nil && qbClientErrs.Count() > 0 {
 		return nil, errors.Errorf("selectRowsByAnyFilter: invalid query graph")
 	}
-	this.logQuery(*sqlQuery)
+	this.logQuery(ctx, *sqlQuery)
 	return this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(schema, columns))
 }
 
@@ -1401,7 +1401,7 @@ func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraphOnSchema(
 		return 0, *qbClientErrs, nil
 	}
 	countSql := *qbRes
-	this.logQuery(countSql)
+	this.logQuery(ctx, countSql)
 	n, ierr := this.queryScalarInt(ctx, countSql)
 	return n, nil, ierr
 }
@@ -1424,7 +1424,7 @@ func (this *BaseDynamicRepositoryImpl) runSelectGraphScan(
 		return nil, *qbClientErrs, nil
 	}
 
-	this.logQuery(*sqlQuery)
+	this.logQuery(ctx, *sqlQuery)
 	rows, err := this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(this.schema, param.Fields))
 	if err != nil {
 		return nil, nil, err
@@ -1503,7 +1503,7 @@ func (this *BaseDynamicRepositoryImpl) Update(ctx corectx.Context, data dmodel.D
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *qbClientErrs}, nil
 	}
 
-	this.logQuery(*sqlQuery)
+	this.logQuery(ctx, *sqlQuery)
 	_, err = this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
 	if err != nil {
 		if fkErrs := normalizeWriteViolation(err, this.schema); fkErrs != nil {
@@ -1514,9 +1514,9 @@ func (this *BaseDynamicRepositoryImpl) Update(ctx corectx.Context, data dmodel.D
 	return &dyn.OpResult[dmodel.DynamicFields]{Data: data, HasData: true}, nil
 }
 
-func (this *BaseDynamicRepositoryImpl) logQuery(query string) {
+func (this *BaseDynamicRepositoryImpl) logQuery(ctx context.Context, query string) {
 	if this.sqlDebugEnabled {
-		this.logger.Debug(query, nil)
+		this.logger.Debug(ctx, query, nil)
 	}
 }
 

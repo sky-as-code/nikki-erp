@@ -7,6 +7,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/telemetry"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/services"
 	itMessage "github.com/sky-as-code/nikki-erp/modules/commerce/sales/interfaces/message"
@@ -78,19 +79,23 @@ func (this *OutboxJobs) DrainNow(ctx corectx.Context) {
 	// Detached before the goroutine starts: the caller answers its own request and its context is
 	// cancelled, while this still has to read the outbox and reach the broker. CloneWithInner keeps
 	// the scope, which is what the published message is stamped with.
-	drainCtx := corectx.CloneWithInner(ctx, context.WithoutCancel(ctx.InnerContext()))
+	source := ctx.InnerContext()
+	scopeCtx := corectx.CloneWithInner(ctx, context.WithoutCancel(source))
 
 	go func() {
+		spanCtx, span := telemetry.StartDetached(source, "sales.outbox.drain")
+		defer span.End()
+		drainCtx := corectx.CloneWithInner(scopeCtx, spanCtx)
 		defer func() {
 			// A panic here would take the process down, and the write this is announcing has already
 			// happened. Contained and logged; the sweep still has the row.
 			if recovered := recover(); recovered != nil {
-				this.logError("sales outbox: draining panicked", "", fmt.Errorf("%v", recovered))
+				this.logError(drainCtx, "sales outbox: draining panicked", "", fmt.Errorf("%v", recovered))
 			}
 		}()
 
 		if err := this.drain(drainCtx, drainPageSize); err != nil {
-			this.logError("sales outbox: draining failed", "", err)
+			this.logError(drainCtx, "sales outbox: draining failed", "", err)
 		}
 	}()
 }
@@ -118,12 +123,12 @@ func (this *OutboxJobs) drain(ctx corectx.Context, limit int) error {
 		event := services.IntegrationEventOf(row)
 
 		if err := this.publisher.Publish(publishCtx, event.IntegrationEvent); err != nil {
-			this.logError("sales outbox: publishing event failed", event.EventId, err)
+			this.logError(ctx, "sales outbox: publishing event failed", event.EventId, err)
 
 			// The row stays unpublished so the next sweep retries it. A failure to record the failure
 			// only loses the attempt count, so it is logged rather than abandoning the page.
 			if recordErr := services.RecordPublishFailure(ctx, row, err.Error()); recordErr != nil {
-				this.logError("sales outbox: recording a publish failure failed",
+				this.logError(ctx, "sales outbox: recording a publish failure failed",
 					event.EventId, recordErr)
 			}
 			continue
@@ -132,7 +137,7 @@ func (this *OutboxJobs) drain(ctx corectx.Context, limit int) error {
 		if err := services.MarkEventPublished(ctx, event.RowId); err != nil {
 			// Published but not marked: the next sweep republishes it, and consumer event_id
 			// deduplication makes that harmless.
-			this.logError("sales outbox: event published but not marked", event.EventId, err)
+			this.logError(ctx, "sales outbox: event published but not marked", event.EventId, err)
 		}
 	}
 	return nil
@@ -141,13 +146,13 @@ func (this *OutboxJobs) drain(ctx corectx.Context, limit int) error {
 // logError puts the event id in the message text because the logger takes an error, not a field
 // map, and the id is what an operator greps the outbox for. An empty id is a failure of the drain
 // itself rather than of one event, and is left off rather than logged as "(event )".
-func (this *OutboxJobs) logError(message, eventId string, err error) {
+func (this *OutboxJobs) logError(ctx context.Context, message, eventId string, err error) {
 	if this.logger == nil {
 		return
 	}
 	if eventId == "" {
-		this.logger.Error(message, err)
+		this.logger.Error(ctx, message, err)
 		return
 	}
-	this.logger.Error(message+" (event "+eventId+")", err)
+	this.logger.Error(ctx, message+" (event "+eventId+")", err)
 }

@@ -94,7 +94,7 @@ func (this *PaymentReconJobs) Sweep(ctx corectx.Context) error {
 		ctx, this.orders, this.now().UTC(), paymentReconMinAge, paymentReconPageSize)
 	if err != nil {
 		if this.logger != nil {
-			this.logger.Error("sales payment reconciliation: sweep failed", err)
+			this.logger.Error(ctx, "sales payment reconciliation: sweep failed", err)
 		}
 		return nil
 	}
@@ -106,7 +106,7 @@ func (this *PaymentReconJobs) Sweep(ctx corectx.Context) error {
 	// Logged only when it did something. A quiet sweep is the normal case — the announcements
 	// usually arrive — and logging every empty pass would bury the ones that mattered.
 	if result.Settled > 0 || result.Failed > 0 || result.Unknown > 0 {
-		this.logger.Infof(
+		this.logger.Infof(ctx,
 			"sales payment reconciliation: examined %d, settled %d, failed %d, unknown %d",
 			result.Examined, result.Settled, result.Failed, result.Unknown)
 	}
@@ -114,7 +114,7 @@ func (this *PaymentReconJobs) Sweep(ctx corectx.Context) error {
 	// An order Sales holds a correlation for but paymentinvoice has never heard of cannot be fixed
 	// by waiting, so it is raised rather than counted quietly.
 	if result.Unknown > 0 {
-		this.logger.Warnf(
+		this.logger.Warnf(ctx,
 			"sales payment reconciliation: %d pending payments name a payment order that does not exist",
 			result.Unknown)
 	}
@@ -130,7 +130,7 @@ func (this *PaymentReconJobs) sweepFiscal(ctx corectx.Context) {
 		ctx, this.invoicing, this.now().UTC(), fiscalReconMinAge, paymentReconPageSize)
 	if err != nil {
 		if this.logger != nil {
-			this.logger.Error("sales fiscal reconciliation: sweep failed", err)
+			this.logger.Error(ctx, "sales fiscal reconciliation: sweep failed", err)
 		}
 		return
 	}
@@ -138,7 +138,7 @@ func (this *PaymentReconJobs) sweepFiscal(ctx corectx.Context) {
 	if this.logger == nil || result.Resolved == 0 {
 		return
 	}
-	this.logger.Infof(
+	this.logger.Infof(ctx,
 		"sales fiscal reconciliation: examined %d, resolved %d, still unanswered %d",
 		result.Examined, result.Resolved, result.Unresolved)
 }
@@ -149,7 +149,7 @@ func (this *PaymentReconJobs) sweepRefunds(ctx corectx.Context) {
 	}, this.now().UTC(), refundReconMinAge, paymentReconPageSize)
 	if err != nil {
 		if this.logger != nil {
-			this.logger.Error("sales refund reconciliation: sweep failed", err)
+			this.logger.Error(ctx, "sales refund reconciliation: sweep failed", err)
 		}
 		return
 	}
@@ -157,7 +157,7 @@ func (this *PaymentReconJobs) sweepRefunds(ctx corectx.Context) {
 	if this.logger == nil || (result.Retried == 0 && result.RetryFailed == 0 && result.CancelledRefunds == 0) {
 		return
 	}
-	this.logger.Infof(
+	this.logger.Infof(ctx,
 		"sales refund reconciliation: retried %d, failed %d, refunds raised for cancelled orders %d",
 		result.Retried, result.RetryFailed, result.CancelledRefunds)
 }

@@ -42,7 +42,7 @@ func RequestTypeFor(dependantModule string) cqrs.RequestType {
 // resolves no checker and the handler answers with an error, which blocks every delete of that
 // resource until someone notices.
 const (
-	ResourceUom            = "uom"
+	ResourceUom = "uom"
 
 	// Owned by IAM. Every org-owned record of another module names it through org_id.
 	ResourceOrg = "org"
@@ -113,10 +113,10 @@ type ResourceRef struct {
 // on arrival, so a command that reaches the wrong module is refused rather than answered for
 // somebody else.
 type CheckResourceUsageCommand struct {
-	RequestId    string        `json:"request_id"`
-	SourceModule string        `json:"source_module"`
-	TargetModule string        `json:"target_module"`
-	Resources    []ResourceRef `json:"resources"`
+	CorrelationId string        `json:"correlation_id"`
+	SourceModule  string        `json:"source_module"`
+	TargetModule  string        `json:"target_module"`
+	Resources     []ResourceRef `json:"resources"`
 }
 
 // CqrsRequestType addresses the command to its target module. The bus derives the topic from
@@ -142,9 +142,9 @@ type ResourceUsageItem struct {
 // resource; a caller treats a missing entry as unanswered, which blocks the delete the same way
 // an error does.
 type CheckResourceUsageResult struct {
-	RequestId string              `json:"request_id"`
-	Module    string              `json:"module"`
-	Results   []ResourceUsageItem `json:"results"`
+	CorrelationId string              `json:"correlation_id"`
+	Module        string              `json:"module"`
+	Results       []ResourceUsageItem `json:"results"`
 }
 
 // UsedItems returns the entries this dependant reported as in use.

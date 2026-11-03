@@ -1,6 +1,8 @@
 package external
 
 import (
+	"context"
+
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/notification/constants"
@@ -41,7 +43,7 @@ func (this *OrgSettingsReader) Bool(ctx corectx.Context, name string, fallback b
 
 	value, isBool := item.Value.(bool)
 	if !isBool {
-		this.warnf("notification: setting '%s' is not a boolean; using the default", name)
+		this.warnf(ctx, "notification: setting '%s' is not a boolean; using the default", name)
 		return fallback
 	}
 
@@ -57,7 +59,7 @@ func (this *OrgSettingsReader) item(ctx corectx.Context, name string) *itExt.Set
 		ModuleKey: modconstants.NotificationModuleName,
 	})
 	if err != nil {
-		this.warnf("notification: the organization's settings could not be read: %v", err)
+		this.warnf(ctx, "notification: the organization's settings could not be read: %v", err)
 		return nil
 	}
 	if result == nil || !result.HasData {
@@ -73,8 +75,8 @@ func (this *OrgSettingsReader) item(ctx corectx.Context, name string) *itExt.Set
 	return nil
 }
 
-func (this *OrgSettingsReader) warnf(format string, args ...any) {
+func (this *OrgSettingsReader) warnf(ctx context.Context, format string, args ...any) {
 	if this.logger != nil {
-		this.logger.Warnf(format, args...)
+		this.logger.Warnf(ctx, format, args...)
 	}
 }

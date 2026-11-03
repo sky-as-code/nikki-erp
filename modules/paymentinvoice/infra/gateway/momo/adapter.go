@@ -113,7 +113,7 @@ func (this *Adapter) CreatePayment(
 		"requestType": payload.RequestType,
 	}.sign(config.SecretKey)
 
-	logging.Logger().Infof("momo: creating payment for order '%s' with ipnUrl '%s'", payload.OrderId, payload.IpnUrl)
+	logging.Logger().Infof(ctx, "momo: creating payment for order '%s' with ipnUrl '%s'", payload.OrderId, payload.IpnUrl)
 
 	var response createPaymentResponse
 	raw, err := this.post(ctx, "/create", payload, &response)

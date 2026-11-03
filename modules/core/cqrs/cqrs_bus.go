@@ -31,9 +31,8 @@ const MetaRequestTopic = "request_topic"
 const MetaReplyTopic = "reply_topic"
 const MetaNoReply = "no_reply"
 
-// MetaRequestId and MetaRequestSource carry the sender's request meta across the bus, so the
-// entries a handler writes share the id of the request that sent the command.
-const MetaRequestId = "request_id"
+// MetaRequestSource carries the sender's request source across the bus. Entries a handler
+// writes are correlated by the propagated trace context, not by an id of the bus's own.
 const MetaRequestSource = "request_source"
 const DefaultQueryTimeoutSecs = "50"
 
@@ -55,7 +54,10 @@ var reservedMetaKeys = map[string]bool{
 	MetaRequestTopic:      true,
 	MetaReplyTopic:        true,
 	MetaNoReply:           true,
-	MetaRequestId:         true,
+	MetaTraceParent:       true,
+	MetaTraceState:        true,
+	MetaBaggage:           true,
+	MetaIdempotencyId:     true,
 	MetaRequestSource:     true,
 }
 
@@ -188,16 +190,16 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 				reqPacket, err := newIncomingRequestPacket(msg, this.marshaler, request)
 				msg.Ack()
 				if err != nil {
-					this.logger.Error(
+					this.logger.Error(ctx,
 						fmt.Sprintf("failed to parse request from topic %s", topicName),
 						err,
 					)
 					continue
 				}
-				c, cancelHandling := context.WithTimeout(context.Background(), this.maxTimeout)
-				reqCtx := this.createIncomingContext(c, msg)
+				reqCtx, span, cancelHandling := this.startHandling(msg, topicName)
 				reply, err = this.handleRequest(reqCtx, handler, reqPacket, topicName)
-				this.sendResponse(reqPacket, &reply)
+				this.sendResponse(reqCtx, reqPacket, &reply)
+				endHandlerSpan(span, err)
 				cancelHandling()
 				// r, err := handler.Handle(reqCtx, reqPacket)
 				// if err != nil {
@@ -261,11 +263,11 @@ func (this *WatermillCqrsBus) createIncomingContext(ctx context.Context, msg *me
 	return reqCtx
 }
 
-// incomingRequestMeta keeps the sender's request id, or mints one for a command that came with
-// none: a scheduler run when the envelope names its execution, a message otherwise.
+// incomingRequestMeta keeps the sender's request source, or derives one for a command that came
+// with none: a scheduler run when the envelope names its execution, a message otherwise.
 func incomingRequestMeta(msg *message.Message) corectx.RequestMeta {
-	if id := msg.Metadata.Get(MetaRequestId); id != "" {
-		return corectx.RequestMeta{Id: id, Source: corectx.RequestSource(msg.Metadata.Get(MetaRequestSource))}
+	if source := msg.Metadata.Get(MetaRequestSource); source != "" {
+		return corectx.NewRequestMeta(corectx.RequestSource(source))
 	}
 	if msg.Metadata.Get(MetaSchedulerExecutionId) != "" {
 		return corectx.NewRequestMeta(corectx.RequestSourceJob)
@@ -278,7 +280,7 @@ func (this *WatermillCqrsBus) handleRequest(
 ) (reply Reply[any], err error) {
 	r, err := handler.Handle(reqCtx, reqPacket)
 	if err != nil {
-		this.logger.Error(
+		this.logger.Error(reqCtx,
 			fmt.Sprintf("error occured from topic %s", topicName),
 			err,
 		)
@@ -289,11 +291,11 @@ func (this *WatermillCqrsBus) handleRequest(
 	return
 }
 
-func (this *WatermillCqrsBus) sendResponse(reqPacket *RequestPacket[Request], reply *Reply[any]) {
+func (this *WatermillCqrsBus) sendResponse(ctx context.Context, reqPacket *RequestPacket[Request], reply *Reply[any]) {
 	replyPacket := newReplyPacket(reqPacket.correlationId, reply, this.marshaler)
 	err := this.publisher.Publish(reqPacket.replyTopic, replyPacket.message)
 	if err != nil {
-		this.logger.Error(
+		this.logger.Error(ctx,
 			fmt.Sprintf("failed to publish reply to topic %s", reqPacket.replyTopic),
 			err,
 		)
@@ -467,9 +469,9 @@ func newOutgoingRequestPacket(cancellableCtx context.Context, request Request, m
 	}
 
 	if meta, ok := corectx.RequestMetaOf(cancellableCtx); ok {
-		msg.Metadata.Set(MetaRequestId, meta.Id)
 		msg.Metadata.Set(MetaRequestSource, string(meta.Source))
 	}
+	injectTelemetry(cancellableCtx, msg)
 	msg.Metadata.Set(MetaCorrelationId, packet.correlationId)
 	msg.Metadata.Set(MetaRequestTopic, packet.requestTopic)
 	msg.Metadata.Set(MetaReplyTopic, packet.replyTopic)

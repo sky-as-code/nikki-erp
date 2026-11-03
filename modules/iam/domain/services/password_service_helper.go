@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"regexp"
 	"strings"
 	"time"
@@ -66,7 +67,7 @@ func (this *PasswordDomainServiceImpl) createOtp(username string) createOtpResul
 	}
 }
 
-func (this *PasswordDomainServiceImpl) createOtpRecovery(cmd it.ConfirmPasswordOtpCommand) []string {
+func (this *PasswordDomainServiceImpl) createOtpRecovery(ctx context.Context, cmd it.ConfirmPasswordOtpCommand) []string {
 	recoveryCodes := make([]string, otpRecoveryCodeCount)
 	for i := range otpRecoveryCodeCount {
 		recCode, err := crypto.GenerateRecoveryCode()
@@ -74,17 +75,20 @@ func (this *PasswordDomainServiceImpl) createOtpRecovery(cmd it.ConfirmPasswordO
 		recoveryCodes[i] = recCode
 	}
 
-	this.logger.Debug("confirm otp password", logging.Attr{
-		"principalType": cmd.PrincipalType,
-		"principalRef":  cmd.PrincipalId,
-		"recoveryCodes": recoveryCodes,
-	})
+	// Disabled: recovery codes are plaintext secrets and must never reach the logs.
+	// this.logger.Debug(ctx, "confirm otp password", logging.Attr{
+	// 	"principalType": cmd.PrincipalType,
+	// 	"principalRef":  cmd.PrincipalId,
+	// 	"recoveryCodes": recoveryCodes,
+	// })
 	return recoveryCodes
 }
 
-func (this *PasswordDomainServiceImpl) validateNewPass(curPassHash []byte, newPass string, clientErrs *ft.ClientErrors) {
+func (this *PasswordDomainServiceImpl) validateNewPass(
+	ctx context.Context, curPassHash []byte, newPass string, clientErrs *ft.ClientErrors,
+) {
 	if curPassHash != nil {
-		sameOldPass := this.isPasswordEqual(curPassHash, newPass)
+		sameOldPass := this.isPasswordEqual(ctx, curPassHash, newPass)
 		if sameOldPass {
 			clientErrs.Append(*ft.NewValidationError(
 				"new_password",
@@ -103,20 +107,20 @@ func (this *PasswordDomainServiceImpl) validateNewPass(curPassHash []byte, newPa
 }
 
 func (this *PasswordDomainServiceImpl) validateCurrentAndTempPass(
-	candidatePass string, stores *principalPasswordStores,
+	ctx context.Context, candidatePass string, stores *principalPasswordStores,
 ) (bool, *ft.ClientErrorItem) {
 	var isMatched bool
 	var reason *ft.ClientErrorItem
 	if stores != nil {
 		if stores.getPasswordHash() != nil {
-			isMatched, reason = this.validateCurrentPass(
+			isMatched, reason = this.validateCurrentPass(ctx,
 				[]byte(*stores.getPasswordHash()),
 				stores.password.GetExpiresAt(),
 				candidatePass,
 			)
 		}
 		if !isMatched && stores.getTempPasswordHash() != nil {
-			isMatched, reason = this.validateCurrentPass(
+			isMatched, reason = this.validateCurrentPass(ctx,
 				[]byte(*stores.getTempPasswordHash()),
 				stores.passwordTmp.GetExpiresAt(),
 				candidatePass,
@@ -135,7 +139,7 @@ func (this *PasswordDomainServiceImpl) validateCurrentAndTempPass(
 }
 
 func (this *PasswordDomainServiceImpl) validateCurrentPass(
-	curPassHash []byte, curPassExpiresAt *model.ModelDateTime, candidatePass string,
+	ctx context.Context, curPassHash []byte, curPassExpiresAt *model.ModelDateTime, candidatePass string,
 ) (bool, *ft.ClientErrorItem) {
 	if curPassExpiresAt != nil && (*curPassExpiresAt).BeforeT(time.Now()) {
 		return false, ft.NewAnonymousBusinessViolation(
@@ -144,7 +148,7 @@ func (this *PasswordDomainServiceImpl) validateCurrentPass(
 		)
 	}
 
-	if !this.isPasswordEqual(curPassHash, candidatePass) {
+	if !this.isPasswordEqual(ctx, curPassHash, candidatePass) {
 		return false, ft.NewAnonymousBusinessViolation(
 			ft.ErrorKey("err_password_incorrect", "iam"),
 			"Incorrect password.",
@@ -161,12 +165,12 @@ type verifyOtpAndRecoveryResult struct {
 }
 
 func (this *PasswordDomainServiceImpl) verifyOtpAndRecovery(
-	otpCode models.OtpCode, stores *principalPasswordStores,
+	ctx context.Context, otpCode models.OtpCode, stores *principalPasswordStores,
 ) (_ verifyOtpAndRecoveryResult, err error) {
 	result := verifyOtpAndRecoveryResult{}
 	if stores != nil {
 		if crypto.IsRecoveryCodeFormat(string(otpCode)) {
-			result.isMatched, result.remainingRecoveryCodes, result.reason = this.verifyOtpRecovery(otpCode, stores)
+			result.isMatched, result.remainingRecoveryCodes, result.reason = this.verifyOtpRecovery(ctx, otpCode, stores)
 			if result.reason == nil {
 				return result, nil
 			}
@@ -179,7 +183,7 @@ func (this *PasswordDomainServiceImpl) verifyOtpAndRecovery(
 }
 
 func (this *PasswordDomainServiceImpl) verifyOtpRecovery(
-	otpCode models.OtpCode, stores *principalPasswordStores,
+	ctx context.Context, otpCode models.OtpCode, stores *principalPasswordStores,
 ) (bool, []string, *ft.ClientErrorItem) {
 	currentRecoveryHashes := decodeRecoveryCodes(stores)
 	if currentRecoveryHashes == nil {
@@ -192,7 +196,7 @@ func (this *PasswordDomainServiceImpl) verifyOtpRecovery(
 	for index, storedHash := range currentRecoveryHashes {
 		isMatched, err := crypto.CompareHashAndPassword([]byte(storedHash), []byte(otpCode))
 		if err != nil {
-			this.logger.Warn("error with crypto.CompareHashAndPassword()", logging.Attr{
+			this.logger.Warn(ctx, "error with crypto.CompareHashAndPassword()", logging.Attr{
 				"error": err.Error(),
 			})
 			continue
@@ -299,10 +303,10 @@ func (this *PasswordDomainServiceImpl) findUserById(
 	return models.NewUserFrom(userResult.Data), nil
 }
 
-func (this *PasswordDomainServiceImpl) isPasswordEqual(passHash []byte, candidatePass string) bool {
+func (this *PasswordDomainServiceImpl) isPasswordEqual(ctx context.Context, passHash []byte, candidatePass string) bool {
 	isEqual, err := crypto.CompareHashAndPassword(passHash, []byte(candidatePass))
 	if err != nil {
-		this.logger.Warn("error with crypto.CompareHashAndPassword()", logging.Attr{
+		this.logger.Warn(ctx, "error with crypto.CompareHashAndPassword()", logging.Attr{
 			"error": err.Error(),
 		})
 		return false

@@ -2,6 +2,8 @@ env ?= local
 goarch ?= amd64
 goos ?= windows
 outfile ?= nikki-erp.exe
+# OpenTelemetry service.version; empty falls back to the VCS revision.
+version ?=
 
 cwdnikki := $(dir $(lastword $(MAKEFILE_LIST)))
 
@@ -26,7 +28,9 @@ clean:
 # Production build: static binary (modules linked in with staticmods) into dist/.
 build-static: clean
 	@echo "Building static binary..."
-	GOOS=$(goos) GOARCH=$(goarch) go build -tags staticmods -work -o dist/$(outfile) main.go
+	GOOS=$(goos) GOARCH=$(goarch) go build -tags staticmods -work \
+		-ldflags "-X github.com/sky-as-code/nikki-erp/modules/core/telemetry.ServiceVersion=$(version)" \
+		-o dist/$(outfile) main.go
 	@echo "Static build completed"
 
 # Build all modules as plugins

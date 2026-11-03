@@ -116,7 +116,7 @@ func (this *Runner) dispatch(ctx context.Context, item claimedWork) {
 		this.runAttempt(ctx, item)
 	})
 	if !submitted && this.logger != nil {
-		this.logger.Warnf(
+		this.logger.Warnf(ctx,
 			"jobscheduler: shutting down before dispatching execution %s; its lease will be reaped",
 			string(item.Execution.Id),
 		)
@@ -126,8 +126,10 @@ func (this *Runner) dispatch(ctx context.Context, item claimedWork) {
 // runAttempt executes the action and records what happened.
 func (this *Runner) runAttempt(ctx context.Context, item claimedWork) {
 	snapshot, err := decodeSnapshot(item.Execution.JobSnapshot)
+	ctx, span := startAttemptSpan(ctx, item, snapshot.JobKey)
+	defer span.End()
 	if err != nil {
-		this.logError("jobscheduler: unreadable job snapshot", err)
+		this.logError(ctx, "jobscheduler: unreadable job snapshot", err)
 		// A snapshot that will not decode cannot be retried into working: the configuration the
 		// attempt needs is the thing that is broken. Failing it non-retryably ends the execution
 		// now rather than spending its whole quota on the same unreadable bytes.
@@ -169,14 +171,15 @@ func (this *Runner) runAttempt(ctx context.Context, item claimedWork) {
 func (this *Runner) finishAttempt(
 	ctx context.Context, item claimedWork, snapshot JobSnapshot, outcome itext.ActionOutcome,
 ) {
+	markAttemptOutcome(ctx, outcome)
 	writeCtx := this.newRequestContext(context.WithoutCancel(ctx))
 	now := this.clock.Now()
 
 	if err := this.closeAttemptRow(writeCtx, item, outcome, now); err != nil {
-		this.logError("jobscheduler: failed to close attempt", err)
+		this.logError(writeCtx, "jobscheduler: failed to close attempt", err)
 	}
 	if err := this.settleExecution(writeCtx, item, snapshot, outcome, now); err != nil {
-		this.logError("jobscheduler: failed to settle execution", err)
+		this.logError(writeCtx, "jobscheduler: failed to settle execution", err)
 	}
 }
 

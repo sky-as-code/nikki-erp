@@ -6,18 +6,12 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
-// HeaderRequestId echoes the id minted for the request, so a client reporting a problem can name
-// the audit entries and log lines it produced.
-const HeaderRequestId = "X-Request-Id"
-
-// RequestContextMiddleware mints one request id per HTTP request. A client-sent id is not taken
-// over: it would let a caller graft its actions onto someone else's audit trail.
+// RequestContextMiddleware opens the request context and labels it as an HTTP execution. It mints
+// no id: the trace id (X-Trace-ID) is what correlates a request's audit entries and log lines.
 func RequestContextMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		ctx := corectx.NewRequestContext(c.Request().Context())
-		meta := corectx.NewRequestMeta(corectx.RequestSourceHttp)
-		corectx.SetRequestMeta(ctx, meta)
-		c.Response().Header().Set(HeaderRequestId, meta.Id)
+		corectx.SetRequestMeta(ctx, corectx.NewRequestMeta(corectx.RequestSourceHttp))
 		c.SetRequest(c.Request().WithContext(ctx))
 		return next(c)
 	}
