@@ -49,7 +49,7 @@ Renaming After Issuance Succeeds And Leaves Issued Codes Alone
     ${item}=    Read Sequence Definition    ${SEQ_ISSUED_DEFINITION_ID}
     ${name}=    Unique Display Name    Robot Renamed Sequence
     ${resp}=    PATCH On Session    api    ${SEQ_DEFINITION_API}/${SEQ_ISSUED_DEFINITION_ID}
-    ...    json=${{ {'name': {'en-US': $name}, 'etag': $item['etag']} }}
+    ...    json=${{ {'name': $name, 'etag': $item['etag']} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${item}[etag]
     ${transfer}=    GET On Session    api    ${STOCK_TRANSFER_API}/${SEQ_ISSUED_TRANSFER_ID}
     ...    params=${{ {'org_id': $INV_ORG_ID} }}

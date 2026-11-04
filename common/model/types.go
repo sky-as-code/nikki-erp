@@ -165,7 +165,7 @@ var translationKeyRules val.Rule = val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9_\.
 const (
 	LanguageCodeEnUs    = LanguageCode("en-US")
 	LanguageCodeViVn    = LanguageCode("vi-VN")
-	DefaultLanguageCode = LanguageCodeEnUs
+	DefaultLanguageCode = LanguageCodeViVn
 	// When this Reference Key is specified in a LangJson, all other keys are ignored.
 	//
 	LanguageCodeRef = LanguageCode("$ref")

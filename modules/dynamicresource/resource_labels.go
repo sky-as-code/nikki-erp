@@ -1,8 +1,6 @@
 package dynamicresource
 
 import (
-	"sort"
-
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/array"
@@ -114,21 +112,9 @@ func labelText(value any, language *model.LanguageCode) string {
 }
 
 func langJsonText(texts map[string]string, language *model.LanguageCode) string {
-	if language != nil && texts[string(*language)] != "" {
-		return texts[string(*language)]
+	requested := model.DefaultLanguageCode
+	if language != nil {
+		requested = *language
 	}
-	if text := texts[string(model.LanguageCodeEnUs)]; text != "" {
-		return text
-	}
-	keys := make([]string, 0, len(texts))
-	for key := range texts {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		if texts[key] != "" {
-			return texts[key]
-		}
-	}
-	return ""
+	return model.LangJson(texts).TextIn(requested)
 }

@@ -2,7 +2,6 @@ package channel
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
@@ -71,9 +70,9 @@ type IsPaymentMethodEnabledQuery struct {
 
 // ChannelPaymentMethodData is one row of the merged view.
 type ChannelPaymentMethodData struct {
-	PaymentMethodId string         `json:"payment_method_id"`
-	Code            string         `json:"code"`
-	Name            model.LangJson `json:"name,omitempty"`
+	PaymentMethodId string `json:"payment_method_id"`
+	Code            string `json:"code"`
+	Name            string `json:"name,omitempty"`
 
 	// IsEnabled is Sales' half: does a mapping row exist for this channel.
 	IsEnabled bool `json:"is_enabled"`

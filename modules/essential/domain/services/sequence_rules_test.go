@@ -126,7 +126,7 @@ func TestAssertConfigurationUnlocked(t *testing.T) {
 	stored := incrementDefinition(dmodel.DynamicFields{models.SeqDefFieldPrefixTemplate: "SO"}).GetFieldData()
 	vErrs := ft.NewClientErrors()
 	AssertConfigurationUnlocked(nil, dmodel.DynamicFields{
-		models.SeqDefFieldName: model.LangJson{"en-US": "Orders"}, models.SeqDefFieldDescription: "new",
+		models.SeqDefFieldName: "Orders", models.SeqDefFieldDescription: "new",
 		models.SeqDefFieldPrefixTemplate: "SO", models.SeqDefFieldPadding: int32(5), "etag": "1",
 	}, stored, vErrs)
 	assert.Zero(t, vErrs.Count(), "name, description and unchanged values pass")
@@ -197,10 +197,11 @@ func TestUpsertFields(t *testing.T) {
 	orgId := model.Id(testOrgId)
 	fields := UpsertFields(itSeq.UpsertDefinitionCommand{
 		ConfigurationScope: "tenant", OrgId: &orgId, OwnerModule: "inventory", Code: "inventory.transfer",
-		SubScope: &sub,
-	})
+		SubScope: &sub, Names: model.LangJson{"en-US": "Transfers", "vi-VN": "Điều chuyển"},
+	}, model.LanguageCodeViVn)
 	assert.NotContains(t, fields, models.SeqDefFieldOrgId, "a tenant definition drops the org")
 	assert.Equal(t, sub, fields[models.SeqDefFieldSubScope])
+	assert.Equal(t, "Điều chuyển", fields[models.SeqDefFieldName], "the name is stored in the given language")
 	assert.NotContains(t, fields, models.SeqDefFieldPadding, "unset options fall back to schema defaults")
 	assert.Equal(t, "tenant.inventory_optype", ScopeTypeOf("tenant", "Inventory_OpType"))
 }

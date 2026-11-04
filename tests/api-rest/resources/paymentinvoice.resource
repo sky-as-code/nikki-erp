@@ -88,7 +88,7 @@ Ensure Payment Method Under Test
     #    A payment method is deliberately not org-scoped: the merchant contract behind it
     #    belongs to the deployment, not to one organization within it.
     ${resp}=    POST On Session    api    ${PAYMENT_METHOD_API}
-    ...    json=${{ {'code': $code, 'adapter_code': 'momo', 'name': {'en-US': 'Robot Momo'}, 'currency_id': $PAYINV_CURRENCY_ID, 'is_active': True, 'min_amount': '1000', 'max_amount': '50000000'} }}
+    ...    json=${{ {'code': $code, 'adapter_code': 'momo', 'name': 'Robot Momo', 'currency_id': $PAYINV_CURRENCY_ID, 'is_active': True, 'min_amount': '1000', 'max_amount': '50000000'} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${PAYMENT_METHOD_ID}    ${id}
     Set Global Variable    ${PAYMENT_METHOD_ETAG}    ${etag}

@@ -38,12 +38,12 @@ English Can Be Reactivated For The Organization
     Response Status Should Be    ${resp}    200
 
 The System Language Cannot Be Deactivated
-    [Documentation]    The org's system_language (the application default en-US when none is
+    [Documentation]    The org's system_language (the application default vi-VN when none is
     ...    stored) is what its members fall back to, so it stays active.
     [Tags]    negative
     ${settings}=    GET On Session    api    /v1/settings/org/essential
     ${stored}=    Evaluate    next((item.get('value') for item in $settings.json()['items'] if item['name'] == 'system_language'), None)
-    ${code}=    Set Variable If    $stored    ${stored}    en-US
+    ${code}=    Set Variable If    $stored    ${stored}    vi-VN
     ${language}=    Language By Locale Code    ${code}
     ${resp}=    PATCH On Session    api    ${LANGUAGE_API}/${language}[id]    expected_status=any
     ...    json=${{ {'is_active': False, 'etag': $language['etag'], 'org_id': $UOM_ORG_ID} }}

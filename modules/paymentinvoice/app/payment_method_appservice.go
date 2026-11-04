@@ -136,9 +136,7 @@ func (this *PaymentMethodApplicationServiceImpl) judge(
 		MinAmount:  method.GetMinAmount(),
 		MaxAmount:  method.GetMaxAmount(),
 	}
-	if name := method.GetName(); name != nil {
-		data.Name = *name
-	}
+	data.Name = derefString(method.GetName())
 
 	switch {
 	case boolOf(record, basemodel.FieldIsArchived):

@@ -74,11 +74,15 @@ Set Settings At Level
     ...
     ...    The write goes to the owning module's own endpoint, /v1/{module_key}/settings/{level}:
     ...    Settings serves reads only. ${level_api} is still the read path, so callers name a
-    ...    level the same way for both; its last segment is the level.
+    ...    level the same way for both; its last segment is the level. ${org_id} names the org an
+    ...    org-level write acts for; left empty, the server picks the caller's.
     [Arguments]    ${level_api}    ${items}    ${module_key}=${SETTINGS_MODULE_KEY}    ${alias}=api    ${expected_status}=${NONE}
+    ...    ${org_id}=${EMPTY}
     ${level}=    Fetch From Right    ${level_api}    /
+    ${body}=    Create Dictionary    items=${items}
+    IF    $org_id    Set To Dictionary    ${body}    org_id=${org_id}
     ${resp}=    PATCH On Session    ${alias}    /v1/${module_key}/settings/${level}
-    ...    json=${{ {'items': $items} }}    expected_status=${expected_status}
+    ...    json=${body}    expected_status=${expected_status}
     RETURN    ${resp}
 
 Setting Item Should Be

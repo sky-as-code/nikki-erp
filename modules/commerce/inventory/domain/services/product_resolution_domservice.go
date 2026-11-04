@@ -1,8 +1,6 @@
 package services
 
 import (
-	"sort"
-
 	"github.com/shopspring/decimal"
 
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -118,26 +116,10 @@ func firstDecimal(values ...*decimal.Decimal) *decimal.Decimal {
 }
 
 // langJsonToString picks a single string out of a localized value. The caller's language is unknown
-// here, so it prefers en-US and otherwise the lowest-sorting locale present; iterating the map
-// directly would render the same product under a different name on each call.
+// here, so it is the default one.
 func langJsonToString(value *model.LangJson) string {
-	if value == nil || len(*value) == 0 {
+	if value == nil {
 		return ""
 	}
-	if text, ok := (*value)[model.LanguageCodeEnUs]; ok && text != "" {
-		return text
-	}
-
-	codes := make([]string, 0, len(*value))
-	for code := range *value {
-		codes = append(codes, string(code))
-	}
-	sort.Strings(codes)
-
-	for _, code := range codes {
-		if text := (*value)[model.LanguageCode(code)]; text != "" {
-			return text
-		}
-	}
-	return ""
+	return value.TextIn(model.DefaultLanguageCode)
 }

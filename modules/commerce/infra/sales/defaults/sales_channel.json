@@ -2,8 +2,8 @@
 	{
 		"$alias": "channel_vdmc",
 		"code": "VDMC",
-		"name": "Vending Machine",
-		"description": "Unattended kiosks selling directly to walk-up customers",
+		"name": {"en-US": "Vending Machine", "vi-VN": "Máy bán hàng tự động"},
+		"description": {"en-US": "Unattended kiosks selling directly to walk-up customers", "vi-VN": "Kiosk tự động bán trực tiếp cho khách vãng lai"},
 		"managed_by_type": "vendingmachine/vdmc_kiosks",
 		"status": "active",
 		"is_system": true,
@@ -13,8 +13,8 @@
 	{
 		"$alias": "channel_bo",
 		"code": "BO",
-		"name": "Back Office",
-		"description": "Sales recorded by staff on behalf of a customer",
+		"name": {"en-US": "Back Office", "vi-VN": "Văn phòng"},
+		"description": {"en-US": "Sales recorded by staff on behalf of a customer", "vi-VN": "Đơn bán do nhân viên ghi nhận thay cho khách hàng"},
 		"status": "active",
 		"is_system": true,
 		"auto_confirm_order": false,

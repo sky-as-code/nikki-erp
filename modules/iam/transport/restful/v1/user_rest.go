@@ -242,20 +242,21 @@ func firstNonEmptyString(values map[string]any, keys ...string) string {
 // outright or names a language essential_languages cannot resolve.
 //
 // It is a literal because the response must always carry a language: the frontend formats every
-// number and date from it, and a session that booted without one would render nothing at all. It is
-// en-US rather than any business-chosen language -- BR §53 is explicit that vi-VN must not be
-// hardcoded as a default -- and it is replaced the moment a real record resolves.
+// number and date from it, and a session that booted without one would render nothing at all. It
+// mirrors the vi-VN row of the essential_languages seed, model.DefaultLanguageCode being the initial
+// application locale (BR 53 forbids hardcoding a default only for the user `language` requirement),
+// and it is replaced the moment a real record resolves. It carries no id: no row backs it.
 func fallbackLanguage() itCore.Language {
 	return itCore.Language{
-		Name:               util.ToPtr("English (US)"),
+		Name:               util.ToPtr("Vietnamese / Tiếng Việt"),
 		LocaleCode:         util.ToPtr(model.LanguageCode(model.DefaultLanguageCode)),
 		Direction:          util.ToPtr("ltr"),
-		DecimalSeparator:   util.ToPtr("."),
-		ThousandsSeparator: util.ToPtr(","),
+		DecimalSeparator:   util.ToPtr(","),
+		ThousandsSeparator: util.ToPtr("."),
 		Grouping:           util.ToPtr("[3,0]"),
-		DateFormat:         util.ToPtr("%m/%d/%Y"),
+		DateFormat:         util.ToPtr("%d/%m/%Y"),
 		TimeFormat:         util.ToPtr("%H:%M:%S"),
 		ShortTimeFormat:    util.ToPtr("%H:%M"),
-		FirstDayOfWeek:     util.ToPtr("sunday"),
+		FirstDayOfWeek:     util.ToPtr("monday"),
 	}
 }

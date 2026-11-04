@@ -5,6 +5,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -12,11 +13,13 @@ import (
 )
 
 // NewWarehouseDomainService derives the warehouse service from the engine's default one. locations
-// is the location service a warehouse provisions, archives and deletes its managed locations through.
+// is the location service a warehouse provisions, archives and deletes its managed locations through;
+// settings tells the org language the names of those locations are written in.
 func NewWarehouseDomainService(
 	base dynamicresource.CrudDomainService, locations *InventoryLocationDomainServiceImpl,
+	settings itExt.OrgSettingsReaderExtService,
 ) *WarehouseDomainServiceImpl {
-	return &WarehouseDomainServiceImpl{CrudDomainService: base, locations: locations}
+	return &WarehouseDomainServiceImpl{CrudDomainService: base, locations: locations, settings: settings}
 }
 
 // WarehouseDomainServiceImpl holds the rules about a warehouse: its code, its operational state, and
@@ -26,6 +29,7 @@ type WarehouseDomainServiceImpl struct {
 	dynamicresource.CrudDomainService
 
 	locations *InventoryLocationDomainServiceImpl
+	settings  itExt.OrgSettingsReaderExtService
 }
 
 var _ dynamicresource.CrudDomainService = (*WarehouseDomainServiceImpl)(nil)

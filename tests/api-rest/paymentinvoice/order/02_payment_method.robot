@@ -13,7 +13,7 @@ Create Payment Method Succeeds
     ...    removed by the suite teardown.
     ${code}=    Unique Payment Code    method
     ${resp}=    POST On Session    api    ${PAYMENT_METHOD_API}
-    ...    json=${{ {'code': $code, 'adapter_code': 'momo', 'name': {'en-US': 'Robot Momo'}, 'currency_id': $PAYINV_CURRENCY_ID, 'is_active': True, 'min_amount': '1000', 'max_amount': '50000000'} }}
+    ...    json=${{ {'code': $code, 'adapter_code': 'momo', 'name': 'Robot Momo', 'currency_id': $PAYINV_CURRENCY_ID, 'is_active': True, 'min_amount': '1000', 'max_amount': '50000000'} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${PAYMENT_METHOD_ID}    ${id}
     Set Global Variable    ${PAYMENT_METHOD_ETAG}    ${etag}
@@ -27,7 +27,7 @@ Get Payment Method Succeeds
 
 Update Payment Method Succeeds
     ${resp}=    PATCH On Session    api    ${PAYMENT_METHOD_API}/${PAYMENT_METHOD_ID}
-    ...    json=${{ {'name': {'en-US': 'Robot Momo Updated'}, 'etag': $PAYMENT_METHOD_ETAG} }}
+    ...    json=${{ {'name': 'Robot Momo Updated', 'etag': $PAYMENT_METHOD_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${PAYMENT_METHOD_ETAG}
     IF    $etag is not None    Set Global Variable    ${PAYMENT_METHOD_ETAG}    ${etag}
 
@@ -58,7 +58,7 @@ Create With Missing Required Fields Fails
 Create With Duplicate Code Fails
     [Tags]    negative
     ${resp}=    POST On Session    api    ${PAYMENT_METHOD_API}
-    ...    json=${{ {'code': $PAYMENT_METHOD_CODE, 'adapter_code': 'momo', 'name': {'en-US': 'Robot Duplicate'}, 'is_active': True} }}
+    ...    json=${{ {'code': $PAYMENT_METHOD_CODE, 'adapter_code': 'momo', 'name': 'Robot Duplicate', 'is_active': True} }}
     ...    expected_status=any
     Should Not Be Equal As Integers    ${resp.status_code}    201
     ...    msg=Two payment methods must not share a code

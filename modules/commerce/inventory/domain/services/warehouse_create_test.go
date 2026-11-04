@@ -58,7 +58,7 @@ func (this *warehouseTestBase) Create(
 func newWarehouseCreateFixture() (*WarehouseDomainServiceImpl, *warehouseTestBase, *warehouseTestTransaction) {
 	tranx := &warehouseTestTransaction{}
 	base := &warehouseTestBase{repo: &warehouseTestRepo{tranx: tranx}, refusal: ft.NewClientErrors()}
-	return NewWarehouseDomainService(base, nil), base, tranx
+	return NewWarehouseDomainService(base, nil, nil), base, tranx
 }
 
 // A warehouse and its root location are created in one transaction: the default create runs inside

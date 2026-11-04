@@ -2,6 +2,8 @@ package external
 
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
+	itLang "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 )
 
@@ -35,3 +37,10 @@ type OrgSettingsSeedExtService interface {
 type SetSettingsCommand = itSettings.SetSettingsCommand
 type SetSettingItem = itSettings.SetSettingItem
 type SetSettingsResult = itSettings.SetSettingsResult
+
+// OrgSettingsReaderExtService reads the values one organization stores for a module, naming the
+// organization explicitly and asserting no permission: the org lifecycle reads the org's language.
+type OrgSettingsReaderExtService = coreSettings.OrgSettingsReader
+
+// OrgLanguage is the language an organization's defaults and generated names are written in.
+var OrgLanguage = itLang.OrgLanguage

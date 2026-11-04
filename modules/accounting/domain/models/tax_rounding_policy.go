@@ -62,12 +62,12 @@ func (this *TaxRoundingPolicy) SetCode(v *string) {
 	this.GetFieldData().SetString(TaxRoundingPolicyFieldCode, v)
 }
 
-func (this TaxRoundingPolicy) GetName() *model.LangJson {
-	return this.GetFieldData().GetLangJson(TaxRoundingPolicyFieldName)
+func (this TaxRoundingPolicy) GetName() *string {
+	return this.GetFieldData().GetString(TaxRoundingPolicyFieldName)
 }
 
-func (this *TaxRoundingPolicy) SetName(v *model.LangJson) {
-	this.GetFieldData().SetLangJson(TaxRoundingPolicyFieldName, v)
+func (this *TaxRoundingPolicy) SetName(v *string) {
+	this.GetFieldData().SetString(TaxRoundingPolicyFieldName, v)
 }
 
 func (this TaxRoundingPolicy) GetJurisdictionId() *model.Id {

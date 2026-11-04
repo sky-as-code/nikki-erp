@@ -37,6 +37,21 @@ func loadActivationDefaults() (*activationDefaults, error) {
 	return out, errors.Wrap(json.Unmarshal(raw, out), "loadActivationDefaults")
 }
 
+// activationLanguage is the language a new org's defaults are written in. Essential cannot read
+// the org's system_language as later modules do (itLanguage.OrgLanguage): this module's own
+// lifecycle is what sets it, from the same activation defaults.
+func activationLanguage() (model.LanguageCode, error) {
+	defaults, err := loadActivationDefaults()
+	if err != nil {
+		return "", err
+	}
+	canonical, err := model.ToBCP47LanguageCode(defaults.SystemLanguage)
+	if err != nil || !model.IsBCP47LanguageCode(canonical) {
+		return model.DefaultLanguageCode, nil
+	}
+	return canonical, nil
+}
+
 // initActivations activates the public languages and the default currencies for a new org, and
 // sets its system language. A default currency the catalogue lacks is an error: the defaults file
 // and the seeds disagree.

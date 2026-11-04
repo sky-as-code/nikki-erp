@@ -60,6 +60,7 @@ type OrgLifecycleParam struct {
 	Settings        itExt.OrgSettingsSeedExtService
 	Units           *services.OrgUnitResolver
 	Sequences       itExt.SequenceExtService
+	SettingsReader  itExt.OrgSettingsReaderExtService
 }
 
 func NewOrgLifecycleAppService(param OrgLifecycleParam) orglifecycle.OrgLifecycleService {
@@ -74,16 +75,23 @@ type OrgLifecycleAppServiceImpl struct {
 	cleanup dynamicresource.OrgDataCleanup
 }
 
+// orgInitStep is one write of a new org's defaults, given the language its names are written in.
+type orgInitStep func(ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id, lang model.LanguageCode) error
+
 func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model.Id) error {
+	lang, err := itExt.OrgLanguage(ctx, this.param.SettingsReader, orgId)
+	if err != nil {
+		return err
+	}
 	return dynamicresource.InTransaction(ctx, this.param.Location.Repository(), func(tranxCtx corectx.Context) error {
 		aliases := defaults.NewAliases()
-		steps := []func(corectx.Context, *defaults.Aliases, model.Id) error{
+		steps := []orgInitStep{
 			this.createStorageCategories, this.createRootCategory, this.createWarehouse,
 			this.createVirtualLocations, this.createOperationTypes, this.seedOperationTypeSettings,
 			this.seedUnitSettings, this.registerSequences,
 		}
 		for _, step := range steps {
-			if err := step(tranxCtx, aliases, orgId); err != nil {
+			if err := step(tranxCtx, aliases, orgId, lang); err != nil {
 				return err
 			}
 		}
@@ -96,15 +104,15 @@ func (this *OrgLifecycleAppServiceImpl) CleanUpOrg(ctx corectx.Context, orgId mo
 }
 
 func (this *OrgLifecycleAppServiceImpl) createStorageCategories(
-	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id,
+	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id, lang model.LanguageCode,
 ) error {
-	return createFromDefaults(ctx, this.param.StorageCategory, aliases, orgId)
+	return createFromDefaults(ctx, this.param.StorageCategory, aliases, orgId, lang)
 }
 
 func (this *OrgLifecycleAppServiceImpl) createRootCategory(
-	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id,
+	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id, lang model.LanguageCode,
 ) error {
-	rows, err := defaults.Load(orgDefaults.Files, models.ProductCategorySchemaName)
+	rows, err := defaults.Load(orgDefaults.Files, models.ProductCategorySchemaName, lang)
 	if err != nil {
 		return err
 	}
@@ -117,9 +125,9 @@ func (this *OrgLifecycleAppServiceImpl) createRootCategory(
 // createWarehouse goes through the warehouse's own orchestration, which provisions the root, Stock
 // and flow locations; the Stock's id is remembered for the operation types.
 func (this *OrgLifecycleAppServiceImpl) createWarehouse(
-	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id,
+	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id, lang model.LanguageCode,
 ) error {
-	rows, err := defaults.Load(orgDefaults.Files, models.WarehouseSchemaName)
+	rows, err := defaults.Load(orgDefaults.Files, models.WarehouseSchemaName, lang)
 	if err != nil {
 		return err
 	}
@@ -144,9 +152,9 @@ func (this *OrgLifecycleAppServiceImpl) createWarehouse(
 // the system (their defaults say so) and system-generated, a flag the location service strips
 // from input.
 func (this *OrgLifecycleAppServiceImpl) createVirtualLocations(
-	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id,
+	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id, lang model.LanguageCode,
 ) error {
-	rows, err := defaults.Load(orgDefaults.Files, models.InventoryLocationSchemaName)
+	rows, err := defaults.Load(orgDefaults.Files, models.InventoryLocationSchemaName, lang)
 	if err != nil {
 		return err
 	}
@@ -167,7 +175,7 @@ func (this *OrgLifecycleAppServiceImpl) createVirtualLocations(
 // Inventory settings. It is the only place an Inventory definition is registered: operation types
 // share the transfer definition, each on its own counter, so creating one registers nothing.
 func (this *OrgLifecycleAppServiceImpl) registerSequences(
-	ctx corectx.Context, _ *defaults.Aliases, orgId model.Id,
+	ctx corectx.Context, _ *defaults.Aliases, orgId model.Id, _ model.LanguageCode,
 ) error {
 	_, err := itExt.RegisterOrgSequences(ctx, this.param.Sequences, this.param.Settings,
 		invconstants.InventoryModuleName, orgId, services.OrgSequenceRegistrations(orgId)...)
@@ -175,16 +183,16 @@ func (this *OrgLifecycleAppServiceImpl) registerSequences(
 }
 
 func (this *OrgLifecycleAppServiceImpl) createOperationTypes(
-	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id,
+	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id, lang model.LanguageCode,
 ) error {
-	return createFromDefaults(ctx, this.param.OperationType, aliases, orgId)
+	return createFromDefaults(ctx, this.param.OperationType, aliases, orgId, lang)
 }
 
 // seedOperationTypeSettings points the Commerce settings at the operation types just created. A
 // module that adds its own types for the same purpose (Vending Machine's kiosk dispense) overwrites
 // its setting from its own lifecycle, which runs in a later wave.
 func (this *OrgLifecycleAppServiceImpl) seedOperationTypeSettings(
-	ctx corectx.Context, aliases *defaults.Aliases, _ model.Id,
+	ctx corectx.Context, aliases *defaults.Aliases, _ model.Id, _ model.LanguageCode,
 ) error {
 	items := make([]itExt.SetSettingItem, 0, len(operationTypeSettings))
 	for _, entry := range operationTypeSettings {
@@ -211,7 +219,7 @@ func (this *OrgLifecycleAppServiceImpl) seedOperationTypeSettings(
 // Essential's lifecycle created in an earlier wave. A UoM id differs per organization, so the
 // schema can carry no default_value and the defaults are resolved by symbol here.
 func (this *OrgLifecycleAppServiceImpl) seedUnitSettings(
-	ctx corectx.Context, _ *defaults.Aliases, orgId model.Id,
+	ctx corectx.Context, _ *defaults.Aliases, orgId model.Id, _ model.LanguageCode,
 ) error {
 	ids, err := this.param.Units.DefaultUnitIds(ctx, string(orgId))
 	if err != nil || len(ids) == 0 {
@@ -236,8 +244,9 @@ func (this *OrgLifecycleAppServiceImpl) seedUnitSettings(
 
 func createFromDefaults(
 	ctx corectx.Context, svc dynamicresource.CrudDomainService, aliases *defaults.Aliases, orgId model.Id,
+	lang model.LanguageCode,
 ) error {
-	rows, err := defaults.Load(orgDefaults.Files, svc.Schema().Name())
+	rows, err := defaults.Load(orgDefaults.Files, svc.Schema().Name(), lang)
 	if err != nil {
 		return err
 	}

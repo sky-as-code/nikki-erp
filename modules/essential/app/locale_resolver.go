@@ -81,9 +81,9 @@ func supportedLanguageOf(value any) *cmodel.LanguageCode {
 // in the chain. Returning nil there would leave every LangJson list in the product sorting by the
 // raw jsonb document, which is the bug this whole feature exists to fix, for most users.
 //
-// It is model.DefaultLanguageCode rather than any business-chosen language: BR 53 is explicit that
-// vi-VN must not be hardcoded as a default, and this is the display locale of last resort, replaced
-// the moment the user or their organization stores a preference.
+// It is model.DefaultLanguageCode, Vietnamese, the initial application locale. BR 53 forbids
+// hardcoding a default only for the user `language` requirement; this is the display locale of
+// last resort, replaced the moment the user or their organization stores a preference.
 func defaultLocale() *cmodel.LanguageCode {
 	code := cmodel.LanguageCode(cmodel.DefaultLanguageCode)
 	return &code

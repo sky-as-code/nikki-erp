@@ -45,9 +45,9 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M3NOTIF00000000000000001', jsonb_build_object('en-US', 'Notification - Notification', 'vi-VN', 'Thông báo - Thông báo'), 'notification_notification', 'A message raised by a module for one or more people', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3NOTIF00000000000000002', jsonb_build_object('en-US', 'Notification - Recipient', 'vi-VN', 'Thông báo - Người nhận'), 'notification_recipient', 'One person''s copy of a notification, carrying their own read state', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3NOTIF00000000000000003', jsonb_build_object('en-US', 'Notification - Delivery', 'vi-VN', 'Thông báo - Gửi'), 'notification_delivery', 'One attempt to deliver a notification over one channel', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3NOTIF00000000000000001', jsonb_build_object('en-US', 'Notification - Notification', 'vi-VN', 'Thông báo - Thông báo'), 'notification_notification', 'Thông điệp do một phân hệ gửi tới một hoặc nhiều người', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3NOTIF00000000000000002', jsonb_build_object('en-US', 'Notification - Recipient', 'vi-VN', 'Thông báo - Người nhận'), 'notification_recipient', 'Bản thông báo của từng người, kèm trạng thái đã đọc riêng', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3NOTIF00000000000000003', jsonb_build_object('en-US', 'Notification - Delivery', 'vi-VN', 'Thông báo - Gửi'), 'notification_delivery', 'Một lần gửi thông báo qua một kênh', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -57,18 +57,18 @@ BEGIN
 	) THEN
 		INSERT INTO "iam_actions" ("id", "name", "code", "description", "resource_id", "etag") VALUES
 		-- Notification. Read for support and administration; send for the modules that raise them.
-		('01M3NOTIF00000000000000011', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Read a notification', '01M3NOTIF00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3NOTIF00000000000000012', jsonb_build_object('en-US', 'Send', 'vi-VN', 'Gửi'), 'send', 'Raise a notification for one or more people', '01M3NOTIF00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3NOTIF00000000000000011', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Xem thông báo', '01M3NOTIF00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3NOTIF00000000000000012', jsonb_build_object('en-US', 'Send', 'vi-VN', 'Gửi'), 'send', 'Gửi thông báo tới một hoặc nhiều người', '01M3NOTIF00000000000000001', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Recipient. read_inbox covers the inbox list, the unread count and the stream: they answer
 		-- the same question and differ only in transport. mark_read is separate because it writes.
-		('01M3NOTIF00000000000000021', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Read a notification recipient record', '01M3NOTIF00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3NOTIF00000000000000022', jsonb_build_object('en-US', 'Read Inbox', 'vi-VN', 'Xem hộp thư'), 'read_inbox', 'Read your own notifications, unread count and stream', '01M3NOTIF00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3NOTIF00000000000000023', jsonb_build_object('en-US', 'Mark Read', 'vi-VN', 'Đánh dấu đã đọc'), 'mark_read', 'Mark your own notifications as read', '01M3NOTIF00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3NOTIF00000000000000021', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Xem bản ghi người nhận thông báo', '01M3NOTIF00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3NOTIF00000000000000022', jsonb_build_object('en-US', 'Read Inbox', 'vi-VN', 'Xem hộp thư'), 'read_inbox', 'Xem thông báo của bạn, số chưa đọc và luồng thông báo', '01M3NOTIF00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3NOTIF00000000000000023', jsonb_build_object('en-US', 'Mark Read', 'vi-VN', 'Đánh dấu đã đọc'), 'mark_read', 'Đánh dấu thông báo của bạn là đã đọc', '01M3NOTIF00000000000000002', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
 
 		-- Delivery. Read only: deliveries are written by the module's own dispatcher, never
 		-- through the API, and a forged delivery record would misreport what a provider accepted.
-		('01M3NOTIF00000000000000031', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Read a delivery record', '01M3NOTIF00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3NOTIF00000000000000031', jsonb_build_object('en-US', 'Read', 'vi-VN', 'Xem'), 'read', 'Xem bản ghi gửi thông báo', '01M3NOTIF00000000000000003', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 
@@ -90,8 +90,8 @@ BEGIN
 		INSERT INTO "iam_entitlements" (
 			"id", "name", "description", "expression", "action_id", "resource_id", "role_id", "scope", "org_id", "org_unit_id", "is_archived", "created_at", "etag"
 		) VALUES
-		('01M3NOTIF00000000000000041', 'User - Read Own Notifications', 'Read your own notification inbox, unread count and stream', 'read_inbox:notification_recipient:org', '01M3NOTIF00000000000000022', '01M3NOTIF00000000000000002', '01KZJ5XRJDXSXZY0DKNNE6S086', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M3NOTIF00000000000000042', 'User - Mark Own Notifications Read', 'Mark your own notifications as read', 'mark_read:notification_recipient:org', '01M3NOTIF00000000000000023', '01M3NOTIF00000000000000002', '01KZJ5XRJDXSXZY0DKNNE6S086', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M3NOTIF00000000000000041', 'Người dùng - Xem thông báo của mình', 'Xem hộp thư thông báo của bạn, số chưa đọc và luồng thông báo', 'read_inbox:notification_recipient:org', '01M3NOTIF00000000000000022', '01M3NOTIF00000000000000002', '01KZJ5XRJDXSXZY0DKNNE6S086', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3NOTIF00000000000000042', 'Người dùng - Đánh dấu đã đọc thông báo của mình', 'Đánh dấu thông báo của bạn là đã đọc', 'mark_read:notification_recipient:org', '01M3NOTIF00000000000000023', '01M3NOTIF00000000000000002', '01KZJ5XRJDXSXZY0DKNNE6S086', 'org', NULL, NULL, false, NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

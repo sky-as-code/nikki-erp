@@ -63,6 +63,7 @@ type OrgLifecycleParam struct {
 	PointPayment   *services.PointPaymentDomainServiceImpl
 	Sequences      itExt.SequenceExtService
 	SettingsSeed   itExt.OrgSettingsSeedExtService
+	SettingsReader itExt.OrgSettingsReaderExtService
 }
 
 func NewOrgLifecycleAppService(param OrgLifecycleParam) orglifecycle.OrgLifecycleService {
@@ -81,13 +82,17 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model
 	if err != nil {
 		return err
 	}
+	lang, err := itExt.OrgLanguage(ctx, this.param.SettingsReader, orgId)
+	if err != nil {
+		return err
+	}
 	return dynamicresource.InTransaction(ctx, svcs[0].Repository(), func(tranxCtx corectx.Context) error {
 		aliases, err := this.externalAliases(tranxCtx)
 		if err != nil {
 			return err
 		}
 		for _, svc := range svcs {
-			rows, err := defaults.Load(orgDefaults.Files, svc.Schema().Name())
+			rows, err := defaults.Load(orgDefaults.Files, svc.Schema().Name(), lang)
 			if err != nil {
 				return err
 			}
@@ -95,7 +100,7 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model
 				return err
 			}
 		}
-		if err := this.createAssociations(tranxCtx, aliases, orgId); err != nil {
+		if err := this.createAssociations(tranxCtx, aliases, orgId, lang); err != nil {
 			return err
 		}
 		return this.registerSequences(tranxCtx, orgId)
@@ -123,9 +128,9 @@ func (this *OrgLifecycleAppServiceImpl) CleanUpOrg(ctx corectx.Context, orgId mo
 
 // createAssociations maps payment and fulfillment methods onto the channels just created.
 func (this *OrgLifecycleAppServiceImpl) createAssociations(
-	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id,
+	ctx corectx.Context, aliases *defaults.Aliases, orgId model.Id, lang model.LanguageCode,
 ) error {
-	payments, err := this.loadResolved(models.SalesChannelPaymentRelSchemaName, aliases, orgId)
+	payments, err := this.loadResolved(models.SalesChannelPaymentRelSchemaName, aliases, orgId, lang)
 	if err != nil {
 		return err
 	}
@@ -138,7 +143,7 @@ func (this *OrgLifecycleAppServiceImpl) createAssociations(
 		}
 	}
 
-	fulfillments, err := this.loadResolved(models.SalesChannelFulfillmentMethodSchemaName, aliases, orgId)
+	fulfillments, err := this.loadResolved(models.SalesChannelFulfillmentMethodSchemaName, aliases, orgId, lang)
 	if err != nil {
 		return err
 	}
@@ -156,9 +161,9 @@ func (this *OrgLifecycleAppServiceImpl) createAssociations(
 // loadResolved reads an association file with its aliases resolved. A payment method this tenant
 // lacks resolves to nothing and is left as its "@alias", which withKnownPaymentMethods drops.
 func (this *OrgLifecycleAppServiceImpl) loadResolved(
-	schemaName string, aliases *defaults.Aliases, orgId model.Id,
+	schemaName string, aliases *defaults.Aliases, orgId model.Id, lang model.LanguageCode,
 ) ([]dmodel.DynamicFields, error) {
-	rows, err := defaults.Load(orgDefaults.Files, schemaName)
+	rows, err := defaults.Load(orgDefaults.Files, schemaName, lang)
 	if err != nil {
 		return nil, err
 	}

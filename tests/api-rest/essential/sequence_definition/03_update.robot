@@ -10,7 +10,7 @@ Test Tags         essential    sequence_definition    update
 Update Name Succeeds
     ${name}=    Unique Display Name    Robot Sequence Renamed
     ${resp}=    PATCH On Session    api    ${SEQ_DEFINITION_API}/${SEQ_DEFINITION_ID}
-    ...    json=${{ {'name': {'en-US': $name}, 'etag': $SEQ_DEFINITION_ETAG} }}
+    ...    json=${{ {'name': $name, 'etag': $SEQ_DEFINITION_ETAG} }}
     ${etag}=    Response Should Be Update Success    ${resp}    count=1    previous_etag=${SEQ_DEFINITION_ETAG}
     Set Global Variable    ${SEQ_DEFINITION_ETAG}    ${etag}
 

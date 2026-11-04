@@ -188,7 +188,8 @@ func TestApplicationDefaultCountsWhenNoSystemLanguageIsSet(t *testing.T) {
 	svc := newLanguageSvc("", "a", "b")
 	vErrs := ft.NewClientErrors()
 
-	err := svc.validateWrite(userContext(), entity(dmodel.DynamicFields{}), storedLanguage("a", "en-US"), vErrs, deactivate)
+	err := svc.validateWrite(userContext(), entity(dmodel.DynamicFields{}),
+		storedLanguage("a", model.DefaultLanguageCode), vErrs, deactivate)
 
 	require.NoError(t, err)
 	requireOneError(t, vErrs, models.LanguageFieldIsActive, "essential:err_lang_default_disabled")

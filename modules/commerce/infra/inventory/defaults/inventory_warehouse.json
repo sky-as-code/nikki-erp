@@ -2,7 +2,7 @@
 	{
 		"$alias": "warehouse_main",
 		"code": "MAIN",
-		"name": "Main Warehouse",
+		"name": {"en-US": "Main Warehouse", "vi-VN": "Kho chính"},
 		"warehouse_role": "central",
 		"incoming_flow": "one_step",
 		"outgoing_flow": "one_step",

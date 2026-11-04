@@ -46,8 +46,8 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M68990HNE4Z1PR28N6G1R1M2', jsonb_build_object('en-US', 'Settings - Schema', 'vi-VN', 'Cài đặt - Lược đồ'), 'settings_schema', 'What a module declares it can be configured with, per level', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01MACPJ8N53VVRCDGNB7APWHPG', jsonb_build_object('en-US', 'Settings - Record', 'vi-VN', 'Cài đặt - Bản ghi'), 'settings_record', 'One setting value held by one tenant, organization or user', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M68990HNE4Z1PR28N6G1R1M2', jsonb_build_object('en-US', 'Settings - Schema', 'vi-VN', 'Cài đặt - Lược đồ'), 'settings_schema', 'Các cấu hình mà một phân hệ khai báo, theo từng cấp', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01MACPJ8N53VVRCDGNB7APWHPG', jsonb_build_object('en-US', 'Settings - Record', 'vi-VN', 'Cài đặt - Bản ghi'), 'settings_record', 'Một giá trị cài đặt của một đơn vị thuê bao, tổ chức hoặc người dùng', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

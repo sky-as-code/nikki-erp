@@ -15,14 +15,14 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_org_units'
 	) THEN
 		INSERT INTO "iam_org_units" ("id", "name", "description", "path", "parent_id", "org_id", "etag", "created_at", "updated_at") VALUES
-		('01K1H8N3L0WX4Q6S8YRKT3D2A2', 'Executive Office', NULL, ARRAY['01JWNY20G23KD4RV5VWYABQYHD', '01K1H8N3L0WX4Q6S8YRKT3D2A2']::varchar[], NULL, '01JWNY20G23KD4RV5VWYABQYHD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2A3', 'Operations Division', NULL, ARRAY['01JWNY20G23KD4RV5VWYABQYHD', '01K1H8N3L0WX4Q6S8YRKT3D2A2', '01K1H8N3L0WX4Q6S8YRKT3D2A3']::varchar[], '01K1H8N3L0WX4Q6S8YRKT3D2A2', '01JWNY20G23KD4RV5VWYABQYHD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2A4', 'Product Engineering Department', NULL, ARRAY['01JWNY20G23KD4RV5VWYABQYHD', '01K1H8N3L0WX4Q6S8YRKT3D2A2', '01K1H8N3L0WX4Q6S8YRKT3D2A3', '01K1H8N3L0WX4Q6S8YRKT3D2A4']::varchar[], '01K1H8N3L0WX4Q6S8YRKT3D2A3', '01JWNY20G23KD4RV5VWYABQYHD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2A5', 'Engineering Division', NULL, ARRAY['01K1H7M2K9VW3P5R7XQJY2C1Z9', '01K1H8N3L0WX4Q6S8YRKT3D2A5']::varchar[], NULL, '01K1H7M2K9VW3P5R7XQJY2C1Z9', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2A6', 'Platform Engineering Department', NULL, ARRAY['01K1H7M2K9VW3P5R7XQJY2C1Z9', '01K1H8N3L0WX4Q6S8YRKT3D2A5', '01K1H8N3L0WX4Q6S8YRKT3D2A6']::varchar[], '01K1H8N3L0WX4Q6S8YRKT3D2A5', '01K1H7M2K9VW3P5R7XQJY2C1Z9', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2C0', 'Sales and Marketing Division', NULL, ARRAY['01K02G6J1CYAN9K8V4PAGSQ5Z8', '01K1H8N3L0WX4Q6S8YRKT3D2C0']::varchar[], NULL, '01K02G6J1CYAN9K8V4PAGSQ5Z8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2C1', 'Sales Department', NULL, ARRAY['01K02G6J1CYAN9K8V4PAGSQ5Z8', '01K1H8N3L0WX4Q6S8YRKT3D2C0', '01K1H8N3L0WX4Q6S8YRKT3D2C1']::varchar[], '01K1H8N3L0WX4Q6S8YRKT3D2C0', '01K02G6J1CYAN9K8V4PAGSQ5Z8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2C2', 'Marketing Department', NULL, ARRAY['01K02G6J1CYAN9K8V4PAGSQ5Z8', '01K1H8N3L0WX4Q6S8YRKT3D2C0', '01K1H8N3L0WX4Q6S8YRKT3D2C2']::varchar[], '01K1H8N3L0WX4Q6S8YRKT3D2C0', '01K02G6J1CYAN9K8V4PAGSQ5Z8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL);
+		('01K1H8N3L0WX4Q6S8YRKT3D2A2', 'Ban Giám đốc', NULL, ARRAY['01JWNY20G23KD4RV5VWYABQYHD', '01K1H8N3L0WX4Q6S8YRKT3D2A2']::varchar[], NULL, '01JWNY20G23KD4RV5VWYABQYHD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2A3', 'Khối Vận hành', NULL, ARRAY['01JWNY20G23KD4RV5VWYABQYHD', '01K1H8N3L0WX4Q6S8YRKT3D2A2', '01K1H8N3L0WX4Q6S8YRKT3D2A3']::varchar[], '01K1H8N3L0WX4Q6S8YRKT3D2A2', '01JWNY20G23KD4RV5VWYABQYHD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2A4', 'Phòng Kỹ thuật Sản phẩm', NULL, ARRAY['01JWNY20G23KD4RV5VWYABQYHD', '01K1H8N3L0WX4Q6S8YRKT3D2A2', '01K1H8N3L0WX4Q6S8YRKT3D2A3', '01K1H8N3L0WX4Q6S8YRKT3D2A4']::varchar[], '01K1H8N3L0WX4Q6S8YRKT3D2A3', '01JWNY20G23KD4RV5VWYABQYHD', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2A5', 'Khối Kỹ thuật', NULL, ARRAY['01K1H7M2K9VW3P5R7XQJY2C1Z9', '01K1H8N3L0WX4Q6S8YRKT3D2A5']::varchar[], NULL, '01K1H7M2K9VW3P5R7XQJY2C1Z9', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2A6', 'Phòng Kỹ thuật Nền tảng', NULL, ARRAY['01K1H7M2K9VW3P5R7XQJY2C1Z9', '01K1H8N3L0WX4Q6S8YRKT3D2A5', '01K1H8N3L0WX4Q6S8YRKT3D2A6']::varchar[], '01K1H8N3L0WX4Q6S8YRKT3D2A5', '01K1H7M2K9VW3P5R7XQJY2C1Z9', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2C0', 'Khối Kinh doanh và Tiếp thị', NULL, ARRAY['01K02G6J1CYAN9K8V4PAGSQ5Z8', '01K1H8N3L0WX4Q6S8YRKT3D2C0']::varchar[], NULL, '01K02G6J1CYAN9K8V4PAGSQ5Z8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2C1', 'Phòng Kinh doanh', NULL, ARRAY['01K02G6J1CYAN9K8V4PAGSQ5Z8', '01K1H8N3L0WX4Q6S8YRKT3D2C0', '01K1H8N3L0WX4Q6S8YRKT3D2C1']::varchar[], '01K1H8N3L0WX4Q6S8YRKT3D2C0', '01K02G6J1CYAN9K8V4PAGSQ5Z8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2C2', 'Phòng Tiếp thị', NULL, ARRAY['01K02G6J1CYAN9K8V4PAGSQ5Z8', '01K1H8N3L0WX4Q6S8YRKT3D2C0', '01K1H8N3L0WX4Q6S8YRKT3D2C2']::varchar[], '01K1H8N3L0WX4Q6S8YRKT3D2C0', '01K02G6J1CYAN9K8V4PAGSQ5Z8', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL);
 	END IF;
 
 	IF EXISTS (
@@ -33,14 +33,14 @@ BEGIN
 			"id", "type", "display_name", "email", "status", "is_owner", "org_unit_id",
 			"is_archived", "etag", "created_at", "updated_at"
 		) VALUES
-		('01JWNNJGS70Y07MBEV3AQ0M526', 'user', 'System', 'system@nikki.com', 'active', NULL, NULL, FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JWNMZ36QHC7CQQ748H9NQ6J6', 'user', 'Admin Owner', 'owner@nikki.com', 'active', TRUE, NULL, FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JWNXT3EY7FG47VDJTEPTDC98', 'user', 'Nguyễn Văn An Domain Admin', 'nguyen.van.an@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A2', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JWNXXTF8958VVYAV33MVVMDN', 'user', 'Trần Thị Bình Ident Readonly', 'tran.thi.binh@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A3', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JZQFDH0N51Q3BFQFMFFGSCSV', 'user', 'Lê Văn Cường Authz Admin', 'le.van.cuong@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A4', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JZQFF9QEXH71P2CG9Y9MY8MM', 'user', 'Phạm Thị Dung Authz Mod', 'pham.thi.dung@nikki.com', 'suspended', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A5', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JZQFFDKY8T4JB8R6NSY1331J', 'user', 'Hoàng Văn Em My Company Org Admin', 'hoang.van.em@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01JZQFGVKZCTV7S310W0BDMWCS', 'user', 'Đặng Thị Phương Membership Company Org Admin', 'dang.thi.phuong@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C0', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JWNNJGS70Y07MBEV3AQ0M526', 'user', 'Hệ thống', 'system@nikki.com', 'active', NULL, NULL, FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JWNMZ36QHC7CQQ748H9NQ6J6', 'user', 'Chủ sở hữu', 'owner@nikki.com', 'active', TRUE, NULL, FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JWNXT3EY7FG47VDJTEPTDC98', 'user', 'Nguyễn Văn An Quản trị viên miền', 'nguyen.van.an@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A2', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JWNXXTF8958VVYAV33MVVMDN', 'user', 'Trần Thị Bình Chỉ đọc Định danh', 'tran.thi.binh@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A3', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JZQFDH0N51Q3BFQFMFFGSCSV', 'user', 'Lê Văn Cường Quản trị viên Phân quyền', 'le.van.cuong@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A4', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JZQFF9QEXH71P2CG9Y9MY8MM', 'user', 'Phạm Thị Dung Điều phối viên Phân quyền', 'pham.thi.dung@nikki.com', 'suspended', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A5', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JZQFFDKY8T4JB8R6NSY1331J', 'user', 'Hoàng Văn Em Quản trị viên tổ chức My Company', 'hoang.van.em@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2A6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01JZQFGVKZCTV7S310W0BDMWCS', 'user', 'Đặng Thị Phương Quản trị viên tổ chức thành viên', 'dang.thi.phuong@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C0', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
 		('01JZQFY6EXRG0959Z95Y2EM3AM', 'user', 'Võ Văn Giang', 'vo.van.giang@nikki.com', 'suspended', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C1', TRUE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
 		('01JZQFZFK6GM2D5X6MYHWH6FND', 'user', 'Bùi Thị Hoa', 'bui.thi.hoa@nikki.com', 'active', NULL, '01K1H8N3L0WX4Q6S8YRKT3D2C2', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL);
 	END IF;
@@ -110,12 +110,12 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'iam_groups'
 	) THEN
 		INSERT INTO "iam_groups" ("id", "name", "description", "owner_id", "is_archived", "etag", "created_at", "updated_at") VALUES
-		('01JWNXBR5QJBH7PE9PQ9FW746V', jsonb_build_object('en-US', 'Domain Users', 'vi-VN', 'Người dùng domain', 'zh-TW', '網域使用者'), 'Default group for all domain users', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2A0', jsonb_build_object('en-US', 'Administrators', 'vi-VN', 'Quản trị viên', 'zh-TW', '管理員'), 'System administrators group', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2A1', jsonb_build_object('en-US', 'Project Managers', 'vi-VN', 'Quản lý dự án', 'zh-TW', '專案經理'), 'Project management team', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2B0', jsonb_build_object('en-US', 'Legacy Support', 'vi-VN', 'Hỗ trợ hệ thống cũ', 'zh-TW', '舊版支援'), 'Legacy system support team', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2B1', jsonb_build_object('en-US', 'Archives Team', 'vi-VN', 'Đội lưu trữ', 'zh-TW', '檔案團隊'), 'Archived content management', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2B2', jsonb_build_object('en-US', 'Maintenance Group', 'vi-VN', 'Nhóm bảo trì', 'zh-TW', '維護群組'), 'System maintenance personnel', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL);
+		('01JWNXBR5QJBH7PE9PQ9FW746V', jsonb_build_object('en-US', 'Domain Users', 'vi-VN', 'Người dùng domain', 'zh-TW', '網域使用者'), 'Nhóm mặc định cho mọi người dùng trong miền', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2A0', jsonb_build_object('en-US', 'Administrators', 'vi-VN', 'Quản trị viên', 'zh-TW', '管理員'), 'Nhóm quản trị viên hệ thống', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2A1', jsonb_build_object('en-US', 'Project Managers', 'vi-VN', 'Quản lý dự án', 'zh-TW', '專案經理'), 'Đội quản lý dự án', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2B0', jsonb_build_object('en-US', 'Legacy Support', 'vi-VN', 'Hỗ trợ hệ thống cũ', 'zh-TW', '舊版支援'), 'Đội hỗ trợ hệ thống cũ', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2B1', jsonb_build_object('en-US', 'Archives Team', 'vi-VN', 'Đội lưu trữ', 'zh-TW', '檔案團隊'), 'Quản lý nội dung đã lưu trữ', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2B2', jsonb_build_object('en-US', 'Maintenance Group', 'vi-VN', 'Nhóm bảo trì', 'zh-TW', '維護群組'), 'Nhân sự bảo trì hệ thống', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL);
 	END IF;
 
 	IF EXISTS (

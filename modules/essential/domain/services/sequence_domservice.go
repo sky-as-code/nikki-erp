@@ -6,8 +6,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	coreSettings "github.com/sky-as-code/nikki-erp/modules/core/settings"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
+	itLang "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 	itSeq "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/sequence"
 )
 
@@ -15,12 +17,14 @@ func NewSequenceDomainServiceImpl(
 	definitionSvc itSeq.SequenceDefinitionDomainService,
 	counterRepo itSeq.SequenceCounterRepository,
 	issuanceRepo itSeq.SequenceIssuanceRepository,
+	orgSettings coreSettings.OrgSettingsReader,
 ) itSeq.SequenceDomainService {
 	return &SequenceDomainServiceImpl{
 		definitionSvc:  definitionSvc,
 		definitionRepo: definitionSvc.Repository().(itSeq.SequenceDefinitionRepository),
 		counterRepo:    counterRepo,
 		issuanceRepo:   issuanceRepo,
+		orgSettings:    orgSettings,
 	}
 }
 
@@ -31,6 +35,7 @@ type SequenceDomainServiceImpl struct {
 	definitionRepo itSeq.SequenceDefinitionRepository
 	counterRepo    itSeq.SequenceCounterRepository
 	issuanceRepo   itSeq.SequenceIssuanceRepository
+	orgSettings    coreSettings.OrgSettingsReader
 }
 
 // UpsertDefinition returns the definition registered under (configuration_scope, org, code), or
@@ -72,7 +77,11 @@ func (this *SequenceDomainServiceImpl) upsert(
 		cErrs, err := this.assertSameContract(ctx, existingId, cmd)
 		return itSeq.UpsertDefinitionResultData{DefinitionId: existingId}, cErrs, err
 	}
-	created, err := this.definitionSvc.Create(ctx, UpsertFields(cmd))
+	lang, err := this.nameLanguage(ctx, orgId)
+	if err != nil {
+		return itSeq.UpsertDefinitionResultData{}, nil, err
+	}
+	created, err := this.definitionSvc.Create(ctx, UpsertFields(cmd, lang))
 	if err != nil {
 		return itSeq.UpsertDefinitionResultData{}, nil, err
 	}
@@ -81,6 +90,17 @@ func (this *SequenceDomainServiceImpl) upsert(
 	}
 	createdId := models.FieldString(created.Data, basemodel.FieldId)
 	return itSeq.UpsertDefinitionResultData{DefinitionId: model.Id(createdId), Created: true}, nil, nil
+}
+
+// nameLanguage is the language a new definition's name is stored in: the org's system_language, or
+// DefaultLanguageCode for a tenant definition, which no single org's language speaks for.
+func (this *SequenceDomainServiceImpl) nameLanguage(
+	ctx corectx.Context, orgId *model.Id,
+) (model.LanguageCode, error) {
+	if orgId == nil {
+		return model.DefaultLanguageCode, nil
+	}
+	return itLang.OrgLanguage(ctx, this.orgSettings, *orgId)
 }
 
 // assertSameContract refuses a registration whose owner or scope contradicts the stored one.
@@ -102,13 +122,13 @@ func (this *SequenceDomainServiceImpl) assertSameContract(
 	return &cErrs, nil
 }
 
-// UpsertFields maps a registration onto the definition's create command.
-func UpsertFields(cmd itSeq.UpsertDefinitionCommand) dmodel.DynamicFields {
+// UpsertFields maps a registration onto the definition's create command, naming it in lang.
+func UpsertFields(cmd itSeq.UpsertDefinitionCommand, lang model.LanguageCode) dmodel.DynamicFields {
 	fields := dmodel.DynamicFields{
 		models.SeqDefFieldConfigurationScope: cmd.ConfigurationScope,
 		models.SeqDefFieldOwnerModule:        cmd.OwnerModule,
 		models.SeqDefFieldCode:               cmd.Code,
-		models.SeqDefFieldName:               cmd.Name,
+		models.SeqDefFieldName:               cmd.Names.TextIn(lang),
 	}
 	if orgId := upsertOrgId(cmd); orgId != nil {
 		fields[models.SeqDefFieldOrgId] = string(*orgId)

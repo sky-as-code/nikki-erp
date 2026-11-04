@@ -31,7 +31,8 @@ func TestDuplicateTemplateFieldsCarriesOnlyTheTemplatesOwnFields(t *testing.T) {
 	payload, err := duplicateTemplateFields(duplicateSourceTemplate(), nil)
 
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"en-US": "Tea (copy)", "vi-VN": "Trà (copy)"}, payload[models.ProductTemplateFieldName])
+	assert.Equal(t, map[string]any{"en-US": "Tea (copy)", "vi-VN": "Trà (bản sao)"},
+		payload[models.ProductTemplateFieldName])
 	assert.Equal(t, "active", payload[models.ProductTemplateFieldStatus])
 	for _, dropped := range []string{
 		basemodel.FieldId, basemodel.FieldEtag, basemodel.FieldIsArchived, basemodel.FieldOrgId,
@@ -40,6 +41,14 @@ func TestDuplicateTemplateFieldsCarriesOnlyTheTemplatesOwnFields(t *testing.T) {
 	} {
 		assert.NotContains(t, payload, dropped)
 	}
+}
+
+// Each translation gets the suffix of its own language; a language without one gets the English.
+func TestDuplicateNameSuffixFollowsTheTranslationLanguage(t *testing.T) {
+	assert.Equal(t, " (bản sao)", duplicateNameSuffix("vi-VN"))
+	assert.Equal(t, " (bản sao)", duplicateNameSuffix("vi_vn"))
+	assert.Equal(t, " (copy)", duplicateNameSuffix("en-US"))
+	assert.Equal(t, " (copy)", duplicateNameSuffix("fr-FR"))
 }
 
 func TestDuplicateTemplateFieldsUsesAnExplicitName(t *testing.T) {

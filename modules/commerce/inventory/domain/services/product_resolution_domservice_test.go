@@ -47,8 +47,8 @@ func TestDisplayNameIsDeterministicAcrossLocales(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		assert.Equal(t, first, langJsonToString(name))
 	}
-	// en-US wins when present, rather than an arbitrary map key.
-	assert.Equal(t, "T-Shirt", first)
+	// The default language wins when present, rather than an arbitrary map key.
+	assert.Equal(t, "Áo thun", first)
 }
 
 func TestDisplayNameFallsBackWhenEnglishAbsent(t *testing.T) {

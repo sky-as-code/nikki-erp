@@ -88,10 +88,10 @@ func TestPreviewLabelsFollowLineOrderAndNameCreatesFromTheirValues(t *testing.T)
 
 	keep := previewItems(outcome, labeler, plan.Keep)
 	created := previewItems(outcome, labeler, plan.Create)
-	assert.Equal(t, "Coca Cola (No sugar, Big)", keep[0].DisplayName)
+	assert.Equal(t, "Cô ca (No sugar, Big)", keep[0].DisplayName)
 	assert.Empty(t, keep[0].NewDisplayName)
-	assert.Equal(t, "Coca Cola (No sugar, Big, Lon)", created[0].DisplayName)
-	assert.Equal(t, "Coca Cola", created[1].DisplayName, "an empty key is named by the template alone")
+	assert.Equal(t, "Cô ca (No sugar, Big, Lon)", created[0].DisplayName)
+	assert.Equal(t, "Cô ca", created[1].DisplayName, "an empty key is named by the template alone")
 	assert.Equal(t, 1, repo.searches, "value names are read once for the whole preview")
 }
 
@@ -106,8 +106,8 @@ func TestPreviewExtendCarriesItsCurrentAndItsNewLabel(t *testing.T) {
 	require.NoError(t, err)
 
 	extend := previewItems(outcome, labeler, plan.Extend)
-	assert.Equal(t, "Coca Cola (No sugar)", extend[0].DisplayName)
-	assert.Equal(t, "Coca Cola (No sugar, Lon)", extend[0].NewDisplayName)
+	assert.Equal(t, "Cô ca (No sugar)", extend[0].DisplayName)
+	assert.Equal(t, "Cô ca (No sugar, Lon)", extend[0].NewDisplayName)
 }
 
 // A value the catalogue no longer holds is left out, as display_name leaves it out.
@@ -122,5 +122,5 @@ func TestPreviewLabelSkipsAValueWithNoName(t *testing.T) {
 	archive, remove := splitInvalid(outcome, labeler)
 	require.Len(t, archive, 1)
 	assert.Empty(t, remove)
-	assert.Equal(t, "Coca Cola (No sugar)", archive[0].DisplayName)
+	assert.Equal(t, "Cô ca (No sugar)", archive[0].DisplayName)
 }

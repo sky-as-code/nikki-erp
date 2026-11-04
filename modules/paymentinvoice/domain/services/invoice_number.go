@@ -37,7 +37,7 @@ func InvoiceSequenceCommand(orgId model.Id) itExt.UpsertSequenceDefinitionComman
 		OrgId:              &orgId,
 		OwnerModule:        modconstants.PaymentInvoiceModuleName,
 		Code:               InvoiceSequenceCode,
-		Name:               model.LangJson{"en-US": "Invoice number", "vi-VN": "Số hóa đơn"},
+		Names:              model.LangJson{"en-US": "Invoice number", "vi-VN": "Số hóa đơn"},
 		FormatOwner:        util.ToPtr(sequenceFormatOwner),
 		Algorithm:          util.ToPtr(itExt.SequenceAlgorithmIncrement),
 		PrefixTemplate:     util.ToPtr(invoicePrefixTemplate),

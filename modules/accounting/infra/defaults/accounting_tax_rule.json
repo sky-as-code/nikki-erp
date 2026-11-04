@@ -4,13 +4,13 @@
 		"code": "VN-EXPORT-ZERO-RATED",
 		"name": {
 			"en-US": "Exports are zero rated",
-			"vi-VN": "Xuat khau huong thue suat 0%"
+			"vi-VN": "Xuất khẩu hưởng thuế suất 0%"
 		},
 		"jurisdiction_id": "@tax_jurisdiction_vn",
 		"priority": 10,
 		"stop_processing": true,
 		"effective_from": "2025-07-01",
-		"legal_reference": "Luat Thue GTGT 48/2024/QH15",
+		"legal_reference": "Luật Thuế GTGT 48/2024/QH15",
 		"version_no": 1,
 		"lifecycle_status": "published"
 	},
@@ -19,13 +19,13 @@
 		"code": "VN-EXEMPT-SUPPLY",
 		"name": {
 			"en-US": "Exempt supplies carry no VAT",
-			"vi-VN": "Hang khong chiu thue GTGT"
+			"vi-VN": "Hàng không chịu thuế GTGT"
 		},
 		"jurisdiction_id": "@tax_jurisdiction_vn",
 		"priority": 20,
 		"stop_processing": true,
 		"effective_from": "2025-07-01",
-		"legal_reference": "Luat Thue GTGT 48/2024/QH15",
+		"legal_reference": "Luật Thuế GTGT 48/2024/QH15",
 		"version_no": 1,
 		"lifecycle_status": "published"
 	},
@@ -34,14 +34,14 @@
 		"code": "VN-VAT-REDUCTION-2025",
 		"name": {
 			"en-US": "2% VAT reduction",
-			"vi-VN": "Giam 2% thue GTGT"
+			"vi-VN": "Giảm 2% thuế GTGT"
 		},
 		"jurisdiction_id": "@tax_jurisdiction_vn",
 		"priority": 30,
 		"stop_processing": false,
 		"effective_from": "2025-07-01",
 		"effective_to": "2026-12-31",
-		"legal_reference": "Nghi quyet 204/2025/QH15",
+		"legal_reference": "Nghị quyết 204/2025/QH15",
 		"version_no": 1,
 		"lifecycle_status": "published"
 	}

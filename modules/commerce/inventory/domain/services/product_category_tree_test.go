@@ -47,14 +47,14 @@ func TestBuildCanonicalNameAppendsPerLanguage(t *testing.T) {
 	}, canonical)
 }
 
-func TestBuildCanonicalNameFallsBackToEnUsOnEitherSide(t *testing.T) {
+func TestBuildCanonicalNameFallsBackToTheDefaultLanguageOnEitherSide(t *testing.T) {
 	parent := canonicalLangJson("en-US", "Default / Beverages", "vi-VN", "Mặc định / Đồ uống")
 
 	canonical := BuildCanonicalName(parent, canonicalLangJson("en-US", "Cola", "ja-JP", "コーラ"))
 
 	assert.Equal(t, model.LangJson{
 		"en-US": "Default / Beverages / Cola",
-		"ja-JP": "Default / Beverages / コーラ",
+		"ja-JP": "Mặc định / Đồ uống / コーラ",
 		"vi-VN": "Mặc định / Đồ uống / Cola",
 	}, canonical)
 }

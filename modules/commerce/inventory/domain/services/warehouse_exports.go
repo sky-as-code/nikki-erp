@@ -41,11 +41,11 @@ func MarkLocationSystemGenerated(ctx corectx.Context, locationId string) error {
 	})
 }
 
-// ResolveWarehouseStop turns a stop named in a flow leg into its location id, read off the
+// ResolveWarehouseStop turns a stop a flow leg names by code into its location id, read off the
 // warehouse FK that holds it: "Stock" is the stock location, any other stop its flow location.
 // Empty when the warehouse lacks the stop.
-func ResolveWarehouseStop(warehouse models.Warehouse, stopName string) string {
-	field := stopField(stopName)
+func ResolveWarehouseStop(warehouse models.Warehouse, stopCode string) string {
+	field := stopField(stopCode)
 	if field == "" {
 		return ""
 	}

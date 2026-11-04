@@ -21,9 +21,9 @@ BEGIN
 		INSERT INTO "iam_resources" (
 			"id", "name", "code", "description", "owner_type", "max_scope", "min_scope", "created_at", "etag"
 		) VALUES
-		('01M5T2BJTACN4H60E8VA7FRE2R', jsonb_build_object('en-US', 'IT Storage - Space', 'vi-VN', 'Lưu trữ - Không gian lưu trữ'), 'itstorage_space', 'A system-managed folder of the storage tree', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M5T2BJTE29YK2T3SSE1QR94J', jsonb_build_object('en-US', 'IT Storage - File', 'vi-VN', 'Lưu trữ - Tập tin'), 'itstorage_file', 'An uploaded file and its stored object', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
-		('01M5W4T2J1HD26P737M3M5W200', jsonb_build_object('en-US', 'IT Storage - Consumption', 'vi-VN', 'Lưu trữ - Dung lượng sử dụng'), 'itstorage_consumption', 'Bytes stored and reserved per tenant, organization and user', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		('01M5T2BJTACN4H60E8VA7FRE2R', jsonb_build_object('en-US', 'IT Storage - Space', 'vi-VN', 'Lưu trữ - Không gian lưu trữ'), 'itstorage_space', 'Thư mục do hệ thống quản lý trong cây lưu trữ', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M5T2BJTE29YK2T3SSE1QR94J', jsonb_build_object('en-US', 'IT Storage - File', 'vi-VN', 'Lưu trữ - Tập tin'), 'itstorage_file', 'Tập tin đã tải lên và đối tượng lưu trữ của nó', 'nikkierp', 'tenant', 'org', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M5W4T2J1HD26P737M3M5W200', jsonb_build_object('en-US', 'IT Storage - Consumption', 'vi-VN', 'Lưu trữ - Dung lượng sử dụng'), 'itstorage_consumption', 'Dung lượng đã lưu và đã đặt trước theo đơn vị thuê bao, tổ chức và người dùng', 'nikkierp', 'tenant', 'tenant', NOW(), (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 

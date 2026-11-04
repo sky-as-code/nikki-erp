@@ -21,8 +21,22 @@ import (
 // rows.
 const ReasonDuplicateCatalogueArchived = "product_template.duplicate_catalogue_archived"
 
-// duplicateNameSuffix marks the duplicate's default name in every language the source carries.
-const duplicateNameSuffix = " (copy)"
+// duplicateNameSuffixes mark the duplicate's default name, each translation in its own language;
+// a language missing here gets the en-US suffix.
+var duplicateNameSuffixes = map[model.LanguageCode]string{
+	model.LanguageCodeEnUs: " (copy)",
+	model.LanguageCodeViVn: " (bản sao)",
+}
+
+func duplicateNameSuffix(language string) string {
+	if canonical, err := model.ToBCP47LanguageCode(language); err == nil {
+		language = canonical
+	}
+	if suffix, found := duplicateNameSuffixes[language]; found {
+		return suffix
+	}
+	return duplicateNameSuffixes[model.LanguageCodeEnUs]
+}
 
 // templateDuplicateFields are the template columns a duplicate carries. Everything else is the
 // source's own identity or history: id, etag, audit, archive state, import identity (external_id,
@@ -165,7 +179,7 @@ func duplicateTemplateFields(source dmodel.DynamicFields, name any) (dmodel.Dyna
 	if names, ok := payload[models.ProductTemplateFieldName].(map[string]any); ok {
 		for language, text := range names {
 			if value, isText := text.(string); isText && value != "" {
-				names[language] = value + duplicateNameSuffix
+				names[language] = value + duplicateNameSuffix(language)
 			}
 		}
 	}

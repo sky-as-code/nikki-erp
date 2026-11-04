@@ -3,6 +3,7 @@ package services
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
@@ -28,7 +29,7 @@ func (this *WarehouseDomainServiceImpl) ReconfigureFlowLocations(
 	if outgoing {
 		needed = outgoingFlowLocations(nextFlow)
 	}
-	if err := this.ensureFlowLocations(ctx, &warehouse, needed); err != nil {
+	if err := this.ensureFlowLocations(ctx, &warehouse, needed, ""); err != nil {
 		return err
 	}
 	for _, spec := range obsoleteSystemLocations(previousFlow, nextFlow, outgoing) {
@@ -45,9 +46,10 @@ func (this *WarehouseDomainServiceImpl) ReconfigureFlowLocations(
 
 // ensureFlowLocations makes each stop present and in use: a stop the warehouse already references
 // is reused (unarchived when a former flow change archived it), and one it lacks is created under
-// the root and written to its FK. Switching a flow back and forth never accumulates copies.
+// the root, named in the org language, and written to its FK. Switching a flow back and forth never
+// accumulates copies. An empty lang is read from the org's settings once a stop has to be created.
 func (this *WarehouseDomainServiceImpl) ensureFlowLocations(
-	ctx corectx.Context, warehouse *models.Warehouse, specs []systemLocationSpec,
+	ctx corectx.Context, warehouse *models.Warehouse, specs []systemLocationSpec, lang model.LanguageCode,
 ) error {
 	rootId := derefId(warehouse.GetRootLocationId())
 	for _, spec := range specs {
@@ -57,8 +59,14 @@ func (this *WarehouseDomainServiceImpl) ensureFlowLocations(
 			}
 			continue
 		}
+		if lang == "" {
+			var err error
+			if lang, err = this.orgLanguage(ctx, *warehouse); err != nil {
+				return err
+			}
+		}
 		created, err := this.createManagedLocation(ctx, *warehouse,
-			spec.Name, models.InventoryLocationTypeInternal, rootId)
+			spec.Names.TextIn(lang), models.InventoryLocationTypeInternal, rootId)
 		if err != nil {
 			return err
 		}

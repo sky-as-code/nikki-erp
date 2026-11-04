@@ -16,7 +16,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
@@ -59,12 +58,9 @@ type AssertUsableQuery struct {
 // adapter_code: which adapter serves a method is this module's business, and a consumer that
 // branched on it would be encoding a payment integration it does not own.
 type PaymentMethodData struct {
-	Id   string `json:"id"`
-	Code string `json:"code"`
-	// Name is the multilingual value as stored, not a string flattened to one language. There is
-	// no house rule for choosing a language here, and picking one would bake this module's guess
-	// into every consumer's UI; the caller knows the requester's locale and this module does not.
-	Name      model.LangJson   `json:"name,omitempty"`
+	Id        string           `json:"id"`
+	Code      string           `json:"code"`
+	Name      string           `json:"name,omitempty"`
 	IsActive  bool             `json:"is_active"`
 	IsUsable  bool             `json:"is_usable"`
 	MinAmount *decimal.Decimal `json:"min_amount,omitempty"`

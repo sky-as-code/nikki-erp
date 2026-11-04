@@ -64,8 +64,10 @@ A Ready Org Has A Main Warehouse
     ${resp}=    GET On Session    api    /v1/inventory/inventory_warehouse
     ...    params=${{ {'org_id': $LIFECYCLE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    ${codes}=    Evaluate    [item['code'] for item in body['items']]    namespace=${{ {'body': $resp.json()} }}
-    Should Contain    ${codes}    MAIN
+    ${names}=    Evaluate    {item['code']: item['name'] for item in body['items']}    namespace=${{ {'body': $resp.json()} }}
+    Dictionary Should Contain Key    ${names}    MAIN
+    Should Be Equal    ${names}[MAIN]    Kho chính
+    ...    msg=A new org's system language is vi-VN, so its defaults are named in Vietnamese
 
 Deleting An Org Archives It Then Removes It
     [Tags]    org    lifecycle

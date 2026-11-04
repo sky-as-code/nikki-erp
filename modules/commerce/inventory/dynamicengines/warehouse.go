@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/app"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	itWarehouse "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/warehouse"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
@@ -24,14 +25,17 @@ type warehouseEngineParam struct {
 func registerWarehouseEngine() error {
 	err := deps.RegisterNamed(
 		dynamicresource.EngineDependencyName(models.WarehouseSchemaName),
-		func(param dynamicresource.BuildParam, locationSvc *services.InventoryLocationDomainServiceImpl) dynamicresource.DynamicResourceEngineOnion {
+		func(
+			param dynamicresource.BuildParam, locationSvc *services.InventoryLocationDomainServiceImpl,
+			settings itExt.OrgSettingsReaderExtService,
+		) dynamicresource.DynamicResourceEngineOnion {
 			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.WarehouseSchemaName,
 				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewWarehouseRepository(base)
 				},
 				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
-					return services.NewWarehouseDomainService(base, locationSvc)
+					return services.NewWarehouseDomainService(base, locationSvc, settings)
 				},
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewWarehouseApplicationService(base, locationSvc)

@@ -52,7 +52,7 @@ func (this salesSequence) upsertDefinitionCommand(orgId model.Id) itExt.UpsertSe
 		OrgId:              &orgId,
 		OwnerModule:        modconstants.SalesModuleName,
 		Code:               this.code,
-		Name:               model.LangJson{"en-US": this.nameEn, "vi-VN": this.nameVi},
+		Names:              model.LangJson{"en-US": this.nameEn, "vi-VN": this.nameVi},
 		FormatOwner:        util.ToPtr(sequenceFormatOwnerSystem),
 		Algorithm:          util.ToPtr(this.algorithm),
 		PrefixTemplate:     util.ToPtr(this.prefix),

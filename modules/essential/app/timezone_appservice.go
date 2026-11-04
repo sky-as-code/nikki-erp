@@ -23,9 +23,13 @@ type TimezoneAppServiceImpl struct{}
 func (this *TimezoneAppServiceImpl) SearchTimezones(
 	_ corectx.Context, query it.SearchTimezonesQuery,
 ) (*it.SearchTimezonesResult, error) {
-	labels, ok := langjson.EmbeddedPack[timezoneNamespace][model.LanguageCode(query.LanguageCode)]
+	pack := langjson.EmbeddedPack[timezoneNamespace]
+	labels, ok := pack[model.LanguageCode(query.LanguageCode)]
 	if !ok {
-		labels = langjson.EmbeddedPack[timezoneNamespace][model.LanguageCodeEnUs]
+		labels, ok = pack[model.DefaultLanguageCode]
+	}
+	if !ok {
+		labels = pack[model.LanguageCodeEnUs]
 	}
 	items, total := tz.Search(query.Keyword, labels, query.Page, query.Size)
 	return &it.SearchTimezonesResult{

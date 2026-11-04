@@ -33,7 +33,7 @@
 		{
 			"name": "name",
 			"label": "fields.name",
-			"data_type": { "type": "langjson", "min": 1, "max": 200 },
+			"data_type": { "type": "string", "min": 1, "max": 200 },
 			"required_for_create": true
 		},
 		{
