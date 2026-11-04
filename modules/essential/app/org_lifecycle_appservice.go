@@ -97,6 +97,13 @@ func (this *OrgLifecycleAppServiceImpl) CleanUpOrg(ctx corectx.Context, orgId mo
 		if err := this.param.Currencies.DeleteForOrg(tranxCtx, orgId); err != nil {
 			return err
 		}
+		// Children before parents: issuances name counters, both name definitions (RESTRICT).
+		// Tenant-wide definitions carry no org_id and stay. The consumers holding a definition id
+		// (commerce, payment invoice) depend on essential and are cleaned up before it.
+		if err := dynamicresource.DeleteOrgDataOf(tranxCtx, orgId, models.SequenceIssuanceSchemaName,
+			models.SequenceCounterSchemaName, models.SequenceDefinitionSchemaName); err != nil {
+			return err
+		}
 		return dynamicresource.DeleteOrgData(tranxCtx, orgId, this.uomSvc, this.uomCatSvc)
 	})
 }

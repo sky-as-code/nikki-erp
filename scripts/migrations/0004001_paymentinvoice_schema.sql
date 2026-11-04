@@ -99,7 +99,6 @@ CREATE TABLE "paymentinvoice_invoices" (
   "created_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "paymentinvoice_invoices_number_ukey" UNIQUE ("number"),
   CONSTRAINT "paymentinvoice_invoices_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "paymentinvoice_orders" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- Create index "payinv_invoices_issued_at_idx" to table: "paymentinvoice_invoices"
@@ -110,6 +109,8 @@ CREATE INDEX "payinv_invoices_order_id_idx" ON "paymentinvoice_invoices" ("order
 CREATE INDEX "payinv_invoices_source_idx" ON "paymentinvoice_invoices" ("source_type", "source_id");
 -- Create index "payinv_invoices_status_idx" to table: "paymentinvoice_invoices"
 CREATE INDEX "payinv_invoices_status_idx" ON "paymentinvoice_invoices" ("status");
+-- Create index "payinv_invoices_tid_org_number_ukey" to table: "paymentinvoice_invoices"
+CREATE UNIQUE INDEX "payinv_invoices_tid_org_number_ukey" ON "paymentinvoice_invoices" ("org_id", "number") WHERE (number IS NOT NULL);
 -- Create "paymentinvoice_invoice_lines" table
 CREATE TABLE "paymentinvoice_invoice_lines" (
   "id" character varying NOT NULL,

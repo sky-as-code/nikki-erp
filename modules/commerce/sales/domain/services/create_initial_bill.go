@@ -47,10 +47,13 @@ func CreateInitialBill(
 
 	orgId := stringOf(order, basemodel.FieldOrgId)
 	allocations, totals := initialAllocations(order, lines, policy)
+	billNumber, err := issueBillNumber(ctx, orgId, orderId)
+	if err != nil {
+		return "", err
+	}
 
 	err = insertBill(ctx, string(*billId), orderId, orgId,
-		stringOf(order, models.SalesOrderFieldCurrencyCode),
-		initialBillNumberOf(string(*billId)), totals)
+		stringOf(order, models.SalesOrderFieldCurrencyCode), billNumber, totals)
 	if err != nil {
 		return "", err
 	}
@@ -100,11 +103,16 @@ func LoadConfirmedOrderView(
 	return view, nil
 }
 
-// initialBillNumberOf names the first bill after its own id, the convention create_order uses for
-// the order number. It is unique because the id is, needs no counter nobody would own, and still
-// lets billNumberOf derive BILL-<id>-1 when the bill is later split.
-func initialBillNumberOf(billId string) string {
-	return "BILL-" + billId
+// issueBillNumber draws the first bill's number from the organization's sales.bill sequence
+// (BILL00001), inside the confirm transaction. Only the initial bill is drawn: a split derives
+// BILL00001-1 from it and a merge BILL00001-M<unix time>, so a customer holding one can still be matched to
+// the sale.
+func issueBillNumber(ctx corectx.Context, orgId, orderId string) (string, error) {
+	issued, err := issueDocumentNumbers(ctx, orgId, []string{"order", orderId}, SeqBillNumber)
+	if err != nil {
+		return "", err
+	}
+	return issued[0], nil
 }
 
 // initialAllocations calculates the lines and totals before the parent bill is inserted.

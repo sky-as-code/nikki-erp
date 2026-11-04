@@ -4,7 +4,13 @@
 	"table_name": "inventory_stock_operation_types",
 	"should_build_db": true,
 	"record_label_field": "name",
-	"default_search_fields": ["name", "operation_code", "reservation_method", "backorder_policy"],
+	"default_search_fields": [
+		"name", "operation_code", "sequence_prefix", "warehouse_id", "reservation_method", "backorder_policy"
+	],
+	"composite_uniques": [{
+		"index_name": "invty_stock_op_types_tid_seq_prefix_org_id",
+		"fields": ["sequence_prefix", "org_id"]
+	}],
 	"extend_before": ["core.basemodel.base_model"],
 
 	"fields": [
@@ -24,6 +30,22 @@
 			"required_for_create": true,
 			"no_update": true,
 			"description": "field_desc.inventory_stock_operation_type.operation_code"
+		},
+		{
+			"name": "sequence_prefix",
+			"label": "fields.sequence_prefix",
+			"data_type": { "type": "resource_code", "min": 1, "max": 20 },
+			"required_for_create": true,
+			"no_update": true,
+			"description": "field_desc.inventory_stock_operation_type.sequence_prefix"
+		},
+		{
+			"name": "warehouse_id",
+			"label": "fields.warehouse_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"no_update": true,
+			"description": "field_desc.inventory_stock_operation_type.warehouse_id"
 		},
 		{
 			"name": "reservation_method",
@@ -106,6 +128,14 @@
 			"dest_schema": "inventory_location",
 			"key_map": { "default_destination_location_id": "id" },
 			"on_delete": "NO ACTION"
+		},
+		{
+			"edge": "warehouse",
+			"label": { "en-US": "Warehouse" },
+			"type": "many:one",
+			"dest_schema": "inventory_warehouse",
+			"key_map": { "warehouse_id": "id" },
+			"on_delete": "RESTRICT"
 		}
 	]
 }

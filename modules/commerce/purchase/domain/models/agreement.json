@@ -17,6 +17,7 @@
 			"data_type": { "type": "resource_code", "min": 1, "max": 50 },
 			"required_for_create": true,
 			"no_update": true,
+			"metadata": {"server_assigned": true},
 			"description": {
 				"en-US": "The human reference for this agreement, unique within its organization. Immutable: it is quoted to the vendor and cited on every order drawn against it, so changing it would strand those references."
 			}

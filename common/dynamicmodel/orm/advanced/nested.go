@@ -326,12 +326,12 @@ func contextKeysOf(fieldPlan *computed.FieldPlan) []string {
 }
 
 // projectableLeafNames lists a schema's readable scalar fields minus the tenant key, which the
-// repository never returns to a client.
+// repository never returns to a client, and every server_only field (dmodel.MetadataServerOnly).
 func projectableLeafNames(schema *dmodel.ModelSchema) []string {
 	tenantKey := schema.TenantKey()
 	out := []string{}
 	for _, field := range schema.ReadableFields() {
-		if field.IsEdgeModel() || field.Name() == tenantKey {
+		if field.IsEdgeModel() || field.Name() == tenantKey || field.IsServerOnly() {
 			continue
 		}
 		out = append(out, field.Name())
@@ -382,7 +382,7 @@ func (this *queryPlan) projectToMany(proj *projection, path string, shape *pathS
 		return nil
 	}
 	field, ok := group.dest.Field(shape.leaf)
-	if !ok || field.IsEdgeModel() {
+	if !ok || field.IsEdgeModel() || field.IsServerOnly() {
 		return orm.ErrUnknownField(path)
 	}
 	group.addLeaf(shape.leaf)

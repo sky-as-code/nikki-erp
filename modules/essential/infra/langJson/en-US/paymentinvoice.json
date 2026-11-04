@@ -125,5 +125,10 @@
 	"transaction_status.failed": "Failed",
 	"transaction_status.pending": "Pending",
 	"transaction_type.payment": "Payment",
-	"transaction_type.refund": "Refund"
+	"transaction_type.refund": "Refund",
+	"paymentinvoice.settings.orgSettings": "Payment & invoice settings",
+	"paymentinvoice.settings.invoiceNumberSequenceId": "Invoice numbering",
+	"settings_desc.invoice_number_sequence_id": "Sequence definition that numbers invoices. Set by the system.",
+	"settings.sequence_managed": "This setting is managed by the system and cannot be changed",
+	"sequence_not_configured": "Document numbering is not set up for this organization. Ask an administrator to set it up."
 }

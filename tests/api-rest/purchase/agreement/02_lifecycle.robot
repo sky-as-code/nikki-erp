@@ -15,7 +15,8 @@ Create Agreement Starts As A Draft
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
     Should Be Equal    ${resp.json()}[item][status]    draft
-    Should Start With    ${resp.json()}[item][code]    PA-
+    # PUR-SEQ-001: issued by the org's `purchase.agreement` Sequence, PA + 5-digit number.
+    Should Match Regexp    ${resp.json()}[item][code]    ^PA\\d{5,}$
 
 Confirm Makes The Agreement Live
     [Documentation]    AC-16, §38. Only a confirmed agreement can have orders drawn against it.

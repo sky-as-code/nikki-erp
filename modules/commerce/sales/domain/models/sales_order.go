@@ -17,6 +17,7 @@ const (
 	SalesOrderFieldId                           = "id"
 	SalesOrderFieldOrgId                        = "org_id"
 	SalesOrderFieldOrderNumber                  = "order_number"
+	SalesOrderFieldPublicReference              = "public_reference"
 	SalesOrderFieldSalesChannelId               = "sales_channel_id"
 	SalesOrderFieldSalesPointId                 = "sales_point_id"
 	SalesOrderFieldCustomerReference            = "customer_reference"
@@ -97,6 +98,10 @@ func (this SalesOrder) GetOrderNumber() *string {
 
 func (this *SalesOrder) SetOrderNumber(number *string) {
 	this.GetFieldData().SetString(SalesOrderFieldOrderNumber, number)
+}
+
+func (this SalesOrder) GetPublicReference() *string {
+	return this.GetFieldData().GetString(SalesOrderFieldPublicReference)
 }
 
 func (this SalesOrder) GetSalesChannelId() *model.Id {

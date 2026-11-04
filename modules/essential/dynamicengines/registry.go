@@ -25,5 +25,6 @@ func InitDynamicEngines() error {
 		registerFieldMetadataEngine(),
 		registerModelMetadataEngine(),
 		registerModuleEngine(),
+		registerSequenceEngines(),
 	)
 }

@@ -744,3 +744,108 @@ BEGIN
 		WHERE t."id" = v."product_template_id" AND v."display_name" IS NULL;
 	END IF;
 END $$;
+
+
+-- Document numbering through Essential's Sequence (SEQ-T03, SEQ-FB-T02): what the org lifecycle writes
+-- for a new org, applied to the orgs and operation types seeded above.
+--   * each operation type gets its sequence_prefix (unique per org) and the warehouse its default
+--     locations belong to;
+--   * each org gets inventory.transfer (org scope, sub-scope inventory_optype, consumer-formatted: one
+--     counter per operation type, its transfers read {warehouse code}/{prefix}/{00001}) and
+--     inventory.scrap (prefix SCR), and the Inventory org settings holding their ids.
+-- No counter rows: new numbers start at 1. The seeded transfer and scrap numbers keep their
+-- ULID-shaped values, which cannot collide with the new ones.
+DO $$
+DECLARE
+	inventory_settings_schema_id varchar;
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'essential_sequence_definitions'
+	) AND EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'inventory_stock_operation_types'
+	) THEN
+		UPDATE "inventory_stock_operation_types" AS t
+		SET "sequence_prefix" = v."sequence_prefix",
+			"warehouse_id" = v."warehouse_id"
+		FROM (VALUES
+			('01K5INV00000000CENRECEIPTS', 'IN', '01K5INV00000000000WH000001'),
+			('01K5INV0000000CENQUALITYCK', 'QC', '01K5INV00000000000WH000001'),
+			('01K5INV00000000CENPUTAWAYS', 'PUT', '01K5INV00000000000WH000001'),
+			('01K5INV00000000000CENPICKS', 'PICK', '01K5INV00000000000WH000001'),
+			('01K5INV00000000000CENPACKS', 'PACK', '01K5INV00000000000WH000001'),
+			('01K5INV000000CENDELIVERIES', 'OUT', '01K5INV00000000000WH000001'),
+			('01K5INV0000000CENRESUPPLY0', 'RESUP', '01K5INV00000000000WH000001'),
+			('01K5INV000000NORRECEIPTS00', 'N-IN', '01K5INV00000000000WH000002'),
+			('01K5INV000000NORDELIVERIES', 'N-OUT', '01K5INV00000000000WH000002'),
+			('01K5INV000000NORINTERNAL00', 'N-INT', '01K5INV00000000000WH000002'),
+			('01K5INV000000SOURECEIPTS00', 'S-IN', '01K5INV00000000000WH000003'),
+			('01K5INV000000SOUDELIVERIES', 'S-OUT', '01K5INV00000000000WH000003'),
+			('01K5INV00000000POSRECEIPTS', 'RECEIPTS', '01K5INV00000000000WH000004'),
+			('01K5INV00000000POSSHELFFIL', 'SHELF', '01K5INV00000000000WH000004'),
+			('01K5INV0000000000POSSALES0', 'SALES', '01K5INV00000000000WH000004'),
+			('01K5INV000000000CENRETURNS', 'RETURNS', '01K5INV00000000000WH000001'),
+			('01K5INV00000000000CENADJST', 'ADJ2', '01K5INV00000000000WH000001'),
+			('01K5INV000000000000OLDOPTY', 'OLD', '01K5INV00000000000WH000001'),
+			('01K5INV00000000TECHRECEIPT', 'TREC', '01K5INV00000000000WH000007'),
+			('01K5INV0000000TECHDELIVERY', 'TDEL', '01K5INV00000000000WH000007')
+		) AS v("operation_type_id", "sequence_prefix", "warehouse_id")
+		WHERE t."id" = v."operation_type_id" AND t."sequence_prefix" IS NULL;
+
+		-- One transfer definition (one counter per operation type) and one scrap definition per
+		-- organization, as the org lifecycle registers them.
+		INSERT INTO "essential_sequence_definitions" ("id", "configuration_scope", "org_id", "owner_module", "code", "name", "description", "sub_scope", "scope_type", "format_owner", "algorithm", "algorithm_params", "prefix_template", "suffix_template", "padding", "increment", "initial_value", "reset_period", "timezone", "issuance_retention_days", "first_issued_at", "is_archived", "created_at", "updated_at", "created_by", "etag") VALUES
+		('01KSEQ0000000000000NYSCR01', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'inventory', 'inventory.scrap',
+			jsonb_build_object('en-US', 'Scrap documents', 'vi-VN', 'Phiếu hủy hàng'), NULL,
+			NULL, 'org', 'sequence', 'increment', NULL, 'SCR', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL,
+			FALSE, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KSEQ0000000000000TKSCR01', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'inventory', 'inventory.scrap',
+			jsonb_build_object('en-US', 'Scrap documents', 'vi-VN', 'Phiếu hủy hàng'), NULL,
+			NULL, 'org', 'sequence', 'increment', NULL, 'SCR', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL,
+			FALSE, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KSEQ0000000000000NYTRF01', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'inventory', 'inventory.transfer',
+			jsonb_build_object('en-US', 'Transfer documents', 'vi-VN', 'Phiếu chuyển kho'), NULL,
+			'inventory_optype', 'org.inventory_optype', 'consumer', 'increment', NULL, NULL, NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL,
+			FALSE, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01KSEQ0000000000000TKTRF01', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'inventory', 'inventory.transfer',
+			jsonb_build_object('en-US', 'Transfer documents', 'vi-VN', 'Phiếu chuyển kho'), NULL,
+			'inventory_optype', 'org.inventory_optype', 'consumer', 'increment', NULL, NULL, NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL,
+			FALSE, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'settings_records'
+	) AND EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'essential_sequence_definitions'
+	) THEN
+		-- Seeds run before the first boot registers Inventory's org settings, and a settings record
+		-- must name its declaration. Snapshot of inventory/domain/settings.OrgSettingsSchemaBuilder()
+		-- .Build().ToModelJson(); startup registration matches on (module_key, level), keeps this id
+		-- and refreshes the document.
+		INSERT INTO "settings_schemas" ("id", "module_key", "level", "schema", "created_at")
+		VALUES ('01KSEQ000000000000SETSCH01', 'inventory', 'org',
+			$inventory_org_schema${"fields":[{"data_type":{"max":30,"min":0,"type":"string"},"description":{"$ref":"settings_desc.default_weight_uom_id"},"label":{"$ref":"inventory.settings.defaultWeightUomId"},"metadata":{"allow_override":true},"name":"default_weight_uom_id"},{"data_type":{"max":30,"min":0,"type":"string"},"description":{"$ref":"settings_desc.default_length_uom_id"},"label":{"$ref":"inventory.settings.defaultLengthUomId"},"metadata":{"allow_override":true},"name":"default_length_uom_id"},{"data_type":{"max":30,"min":0,"type":"string"},"description":{"$ref":"settings_desc.scrap_sequence_definition_id"},"label":{"$ref":"inventory.settings.scrapSequenceDefinitionId"},"metadata":{"allow_override":true},"name":"scrap_sequence_definition_id"},{"data_type":{"max":30,"min":0,"type":"string"},"description":{"$ref":"settings_desc.transfer_sequence_definition_id"},"label":{"$ref":"inventory.settings.transferSequenceDefinitionId"},"metadata":{"allow_override":true},"name":"transfer_sequence_definition_id"}],"label":{"$ref":"inventory.settings.orgSettings"},"name":"inventory_org_settings"}$inventory_org_schema$::jsonb, NOW())
+		ON CONFLICT DO NOTHING;
+
+		SELECT "id" INTO STRICT inventory_settings_schema_id
+		FROM "settings_schemas" WHERE "module_key" = 'inventory' AND "level" = 'org';
+
+		INSERT INTO "settings_records" (
+			"id", "schema_id", "module_key", "level", "owner_type", "owner_id",
+			"name", "value", "allow_override", "created_at", "updated_at"
+		) VALUES
+		('01KSEQ000000000000SETREC01', inventory_settings_schema_id, 'inventory', 'org', 'org', '01JWNY20G23KD4RV5VWYABQYHD',
+			'scrap_sequence_definition_id', jsonb_build_object('value', '01KSEQ0000000000000NYSCR01'), NULL, NOW(), NULL),
+		('01KSEQ000000000000SETREC02', inventory_settings_schema_id, 'inventory', 'org', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9',
+			'scrap_sequence_definition_id', jsonb_build_object('value', '01KSEQ0000000000000TKSCR01'), NULL, NOW(), NULL),
+		('01KSEQ000000000000SETREC04', inventory_settings_schema_id, 'inventory', 'org', 'org', '01JWNY20G23KD4RV5VWYABQYHD',
+			'transfer_sequence_definition_id', jsonb_build_object('value', '01KSEQ0000000000000NYTRF01'), NULL, NOW(), NULL),
+		('01KSEQ000000000000SETREC05', inventory_settings_schema_id, 'inventory', 'org', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9',
+			'transfer_sequence_definition_id', jsonb_build_object('value', '01KSEQ0000000000000TKTRF01'), NULL, NOW(), NULL)
+		ON CONFLICT DO NOTHING;
+	END IF;
+END $$;

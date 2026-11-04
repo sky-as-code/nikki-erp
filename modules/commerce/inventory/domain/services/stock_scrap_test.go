@@ -71,13 +71,3 @@ func TestScrapDimensionNarrowsOnEveryNamedAxis(t *testing.T) {
 		LotRef: "LOT-A", PackageRef: "PKG-2", OwnerRef: "OWN-9",
 	}))
 }
-
-func TestGeneratedScrapNumbersAreDistinct(t *testing.T) {
-	first, err := generateScrapNumber()
-	assert.NoError(t, err)
-	second, err := generateScrapNumber()
-	assert.NoError(t, err)
-
-	assert.NotEqual(t, first, second)
-	assert.Contains(t, first, "SCR-")
-}

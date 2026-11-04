@@ -56,6 +56,7 @@ func TestBillParentsExistBeforeAllocations(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			s := &billStore{bills: map[string]dmodel.DynamicFields{}}
 			installBillStore(t, s)
+			installFakeNumbering(t)
 			ctx := corectx.NewRequestContext(context.Background())
 			source := dmodel.DynamicFields{"id": "source", "sales_order_id": "order", "bill_number": "BILL-source", "currency_code": "VND", "org_id": "org", "subtotal": "100", "tax_total": "10", "grand_total": "110"}
 			allocation := dmodel.DynamicFields{"sales_order_line_id": "L1", "quantity": "2", "allocated_net_amount": "100", "allocated_tax_amount": "10", "allocated_total_amount": "110"}
@@ -99,6 +100,7 @@ func TestInitialBillStopsOnRepositoryClientErrors(t *testing.T) {
 		t.Run(schema, func(t *testing.T) {
 			s := &billStore{bills: map[string]dmodel.DynamicFields{}, failSchema: schema, sourceLines: []dmodel.DynamicFields{orderLineRecord("L1", "1", "0", "1"), orderLineRecord("L2", "1", "0", "1")}}
 			installBillStore(t, s)
+			installFakeNumbering(t)
 			id, err := CreateInitialBill(corectx.NewRequestContext(context.Background()), dmodel.DynamicFields{"id": "order", "subtotal": "2", "grand_total": "2"}, SalesPolicy{RoundingScale: 4})
 			require.Empty(t, id)
 			require.ErrorContains(t, err, "referenced bill does not exist")

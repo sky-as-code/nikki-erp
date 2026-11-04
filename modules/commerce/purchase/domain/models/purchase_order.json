@@ -17,6 +17,7 @@
 			"data_type": { "type": "resource_code", "min": 1, "max": 50 },
 			"required_for_create": true,
 			"no_update": true,
+			"metadata": {"server_assigned": true},
 			"description": {
 				"en-US": "The human reference, unique within its organization. Immutable: it is quoted to the vendor on the RFQ and must still identify the same document after confirmation, because an RFQ and the order it becomes are one record (BR 5.1, 55.1)."
 			}

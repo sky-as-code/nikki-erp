@@ -43,7 +43,7 @@ func InitRestfulHandlers() error {
 		v1.NewInvoiceRest,
 		v1.NewInvoiceLineRest,
 	)
-	return stdErr.Join(err, initResourcesV1(), initWebhooksV1())
+	return stdErr.Join(err, initResourcesV1(), initWebhooksV1(), initSettingsV1())
 }
 
 // legacyCrudActions is the built-in verb set the legacy engine served: every CRUD action except

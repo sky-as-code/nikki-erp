@@ -93,3 +93,59 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
+
+
+-- Purchase code numbering for every seeded organization, mirroring the Purchase org lifecycle
+-- (OrgLifecycleAppServiceImpl.InitOrg): one purchase.order (PO) and one purchase.agreement (PA)
+-- definition per org, their ids held in the org's "purchase" settings. No counter rows: no purchase
+-- order or agreement is seeded, so new codes start at PO00001 / PA00001.
+DO $$
+DECLARE
+	purchase_settings_schema_id varchar;
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'essential_sequence_definitions'
+	) AND EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'settings_records'
+	) THEN
+		INSERT INTO "essential_sequence_definitions" (
+			"id", "configuration_scope", "org_id", "owner_module", "code", "name", "description", "sub_scope",
+			"scope_type", "format_owner", "algorithm", "algorithm_params", "prefix_template", "suffix_template", "padding",
+			"increment", "initial_value", "reset_period", "timezone", "issuance_retention_days", "first_issued_at",
+			"is_archived", "created_at", "updated_at", "created_by", "etag"
+		) VALUES
+		('01M3SQPD000000000000000011', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'purchase', 'purchase.order', jsonb_build_object('en-US', 'Purchase order code', 'vi-VN', 'Mã đơn mua hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'PO', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQPD000000000000000012', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'purchase', 'purchase.agreement', jsonb_build_object('en-US', 'Purchase agreement code', 'vi-VN', 'Mã thỏa thuận mua hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'PA', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQPD000000000000000021', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'purchase', 'purchase.order', jsonb_build_object('en-US', 'Purchase order code', 'vi-VN', 'Mã đơn mua hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'PO', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQPD000000000000000022', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'purchase', 'purchase.agreement', jsonb_build_object('en-US', 'Purchase agreement code', 'vi-VN', 'Mã thỏa thuận mua hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'PA', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQPD000000000000000031', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'purchase', 'purchase.order', jsonb_build_object('en-US', 'Purchase order code', 'vi-VN', 'Mã đơn mua hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'PO', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQPD000000000000000032', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'purchase', 'purchase.agreement', jsonb_build_object('en-US', 'Purchase agreement code', 'vi-VN', 'Mã thỏa thuận mua hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'PA', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT DO NOTHING;
+
+		-- Seeds run before the first boot registers the module's org settings, and a settings record
+		-- must name its declaration. Snapshot of purchase/domain/settings.OrgSettingsSchemaBuilder()
+		-- .Build().ToModelJson(); startup registration matches on (module_key, level), keeps this id
+		-- and refreshes the document.
+		INSERT INTO "settings_schemas" ("id", "module_key", "level", "schema", "created_at")
+		VALUES ('01M3SQPS000000000000000001', 'purchase', 'org',
+			$purchase_org_schema${"fields":[{"data_type":{"max":30,"min":0,"type":"string"},"description":{"$ref":"settings_desc.order_code_sequence_id"},"label":{"$ref":"purchase.settings.orderCodeSequenceId"},"metadata":{"allow_override":true},"name":"order_code_sequence_id"},{"data_type":{"max":30,"min":0,"type":"string"},"description":{"$ref":"settings_desc.agreement_code_sequence_id"},"label":{"$ref":"purchase.settings.agreementCodeSequenceId"},"metadata":{"allow_override":true},"name":"agreement_code_sequence_id"}],"label":{"$ref":"purchase.settings.orgSettings"},"name":"purchase_org_settings"}$purchase_org_schema$::jsonb, NOW())
+		ON CONFLICT DO NOTHING;
+
+		SELECT "id" INTO STRICT purchase_settings_schema_id
+		FROM "settings_schemas" WHERE "module_key" = 'purchase' AND "level" = 'org';
+
+		INSERT INTO "settings_records" (
+			"id", "schema_id", "module_key", "level", "owner_type", "owner_id",
+			"name", "value", "allow_override", "created_at", "updated_at"
+		) VALUES
+		('01M3SQPR000000000000000011', purchase_settings_schema_id, 'purchase', 'org', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'order_code_sequence_id', jsonb_build_object('value', '01M3SQPD000000000000000011'), NULL, NOW(), NULL),
+		('01M3SQPR000000000000000012', purchase_settings_schema_id, 'purchase', 'org', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'agreement_code_sequence_id', jsonb_build_object('value', '01M3SQPD000000000000000012'), NULL, NOW(), NULL),
+		('01M3SQPR000000000000000021', purchase_settings_schema_id, 'purchase', 'org', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'order_code_sequence_id', jsonb_build_object('value', '01M3SQPD000000000000000021'), NULL, NOW(), NULL),
+		('01M3SQPR000000000000000022', purchase_settings_schema_id, 'purchase', 'org', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'agreement_code_sequence_id', jsonb_build_object('value', '01M3SQPD000000000000000022'), NULL, NOW(), NULL),
+		('01M3SQPR000000000000000031', purchase_settings_schema_id, 'purchase', 'org', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'order_code_sequence_id', jsonb_build_object('value', '01M3SQPD000000000000000031'), NULL, NOW(), NULL),
+		('01M3SQPR000000000000000032', purchase_settings_schema_id, 'purchase', 'org', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'agreement_code_sequence_id', jsonb_build_object('value', '01M3SQPD000000000000000032'), NULL, NOW(), NULL)
+		ON CONFLICT DO NOTHING;
+	END IF;
+END $$;

@@ -1,0 +1,92 @@
+{
+	"name": "essential_sequence_counter",
+	"label": "essential_sequence_counter.label",
+	"table_name": "essential_sequence_counters",
+	"should_build_db": true,
+	"record_label_field": "scope_key",
+	"record_sub_label_field": "period_key",
+	"default_search_fields": [
+		"definition_id", "org_id", "scope_object_id", "scope_key", "period_key", "last_number",
+		"created_at", "updated_at"
+	],
+	"composite_uniques": [
+		{
+			"index_name": "essential_seqctr_tid_def_scope_period",
+			"fields": ["definition_id", "scope_key", "period_key"]
+		}
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "definition_id",
+			"label": "fields.definition_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "scope_object_id",
+			"label": "fields.scope_object_id",
+			"data_type": "ulid",
+			"description": {
+				"en-US": "The object a custom scope numbers within (a warehouse, an operation type). No foreign key: it belongs to the consuming module"
+			}
+		},
+		{
+			"name": "scope_key",
+			"label": "fields.scope_key",
+			"data_type": { "type": "string", "min": 1, "max": 255 },
+			"required_for_create": true
+		},
+		{
+			"name": "period_key",
+			"label": "fields.period_key",
+			"data_type": { "type": "string", "min": 1, "max": 16 },
+			"required_for_create": true
+		},
+		{
+			"name": "last_number",
+			"label": "fields.last_number",
+			"data_type": { "type": "int64", "min": -9000000000000000000, "max": 9000000000000000000 },
+			"required_for_create": true
+		},
+		{
+			"name": "algorithm_params",
+			"label": "fields.algorithm_params",
+			"data_type": "jsonmap",
+			"metadata": {"server_only": true},
+			"description": {
+				"en-US": "Server-generated per-counter secrets of the algorithm. Never returned by the API"
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "definition",
+			"label": { "en-US": "Definition" },
+			"type": "many:one",
+			"dest_schema": "essential_sequence_definition",
+			"key_map": { "definition_id": "id" },
+			"on_delete": "RESTRICT"
+		}
+	],
+
+	"edges_from": [
+		{
+			"edge": "issuances",
+			"label": { "en-US": "Issuances" },
+			"existing": { "src_schema": "essential_sequence_issuance", "src_edge": "counter" }
+		}
+	]
+}

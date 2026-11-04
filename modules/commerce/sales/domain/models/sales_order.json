@@ -6,6 +6,7 @@
 	"record_label_field": "order_number",
 	"default_search_fields": [
 		"order_number",
+		"public_reference",
 		"grand_total",
 		"status",
 		"sales_point_name",
@@ -40,6 +41,10 @@
 			]
 		}
 	],
+	"composite_uniques": [
+		{ "index_name": "sales_orders_tid_number_org", "fields": ["order_number", "org_id"] },
+		{ "index_name": "sales_orders_tid_pubref_org", "fields": ["public_reference", "org_id"] }
+	],
 	"partial_uniques_strict": [
 		{
 			"index_name": "sales_orders_tid_channel_idem",
@@ -70,10 +75,26 @@
 				"max": 50
 			},
 			"required_for_create": true,
-			"unique": true,
+			"auto_generated": true,
 			"no_update": true,
 			"description": {
-				"en-US": "The human-facing identifier of the sale, quoted on receipts and in support conversations. Unique across the whole tenant rather than per channel: a customer reading a number off a receipt has no idea which channel sold it, so a number that only identified an order once the channel was known would be useless for the one job it exists to do. Immutable, because it has already been printed."
+				"en-US": "The human-facing identifier of the sale, quoted on receipts and in support conversations. Issued by the organization's sales.order sequence (SO00001, SO00002, ...) and never accepted from a client. Unique within the organization rather than per channel: a customer reading a number off a receipt has no idea which channel sold it. Per organization rather than tenant-wide, because each organization keeps its own counter. Sequential and therefore guessable, so a self-service device must never accept it as proof of an order: it uses public_reference. Immutable, because it has already been printed."
+			}
+		},
+		{
+			"name": "public_reference",
+			"label": "fields.public_reference",
+			"data_type": {
+				"type": "string",
+				"min": 1,
+				"max": 50
+			},
+			"required_for_create": true,
+			"auto_generated": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Hard-to-guess code customers use to look up this order, e.g. COREK3M9QX.",
+				"vi-VN": "Mã khó đoán để khách hàng tra cứu đơn hàng, ví dụ COREK3M9QX."
 			}
 		},
 		{

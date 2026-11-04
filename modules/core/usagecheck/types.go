@@ -44,6 +44,11 @@ func RequestTypeFor(dependantModule string) cqrs.RequestType {
 const (
 	ResourceUom = "uom"
 
+	// ResourceSequenceDefinition is asked about before Essential archives a sequence definition: a
+	// consumer that stores the definition id (an operation type, a settings record) still numbers
+	// its documents with it.
+	ResourceSequenceDefinition = "sequence_definition"
+
 	// Owned by IAM. Every org-owned record of another module names it through org_id.
 	ResourceOrg = "org"
 

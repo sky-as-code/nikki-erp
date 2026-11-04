@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/app"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/inventory/domain/services"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/external"
 	itStock "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/interfaces/stock"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 )
@@ -24,14 +25,17 @@ type stockOperationTypeEngineParam struct {
 func registerStockOperationTypeEngine() error {
 	err := deps.RegisterNamed(
 		dynamicresource.EngineDependencyName(models.StockOperationTypeSchemaName),
-		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+		func(
+			param dynamicresource.BuildParam, sequences itExt.SequenceExtService,
+			settings itExt.OrgSettingsReaderExtService,
+		) dynamicresource.DynamicResourceEngineOnion {
 			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.StockOperationTypeSchemaName,
 				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewStockOperationTypeRepository(base)
 				},
 				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
-					return services.NewStockOperationTypeDomainService(base)
+					return services.NewStockOperationTypeDomainService(base, sequences, settings)
 				},
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewStockOperationTypeApplicationService(base)

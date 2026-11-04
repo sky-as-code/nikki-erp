@@ -6,7 +6,6 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -24,15 +23,16 @@ import (
 // agreements it could not bring back.
 
 func NewPurchaseAgreementDomainService(
-	base dynamicresource.CrudDomainService, references *OrderReferenceValidator,
+	base dynamicresource.CrudDomainService, references *OrderReferenceValidator, numbering *CodeNumbering,
 ) *PurchaseAgreementDomainServiceImpl {
-	return &PurchaseAgreementDomainServiceImpl{CrudDomainService: base, references: references}
+	return &PurchaseAgreementDomainServiceImpl{CrudDomainService: base, references: references, numbering: numbering}
 }
 
 type PurchaseAgreementDomainServiceImpl struct {
 	dynamicresource.CrudDomainService
 
 	references *OrderReferenceValidator
+	numbering  *CodeNumbering
 }
 
 // Create stamps code and status server-side; both are no_update and a client may not choose either,
@@ -40,16 +40,10 @@ type PurchaseAgreementDomainServiceImpl struct {
 func (this *PurchaseAgreementDomainServiceImpl) Create(
 	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
-	code, err := generateAgreementCode()
-	if err != nil {
-		return nil, err
-	}
-
 	prepared := make(dmodel.DynamicFields, len(params)+3)
 	for key, value := range params {
 		prepared[key] = value
 	}
-	prepared[models.AgreementFieldCode] = code
 	prepared[models.AgreementFieldStatus] = string(models.AgreementStatusDraft)
 
 	// The vendor is optional on an agreement, unlike on an order: a template may exist before
@@ -64,7 +58,7 @@ func (this *PurchaseAgreementDomainServiceImpl) Create(
 		}
 	}
 
-	return this.CrudDomainService.Create(ctx, prepared, options...)
+	return createWithCode(ctx, this.CrudDomainService, this.numbering, SeqAgreementCode, prepared, options...)
 }
 
 // Confirm makes the agreement live, so orders may be drawn against it.
@@ -327,15 +321,6 @@ func agreementNotFoundResult(agreementId string) *dyn.OpResult[dyn.MutateResultD
 		ft.ErrorKey("purchase_agreement.not_found", "purchase"),
 		"no purchase agreement with id '"+agreementId+"'"))
 	return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: *vErrs}
-}
-
-// generateAgreementCode mints the agreement's human-facing reference, on the order code's pattern.
-func generateAgreementCode() (string, error) {
-	id, err := model.NewId()
-	if err != nil {
-		return "", errors.Wrap(err, "generateAgreementCode")
-	}
-	return "PA-" + *id, nil
 }
 
 // CreateRfq starts a request for quotation from an agreement, copying its lines at the agreed

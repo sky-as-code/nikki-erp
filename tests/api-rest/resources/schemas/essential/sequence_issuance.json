@@ -1,0 +1,97 @@
+{
+    "type": "object",
+    "required": [
+        "id",
+        "definition_id",
+        "counter_id",
+        "idempotency_id",
+        "operation_key",
+        "allocated_value",
+        "issued_at",
+        "expires_at"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "created_by": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "definition_id": {
+            "type": "string",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "counter_id": {
+            "type": "string",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "org_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "idempotency_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "operation_key": {
+            "type": "string"
+        },
+        "request_fingerprint": {
+            "type": "string"
+        },
+        "caller_module": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "caller_principal_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "accepted_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "effective_at": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "allocated_value": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+        },
+        "formatted_value": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "issued_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "expires_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "etag": {
+            "type": "string"
+        }
+    },
+    "additionalProperties": false
+}

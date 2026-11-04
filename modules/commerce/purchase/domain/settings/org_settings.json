@@ -1,0 +1,21 @@
+{
+	"name": "purchase_org_settings",
+	"label": "purchase.settings.orgSettings",
+
+	"fields": [
+		{
+			"name": "order_code_sequence_id",
+			"label": "purchase.settings.orderCodeSequenceId",
+			"description": "settings_desc.order_code_sequence_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "agreement_code_sequence_id",
+			"label": "purchase.settings.agreementCodeSequenceId",
+			"description": "settings_desc.agreement_code_sequence_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
+		}
+	]
+}

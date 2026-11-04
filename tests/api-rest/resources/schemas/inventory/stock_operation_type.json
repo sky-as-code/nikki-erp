@@ -2,7 +2,8 @@
     "type": "object",
     "required": [
         "id", "created_at", "name", "operation_code", "reservation_method",
-        "backorder_policy", "etag", "is_archived", "org_id"
+        "backorder_policy", "etag", "is_archived", "org_id", "sequence_prefix",
+        "warehouse_id"
     ],
     "properties": {
         "id": {
@@ -41,6 +42,14 @@
         "shipping_policy": {
             "type": ["string", "null"],
             "enum": ["partial", "all_at_once", null]
+        },
+        "sequence_prefix": {
+            "type": "string",
+            "pattern": "^[A-Z0-9-]+$"
+        },
+        "warehouse_id": {
+            "type": "string",
+            "minLength": 1
         },
         "default_source_location_id": {
             "type": ["string", "null"]

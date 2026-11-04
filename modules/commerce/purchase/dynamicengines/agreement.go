@@ -30,6 +30,7 @@ func registerAgreementEngine() error {
 			param dynamicresource.BuildParam,
 			vendors itExt.VendorExtService,
 			currencies itExt.CurrencyExtService,
+			numbering *services.CodeNumbering,
 		) dynamicresource.DynamicResourceEngineOnion {
 			references := services.NewOrderReferenceValidator(vendors, currencies)
 			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
@@ -38,7 +39,7 @@ func registerAgreementEngine() error {
 					return repo.NewAgreementRepository(base)
 				},
 				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
-					return services.NewPurchaseAgreementDomainService(base, references)
+					return services.NewPurchaseAgreementDomainService(base, references, numbering)
 				},
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewAgreementApplicationService(base)

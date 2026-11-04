@@ -1,0 +1,191 @@
+{
+	"name": "essential_sequence_definition",
+	"label": "essential_sequence_definition.label",
+	"table_name": "essential_sequence_definitions",
+	"should_build_db": true,
+	"record_label_field": "name",
+	"record_sub_label_field": "code",
+	"default_search_fields": [
+		"code", "name", "owner_module", "configuration_scope", "scope_type", "org_id", "format_owner",
+		"algorithm", "prefix_template", "suffix_template", "padding", "increment", "initial_value",
+		"reset_period", "timezone", "issuance_retention_days", "first_issued_at", "is_archived", "etag"
+	],
+	"partial_uniques_loose": [
+		{
+			"index_name": "essential_seqdef_tid_code_org",
+			"not_null_fields": ["code"],
+			"nullable_field": "org_id"
+		}
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "configuration_scope",
+			"label": "fields.configuration_scope",
+			"data_type": { "type": "enum_string", "values": ["tenant", "org"] },
+			"required_for_create": true,
+			"no_update": true,
+			"description": {
+				"en-US": "Who owns the definition: the whole tenant (org_id empty) or one organization"
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid",
+			"no_update": true,
+			"description": {
+				"en-US": "Set for an org-owned definition, empty for a tenant-owned one"
+			}
+		},
+		{
+			"name": "owner_module",
+			"label": "fields.owner_module",
+			"data_type": { "type": "string", "min": 1, "max": 100, "regex": "^[a-z0-9_]+$" },
+			"required_for_create": true,
+			"no_update": true
+		},
+		{
+			"name": "code",
+			"label": "fields.code",
+			"data_type": { "type": "string", "min": 1, "max": 100, "regex": "^[a-z0-9_]+(\\.[a-z0-9_]+)*$" },
+			"required_for_create": true
+		},
+		{
+			"name": "name",
+			"label": "fields.name",
+			"data_type": { "type": "langjson", "min": 1, "max": 255 },
+			"required_for_create": true
+		},
+		{
+			"name": "description",
+			"label": "fields.description",
+			"data_type": { "type": "string", "min": 0, "max": 3000 }
+		},
+		{
+			"name": "sub_scope",
+			"label": "fields.sub_scope",
+			"data_type": { "type": "string", "min": 1, "max": 50, "regex": "^[A-Za-z0-9_]+$" },
+			"no_update": true,
+			"description": {
+				"en-US": "Splits numbering inside the configuration scope, e.g. inventory_optype; stored lowercase"
+			}
+		},
+		{
+			"name": "scope_type",
+			"label": "fields.scope_type",
+			"data_type": { "type": "string", "min": 1, "max": 64 },
+			"no_update": true,
+			"description": {
+				"en-US": "Computed by the server: configuration_scope, or configuration_scope.sub_scope"
+			}
+		},
+		{
+			"name": "format_owner",
+			"label": "fields.format_owner",
+			"data_type": { "type": "enum_string", "values": ["sequence", "consumer"] },
+			"default_value": "sequence",
+			"description": {
+				"en-US": "sequence renders prefix + number + suffix; consumer receives the padded number and the period key and formats the final code itself"
+			}
+		},
+		{
+			"name": "algorithm",
+			"label": "fields.algorithm",
+			"data_type": { "type": "enum_string", "values": ["increment", "FF1_FPE"] },
+			"default_value": "increment",
+			"no_update": true
+		},
+		{
+			"name": "algorithm_params",
+			"label": "fields.algorithm_params",
+			"data_type": "jsonmap",
+			"metadata": {"server_only": true},
+			"description": {
+				"en-US": "Server-generated secrets of the algorithm. Never returned by the API"
+			}
+		},
+		{
+			"name": "prefix_template",
+			"label": "fields.prefix_template",
+			"data_type": { "type": "string", "min": 0, "max": 255 }
+		},
+		{
+			"name": "suffix_template",
+			"label": "fields.suffix_template",
+			"data_type": { "type": "string", "min": 0, "max": 255 }
+		},
+		{
+			"name": "padding",
+			"label": "fields.padding",
+			"data_type": { "type": "int32", "min": 0, "max": 32 },
+			"description": {
+				"en-US": "Minimum digits of the number, 1-32, default 5; always 0 for pseudorandom. Defaulted by the server rather than the schema, which would read 0 as absent"
+			}
+		},
+		{
+			"name": "increment",
+			"label": "fields.increment",
+			"data_type": { "type": "int64", "min": 1, "max": 9000000000000000000 },
+			"default_value": 1
+		},
+		{
+			"name": "initial_value",
+			"label": "fields.initial_value",
+			"data_type": { "type": "int64", "min": 0, "max": 9000000000000000000 },
+			"description": {
+				"en-US": "First number of every counter, default 1. Defaulted by the server rather than the schema, which would read 0 as absent"
+			}
+		},
+		{
+			"name": "reset_period",
+			"label": "fields.reset_period",
+			"data_type": { "type": "enum_string", "values": ["never", "yearly", "monthly", "daily"] },
+			"default_value": "never"
+		},
+		{
+			"name": "timezone",
+			"label": "fields.timezone",
+			"data_type": { "type": "string", "min": 1, "max": 64 },
+			"description": {
+				"en-US": "IANA time zone the periods are cut in. Defaults to the organization's time zone, else UTC"
+			}
+		},
+		{
+			"name": "issuance_retention_days",
+			"label": "fields.issuance_retention_days",
+			"data_type": { "type": "int32", "min": 1, "max": 3650 },
+			"default_value": 90
+		},
+		{
+			"name": "first_issued_at",
+			"label": "fields.first_issued_at",
+			"data_type": "datetime",
+			"auto_generated": true,
+			"description": {
+				"en-US": "When the first number was issued. Once set, only name and description can change"
+			}
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.archivable_model",
+		"core.basemodel.auditable_model",
+		"core.basemodel.traceable_model",
+		"core.basemodel.versioned_model"
+	],
+
+	"edges_from": [
+		{
+			"edge": "counters",
+			"label": { "en-US": "Counters" },
+			"existing": { "src_schema": "essential_sequence_counter", "src_edge": "definition" }
+		},
+		{
+			"edge": "issuances",
+			"label": { "en-US": "Issuances" },
+			"existing": { "src_schema": "essential_sequence_issuance", "src_edge": "definition" }
+		}
+	]
+}

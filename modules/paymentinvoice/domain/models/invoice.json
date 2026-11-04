@@ -6,6 +6,13 @@
 	"record_label_field": "number",
 	"default_search_fields": ["number", "status", "partner_name", "total_amount", "issued_at"],
 	"extend_before": ["core.basemodel.base_model"],
+	"partial_uniques_strict": [
+		{
+			"index_name": "payinv_invoices_tid_org_number",
+			"not_null_fields": ["org_id"],
+			"nullable_field": "number"
+		}
+	],
 
 	"fields": [
 		{
@@ -30,10 +37,11 @@
 			"name": "number",
 			"label": "fields.number",
 			"data_type": { "type": "string", "min": 0, "max": 50 },
-			"unique": true,
+			"auto_generated": true,
 			"no_update": true,
+			"metadata": {"server_assigned": true},
 			"description": {
-				"en-US": "The invoice number, in the form INV-{year}-{sequence}. Absent while the invoice is a draft and assigned by the issue action, because a number handed out before issue would leave a gap in the sequence if the draft were abandoned."
+				"en-US": "The invoice number, in the form INV-{year}-{sequence}, issued by the organization's paymentinvoice.invoice sequence (reset yearly, in the organization's timezone). Absent while the invoice is a draft and assigned by the issue action, because a number handed out before issue would leave a gap in the sequence if the draft were abandoned. Unique within the organization when present (payinv_invoices_tid_org_number): each organization keeps its own counter, so a tenant-wide unique would collide across organizations."
 			}
 		},
 		{

@@ -43,6 +43,7 @@ func TestDraftOrderInsertsExplicitArchiveDefault(t *testing.T) {
 		t.Run(schema, func(t *testing.T) {
 			stop := errors.New("insert captured")
 			probe := &draftInsertProbe{stop: stop}
+			installFakeNumbering(t)
 			previous := repoFor
 			t.Cleanup(func() { repoFor = previous })
 			repoFor = func(name string) (dynamicresource.CrudRepository, error) {
@@ -63,6 +64,11 @@ func TestDraftOrderInsertsExplicitArchiveDefault(t *testing.T) {
 			require.Contains(t, probe.fields, basemodel.FieldIsArchived)
 			require.Equal(t, false, probe.fields[basemodel.FieldIsArchived])
 			require.Equal(t, "org", probe.fields[basemodel.FieldOrgId])
+			if schema == models.SalesOrderSchemaName {
+				require.Equal(t, "order_number_sequence_id-00001", probe.fields[models.SalesOrderFieldOrderNumber])
+				require.Equal(t, "order_public_reference_sequence_id-00002",
+					probe.fields[models.SalesOrderFieldPublicReference])
+			}
 		})
 	}
 }

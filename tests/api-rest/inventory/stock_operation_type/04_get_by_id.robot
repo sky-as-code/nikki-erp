@@ -16,7 +16,7 @@ Get Succeeds
 
 Get With Columns Succeeds
     ${resp}=    GET On Session    api    ${STOCK_OPERATION_TYPE_API}/${STOCK_OPERATION_TYPE_ID}
-    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['code', 'name', 'operation_code']} }}
+    ...    params=${{ {'org_id': $INV_ORG_ID, 'fields': ['sequence_prefix', 'name', 'operation_code', 'warehouse_id']} }}
     Response Status Should Be    ${resp}    200
 
 Get With Nonexist Column Fails

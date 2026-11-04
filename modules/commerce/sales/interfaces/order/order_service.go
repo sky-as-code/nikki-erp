@@ -255,9 +255,12 @@ type CreateSaleOrderLineAllocation struct {
 }
 
 type SalesOrderData struct {
-	SalesOrderId   string `json:"sales_order_id"`
-	OrderNumber    string `json:"order_number"`
-	SalesChannelId string `json:"sales_channel_id"`
+	SalesOrderId string `json:"sales_order_id"`
+	// OrderNumber is sequential, for staff and receipts. PublicReference is the non-guessable code a
+	// customer-facing device shows and looks the order up by; never hand OrderNumber to one.
+	OrderNumber     string `json:"order_number"`
+	PublicReference string `json:"public_reference"`
+	SalesChannelId  string `json:"sales_channel_id"`
 
 	// AlreadyExisted tells a caller its retry was recognised rather than a new order created.
 	AlreadyExisted bool `json:"already_existed"`

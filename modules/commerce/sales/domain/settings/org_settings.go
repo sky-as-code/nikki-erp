@@ -64,7 +64,23 @@ const (
 	// adjustments and scraps under. It lives in this schema because Commerce registers one org-level
 	// schema; Sales never reads it.
 	OrgSettingCorrectionOperationTypeId = "correction_operation_type_id"
+
+	// The Essential sequence definitions Sales numbers its documents from, registered by the org
+	// lifecycle. System-managed: SequenceSettingsRule refuses a client write, because repointing one
+	// would restart or duplicate a document series.
+	OrgSettingOrderNumberSequenceId          = "order_number_sequence_id"
+	OrgSettingOrderPublicReferenceSequenceId = "order_public_reference_sequence_id"
+	OrgSettingBillNumberSequenceId           = "bill_number_sequence_id"
+	OrgSettingReturnNumberSequenceId         = "return_number_sequence_id"
 )
+
+// SequenceIdSettings lists the settings holding a sequence definition id.
+func SequenceIdSettings() []string {
+	return []string{
+		OrgSettingOrderNumberSequenceId, OrgSettingOrderPublicReferenceSequenceId,
+		OrgSettingBillNumberSequenceId, OrgSettingReturnNumberSequenceId,
+	}
+}
 
 // The defaults, restated in Go as a fallback when the settings read fails or the value is absent.
 // They deliberately duplicate the default_value entries in org_settings.json: the JSON governs the

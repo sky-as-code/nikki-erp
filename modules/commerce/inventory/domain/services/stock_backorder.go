@@ -92,7 +92,9 @@ func createBackorderTransfer(
 	original := operation.Transfer
 	operationCode := derefString(original.GetOperationCode())
 
-	transferNumber, err := generateTransferNumber(operationCode)
+	// The backorder continues its parent's type, so it is numbered from that type's sequence.
+	transferNumber, err := mustBuildTransferNumber(ctx, derefString(original.GetOperationTypeId()),
+		transferKeyBackorderOf, derefString(original.GetId()))
 	if err != nil {
 		return err
 	}

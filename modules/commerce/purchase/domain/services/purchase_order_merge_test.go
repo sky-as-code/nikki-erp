@@ -10,6 +10,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
 func mergeLine(variantId, uomId, discount string, arrival *time.Time) dmodel.DynamicFields {
@@ -218,16 +219,29 @@ func TestTheOldestOrderIsTheMergeTarget(t *testing.T) {
 		assert.Equal(t, "PO-B", stringOf(target, models.PurchaseOrderFieldCode))
 	})
 
-	t.Run("with no deadlines, the code decides", func(t *testing.T) {
-		// The code carries a ULID, which sorts by creation time, so this still means oldest.
-		orders := []dmodel.DynamicFields{
-			orderFor("PO-02", "01V", "01C", "", nil),
-			orderFor("PO-01", "01V", "01C", "", nil),
-		}
+	t.Run("with no deadlines, the creation time decides, not the code", func(t *testing.T) {
+		// Codes are per-org sequence numbers: "PO-00002" may well be older than "PO-00001".
+		older := orderFor("PO-00002", "01V", "01C", "", nil)
+		older[basemodel.FieldCreatedAt] = *at(8, 0)
+		newer := orderFor("PO-00001", "01V", "01C", "", nil)
+		newer[basemodel.FieldCreatedAt] = *at(9, 0)
 
-		target, _ := splitMergeTarget(orders)
+		target, _ := splitMergeTarget([]dmodel.DynamicFields{newer, older})
 
-		assert.Equal(t, "PO-01", stringOf(target, models.PurchaseOrderFieldCode))
+		assert.Equal(t, "PO-00002", stringOf(target, models.PurchaseOrderFieldCode))
+	})
+
+	t.Run("the same creation time falls back to the id", func(t *testing.T) {
+		first := orderFor("PO-B", "01V", "01C", "", nil)
+		first[models.PurchaseOrderFieldId] = "01KAAAAAAAAAAAAAAAAAAAAAA2"
+		first[basemodel.FieldCreatedAt] = *at(8, 0)
+		second := orderFor("PO-A", "01V", "01C", "", nil)
+		second[models.PurchaseOrderFieldId] = "01KAAAAAAAAAAAAAAAAAAAAAA1"
+		second[basemodel.FieldCreatedAt] = *at(8, 0)
+
+		target, _ := splitMergeTarget([]dmodel.DynamicFields{first, second})
+
+		assert.Equal(t, "PO-A", stringOf(target, models.PurchaseOrderFieldCode))
 	})
 }
 

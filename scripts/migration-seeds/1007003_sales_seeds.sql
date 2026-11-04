@@ -10472,3 +10472,69 @@ BEGIN
 		ON CONFLICT ("id") DO NOTHING;
 	END IF;
 END $$;
+
+
+-- Sales document numbering for the seeded organizations, mirroring what the Sales org lifecycle
+-- (app/org_lifecycle_sequences.go) writes for a new one: the four Essential sequence definitions
+-- (sales.order SO, sales.order.public_reference CORE pseudorandom, sales.bill BILL, sales.return RET;
+-- org scope, reset never, increment 1, initial 1) and the commerce org settings naming them. No
+-- counter rows: new numbers start at 1. The FF1 keys are hex literals generated once with a CSPRNG -
+-- dev seed only, never reuse them anywhere real.
+--
+-- Seeded orders keep their SO-2026-NNNNN numbers, which cannot collide with the new SO00001 shape.
+-- Their public_reference is seed data shaped like a real one (CORE + 6 Crockford characters taken
+-- from md5 of the id, checked unique over the seeded ids), NOT FF1 output.
+DO $$
+BEGIN
+	IF EXISTS (
+		SELECT FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_name = 'essential_sequence_definitions'
+	) THEN
+		INSERT INTO "essential_sequence_definitions" (
+			"id", "configuration_scope", "org_id", "owner_module", "code", "name", "description", "sub_scope",
+			"scope_type", "format_owner", "algorithm", "algorithm_params", "prefix_template", "suffix_template", "padding",
+			"increment", "initial_value", "reset_period", "timezone", "issuance_retention_days", "first_issued_at",
+			"is_archived", "created_at", "updated_at", "created_by", "etag"
+		) VALUES
+		('01M3SQD0000000000000000011', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'sales', 'sales.order', jsonb_build_object('en-US', 'Sales order number', 'vi-VN', 'Số đơn bán hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'SO', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQD0000000000000000012', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'sales', 'sales.order.public_reference', jsonb_build_object('en-US', 'Sales order public reference', 'vi-VN', 'Mã tham chiếu công khai đơn bán hàng'), NULL, NULL, 'org', 'sequence', 'FF1_FPE', jsonb_build_object('key', 'b8e7daeae2869e6de205545647e7fb0e9162412eb9c5630fbc5029c6c97ec952'), 'CORE', NULL, 0, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQD0000000000000000013', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'sales', 'sales.bill', jsonb_build_object('en-US', 'Sales bill number', 'vi-VN', 'Số hóa đơn bán hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'BILL', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQD0000000000000000014', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'sales', 'sales.return', jsonb_build_object('en-US', 'Sales return number', 'vi-VN', 'Số phiếu trả hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'RET', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQD0000000000000000021', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'sales', 'sales.order', jsonb_build_object('en-US', 'Sales order number', 'vi-VN', 'Số đơn bán hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'SO', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQD0000000000000000022', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'sales', 'sales.order.public_reference', jsonb_build_object('en-US', 'Sales order public reference', 'vi-VN', 'Mã tham chiếu công khai đơn bán hàng'), NULL, NULL, 'org', 'sequence', 'FF1_FPE', jsonb_build_object('key', 'b97daeba2e6d1b1bd3e09ca668b3c83a23dd42bffbc4506b34d14876681366f8'), 'CORE', NULL, 0, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQD0000000000000000023', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'sales', 'sales.bill', jsonb_build_object('en-US', 'Sales bill number', 'vi-VN', 'Số hóa đơn bán hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'BILL', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQD0000000000000000024', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'sales', 'sales.return', jsonb_build_object('en-US', 'Sales return number', 'vi-VN', 'Số phiếu trả hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'RET', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQD0000000000000000031', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'sales', 'sales.order', jsonb_build_object('en-US', 'Sales order number', 'vi-VN', 'Số đơn bán hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'SO', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQD0000000000000000032', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'sales', 'sales.order.public_reference', jsonb_build_object('en-US', 'Sales order public reference', 'vi-VN', 'Mã tham chiếu công khai đơn bán hàng'), NULL, NULL, 'org', 'sequence', 'FF1_FPE', jsonb_build_object('key', '329cea24872a7ebc9a67f8886905864c112f4a6a602dd60921a7dca5c64367ce'), 'CORE', NULL, 0, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQD0000000000000000033', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'sales', 'sales.bill', jsonb_build_object('en-US', 'Sales bill number', 'vi-VN', 'Số hóa đơn bán hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'BILL', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text),
+		('01M3SQD0000000000000000034', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'sales', 'sales.return', jsonb_build_object('en-US', 'Sales return number', 'vi-VN', 'Số phiếu trả hàng'), NULL, NULL, 'org', 'sequence', 'increment', NULL, 'RET', NULL, 5, 1, 1, 'never', 'Asia/Ho_Chi_Minh', 90, NULL, false, NOW(), NULL, NULL, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text)
+		ON CONFLICT DO NOTHING;
+
+		INSERT INTO "settings_records" (
+			"id", "schema_id", "module_key", "level", "owner_type", "owner_id",
+			"name", "value", "allow_override", "created_at", "updated_at"
+		) VALUES
+		('01M3SQR0000000000000000011', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'order_number_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000011'), NULL, NOW(), NULL),
+		('01M3SQR0000000000000000012', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'order_public_reference_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000012'), NULL, NOW(), NULL),
+		('01M3SQR0000000000000000013', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'bill_number_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000013'), NULL, NOW(), NULL),
+		('01M3SQR0000000000000000014', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01JWNY20G23KD4RV5VWYABQYHD', 'return_number_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000014'), NULL, NOW(), NULL),
+		('01M3SQR0000000000000000021', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'order_number_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000021'), NULL, NOW(), NULL),
+		('01M3SQR0000000000000000022', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'order_public_reference_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000022'), NULL, NOW(), NULL),
+		('01M3SQR0000000000000000023', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'bill_number_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000023'), NULL, NOW(), NULL),
+		('01M3SQR0000000000000000024', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01K02G6J1CYAN9K8V4PAGSQ5Z8', 'return_number_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000024'), NULL, NOW(), NULL),
+		('01M3SQR0000000000000000031', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'order_number_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000031'), NULL, NOW(), NULL),
+		('01M3SQR0000000000000000032', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'order_public_reference_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000032'), NULL, NOW(), NULL),
+		('01M3SQR0000000000000000033', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'bill_number_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000033'), NULL, NOW(), NULL),
+		('01M3SQR0000000000000000034', (SELECT "id" FROM "settings_schemas" WHERE "module_key" = 'commerce' AND "level" = 'org'), 'commerce', 'org', 'org', '01K1H7M2K9VW3P5R7XQJY2C1Z9', 'return_number_sequence_id', jsonb_build_object('value', '01M3SQD0000000000000000034'), NULL, NOW(), NULL)
+		ON CONFLICT DO NOTHING;
+	END IF;
+
+	IF EXISTS (
+		SELECT FROM information_schema.columns
+		WHERE table_schema = 'public' AND table_name = 'sales_orders' AND column_name = 'public_reference'
+	) THEN
+		UPDATE "sales_orders"
+		SET "public_reference" = 'CORE' || upper(substr(md5("id"), 1, 6))
+		WHERE "public_reference" IS NULL AND "id" LIKE '01M3SO%';
+	END IF;
+END $$;

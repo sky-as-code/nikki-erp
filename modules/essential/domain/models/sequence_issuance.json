@@ -1,0 +1,133 @@
+{
+	"name": "essential_sequence_issuance",
+	"label": "essential_sequence_issuance.label",
+	"table_name": "essential_sequence_issuances",
+	"should_build_db": true,
+	"record_label_field": "formatted_value",
+	"default_search_fields": [
+		"definition_id", "counter_id", "org_id", "idempotency_id", "operation_key", "caller_module",
+		"allocated_value", "formatted_value", "effective_at", "issued_at", "expires_at"
+	],
+	"composite_uniques": [
+		{
+			"index_name": "essential_seqiss_tid_def_idem_op",
+			"fields": ["definition_id", "idempotency_id", "operation_key"]
+		},
+		{
+			"index_name": "essential_seqiss_tid_counter_val",
+			"fields": ["counter_id", "allocated_value"]
+		}
+	],
+	"search_indexes": [
+		{ "index_name": "essential_seqiss_expires_at", "fields": ["expires_at"] },
+		{ "index_name": "essential_seqiss_counter_issued", "fields": ["counter_id", "issued_at", "id"] }
+	],
+	"extend_before": ["core.basemodel.base_model"],
+
+	"fields": [
+		{
+			"name": "definition_id",
+			"label": "fields.definition_id",
+			"data_type": "ulid",
+			"required_for_create": true
+		},
+		{
+			"name": "counter_id",
+			"label": "fields.counter_id",
+			"data_type": "ulid",
+			"required_for_create": true,
+			"description": {
+				"en-US": "Empty only while the issuance is being reserved, inside the issuing transaction"
+			}
+		},
+		{
+			"name": "org_id",
+			"label": "fields.org_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "idempotency_id",
+			"label": "fields.idempotency_id",
+			"data_type": "uuid",
+			"required_for_create": true
+		},
+		{
+			"name": "operation_key",
+			"label": "fields.operation_key",
+			"data_type": { "type": "string", "min": 1, "max": 128 },
+			"required_for_create": true
+		},
+		{
+			"name": "request_fingerprint",
+			"label": "fields.request_fingerprint",
+			"data_type": { "type": "string", "min": 1, "max": 128 },
+			"required_for_create": true
+		},
+		{
+			"name": "caller_module",
+			"label": "fields.caller_module",
+			"data_type": { "type": "string", "min": 0, "max": 100 }
+		},
+		{
+			"name": "caller_principal_id",
+			"label": "fields.caller_principal_id",
+			"data_type": "ulid"
+		},
+		{
+			"name": "accepted_at",
+			"label": "fields.accepted_at",
+			"data_type": "datetime",
+			"required_for_create": true
+		},
+		{
+			"name": "effective_at",
+			"label": "fields.effective_at",
+			"data_type": "datetime"
+		},
+		{
+			"name": "allocated_value",
+			"label": "fields.allocated_value",
+			"data_type": { "type": "int64", "min": 0, "max": 9000000000000000000 },
+			"required_for_create": true
+		},
+		{
+			"name": "formatted_value",
+			"label": "fields.formatted_value",
+			"data_type": { "type": "string", "min": 0, "max": 512 }
+		},
+		{
+			"name": "issued_at",
+			"label": "fields.issued_at",
+			"data_type": "datetime"
+		},
+		{
+			"name": "expires_at",
+			"label": "fields.expires_at",
+			"data_type": "datetime"
+		}
+	],
+
+	"extend_after": [
+		"core.basemodel.auditable_readonly_model",
+		"core.basemodel.traceable_model"
+	],
+
+	"edges_to": [
+		{
+			"edge": "definition",
+			"label": { "en-US": "Definition" },
+			"type": "many:one",
+			"dest_schema": "essential_sequence_definition",
+			"key_map": { "definition_id": "id" },
+			"on_delete": "RESTRICT"
+		},
+		{
+			"edge": "counter",
+			"label": { "en-US": "Counter" },
+			"type": "many:one",
+			"dest_schema": "essential_sequence_counter",
+			"key_map": { "counter_id": "id" },
+			"on_delete": "RESTRICT"
+		}
+	]
+}

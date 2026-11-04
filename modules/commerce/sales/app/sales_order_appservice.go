@@ -124,10 +124,11 @@ func (this *SalesOrderExtServiceImpl) CreateOrder(
 	}
 
 	data := it.SalesOrderData{
-		SalesOrderId:   created.SalesOrderId,
-		OrderNumber:    created.OrderNumber,
-		SalesChannelId: created.SalesChannelId,
-		AlreadyExisted: created.AlreadyExisted,
+		SalesOrderId:    created.SalesOrderId,
+		OrderNumber:     created.OrderNumber,
+		PublicReference: created.PublicReference,
+		SalesChannelId:  created.SalesChannelId,
+		AlreadyExisted:  created.AlreadyExisted,
 	}
 	// The draft is saved first; the channel's snapshot then decides whether it confirms itself.
 	// A caller that confirms afterwards anyway finds the work done and gets the same bill back.

@@ -7,8 +7,8 @@
 	"default_search_fields": ["quotation_number", "customer_reference"],
 	"composite_uniques": [
 		{
-			"index_name": "sales_quotations_tid_number",
-			"fields": ["quotation_number"]
+			"index_name": "sales_quotations_tid_number_org",
+			"fields": ["quotation_number", "org_id"]
 		}
 	],
 	"search_indexes": [

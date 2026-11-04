@@ -33,6 +33,7 @@ func registerPurchaseOrderEngine() error {
 			currencies itExt.CurrencyExtService,
 			products itExt.ProductExtService,
 			uoms itExt.UomExtService,
+			numbering *services.CodeNumbering,
 		) dynamicresource.DynamicResourceEngineOnion {
 			references := services.NewOrderReferenceValidator(vendors, currencies)
 			// Totals round to the order's own currency rather than a fixed two places.
@@ -45,7 +46,7 @@ func registerPurchaseOrderEngine() error {
 					return repo.NewPurchaseOrderRepository(base)
 				},
 				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
-					return services.NewPurchaseOrderDomainService(base, references, validator, pricer)
+					return services.NewPurchaseOrderDomainService(base, references, validator, pricer, numbering)
 				},
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewPurchaseOrderApplicationService(base)

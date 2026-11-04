@@ -32,6 +32,8 @@ func InitSubModule() error {
 	// The unit resolver feeds the template's computed unit names and the settings writer's rule.
 	if err := errors.Join(
 		deps.Register(services.NewOrgUnitResolver),
+		// Scrap numbering is shared by the scrap service and the org lifecycle.
+		deps.Register(services.NewScrapSequence),
 		deps.Register(app.NewSettingsApplicationServiceImpl),
 	); err != nil {
 		return err

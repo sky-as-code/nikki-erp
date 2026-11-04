@@ -81,6 +81,9 @@ func (*EssentialModule) Dependants() []string {
 		// Accounting holds rate_uom_id on a tax rate version: a specific-duty tax is charged per
 		// unit, and superseded versions stay readable, so the unit must survive with them.
 		"accounting",
+		// Payment & Invoice numbers invoices from a sequence definition whose id its org settings
+		// hold, so it is asked before a definition is archived.
+		"paymentinvoice",
 	}
 }
 
@@ -126,6 +129,11 @@ func (*EssentialModule) RegisterModels() error {
 		// The category must be registered before the UoM: the UoM's edge points at it.
 		dmodel.RegisterSchemaB(models.UomCatSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.UomSchemaBuilder()),
+		// The definition first: the counter and the issuance hold edges to it, the issuance also to
+		// the counter.
+		dmodel.RegisterSchemaB(models.SequenceDefinitionSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SequenceCounterSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SequenceIssuanceSchemaBuilder()),
 	)
 }
 

@@ -14,8 +14,8 @@ Test Tags         essential    uom    usage_check
 
 *** Test Cases ***
 Delete Is Refused While Inventory References The Unit
-    [Documentation]    The stock configuration names this unit, so Inventory answers "in
-    ...    use" and the delete is refused with resource_used_by_modules rather than succeeding and
+    [Documentation]    The stock configuration names this unit, so Commerce (its Inventory part)
+    ...    answers "in use" and the delete is refused with resource_used_by_modules rather than succeeding and
     ...    letting the database blank the reference (the foreign key is ON DELETE SET NULL).
     [Tags]    negative
     ${resp}=    DELETE On Session    api    ${UOM_API}/${REFERENCED_UOM_ID}
@@ -25,10 +25,12 @@ Delete Is Refused While Inventory References The Unit
 Refusal Names The Blocking Module
     [Documentation]    BR-DEL-004: the client is told which module to go and clear the
     ...    reference in. The record itself is never disclosed — that is the dependant's data.
+    ...    The stock configuration belongs to Inventory, a part of the Commerce module, so the
+    ...    refusal names `commerce`: usage is reported per module, never per part.
     [Tags]    negative
     ${resp}=    DELETE On Session    api    ${UOM_API}/${REFERENCED_UOM_ID}
     ...    params=${{ {'org_id': $UOM_ORG_ID} }}    expected_status=any
-    Should Contain    ${resp.json()}[0][message]    inventory
+    Should Contain    ${resp.json()}[0][message]    commerce
     ...    msg=The refusal must name the module still referencing the unit
 
 Rescaling Is Refused While The Unit Is Referenced

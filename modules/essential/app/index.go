@@ -13,6 +13,8 @@ func InitApplicationServices() error {
 			NewSettingsApplicationServiceImpl,
 			NewTimezoneAppServiceImpl,
 			NewUomConversionApplicationServiceImpl,
+			// The Sequence port inventory, sales, purchase and payment invoice bind to.
+			NewSequenceAppServiceImpl,
 		),
 		// The narrow port sales, purchase, inventory and accounting bind to.
 		deps.Register(func(svc itUom.UomConversionApplicationService) itUom.UomConversionAppService {

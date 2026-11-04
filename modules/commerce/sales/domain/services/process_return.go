@@ -178,6 +178,9 @@ func processReturnUnderLock(
 	// back yet.
 	if result.Status == string(models.SalesReturnStatusCompleted) {
 		adjustment, err := CreateAdjustmentOrder(ctx, salesReturn)
+		if cErrs := numberingRefusalOf(err); cErrs != nil {
+			return nil, cErrs, nil
+		}
 		if err != nil {
 			return nil, nil, err
 		}

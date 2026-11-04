@@ -106,6 +106,34 @@
 			"description": "settings_desc.correction_operation_type_id",
 			"data_type": { "type": "string", "min": 0, "max": 30 },
 			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "order_number_sequence_id",
+			"label": "sales.settings.orderNumberSequenceId",
+			"description": "settings_desc.order_number_sequence_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "order_public_reference_sequence_id",
+			"label": "sales.settings.orderPublicReferenceSequenceId",
+			"description": "settings_desc.order_public_reference_sequence_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "bill_number_sequence_id",
+			"label": "sales.settings.billNumberSequenceId",
+			"description": "settings_desc.bill_number_sequence_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "return_number_sequence_id",
+			"label": "sales.settings.returnNumberSequenceId",
+			"description": "settings_desc.return_number_sequence_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
 		}
 	]
 }

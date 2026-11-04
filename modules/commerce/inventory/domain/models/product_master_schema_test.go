@@ -78,6 +78,11 @@ func requireEssentialSchemasRegistered(t *testing.T) {
 	t.Helper()
 	_ = dmodel.RegisterSchemaB(essentialmodels.UomCatSchemaBuilder())
 	_ = dmodel.RegisterSchemaB(essentialmodels.UomSchemaBuilder())
+	// The operation type's sequence_definition edge; the counter and issuance follow it because
+	// the definition's edges_from name them.
+	_ = dmodel.RegisterSchemaB(essentialmodels.SequenceDefinitionSchemaBuilder())
+	_ = dmodel.RegisterSchemaB(essentialmodels.SequenceCounterSchemaBuilder())
+	_ = dmodel.RegisterSchemaB(essentialmodels.SequenceIssuanceSchemaBuilder())
 	// The warehouse's manager_user edge points at IAM's user. A stand-in with the same name and key
 	// is enough to finalize the edge without registering the whole IAM graph behind the real one.
 	_ = dmodel.RegisterSchemaB(dmodel.ParseModelJson(iamUserStandInJson))

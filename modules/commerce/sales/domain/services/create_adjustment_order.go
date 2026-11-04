@@ -141,11 +141,18 @@ func writeAdjustmentOrder(
 
 	totals := adjustmentTotalsOf(kept)
 	orgId := stringOf(original, basemodel.FieldOrgId)
+	// An adjustment order is an order like any other, so it is numbered from the same series and
+	// gets its own public reference: a device looking an order up must find this one the same way.
+	numbers, err := issueOrderNumbers(ctx, orgId, "adjusts_return", stringOf(salesReturn, models.SalesReturnFieldId))
+	if err != nil {
+		return err
+	}
 
 	fields := dmodel.DynamicFields{
-		models.SalesOrderFieldId:             adjustmentId,
-		models.SalesOrderFieldOrderNumber:    "SO-" + adjustmentId,
-		models.SalesOrderFieldAdjustsOrderId: stringOf(original, models.SalesOrderFieldId),
+		models.SalesOrderFieldId:              adjustmentId,
+		models.SalesOrderFieldOrderNumber:     numbers.OrderNumber,
+		models.SalesOrderFieldPublicReference: numbers.PublicReference,
+		models.SalesOrderFieldAdjustsOrderId:  stringOf(original, models.SalesOrderFieldId),
 
 		// Confirmed, not draft: the sale it describes already happened and was paid for. A draft
 		// would be swept away by the expiry job as an abandoned basket.

@@ -37,9 +37,8 @@ func (this *StockTransferDomainServiceImpl) Create(
 	if cErrs.Count() > 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: cErrs}, nil
 	}
-	if delta == nil {
-		return this.createHeader(ctx, params)
-	}
+	// Always one transaction: the transfer number is reserved before the header is written, and a
+	// refused header must release it.
 	var result *dyn.OpResult[dmodel.DynamicFields]
 	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
 		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
@@ -47,7 +46,7 @@ func (this *StockTransferDomainServiceImpl) Create(
 			if result, err = this.createHeader(tranxCtx, params); err != nil {
 				return nil, err
 			}
-			if result.ClientErrors.Count() > 0 || !result.HasData {
+			if result.ClientErrors.Count() > 0 || !result.HasData || delta == nil {
 				return &result.ClientErrors, nil
 			}
 			transferId := derefString(models.NewStockTransferFrom(result.Data).GetId())
@@ -90,10 +89,7 @@ func (this *StockTransferDomainServiceImpl) createHeader(
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 	}
 
-	prepared, err := prepareTransferForCreate(params, *operationType)
-	if err != nil {
-		return nil, err
-	}
+	prepared := prepareTransferForCreate(params, *operationType)
 	clientErrs := assertCreatableTransfer(prepared)
 	if err := assertLocationsHoldStock(ctx, prepared, clientErrs); err != nil {
 		return nil, err
@@ -101,6 +97,15 @@ func (this *StockTransferDomainServiceImpl) createHeader(
 	if clientErrs.Count() > 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *clientErrs}, nil
 	}
+	// Numbered last, once nothing else can refuse the transfer, so a refusal wastes no number.
+	transferNumber, numberErrs, err := buildTransferNumber(ctx, operationTypeId)
+	if err != nil {
+		return nil, err
+	}
+	if numberErrs != nil {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *numberErrs}, nil
+	}
+	prepared[models.StockTransferFieldTransferNumber] = transferNumber
 
 	return this.CrudDomainService.Create(ctx, prepared)
 }
@@ -216,23 +221,19 @@ func loadUsableOperationType(
 }
 
 // prepareTransferForCreate stamps the server-owned fields over whatever the client sent. Client
-// values are overwritten rather than rejected, so a client echoing a record back does not fail.
+// values are overwritten rather than rejected, so a client echoing a record back does not fail. The
+// client's transfer_number is dropped here; the caller stamps the issued one.
 func prepareTransferForCreate(
 	params dmodel.DynamicFields, operationType models.StockOperationType,
-) (dmodel.DynamicFields, error) {
+) dmodel.DynamicFields {
 	operationCode := derefString(operationType.GetOperationCode())
-
-	transferNumber, err := generateTransferNumber(operationCode)
-	if err != nil {
-		return nil, err
-	}
 
 	prepared := make(dmodel.DynamicFields, len(params)+6)
 	for key, value := range params {
 		prepared[key] = value
 	}
 
-	prepared[models.StockTransferFieldTransferNumber] = transferNumber
+	delete(prepared, models.StockTransferFieldTransferNumber)
 	prepared[models.StockTransferFieldStatus] = models.StockTransferStatusDraft
 	prepared[models.StockTransferFieldOperationCode] = operationCode
 	prepared[models.StockTransferFieldReservationMethod] = derefString(operationType.GetReservationMethod())
@@ -245,7 +246,7 @@ func prepareTransferForCreate(
 	applyDefaultLocation(prepared, models.StockTransferFieldDestinationLocationId,
 		operationType.GetDefaultDestinationLocationId())
 
-	return prepared, nil
+	return prepared
 }
 
 func applyDefaultLocation(params dmodel.DynamicFields, field string, fallback *string) {

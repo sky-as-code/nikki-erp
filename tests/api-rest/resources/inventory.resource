@@ -360,6 +360,26 @@ Ensure Inventory Location Under Test
     Set Global Variable    ${INVENTORY_LOCATION_ETAG}    ${etag}
     Set Global Variable    ${INVENTORY_LOCATION_NAME}    ${name}
 
+Unique Sequence Prefix
+    [Documentation]    INV-SEQ-001: an operation type's sequence_prefix is a resource code unique per
+    ...    org (at most 20 characters), and the middle segment of every transfer number it issues.
+    [Arguments]    ${words}=OPT
+    ${code}=    Unique Code    ${words}
+    RETURN    ${code[:20]}
+
+Post Stock Operation Type
+    [Documentation]    POSTs an operation type and returns the raw response, for positive and
+    ...    negative tests alike. INV-SEQ-001 makes sequence_prefix and warehouse_id required, so
+    ...    the warehouse under test and a unique prefix are filled in unless the body names its
+    ...    own; a key set to None in the body is dropped, so a test can omit one on purpose.
+    [Arguments]    ${body}
+    Ensure Warehouse Under Test
+    ${prefix}=    Unique Sequence Prefix
+    ${payload}=    Evaluate
+    ...    {k: v for k, v in {'sequence_prefix': $prefix, 'warehouse_id': $WAREHOUSE_ID, **$body}.items() if v is not None}
+    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}    json=${payload}    expected_status=any
+    RETURN    ${resp}
+
 Ensure Stock Operation Type Under Test
     [Documentation]    The receipt operation type the stock_operation_type suite exercises.
     ${id}=    Get Variable Value    ${STOCK_OPERATION_TYPE_ID}    ${EMPTY}
@@ -367,8 +387,7 @@ Ensure Stock Operation Type Under Test
     Ensure Inventory Location Under Test
     ${name}=    Unique Display Name    Robot Receipt Type
     ${code}=    Unique Code    stkop
-    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'at_confirmation', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
+    ${resp}=    Post Stock Operation Type    ${{ {'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'at_confirmation', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${STOCK_OPERATION_TYPE_ID}    ${id}
     Set Global Variable    ${STOCK_OPERATION_TYPE_ETAG}    ${etag}
@@ -412,8 +431,7 @@ Ensure Internal Operation Type Under Test
     Ensure Inventory Location Under Test
     Ensure Stock Destination Location Under Test
     ${name}=    Unique Display Name    Robot Internal Type
-    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'always', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ${resp}=    Post Stock Operation Type    ${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'always', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${INTERNAL_OPERATION_TYPE_ID}    ${id}
 
@@ -546,8 +564,7 @@ Ensure Receipt Operation Type Under Test
     IF    $id    RETURN
     Ensure Inventory Org
     ${name}=    Unique Display Name    Robot Receipt Flow Type
-    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ${resp}=    Post Stock Operation Type    ${{ {'name': {'en-US': $name}, 'operation_code': 'incoming', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     Set Global Variable    ${RECEIPT_OPERATION_TYPE_ID}    ${id}
 
@@ -589,8 +606,7 @@ Ensure Correction Operation Type Under Test
     Ensure Inventory Location Under Test
     Ensure Inventory Loss Location Under Test
     ${name}=    Unique Display Name    Robot Correction Type
-    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
+    ${resp}=    Post Stock Operation Type    ${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'never', 'shipping_policy': 'partial', 'org_id': $INV_ORG_ID} }}
     ${id}    ${etag}=    Response Should Be Create Success    ${resp}
     ${items}=    Create List    ${{ {'name': 'correction_operation_type_id', 'value': $id} }}
     ${resp}=    PATCH On Session    api    /v1/commerce/settings/org    json=${{ {'items': $items} }}

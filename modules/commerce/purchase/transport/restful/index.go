@@ -29,7 +29,7 @@ func InitRestfulHandlers() error {
 		v1.NewPurchaseOrderLineRest,
 		v1.NewAuditEventRest,
 	)
-	return stdErr.Join(err, initPurchaseV1())
+	return stdErr.Join(err, initPurchaseV1(), initSettingsV1())
 }
 
 func initPurchaseV1() error {
