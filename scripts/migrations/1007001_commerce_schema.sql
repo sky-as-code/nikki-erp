@@ -57,6 +57,7 @@ CREATE TABLE "inventory_locations" (
   "storage_category_id" character varying NULL,
   "removal_strategy" character varying NULL,
   "is_replenishment_destination" boolean NULL,
+  "accept_direct_transfers" boolean NULL,
   "is_system_generated" boolean NULL,
   "status" character varying NULL,
   "description" character varying NULL,

@@ -94,6 +94,9 @@
         "is_replenishment_destination": {
             "type": "boolean"
         },
+        "accept_direct_transfers": {
+            "type": "boolean"
+        },
         "is_system_generated": {
             "type": "boolean"
         },

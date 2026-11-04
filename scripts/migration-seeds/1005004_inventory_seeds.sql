@@ -849,3 +849,6 @@ BEGIN
 		ON CONFLICT DO NOTHING;
 	END IF;
 END $$;
+
+-- The seeded column lists predate accept_direct_transfers; give those rows the model default.
+UPDATE "inventory_locations" SET "accept_direct_transfers" = TRUE WHERE "accept_direct_transfers" IS NULL;

@@ -90,6 +90,13 @@
 			"description": "field_desc.inventory_location.is_replenishment_destination"
 		},
 		{
+			"name": "accept_direct_transfers",
+			"label": "fields.accept_direct_transfers",
+			"data_type": "boolean",
+			"default_value": true,
+			"description": "field_desc.inventory_location.accept_direct_transfers"
+		},
+		{
 			"name": "is_system_generated",
 			"label": "fields.is_system_generated",
 			"data_type": "boolean",
