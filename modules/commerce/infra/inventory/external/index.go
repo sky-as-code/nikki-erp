@@ -6,6 +6,7 @@ package external
 import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
+	itSeq "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/sequence"
 	itUom "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/uom"
 	itSettings "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/settings"
 
@@ -43,6 +44,10 @@ func InitExternal() error {
 		},
 		func(settings itSettings.OrgSettingsAppService) itExt.OrgSettingsSeedExtService {
 			return settings
+		},
+		func(sequences itSeq.SequenceService) itExt.SequenceExtService {
+			// Direct hand-over: Essential's port asserts nothing and settles the idempotency id.
+			return sequences
 		},
 	)
 }

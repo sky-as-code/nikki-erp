@@ -241,6 +241,9 @@ func confirmUnderLock(
 		note = models.AutoConfirmedNote
 	}
 	initialBillId, err := stampConfirmed(ctx, orderId, record, confirmedAt, policy, note)
+	if cErrs := numberingRefusalOf(err); cErrs != nil {
+		return nil, cErrs, nil
+	}
 	if err != nil {
 		return nil, nil, err
 	}

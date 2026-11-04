@@ -144,6 +144,86 @@ CREATE TABLE "essential_org_languages" (
   CONSTRAINT "essent_org_lang_org_language_ukey" UNIQUE ("org_id", "language_id"),
   CONSTRAINT "essential_org_languages_language_id_fkey" FOREIGN KEY ("language_id") REFERENCES "essential_languages" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
+-- Create "essential_sequence_definitions" table
+CREATE TABLE "essential_sequence_definitions" (
+  "id" character varying NOT NULL,
+  "configuration_scope" character varying NULL,
+  "org_id" character varying NULL,
+  "owner_module" character varying NULL,
+  "code" character varying NULL,
+  "name" jsonb NULL,
+  "description" character varying NULL,
+  "sub_scope" character varying NULL,
+  "scope_type" character varying NULL,
+  "format_owner" character varying NULL,
+  "algorithm" character varying NULL,
+  "algorithm_params" jsonb NULL,
+  "prefix_template" character varying NULL,
+  "suffix_template" character varying NULL,
+  "padding" integer NULL,
+  "increment" bigint NULL,
+  "initial_value" bigint NULL,
+  "reset_period" character varying NULL,
+  "timezone" character varying NULL,
+  "issuance_retention_days" integer NULL,
+  "first_issued_at" timestamptz NULL,
+  "is_archived" boolean NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  "etag" character varying NULL,
+  PRIMARY KEY ("id")
+);
+-- Create index "essential_seqdef_tid_code_org_ukey_notnull" to table: "essential_sequence_definitions"
+CREATE UNIQUE INDEX "essential_seqdef_tid_code_org_ukey_notnull" ON "essential_sequence_definitions" ("code", "org_id") WHERE (org_id IS NOT NULL);
+-- Create index "essential_seqdef_tid_code_org_ukey_null" to table: "essential_sequence_definitions"
+CREATE UNIQUE INDEX "essential_seqdef_tid_code_org_ukey_null" ON "essential_sequence_definitions" ("code") WHERE (org_id IS NULL);
+-- Create "essential_sequence_counters" table
+CREATE TABLE "essential_sequence_counters" (
+  "id" character varying NOT NULL,
+  "definition_id" character varying NULL,
+  "org_id" character varying NULL,
+  "scope_object_id" character varying NULL,
+  "scope_key" character varying NULL,
+  "period_key" character varying NULL,
+  "last_number" bigint NULL,
+  "algorithm_params" jsonb NULL,
+  "created_at" timestamptz NULL,
+  "updated_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "essential_seqctr_tid_def_scope_period_ukey" UNIQUE ("definition_id", "scope_key", "period_key"),
+  CONSTRAINT "essential_sequence_counters_definition_id_fkey" FOREIGN KEY ("definition_id") REFERENCES "essential_sequence_definitions" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT
+);
+-- Create "essential_sequence_issuances" table
+CREATE TABLE "essential_sequence_issuances" (
+  "id" character varying NOT NULL,
+  "definition_id" character varying NULL,
+  "counter_id" character varying NULL,
+  "org_id" character varying NULL,
+  "idempotency_id" uuid NULL,
+  "operation_key" character varying NULL,
+  "request_fingerprint" character varying NULL,
+  "caller_module" character varying NULL,
+  "caller_principal_id" character varying NULL,
+  "accepted_at" timestamptz NULL,
+  "effective_at" timestamptz NULL,
+  "allocated_value" bigint NULL,
+  "formatted_value" character varying NULL,
+  "issued_at" timestamptz NULL,
+  "expires_at" timestamptz NULL,
+  "created_at" timestamptz NULL,
+  "created_by" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "essential_seqiss_tid_counter_val_ukey" UNIQUE ("counter_id", "allocated_value"),
+  CONSTRAINT "essential_seqiss_tid_def_idem_op_ukey" UNIQUE ("definition_id", "idempotency_id", "operation_key"),
+  CONSTRAINT "essential_sequence_issuances_counter_id_fkey" FOREIGN KEY ("counter_id") REFERENCES "essential_sequence_counters" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT,
+  CONSTRAINT "essential_sequence_issuances_definition_id_fkey" FOREIGN KEY ("definition_id") REFERENCES "essential_sequence_definitions" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT
+);
+-- Create index "essential_seqiss_counter_issued_idx" to table: "essential_sequence_issuances"
+CREATE INDEX "essential_seqiss_counter_issued_idx" ON "essential_sequence_issuances" ("counter_id", "issued_at", "id");
+-- Create index "essential_seqiss_expires_at_idx" to table: "essential_sequence_issuances"
+CREATE INDEX "essential_seqiss_expires_at_idx" ON "essential_sequence_issuances" ("expires_at");
 -- Create "essential_uomcats" table
 CREATE TABLE "essential_uomcats" (
   "id" character varying NOT NULL,

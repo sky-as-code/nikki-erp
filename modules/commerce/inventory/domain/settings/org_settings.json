@@ -16,6 +16,20 @@
 			"description": "settings_desc.default_length_uom_id",
 			"data_type": { "type": "string", "min": 0, "max": 30 },
 			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "scrap_sequence_definition_id",
+			"label": "inventory.settings.scrapSequenceDefinitionId",
+			"description": "settings_desc.scrap_sequence_definition_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
+		},
+		{
+			"name": "transfer_sequence_definition_id",
+			"label": "inventory.settings.transferSequenceDefinitionId",
+			"description": "settings_desc.transfer_sequence_definition_id",
+			"data_type": { "type": "string", "min": 0, "max": 30 },
+			"metadata": { "allow_override": true }
 		}
 	]
 }

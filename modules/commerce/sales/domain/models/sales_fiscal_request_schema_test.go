@@ -241,14 +241,8 @@ func TestQuotationNumberIsIndependentOfTheOrderSequence(t *testing.T) {
 		t.Error("quotation_number must be no_update: it is what the customer quotes back")
 	}
 
-	found := false
-	for _, unique := range schema.CompositeUniques() {
-		if len(unique.Fields) == 1 && unique.Fields[0] == SalesQuotationFieldNumber {
-			found = true
-		}
-	}
-	if !found {
-		t.Error("quotation_number must be unique")
+	if !hasCompositeUnique(schema, SalesQuotationFieldNumber, SalesQuotationFieldOrgId) {
+		t.Error("quotation_number must be unique per organization")
 	}
 }
 

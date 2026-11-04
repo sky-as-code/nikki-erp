@@ -16,11 +16,15 @@ func TestOrgSettingsSchemaIsMetadataOnly(t *testing.T) {
 	assert.Empty(t, schema.PrimaryKeys())
 }
 
-// Every unit setting has a default unit, and nothing else does.
+// Every unit setting has a default unit, and nothing else does but the server-owned settings.
 func TestEveryUnitSettingHasADefaultSymbol(t *testing.T) {
 	schema := OrgSettingsSchemaBuilder().Build()
 
-	require.Len(t, DefaultUomSymbolOf, len(schema.Fields()))
+	require.Len(t, DefaultUomSymbolOf, len(schema.Fields())-len(ServerOwnedOrgSettings))
+	for _, name := range ServerOwnedOrgSettings {
+		_, declared := schema.Field(name)
+		assert.Truef(t, declared, "server-owned %q is not declared", name)
+	}
 	for name := range DefaultUomSymbolOf {
 		_, declared := schema.Field(name)
 		assert.Truef(t, declared, "%q has a default but is not declared", name)

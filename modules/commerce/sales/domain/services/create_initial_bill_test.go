@@ -1,13 +1,16 @@
 package services
 
 import (
+	"context"
 	"testing"
 
 	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/require"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 
 	"github.com/sky-as-code/nikki-erp/modules/commerce/sales/domain/models"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 // The arithmetic of the initial bill, pinned without a repository. What matters here is that the
@@ -141,17 +144,18 @@ func TestAZeroValueOrderStillProducesABalancedBill(t *testing.T) {
 	}
 }
 
-// The number is derived from the bill's own id, the convention create_order uses for the order
-// number. Unique by construction, and a later split still derives BILL-<id>-1 from it.
-func TestTheInitialBillIsNamedAfterItsOwnId(t *testing.T) {
-	if got := initialBillNumberOf("01HXYZ"); got != "BILL-01HXYZ" {
-		t.Errorf("bill number = %q, want BILL-01HXYZ", got)
-	}
+// The initial bill is numbered from the org's bill sequence, keyed by the order it bills, and a later
+// split derives its children's numbers from it.
+func TestTheInitialBillIsNumberedFromTheBillSequence(t *testing.T) {
+	sequences, _ := installFakeNumbering(t)
 
-	source := dmodel.DynamicFields{
-		models.SalesBillFieldBillNumber: initialBillNumberOf("01HXYZ"),
-	}
-	if got := billNumberOf(source, 0); got != "BILL-01HXYZ-1" {
-		t.Errorf("split child number = %q, want BILL-01HXYZ-1", got)
+	got, err := issueBillNumber(corectx.NewRequestContext(context.Background()), "org", "01HXYZ")
+
+	require.NoError(t, err)
+	require.Equal(t, "bill_number_sequence_id-00001", got)
+	require.Equal(t, "bill_number:order:01HXYZ", *sequences.calls[0].OperationKey)
+	source := dmodel.DynamicFields{models.SalesBillFieldBillNumber: "BILL00001"}
+	if child := billNumberOf(source, 0); child != "BILL00001-1" {
+		t.Errorf("split child number = %q, want BILL00001-1", child)
 	}
 }

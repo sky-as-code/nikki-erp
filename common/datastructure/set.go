@@ -53,7 +53,7 @@ func (this Set[T]) Length() int {
 
 // String returns printable string of the set.
 func (this Set[T]) String() string {
-	return fmt.Sprintf("%s", this.ToSlice())
+	return fmt.Sprintf("%v", this.ToSlice())
 }
 
 // MarshalJSON belongs to json.Marshaler interface.

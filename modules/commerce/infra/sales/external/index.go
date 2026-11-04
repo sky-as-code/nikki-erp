@@ -18,6 +18,7 @@ import (
 	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
 	itCurrency "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/currency"
+	itSeq "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/sequence"
 	itJob "github.com/sky-as-code/nikki-erp/modules/jobscheduler/interfaces/job"
 	itInvoice "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/invoice"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
@@ -129,6 +130,13 @@ func InitExternal() error {
 		},
 		func(currencySvc itCurrency.CurrencyAppService) itExt.OrgDefaultsLookupExtService {
 			return &orgDefaultsLookup{currencySvc: currencySvc}
+		},
+		func(sequences itSeq.SequenceService) itExt.SequenceExtService {
+			// Direct hand-over: Essential's port asserts nothing and settles the idempotency id.
+			return sequences
+		},
+		func(settings itSettings.OrgSettingsAppService) itExt.OrgSettingsSeedExtService {
+			return settings
 		},
 	); err != nil {
 		return err

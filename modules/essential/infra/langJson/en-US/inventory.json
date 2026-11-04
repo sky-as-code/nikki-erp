@@ -1049,5 +1049,14 @@
 	"warehouse_supply_relation.org_mismatch": "Both warehouses must belong to the same organization",
 	"warehouse_supply_relation.same_warehouse": "A warehouse cannot supply itself",
 	"warehouse_supply_relation.source_not_found": "The source warehouse does not exist",
-	"warehouse_supply_relation.warehouse_archived": "An archived warehouse cannot take part in a supply route"
+	"warehouse_supply_relation.warehouse_archived": "An archived warehouse cannot take part in a supply route",
+	"field_desc.inventory_stock_operation_type.sequence_prefix": "Code placed in the number of every transfer of this type: {warehouse code}/{prefix}/{number}. Unique in the organization; it cannot be changed.",
+	"field_desc.inventory_stock_operation_type.warehouse_id": "Warehouse whose code starts the number of every transfer of this type. It cannot be changed.",
+	"fields.sequence_prefix": "Sequence prefix",
+	"inventory.settings.scrapSequenceDefinitionId": "Scrap numbering",
+	"settings_desc.scrap_sequence_definition_id": "Sequence definition that numbers scrap documents. Set by the system.",
+	"settings.server_owned": "{{field}} is set by the system",
+	"inventory.settings.transferSequenceDefinitionId": "Transfer numbering",
+	"settings_desc.transfer_sequence_definition_id": "Sequence definition that numbers transfers, one counter per operation type. Set by the system.",
+	"sequence_not_configured": "Document numbering is not set up for this organization. Ask an administrator to set it up."
 }

@@ -227,7 +227,8 @@ func (this *queryPlan) resolveWith(path string, u use, maxDots int) (*resolvedRe
 	}
 	leaf := segments[len(segments)-1]
 	field, ok := owner.Field(leaf)
-	if !ok || field.IsEdgeModel() {
+	// A server_only leaf answers as unknown through an edge: naming it must disclose nothing.
+	if !ok || field.IsEdgeModel() || (len(segments) > 1 && field.IsServerOnly()) {
 		return nil, orm.ErrUnknownField(path)
 	}
 	if field.IsVirtual() {

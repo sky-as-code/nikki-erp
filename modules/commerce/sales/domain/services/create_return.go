@@ -217,6 +217,9 @@ func createReturnUnderLock(
 	}
 
 	if err := writeReturn(ctx, params, order, result); err != nil {
+		if cErrs := numberingRefusalOf(err); cErrs != nil {
+			return nil, cErrs, nil
+		}
 		return nil, nil, err
 	}
 	return result, nil, nil
@@ -416,17 +419,19 @@ func writeReturn(
 	returnId := string(*id)
 	orgId := stringOf(order, basemodel.FieldOrgId)
 
-	number, err := model.NewId()
-	if err != nil {
-		return err
-	}
-	returnNumber := "RET-" + string(*number)
-
+	var returnNumber string
 	err = withTransaction(ctx, models.SalesReturnSchemaName, func(tranxCtx corectx.Context) error {
 		engineRepo, err := repoFor(models.SalesReturnSchemaName)
 		if err != nil {
 			return err
 		}
+		// Drawn inside the transaction, so a return that fails to write gives its number back.
+		issued, err := issueDocumentNumbers(tranxCtx, orgId,
+			[]string{"order", stringOf(order, models.SalesOrderFieldId)}, SeqReturnNumber)
+		if err != nil {
+			return err
+		}
+		returnNumber = issued[0]
 		if _, err := engineRepo.Insert(tranxCtx, dmodel.DynamicFields{
 			models.SalesReturnFieldId:                     returnId,
 			models.SalesReturnFieldOrgId:                  orgId,

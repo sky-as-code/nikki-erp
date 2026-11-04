@@ -2,7 +2,6 @@ package services
 
 import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	"strings"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -10,7 +9,6 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -270,20 +268,4 @@ func moveStatuses(moves []dmodel.DynamicFields) []string {
 		statuses = append(statuses, derefString(move.GetStatus()))
 	}
 	return statuses
-}
-
-// generateTransferNumber builds the document number from the operation type's code and a fresh
-// ULID rather than a counter, which would need a sequence table and serialise every create in an
-// org. ULID prefixes are time-ordered, so numbers still sort roughly by creation. Uniqueness is
-// enforced by the composite unique on (transfer_number, org_id), not by this function.
-func generateTransferNumber(operationCode string) (string, error) {
-	id, err := model.NewId()
-	if err != nil {
-		return "", errors.Wrap(err, "generateTransferNumber")
-	}
-	prefix := strings.ToUpper(operationCode)
-	if prefix == "" {
-		prefix = "TRF"
-	}
-	return prefix[:min(3, len(prefix))] + "-" + *id, nil
 }

@@ -283,14 +283,22 @@ func insertReturnTransfer(
 		return "", err
 	}
 
-	transferNumber, err := generateTransferNumber("RET")
+	// An operation type of the opposite direction is preferred, but its absence must not block a
+	// return: the reversed code on the transfer is what drives the movement. The number comes from
+	// whichever type the return is recorded under.
+	operationTypeId := derefString(original.GetOperationTypeId())
+	if operationType != nil {
+		operationTypeId = derefString(operationType.GetId())
+	}
+	transferNumber, err := mustBuildTransferNumber(ctx, operationTypeId, transferKeyReturnOf, derefString(original.GetId()))
 	if err != nil {
 		return "", err
 	}
 
 	fields := dmodel.DynamicFields{
-		models.StockTransferFieldTransferNumber: transferNumber,
-		models.StockTransferFieldOperationCode:  reversedCode,
+		models.StockTransferFieldTransferNumber:  transferNumber,
+		models.StockTransferFieldOperationCode:   reversedCode,
+		models.StockTransferFieldOperationTypeId: operationTypeId,
 		// Source and destination swap: the goods retrace their steps.
 		models.StockTransferFieldSourceLocationId:      derefString(original.GetDestinationLocationId()),
 		models.StockTransferFieldDestinationLocationId: derefString(original.GetSourceLocationId()),
@@ -301,13 +309,6 @@ func insertReturnTransfer(
 		models.StockTransferFieldShippingPolicy:        derefString(original.GetShippingPolicy()),
 		models.StockTransferFieldOriginReference:       derefString(original.GetTransferNumber()),
 		models.StockTransferFieldOrgId:                 derefString(original.GetOrgId()),
-	}
-	// An operation type of the opposite direction is preferred, but its absence must not block a
-	// return: the reversed code on the transfer is what drives the movement.
-	if operationType != nil {
-		fields[models.StockTransferFieldOperationTypeId] = derefString(operationType.GetId())
-	} else {
-		fields[models.StockTransferFieldOperationTypeId] = derefString(original.GetOperationTypeId())
 	}
 
 	inserted, err := operation.TransferRepo.Insert(ctx, fields)

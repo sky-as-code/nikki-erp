@@ -183,5 +183,12 @@
 	"purchase_vendor_product_price.uom_not_convertible": "Đơn vị này không thể quy đổi sang đơn vị tồn kho của sản phẩm",
 	"purchase_vendor_product_price.uom_not_found": "Đơn vị tính không tồn tại",
 	"purchase_vendor_product_price.validity_inverted": "Giá này hết hiệu lực trước khi bắt đầu nên sẽ không bao giờ được áp dụng",
-	"purchase_vendor_product_price.variant_template_mismatch": "Biến thể này thuộc một sản phẩm khác với mẫu sản phẩm được chỉ định trên giá này"
+	"purchase_vendor_product_price.variant_template_mismatch": "Biến thể này thuộc một sản phẩm khác với mẫu sản phẩm được chỉ định trên giá này",
+	"purchase.settings.orgSettings": "Thiết lập mua hàng",
+	"purchase.settings.orderCodeSequenceId": "Đánh số đơn mua hàng",
+	"purchase.settings.agreementCodeSequenceId": "Đánh số thỏa thuận mua hàng",
+	"settings_desc.order_code_sequence_id": "Định nghĩa dãy số đánh số các đơn mua hàng. Do hệ thống thiết lập.",
+	"settings_desc.agreement_code_sequence_id": "Định nghĩa dãy số đánh số các thỏa thuận mua hàng. Do hệ thống thiết lập.",
+	"settings.sequence_managed": "Thiết lập này do hệ thống quản lý và không thể thay đổi",
+	"sequence_not_configured": "Tổ chức này chưa được thiết lập đánh số chứng từ. Hãy liên hệ quản trị viên để thiết lập."
 }

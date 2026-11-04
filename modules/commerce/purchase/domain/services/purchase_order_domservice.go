@@ -1,11 +1,8 @@
 package services
 
 import (
-	"go.bryk.io/pkg/errors"
-
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
@@ -18,13 +15,14 @@ import (
 // type-asserting its domain service at construction.
 func NewPurchaseOrderDomainService(
 	base dynamicresource.CrudDomainService, references *OrderReferenceValidator,
-	products *ProductLineValidator, pricer *LinePricer,
+	products *ProductLineValidator, pricer *LinePricer, numbering *CodeNumbering,
 ) *PurchaseOrderDomainServiceImpl {
 	return &PurchaseOrderDomainServiceImpl{
 		CrudDomainService: base,
 		references:        references,
 		products:          products,
 		pricer:            pricer,
+		numbering:         numbering,
 	}
 }
 
@@ -40,26 +38,23 @@ type PurchaseOrderDomainServiceImpl struct {
 	// reports it examined nothing rather than failing.
 	products *ProductLineValidator
 	pricer   *LinePricer
+
+	// Issues the order code from the org's purchase.order sequence.
+	numbering *CodeNumbering
 }
 
-// Create stamps the fields a client may not choose: a generated code, status forced to RFQ, zeroed
+// Create stamps the fields a client may not choose: a sequence-issued code, status forced to RFQ, zeroed
 // totals, and is_locked, vendor_acknowledged and approval_required set false. Approval is decided
 // at confirm time from the org configuration and the order total. Client values for these are
 // overwritten rather than rejected, so echoing a record back does not fail.
 func (this *PurchaseOrderDomainServiceImpl) Create(
 	ctx corectx.Context, params dmodel.DynamicFields, options ...dynamicresource.CreateOptions,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
-	code, err := generateOrderCode()
-	if err != nil {
-		return nil, err
-	}
-
 	prepared := make(dmodel.DynamicFields, len(params)+7)
 	for key, value := range params {
 		prepared[key] = value
 	}
 
-	prepared[models.PurchaseOrderFieldCode] = code
 	prepared[models.PurchaseOrderFieldStatus] = string(models.PurchaseOrderStatusRfq)
 	prepared[models.PurchaseOrderFieldIsLocked] = false
 	prepared[models.PurchaseOrderFieldVendorAcknowledged] = false
@@ -76,17 +71,5 @@ func (this *PurchaseOrderDomainServiceImpl) Create(
 		}
 	}
 
-	return this.CrudDomainService.Create(ctx, prepared, options...)
-}
-
-// generateOrderCode mints the order's human-facing reference. The prefix is "PO" whatever the
-// status: an RFQ and the purchase order it becomes are one record, and a status-encoding code would
-// have to change under a vendor already holding the old one. The suffix is a ULID rather than a
-// per-org counter, being unique without coordination while still sorting by creation time.
-func generateOrderCode() (string, error) {
-	id, err := model.NewId()
-	if err != nil {
-		return "", errors.Wrap(err, "generateOrderCode")
-	}
-	return "PO-" + *id, nil
+	return createWithCode(ctx, this.CrudDomainService, this.numbering, SeqOrderCode, prepared, options...)
 }

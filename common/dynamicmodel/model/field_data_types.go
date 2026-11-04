@@ -674,6 +674,10 @@ func (this fieldDataTypeUuid) TryConvert(val any, _ FieldDataTypeOptions) (value
 	if sameType || ptrSameType {
 		return Value(val), nil
 	}
+	// lib/pq scans a Postgres uuid column as its text form in a []byte.
+	if raw, isBytes := val.([]byte); isBytes {
+		return Value(string(raw)), nil
+	}
 	str, err := toString(val)
 	if err != nil {
 		return Value(nil), err

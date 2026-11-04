@@ -24,14 +24,16 @@ type stockScrapEngineParam struct {
 func registerStockScrapEngine() error {
 	err := deps.RegisterNamed(
 		dynamicresource.EngineDependencyName(models.StockScrapSchemaName),
-		func(param dynamicresource.BuildParam) dynamicresource.DynamicResourceEngineOnion {
+		func(
+			param dynamicresource.BuildParam, numbering *services.ScrapSequence,
+		) dynamicresource.DynamicResourceEngineOnion {
 			return buildOnion(&dynamicresource.DynamicResourceEngineOnionImpl{
 				SchemaName: models.StockScrapSchemaName,
 				NewRepositoryFn: func(base dynamicresource.CrudRepository) dynamicresource.CrudRepository {
 					return repo.NewStockScrapRepository(base)
 				},
 				NewDomainServiceFn: func(base dynamicresource.CrudDomainService) dynamicresource.CrudDomainService {
-					return services.NewStockScrapDomainService(base)
+					return services.NewStockScrapDomainService(base, numbering)
 				},
 				NewAppServiceFn: func(base dynamicresource.CrudApplicationService) dynamicresource.CrudApplicationService {
 					return app.NewStockScrapApplicationService(base)

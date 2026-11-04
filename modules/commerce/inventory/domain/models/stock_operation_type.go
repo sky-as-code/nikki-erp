@@ -58,9 +58,12 @@ const (
 	StockOperationTypeFieldDefaultSourceLocationId      = "default_source_location_id"
 	StockOperationTypeFieldDefaultDestinationLocationId = "default_destination_location_id"
 	StockOperationTypeFieldOrgId                        = "org_id"
+	StockOperationTypeFieldSequencePrefix               = "sequence_prefix"
+	StockOperationTypeFieldWarehouseId                  = "warehouse_id"
 
 	StockOperationTypeEdgeDefaultSourceLocation      = "default_source_location"
 	StockOperationTypeEdgeDefaultDestinationLocation = "default_destination_location"
+	StockOperationTypeEdgeWarehouse                  = "warehouse"
 )
 
 //go:embed stock_operation_type.json
@@ -144,4 +147,12 @@ func (this StockOperationType) GetOrgId() *model.Id {
 
 func (this *StockOperationType) SetOrgId(v *model.Id) {
 	this.GetFieldData().SetModelId(StockOperationTypeFieldOrgId, v)
+}
+
+func (this StockOperationType) GetSequencePrefix() *string {
+	return this.GetFieldData().GetString(StockOperationTypeFieldSequencePrefix)
+}
+
+func (this StockOperationType) GetWarehouseId() *model.Id {
+	return this.GetFieldData().GetModelId(StockOperationTypeFieldWarehouseId)
 }

@@ -6,6 +6,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/accounting/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/accounting/constants"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/orglifecycle"
 	"github.com/sky-as-code/nikki-erp/modules/core/usagecheck"
@@ -37,6 +38,18 @@ func initUsageCheckHandlers() error {
 			essconstants.EssentialModuleName,
 			usagecheck.ResourceUom,
 			usagecheck.NewTableChecker(resolveRepository, uomTables()...),
+		); err != nil {
+			return err
+		}
+		// Essential asks every dependant before archiving a sequence definition, and a dependant
+		// without a checker answers with an error that blocks the archive. Accounting numbers
+		// nothing through Sequence, so it holds no definition id.
+		if err := registry.Register(
+			essconstants.EssentialModuleName,
+			usagecheck.ResourceSequenceDefinition,
+			usagecheck.CheckerFunc(func(corectx.Context, usagecheck.ResourceRef) (bool, string, error) {
+				return false, "", nil
+			}),
 		); err != nil {
 			return err
 		}

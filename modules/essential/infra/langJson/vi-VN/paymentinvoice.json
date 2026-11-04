@@ -125,5 +125,10 @@
 	"transaction_status.failed": "Thất bại",
 	"transaction_status.pending": "Chờ xử lý",
 	"transaction_type.payment": "Thanh toán",
-	"transaction_type.refund": "Hoàn tiền"
+	"transaction_type.refund": "Hoàn tiền",
+	"paymentinvoice.settings.orgSettings": "Thiết lập thanh toán và hóa đơn",
+	"paymentinvoice.settings.invoiceNumberSequenceId": "Đánh số hóa đơn",
+	"settings_desc.invoice_number_sequence_id": "Định nghĩa dãy số đánh số các hóa đơn. Do hệ thống thiết lập.",
+	"settings.sequence_managed": "Thiết lập này do hệ thống quản lý và không thể thay đổi",
+	"sequence_not_configured": "Tổ chức này chưa được thiết lập đánh số chứng từ. Hãy liên hệ quản trị viên để thiết lập."
 }

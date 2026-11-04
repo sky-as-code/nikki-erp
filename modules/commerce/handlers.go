@@ -37,11 +37,19 @@ func initCqrsHandlers() error {
 }
 
 // newUsageCheckRegistry binds a checker to every (owner, resource) pair the owners dispatch to
-// Commerce. A unit of measure is in use when any part still holds it.
+// Commerce. A unit of measure or a sequence definition is in use when any part still holds it.
 func newUsageCheckRegistry() (*usagecheck.CheckerRegistry, error) {
 	registry := usagecheck.NewCheckerRegistry()
 	err := registry.Register(essconstants.EssentialModuleName, usagecheck.ResourceUom, anyPartUses(
 		invcqrs.UomUsageChecker(), purcqrs.UomUsageChecker(), salescqrs.UomUsageChecker(),
+	))
+	if err != nil {
+		return nil, err
+	}
+	// A sequence definition is in use while any part still numbers documents with it, through an
+	// operation type's column or a definition id kept in an org setting.
+	err = registry.Register(essconstants.EssentialModuleName, usagecheck.ResourceSequenceDefinition, anyPartUses(
+		invcqrs.SequenceUsageChecker(), purcqrs.SequenceUsageChecker(), salescqrs.SequenceUsageChecker(),
 	))
 	if err != nil {
 		return nil, err

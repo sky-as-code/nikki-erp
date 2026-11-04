@@ -33,11 +33,30 @@ Server Mints The Order Code
     ...    The prefix is PO for every order regardless of status (PUR-R1): a code that encoded
     ...    the status would have to change when the status did, while the vendor is holding a
     ...    document quoting the old one.
+    ...
+    ...    PUR-SEQ-001: the code comes from the org's `purchase.order` Sequence, `PO` and a
+    ...    number padded to 5 digits, so it grows past 5 digits instead of wrapping.
     Ensure Purchase Order Under Test
     ${resp}=    GET On Session    api    ${PURCHASE_ORDER_API}/${PURCHASE_ORDER_ID}
     ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
     Response Status Should Be    ${resp}    200
-    Should Start With    ${resp.json()}[item][code]    PO-
+    Should Match Regexp    ${resp.json()}[item][code]    ^PO\\d{5,}$
+
+Consecutive Orders Take Increasing Codes
+    [Documentation]    PUR-SEQ-001: one counter per org, so the next order's number is greater
+    ...    than the previous one's. Not necessarily +1: another client may issue in between.
+    ${first_id}    ${first_etag}=    Create Purchase Order
+    ${second_id}    ${second_etag}=    Create Purchase Order
+    ${first}=    GET On Session    api    ${PURCHASE_ORDER_API}/${first_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
+    ${second}=    GET On Session    api    ${PURCHASE_ORDER_API}/${second_id}
+    ...    params=${{ {'org_id': $PURCHASE_ORG_ID} }}
+    ${first_number}=    Evaluate    int($first.json()['item']['code'][2:])
+    ${second_number}=    Evaluate    int($second.json()['item']['code'][2:])
+    Should Be True    ${second_number} > ${first_number}
+    ...    msg=Second order code ${second.json()}[item][code] does not follow ${first.json()}[item][code]
+    [Teardown]    Run Keywords    Delete Purchase Order Fixture    ${first_id}
+    ...    AND    Delete Purchase Order Fixture    ${second_id}
 
 A Client Supplied Code And Status Are Overwritten Not Rejected
     [Documentation]    They are not part of the request's meaning, and a client echoing a

@@ -42,6 +42,7 @@ func InitExternal() error {
 		deps.Register(func(currencySvc itCurrency.CurrencyAppService) itExt.CurrencyExtService {
 			return currencySvc
 		}),
+		registerNumberingPorts(),
 	)
 }
 

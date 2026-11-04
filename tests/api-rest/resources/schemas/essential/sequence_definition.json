@@ -1,0 +1,150 @@
+{
+    "type": "object",
+    "required": [
+        "id",
+        "created_at",
+        "configuration_scope",
+        "owner_module",
+        "code",
+        "name",
+        "scope_type",
+        "format_owner",
+        "algorithm",
+        "padding",
+        "increment",
+        "initial_value",
+        "reset_period",
+        "timezone",
+        "issuance_retention_days",
+        "is_archived",
+        "etag"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "created_by": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "configuration_scope": {
+            "type": "string",
+            "enum": [
+                "tenant",
+                "org"
+            ]
+        },
+        "org_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "owner_module": {
+            "type": "string"
+        },
+        "code": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)*$"
+        },
+        "name": {
+            "type": "object"
+        },
+        "description": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "sub_scope": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "scope_type": {
+            "type": "string"
+        },
+        "format_owner": {
+            "type": "string",
+            "enum": [
+                "sequence",
+                "consumer"
+            ]
+        },
+        "algorithm": {
+            "type": "string",
+            "enum": [
+                "increment",
+                "pseudorandom"
+            ]
+        },
+        "prefix_template": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "suffix_template": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "padding": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 32
+        },
+        "increment": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "initial_value": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "reset_period": {
+            "type": "string",
+            "enum": [
+                "never",
+                "yearly",
+                "monthly",
+                "daily"
+            ]
+        },
+        "timezone": {
+            "type": "string"
+        },
+        "issuance_retention_days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3650
+        },
+        "first_issued_at": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "is_archived": {
+            "type": "boolean"
+        },
+        "etag": {
+            "type": "string",
+            "minLength": 1
+        }
+    },
+    "additionalProperties": false
+}

@@ -45,6 +45,8 @@ A New Scrap Is Draft And Numbered By The Server
     Should Be Equal    ${item}[status]    draft
     Should Not Be Empty    ${item}[scrap_number]
     ...    msg=The server must generate a scrap number
+    # INV-SEQ-002: issued by the org's `inventory.scrap` Sequence, SCR + 5-digit number.
+    Should Match Regexp    ${item}[scrap_number]    ^SCR\\d{5,}$
 
 Do Scrap Removes The Goods From Usable Stock
     [Documentation]    AC-STOCK-019. The balance falls by exactly the scrapped quantity.

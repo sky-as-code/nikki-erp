@@ -33,6 +33,8 @@
 	"settings.menu.currencies": "Currencies",
 	"settings.menu.general": "General settings",
 	"settings.menu.languages": "Languages",
+	"settings.menu.sequences": "Sequences",
+	"settings.menu.technical": "Technical",
 	"settings.menu.translations": "Translations",
 	"settings.moduleLabel": "Settings",
 	"settings.module_key_required": "The module is required",

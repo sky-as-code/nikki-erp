@@ -28,6 +28,9 @@
 			]
 		}
 	],
+	"composite_uniques": [
+		{ "index_name": "sales_returns_tid_number_org", "fields": ["return_number", "org_id"] }
+	],
 	"extend_before": [
 		"core.basemodel.base_model",
 		"core.basemodel.org_base_model"
@@ -42,10 +45,10 @@
 				"max": 50
 			},
 			"required_for_create": true,
-			"unique": true,
+			"auto_generated": true,
 			"no_update": true,
 			"description": {
-				"en-US": "The return's own reference, allocated on create and never reused. Separate from the order number because a return is its own document (BR 59): a partial return never rewrites the order it came from, so the two need distinct identities for anyone reconciling them later."
+				"en-US": "The return's own reference, allocated on create from the organization's sales.return sequence (RET00001, ...) and never reused or accepted from a client. Unique within the organization rather than tenant-wide, because each organization keeps its own counter. Separate from the order number because a return is its own document (BR 59): a partial return never rewrites the order it came from, so the two need distinct identities for anyone reconciling them later."
 			}
 		},
 		{

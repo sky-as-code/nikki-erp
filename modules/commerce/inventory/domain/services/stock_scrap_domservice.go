@@ -2,7 +2,6 @@ package services
 
 import (
 	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
-	"strings"
 
 	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
@@ -18,8 +17,10 @@ import (
 
 // NewStockScrapDomainService derives the scrap service from the engine's default one, which it
 // embeds so built-in CRUD keeps running unchanged.
-func NewStockScrapDomainService(base dynamicresource.CrudDomainService) *StockScrapDomainServiceImpl {
-	return &StockScrapDomainServiceImpl{CrudDomainService: base}
+func NewStockScrapDomainService(
+	base dynamicresource.CrudDomainService, numbering *ScrapSequence,
+) *StockScrapDomainServiceImpl {
+	return &StockScrapDomainServiceImpl{CrudDomainService: base, numbering: numbering}
 }
 
 // StockScrapDomainServiceImpl adds the scrap document's own rules. A scrap is a document, not a
@@ -27,6 +28,7 @@ func NewStockScrapDomainService(base dynamicresource.CrudDomainService) *StockSc
 // create, update and delete stay open here, merely constrained, where the quant refuses them.
 type StockScrapDomainServiceImpl struct {
 	dynamicresource.CrudDomainService
+	numbering *ScrapSequence
 }
 
 var _ dynamicresource.CrudDomainService = (*StockScrapDomainServiceImpl)(nil)
@@ -40,10 +42,34 @@ func (this *StockScrapDomainServiceImpl) Create(
 	if vErrs := assertScrapQuantityPositive(params); vErrs.Count() > 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *vErrs}, nil
 	}
-
-	scrapNumber, err := generateScrapNumber()
+	// One transaction: the number is reserved before the scrap is written, and a refused write must
+	// release it.
+	var result *dyn.OpResult[dmodel.DynamicFields]
+	refused, err := dynamicresource.InRefusableTransaction(ctx, this.Repository(),
+		func(tranxCtx corectx.Context) (*ft.ClientErrors, error) {
+			var err error
+			var cErrs *ft.ClientErrors
+			result, cErrs, err = this.createNumbered(tranxCtx, params)
+			if err != nil || cErrs != nil {
+				return cErrs, err
+			}
+			return &result.ClientErrors, nil
+		})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create stock scrap")
+	}
+	if refused != nil {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: *refused}, nil
+	}
+	return result, nil
+}
+
+func (this *StockScrapDomainServiceImpl) createNumbered(
+	ctx corectx.Context, params dmodel.DynamicFields,
+) (*dyn.OpResult[dmodel.DynamicFields], *ft.ClientErrors, error) {
+	scrapNumber, cErrs, err := this.numbering.Next(ctx, model.Id(readStringParam(params, models.StockScrapFieldOrgId)))
+	if err != nil || cErrs != nil {
+		return nil, cErrs, err
 	}
 
 	prepared := dmodel.DynamicFields{}
@@ -60,7 +86,8 @@ func (this *StockScrapDomainServiceImpl) Create(
 	applyEmptyStringDefault(prepared, models.StockScrapFieldPackageRef)
 	applyEmptyStringDefault(prepared, models.StockScrapFieldOwnerRef)
 
-	return this.CrudDomainService.Create(ctx, prepared)
+	result, err := this.CrudDomainService.Create(ctx, prepared)
+	return result, nil, err
 }
 
 // Update refuses to change a scrap that is already done: editing it would rewrite the description
@@ -212,15 +239,4 @@ func scrapViolation(key, message string) *ft.ClientErrors {
 	vErrs := ft.NewClientErrors()
 	vErrs.Append(*ft.NewAnonymousBusinessViolation(ft.ErrorKey(key, "inventory"), message))
 	return vErrs
-}
-
-// generateScrapNumber builds the document number from a ULID rather than a counter, which would
-// need its own sequence table and serialise every create in an org. Uniqueness is enforced by the
-// composite unique on (scrap_number, org_id).
-func generateScrapNumber() (string, error) {
-	id, err := model.NewId()
-	if err != nil {
-		return "", errors.Wrap(err, "generateScrapNumber")
-	}
-	return "SCR-" + strings.ToUpper(string(*id)), nil
 }

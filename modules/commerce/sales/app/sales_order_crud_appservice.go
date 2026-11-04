@@ -368,6 +368,7 @@ func (this *SalesOrderApplicationServiceImpl) runCreateOrder(
 	data := map[string]any{
 		"sales_order_id":   result.SalesOrderId,
 		"order_number":     result.OrderNumber,
+		"public_reference": result.PublicReference,
 		"sales_channel_id": result.SalesChannelId,
 
 		// True on the idempotent replay path. The caller gets a success either way; this says

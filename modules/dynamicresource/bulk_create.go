@@ -132,7 +132,11 @@ func runBulkCreate(ctx corectx.Context, domSvc CrudDomainService, prepare prepar
 }
 
 func (this *bulkWriter) writeRows(ctx corectx.Context, rows []BulkRow, data *BulkCreateResultData) error {
+	defer corectx.SetBatchRow(ctx, 0)
 	for _, row := range rows {
+		// The row number keys what each row draws (its sequence number), so a retry of the same
+		// batch replays row for row instead of every row colliding on one key.
+		corectx.SetBatchRow(ctx, row.Number)
 		outcome, rowErr, err := this.writeRow(ctx, row)
 		if err != nil {
 			return err

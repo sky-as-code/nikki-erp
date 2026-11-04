@@ -16,6 +16,20 @@ const (
 	OrgSettingDefaultLengthUomId = "default_length_uom_id"
 )
 
+// OrgSettingScrapSequenceDefinitionId holds the id of the Sequence definition that numbers the
+// organization's scrap documents (code ScrapSequenceCode). The org lifecycle writes it; the module's
+// settings writer refuses it from a client, because re-pointing it would renumber scraps from
+// another definition and hide the real one from the usage check.
+const OrgSettingScrapSequenceDefinitionId = "scrap_sequence_definition_id"
+
+// OrgSettingTransferSequenceDefinitionId holds the id of the one Sequence definition that numbers
+// the organization's transfers (code TransferSequenceCode), one counter per operation type. Server
+// owned for the same reason as the scrap definition.
+const OrgSettingTransferSequenceDefinitionId = "transfer_sequence_definition_id"
+
+// ServerOwnedOrgSettings are the settings only Inventory itself writes.
+var ServerOwnedOrgSettings = []string{OrgSettingScrapSequenceDefinitionId, OrgSettingTransferSequenceDefinitionId}
+
 // The symbols of the units a new organization starts with, and the units an organization with no
 // stored value reads as. UoM ids are per organization, so a default can only name a symbol; the org
 // lifecycle resolves it to the organization's own unit.

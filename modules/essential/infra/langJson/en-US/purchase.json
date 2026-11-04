@@ -183,5 +183,12 @@
 	"purchase_vendor_product_price.uom_not_convertible": "This unit cannot be converted to the unit the product is stocked in",
 	"purchase_vendor_product_price.uom_not_found": "The unit of measure does not exist",
 	"purchase_vendor_product_price.validity_inverted": "This price stops applying before it starts, so it would never apply at all",
-	"purchase_vendor_product_price.variant_template_mismatch": "This variant belongs to a different product than the template named on this price"
+	"purchase_vendor_product_price.variant_template_mismatch": "This variant belongs to a different product than the template named on this price",
+	"purchase.settings.orgSettings": "Purchase settings",
+	"purchase.settings.orderCodeSequenceId": "Purchase order numbering",
+	"purchase.settings.agreementCodeSequenceId": "Purchase agreement numbering",
+	"settings_desc.order_code_sequence_id": "Sequence definition that numbers purchase orders. Set by the system.",
+	"settings_desc.agreement_code_sequence_id": "Sequence definition that numbers purchase agreements. Set by the system.",
+	"settings.sequence_managed": "This setting is managed by the system and cannot be changed",
+	"sequence_not_configured": "Document numbering is not set up for this organization. Ask an administrator to set it up."
 }

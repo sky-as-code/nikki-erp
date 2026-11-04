@@ -1,0 +1,61 @@
+{
+    "type": "object",
+    "required": [
+        "id",
+        "created_at",
+        "definition_id",
+        "scope_key",
+        "period_key",
+        "last_number"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "updated_at": {
+            "type": "string",
+            "minLength": 20
+        },
+        "created_by": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "definition_id": {
+            "type": "string",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+        },
+        "org_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "scope_object_id": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "scope_key": {
+            "type": "string"
+        },
+        "period_key": {
+            "type": "string"
+        },
+        "last_number": {
+            "type": "string",
+            "pattern": "^-?[0-9]+$"
+        },
+        "etag": {
+            "type": "string"
+        }
+    },
+    "additionalProperties": false
+}

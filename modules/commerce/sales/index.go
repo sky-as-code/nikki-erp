@@ -102,7 +102,10 @@ func OnAppStarted() error {
 		dLock lock.DistributedLock,
 		cronjobs job.CronjobRegistry,
 		logger logging.LoggerService,
+		sequences itExt.SequenceExtService,
+		orgSettings itExt.OrgSettingsReaderExtService,
 	) error {
+		services.SetDocumentNumbering(services.DocumentNumbering{Sequences: sequences, Settings: orgSettings})
 		// Warehouse-level holds for kiosk sales, and the protection of a paid order's holds after
 		// every settlement path. Both are package hooks for the same reason the outbox drain is.
 		refundDeps := services.RefundProcessingDeps{Fulfillment: fulfillment, Invoicing: invoicing, PaymentOrders: orders}

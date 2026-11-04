@@ -59,6 +59,7 @@ type OrgLifecycleParam struct {
 	OperationType   itStock.StockOperationTypeDomainService
 	Settings        itExt.OrgSettingsSeedExtService
 	Units           *services.OrgUnitResolver
+	Sequences       itExt.SequenceExtService
 }
 
 func NewOrgLifecycleAppService(param OrgLifecycleParam) orglifecycle.OrgLifecycleService {
@@ -79,7 +80,7 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model
 		steps := []func(corectx.Context, *defaults.Aliases, model.Id) error{
 			this.createStorageCategories, this.createRootCategory, this.createWarehouse,
 			this.createVirtualLocations, this.createOperationTypes, this.seedOperationTypeSettings,
-			this.seedUnitSettings,
+			this.seedUnitSettings, this.registerSequences,
 		}
 		for _, step := range steps {
 			if err := step(tranxCtx, aliases, orgId); err != nil {
@@ -160,6 +161,17 @@ func (this *OrgLifecycleAppServiceImpl) createVirtualLocations(
 		id := dynamicresource.ParamId(result.Data)
 		return id, services.MarkLocationSystemGenerated(ctx, string(id))
 	})
+}
+
+// registerSequences registers the org's transfer and scrap numbering and records their ids in the
+// Inventory settings. It is the only place an Inventory definition is registered: operation types
+// share the transfer definition, each on its own counter, so creating one registers nothing.
+func (this *OrgLifecycleAppServiceImpl) registerSequences(
+	ctx corectx.Context, _ *defaults.Aliases, orgId model.Id,
+) error {
+	_, err := itExt.RegisterOrgSequences(ctx, this.param.Sequences, this.param.Settings,
+		invconstants.InventoryModuleName, orgId, services.OrgSequenceRegistrations(orgId)...)
+	return err
 }
 
 func (this *OrgLifecycleAppServiceImpl) createOperationTypes(

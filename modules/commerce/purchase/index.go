@@ -5,15 +5,20 @@
 package purchase
 
 import (
+	"context"
 	stdErr "errors"
 
 	"go.bryk.io/pkg/errors"
 
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/app"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/dynamicengines"
+	itExt "github.com/sky-as-code/nikki-erp/modules/commerce/purchase/interfaces/external"
 	"github.com/sky-as-code/nikki-erp/modules/commerce/purchase/transport/restful"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 // InitSubModule builds the Purchase part of Commerce. The order is load-bearing: the external ports
@@ -22,6 +27,13 @@ import (
 // BuildAllEngines forces every onion no route resolved, so the resource hub the lifecycle
 // operations and the usage checker read through is complete before the first request.
 func InitSubModule() error {
+	// Code numbering is shared by the order and agreement services and the org lifecycle.
+	if err := stdErr.Join(
+		deps.Register(services.NewCodeNumbering),
+		deps.Register(app.NewSettingsApplicationServiceImpl),
+	); err != nil {
+		return err
+	}
 	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}
@@ -49,6 +61,14 @@ func assertEveryResourceInstalled() error {
 		}
 	}
 	return stdErr.Join(missing...)
+}
+
+// OnAppStarted is called by Commerce's OnAppStarted. The settings schema registers here, not in
+// Init, because the settings module may not have built its engines yet; registration is idempotent.
+func OnAppStarted() error {
+	return deps.Invoke(func(settingsSvc itExt.SettingsRegistrationExtService) error {
+		return registerOrgSettings(corectx.NewRequestContext(context.Background()), settingsSvc)
+	})
 }
 
 // RegisterModels registers the Purchase schemas. The order is load-bearing: an edge is resolved against

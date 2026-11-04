@@ -32,6 +32,51 @@ Create Generates The Transfer Number
     Should Not Be Empty    ${item}[transfer_number]
     ...    msg=Create must generate a transfer number
 
+Transfer Number Is Warehouse Code, Type Prefix And Padded Counter
+    [Documentation]    INV-SEQ-002: {warehouse code}/{sequence prefix}/{n}, n padded to 5 digits
+    ...    from the operation type's own Sequence counter.
+    ${type}=    GET On Session    api    ${STOCK_OPERATION_TYPE_API}/${INTERNAL_OPERATION_TYPE_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    Response Status Should Be    ${type}    200
+    ${prefix}=    Set Variable    ${type.json()}[item][sequence_prefix]
+    ${warehouse}=    GET On Session    api    ${WAREHOUSE_API}/${type.json()}[item][warehouse_id]
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    Response Status Should Be    ${warehouse}    200
+    ${code}=    Set Variable    ${warehouse.json()}[item][code]
+    ${resp}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ${number}=    Set Variable    ${resp.json()}[item][transfer_number]
+    Should Start With    ${number}    ${code}/${prefix}/
+    Should Match Regexp    ${number}    /\\d{5,}$
+
+The Next Transfer Of The Type Takes The Next Number
+    [Documentation]    INV-SEQ-002: one counter per operation type. Nothing else issues from the
+    ...    fixture type's counter while this runs, so the step is exactly the increment (1).
+    ${first}=    GET On Session    api    ${STOCK_TRANSFER_API}/${STOCK_TRANSFER_ID}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ${first_number}=    Set Variable    ${first.json()}[item][transfer_number]
+    ${id}    ${etag}=    Create Stock Transfer    ${INTERNAL_OPERATION_TYPE_ID}
+    ${second}=    GET On Session    api    ${STOCK_TRANSFER_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    ${second_number}=    Set Variable    ${second.json()}[item][transfer_number]
+    Should Be Equal    ${second_number.rsplit('/', 1)[0]}    ${first_number.rsplit('/', 1)[0]}
+    ${step}=    Evaluate    int($second_number.rsplit('/', 1)[1]) - int($first_number.rsplit('/', 1)[1])
+    Should Be Equal As Integers    ${step}    1
+    [Teardown]    DELETE On Session    api    ${STOCK_TRANSFER_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+
+A Client Supplied Transfer Number Is Ignored
+    [Documentation]    transfer_number is no longer required on create; one a client sends is
+    ...    replaced by the issued number rather than rejected.
+    ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
+    ...    json=${{ {'operation_type_id': $INTERNAL_OPERATION_TYPE_ID, 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'transfer_number': 'CLIENT-CHOSEN', 'org_id': $INV_ORG_ID} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    ${created}=    GET On Session    api    ${STOCK_TRANSFER_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}
+    Should Not Be Equal    ${created.json()}[item][transfer_number]    CLIENT-CHOSEN
+    [Teardown]    DELETE On Session    api    ${STOCK_TRANSFER_API}/${id}
+    ...    params=${{ {'org_id': $INV_ORG_ID} }}    expected_status=any
+
 Create Starts In Draft
     [Documentation]    AC-STOCK-003. A transfer that could be created in any other state would be
     ...    a movement with nothing behind it.
@@ -93,8 +138,7 @@ Create With An Archived Operation Type Fails
     ...    was archived must still resolve it (AC-STOCK-031).
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Archived Type
-    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
+    ${resp}=    Post Stock Operation Type    ${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
     ${type_id}    ${type_etag}=    Response Should Be Create Success    ${resp}
 
     POST On Session    api    ${STOCK_OPERATION_TYPE_API}/${type_id}/archived
@@ -132,8 +176,7 @@ Create By An Ambiguous Operation Code Is Refused
     ...    policies and default locations onto the transfer, so the client must choose.
     [Tags]    negative
     ${name}=    Unique Display Name    Robot Second Internal Type
-    ${resp}=    POST On Session    api    ${STOCK_OPERATION_TYPE_API}
-    ...    json=${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
+    ${resp}=    Post Stock Operation Type    ${{ {'name': {'en-US': $name}, 'operation_code': 'internal', 'reservation_method': 'manual', 'backorder_policy': 'ask', 'org_id': $INV_ORG_ID} }}
     ${type_id}    ${type_etag}=    Response Should Be Create Success    ${resp}
     ${resp}=    POST On Session    api    ${STOCK_TRANSFER_API}
     ...    json=${{ {'operation_code': 'internal', 'source_location_id': $INVENTORY_LOCATION_ID, 'destination_location_id': $STOCK_DEST_LOCATION_ID, 'org_id': $INV_ORG_ID} }}

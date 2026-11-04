@@ -25,6 +25,7 @@ func InitRestfulHandlers() error {
 		v1.NewLanguageRest,
 		v1.NewModelMetadataRest,
 		v1.NewModuleRest,
+		v1.NewSequenceRest,
 		v1.NewTagRest,
 		v1.NewTimezoneRest,
 		v1.NewUomCatRest,
@@ -54,6 +55,7 @@ func initEssentialV1() error {
 			initLanguageV1(routeV1),
 			initModelMetadataV1(routeV1),
 			initModuleV1(routeV1),
+			initSequenceV1(routeV1),
 			initTagV1(routeV1),
 			initSettingsV1(routeV1),
 			initTimezoneV1(routeV1),
@@ -164,5 +166,33 @@ func initSettingsV1(route *echo.Group) error {
 func initTimezoneV1(route *echo.Group) error {
 	return deps.Invoke(func(timezoneRest *v1.TimezoneRest) {
 		route.GET("/timezones", timezoneRest.Search, m.UserSmokeAuthz())
+	})
+}
+
+// initSequenceV1 serves the Sequence resources. Definitions have no delete route (BR §4.4) and no
+// bulk/import; counters and issuances are read-only. Numbers are issued only through the port.
+func initSequenceV1(route *echo.Group) error {
+	return deps.Invoke(func(sequenceRest *v1.SequenceRest) error {
+		definitionErr := dynamicresource.NewRestEngine(models.SequenceDefinitionSchemaName, sequenceRest.Definition).
+			AddCrudRoutes(
+				dynamicresource.CrudActionCreate, dynamicresource.CrudActionUpdate,
+				dynamicresource.CrudActionSetArchived, dynamicresource.CrudActionGetById,
+				dynamicresource.CrudActionSearch, dynamicresource.CrudActionExists,
+				dynamicresource.CrudActionGetSchema,
+			).
+			AddRoute(dynamicresource.RouteDefinition{
+				Path: "preview", ActionType: dynamicresource.ActionTypeGeneric, HandlerFn: sequenceRest.Definition.Preview,
+			}).
+			RegisterRoutes(route)
+		readOnly := []dynamicresource.CrudAction{
+			dynamicresource.CrudActionGetById, dynamicresource.CrudActionSearch, dynamicresource.CrudActionGetSchema,
+		}
+		return stdErr.Join(
+			definitionErr,
+			dynamicresource.NewRestEngine(models.SequenceCounterSchemaName, sequenceRest.Counter).
+				AddCrudRoutes(readOnly...).RegisterRoutes(route),
+			dynamicresource.NewRestEngine(models.SequenceIssuanceSchemaName, sequenceRest.Issuance).
+				AddCrudRoutes(readOnly...).RegisterRoutes(route),
+		)
 	})
 }

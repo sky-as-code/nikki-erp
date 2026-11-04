@@ -61,6 +61,8 @@ type OrgLifecycleParam struct {
 	PaymentMethods itExt.PaymentMethodExtService
 	ChannelPayment *services.ChannelPaymentDomainServiceImpl
 	PointPayment   *services.PointPaymentDomainServiceImpl
+	Sequences      itExt.SequenceExtService
+	SettingsSeed   itExt.OrgSettingsSeedExtService
 }
 
 func NewOrgLifecycleAppService(param OrgLifecycleParam) orglifecycle.OrgLifecycleService {
@@ -68,7 +70,7 @@ func NewOrgLifecycleAppService(param OrgLifecycleParam) orglifecycle.OrgLifecycl
 }
 
 // OrgLifecycleAppServiceImpl gives a new org the system sales channels, their payment and
-// fulfillment options, a back-office sales point and a default price list.
+// fulfillment options, a back-office sales point, a default price list and its document series.
 type OrgLifecycleAppServiceImpl struct {
 	param   OrgLifecycleParam
 	cleanup dynamicresource.OrgDataCleanup
@@ -96,7 +98,7 @@ func (this *OrgLifecycleAppServiceImpl) InitOrg(ctx corectx.Context, orgId model
 		if err := this.createAssociations(tranxCtx, aliases, orgId); err != nil {
 			return err
 		}
-		return nil
+		return this.registerSequences(tranxCtx, orgId)
 	})
 }
 

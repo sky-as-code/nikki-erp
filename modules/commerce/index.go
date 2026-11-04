@@ -124,6 +124,7 @@ func (*CommerceModule) OnAppStarted() error {
 	return runSteps(
 		assertDependantsSubscribed,
 		inventory.OnAppStarted,
+		purchase.OnAppStarted,
 		sales.OnAppStarted,
 	)
 }

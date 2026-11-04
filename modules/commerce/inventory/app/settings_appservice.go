@@ -1,6 +1,8 @@
 package app
 
 import (
+	"slices"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	invconstants "github.com/sky-as-code/nikki-erp/modules/commerce/inventory/constants"
@@ -24,7 +26,7 @@ func NewSettingsApplicationServiceImpl(
 		coreSettings.LevelOrg: invsettings.OrgSettingsSchemaBuilder().Build(),
 	}
 	writer := coreSettings.NewModuleSettingsWriter(
-		invconstants.InventoryModuleName, schemas, settingsSvc, unitSettingRule(units),
+		invconstants.InventoryModuleName, schemas, settingsSvc, serverOwnedSettingRule, unitSettingRule(units),
 	)
 	return &SettingsApplicationServiceImpl{writer: writer}
 }
@@ -37,6 +39,20 @@ func (this *SettingsApplicationServiceImpl) UpdateSettings(
 	ctx corectx.Context, cmd coreSettings.UpdateSettingsCommand,
 ) (*coreSettings.SetSettingsResult, error) {
 	return this.writer.Update(ctx, cmd)
+}
+
+// serverOwnedSettingRule refuses a client write to a setting only Inventory writes: the scrap
+// sequence id. Re-pointing it would number scraps from another definition and hide the real one
+// from the usage check that keeps it from being archived.
+func serverOwnedSettingRule(_ corectx.Context, _ string, items []coreSettings.SetSettingItem) (ft.ClientErrors, error) {
+	vErrs := ft.ClientErrors{}
+	for _, item := range items {
+		if slices.Contains(invsettings.ServerOwnedOrgSettings, item.Name) {
+			vErrs.Append(*ft.NewValidationError(item.Name, ft.ErrorKey("settings.server_owned", "inventory"),
+				"{{field}} is set by the system", map[string]any{"field": item.Name}))
+		}
+	}
+	return vErrs, nil
 }
 
 // unitSettingRule refuses a unit that does not exist, is archived, or is not of the kind the

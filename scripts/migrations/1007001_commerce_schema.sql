@@ -386,6 +386,8 @@ CREATE TABLE "inventory_stock_operation_types" (
   "id" character varying NOT NULL,
   "name" jsonb NULL,
   "operation_code" character varying NULL,
+  "sequence_prefix" character varying NULL,
+  "warehouse_id" character varying NULL,
   "reservation_method" character varying NULL,
   "reserve_before_days" integer NULL,
   "backorder_policy" character varying NULL,
@@ -398,7 +400,8 @@ CREATE TABLE "inventory_stock_operation_types" (
   "updated_at" timestamptz NULL,
   "created_by" character varying NULL,
   "etag" character varying NULL,
-  PRIMARY KEY ("id")
+  PRIMARY KEY ("id"),
+  CONSTRAINT "invty_stock_op_types_tid_seq_prefix_org_id_ukey" UNIQUE ("sequence_prefix", "org_id")
 );
 -- Create "inventory_stock_product_configs" table
 CREATE TABLE "inventory_stock_product_configs" (
@@ -959,7 +962,7 @@ CREATE TABLE "sales_bills" (
   "created_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_bills_bill_number_ukey" UNIQUE ("bill_number")
+  CONSTRAINT "sales_bills_tid_number_org_ukey" UNIQUE ("bill_number", "org_id")
 );
 -- Create index "sales_bills_tid_order_idx" to table: "sales_bills"
 CREATE INDEX "sales_bills_tid_order_idx" ON "sales_bills" ("sales_order_id");
@@ -1457,6 +1460,7 @@ CREATE TABLE "sales_orders" (
   "id" character varying NOT NULL,
   "org_id" character varying NULL,
   "order_number" character varying NULL,
+  "public_reference" character varying NULL,
   "sales_channel_id" character varying NULL,
   "sales_point_id" character varying NULL,
   "customer_reference" character varying NULL,
@@ -1501,7 +1505,8 @@ CREATE TABLE "sales_orders" (
   "created_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_orders_order_number_ukey" UNIQUE ("order_number")
+  CONSTRAINT "sales_orders_tid_number_org_ukey" UNIQUE ("order_number", "org_id"),
+  CONSTRAINT "sales_orders_tid_pubref_org_ukey" UNIQUE ("public_reference", "org_id")
 );
 -- Create index "sales_orders_tid_billto_idx" to table: "sales_orders"
 CREATE INDEX "sales_orders_tid_billto_idx" ON "sales_orders" ("bill_to_party_id");
@@ -1823,7 +1828,7 @@ CREATE TABLE "sales_quotations" (
   "created_by" character varying NULL,
   "etag" character varying NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_quotations_tid_number_ukey" UNIQUE ("quotation_number")
+  CONSTRAINT "sales_quotations_tid_number_org_ukey" UNIQUE ("quotation_number", "org_id")
 );
 -- Create index "sales_quotations_tid_channel_idx" to table: "sales_quotations"
 CREATE INDEX "sales_quotations_tid_channel_idx" ON "sales_quotations" ("sales_channel_id");
@@ -1901,7 +1906,7 @@ CREATE TABLE "sales_returns" (
   "locked_refund_amount" numeric NULL,
   "cancelled_at" timestamptz NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "sales_returns_return_number_ukey" UNIQUE ("return_number")
+  CONSTRAINT "sales_returns_tid_number_org_ukey" UNIQUE ("return_number", "org_id")
 );
 -- Create index "sales_returns_tid_fiscal_idx" to table: "sales_returns"
 CREATE INDEX "sales_returns_tid_fiscal_idx" ON "sales_returns" ("fiscal_adjustment_status");
@@ -1983,7 +1988,7 @@ ALTER TABLE "inventory_stock_move_lines" ADD CONSTRAINT "inventory_stock_move_li
 -- Modify "inventory_stock_moves" table
 ALTER TABLE "inventory_stock_moves" ADD CONSTRAINT "inventory_stock_moves_destination_location_id_fkey" FOREIGN KEY ("destination_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "inventory_stock_moves_product_variant_id_fkey" FOREIGN KEY ("product_variant_id") REFERENCES "inventory_product_variants" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "inventory_stock_moves_source_location_id_fkey" FOREIGN KEY ("source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "inventory_stock_moves_transfer_id_fkey" FOREIGN KEY ("transfer_id") REFERENCES "inventory_stock_transfers" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "inventory_stock_moves_uom_id_fkey" FOREIGN KEY ("uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL;
 -- Modify "inventory_stock_operation_types" table
-ALTER TABLE "inventory_stock_operation_types" ADD CONSTRAINT "inventory_stock_operation_types_default_destination_location_id" FOREIGN KEY ("default_destination_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "inventory_stock_operation_types_default_source_location_id_fkey" FOREIGN KEY ("default_source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
+ALTER TABLE "inventory_stock_operation_types" ADD CONSTRAINT "inventory_stock_operation_types_default_destination_location_id" FOREIGN KEY ("default_destination_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "inventory_stock_operation_types_default_source_location_id_fkey" FOREIGN KEY ("default_source_location_id") REFERENCES "inventory_locations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, ADD CONSTRAINT "inventory_stock_operation_types_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "inventory_warehouses" ("id") ON UPDATE NO ACTION ON DELETE RESTRICT;
 -- Modify "inventory_stock_product_configs" table
 ALTER TABLE "inventory_stock_product_configs" ADD CONSTRAINT "inventory_stock_product_configs_inventory_uom_id_fkey" FOREIGN KEY ("inventory_uom_id") REFERENCES "essential_uoms" ("id") ON UPDATE NO ACTION ON DELETE SET NULL, ADD CONSTRAINT "inventory_stock_product_configs_product_template_id_fkey" FOREIGN KEY ("product_template_id") REFERENCES "inventory_product_templates" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION;
 -- Modify "inventory_stock_quants" table

@@ -102,9 +102,12 @@ type CreateOrderLineAllocation struct {
 }
 
 type CreateOrderResult struct {
-	SalesOrderId   string
-	OrderNumber    string
-	SalesChannelId string
+	SalesOrderId string
+	OrderNumber  string
+	// PublicReference is the non-guessable code a customer-facing device shows and looks the
+	// order up by; OrderNumber is sequential and therefore guessable.
+	PublicReference string
+	SalesChannelId  string
 
 	Pricing *RepriceResult
 
@@ -169,15 +172,16 @@ func CreateOrder(
 		}
 		if existing != nil {
 			return &CreateOrderResult{
-				SalesOrderId:   stringOf(existing, models.SalesOrderFieldId),
-				OrderNumber:    stringOf(existing, models.SalesOrderFieldOrderNumber),
-				SalesChannelId: channelId,
-				AlreadyExisted: true,
+				SalesOrderId:    stringOf(existing, models.SalesOrderFieldId),
+				OrderNumber:     stringOf(existing, models.SalesOrderFieldOrderNumber),
+				PublicReference: stringOf(existing, models.SalesOrderFieldPublicReference),
+				SalesChannelId:  channelId,
+				AlreadyExisted:  true,
 			}, nil, nil
 		}
 	}
 
-	orderId, orderNumber, err := writeDraftOrder(ctx, params, point, channelId)
+	orderId, numbers, err := writeDraftOrder(ctx, params, point, channelId)
 	if err != nil {
 		// A collision on the idempotency index means a concurrent retry won the race: the success
 		// path, not a failure.
@@ -188,12 +192,16 @@ func CreateOrder(
 			}
 			if existing != nil {
 				return &CreateOrderResult{
-					SalesOrderId:   stringOf(existing, models.SalesOrderFieldId),
-					OrderNumber:    stringOf(existing, models.SalesOrderFieldOrderNumber),
-					SalesChannelId: channelId,
-					AlreadyExisted: true,
+					SalesOrderId:    stringOf(existing, models.SalesOrderFieldId),
+					OrderNumber:     stringOf(existing, models.SalesOrderFieldOrderNumber),
+					PublicReference: stringOf(existing, models.SalesOrderFieldPublicReference),
+					SalesChannelId:  channelId,
+					AlreadyExisted:  true,
 				}, nil, nil
 			}
+		}
+		if cErrs := numberingRefusalOf(err); cErrs != nil {
+			return nil, cErrs, nil
 		}
 		return nil, nil, err
 	}
@@ -219,7 +227,8 @@ func CreateOrder(
 
 	return &CreateOrderResult{
 		SalesOrderId:     orderId,
-		OrderNumber:      orderNumber,
+		OrderNumber:      numbers.OrderNumber,
+		PublicReference:  numbers.PublicReference,
 		SalesChannelId:   channelId,
 		Pricing:          priced,
 		AutoConfirmOrder: params.autoConfirmOrder,
@@ -393,17 +402,33 @@ func findOrderByIdempotencyKey(
 	return found.Data.Items[0], nil
 }
 
+// orderNumbers are the two identifiers an order is issued: the sequential number staff quote, and
+// the non-guessable reference a customer-facing device shows.
+type orderNumbers struct {
+	OrderNumber     string
+	PublicReference string
+}
+
+// issueOrderNumbers draws both identifiers inside the order's transaction, so an order that fails
+// to write gives its numbers back.
+func issueOrderNumbers(ctx corectx.Context, orgId string, discriminators ...string) (orderNumbers, error) {
+	issued, err := issueDocumentNumbers(ctx, orgId, discriminators, SeqOrderNumber, SeqOrderPublicReference)
+	if err != nil {
+		return orderNumbers{}, err
+	}
+	return orderNumbers{OrderNumber: issued[0], PublicReference: issued[1]}, nil
+}
+
 // writeDraftOrder uses one transaction because an order whose lines failed to write is an empty
 // order - a legitimate state, so nothing downstream would flag it.
 func writeDraftOrder(
 	ctx corectx.Context, params CreateOrderParams, point dmodel.DynamicFields, channelId string,
-) (orderId string, orderNumber string, err error) {
+) (orderId string, numbers orderNumbers, err error) {
 	id, err := model.NewId()
 	if err != nil {
-		return "", "", err
+		return "", numbers, err
 	}
 	orderId = string(*id)
-	orderNumber = "SO-" + orderId
 
 	orgId := params.OrgId
 	if orgId == "" {
@@ -415,13 +440,17 @@ func writeDraftOrder(
 		if err != nil {
 			return err
 		}
+		if numbers, err = issueOrderNumbers(tranxCtx, orgId); err != nil {
+			return err
+		}
 
 		fields := dmodel.DynamicFields{
-			models.SalesOrderFieldId:             orderId,
-			models.SalesOrderFieldOrderNumber:    orderNumber,
-			models.SalesOrderFieldSalesChannelId: channelId,
-			models.SalesOrderFieldSalesPointId:   params.SalesPointId,
-			models.SalesOrderFieldCurrencyCode:   params.CurrencyCode,
+			models.SalesOrderFieldId:              orderId,
+			models.SalesOrderFieldOrderNumber:     numbers.OrderNumber,
+			models.SalesOrderFieldPublicReference: numbers.PublicReference,
+			models.SalesOrderFieldSalesChannelId:  channelId,
+			models.SalesOrderFieldSalesPointId:    params.SalesPointId,
+			models.SalesOrderFieldCurrencyCode:    params.CurrencyCode,
 
 			models.SalesOrderFieldStatus: string(models.SalesOrderStatusDraft),
 
@@ -500,9 +529,9 @@ func writeDraftOrder(
 		return writeOrderLineAllocations(tranxCtx, lineIds, orgId, params.Lines)
 	})
 	if err != nil {
-		return "", "", err
+		return "", orderNumbers{}, err
 	}
-	return orderId, orderNumber, nil
+	return orderId, numbers, nil
 }
 
 func writeOrderLines(

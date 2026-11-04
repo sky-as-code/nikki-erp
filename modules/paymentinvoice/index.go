@@ -8,6 +8,7 @@
 package paymentinvoice
 
 import (
+	"context"
 	stdErr "errors"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	httpclientclient "github.com/sky-as-code/nikki-erp/modules/core/httpclient/client"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
@@ -28,8 +30,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/services"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/dynamicengines"
+	pinvExternal "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/infra/external"
 	pievent "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/infra/external/event"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/infra/gateway"
+	itExt "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/external"
 	itGateway "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/gateway"
 	itInvoice "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/invoice"
 	itOrder "github.com/sky-as-code/nikki-erp/modules/paymentinvoice/interfaces/order"
@@ -69,6 +73,9 @@ func (*PaymentInvoiceModule) Deps() []string {
 	return []string{
 		"dynamicresource",
 		"essential",
+		// The invoice numbering's sequence id lives in this module's org settings, registered and
+		// read through the Settings module. Settings depends only on dynamicresource.
+		"settings",
 	}
 }
 
@@ -87,6 +94,9 @@ func (*PaymentInvoiceModule) Version() semver.SemVer {
 // registers their routes. BuildAllEngines then forces every onion that no route resolved, so the
 // resource hub the payment flow reads through is complete before the first request.
 func (*PaymentInvoiceModule) Init() error {
+	if err := pinvExternal.InitExternal(); err != nil {
+		return err
+	}
 	if err := initDomainServices(); err != nil {
 		return err
 	}
@@ -96,7 +106,7 @@ func (*PaymentInvoiceModule) Init() error {
 	if err := restful.InitRestfulHandlers(); err != nil {
 		return err
 	}
-	if err := pinvCqrs.InitOrgLifecycleHandlers(); err != nil {
+	if err := pinvCqrs.InitCqrsHandlers(); err != nil {
 		return err
 	}
 	if err := dynamicengines.BuildAllEngines(); err != nil {
@@ -143,7 +153,10 @@ func initDomainServices() error {
 			return gateway.BuildRegistry(cfg, httpClient, logger)
 		},
 		services.NewOrderDomainService,
+		// Shared by the invoice service and the org lifecycle.
+		services.NewInvoiceNumbering,
 		services.NewInvoiceDomainService,
+		app.NewSettingsApplicationServiceImpl,
 		services.NewPaymentProfileDomainService,
 
 		// The notifier is registered rather than built where it is used, because both paths that
@@ -218,7 +231,13 @@ func (*PaymentInvoiceModule) OnAppStarted() error {
 		notifier *app.ResultNotifier,
 		cronRegistry job.CronjobRegistry,
 		logger logging.LoggerService,
+		settingsSvc itExt.SettingsRegistrationExtService,
 	) error {
+		// The settings schema registers here rather than in Init, because the settings module may
+		// not have built its engines yet; registration is idempotent.
+		if err := registerOrgSettings(corectx.NewRequestContext(context.Background()), settingsSvc); err != nil {
+			return err
+		}
 		manager := app.NewJobsManager(orders, notifier, app.JobsConfig{
 			ExpireAfter: time.Duration(
 				cfg.GetInt(modconstants.OrderExpireAfterMins, defaultExpireAfterMins)) * time.Minute,

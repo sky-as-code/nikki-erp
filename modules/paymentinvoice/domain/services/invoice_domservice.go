@@ -10,15 +10,16 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/paymentinvoice/domain/models"
 )
 
 // InvoiceDomainService closes invoice drafts.
-type InvoiceDomainService struct{}
+type InvoiceDomainService struct {
+	numbering *InvoiceNumbering
+}
 
-func NewInvoiceDomainService() *InvoiceDomainService {
-	return &InvoiceDomainService{}
+func NewInvoiceDomainService(numbering *InvoiceNumbering) *InvoiceDomainService {
+	return &InvoiceDomainService{numbering: numbering}
 }
 
 // IssueCommand asks for a draft to be closed. It carries only the invoice, because everything the
@@ -74,12 +75,17 @@ func (this *InvoiceDomainService) Issue(
 			return err
 		}
 		if innerErrs != nil && innerErrs.Count() > 0 {
+			// Rolled back rather than committed: a refusal from the numbering arrives after its
+			// reservation is written, and that reservation must not survive.
 			vErrs.ConcatPtr(innerErrs)
-			return nil
+			return errRollbackAfterRefusal
 		}
 		result = issued
 		return nil
 	})
+	if errors.Is(err, errRollbackAfterRefusal) {
+		err = nil
+	}
 
 	if err != nil || vErrs.Count() > 0 {
 		return nil, vErrs, err
@@ -121,11 +127,11 @@ func (this *InvoiceDomainService) issueWithin(
 		return nil, vErrs, err
 	}
 
-	issuedAt := time.Now().UTC()
-	number, err := allocateInvoiceNumber(ctx, issuedAt.Year())
-	if err != nil {
-		return nil, nil, err
+	issued, numberErrs, err := this.allocateNumber(ctx, invoice, invoiceId)
+	if err != nil || numberErrs != nil {
+		return nil, numberErrs, err
 	}
+	number, issuedAt := issued.Number, issued.IssuedAt
 
 	if err := writeInvoiceFields(ctx, invoiceId, dmodel.DynamicFields{
 		models.InvoiceFieldNumber:         number,
@@ -229,64 +235,19 @@ func (this *InvoiceDomainService) recomputeLines(
 	return totals, nil
 }
 
-// allocateInvoiceNumber mints the next number for the given year.
-//
-// The sequence is per-year and derived by counting the invoices already issued in it. That is
-// sound only because this runs inside the issue transaction: the count and the write that follows
-// it are one atomic step, so two invoices issued at the same instant cannot read the same count.
-// The unique index on number is the backstop if that assumption ever breaks — a collision fails
-// the transaction rather than producing two documents with one number.
-func allocateInvoiceNumber(ctx corectx.Context, year int) (string, error) {
-	repo, err := repoFor(models.InvoiceSchemaName)
-	if err != nil {
-		return "", err
+// allocateNumber issues the invoice's number from its organization's paymentinvoice.invoice
+// sequence, inside the issue transaction ctx carries. The per-organization partial unique on
+// (org_id, number) stays as the backstop: a collision fails the transaction rather than producing
+// two documents with one number.
+func (this *InvoiceDomainService) allocateNumber(
+	ctx corectx.Context, invoice *models.Invoice, invoiceId string,
+) (*IssuedNumber, *ft.ClientErrors, error) {
+	if this.numbering == nil {
+		return nil, nil, errors.New("allocateNumber: invoice numbering is not installed")
 	}
-
-	prefix := fmt.Sprintf("INV-%d-", year)
-
-	graph := &dmodel.SearchGraph{}
-	graph.And(
-		*dmodel.NewSearchNode().NewCondition(models.InvoiceFieldNumber, dmodel.StartsWith, prefix),
-	)
-	// Highest number first: the next one follows the largest already taken, so a gap left by a
-	// deleted invoice is not re-used. Re-using a number would put two documents in the record
-	// under one identity.
-	graph.OrderBy(models.InvoiceFieldNumber, dmodel.Desc)
-
-	found, err := repo.Search(ctx, dyn.RepoSearchParam{
-		Graph: graph,
-		Page:  0,
-		Size:  1,
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "allocateInvoiceNumber")
+	orgId := invoice.GetOrgId()
+	if orgId == nil {
+		return nil, nil, errors.Errorf("allocateNumber: invoice %s names no organization", invoiceId)
 	}
-
-	next := 1
-	if found != nil && found.HasData && len(found.Data.Items) > 0 {
-		highest := derefString(models.NewInvoiceFrom(found.Data.Items[0]).GetNumber())
-		if sequence, ok := sequenceOfInvoiceNumber(highest, prefix); ok {
-			next = sequence + 1
-		}
-	}
-
-	return fmt.Sprintf("%s%06d", prefix, next), nil
-}
-
-// sequenceOfInvoiceNumber reads the counter out of a number this module minted.
-//
-// A number that does not parse is treated as absent rather than failing the issue: it was not
-// minted here, and refusing to issue anything until someone corrects a stray row would be a worse
-// outcome than starting the sequence afresh alongside it. The unique index still prevents a
-// collision.
-func sequenceOfInvoiceNumber(number string, prefix string) (int, bool) {
-	if len(number) <= len(prefix) || number[:len(prefix)] != prefix {
-		return 0, false
-	}
-
-	sequence := 0
-	if _, err := fmt.Sscanf(number[len(prefix):], "%d", &sequence); err != nil {
-		return 0, false
-	}
-	return sequence, sequence > 0
+	return this.numbering.Next(ctx, *orgId, invoiceId)
 }

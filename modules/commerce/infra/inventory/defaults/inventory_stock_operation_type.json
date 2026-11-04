@@ -1,6 +1,8 @@
 [
 	{
 		"$alias": "stock_operation_type_main_in",
+		"sequence_prefix": "IN",
+		"warehouse_id": "@warehouse_main",
 		"name": {
 			"en-US": "Receipts",
 			"vi-VN": "Nhập kho"
@@ -14,6 +16,8 @@
 	},
 	{
 		"$alias": "stock_operation_type_main_out",
+		"sequence_prefix": "OUT",
+		"warehouse_id": "@warehouse_main",
 		"name": {
 			"en-US": "Deliveries",
 			"vi-VN": "Xuất kho"
@@ -27,6 +31,8 @@
 	},
 	{
 		"$alias": "stock_operation_type_correction",
+		"sequence_prefix": "ADJ",
+		"warehouse_id": "@warehouse_main",
 		"name": {
 			"en-US": "Stock Corrections",
 			"vi-VN": "Điều chỉnh tồn kho"

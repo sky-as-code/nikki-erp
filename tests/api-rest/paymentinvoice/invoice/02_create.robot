@@ -41,6 +41,22 @@ A New Invoice Has No Number
     Should Be Equal    ${number}    ${None}
     ...    msg=A draft invoice must not carry a number before it is issued
 
+Create Ignores A Client Number
+    [Documentation]    SEQ-FB-004: number is auto_generated in the schema, so the validator drops
+    ...    whatever a client sends on create; only the issue action writes it, from the sequence.
+    ${partner}=    Unique Display Name    Robot Forged Number
+    ${resp}=    POST On Session    api    ${INVOICE_API}
+    ...    json=${{ {'partner_name': $partner, 'currency_id': $PAYINV_CURRENCY_ID, 'org_id': $PAYINV_ORG_ID, 'number': 'INV-2026-999999'} }}
+    ${id}    ${etag}=    Response Should Be Create Success    ${resp}
+    ${resp}=    GET On Session    api    ${INVOICE_API}/${id}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}
+    ${item}=    Item Should Match Schema    ${resp}    ${PAYINV_SCHEMA_DIR}/invoice.json    200
+    ${number}=    Get From Dictionary    ${item}    number    ${None}
+    Should Be Equal    ${number}    ${None}
+    ...    msg=A client must not be able to choose an invoice number on create
+    [Teardown]    DELETE On Session    api    ${INVOICE_API}/${id}
+    ...    params=${{ {'org_id': $PAYINV_ORG_ID} }}    expected_status=any
+
 Create With All Optional Fields Succeeds
     ${partner}=    Unique Display Name    Robot Full Partner
     ${resp}=    POST On Session    api    ${INVOICE_API}

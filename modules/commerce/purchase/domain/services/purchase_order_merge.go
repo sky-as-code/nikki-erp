@@ -149,7 +149,8 @@ func assertCompatibleOrders(orders []dmodel.DynamicFields) *dyn.OpResult[dyn.Mut
 }
 
 // splitMergeTarget picks the oldest order as the target and returns the rest as sources. Oldest is
-// by order deadline, falling back to the code, which carries a ULID and so sorts by creation time.
+// by order deadline, falling back to the creation time and then the id. Not the code: it is a
+// per-org sequence number whose order follows the definition's configuration, not creation.
 func splitMergeTarget(
 	orders []dmodel.DynamicFields,
 ) (dmodel.DynamicFields, []dmodel.DynamicFields) {
@@ -182,8 +183,22 @@ func isOlderOrder(candidate, current dmodel.DynamicFields) bool {
 	case currentHas:
 		return false
 	default:
-		return stringOf(candidate, models.PurchaseOrderFieldCode) <
-			stringOf(current, models.PurchaseOrderFieldCode)
+		return isCreatedEarlier(candidate, current)
+	}
+}
+
+// isCreatedEarlier orders by created_at, then by id so two orders created in the same instant still
+// have one answer.
+func isCreatedEarlier(candidate, current dmodel.DynamicFields) bool {
+	candidateCreated, candidateHas := timeOf(candidate, basemodel.FieldCreatedAt)
+	currentCreated, currentHas := timeOf(current, basemodel.FieldCreatedAt)
+	switch {
+	case candidateHas && currentHas && !candidateCreated.Equal(currentCreated):
+		return candidateCreated.Before(currentCreated)
+	case candidateHas != currentHas:
+		return candidateHas
+	default:
+		return stringOf(candidate, models.PurchaseOrderFieldId) < stringOf(current, models.PurchaseOrderFieldId)
 	}
 }
 
